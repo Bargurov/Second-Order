@@ -9,8 +9,10 @@
 
 import json
 import os
+import re
 import socket
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 
 # Maximum seconds to wait for any single RSS feed before skipping it.
 _FEED_TIMEOUT = 8
@@ -24,11 +26,15 @@ _FEED_TIMEOUT = 8
 # regional.  "low" = user-submitted / unverified.
 
 _SOURCE_TIERS: dict[str, str] = {
-    "BBC World":          "high",
-    "The Guardian World":  "high",
-    "WSJ World News":      "high",
-    "Al Jazeera":          "medium",
-    "local":               "low",
+    "BBC Business":          "high",
+    "BBC World":             "high",
+    "Reuters World":         "high",
+    "The Guardian Business":  "high",
+    "The Guardian World":     "high",
+    "WSJ World News":         "high",
+    "Al Jazeera Economy":     "medium",
+    "Al Jazeera":             "medium",
+    "local":                  "low",
 }
 
 _TIER_RANK: dict[str, int] = {"high": 0, "medium": 1, "low": 2}
@@ -43,12 +49,60 @@ def source_tier(name: str) -> str:
 # Normalized record shape
 # ---------------------------------------------------------------------------
 
+# Common date formats found in RSS feeds and local JSON files.
+# Tried in order; the first successful parse wins.
+_DATE_FORMATS: list[str] = [
+    "%Y-%m-%dT%H:%M:%S",       # 2026-04-05T14:30:00
+    "%Y-%m-%dT%H:%M:%S%z",     # 2026-04-05T14:30:00+00:00
+    "%Y-%m-%d %H:%M:%S",       # 2026-04-05 14:30:00
+    "%Y-%m-%d",                 # 2026-04-05
+    "%B %d, %Y",               # April 5, 2026
+    "%b %d, %Y",               # Apr 5, 2026
+    "%d %B %Y",                # 5 April 2026
+    "%d %b %Y",                # 5 Apr 2026
+]
+
+
+def _normalize_timestamp(raw: str) -> str:
+    """Best-effort parse of a raw timestamp string into ISO format.
+
+    Tries RFC 2822 (email.utils) first — this covers the common RSS format
+    'Sat, 05 Apr 2026 10:30:00 GMT'.  Then falls through strptime patterns.
+    Returns the original string if nothing works, keeping the record usable.
+    """
+    if not raw or not raw.strip():
+        return ""
+    raw = raw.strip()
+
+    # Already valid ISO — fast path
+    if re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", raw):
+        return raw
+
+    # RFC 2822 (most RSS published strings)
+    try:
+        dt = parsedate_to_datetime(raw)
+        return dt.strftime("%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        pass
+
+    # Strptime fallbacks
+    for fmt in _DATE_FORMATS:
+        try:
+            dt = datetime.strptime(raw, fmt)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            continue
+
+    # Unparseable — return as-is so the record isn't lost
+    return raw
+
+
 def _make_record(source: str, title: str, published_at: str, url: str = "") -> dict:
     """Build one normalized headline record."""
     return {
         "source":       source,
         "title":        title.strip(),
-        "published_at": published_at,
+        "published_at": _normalize_timestamp(published_at),
         "url":          url.strip(),
     }
 
@@ -80,6 +134,8 @@ def load_local(path: str = LOCAL_FILE) -> list[dict]:
 
     records = []
     for item in items:
+        if not isinstance(item, dict):
+            continue
         title = item.get("title", "").strip()
         if not title:
             continue
@@ -96,27 +152,28 @@ def load_local(path: str = LOCAL_FILE) -> list[dict]:
 # Source 2: RSS feeds
 # ---------------------------------------------------------------------------
 
-# A short curated list — geopolitics / macro / energy.
-# feedparser handles Atom and RSS transparently.
+# Curated feeds — narrowed to business / world / politics / policy sections
+# to reduce general-news noise (sports, entertainment, lifestyle, etc.).
 #
 # Feed selection notes:
-#   - Reuters (feeds.reuters.com) changed their feed infrastructure in 2023 and
-#     the old URL frequently returns 301 or empty — replaced with The Guardian.
-#   - The Guardian World: reliable, strong geopolitical and economics coverage.
-#   - WSJ World News: financial + geopolitical, good for macro / trade stories.
-#   - Al Jazeera and BBC are kept — both stable and geopolitics-heavy.
+#   - Reuters World via Google News RSS proxy — Reuters shut down their own
+#     public feeds, but Google News exposes a topic-filtered Atom feed that
+#     reliably surfaces Reuters world/business content.
+#   - The Guardian uses /business/rss (not /world/rss) for better trade/macro.
+#   - BBC uses /news/business to avoid lifestyle and sports stories.
+#   - WSJ World News: financial + geopolitical, naturally filtered.
 DEFAULT_FEEDS: list[dict] = [
     {
-        "name": "The Guardian World",
-        "url":  "https://www.theguardian.com/world/rss",
+        "name": "Reuters World",
+        "url":  "https://news.google.com/rss/search?q=site:reuters.com+world+OR+business&hl=en&gl=US&ceid=US:en",
     },
     {
-        "name": "Al Jazeera",
-        "url":  "https://www.aljazeera.com/xml/rss/all.xml",
+        "name": "The Guardian Business",
+        "url":  "https://www.theguardian.com/business/rss",
     },
     {
-        "name": "BBC World",
-        "url":  "https://feeds.bbci.co.uk/news/world/rss.xml",
+        "name": "BBC Business",
+        "url":  "https://feeds.bbci.co.uk/news/business/rss.xml",
     },
     {
         "name": "WSJ World News",
@@ -125,21 +182,31 @@ DEFAULT_FEEDS: list[dict] = [
 ]
 
 
-def load_rss(feeds: list[dict] | None = None) -> list[dict]:
+def load_rss(feeds: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
     """Fetch headlines from RSS/Atom feeds.
 
-    Each feed dict needs 'name' and 'url'.  Returns [] on import failure
-    (feedparser not installed) or if every feed is unreachable.
+    Each feed dict needs 'name' and 'url'.
+
+    Returns
+    -------
+    (records, feed_status)
+        records    : list of headline dicts (same shape as before).
+        feed_status: one dict per feed attempted:
+                     {"name": str, "ok": bool, "headlines": int}
     """
     try:
         import feedparser
     except ImportError:
-        return []
+        feed_status = [{"name": f["name"], "ok": False, "headlines": 0}
+                       for f in (feeds or DEFAULT_FEEDS)]
+        return [], feed_status
 
     if feeds is None:
         feeds = DEFAULT_FEEDS
 
     records = []
+    feed_status: list[dict] = []
+
     for feed_info in feeds:
         feed_name = feed_info["name"]
         # Apply a per-feed timeout using the stdlib socket default.
@@ -150,10 +217,12 @@ def load_rss(feeds: list[dict] | None = None) -> list[dict]:
             socket.setdefaulttimeout(_FEED_TIMEOUT)
             parsed = feedparser.parse(feed_info["url"])
         except Exception:
+            feed_status.append({"name": feed_name, "ok": False, "headlines": 0})
             continue
         finally:
             socket.setdefaulttimeout(_prev_timeout)
 
+        count_before = len(records)
         for entry in parsed.entries:
             title = (entry.get("title") or "").strip()
             if not title:
@@ -176,7 +245,15 @@ def load_rss(feeds: list[dict] | None = None) -> list[dict]:
                 published_at=pub,
                 url=link,
             ))
-    return records
+
+        added = len(records) - count_before
+        feed_status.append({
+            "name":      feed_name,
+            "ok":        added > 0,
+            "headlines": added,
+        })
+
+    return records, feed_status
 
 
 # ---------------------------------------------------------------------------
@@ -188,26 +265,99 @@ def _dedup_key(title: str) -> str:
     return "".join(ch for ch in title.lower() if ch.isalnum() or ch == " ").strip()
 
 
-def fetch_all(local_path: str = LOCAL_FILE, feeds: list[dict] | None = None) -> list[dict]:
+# ---------------------------------------------------------------------------
+# Relevance filter — deterministic keyword allowlist
+# ---------------------------------------------------------------------------
+# Headlines must contain at least one domain keyword to pass.  This drops
+# lifestyle, sports, entertainment, and other general-news noise before
+# clustering.  Easy to tune: just add or remove words from the set.
+
+RELEVANCE_KEYWORDS: set[str] = {
+    # Geopolitics & conflict
+    "geopolit", "sanction", "embargo", "tariff", "duties", "treaty",
+    "ceasefire", "truce", "diplomacy", "diplomatic", "nato", "sovereignty",
+    "annex", "territorial", "missile", "military", "defense", "defence",
+    "weapons", "nuclear", "drone", "war ", "wartime", "conflict",
+    "escalat", "de-escalat", "retaliat",
+    # Trade & industrial policy
+    "trade", "export", "import", "subsid", "quota", "dumping",
+    "industrial policy", "supply chain", "reshoring", "nearshoring",
+    "protectionism", "free trade", "trade war", "trade deal",
+    # Energy & commodities
+    "oil", "crude", "opec", "natural gas", "lng", "pipeline",
+    "energy", "petroleum", "fuel", "refiner", "coal",
+    "rare earth", "lithium", "cobalt", "mineral",
+    "copper", "steel", "alumin", "metal",
+    "wheat", "grain", "food security", "commodit",
+    # Shipping & logistics
+    "shipping", "maritime", "freight", "red sea", "suez",
+    "strait of hormuz", "port", "blockade",
+    # Central banks & monetary policy
+    "central bank", "federal reserve", "interest rate", "rate hike",
+    "rate cut", "inflation", "deflation", "monetary policy",
+    "ecb", "boj", "pboc", "imf", "world bank",
+    "quantitative", "stimulus",
+    # Fiscal & regulation
+    "fiscal", "budget", "spending", "debt ceiling", "sovereign debt",
+    "regulat", "antitrust", "deregulat",
+    # Markets & finance
+    "market", "investor", "bond", "treasury", "yield",
+    "equit", "stock", "index", "recession", "gdp",
+    "currency", "dollar", "euro", "yuan", "yen",
+    "crypto", "bitcoin",
+    # Sectors
+    "semiconductor", "chip", "tech sector", "pharma", "biotech",
+    "aerospace", "auto industry", "automotive",
+    # Key actors (catch headlines that name actors without other keywords)
+    "white house", "kremlin", "beijing", "brussels",
+    "pentagon", "congress", "parliament",
+}
+
+
+def is_relevant(title: str) -> bool:
+    """Return True if the headline matches at least one domain keyword.
+
+    Uses substring matching on the lowercased title so that stems like
+    'sanction' catch 'sanctions', 'sanctioned', etc.
+    """
+    low = title.lower()
+    return any(kw in low for kw in RELEVANCE_KEYWORDS)
+
+
+def fetch_all(local_path: str = LOCAL_FILE,
+              feeds: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
     """Load from all sources, merge, and deduplicate.
 
-    Returns newest-first (by published_at where available).
-    """
-    all_records = load_local(local_path) + load_rss(feeds)
+    Dedup removes same-source repeats (e.g. an RSS feed returning the same
+    headline twice) but preserves identical titles from *different* sources
+    so that clustering can count them as corroborating coverage.
 
-    # Deduplicate by normalized title — keep the first occurrence
-    seen: set[str] = set()
+    Returns
+    -------
+    (records, feed_status)
+        records    : newest-first list of headline dicts.
+        feed_status: per-feed status dicts from load_rss().
+    """
+    rss_records, feed_status = load_rss(feeds)
+    all_records = load_local(local_path) + rss_records
+
+    # Deduplicate by (source, normalized title) — same source + same title
+    # is a true duplicate; different source + same title is corroboration.
+    seen: set[tuple[str, str]] = set()
     unique: list[dict] = []
     for rec in all_records:
-        key = _dedup_key(rec["title"])
+        key = (rec["source"], _dedup_key(rec["title"]))
         if key in seen:
             continue
         seen.add(key)
         unique.append(rec)
 
+    # Drop headlines that don't match any domain keyword
+    relevant = [rec for rec in unique if is_relevant(rec["title"])]
+
     # Sort newest-first; records without a timestamp go to the end
-    unique.sort(key=lambda r: r["published_at"] or "", reverse=True)
-    return unique
+    relevant.sort(key=lambda r: r["published_at"] or "", reverse=True)
+    return relevant, feed_status
 
 
 # ---------------------------------------------------------------------------
@@ -333,15 +483,26 @@ def _scan_keywords(text: str, keyword_map: dict[str, str]) -> list[str]:
     """Find all keyword matches in text; return unique canonical values.
 
     Checks longest keywords first so 'south korea' matches before 'korea'.
+    Short pure-alpha keywords (e.g. 'us', 'eu') use word-boundary matching
+    to avoid false positives like 'discuss' or 'reuters'.
     """
     text_lower = text.lower()
     seen: set[str] = set()
     found: list[str] = []
     for kw in sorted(keyword_map, key=len, reverse=True):
         canonical = keyword_map[kw]
-        if canonical not in seen and kw in text_lower:
-            seen.add(canonical)
-            found.append(canonical)
+        if canonical in seen:
+            continue
+        # Short alphabetic keywords need word-boundary matching to avoid
+        # false positives (e.g. "us" inside "discuss", "eu" inside "reuters").
+        if kw.isalpha() and len(kw) <= 3:
+            if not re.search(r'\b' + re.escape(kw) + r'\b', text_lower):
+                continue
+        else:
+            if kw not in text_lower:
+                continue
+        seen.add(canonical)
+        found.append(canonical)
     return found
 
 
@@ -460,8 +621,60 @@ def _build_summary(best_headline: str, best_source: str,
     return f"{best_headline}. Covered by {', '.join(source_names)}."
 
 
+def _build_evidence(recs: list[dict], best_title: str,
+                     agreement: str) -> list[dict]:
+    """Return top 2-3 source evidence items, ranked by tier then recency.
+
+    Each item: {"source", "tier", "title", "published_at", "note"}
+    When agreement is "mixed", the most divergent headline gets a note.
+    """
+    best_words = _headline_words(best_title)
+
+    # Sort: best tier first, then newest first within same tier.
+    # Stable-sort trick: sort by recency desc, then stable-sort by tier asc.
+    by_recency = sorted(recs, key=lambda r: r["published_at"] or "", reverse=True)
+    ranked = sorted(by_recency, key=lambda r: _TIER_RANK.get(source_tier(r["source"]), 2))
+
+    # Deduplicate by source name — keep first (best per source)
+    seen: set[str] = set()
+    unique: list[dict] = []
+    for r in ranked:
+        if r["source"] not in seen:
+            seen.add(r["source"])
+            unique.append(r)
+
+    # Find the most divergent headline when mixed
+    divergent_title: str | None = None
+    if agreement == "mixed" and len(unique) > 1:
+        lowest_sim = 1.0
+        for r in unique[1:]:
+            sim = _jaccard(best_words, _headline_words(r["title"]))
+            if sim < lowest_sim:
+                lowest_sim = sim
+                divergent_title = r["title"]
+
+    evidence: list[dict] = []
+    for r in unique[:3]:
+        note = ""
+        if divergent_title and r["title"] == divergent_title:
+            note = "framing differs"
+        evidence.append({
+            "source":       r["source"],
+            "tier":         source_tier(r["source"]),
+            "title":        r["title"],
+            "published_at": r["published_at"],
+            "note":         note,
+        })
+
+    return evidence
+
+
 def cluster_headlines(records: list[dict]) -> list[dict]:
     """Group near-duplicate headlines into event clusters.
+
+    Uses pairwise Jaccard similarity with union-find so that clustering is
+    order-independent and transitive: if A≈B and B≈C, all three end up in
+    one cluster regardless of input order.
 
     Parameters
     ----------
@@ -477,24 +690,43 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
             "summary":      str,          # merged 2-4 sentence summary
             "consensus":    dict,         # structured extraction (actors, action, …)
             "sources":      list[dict],   # [{"name", "tier", "url"}, ...], best first
-            "published_at": str,          # earliest timestamp in cluster
+            "published_at": str,          # most recent timestamp in cluster
             "source_count": int,
             "agreement":    "consistent" | "mixed",
         }
     """
-    # Build clusters greedily — compare each record to existing cluster seeds
-    clusters: list[dict] = []  # {"seed_words": set, "records": list}
+    n = len(records)
+    if n == 0:
+        return []
 
-    for rec in records:
-        words = _headline_words(rec["title"])
-        matched = False
-        for cluster in clusters:
-            if _jaccard(words, cluster["seed_words"]) >= _CLUSTER_THRESHOLD:
-                cluster["records"].append(rec)
-                matched = True
-                break
-        if not matched:
-            clusters.append({"seed_words": words, "records": [rec]})
+    # -- Union-find for order-independent, transitive clustering --
+    parent = list(range(n))
+
+    def _find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]   # path compression
+            x = parent[x]
+        return x
+
+    def _union(a: int, b: int) -> None:
+        ra, rb = _find(a), _find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    word_sets = [_headline_words(rec["title"]) for rec in records]
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            if _jaccard(word_sets[i], word_sets[j]) >= _CLUSTER_THRESHOLD:
+                _union(i, j)
+
+    # Group record indices by their root
+    groups: dict[int, list[int]] = {}
+    for i in range(n):
+        root = _find(i)
+        groups.setdefault(root, []).append(i)
+
+    clusters = [{"records": [records[i] for i in idxs]} for idxs in groups.values()]
 
     # Convert internal clusters to the output shape
     result: list[dict] = []
@@ -522,9 +754,9 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
             -len(r["title"]),
         ))
 
-        # -- Timestamp: earliest in cluster --
+        # -- Timestamp: most recent in cluster --
         pub_dates = [r["published_at"] for r in recs if r["published_at"]]
-        published_at = min(pub_dates) if pub_dates else ""
+        published_at = max(pub_dates) if pub_dates else ""
 
         # -- Agreement: check all pairs within cluster --
         agreement = "consistent"
@@ -548,6 +780,8 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
             best_rec["title"], all_titles, sources, agreement,
         )
 
+        evidence = _build_evidence(recs, best_rec["title"], agreement)
+
         result.append({
             "headline":     best_rec["title"],
             "summary":      summary,
@@ -556,6 +790,7 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
             "published_at": published_at,
             "source_count": len(sources),
             "agreement":    agreement,
+            "evidence":     evidence,
         })
 
     result.sort(key=lambda c: c["published_at"] or "", reverse=True)

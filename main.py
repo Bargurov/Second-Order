@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from analyze_event import analyze_event
+from analyze_event import analyze_event, is_mock
 from classify import classify_persistence, classify_stage
 from market_check import market_check as run_market_check
 from db import init_db, load_recent_events, save_event
@@ -21,7 +21,7 @@ def _view_recent() -> None:
 def main() -> None:
     init_db()
 
-    print("Geo Mechanism Project")
+    print("Second Order")
     print("---------------------")
     print("1) Analyze new headline")
     print("2) View recent events")
@@ -77,10 +77,16 @@ def main() -> None:
     market = run_market_check(analysis["beneficiary_tickers"], analysis["loser_tickers"], event_date=event_date)
     print(f"\nMarket:   {market['note']}")
 
-    # Step 4: optional research note
+    # Step 4: check for mock output before saving
+    if is_mock(analysis):
+        print("\n⚠  This is a mock/fallback result — not saved.")
+        print("  Set ANTHROPIC_API_KEY in your .env file to get real analysis.")
+        return
+
+    # Step 5: optional research note
     notes = input("\nAdd a research note? (press Enter to skip): ").strip()
 
-    # Step 5: save
+    # Step 6: save
     event = {
         "timestamp":          timestamp,
         "headline":           headline,

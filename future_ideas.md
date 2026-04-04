@@ -38,14 +38,10 @@ here.
    `analyze_event.py` makes one attempt; a transient 500 or rate-limit error
    crashes straight to the mock fallback. Add 1-2 retries with short backoff.
 
-2. **Graceful RSS timeout handling**
-   `load_rss()` in `news_sources.py` has no per-feed timeout. A slow or hanging
-   feed blocks the entire inbox refresh. Add a short timeout (e.g. 5 s).
+2. ~~**Graceful RSS timeout handling**~~ ✅ Done — per-feed `socket.setdefaulttimeout(8)` added.
 
-3. **Structured error display in Streamlit**
-   When the LLM returns unparseable JSON or the API key is missing, the UI
-   silently shows mock data. Surface a clear warning banner so the user knows
-   the result is a placeholder.
+3. ~~**Structured error display in Streamlit**~~ ✅ Done — mock-detection banner
+   added to `_render_result()` in `app.py`.
 
 4. **`_clean_assets` edge case: non-list, non-string input**
    If the LLM returns an integer or nested object for a ticker field, the
@@ -54,3 +50,10 @@ here.
 5. **Rate-limit awareness for yfinance**
    Rapid sequential `yfinance.download()` calls can trigger throttling. Consider
    batching tickers into a single download call where possible.
+
+6. **Missing-key defaults after JSON parse** ✅ Done — `setdefault()` calls
+   added in `analyze_event.py` so downstream code never hits KeyError.
+
+7. **False-positive keyword matching for short actors** ✅ Done — `_scan_keywords()`
+   now uses `\b` word-boundary regex for pure-alpha keywords ≤ 3 chars
+   (prevents "us" matching "discuss", "eu" matching "reuters").

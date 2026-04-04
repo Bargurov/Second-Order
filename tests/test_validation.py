@@ -9,7 +9,7 @@ import sys
 import unittest
 
 sys.path.insert(0, ".")
-from analyze_event import _validate_result
+from analyze_event import _validate_result, is_mock, _mock
 
 
 def _good_result() -> dict:
@@ -80,6 +80,29 @@ class TestValidateResult(unittest.TestCase):
         result = _validate_result(result, stage="anticipation")
         self.assertEqual(len(result["validation_warnings"]), 3)
         self.assertEqual(result["confidence"], "medium")
+
+
+class TestIsMock(unittest.TestCase):
+    """Tests for is_mock() — detects mock/fallback analysis results."""
+
+    def test_mock_output_detected(self):
+        self.assertTrue(is_mock(_mock("no API key")))
+
+    def test_mock_json_parse_error_detected(self):
+        self.assertTrue(is_mock(_mock("JSON parse error")))
+
+    def test_real_result_not_flagged(self):
+        self.assertFalse(is_mock(_good_result()))
+
+    def test_empty_what_changed_not_flagged(self):
+        result = _good_result()
+        result["what_changed"] = ""
+        self.assertFalse(is_mock(result))
+
+    def test_missing_what_changed_not_flagged(self):
+        result = _good_result()
+        del result["what_changed"]
+        self.assertFalse(is_mock(result))
 
 
 if __name__ == "__main__":

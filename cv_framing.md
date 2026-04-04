@@ -12,4 +12,4 @@ Local research tool with CLI and Streamlit interfaces for classifying headlines,
 
 ## LinkedIn / Portfolio Description
 
-Geo Mechanism Project is a lightweight Python research workflow for turning headlines into structured event reviews. The project combines event lifecycle classification, hidden economic mechanism extraction, a small Streamlit UI, direction-aware market validation in both current-price and event-date anchored modes, and a local SQLite archive, with iterative evaluation runs used to improve the system in a controlled and repeatable way.
+Second Order is a lightweight Python research workflow for turning headlines into structured event reviews. The project combines event lifecycle classification, hidden economic mechanism extraction, a small Streamlit UI, direction-aware market validation in both current-price and event-date anchored modes, and a local SQLite archive, with iterative evaluation runs used to improve the system in a controlled and repeatable way.

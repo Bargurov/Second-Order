@@ -1,134 +1,214 @@
-# app.py
-# Streamlit UI for Geo Mechanism Project V1.5.
-# Run with: streamlit run app.py
+# app.py — Second Order V1.5
+# Streamlit UI.  Run with: streamlit run app.py
+#
+# Design references
+# -  Semafor Signals: facts-first story structure, calm editorial tone
+# -  Ground News: clustered multi-source scanning, source comparison
+# -  BlackRock Geopolitical Risk Dashboard: event-to-market risk framing
 
 import streamlit as st
 from datetime import datetime
 
 from classify import classify_stage, classify_persistence
-from analyze_event import analyze_event
-from market_check import market_check as run_market_check
-from db import init_db, save_event, load_recent_events
+from analyze_event import analyze_event, is_mock
+from market_check import market_check as run_market_check, followup_check
+from db import (init_db, save_event, load_recent_events,
+                find_related_events, update_review)
 from news_sources import fetch_all, cluster_headlines, source_tier
 
 # ---------------------------------------------------------------------------
-# CSS — small overrides that Streamlit doesn't expose natively
+# CSS — editorial palette, no trader-terminal colours
 # ---------------------------------------------------------------------------
 
-_CUSTOM_CSS = """
+_CSS = """
 <style>
-/* Tighter metric cards */
-div[data-testid="stMetric"] {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 12px 16px 8px 16px;
-}
-div[data-testid="stMetric"] label { font-size: 0.78rem; color: #6c757d; }
-div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.15rem; }
+/* ── Typography ─────────────────────────────────────────────────── */
+html, body, [class*="css"] { font-family: "Inter", system-ui, -apple-system, sans-serif; }
 
-/* Badge helpers injected via markdown */
-.badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-.badge-blue   { background: #dbeafe; color: #1e40af; }
-.badge-purple { background: #ede9fe; color: #5b21b6; }
-.badge-green  { background: #dcfce7; color: #166534; }
-.badge-yellow { background: #fef9c3; color: #854d0e; }
-.badge-red    { background: #fee2e2; color: #991b1b; }
-.badge-gray   { background: #f3f4f6; color: #374151; }
+/* ── Muted section dividers ─────────────────────────────────────── */
+.sec-rule { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0 20px 0; }
 
-/* Card-like containers */
-.card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 20px 24px;
-    margin-bottom: 12px;
+/* ── Section heading — Semafor-style all-caps kicker ────────────── */
+.sec-head {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #6b7280; margin-bottom: 12px;
 }
 
-/* Source tier pills */
-.tier-high   { background: #dcfce7; color: #166534; }
-.tier-medium { background: #fef9c3; color: #854d0e; }
-.tier-low    { background: #f3f4f6; color: #6b7280; }
-.source-pill {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 10px;
-    font-size: 0.73rem;
-    margin-right: 4px;
+/* ── Badges — muted pastels, not neon ───────────────────────────── */
+.tag {
+    display: inline-block; padding: 2px 8px; border-radius: 3px;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.015em;
+    line-height: 1.55; vertical-align: middle;
 }
-.agreement-mixed {
-    display: inline-block;
-    font-size: 0.73rem;
-    color: #b45309;
-    margin-left: 4px;
+.tag-blue   { background: #eff6ff; color: #1e40af; }
+.tag-green  { background: #f0fdf4; color: #166534; }
+.tag-amber  { background: #fffbeb; color: #92400e; }
+.tag-red    { background: #fef2f2; color: #991b1b; }
+.tag-violet { background: #f5f3ff; color: #5b21b6; }
+.tag-slate  { background: #f1f5f9; color: #475569; }
+
+/* ── Source pills (Ground News style) ───────────────────────────── */
+.src-pill {
+    display: inline-block; padding: 1px 7px; border-radius: 3px;
+    font-size: 0.68rem; font-weight: 600; margin-right: 3px;
+    vertical-align: middle;
+}
+.src-high   { background: #f0fdf4; color: #166534; }
+.src-mid    { background: #fffbeb; color: #92400e; }
+.src-low    { background: #f1f5f9; color: #64748b; }
+
+/* ── Story card — the primary content container ─────────────────── */
+.story {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 20px 24px 16px 24px; margin-bottom: 14px;
+}
+.story-headline {
+    font-size: 1.0rem; font-weight: 700; color: #111827;
+    line-height: 1.38; margin-bottom: 6px;
+}
+.story-body {
+    font-size: 0.87rem; color: #374151; line-height: 1.6; margin-top: 6px;
+}
+.story-meta {
+    font-size: 0.70rem; color: #9ca3af; line-height: 1.45;
 }
 
-/* Subtle section headers */
-.section-label {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #9ca3af;
+/* ── Kicker labels inside cards ─────────────────────────────────── */
+.kicker {
+    font-size: 0.63rem; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: #9ca3af; margin-bottom: 4px;
+}
+
+/* ── Evidence rows (Ground News source-comparison) ──────────────── */
+.ev-row {
+    font-size: 0.78rem; color: #4b5563; padding: 4px 0; line-height: 1.5;
+    border-bottom: 1px solid #f3f4f6;
+}
+.ev-row:last-child { border-bottom: none; }
+.ev-src  { font-weight: 600; color: #374151; }
+.ev-ts   { color: #9ca3af; font-size: 0.72rem; }
+.ev-note { color: #b45309; font-style: italic; font-size: 0.75rem; }
+
+/* ── Market exposure panel (BlackRock risk-dashboard feel) ───────── */
+.mkt-panel {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 18px 22px 14px 22px; margin-top: 12px;
+}
+.mkt-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.mkt-table th {
+    text-align: left; font-size: 0.63rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;
+    padding: 4px 10px 5px 0; border-bottom: 1px solid #e2e8f0;
+}
+.mkt-table td { padding: 5px 10px 5px 0; border-bottom: 1px solid #f1f5f9; }
+.mkt-sym  { font-weight: 700; color: #0f172a; }
+.mkt-role { font-size: 0.75rem; color: #64748b; }
+.mkt-pos  { color: #15803d; font-weight: 600; }
+.mkt-neg  { color: #b91c1c; font-weight: 600; }
+.mkt-na   { color: #94a3b8; }
+
+/* Hypothesis-support verdict */
+.verdict {
+    display: inline-block; padding: 5px 12px; border-radius: 4px;
+    font-size: 0.80rem; font-weight: 600; margin-top: 10px;
+}
+.verdict-strong   { background: #f0fdf4; color: #166534; }
+.verdict-moderate { background: #fffbeb; color: #92400e; }
+.verdict-weak     { background: #fef2f2; color: #991b1b; }
+.verdict-neutral  { background: #f1f5f9; color: #475569; }
+
+/* ── Saved-analysis list card ───────────────────────────────────── */
+.sa-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 16px 20px 12px 20px; margin-bottom: 10px;
+}
+.sa-hl {
+    font-size: 0.92rem; font-weight: 700; color: #111827; line-height: 1.38;
+}
+.sa-mech {
+    font-size: 0.82rem; color: #4b5563; line-height: 1.5; margin-top: 5px;
+}
+.sa-ts { font-size: 0.68rem; color: #94a3b8; }
+
+/* ── Research note display ──────────────────────────────────────── */
+.note-block {
+    font-size: 0.82rem; color: #374151; line-height: 1.55;
+    background: #f8fafc; border-left: 3px solid #cbd5e1;
+    padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 8px;
+}
+
+/* ── Related events timeline ────────────────────────────────────── */
+.rel-item {
+    font-size: 0.78rem; color: #4b5563; line-height: 1.5;
+    padding: 4px 0 4px 12px; border-left: 2px solid #e2e8f0;
     margin-bottom: 2px;
+}
+.rel-ts { color: #94a3b8; font-size: 0.72rem; }
+
+/* ── Follow-up table ────────────────────────────────────────────── */
+.fu-table { width: 100%; border-collapse: collapse; font-size: 0.80rem; }
+.fu-table th {
+    text-align: left; font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #94a3b8; font-weight: 700;
+    padding: 3px 8px 4px 0; border-bottom: 1px solid #e2e8f0;
+}
+.fu-table td { padding: 4px 8px 4px 0; border-bottom: 1px solid #f1f5f9; }
+
+/* ── Empty states ───────────────────────────────────────────────── */
+.empty {
+    text-align: center; padding: 36px 20px; color: #94a3b8;
+    font-size: 0.86rem; line-height: 1.6;
+}
+.empty b { color: #64748b; }
+
+/* ── Streamlit overrides ────────────────────────────────────────── */
+div[data-testid="stMetric"] {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 10px 14px 6px 14px;
 }
 </style>
 """
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Helpers — badge builders
 # ---------------------------------------------------------------------------
 
-def _stage_badge(stage: str) -> str:
-    colors = {
-        "anticipation": "blue", "realized": "green", "escalation": "red",
-        "de-escalation": "purple", "normalization": "gray",
-    }
-    c = colors.get(stage, "gray")
-    return f'<span class="badge badge-{c}">{stage}</span>'
+_STAGE_MAP  = {"anticipation": "blue", "realized": "green", "escalation": "red",
+               "de-escalation": "violet", "normalization": "slate"}
+_PERS_MAP   = {"transient": "slate", "medium": "amber", "structural": "violet"}
+_CONF_MAP   = {"low": "red", "medium": "amber", "high": "green"}
+_RATING_MAP = {"good": "green", "mixed": "amber", "poor": "red"}
 
-def _persistence_badge(persistence: str) -> str:
-    colors = {"transient": "gray", "medium": "yellow", "structural": "purple"}
-    c = colors.get(persistence, "gray")
-    return f'<span class="badge badge-{c}">{persistence}</span>'
+def _tag(text: str, colour: str) -> str:
+    return f'<span class="tag tag-{colour}">{text}</span>'
 
-def _confidence_badge(confidence: str) -> str:
-    colors = {"low": "red", "medium": "yellow", "high": "green"}
-    c = colors.get(confidence, "gray")
-    return f'<span class="badge badge-{c}">{confidence}</span>'
+def _stage_tag(s: str) -> str:   return _tag(s, _STAGE_MAP.get(s, "slate"))
+def _pers_tag(p: str) -> str:    return _tag(p, _PERS_MAP.get(p, "slate"))
+def _conf_tag(c: str) -> str:    return _tag(c, _CONF_MAP.get(c, "slate"))
+def _rating_tag(r: str) -> str:  return _tag(r, _RATING_MAP.get(r, "slate")) if r else ""
 
-def _direction_icon(tag: str | None) -> str:
+def _src_pills(sources: list[dict]) -> str:
+    tier_cls = {"high": "src-high", "medium": "src-mid", "low": "src-low"}
+    return "".join(
+        f'<span class="src-pill {tier_cls.get(s["tier"], "src-low")}">{s["name"]}</span>'
+        for s in sources
+    )
+
+def _dir_label(tag: str | None) -> str:
+    """Plain-text direction label, no emoji-heavy trader style."""
     if not tag:
         return "—"
-    if tag.startswith("supports"):
-        return f"✅ {tag}"
-    return f"⚠️ {tag}"
+    return f'<span class="mkt-pos">Supports</span>' if tag.startswith("supports") \
+        else f'<span class="mkt-neg">Against</span>'
 
-def _source_pills(sources: list[dict]) -> str:
-    """Render source names as tier-coloured pills."""
-    parts = []
-    for s in sources:
-        tier = s["tier"]
-        parts.append(f'<span class="source-pill tier-{tier}">{s["name"]}</span>')
-    return "".join(parts)
 
+# ---------------------------------------------------------------------------
+# LLM context builder (unchanged logic)
+# ---------------------------------------------------------------------------
 
 def _build_event_context(cluster: dict) -> str:
-    """Build a multi-source context string for the LLM from a cluster.
-
-    Always includes structured consensus fields when available.
-    For multi-source clusters, also includes source corroboration details.
-    """
     con = cluster.get("consensus", {})
     lines: list[str] = []
-
-    # Structured consensus block — always included when populated
     if con:
         lines.append("Structured event context:")
         if con.get("actors"):
@@ -141,119 +221,173 @@ def _build_event_context(cluster: dict) -> str:
             lines.append(f"  Sector: {con['sector']}")
         lines.append(f"  Uncertainty: {con.get('uncertainty', 'high')}")
         lines.append(f"  Consensus: {con.get('consensus', 'mixed')}")
-
-    # Multi-source details — only for clusters with >1 source
     if cluster["source_count"] > 1:
         lines.append("")
         lines.append("Multi-source context:")
         lines.append(f"  Summary: {cluster['summary']}")
-
-        source_parts = []
-        for s in cluster["sources"]:
-            source_parts.append(f"{s['name']} ({s['tier']} tier)")
-        lines.append(f"  Sources ({cluster['source_count']}): {', '.join(source_parts)}")
+        sp = [f"{s['name']} ({s['tier']} tier)" for s in cluster["sources"]]
+        lines.append(f"  Sources ({cluster['source_count']}): {', '.join(sp)}")
         lines.append(f"  Source agreement: {cluster['agreement']}")
-
         if cluster["agreement"] == "mixed":
             lines.append(
                 "  Note: sources frame this event differently. "
                 "Weigh the higher-tier account more heavily, but acknowledge "
                 "the disagreement in your analysis if it affects the mechanism."
             )
+    return ("\n".join(lines) + "\n") if lines else ""
 
-    if not lines:
+
+# ---------------------------------------------------------------------------
+# Market-exposure HTML builders (BlackRock-style risk panel)
+# ---------------------------------------------------------------------------
+
+def _mkt_table(tickers: list[dict]) -> str:
+    """Compact asset-exposure table."""
+    if not tickers:
         return ""
-    return "\n".join(lines) + "\n"
+    rows = []
+    for t in tickers:
+        r5 = t.get("return_5d")
+        r5_s = f"{r5:+.1f}%" if r5 is not None else "—"
+        r5_c = "mkt-na" if r5 is None else ("mkt-pos" if r5 >= 0 else "mkt-neg")
+        dtag = t.get("direction_tag") or ""
+        d = _dir_label(dtag)
+        role = t.get("role", "")
+        arrow = "↑" if role == "beneficiary" else ("↓" if role == "loser" else "")
+        rows.append(
+            f'<tr><td><span class="mkt-sym">{t["symbol"]}</span></td>'
+            f'<td><span class="mkt-role">{arrow} {role}</span></td>'
+            f'<td><span class="{r5_c}">{r5_s}</span></td>'
+            f'<td>{t.get("label","—")}</td><td>{d}</td></tr>'
+        )
+    return (
+        '<table class="mkt-table">'
+        '<tr><th>Asset</th><th>Exposure</th><th>5-day</th>'
+        '<th>Signal</th><th>Versus hypothesis</th></tr>'
+        + "".join(rows) + '</table>'
+    )
 
+
+def _verdict_html(note: str) -> str:
+    """Extract hypothesis-support line from market note, render as verdict bar."""
+    for ln in reversed(note.splitlines()):
+        if "Hypothesis support" in ln:
+            text = ln.strip()
+            low = text.lower()
+            if "strong" in low:    cls = "verdict-strong"
+            elif "moderate" in low: cls = "verdict-moderate"
+            elif "weak" in low:    cls = "verdict-weak"
+            else:                  cls = "verdict-neutral"
+            return f'<div class="verdict {cls}">{text}</div>'
+    return ""
+
+
+# ---------------------------------------------------------------------------
+# _render_result — Semafor-style facts → analysis → market exposure
+# ---------------------------------------------------------------------------
 
 def _render_result(analysis: dict, market: dict, stage: str,
                    persistence: str, event_date: str | None) -> None:
-    """Render the full analysis result card (called inline under a headline)."""
 
-    confidence = analysis["confidence"]
-    badges_html = (
-        f'<div style="margin-bottom:16px">'
-        f'<span class="section-label">CLASSIFICATION</span><br>'
-        f'{_stage_badge(stage)} &nbsp; {_persistence_badge(persistence)} &nbsp; '
-        f'{_confidence_badge(confidence)}'
-        f'</div>'
+    mock = "[mock:" in (analysis.get("what_changed") or "")
+    if mock:
+        st.warning(
+            "Placeholder data — set ANTHROPIC_API_KEY in .env for real analysis."
+        )
+
+    # ── 1. Classification strip ──
+    st.markdown(
+        f'<div style="margin:10px 0 14px 0">'
+        f'{_stage_tag(stage)} &nbsp; {_pers_tag(persistence)} &nbsp; '
+        f'{_conf_tag(analysis["confidence"])}'
+        f'</div>',
+        unsafe_allow_html=True,
     )
-    st.markdown(badges_html, unsafe_allow_html=True)
 
     if analysis.get("validation_warnings"):
-        st.warning("  ·  ".join(analysis["validation_warnings"]))
+        st.warning(" · ".join(analysis["validation_warnings"]))
 
-    # -- What changed --
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<span class="section-label">WHAT CHANGED</span>', unsafe_allow_html=True)
-    st.markdown(analysis["what_changed"])
-    st.markdown('</div>', unsafe_allow_html=True)
+    # ── 2. The Facts (Semafor "Semafor" block) ──
+    st.markdown(
+        f'<div class="story">'
+        f'<div class="kicker">THE FACTS</div>'
+        f'<div class="story-body">{analysis["what_changed"]}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
-    # -- Mechanism --
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<span class="section-label">MECHANISM</span>', unsafe_allow_html=True)
-    st.markdown(analysis["mechanism_summary"])
-    st.markdown('</div>', unsafe_allow_html=True)
+    # ── 3. The Mechanism (Semafor "Know More" / analysis block) ──
+    st.markdown(
+        f'<div class="story">'
+        f'<div class="kicker">THE MECHANISM</div>'
+        f'<div class="story-body">{analysis["mechanism_summary"]}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
-    # -- Beneficiaries / Losers --
+    # ── 4. Exposed sectors — two columns ──
     col_b, col_l = st.columns(2)
-
     with col_b:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<span class="section-label">BENEFICIARIES</span>', unsafe_allow_html=True)
-        for b in analysis["beneficiaries"]:
-            st.markdown(f"- {b}")
-        tickers_up = analysis["beneficiary_tickers"]
-        if tickers_up:
-            st.success("Watch ↑ :  " + "  ·  ".join(tickers_up))
-        else:
-            st.caption("No tickers identified")
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        items = "".join(f"<li>{b}</li>" for b in analysis["beneficiaries"])
+        up = analysis["beneficiary_tickers"]
+        up_line = (
+            f'<div style="margin-top:8px;font-size:0.78rem;color:#15803d;font-weight:600">'
+            f'Tickers: {"  ·  ".join(up)}</div>' if up
+            else '<div style="margin-top:8px;font-size:0.76rem;color:#94a3b8">No tickers identified</div>'
+        )
+        st.markdown(
+            f'<div class="story" style="border-top:3px solid #bbf7d0">'
+            f'<div class="kicker">POTENTIAL BENEFICIARIES</div>'
+            f'<ul style="margin:4px 0 2px 18px;padding:0;font-size:0.85rem;'
+            f'color:#1f2937;line-height:1.65">{items}</ul>{up_line}</div>',
+            unsafe_allow_html=True,
+        )
     with col_l:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<span class="section-label">LOSERS</span>', unsafe_allow_html=True)
-        for lo in analysis["losers"]:
-            st.markdown(f"- {lo}")
-        tickers_down = analysis["loser_tickers"]
-        if tickers_down:
-            st.error("Watch ↓ :  " + "  ·  ".join(tickers_down))
-        else:
-            st.caption("No tickers identified")
-        st.markdown('</div>', unsafe_allow_html=True)
+        items = "".join(f"<li>{lo}</li>" for lo in analysis["losers"])
+        dn = analysis["loser_tickers"]
+        dn_line = (
+            f'<div style="margin-top:8px;font-size:0.78rem;color:#b91c1c;font-weight:600">'
+            f'Tickers: {"  ·  ".join(dn)}</div>' if dn
+            else '<div style="margin-top:8px;font-size:0.76rem;color:#94a3b8">No tickers identified</div>'
+        )
+        st.markdown(
+            f'<div class="story" style="border-top:3px solid #fecaca">'
+            f'<div class="kicker">POTENTIAL LOSERS</div>'
+            f'<ul style="margin:4px 0 2px 18px;padding:0;font-size:0.85rem;'
+            f'color:#1f2937;line-height:1.65">{items}</ul>{dn_line}</div>',
+            unsafe_allow_html=True,
+        )
 
-    # -- Market check table --
-    st.markdown("##### 📈 Market Check")
+    # ── 5. Market exposure panel (BlackRock style) ──
+    st.markdown('<div class="mkt-panel"><div class="kicker">MARKET EXPOSURE CHECK</div>',
+                unsafe_allow_html=True)
     if event_date:
-        st.caption(f"Returns anchored to event date: {event_date}")
+        anchor = market.get("anchor_date")
+        note = f"Anchored to {event_date}"
+        if anchor and anchor != event_date:
+            note += f" (first trading day: {anchor})"
+        st.caption(note)
     else:
-        st.caption("Current prices — rolling 3-month window, not event-date validation.")
+        st.caption("Rolling window — not anchored to a specific event date.")
 
-    tickers = market["tickers"]
-    if tickers:
-        hdr = st.columns([1.2, 1, 1, 1.2, 2])
-        for col, label in zip(hdr, ["Symbol", "Role", "5d", "Label", "Direction"]):
-            col.markdown(f"<span class='section-label'>{label.upper()}</span>", unsafe_allow_html=True)
-        for t in tickers:
-            r5 = f"{t['return_5d']:+.1f}%" if t.get("return_5d") is not None else "n/a"
-            row = st.columns([1.2, 1, 1, 1.2, 2])
-            row[0].markdown(f"**{t['symbol']}**")
-            row[1].caption(t["role"])
-            row[2].markdown(r5)
-            row[3].caption(t.get("label", "—"))
-            row[4].markdown(_direction_icon(t.get("direction_tag")))
+    tbl = _mkt_table(market["tickers"])
+    if tbl:
+        st.markdown(tbl, unsafe_allow_html=True)
     else:
-        st.caption("No tickers to check.")
+        st.caption("No assets to check.")
 
-    note_lines = market["note"].splitlines()
-    summary = next((ln.strip() for ln in reversed(note_lines) if "Hypothesis support" in ln), None)
-    if summary:
-        st.info(summary)
+    v = _verdict_html(market["note"])
+    if v:
+        st.markdown(v, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
+
+# ---------------------------------------------------------------------------
+# _run_analysis — pipeline orchestrator (logic unchanged)
+# ---------------------------------------------------------------------------
 
 def _run_analysis(headline: str, event_date_input,
-                   event_context: str = "") -> dict:
-    """Run the full pipeline and return a result dict for caching."""
+                  event_context: str = "") -> dict:
     stage       = classify_stage(headline)
     persistence = classify_persistence(headline)
     analysis    = analyze_event(headline, stage, persistence,
@@ -264,63 +398,66 @@ def _run_analysis(headline: str, event_date_input,
         analysis["loser_tickers"],
         event_date=event_date,
     )
-
-    try:
-        save_event({
-            "timestamp":         datetime.now().isoformat(timespec="seconds"),
-            "headline":          headline,
-            "stage":             stage,
-            "persistence":       persistence,
-            "what_changed":      analysis["what_changed"],
-            "mechanism_summary": analysis["mechanism_summary"],
-            "beneficiaries":     analysis["beneficiaries"],
-            "losers":            analysis["losers"],
-            "assets_to_watch":   analysis["assets_to_watch"],
-            "confidence":        analysis["confidence"],
-            "market_note":       market["note"],
-            "market_tickers":    market["tickers"],
-            "event_date":        event_date,
-            "notes":             "",
-        })
-    except Exception as e:
-        st.error(f"Could not save event: {e}")
-
-    return {
-        "stage": stage, "persistence": persistence,
-        "analysis": analysis, "market": market,
-        "event_date": event_date,
-    }
+    if is_mock(analysis):
+        st.info("Mock analysis — result not saved.")
+    else:
+        try:
+            save_event({
+                "timestamp":         datetime.now().isoformat(timespec="seconds"),
+                "headline":          headline,
+                "stage":             stage,
+                "persistence":       persistence,
+                "what_changed":      analysis["what_changed"],
+                "mechanism_summary": analysis["mechanism_summary"],
+                "beneficiaries":     analysis["beneficiaries"],
+                "losers":            analysis["losers"],
+                "assets_to_watch":   analysis["assets_to_watch"],
+                "confidence":        analysis["confidence"],
+                "market_note":       market["note"],
+                "market_tickers":    market["tickers"],
+                "event_date":        event_date,
+                "notes":             "",
+            })
+        except Exception as e:
+            st.error(f"Could not save event: {e}")
+    return {"stage": stage, "persistence": persistence,
+            "analysis": analysis, "market": market, "event_date": event_date}
 
 
-# ---------------------------------------------------------------------------
-# Init
-# ---------------------------------------------------------------------------
+# ═══════════════════════════════════════════════════════════════════════════
+# Page setup
+# ═══════════════════════════════════════════════════════════════════════════
 
 init_db()
+st.set_page_config(page_title="Second Order", page_icon="🌍", layout="centered")
+st.markdown(_CSS, unsafe_allow_html=True)
 
-st.set_page_config(page_title="Geo Mechanism", page_icon="🌍", layout="centered")
-st.markdown(_CUSTOM_CSS, unsafe_allow_html=True)
-
-st.markdown("## 🌍 Geo Mechanism Project")
+# ── Masthead ──
 st.markdown(
-    "Identify hidden economic mechanisms behind geopolitical events — "
-    "classify, hypothesize, and validate against market data.",
+    '<div style="margin-bottom:2px">'
+    '<span style="font-size:1.45rem;font-weight:800;letter-spacing:-0.02em;'
+    'color:#0f172a">Second Order</span></div>'
+    '<div style="font-size:0.84rem;color:#64748b;line-height:1.5;'
+    'margin-bottom:6px">'
+    'Geopolitical event analysis — surface hidden economic mechanisms, '
+    'map exposed sectors, validate against market data.</div>',
+    unsafe_allow_html=True,
 )
 
-# Session state: which inbox item is active, and its cached result
 if "active_idx" not in st.session_state:
-    st.session_state.active_idx = None      # index of expanded cluster, or None
+    st.session_state.active_idx = None
 if "active_result" not in st.session_state:
-    st.session_state.active_result = None   # cached pipeline output dict
+    st.session_state.active_result = None
 
-# ---------------------------------------------------------------------------
-# News Inbox
-# ---------------------------------------------------------------------------
 
-st.markdown("---")
-st.markdown("#### 📰 News Inbox")
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 1 — Signals (News Inbox)
+# ═══════════════════════════════════════════════════════════════════════════
 
-col_date, col_spacer = st.columns([1, 2])
+st.markdown('<hr class="sec-rule">', unsafe_allow_html=True)
+st.markdown('<div class="sec-head">Signals</div>', unsafe_allow_html=True)
+
+col_date, _ = st.columns([1, 2])
 with col_date:
     event_date_input = st.date_input(
         "Event date (optional)",
@@ -330,112 +467,314 @@ with col_date:
 
 @st.cache_data(ttl=600, show_spinner="Fetching headlines…")
 def _cached_fetch():
-    records = fetch_all()
-    return cluster_headlines(records)
+    records, feed_status = fetch_all()
+    return cluster_headlines(records), feed_status
 
-inbox_clusters = _cached_fetch()
+inbox_clusters, feed_status = _cached_fetch()
+
+# Feed health — secondary, calm status line
+if feed_status:
+    ok_feeds    = [f for f in feed_status if f["ok"]]
+    failed      = [f["name"] for f in feed_status if not f["ok"]]
+    total       = len(feed_status)
+    if failed:
+        ok_names = ", ".join(f["name"] for f in ok_feeds) if ok_feeds else "none"
+        offline_part = " · offline: " + ", ".join(failed)
+        st.markdown(
+            f'<div style="font-size:0.70rem;color:#94a3b8;margin:-4px 0 8px 0">'
+            f'{len(ok_feeds)}/{total} feeds active ({ok_names}){offline_part}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
 if not inbox_clusters:
-    st.caption("No headlines available. Add entries to `news_inbox.json` or check RSS connectivity.")
+    st.markdown(
+        '<div class="empty">'
+        'No signals available.<br>'
+        '<b>Add entries to <code>news_inbox.json</code></b> or check RSS connectivity.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 else:
     for idx, cluster in enumerate(inbox_clusters[:15]):
         pub = cluster["published_at"][:16].replace("T", " ") if cluster["published_at"] else ""
         is_active = (st.session_state.active_idx == idx)
 
-        # -- Headline row --
         col_text, col_btn = st.columns([6, 1])
+
         with col_text:
-            st.markdown(cluster["headline"])
-            pills = _source_pills(cluster["sources"])
-            mixed = (
-                '<span class="agreement-mixed">⚠ sources differ</span>'
+            # Source pills
+            pills = _src_pills(cluster["sources"])
+            mixed_note = (
+                '<span style="font-size:0.68rem;color:#b45309;margin-left:4px">'
+                '— framing differs</span>'
                 if cluster["agreement"] == "mixed" else ""
             )
-            meta = f'{pills} {mixed}'
-            if pub:
-                meta += f'&nbsp; · &nbsp;<span style="font-size:0.73rem;color:#9ca3af">{pub}</span>'
-            st.markdown(meta, unsafe_allow_html=True)
+            ts_bit = (f' <span style="font-size:0.68rem;color:#94a3b8">'
+                       f'· {pub}</span>') if pub else ""
 
-            # Merged summary — only show when cluster has >1 source
-            if cluster["source_count"] > 1:
+            # Headline card
+            st.markdown(
+                f'<div class="story" style="padding:14px 18px 10px 18px;'
+                f'margin-bottom:4px">'
+                f'<div class="story-headline">{cluster["headline"]}</div>'
+                f'<div class="story-meta">{pills}{mixed_note}{ts_bit}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+            # Cluster summary (multi-source only)
+            if cluster["source_count"] > 1 and cluster.get("summary"):
                 st.caption(cluster["summary"])
+
+            # Source-comparison panel (Ground News style)
+            evidence = cluster.get("evidence", [])
+            if len(evidence) > 1:
+                ev_html = ['<div style="margin:2px 0 6px 0">'
+                           '<div class="kicker">SOURCE COMPARISON</div>']
+                for ev in evidence:
+                    ts = (ev["published_at"] or "")[:16].replace("T", " ")
+                    tier_dot = {"high": "🟢", "medium": "🟡", "low": "⚪"}.get(
+                        ev["tier"], "⚪")
+                    title = ev["title"][:100] + ("…" if len(ev["title"]) > 100 else "")
+                    note = (f'<br><span class="ev-note">{ev["note"]}</span>'
+                            if ev.get("note") else "")
+                    ev_html.append(
+                        f'<div class="ev-row">'
+                        f'{tier_dot} <span class="ev-src">{ev["source"]}</span> '
+                        f'<span class="ev-ts">· {ts}</span><br>{title}{note}</div>'
+                    )
+                ev_html.append('</div>')
+                st.markdown("".join(ev_html), unsafe_allow_html=True)
+
         with col_btn:
-            btn_label = "Close" if is_active else "Analyze"
-            if st.button(btn_label, key=f"inbox_{idx}", use_container_width=True):
+            label = "Close" if is_active else "Analyze"
+            if st.button(label, key=f"inbox_{idx}", use_container_width=True):
                 if is_active:
-                    # Toggle off — close the open result
                     st.session_state.active_idx = None
                     st.session_state.active_result = None
                 else:
-                    # Open this headline — clear cached result so pipeline runs
                     st.session_state.active_idx = idx
                     st.session_state.active_result = None
                 st.rerun()
 
-        # -- Inline result card (only for the active headline) --
+        # Inline analysis
         if is_active:
-            headline = cluster["headline"].strip()
-            if len(headline) > 500:
-                headline = headline[:500]
-
-            # Run the pipeline once and cache in session state
-            if st.session_state.active_result is None:
+            headline = cluster["headline"].strip()[:500]
+            cached = st.session_state.active_result
+            cached_date = cached["event_date"] if cached else None
+            current_date = event_date_input.strftime("%Y-%m-%d") if event_date_input else None
+            if cached is None or cached_date != current_date:
                 ctx = _build_event_context(cluster)
-                with st.spinner("Classifying and analyzing…"):
+                with st.spinner("Analyzing…"):
                     st.session_state.active_result = _run_analysis(
-                        headline, event_date_input, event_context=ctx,
-                    )
+                        headline, event_date_input, event_context=ctx)
 
             res = st.session_state.active_result
-            _render_result(
-                res["analysis"], res["market"],
-                res["stage"], res["persistence"], res["event_date"],
-            )
-            st.markdown("---")
+            _render_result(res["analysis"], res["market"],
+                           res["stage"], res["persistence"], res["event_date"])
+            st.markdown('<hr class="sec-rule">', unsafe_allow_html=True)
 
-# ---------------------------------------------------------------------------
-# Recent Events
-# ---------------------------------------------------------------------------
 
-st.markdown("---")
-st.markdown("#### 🕓 Recent Events")
+# ═══════════════════════════════════════════════════════════════════════════
+# SECTION 2 — Analysis Archive
+# ═══════════════════════════════════════════════════════════════════════════
 
-events = load_recent_events(10)
+st.markdown('<hr class="sec-rule">', unsafe_allow_html=True)
+st.markdown('<div class="sec-head">Analysis Archive</div>', unsafe_allow_html=True)
+
+events = load_recent_events(25)
 
 if not events:
-    st.caption("No events saved yet. Run an analysis above to get started.")
+    st.markdown(
+        '<div class="empty">'
+        'No analyses saved yet.<br>'
+        '<b>Run an analysis above</b> to start building your archive.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 else:
-    for e in events:
-        truncated = e["headline"][:100] + ("…" if len(e["headline"]) > 100 else "")
-        with st.expander(truncated, expanded=False):
-            badges = (
-                f'{_stage_badge(e["stage"])} &nbsp; '
-                f'{_persistence_badge(e["persistence"])} &nbsp; '
-                f'{_confidence_badge(e["confidence"])}'
-            )
-            st.markdown(badges, unsafe_allow_html=True)
-            st.caption(e.get("timestamp", ""))
+    # ── Integrated filter bar ──
+    fc1, fc2, fc3 = st.columns([1.2, 1.2, 3])
+    with fc1:
+        f_rating = st.selectbox(
+            "Rating", ["all", "good", "mixed", "poor", "unreviewed"],
+            key="f_rating", label_visibility="collapsed",
+        )
+    with fc2:
+        f_stage = st.selectbox(
+            "Stage",
+            ["all"] + list(_STAGE_MAP.keys()),
+            key="f_stage", label_visibility="collapsed",
+        )
+    with fc3:
+        f_q = st.text_input(
+            "Search", key="f_q", placeholder="Search headlines or mechanisms…",
+            label_visibility="collapsed",
+        )
 
-            mech = e.get("mechanism_summary") or "—"
-            st.markdown(f"**Mechanism:** {mech}")
+    # Apply
+    vis = events
+    if f_rating != "all":
+        vis = ([e for e in vis if not e.get("rating")] if f_rating == "unreviewed"
+               else [e for e in vis if e.get("rating") == f_rating])
+    if f_stage != "all":
+        vis = [e for e in vis if e.get("stage") == f_stage]
+    if f_q:
+        q = f_q.lower()
+        vis = [e for e in vis if q in e["headline"].lower()
+               or q in (e.get("mechanism_summary") or "").lower()]
 
+    reviewed = sum(1 for e in events if e.get("rating"))
+    st.markdown(
+        f'<div style="font-size:0.72rem;color:#94a3b8;margin:0 0 10px 0">'
+        f'Showing {len(vis)} of {len(events)} · {reviewed} reviewed</div>',
+        unsafe_allow_html=True,
+    )
+
+    if not vis:
+        st.markdown(
+            '<div class="empty" style="padding:20px">No events match these filters.</div>',
+            unsafe_allow_html=True,
+        )
+
+    for e in vis:
+        eid = e["id"]
+        rating = e.get("rating") or ""
+        ts = (e.get("timestamp") or "")[:16].replace("T", " ")
+        hl = e["headline"][:130] + ("…" if len(e["headline"]) > 130 else "")
+        mech = e.get("mechanism_summary") or ""
+        mech_short = mech[:220] + ("…" if len(mech) > 220 else "")
+
+        # Tags line
+        tags = f'{_stage_tag(e["stage"])} &nbsp; {_pers_tag(e["persistence"])}'
+        tags += f' &nbsp; {_conf_tag(e["confidence"])}'
+        if rating:
+            tags += f' &nbsp; {_rating_tag(rating)}'
+
+        # Card
+        card = (
+            f'<div class="sa-card">'
+            f'<div class="sa-hl">{hl}</div>'
+            f'<div style="margin:5px 0 3px 0">{tags}</div>'
+            f'<div class="sa-ts">{ts}'
+        )
+        if e.get("event_date"):
+            card += f' · anchored to {e["event_date"]}'
+        card += '</div>'
+        if mech_short:
+            card += f'<div class="sa-mech">{mech_short}</div>'
+
+        # Show existing research note inline on card
+        notes = e.get("notes") or ""
+        if notes:
+            card += (f'<div class="note-block" style="margin-top:8px">'
+                     f'{notes}</div>')
+        card += '</div>'
+        st.markdown(card, unsafe_allow_html=True)
+
+        # ── Detail expander ──
+        with st.expander("View full analysis", expanded=False):
+
+            # Full mechanism (if truncated above)
+            if mech and len(mech) > 220:
+                st.markdown(
+                    f'<div class="story">'
+                    f'<div class="kicker">FULL MECHANISM</div>'
+                    f'<div class="story-body">{mech}</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+            # Market exposure
             saved_tickers = e.get("market_tickers", [])
             if saved_tickers:
-                b_t = [t for t in saved_tickers if t["role"] == "beneficiary"]
-                l_t = [t for t in saved_tickers if t["role"] == "loser"]
-                tc1, tc2 = st.columns(2)
-                with tc1:
-                    if b_t:
-                        st.markdown('<span class="section-label">WATCH ↑</span>', unsafe_allow_html=True)
-                        for t in b_t:
-                            r5 = f"{t['return_5d']:+.1f}%" if t.get("return_5d") is not None else "n/a"
-                            st.markdown(f"**{t['symbol']}** · 5d: {r5} · {_direction_icon(t.get('direction_tag'))}")
-                with tc2:
-                    if l_t:
-                        st.markdown('<span class="section-label">WATCH ↓</span>', unsafe_allow_html=True)
-                        for t in l_t:
-                            r5 = f"{t['return_5d']:+.1f}%" if t.get("return_5d") is not None else "n/a"
-                            st.markdown(f"**{t['symbol']}** · 5d: {r5} · {_direction_icon(t.get('direction_tag'))}")
+                st.markdown('<div class="mkt-panel">'
+                            '<div class="kicker">MARKET EXPOSURE</div>',
+                            unsafe_allow_html=True)
+                st.markdown(_mkt_table(saved_tickers), unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-            if e.get("notes"):
-                st.caption(f"📝 {e['notes']}")
+            # Follow-up outcomes
+            saved_event_date = e.get("event_date")
+            if saved_event_date and saved_tickers:
+                followup = followup_check(saved_tickers, saved_event_date)
+                if followup:
+                    fu_anchor = next(
+                        (fu.get("anchor_date") for fu in followup
+                         if fu.get("anchor_date")), None)
+                    lbl = "FOLLOW-UP"
+                    if fu_anchor and fu_anchor != saved_event_date:
+                        lbl += f" · anchor: {fu_anchor}"
+                    fu_rows = []
+                    for fu in followup:
+                        r1  = f"{fu['return_1d']:+.1f}%" if fu["return_1d"]  is not None else "—"
+                        r5  = f"{fu['return_5d']:+.1f}%" if fu["return_5d"]  is not None else "—"
+                        r20 = f"{fu['return_20d']:+.1f}%" if fu["return_20d"] is not None else "—"
+                        d   = _dir_label(fu.get("direction"))
+                        arrow = "↑" if fu["role"] == "beneficiary" else "↓"
+                        fu_rows.append(
+                            f'<tr><td><b>{fu["symbol"]}</b></td>'
+                            f'<td>{arrow} {fu["role"]}</td>'
+                            f'<td>{r1}</td><td>{r5}</td><td>{r20}</td>'
+                            f'<td>{d}</td></tr>'
+                        )
+                    st.markdown(
+                        f'<div class="kicker">{lbl}</div>'
+                        f'<table class="fu-table">'
+                        f'<tr><th>Asset</th><th>Exposure</th><th>1d</th>'
+                        f'<th>5d</th><th>20d</th><th>Direction</th></tr>'
+                        f'{"".join(fu_rows)}</table>',
+                        unsafe_allow_html=True,
+                    )
+            elif not saved_event_date and saved_tickers:
+                st.caption("No event date — follow-up returns unavailable.")
+
+            # Related events
+            related = find_related_events(e["id"], e["headline"], limit=5)
+            if related:
+                rel_rows = []
+                for rel in related:
+                    rel_ts = (rel.get("timestamp") or "")[:16].replace("T", " ")
+                    rel_hl = rel["headline"][:100] + (
+                        "…" if len(rel["headline"]) > 100 else "")
+                    rel_rows.append(
+                        f'<div class="rel-item">'
+                        f'<span class="rel-ts">{rel_ts}</span> · '
+                        f'{_stage_tag(rel.get("stage",""))} · {rel_hl}'
+                        f'</div>'
+                    )
+                st.markdown(
+                    f'<div class="kicker">RELATED ANALYSES</div>'
+                    f'{"".join(rel_rows)}',
+                    unsafe_allow_html=True,
+                )
+
+            # ── Review ──
+            st.markdown(
+                '<div style="margin-top:14px;padding-top:12px;'
+                'border-top:1px solid #e2e8f0">'
+                '<div class="kicker">YOUR REVIEW</div></div>',
+                unsafe_allow_html=True,
+            )
+            _RATINGS = ["", "good", "mixed", "poor"]
+            current_rating = e.get("rating") or ""
+            current_notes  = e.get("notes") or ""
+            rc1, rc2 = st.columns([1, 3])
+            with rc1:
+                new_rating = st.selectbox(
+                    "Rating", _RATINGS,
+                    index=(_RATINGS.index(current_rating)
+                           if current_rating in _RATINGS else 0),
+                    key=f"rating_{eid}",
+                )
+            with rc2:
+                new_notes = st.text_input(
+                    "Note", value=current_notes, key=f"notes_{eid}",
+                    placeholder="Your observations…",
+                )
+            if new_rating != current_rating or new_notes != current_notes:
+                try:
+                    update_review(eid, new_rating, new_notes)
+                    st.caption("✓ Saved")
+                except Exception as ex:
+                    st.error(f"Could not save review: {ex}")

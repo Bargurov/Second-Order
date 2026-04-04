@@ -105,8 +105,11 @@ def _check_one_ticker(
       return_1d, return_5d, return_20d, volume_ratio, vs_xle_5d  — structured numbers
     All numeric fields are None when data is unavailable.
     """
-    # Quick availability probe — skip the full download for invalid/unknown tickers
-    if not _is_valid_ticker(ticker):
+    # Quick availability probe — skip the full download for invalid/unknown tickers.
+    # In event-date mode we skip this: a ticker may have no recent 5-day data
+    # (e.g. delisted or acquired) yet have perfectly good historical data around
+    # the event date.  The historical fetch itself acts as the validity check.
+    if not event_date and not _is_valid_ticker(ticker):
         return {
             "label":        "needs more evidence",
             "detail":       "Invalid or unavailable ticker.",
@@ -141,6 +144,11 @@ def _check_one_ticker(
 
         if data is None or len(data) < 6:
             return dict(_no_data)
+
+        # Surface the actual first trading bar when in event-date mode.
+        anchor_date = None
+        if event_date:
+            anchor_date = str(data.index[0].date())
 
         closes  = data["Close"]
         volumes = data["Volume"]
@@ -199,6 +207,7 @@ def _check_one_ticker(
             "return_20d":   round(r20,        2) if r20        is not None else None,
             "volume_ratio": round(vol_ratio,  2),
             "vs_xle_5d":    round(rel_vs_xle, 2) if rel_vs_xle is not None else None,
+            "anchor_date":  anchor_date,
         }
 
     except Exception as e:
@@ -264,8 +273,21 @@ def market_check(
             f"tickers moving in predicted direction"
         )
 
+    # Determine the actual trading anchor date across tickers.
+    # All tickers fetch from the same start_date so anchors should agree;
+    # pick the first non-None one as representative.
+    anchor_date = None
     if event_date:
-        header = f"Market check (anchored to event date: {event_date}):"
+        for v in details.values():
+            if v.get("anchor_date"):
+                anchor_date = v["anchor_date"]
+                break
+
+    if event_date:
+        header = f"Market check (anchored to event date: {event_date}"
+        if anchor_date and anchor_date != event_date:
+            header += f", first trading day: {anchor_date}"
+        header += "):"
     else:
         header = "Market check (current prices, not event-date validation):"
     note = header + "\n" + "\n".join(lines)
@@ -287,4 +309,69 @@ def market_check(
         for t, v in details.items()
     ]
 
-    return {"note": note, "details": details, "tickers": tickers}
+    result = {"note": note, "details": details, "tickers": tickers}
+    if anchor_date:
+        result["anchor_date"] = anchor_date
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Follow-up check — forward returns for saved events
+# ---------------------------------------------------------------------------
+
+def followup_check(tickers: list[dict], event_date: str) -> list[dict]:
+    """Compute forward 1d/5d/20d returns for previously saved tickers.
+
+    tickers: list of dicts from a saved event's market_tickers field.
+              Each dict must have at least 'symbol' and 'role'.
+    event_date: 'YYYY-MM-DD' string — the anchor date.
+
+    Returns a list of dicts, one per ticker:
+        { symbol, role, return_1d, return_5d, return_20d, direction }
+
+    Designed to be lightweight: no volume check, no XLE comparison, no label.
+    Just forward returns and a direction tag so the UI can show what happened.
+    """
+    if not tickers or not event_date:
+        return []
+
+    results: list[dict] = []
+    for t in tickers:
+        symbol = t.get("symbol", "")
+        role   = t.get("role", "beneficiary")
+        if not symbol:
+            continue
+
+        try:
+            data = _fetch_since(symbol, event_date)
+            if data is None or len(data) < 2:
+                results.append({
+                    "symbol": symbol, "role": role,
+                    "return_1d": None, "return_5d": None, "return_20d": None,
+                    "direction": None, "anchor_date": None,
+                })
+                continue
+
+            anchor = str(data.index[0].date())
+            closes = data["Close"]
+            r1  = _pct_forward(closes, 1)
+            r5  = _pct_forward(closes, 5)
+            r20 = _pct_forward(closes, 20)
+
+            results.append({
+                "symbol":      symbol,
+                "role":        role,
+                "return_1d":   round(r1,  2) if r1  is not None else None,
+                "return_5d":   round(r5,  2) if r5  is not None else None,
+                "return_20d":  round(r20, 2) if r20 is not None else None,
+                "direction":   _direction_tag(r5, role),
+                "anchor_date": anchor,
+            })
+        except Exception:
+            results.append({
+                "symbol": symbol, "role": role,
+                "return_1d": None, "return_5d": None, "return_20d": None,
+                "direction": None, "anchor_date": None,
+            })
+
+    return results

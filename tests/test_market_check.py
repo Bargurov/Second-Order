@@ -600,5 +600,228 @@ class TestMarketCheck(unittest.TestCase):
         self.assertIsNone(call_kwargs.kwargs.get("event_date"))
 
 
+# ---------------------------------------------------------------------------
+# Tests for event-date mode: pre-check bypass and historical fetch
+# ---------------------------------------------------------------------------
+
+class TestEventDateMode(unittest.TestCase):
+    """When event_date is provided, the 5-day validity probe should be skipped
+    so that historically valid tickers aren't rejected for lacking recent data."""
+
+    def test_precheck_skipped_when_event_date_provided(self):
+        """_is_valid_ticker should NOT be called when event_date is set."""
+        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
+        with patch("market_check._is_valid_ticker") as mock_valid, \
+             patch("market_check._fetch_since", return_value=df):
+            market_check._check_one_ticker("OLDTICKER", event_date="2020-03-01")
+        mock_valid.assert_not_called()
+
+    def test_precheck_still_runs_without_event_date(self):
+        """Without event_date, the 5-day pre-check should still happen."""
+        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
+        with patch("market_check._is_valid_ticker", return_value=True) as mock_valid, \
+             patch("market_check._fetch", return_value=df):
+            market_check._check_one_ticker("GLD")
+        mock_valid.assert_called_once()
+
+    def test_event_date_uses_fetch_since(self):
+        """event_date mode should call _fetch_since, not _fetch."""
+        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
+        with patch("market_check._fetch_since", return_value=df) as mock_since, \
+             patch("market_check._fetch") as mock_fetch:
+            market_check._check_one_ticker("GLD", event_date="2020-03-01")
+        mock_since.assert_called_once_with("GLD", "2020-03-01")
+        mock_fetch.assert_not_called()
+
+    def test_event_date_historical_ticker_not_rejected(self):
+        """A ticker that would fail the 5-day recent probe should still
+        return real data when event_date is supplied and historical data exists."""
+        hist_df = _make_df([100.0] * 35 + [100.0, 101.0, 103.0, 105.0, 108.0],
+                           [1_000_000.0] * 40)
+        with patch("market_check._is_valid_ticker", return_value=False), \
+             patch("market_check._fetch_since", return_value=hist_df):
+            result = market_check._check_one_ticker("OLDTICKER", event_date="2020-03-01")
+        # Should NOT get the "Invalid or unavailable" early-exit
+        self.assertNotIn("Invalid or unavailable", result["detail"])
+        self.assertIsNotNone(result["return_5d"])
+
+    def test_event_date_empty_historical_data_graceful(self):
+        """If _fetch_since returns None (no historical data either), the result
+        should be a clean 'needs more evidence' — not a crash."""
+        with patch("market_check._fetch_since", return_value=None):
+            result = market_check._check_one_ticker("GHOST", event_date="2020-03-01")
+        self.assertEqual(result["label"], "needs more evidence")
+        self.assertIsNone(result["return_5d"])
+
+    def test_event_date_forward_returns_used(self):
+        """event_date mode should compute returns from iloc[0] forward,
+        not rolling from the end."""
+        # Base close at event date = 100, 5th day = 110 → +10% forward
+        closes = [100.0, 101.0, 103.0, 105.0, 108.0, 110.0] + [110.0] * 14
+        df = _make_df(closes, [1_000_000.0] * 20)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check._check_one_ticker("GLD", event_date="2020-03-01")
+        self.assertAlmostEqual(result["return_5d"], 10.0, places=1)
+
+    def test_anchor_date_matches_first_trading_day(self):
+        """anchor_date should reflect the actual first bar in the data,
+        which may differ from the requested event_date (e.g. weekends)."""
+        # DataFrame starts on 2026-01-01 (Thursday) — simulate requesting
+        # a Saturday event_date where the data starts on Monday.
+        closes = [100.0] * 40
+        # Start on a Monday (2026-01-05)
+        dates = pd.date_range("2026-01-05", periods=40, freq="B")
+        df = pd.DataFrame({"Close": closes, "Volume": [1_000_000.0] * 40}, index=dates)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check._check_one_ticker("GLD", event_date="2026-01-03")
+        # Event date was Saturday Jan 3, but first trading bar is Monday Jan 5
+        self.assertEqual(result["anchor_date"], "2026-01-05")
+
+    def test_anchor_date_none_in_rolling_mode(self):
+        """Rolling (non-event-date) mode should have no anchor_date."""
+        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
+        with patch("market_check._is_valid_ticker", return_value=True), \
+             patch("market_check._fetch", return_value=df):
+            result = market_check._check_one_ticker("GLD")
+        self.assertIsNone(result.get("anchor_date"))
+
+    def test_market_check_anchor_date_in_note_when_differs(self):
+        """market_check() note should mention the trading anchor when it
+        differs from the requested event_date."""
+        dates = pd.date_range("2026-01-05", periods=40, freq="B")
+        df = pd.DataFrame({"Close": [100.0]*40, "Volume": [1e6]*40}, index=dates)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.market_check(["GLD"], [], event_date="2026-01-03")
+        self.assertIn("first trading day: 2026-01-05", result["note"])
+        self.assertEqual(result["anchor_date"], "2026-01-05")
+
+    def test_market_check_no_anchor_note_when_matches(self):
+        """When anchor matches event_date, no extra note needed."""
+        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.market_check(["GLD"], [], event_date="2026-01-01")
+        self.assertNotIn("first trading day", result["note"])
+
+    def test_event_date_market_check_integration(self):
+        """market_check() with event_date should pass it through and skip
+        the pre-check for all tickers."""
+        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
+        with patch("market_check._is_valid_ticker") as mock_valid, \
+             patch("market_check._fetch_since", return_value=df):
+            result = market_check.market_check(["GLD"], ["USO"], event_date="2020-03-01")
+        # _is_valid_ticker should not have been called for any ticker
+        mock_valid.assert_not_called()
+        self.assertIn("anchored to event date", result["note"])
+        self.assertEqual(len(result["tickers"]), 2)
+
+
+class TestFollowupCheck(unittest.TestCase):
+    """Tests for followup_check() — forward returns for saved events."""
+
+    def test_returns_empty_for_no_tickers(self):
+        result = market_check.followup_check([], "2025-03-15")
+        self.assertEqual(result, [])
+
+    def test_returns_empty_for_no_event_date(self):
+        result = market_check.followup_check(
+            [{"symbol": "GLD", "role": "beneficiary"}], ""
+        )
+        self.assertEqual(result, [])
+
+    def test_basic_forward_returns(self):
+        # 21 rows: enough for 1d/5d/20d forward
+        closes = [100.0, 102.0, 104.0, 106.0, 108.0, 110.0] + [112.0] * 15
+        df = _make_df(closes)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.followup_check(
+                [{"symbol": "GLD", "role": "beneficiary"}], "2025-03-15"
+            )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["symbol"], "GLD")
+        self.assertAlmostEqual(result[0]["return_1d"], 2.0, places=1)
+        self.assertAlmostEqual(result[0]["return_5d"], 10.0, places=1)
+        self.assertIsNotNone(result[0]["return_20d"])
+        self.assertEqual(result[0]["direction"], "supports ↑")
+
+    def test_loser_direction(self):
+        # Price drops: loser going down = supports ↓
+        closes = [100.0, 98.0, 96.0, 94.0, 92.0, 90.0] + [88.0] * 15
+        df = _make_df(closes)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.followup_check(
+                [{"symbol": "EWJ", "role": "loser"}], "2025-03-15"
+            )
+        self.assertEqual(result[0]["direction"], "supports ↓")
+
+    def test_insufficient_data(self):
+        # Only 1 row — not enough for any forward return
+        df = _make_df([100.0])
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.followup_check(
+                [{"symbol": "GLD", "role": "beneficiary"}], "2025-03-15"
+            )
+        self.assertEqual(len(result), 1)
+        self.assertIsNone(result[0]["return_1d"])
+        self.assertIsNone(result[0]["return_5d"])
+        self.assertIsNone(result[0]["return_20d"])
+        self.assertIsNone(result[0]["direction"])
+
+    def test_fetch_returns_none(self):
+        with patch("market_check._fetch_since", return_value=None):
+            result = market_check.followup_check(
+                [{"symbol": "FAKE", "role": "beneficiary"}], "2025-03-15"
+            )
+        self.assertEqual(len(result), 1)
+        self.assertIsNone(result[0]["return_1d"])
+
+    def test_fetch_raises_exception(self):
+        with patch("market_check._fetch_since", side_effect=Exception("network error")):
+            result = market_check.followup_check(
+                [{"symbol": "GLD", "role": "beneficiary"}], "2025-03-15"
+            )
+        self.assertEqual(len(result), 1)
+        self.assertIsNone(result[0]["return_1d"])
+
+    def test_multiple_tickers(self):
+        closes = [100.0, 105.0, 110.0, 115.0, 120.0, 125.0] + [130.0] * 15
+        df = _make_df(closes)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.followup_check(
+                [
+                    {"symbol": "GLD", "role": "beneficiary"},
+                    {"symbol": "USO", "role": "loser"},
+                ],
+                "2025-03-15",
+            )
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["symbol"], "GLD")
+        self.assertEqual(result[1]["symbol"], "USO")
+        # USO price went up but it's a loser — contradicts
+        self.assertEqual(result[1]["direction"], "contradicts ↑")
+
+    def test_skips_empty_symbol(self):
+        result = market_check.followup_check(
+            [{"symbol": "", "role": "beneficiary"}], "2025-03-15"
+        )
+        self.assertEqual(result, [])
+
+    def test_anchor_date_returned(self):
+        """followup_check should include the actual trading anchor date."""
+        dates = pd.date_range("2026-01-05", periods=21, freq="B")
+        df = pd.DataFrame({"Close": [100.0]*21, "Volume": [1e6]*21}, index=dates)
+        with patch("market_check._fetch_since", return_value=df):
+            result = market_check.followup_check(
+                [{"symbol": "GLD", "role": "beneficiary"}], "2026-01-03"
+            )
+        self.assertEqual(result[0]["anchor_date"], "2026-01-05")
+
+    def test_anchor_date_none_on_no_data(self):
+        with patch("market_check._fetch_since", return_value=None):
+            result = market_check.followup_check(
+                [{"symbol": "GLD", "role": "beneficiary"}], "2025-03-15"
+            )
+        self.assertIsNone(result[0]["anchor_date"])
+
+
 if __name__ == "__main__":
     unittest.main()

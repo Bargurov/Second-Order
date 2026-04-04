@@ -114,11 +114,13 @@ def _clean_assets(assets: list, context: str = "") -> list:
     # 5. Cap at 5
     return cleaned[:5]
 
-from dotenv import load_dotenv
-from prompts import SYSTEM_PROMPT, EVENT_ANALYSIS_PROMPT
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-# Load variables from .env into the environment once at import time.
-load_dotenv()
+from prompts import SYSTEM_PROMPT, EVENT_ANALYSIS_PROMPT
 
 _PLACEHOLDER = "your_api_key_here"
 
@@ -207,6 +209,11 @@ def _validate_result(result: dict, stage: str) -> dict:
     return result
 
 
+def is_mock(analysis: dict) -> bool:
+    """Return True if the analysis is a mock/fallback, not a real LLM result."""
+    return "[mock:" in (analysis.get("what_changed") or "")
+
+
 def _mock(reason: str) -> dict:
     """Return a clearly-labelled mock so the pipeline never crashes."""
     return {
@@ -219,6 +226,22 @@ def _mock(reason: str) -> dict:
         "assets_to_watch": ["GLD", "USO"],
         "confidence": "low",
     }
+
+
+def _coerce_ticker_field(value) -> list[str]:
+    """Normalize a raw ticker field from LLM JSON into a list of strings.
+
+    Handles: list, str, None, int, dict, and lists containing non-strings.
+    Anything that isn't a string or a list of strings is dropped.
+    """
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    if isinstance(value, list):
+        return [str(item) for item in value if isinstance(item, str) and item.strip()]
+    # int, float, dict, bool, etc. — discard
+    return []
 
 
 def analyze_event(headline: str, stage: str, persistence: str,
@@ -269,19 +292,19 @@ def analyze_event(headline: str, stage: str, persistence: str,
             print(f"  → Raw response: {raw}\n")
             return _mock("JSON parse error")
 
+        # Ensure every expected key exists — the LLM occasionally omits one.
+        result.setdefault("what_changed", "")
+        result.setdefault("mechanism_summary", "")
+        result.setdefault("beneficiaries", [])
+        result.setdefault("losers", [])
+        result.setdefault("confidence", "low")
+
         # Sanitize both ticker lists separately, then merge into assets_to_watch
         # for backward-compatible db storage.
         context = f"{headline} {result.get('mechanism_summary', '')}"
 
-        # Coerce to list — the LLM sometimes returns a bare string like
-        # "beneficiary_tickers": "AAPL" instead of ["AAPL"].  Iterating a
-        # string would yield individual characters, which all fail sanitization.
-        raw_ben = result.get("beneficiary_tickers", [])
-        raw_los = result.get("loser_tickers", [])
-        if isinstance(raw_ben, str):
-            raw_ben = [raw_ben]
-        if isinstance(raw_los, str):
-            raw_los = [raw_los]
+        raw_ben = _coerce_ticker_field(result.get("beneficiary_tickers"))
+        raw_los = _coerce_ticker_field(result.get("loser_tickers"))
 
         beneficiary_tickers = _clean_assets(raw_ben, context=context)
         loser_tickers = _clean_assets(raw_los, context=context)

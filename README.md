@@ -1,16 +1,36 @@
-# Geo Mechanism Project
+# Second Order
 
-Geo Mechanism Project is a small local research workflow for turning a headline
-into a structured event review. It classifies the event, extracts a provisional
-economic mechanism, proposes beneficiary and loser tickers, and checks whether
+Second Order is a local research workflow for turning geopolitical and
+policy headlines into structured event reviews. It pulls headlines into a news
+inbox, fuses overlapping coverage into a single event candidate, classifies the
+event lifecycle, extracts a provisional economic mechanism, and checks whether
 market moves provide directional evidence rather than proof.
 
-The current V1.5 implementation includes both a command-line flow and a small
-Streamlit UI. It supports optional event dates for anchored market validation,
-stores reviewed events in SQLite, and keeps evaluation cheap through canary
-runs while reserving full evals for milestone checks. The current app works,
-but the UI is still intentionally rough and closer to a basic demo than a
-polished product experience.
+The current V1.5 product includes a basic Streamlit app, a SQLite research
+archive, and a cheap evaluation loop built around canary runs. It is designed
+for manual research and demo use: useful enough to inspect real flows end to
+end, while still small enough to iterate on quickly.
+
+## Current Workflow
+
+1. Load headlines from a local inbox file and curated RSS feeds.
+2. Cluster and fuse overlapping headlines into one event candidate.
+3. Classify the event stage and persistence.
+4. Extract a provisional mechanism summary plus beneficiary and loser tickers.
+5. Run direction-aware market validation in current-price mode or optional
+   event-date anchored mode.
+6. Save the result to SQLite for later review in the app.
+
+## Key Features
+
+- Streamlit demo UI with a news inbox and recent-events view
+- Multi-source headline ingestion from local JSON and RSS
+- Headline clustering and simple source-aware event fusion
+- Event lifecycle classification (`stage`, `persistence`)
+- Hidden economic mechanism extraction with ticker sanitization
+- Direction-aware market validation with optional event-date anchoring
+- SQLite archive with saved events, `event_date`, and structured market tickers
+- Evaluation runner with canary, `--ids`, and `--limit` options
 
 ## Quick Start
 
@@ -19,39 +39,60 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
+streamlit run app.py
+```
+
+### React Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev          # starts on http://localhost:5173
+```
+
+The Vite dev server proxies `/api/*` to the FastAPI backend at `localhost:8000`.
+Start the backend first:
+
+```powershell
+python -m uvicorn api:app --reload
+```
+
+### Optional local runs
+
+```powershell
 python main.py
 python eval.py --preset canary
-streamlit run app.py
+python eval.py
 ```
 
 If `ANTHROPIC_API_KEY` is not set, the analysis step falls back to a mock
 response instead of failing.
 
-## Example Workflow
+## Project Layout
 
-1. Paste a headline into `main.py` or the Streamlit app.
-2. Classify the event stage and persistence.
-3. Extract a provisional mechanism summary plus beneficiary and loser tickers.
-4. Run direction-aware market validation on those tickers using either current-price mode or an optional event-date anchored mode.
-5. Save the event record to SQLite in `events.db` and review recent saved events from the Streamlit UI if needed.
-
-## Architecture
-
-- `app.py`: Streamlit UI with optional event date input and a recent-events view
-- `main.py`: CLI entry point and workflow orchestration
-- `classify.py`: stage and persistence classification helpers
+- `frontend/`: React + TypeScript + shadcn/ui dashboard (Vite dev server)
+- `api.py`: FastAPI layer over the backend engine
+- `app.py`: Streamlit app with the inbox, fused event review, analysis view, and recent saved events
+- `news_sources.py`: local JSON + RSS ingestion, normalization, and headline clustering
+- `classify.py`: event stage and persistence classification
 - `analyze_event.py`: mechanism extraction, ticker sanitization, and fallback behavior
-- `market_check.py`: direction-aware market validation for beneficiary and loser tickers, in current-price or event-date anchored mode
-- `db.py`: local SQLite setup and persistence helpers for schema version 3, including `event_date` and `market_tickers`
-- `eval.py`: sample-set evaluation runner with canary, `--ids`, and `--limit` options
-- `sample_events.json`: reusable evaluation headlines with expected labels
+- `market_check.py`: direction-aware market validation in current-price or event-date mode
+- `db.py`: SQLite schema and persistence helpers
+- `eval.py`: sample-set evaluation runner
+- `sample_events.json`: reusable evaluation set with expected labels
 
-## Limitations
+## Tests
 
-- Classification remains heuristic unless a model-based upgrade is added later.
-- Market validation is still lightweight and should be treated as supporting evidence, not proof.
-- The mechanism step is provisional and may return simplified reasoning.
-- The project is intentionally small and does not yet include broader V2/V3 features.
+```powershell
+python -m unittest discover -s tests -v
+```
+
+## Scope And Limitations
+
+- The Streamlit app works end to end, but it is still a basic demo rather than a polished product UI.
+- Classification and mechanism extraction remain heuristic or provisional in important places.
+- Market validation should be treated as supporting evidence, not confirmation.
+- The system is local-first and does not yet include schedulers, orchestration, or broader V2/V3 platform features.
 
 ## Roadmap
 
@@ -59,8 +100,6 @@ response instead of failing.
 - `V2`: news ingestion plus an inbox-style review flow
 - `V2.5`: UI/UX rework and polish for demo quality
 - `V3`: OpenClaw and chat-style orchestration
-
-## Future Work
 
 Future upgrades and out-of-scope ideas are tracked in
 [future_ideas.md](future_ideas.md).

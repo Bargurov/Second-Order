@@ -9,7 +9,7 @@ import sys
 import unittest
 
 sys.path.insert(0, ".")
-from analyze_event import _clean_assets, _is_bad_ticker
+from analyze_event import _clean_assets, _is_bad_ticker, _coerce_ticker_field
 
 
 # ---------------------------------------------------------------------------
@@ -205,6 +205,52 @@ class TestCleanAssets(unittest.TestCase):
         self.assertIn("GLD", result)
         self.assertNotIn(None, result)
         self.assertNotIn(123, result)
+
+
+class TestCoerceTickerField(unittest.TestCase):
+    """Tests for _coerce_ticker_field — normalizes raw LLM ticker values."""
+
+    def test_valid_list_passes_through(self):
+        self.assertEqual(_coerce_ticker_field(["AAPL", "GLD"]), ["AAPL", "GLD"])
+
+    def test_bare_string_wrapped(self):
+        self.assertEqual(_coerce_ticker_field("AAPL"), ["AAPL"])
+
+    def test_none_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field(None), [])
+
+    def test_int_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field(42), [])
+
+    def test_float_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field(3.14), [])
+
+    def test_dict_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field({"ticker": "AAPL"}), [])
+
+    def test_bool_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field(True), [])
+
+    def test_empty_string_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field(""), [])
+
+    def test_whitespace_string_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field("   "), [])
+
+    def test_mixed_list_drops_non_strings(self):
+        self.assertEqual(
+            _coerce_ticker_field(["AAPL", 42, None, {"a": 1}, "GLD", True]),
+            ["AAPL", "GLD"],
+        )
+
+    def test_list_with_empty_strings_dropped(self):
+        self.assertEqual(_coerce_ticker_field(["AAPL", "", "  ", "GLD"]), ["AAPL", "GLD"])
+
+    def test_nested_list_items_dropped(self):
+        self.assertEqual(_coerce_ticker_field(["AAPL", ["GLD", "USO"]]), ["AAPL"])
+
+    def test_empty_list_returns_empty(self):
+        self.assertEqual(_coerce_ticker_field([]), [])
 
 
 if __name__ == "__main__":
