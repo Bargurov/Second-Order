@@ -1,0 +1,46 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+
+# Test, coverage, and type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Local project databases
+events.db
+events*.db
+*.db.bak
+*.db-journal
+
+# Evaluation outputs
+evaluation_output.json
+eval_output*.json
+
+# Generated test databases
+tests/test_events*.db
+
+# VS Code and Windows local files
+.vscode/
+.streamlit/
+Thumbs.db
+Desktop.ini

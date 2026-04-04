@@ -1,0 +1,142 @@
+[
+  {
+    "id": "sample_001",
+    "category": "trade",
+    "headline": "US may impose new tariffs on electric vehicle imports from China",
+    "expected_stage": "anticipation",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_002",
+    "category": "trade",
+    "headline": "European Union approves retaliatory duties on selected US industrial goods",
+    "expected_stage": "escalation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_003",
+    "category": "trade",
+    "headline": "US and China resume trade talks after months of tariff disputes",
+    "expected_stage": "normalization",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_004",
+    "category": "sanctions",
+    "headline": "Washington expands sanctions on Russian shipping and metals entities",
+    "expected_stage": "realized",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_005",
+    "category": "sanctions",
+    "headline": "US considers easing oil sanctions on Venezuela after diplomatic progress",
+    "expected_stage": "anticipation",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_006",
+    "category": "sanctions",
+    "headline": "Japan introduces new export controls on advanced semiconductor equipment",
+    "expected_stage": "realized",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_007",
+    "category": "military",
+    "headline": "Missile strikes hit energy infrastructure near a major Black Sea port",
+    "expected_stage": "escalation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_008",
+    "category": "military",
+    "headline": "Regional militia launches drone attack on commercial shipping corridor",
+    "expected_stage": "escalation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_009",
+    "category": "military",
+    "headline": "Defense ministry warns of possible retaliation after border clash",
+    "expected_stage": "anticipation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_010",
+    "category": "military",
+    "headline": "Naval forces seize tanker after dispute over maritime transit rights",
+    "expected_stage": "realized",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_011",
+    "category": "diplomacy",
+    "headline": "Israel and Hamas reach ceasefire agreement after weeks of fighting",
+    "expected_stage": "de-escalation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_012",
+    "category": "diplomacy",
+    "headline": "US and China restore military communications following summit meeting",
+    "expected_stage": "realized",
+    "expected_persistence": "transient"
+  },
+  {
+    "id": "sample_013",
+    "category": "diplomacy",
+    "headline": "Talks begin on reopening a key border crossing for commercial traffic",
+    "expected_stage": "anticipation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_014",
+    "category": "energy",
+    "headline": "OPEC members agree to extend voluntary oil output cuts through next quarter",
+    "expected_stage": "realized",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_015",
+    "category": "energy",
+    "headline": "Major LNG export terminal restarts operations after unplanned outage",
+    "expected_stage": "normalization",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_016",
+    "category": "shipping",
+    "headline": "Insurers raise war-risk premiums for vessels transiting the Red Sea",
+    "expected_stage": "realized",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_017",
+    "category": "central_bank",
+    "headline": "Federal Reserve expected to signal slower rate cuts amid sticky inflation",
+    "expected_stage": "anticipation",
+    "expected_persistence": "medium"
+  },
+  {
+    "id": "sample_018",
+    "category": "central_bank",
+    "headline": "Central bank unexpectedly raises policy rate after currency selloff",
+    "expected_stage": "realized",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_019",
+    "category": "industrial_policy",
+    "headline": "Government unveils new subsidy package for domestic battery manufacturing",
+    "expected_stage": "realized",
+    "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_020",
+    "category": "industrial_policy",
+    "headline": "Cabinet approves restrictions on outbound investment in strategic technologies",
+    "expected_stage": "realized",
+    "expected_persistence": "structural"
+  }
+]
