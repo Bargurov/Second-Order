@@ -21,7 +21,10 @@ from db import (
 )
 from classify import classify_stage, classify_persistence
 from analyze_event import analyze_event, _DEFAULT_MODEL
-from market_check import market_check, followup_check, macro_snapshot, ticker_chart, ticker_info
+from market_check import (
+    market_check, followup_check, macro_snapshot, ticker_chart, ticker_info,
+    compute_stress_regime, classify_decay,
+)
 import os
 from news_sources import fetch_all, cluster_headlines
 
@@ -435,6 +438,12 @@ def get_ticker_headlines(symbol: str, limit: int = 5):
     return matches
 
 
+@app.get("/stress")
+def stress():
+    """Return the current market stress regime and signal breakdown."""
+    return compute_stress_regime()
+
+
 @app.get("/market-movers")
 def market_movers(limit: int = 5):
     """Return saved events with confirmed market moves, ranked by impact.
@@ -476,16 +485,21 @@ def market_movers(limit: int = 5):
 
         # Top 3 tickers by absolute move
         big_moves.sort(key=lambda t: abs(t.get("return_5d") or 0), reverse=True)
-        ticker_summaries = [
-            {
+        ticker_summaries = []
+        for t in big_moves[:3]:
+            r5 = t.get("return_5d")
+            r20 = t.get("return_20d")
+            decay = classify_decay(r5, r20)
+            ticker_summaries.append({
                 "symbol": t.get("symbol", "?"),
                 "role": t.get("role", "?"),
-                "return_5d": t.get("return_5d"),
+                "return_5d": r5,
+                "return_20d": r20,
                 "direction": t.get("direction_tag"),
                 "spark": t.get("spark", []),
-            }
-            for t in big_moves[:3]
-        ]
+                "decay": decay["label"],
+                "decay_evidence": decay["evidence"],
+            })
 
         scored.append({
             "event_id": ev["id"],

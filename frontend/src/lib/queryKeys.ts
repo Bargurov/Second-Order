@@ -14,6 +14,7 @@ export const qk = {
   tickerChart: (symbol: string, date: string) => ["ticker", symbol, "chart", date] as const,
   tickerInfo:      (symbol: string) => ["ticker", symbol, "info"] as const,
   tickerHeadlines: (symbol: string) => ["ticker", symbol, "headlines"] as const,
+  stress:       () => ["stress"] as const,
   marketMovers: () => ["market-movers"] as const,
   health:       () => ["health"] as const,
 };

@@ -18,9 +18,17 @@ export interface AnalyzeRequest {
   event_context?: string;
 }
 
-export interface Ticker {
+/** Minimal shape shared by Ticker and MarketMover ticker entries. */
+export interface TickerBase {
   symbol: string;
   role: string;
+  return_5d: number | null;
+  return_20d?: number | null;
+  direction?: string | null;
+  spark?: number[];
+}
+
+export interface Ticker extends TickerBase {
   label: string;
   direction_tag: string | null;
   return_1d: number;
@@ -28,7 +36,6 @@ export interface Ticker {
   return_20d: number;
   volume_ratio: number;
   vs_xle_5d: number | null;
-  spark?: number[];
 }
 
 export interface MarketResult {
@@ -125,6 +132,18 @@ export interface TickerInfo {
   avg_volume: number | null;
 }
 
+export interface StressRegime {
+  regime: string;
+  signals: {
+    vix_elevated: boolean;
+    term_inversion: boolean;
+    credit_widening: boolean;
+    safe_haven_bid: boolean;
+    breadth_deterioration: boolean;
+  };
+  raw: Record<string, number>;
+}
+
 export interface MarketMover {
   event_id: number;
   headline: string;
@@ -138,8 +157,11 @@ export interface MarketMover {
     symbol: string;
     role: string;
     return_5d: number | null;
+    return_20d?: number | null;
     direction: string | null;
     spark: number[];
+    decay?: string;
+    decay_evidence?: string;
   }[];
 }
 
@@ -254,6 +276,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ event_dates: eventDates }),
     }),
+
+  stress: () => request<StressRegime>("/stress"),
 
   marketMovers: () => request<MarketMover[]>("/market-movers"),
 

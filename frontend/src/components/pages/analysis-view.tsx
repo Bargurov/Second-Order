@@ -25,14 +25,13 @@ import {
   ClipboardCopy,
   Check,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
-import { TickerChart } from "@/components/ui/ticker-chart";
 import { MacroStrip } from "@/components/ui/macro-strip";
+import { TickerDetailPanel } from "@/components/ui/ticker-detail-panel";
 import { api, type AnalyzeResponse, type Ticker } from "@/lib/api";
-import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
+import { pct, RetVal } from "@/lib/ticker-utils";
 
 // ---------------------------------------------------------------------------
 // Skeletons
@@ -100,12 +99,6 @@ const CONFIDENCE_META: Record<
   medium: { icon: Shield,      color: "text-amber-400", label: "Medium" },
   low:    { icon: ShieldAlert, color: "val-neg",  label: "Low" },
 };
-
-function pct(v: number | null | undefined): string {
-  if (v == null) return "\u2014";
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(2)}%`;
-}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -181,21 +174,6 @@ function formatAnalysisMarkdown(r: AnalyzeResponse): string {
 // ---------------------------------------------------------------------------
 // Ticker card
 // ---------------------------------------------------------------------------
-
-// Compact return value: "+2.50%" with colour
-function RetVal({ v, className: cls }: { v: number | null | undefined; className?: string }) {
-  return (
-    <span className={cn(
-      "font-num text-2xs",
-      v != null && v > 0 && "val-pos",
-      v != null && v < 0 && "val-neg",
-      v == null && "text-muted-foreground",
-      cls,
-    )}>
-      {pct(v)}
-    </span>
-  );
-}
 
 function isSupporting(t: Ticker): boolean {
   return t.direction_tag === "supporting" || (t.direction_tag?.startsWith("supports") ?? false);
@@ -287,180 +265,6 @@ function TickerCard({
   );
 }
 
-function fmtMktCap(v: number | null): string {
-  if (v == null) return "\u2014";
-  if (v >= 1e12) return `$${(v / 1e12).toFixed(1)}T`;
-  if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(0)}M`;
-  return `$${v.toLocaleString()}`;
-}
-
-function fmtVol(v: number | null): string {
-  if (v == null) return "\u2014";
-  if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K`;
-  return String(v);
-}
-
-function TickerDetail({ ticker, eventDate }: { ticker: Ticker; eventDate?: string }) {
-  const supports = isSupporting(ticker);
-  const contradicts = isContradicting(ticker);
-  const vol = ticker.volume_ratio;
-  const volHigh = vol != null && vol >= 1.25;
-
-  const { data: chartData, isLoading: chartLoading } = useQuery({
-    queryKey: qk.tickerChart(ticker.symbol, eventDate ?? ""),
-    queryFn: () => api.tickerChart(ticker.symbol, eventDate!),
-    enabled: !!eventDate,
-    staleTime: 600_000,
-  });
-
-  const { data: info, isLoading: infoLoading } = useQuery({
-    queryKey: qk.tickerInfo(ticker.symbol),
-    queryFn: () => api.tickerInfo(ticker.symbol),
-    staleTime: 3_600_000,
-  });
-
-  const { data: headlines } = useQuery({
-    queryKey: qk.tickerHeadlines(ticker.symbol),
-    queryFn: () => api.tickerHeadlines(ticker.symbol),
-    staleTime: 300_000,
-  });
-
-  const hasInfo = info && (info.name || info.sector || info.market_cap);
-  const hasChart = chartData && chartData.length > 2 && eventDate;
-  const hasHeadlines = headlines && headlines.length > 0;
-
-  return (
-    <div className="fade-in rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      {/* Header row */}
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <span className={cn(
-          "h-2 w-2 shrink-0 rounded-full",
-          supports && "bg-[#15803d]",
-          contradicts && "bg-[#b91c1c]",
-          !supports && !contradicts && "bg-border",
-        )} />
-        <span className="font-num text-sm font-semibold">{ticker.symbol}</span>
-        {info?.name && (
-          <span className="truncate text-xs text-muted-foreground">{info.name}</span>
-        )}
-        <Badge variant={ticker.role === "beneficiary" ? "secondary" : "outline"}>
-          {ticker.role === "beneficiary" ? "long" : "short"}
-        </Badge>
-        <span className="ml-auto text-2xs text-muted-foreground">{ticker.label}</span>
-      </div>
-
-      {/* Company info strip */}
-      {infoLoading && (
-        <div className="flex gap-3 border-t border-border px-4 py-1.5">
-          <Skeleton className="h-3 w-16" /><Skeleton className="h-3 w-20" /><Skeleton className="h-3 w-14" />
-        </div>
-      )}
-      {!infoLoading && hasInfo && (
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border px-4 py-1.5 text-[10px] text-muted-foreground">
-          {info!.sector && <span>{info!.sector}</span>}
-          {info!.industry && <span>· {info!.industry}</span>}
-          {info!.market_cap && <span className="font-num">Mkt cap {fmtMktCap(info!.market_cap)}</span>}
-          {info!.avg_volume && <span className="font-num">Avg vol {fmtVol(info!.avg_volume)}</span>}
-        </div>
-      )}
-      {!infoLoading && !hasInfo && (
-        <div className="border-t border-border px-4 py-1.5">
-          <span className="text-[10px] text-muted-foreground/60">Company info unavailable</span>
-        </div>
-      )}
-
-      {/* Event-anchored chart */}
-      {chartLoading && eventDate && (
-        <div className="border-t border-border px-4 py-3">
-          <Skeleton className="h-[100px] w-full rounded-lg" />
-        </div>
-      )}
-      {!chartLoading && hasChart && (
-        <div className="border-t border-border px-3 py-2">
-          <TickerChart
-            data={chartData!}
-            eventDate={eventDate!}
-            width={440}
-            height={100}
-            className="w-full"
-          />
-        </div>
-      )}
-      {!chartLoading && !hasChart && eventDate && (
-        <div className="border-t border-border px-4 py-2">
-          <span className="text-[10px] text-muted-foreground/60">Price chart unavailable for this date range</span>
-        </div>
-      )}
-
-      {/* Data strip */}
-      <div className="flex border-t border-border">
-        {([
-          ["1d", ticker.return_1d],
-          ["5d", ticker.return_5d],
-          ["20d", ticker.return_20d],
-        ] as const).map(([label, val]) => (
-          <div key={label} className="flex-1 flex items-center justify-center gap-1 py-1.5 border-r border-border">
-            <span className="text-[10px] text-muted-foreground">{label}</span>
-            <span className={cn(
-              "font-num text-2xs font-medium",
-              val != null && val > 0 && "val-pos",
-              val != null && val < 0 && "val-neg",
-              val == null && "text-muted-foreground",
-            )}>
-              {pct(val)}
-            </span>
-          </div>
-        ))}
-        <div className="flex-1 flex items-center justify-center gap-1 py-1.5 border-r border-border">
-          <span className="text-[10px] text-muted-foreground">Vol</span>
-          <span className={cn("font-num text-2xs font-medium", volHigh && "text-foreground")}>
-            {vol != null ? `${vol.toFixed(1)}x` : "\u2014"}
-          </span>
-        </div>
-        {ticker.vs_xle_5d != null && (
-          <div className="flex-1 flex items-center justify-center gap-1 py-1.5">
-            <span className="text-[10px] text-muted-foreground">vs Bench</span>
-            <RetVal v={ticker.vs_xle_5d} className="font-medium" />
-          </div>
-        )}
-      </div>
-
-      {/* Verdict */}
-      <div className="px-4 py-1.5 border-t border-border">
-        <p className="text-2xs text-muted-foreground">
-          {supports && "Supports hypothesis \u2014 "}
-          {contradicts && "Contradicts hypothesis \u2014 "}
-          {!supports && !contradicts && "Inconclusive \u2014 "}
-          {ticker.return_5d != null && ticker.return_5d > 0 ? "up" : ticker.return_5d != null && ticker.return_5d < 0 ? "down" : "flat"}{" "}
-          <RetVal v={ticker.return_5d} /> over 5 days
-          {volHigh && <>, elevated volume ({vol?.toFixed(1)}x avg)</>}
-          {ticker.vs_xle_5d != null && (
-            <>, <RetVal v={ticker.vs_xle_5d} /> relative to sector</>
-          )}
-        </p>
-      </div>
-
-      {/* Related headlines */}
-      {hasHeadlines && (
-        <div className="border-t border-border px-4 py-2 space-y-1">
-          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Related headlines
-          </span>
-          {headlines!.map((h, i) => (
-            <div key={i} className="flex items-baseline gap-2 text-xs text-muted-foreground">
-              <span className="shrink-0 font-num text-[10px]">
-                {h.source_count > 1 ? `${h.source_count}src` : ""}
-              </span>
-              <span className="leading-snug">{h.headline}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function MarketCards({ tickers, eventDate }: { tickers: Ticker[]; eventDate?: string }) {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
@@ -501,7 +305,17 @@ function MarketCards({ tickers, eventDate }: { tickers: Ticker[]; eventDate?: st
 
       {/* Detail panel */}
       {selectedTicker && selectedTicker.label !== "needs more evidence" && (
-        <TickerDetail ticker={selectedTicker} eventDate={eventDate} />
+        <TickerDetailPanel
+          ticker={selectedTicker}
+          eventDate={eventDate}
+          extra={{
+            label: selectedTicker.label,
+            direction_tag: selectedTicker.direction_tag,
+            return_1d: selectedTicker.return_1d,
+            volume_ratio: selectedTicker.volume_ratio,
+            vs_xle_5d: selectedTicker.vs_xle_5d,
+          }}
+        />
       )}
 
       {/* Hypothesis summary */}

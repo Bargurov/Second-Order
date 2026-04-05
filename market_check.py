@@ -500,6 +500,172 @@ def macro_snapshot(event_date: str | None = None) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Market stress regime
+# ---------------------------------------------------------------------------
+
+_STRESS_TICKERS = ["^VIX", "^VIX3M", "HYG", "SHY", "GLD", "DX-Y.NYB", "TLT", "RSP", "SPY"]
+
+
+def _safe_pct(series, n: int) -> float | None:
+    """Trailing n-period percent change, None if insufficient data."""
+    if series is None or len(series) < n + 1:
+        return None
+    return float((series.iloc[-1] - series.iloc[-(n + 1)]) / series.iloc[-(n + 1)] * 100)
+
+
+def compute_stress_regime() -> dict:
+    """Compute a composite market-stress regime from live data.
+
+    Returns {regime, signals: {vix_elevated, term_inversion, credit_widening,
+    safe_haven_bid, breadth_deterioration}, raw: {vix, vix_avg20, ...}}.
+    Uses the existing _fetch + TTL cache so repeated calls are instant.
+    """
+    raw: dict = {}
+    signals: dict[str, bool] = {
+        "vix_elevated": False,
+        "term_inversion": False,
+        "credit_widening": False,
+        "safe_haven_bid": False,
+        "breadth_deterioration": False,
+    }
+
+    try:
+        # VIX vs 20d average
+        vix_data = _fetch("^VIX")
+        if vix_data is not None and len(vix_data) >= 20:
+            vix_now = float(vix_data["Close"].iloc[-1])
+            vix_avg20 = float(vix_data["Close"].iloc[-20:].mean())
+            raw["vix"] = round(vix_now, 2)
+            raw["vix_avg20"] = round(vix_avg20, 2)
+            vix_5d = _safe_pct(vix_data["Close"], 5)
+            if vix_5d is not None:
+                raw["vix_change_5d"] = round(vix_5d, 2)
+            signals["vix_elevated"] = vix_now > vix_avg20 * 1.20  # >20% above 20d avg
+
+        # VIX term structure: ^VIX vs ^VIX3M
+        vix3m_data = _fetch("^VIX3M")
+        if vix_data is not None and vix3m_data is not None and len(vix3m_data) > 0:
+            vix_now = float(vix_data["Close"].iloc[-1]) if "vix" not in raw else raw["vix"]
+            vix3m = float(vix3m_data["Close"].iloc[-1])
+            raw["vix3m"] = round(vix3m, 2)
+            signals["term_inversion"] = vix_now > vix3m  # backwardation = stress
+
+        # Credit spread direction: HYG vs SHY 5d relative
+        hyg_data = _fetch("HYG")
+        shy_data = _fetch("SHY")
+        if hyg_data is not None and shy_data is not None:
+            hyg_5d = _safe_pct(hyg_data["Close"], 5)
+            shy_5d = _safe_pct(shy_data["Close"], 5)
+            if hyg_5d is not None and shy_5d is not None:
+                spread_move = shy_5d - hyg_5d  # positive = widening
+                raw["credit_spread_5d"] = round(spread_move, 2)
+                signals["credit_widening"] = spread_move > 0.5
+
+        # Safe-haven composite: GLD, DXY, TLT — average 5d return
+        haven_returns: list[float] = []
+        for sym in ["GLD", "DX-Y.NYB", "TLT"]:
+            d = _fetch(sym)
+            if d is not None:
+                r = _safe_pct(d["Close"], 5)
+                if r is not None:
+                    haven_returns.append(r)
+        if haven_returns:
+            avg_haven = sum(haven_returns) / len(haven_returns)
+            raw["haven_avg_5d"] = round(avg_haven, 2)
+            signals["safe_haven_bid"] = avg_haven > 0.5
+
+        # Breadth proxy: RSP vs SPY 5d relative
+        rsp_data = _fetch("RSP")
+        spy_data = _fetch("SPY")
+        if rsp_data is not None and spy_data is not None:
+            rsp_5d = _safe_pct(rsp_data["Close"], 5)
+            spy_5d = _safe_pct(spy_data["Close"], 5)
+            if rsp_5d is not None and spy_5d is not None:
+                breadth_gap = rsp_5d - spy_5d
+                raw["breadth_gap_5d"] = round(breadth_gap, 2)
+                signals["breadth_deterioration"] = breadth_gap < -0.5
+
+    except Exception:
+        pass
+
+    regime = classify_regime(signals)
+    return {"regime": regime, "signals": signals, "raw": raw}
+
+
+def classify_regime(signals: dict[str, bool]) -> str:
+    """Classify the market regime from individual stress signals.
+
+    Labels:
+    - Systemic Stress: VIX elevated + credit widening + term inversion
+    - Geopolitical Stress: VIX elevated + safe-haven bid, but credit stable
+    - Calm with Undercurrent: safe-haven bid or breadth deterioration without VIX spike
+    - Calm: none of the above
+    """
+    active = sum(signals.values())
+    vix = signals.get("vix_elevated", False)
+    credit = signals.get("credit_widening", False)
+    term = signals.get("term_inversion", False)
+    haven = signals.get("safe_haven_bid", False)
+    breadth = signals.get("breadth_deterioration", False)
+
+    if vix and credit and term:
+        return "Systemic Stress"
+    if vix and (haven or term) and not credit:
+        return "Geopolitical Stress"
+    if active >= 2 and not vix:
+        return "Calm with Undercurrent"
+    if haven or breadth:
+        return "Calm with Undercurrent"
+    return "Calm"
+
+
+# ---------------------------------------------------------------------------
+# Shock decay classification
+# ---------------------------------------------------------------------------
+
+def classify_decay(return_5d: float | None, return_20d: float | None) -> dict:
+    """Classify the trajectory of a ticker's post-event move.
+
+    Compares the 5d and 20d returns to determine whether the shock is
+    accelerating, holding, fading, or reversed.
+
+    Returns {label, evidence} where evidence is a one-line explanation.
+    """
+    if return_5d is None or return_20d is None:
+        return {"label": "Unknown", "evidence": "Insufficient return data"}
+
+    r5, r20 = return_5d, return_20d
+
+    # Same sign check
+    same_sign = (r5 > 0 and r20 > 0) or (r5 < 0 and r20 < 0)
+
+    if not same_sign and abs(r5) > 0.5 and abs(r20) > 0.5:
+        return {
+            "label": "Reversed",
+            "evidence": f"5d {r5:+.1f}% vs 20d {r20:+.1f}% — direction flipped",
+        }
+
+    abs5, abs20 = abs(r5), abs(r20)
+
+    if same_sign and abs5 > abs20 * 0.8:
+        return {
+            "label": "Accelerating",
+            "evidence": f"5d move ({r5:+.1f}%) is still intensifying vs 20d ({r20:+.1f}%)",
+        }
+
+    if same_sign and abs5 > abs20 * 0.4:
+        return {
+            "label": "Holding",
+            "evidence": f"5d {r5:+.1f}% retains most of 20d {r20:+.1f}% move",
+        }
+
+    return {
+        "label": "Fading",
+        "evidence": f"5d {r5:+.1f}% has pulled back from 20d {r20:+.1f}%",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Ticker detail helpers
 # ---------------------------------------------------------------------------
 

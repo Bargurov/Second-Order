@@ -939,5 +939,174 @@ class TestMacroSnapshot(unittest.TestCase):
             self.assertIsNone(entry["value"])
 
 
+# ---------------------------------------------------------------------------
+# Tests for classify_regime()
+# ---------------------------------------------------------------------------
+
+class TestClassifyRegime(unittest.TestCase):
+
+    def _signals(self, **overrides) -> dict[str, bool]:
+        base = {
+            "vix_elevated": False,
+            "term_inversion": False,
+            "credit_widening": False,
+            "safe_haven_bid": False,
+            "breadth_deterioration": False,
+        }
+        base.update(overrides)
+        return base
+
+    def test_calm_when_nothing_active(self):
+        self.assertEqual(market_check.classify_regime(self._signals()), "Calm")
+
+    def test_systemic_stress(self):
+        s = self._signals(vix_elevated=True, credit_widening=True, term_inversion=True)
+        self.assertEqual(market_check.classify_regime(s), "Systemic Stress")
+
+    def test_geopolitical_stress(self):
+        s = self._signals(vix_elevated=True, safe_haven_bid=True)
+        self.assertEqual(market_check.classify_regime(s), "Geopolitical Stress")
+
+    def test_geopolitical_with_term(self):
+        s = self._signals(vix_elevated=True, term_inversion=True)
+        self.assertEqual(market_check.classify_regime(s), "Geopolitical Stress")
+
+    def test_undercurrent_without_vix(self):
+        s = self._signals(safe_haven_bid=True, breadth_deterioration=True)
+        self.assertEqual(market_check.classify_regime(s), "Calm with Undercurrent")
+
+    def test_single_haven_is_undercurrent(self):
+        s = self._signals(safe_haven_bid=True)
+        self.assertEqual(market_check.classify_regime(s), "Calm with Undercurrent")
+
+    def test_single_breadth_is_undercurrent(self):
+        s = self._signals(breadth_deterioration=True)
+        self.assertEqual(market_check.classify_regime(s), "Calm with Undercurrent")
+
+    def test_calm_label_is_exact_string(self):
+        """Regime label must be exactly 'Calm' — no trailing whitespace or typo."""
+        result = market_check.classify_regime(self._signals())
+        self.assertEqual(result, "Calm")
+        self.assertEqual(len(result), 4)
+
+    def test_all_regime_labels_are_known(self):
+        """Every possible output must be one of the four known labels."""
+        known = {"Calm", "Calm with Undercurrent", "Geopolitical Stress", "Systemic Stress"}
+        combos = [
+            self._signals(),
+            self._signals(vix_elevated=True),
+            self._signals(safe_haven_bid=True),
+            self._signals(breadth_deterioration=True),
+            self._signals(vix_elevated=True, safe_haven_bid=True),
+            self._signals(vix_elevated=True, term_inversion=True),
+            self._signals(vix_elevated=True, credit_widening=True, term_inversion=True),
+            self._signals(safe_haven_bid=True, breadth_deterioration=True),
+            self._signals(credit_widening=True),
+        ]
+        for sigs in combos:
+            label = market_check.classify_regime(sigs)
+            self.assertIn(label, known, f"Unknown regime: {label!r} for signals {sigs}")
+
+
+class TestComputeStressRegime(unittest.TestCase):
+    """Tests for the full compute_stress_regime() function shape."""
+
+    def test_vix_change_5d_present_when_data_available(self):
+        df = _make_df([20.0 + i * 0.1 for i in range(40)], [1_000_000.0] * 40)
+        with patch("market_check._fetch", return_value=df):
+            result = market_check.compute_stress_regime()
+        self.assertIn("vix_change_5d", result["raw"])
+        self.assertIsInstance(result["raw"]["vix_change_5d"], float)
+
+    def test_vix_change_5d_absent_when_no_data(self):
+        with patch("market_check._fetch", return_value=None):
+            result = market_check.compute_stress_regime()
+        self.assertNotIn("vix_change_5d", result["raw"])
+
+    def test_regime_is_string(self):
+        with patch("market_check._fetch", return_value=None):
+            result = market_check.compute_stress_regime()
+        self.assertIsInstance(result["regime"], str)
+
+
+# ---------------------------------------------------------------------------
+# Tests for classify_decay()
+# ---------------------------------------------------------------------------
+
+class TestClassifyDecay(unittest.TestCase):
+
+    def test_accelerating(self):
+        d = market_check.classify_decay(5.0, 6.0)
+        self.assertEqual(d["label"], "Accelerating")
+
+    def test_holding(self):
+        d = market_check.classify_decay(3.0, 6.0)
+        self.assertEqual(d["label"], "Holding")
+
+    def test_fading(self):
+        d = market_check.classify_decay(1.0, 6.0)
+        self.assertEqual(d["label"], "Fading")
+
+    def test_reversed(self):
+        d = market_check.classify_decay(-2.0, 5.0)
+        self.assertEqual(d["label"], "Reversed")
+
+    def test_reversed_negative(self):
+        d = market_check.classify_decay(2.0, -5.0)
+        self.assertEqual(d["label"], "Reversed")
+
+    def test_unknown_when_none(self):
+        d = market_check.classify_decay(None, 5.0)
+        self.assertEqual(d["label"], "Unknown")
+        d2 = market_check.classify_decay(5.0, None)
+        self.assertEqual(d2["label"], "Unknown")
+
+    def test_evidence_present(self):
+        d = market_check.classify_decay(5.0, 6.0)
+        self.assertIn("5d", d["evidence"])
+        self.assertIn("20d", d["evidence"])
+
+    def test_negative_accelerating(self):
+        d = market_check.classify_decay(-8.0, -9.0)
+        self.assertEqual(d["label"], "Accelerating")
+
+
+class TestComputeStressVixChange(unittest.TestCase):
+    """Test that compute_stress_regime includes vix_change_5d when data is sufficient."""
+
+    @patch("market_check._fetch")
+    def test_vix_change_5d_present(self, mock_fetch):
+        """With >= 20 bars of VIX data, raw should include vix_change_5d."""
+        # 25 bars so _safe_pct(series, 5) has enough data
+        vix_closes = [18.0] * 19 + [17.0, 17.5, 18.0, 19.0, 19.5, 20.0]
+        vix_df = _make_df(vix_closes)
+
+        def side_effect(sym):
+            if sym == "^VIX":
+                return vix_df
+            return None  # other instruments unavailable
+
+        mock_fetch.side_effect = side_effect
+        result = market_check.compute_stress_regime()
+        self.assertIn("vix", result["raw"])
+        self.assertIn("vix_change_5d", result["raw"])
+        self.assertIsInstance(result["raw"]["vix_change_5d"], float)
+
+    @patch("market_check._fetch")
+    def test_vix_change_5d_missing_with_short_data(self, mock_fetch):
+        """With < 6 bars of VIX data, vix_change_5d should be absent."""
+        vix_df = _make_df([18.0, 19.0, 20.0])  # only 3 bars
+
+        def side_effect(sym):
+            if sym == "^VIX":
+                return vix_df
+            return None
+
+        mock_fetch.side_effect = side_effect
+        result = market_check.compute_stress_regime()
+        # Not enough data for 20-bar avg either, so vix may not be in raw
+        self.assertNotIn("vix_change_5d", result.get("raw", {}))
+
+
 if __name__ == "__main__":
     unittest.main()

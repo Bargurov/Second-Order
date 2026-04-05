@@ -531,6 +531,102 @@ class TestBatchBacktest(APITestCase):
         self.assertEqual(r.json(), [])
 
 
+class TestSinceEventLive(APITestCase):
+    """Tests for the live since-event return flow (batch backtest on market movers)."""
+
+    def _seed_mover(self, headline="Live update mover", return_5d=5.0):
+        """Seed an event that qualifies as a market mover (abs(return_5d) >= 3%)."""
+        db.save_event({
+            "headline": headline,
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "label": "notable move",
+                 "direction_tag": "supports \u2191", "return_1d": 1.0,
+                 "return_5d": return_5d, "return_20d": 8.0,
+                 "volume_ratio": 1.5, "vs_xle_5d": None, "spark": [0.2, 0.4, 0.6, 0.8, 1.0]},
+            ],
+        })
+        return db.load_recent_events(1)[0]["id"]
+
+    @patch("api.followup_check", return_value=[
+        {"symbol": "GLD", "role": "beneficiary", "return_1d": 0.8,
+         "return_5d": 3.2, "return_20d": 7.5, "direction": "supports \u2191",
+         "anchor_date": "2025-03-03"},
+    ])
+    def test_since_event_return_via_batch_backtest(self, _mock_fc):
+        """Batch backtest on a mover event returns fresh since-event returns."""
+        eid = self._seed_mover()
+        r = self.client.post("/backtest/batch", json={"event_ids": [eid]})
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertEqual(body[0]["event_id"], eid)
+        outcomes = body[0]["outcomes"]
+        self.assertEqual(len(outcomes), 1)
+        self.assertEqual(outcomes[0]["symbol"], "GLD")
+        self.assertAlmostEqual(outcomes[0]["return_5d"], 3.2)
+        self.assertAlmostEqual(outcomes[0]["return_20d"], 7.5)
+        self.assertIn("supports", outcomes[0]["direction"])
+
+    @patch("api.followup_check", return_value=[
+        {"symbol": "GLD", "role": "beneficiary", "return_1d": 0.8,
+         "return_5d": 3.2, "return_20d": 7.5, "direction": "supports \u2191",
+         "anchor_date": "2025-03-03"},
+    ])
+    def test_qualifying_mover_with_live_update(self, _mock_fc):
+        """Full flow: event qualifies as mover, then batch backtest returns live data."""
+        eid = self._seed_mover()
+        # Step 1: confirm it appears in market movers
+        r = self.client.get("/market-movers")
+        self.assertEqual(r.status_code, 200)
+        movers = r.json()
+        self.assertTrue(any(m["event_id"] == eid for m in movers))
+        # Step 2: batch backtest with the mover's event ID
+        r2 = self.client.post("/backtest/batch", json={"event_ids": [eid]})
+        self.assertEqual(r2.status_code, 200)
+        outcomes = r2.json()[0]["outcomes"]
+        self.assertEqual(outcomes[0]["symbol"], "GLD")
+        self.assertIsNotNone(outcomes[0]["return_20d"])
+
+    def test_missing_data_fallback(self):
+        """Mover event with no event_date falls back to timestamp; returns null returns gracefully."""
+        db.save_event({
+            "headline": "No date mover for live test",
+            "stage": "realized",
+            "persistence": "structural",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "label": "notable move",
+                 "direction_tag": "supports \u2191", "return_1d": 1.0,
+                 "return_5d": 5.0, "return_20d": 8.0,
+                 "volume_ratio": 1.5, "vs_xle_5d": None},
+            ],
+            # No event_date — falls back to auto-generated timestamp
+        })
+        eid = db.load_recent_events(1)[0]["id"]
+        r = self.client.post("/backtest/batch", json={"event_ids": [eid]})
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body[0]["event_id"], eid)
+        # Should return outcomes (timestamp fallback), not crash
+        outcomes = body[0]["outcomes"]
+        self.assertIsInstance(outcomes, list)
+        # With no real price data, returns are null
+        for o in outcomes:
+            self.assertIn("symbol", o)
+            self.assertIn("return_5d", o)
+
+    def test_missing_event_id_fallback(self):
+        """Non-existent event ID in batch returns empty outcomes, not a crash."""
+        r = self.client.post("/backtest/batch", json={"event_ids": [99999]})
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body[0]["event_id"], 99999)
+        self.assertEqual(body[0]["outcomes"], [])
+        self.assertIsNone(body[0]["score"])
+
+
 class TestBatchMacro(APITestCase):
     def test_batch_returns_dict_keyed_by_date(self):
         r = self.client.post("/macro/batch", json={"event_dates": ["2025-03-15"]})
@@ -551,6 +647,78 @@ class TestBatchMacro(APITestCase):
         r = self.client.post("/macro/batch", json={"event_dates": []})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {})
+
+
+class TestStressEndpoint(APITestCase):
+    def test_stress_returns_regime(self):
+        r = self.client.get("/stress")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIn("regime", body)
+        self.assertIn("signals", body)
+        self.assertIn("raw", body)
+
+    def test_stress_regime_is_string(self):
+        r = self.client.get("/stress")
+        self.assertIsInstance(r.json()["regime"], str)
+
+    def test_stress_signals_are_booleans(self):
+        r = self.client.get("/stress")
+        for v in r.json()["signals"].values():
+            self.assertIsInstance(v, bool)
+
+    def test_stress_response_shape_stable(self):
+        """Response always has regime (str), signals (dict of bool), raw (dict of numbers)."""
+        r = self.client.get("/stress")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIsInstance(body["regime"], str)
+        self.assertIsInstance(body["signals"], dict)
+        self.assertIsInstance(body["raw"], dict)
+        for k in ("vix_elevated", "term_inversion", "credit_widening",
+                   "safe_haven_bid", "breadth_deterioration"):
+            self.assertIn(k, body["signals"])
+        for v in body["raw"].values():
+            self.assertIsInstance(v, (int, float))
+
+
+class TestStressVixChange(APITestCase):
+    """Tests for the VIX 5d percent-change field in /stress raw data."""
+
+    @patch("api.compute_stress_regime", return_value={
+        "regime": "Calm",
+        "signals": {
+            "vix_elevated": False, "term_inversion": False,
+            "credit_widening": False, "safe_haven_bid": False,
+            "breadth_deterioration": False,
+        },
+        "raw": {"vix": 18.5, "vix_avg20": 17.0, "vix_change_5d": -3.42},
+    })
+    def test_vix_change_present(self, _mock):
+        """When VIX data is available, raw includes vix_change_5d."""
+        r = self.client.get("/stress")
+        self.assertEqual(r.status_code, 200)
+        raw = r.json()["raw"]
+        self.assertIn("vix_change_5d", raw)
+        self.assertAlmostEqual(raw["vix_change_5d"], -3.42)
+
+    @patch("api.compute_stress_regime", return_value={
+        "regime": "Calm",
+        "signals": {
+            "vix_elevated": False, "term_inversion": False,
+            "credit_widening": False, "safe_haven_bid": False,
+            "breadth_deterioration": False,
+        },
+        "raw": {"vix": 18.5, "vix_avg20": 17.0},
+    })
+    def test_vix_change_missing_fallback(self, _mock):
+        """When VIX 5d data is insufficient, vix_change_5d is absent from raw."""
+        r = self.client.get("/stress")
+        self.assertEqual(r.status_code, 200)
+        raw = r.json()["raw"]
+        self.assertNotIn("vix_change_5d", raw)
+        # vix spot should still be present
+        self.assertIn("vix", raw)
 
 
 class TestMarketMovers(APITestCase):
@@ -583,6 +751,26 @@ class TestMarketMovers(APITestCase):
         self.assertGreater(body[0]["impact"], 0)
         self.assertEqual(len(body[0]["tickers"]), 1)
         self.assertEqual(body[0]["tickers"][0]["symbol"], "GLD")
+        # Verify decay fields are present
+        self.assertIn("decay", body[0]["tickers"][0])
+        self.assertIn("decay_evidence", body[0]["tickers"][0])
+
+    def test_mover_decay_with_both_returns(self):
+        """When both 5d and 20d are present, decay should be classified."""
+        db.save_event({
+            "headline": "Decay test event",
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "XLE", "role": "beneficiary", "return_5d": 5.0,
+                 "return_20d": 6.0, "direction_tag": "supports \u2191"},
+            ],
+        })
+        r = self.client.get("/market-movers")
+        ticker = r.json()[0]["tickers"][0]
+        self.assertEqual(ticker["decay"], "Accelerating")
+        self.assertIn("5d", ticker["decay_evidence"])
 
     def test_excludes_small_saved_moves(self):
         """Event where all tickers have abs(return_5d) < 3% is excluded."""
@@ -699,6 +887,49 @@ class TestTickerEndpoints(APITestCase):
         r = self.client.get("/ticker/ZZZZZZZ99/chart?event_date=2025-03-15")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), [])
+
+    def test_ticker_headlines_nonempty_for_mentioned_ticker(self):
+        """Headlines endpoint returns results when ticker appears in cached news."""
+        import time
+        _api_mod._news_cache["data"] = {
+            "clusters": [
+                {"headline": "GLD surges as gold demand rises", "source_count": 2, "published_at": "2025-03-15T10:00:00"},
+                {"headline": "Unrelated headline about weather", "source_count": 1, "published_at": "2025-03-15T09:00:00"},
+            ],
+            "total_headlines": 2,
+        }
+        _api_mod._news_cache["ts"] = time.monotonic()
+
+        r = self.client.get("/ticker/GLD/headlines")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertGreaterEqual(len(body), 1)
+        self.assertIn("GLD", body[0]["headline"].upper())
+
+    def test_ticker_headlines_empty_for_unmentioned_ticker(self):
+        """Headlines endpoint returns empty list when ticker is absent from news."""
+        import time
+        _api_mod._news_cache["data"] = {
+            "clusters": [
+                {"headline": "Unrelated headline about weather", "source_count": 1, "published_at": "2025-03-15T09:00:00"},
+            ],
+            "total_headlines": 1,
+        }
+        _api_mod._news_cache["ts"] = time.monotonic()
+
+        r = self.client.get("/ticker/ZZZZZZZ99/headlines")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), [])
+
+    def test_ticker_info_fallback_all_fields_null(self):
+        """Unknown ticker should return null for all optional fields."""
+        r = self.client.get("/ticker/ZZZZZZZ99/info")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["symbol"], "ZZZZZZZ99")
+        for key in ("name", "sector", "industry", "market_cap", "avg_volume"):
+            self.assertIn(key, body)
+            self.assertIsNone(body[key], f"{key} should be null for unknown ticker")
 
 
 class TestMacroValidation(APITestCase):

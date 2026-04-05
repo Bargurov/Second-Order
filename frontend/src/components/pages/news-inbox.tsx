@@ -14,6 +14,7 @@ import { api, type NewsCluster, type NewsResponse } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { MarketMovers } from "@/components/pages/market-movers";
+import { StressStrip } from "@/components/ui/stress-strip";
 
 function buildClusterContext(c: NewsCluster): string {
   const parts: string[] = [];
@@ -205,6 +206,9 @@ export function NewsInbox({ onAnalyze }: NewsInboxProps) {
       {displayed.length > 0 && (
         <ScrollArea className="min-h-0 flex-1">
           <div className="pr-2 space-y-5">
+          {/* Stress regime */}
+          <StressStrip />
+
           {/* Market Movers section */}
           <MarketMovers />
 
