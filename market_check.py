@@ -2,13 +2,40 @@
 # Runs a basic event-window validation on two lists of tickers:
 # beneficiary_tickers and loser_tickers.
 # Computes 1-day, 5-day, and 20-day returns plus a volume check.
-# For energy/commodity tickers, also computes return relative to XLE.
+# For sector tickers, computes return relative to a sector benchmark ETF.
 # Evaluates whether each ticker moved in the direction the hypothesis predicts.
 # This is a rough screen — not proof of anything.
 
-# Tickers where a relative-to-XLE comparison makes sense.
-ENERGY_PROXIES = {"XLE", "XOM", "CVX", "COP", "SLB", "HAL", "MPC", "VLO",
-                  "USO", "UNG", "BNO", "OIH"}
+# Sector benchmark map: ticker → benchmark ETF for relative return comparison.
+# Each sector has one benchmark ETF; tickers in the set get a vs_<benchmark>
+# column so the analyst can see idiosyncratic vs sector-wide moves.
+SECTOR_BENCHMARKS: dict[str, tuple[str, set[str]]] = {
+    "energy": ("XLE", {
+        "XLE", "XOM", "CVX", "COP", "SLB", "HAL", "MPC", "VLO",
+        "USO", "UNG", "BNO", "OIH", "PSX", "PBF", "LNG", "FANG",
+    }),
+    "semiconductors": ("SMH", {
+        "SMH", "SOXX", "TSM", "ASML", "NVDA", "AMD", "INTC", "AMAT",
+        "LRCX", "KLAC", "MRVL", "AVGO", "QCOM", "TXN", "MU", "ON",
+    }),
+    "defense": ("XAR", {
+        "XAR", "ITA", "LMT", "RTX", "NOC", "GD", "BA", "LHX",
+        "HII", "TDG", "KTOS", "LDOS",
+    }),
+    "shipping": ("BDRY", {
+        "BDRY", "FRO", "STNG", "EGLE", "SBLK", "GOGL", "ZIM",
+        "DAC", "MATX", "KEX",
+    }),
+}
+
+# Flat lookup: ticker → (benchmark_etf, sector_name) for O(1) access.
+_TICKER_TO_BENCHMARK: dict[str, tuple[str, str]] = {}
+for _sect, (_bench, _members) in SECTOR_BENCHMARKS.items():
+    for _t in _members:
+        _TICKER_TO_BENCHMARK[_t] = (_bench, _sect)
+
+# Backward compat: callers that imported ENERGY_PROXIES directly.
+ENERGY_PROXIES = SECTOR_BENCHMARKS["energy"][1]
 
 
 def _pct(series, periods: int) -> float | None:
@@ -25,46 +52,74 @@ def _pct_forward(series, periods: int) -> float | None:
     return float((series.iloc[periods] - series.iloc[0]) / series.iloc[0] * 100)
 
 
+import time as _time
+from concurrent.futures import ThreadPoolExecutor as _TPE
+
+# Max parallel yfinance downloads. 6 keeps us under typical rate-limit
+# thresholds while still being 5-6x faster than serial.
+_MAX_FETCH_WORKERS = 6
+
+# ---------------------------------------------------------------------------
+# In-memory TTL cache for ticker data
+# ---------------------------------------------------------------------------
+# Avoids redundant yfinance downloads within the same analysis session.
+# Keyed by (ticker, mode, start_date). Short TTL: 10 minutes.
+
+_TICKER_CACHE: dict[str, tuple[float, object]] = {}
+_TICKER_CACHE_TTL = 600  # 10 minutes
+
+
+def _cache_get(key: str):
+    """Return cached value or None if missing/expired.
+
+    Uses pop() instead of del to avoid KeyError races when multiple
+    ThreadPoolExecutor threads expire the same key simultaneously.
+    """
+    entry = _TICKER_CACHE.get(key)
+    if entry is None:
+        return None
+    ts, val = entry
+    if (_time.monotonic() - ts) > _TICKER_CACHE_TTL:
+        _TICKER_CACHE.pop(key, None)  # atomic under CPython GIL; no KeyError
+        return None
+    return val
+
+
+def _cache_set(key: str, val: object) -> None:
+    _TICKER_CACHE[key] = (_time.monotonic(), val)
+
+
 def _fetch(ticker: str):
     """Download ~3 months of daily data for one ticker. Returns a DataFrame or None."""
+    key = f"fetch:{ticker.upper()}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
     import yfinance as yf
     data = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True)
     if data.empty:
         return None
-    # yfinance sometimes returns MultiIndex columns — flatten them
     if hasattr(data.columns, "levels"):
         data.columns = data.columns.get_level_values(0)
+    _cache_set(key, data)
     return data
 
 
-def _is_valid_ticker(ticker: str) -> bool:
-    """Quick 5-day availability probe before the full download.
-
-    Downloads only 5 days of data to check whether yfinance has anything for
-    this ticker symbol. Returns True if at least one row comes back.
-    The short window keeps the probe fast; the full 3-month fetch only runs
-    when this check passes.
-    """
-    import yfinance as yf
-    try:
-        data = yf.download(ticker, period="5d", interval="1d", progress=False, auto_adjust=True)
-        return not data.empty
-    except Exception:
-        return False
-
-
 def _fetch_since(ticker: str, start_date: str):
-    """Download daily data from start_date to today. Returns a DataFrame or None.
+    """Download daily data from start_date to today. Returns a DataFrame or None."""
+    key = f"since:{ticker.upper()}:{start_date}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
 
-    start_date: 'YYYY-MM-DD' string. Used when the caller wants returns anchored
-    to the event date rather than a rolling trailing window.
-    """
     import yfinance as yf
     data = yf.download(ticker, start=start_date, interval="1d", progress=False, auto_adjust=True)
     if data.empty:
         return None
     if hasattr(data.columns, "levels"):
         data.columns = data.columns.get_level_values(0)
+    _cache_set(key, data)
     return data
 
 
@@ -81,10 +136,13 @@ def _direction_tag(r5: float | None, role: str) -> str | None:
     """
     if r5 is None:
         return None
+    # Flat zone: returns within ±0.5% are inconclusive, not directional.
+    if abs(r5) < 0.5:
+        return None
     if role == "beneficiary":
-        return "supports ↑" if r5 >= 0 else "contradicts ↓"
+        return "supports ↑" if r5 > 0 else "contradicts ↓"
     else:  # loser
-        return "supports ↓" if r5 <= 0 else "contradicts ↑"
+        return "supports ↓" if r5 < 0 else "contradicts ↑"
 
 
 def _check_one_ticker(
@@ -92,6 +150,7 @@ def _check_one_ticker(
     role: str = "beneficiary",
     xle_data=None,
     event_date: str | None = None,
+    benchmark_cache: dict | None = None,
 ) -> dict:
     """Compute return windows, volume check, direction tag, and optional relative return.
 
@@ -105,22 +164,6 @@ def _check_one_ticker(
       return_1d, return_5d, return_20d, volume_ratio, vs_xle_5d  — structured numbers
     All numeric fields are None when data is unavailable.
     """
-    # Quick availability probe — skip the full download for invalid/unknown tickers.
-    # In event-date mode we skip this: a ticker may have no recent 5-day data
-    # (e.g. delisted or acquired) yet have perfectly good historical data around
-    # the event date.  The historical fetch itself acts as the validity check.
-    if not event_date and not _is_valid_ticker(ticker):
-        return {
-            "label":        "needs more evidence",
-            "detail":       "Invalid or unavailable ticker.",
-            "direction":    None,
-            "return_1d":    None,
-            "return_5d":    None,
-            "return_20d":   None,
-            "volume_ratio": None,
-            "vs_xle_5d":    None,
-        }
-
     # Shared None-filled fallback for error / no-data paths
     _no_data: dict = {
         "label": "needs more evidence",
@@ -131,6 +174,7 @@ def _check_one_ticker(
         "return_20d": None,
         "volume_ratio": None,
         "vs_xle_5d": None,
+        "spark": [],
     }
 
     try:
@@ -164,13 +208,24 @@ def _check_one_ticker(
         vol_ratio  = latest_vol / avg_vol if avg_vol > 0 else 1.0
         high_volume = vol_ratio >= 1.25   # 25% above average = noteworthy
 
-        # --- Relative return vs XLE (energy sector benchmark) ---
-        rel_vs_xle = None
-        if xle_data is not None and ticker.upper() in ENERGY_PROXIES and ticker.upper() != "XLE":
-            xle_closes = xle_data["Close"]
-            xle_r5 = pct_fn(xle_closes, 5)   # same function keeps the comparison consistent
-            if r5 is not None and xle_r5 is not None:
-                rel_vs_xle = r5 - xle_r5
+        # --- Relative return vs sector benchmark ---
+        rel_vs_xle = None   # field name kept for API compat
+        t_upper = ticker.upper()
+        bench_info = _TICKER_TO_BENCHMARK.get(t_upper)
+        if bench_info is not None:
+            bench_etf, _sector = bench_info
+            if t_upper != bench_etf:
+                # Try xle_data first (backward compat), then benchmark_cache
+                bench_data = None
+                if bench_etf == "XLE" and xle_data is not None:
+                    bench_data = xle_data
+                elif benchmark_cache and bench_etf in benchmark_cache:
+                    bench_data = benchmark_cache[bench_etf]
+                if bench_data is not None:
+                    bench_closes = bench_data["Close"]
+                    bench_r5 = pct_fn(bench_closes, 5)
+                    if r5 is not None and bench_r5 is not None:
+                        rel_vs_xle = r5 - bench_r5
 
         # --- Label: based on 5-day move and volume ---
         # 5-day is the primary window — captures event reaction without daily noise.
@@ -197,6 +252,15 @@ def _check_one_ticker(
         if rel_vs_xle is not None:
             parts.append(f"vs XLE 5d: {rel_vs_xle:+.1f}%")
 
+        # --- Sparkline: last 20 closes normalised to 0-1 ---
+        spark_window = closes.iloc[-20:] if len(closes) >= 20 else closes
+        lo = float(spark_window.min())
+        hi = float(spark_window.max())
+        if hi - lo > 1e-9:
+            spark = [round((float(c) - lo) / (hi - lo), 3) for c in spark_window]
+        else:
+            spark = [0.5] * len(spark_window)
+
         return {
             "label": label,
             "detail": "  |  ".join(parts),
@@ -208,6 +272,7 @@ def _check_one_ticker(
             "volume_ratio": round(vol_ratio,  2),
             "vs_xle_5d":    round(rel_vs_xle, 2) if rel_vs_xle is not None else None,
             "anchor_date":  anchor_date,
+            "spark":        spark,
         }
 
     except Exception as e:
@@ -234,28 +299,47 @@ def market_check(
     if not all_tickers:
         return {"note": "No assets to check.", "details": {}, "tickers": []}
 
-    # Pre-fetch XLE once so we don't re-download it for every energy ticker.
-    # Use the same fetch strategy as the tickers for a consistent comparison.
+    # Pre-fetch sector benchmark ETFs in parallel.
+    benchmark_cache: dict = {}
     xle_data = None
-    needs_xle = any(t.upper() in ENERGY_PROXIES for t in all_tickers)
-    if needs_xle:
-        try:
-            xle_data = _fetch_since("XLE", event_date) if event_date else _fetch("XLE")
-        except Exception:
-            pass   # XLE fetch failing is non-fatal
+    needed_benchmarks: set[str] = set()
+    for t in all_tickers:
+        info = _TICKER_TO_BENCHMARK.get(t.upper())
+        if info:
+            needed_benchmarks.add(info[0])
 
-    # Build a role lookup so _check_one_ticker knows which camp each ticker is in.
-    # If a ticker appears in both lists, beneficiary takes precedence.
+    def _fetch_bench(etf: str):
+        try:
+            return etf, (_fetch_since(etf, event_date) if event_date else _fetch(etf))
+        except Exception:
+            return etf, None
+
+    with _TPE(max_workers=_MAX_FETCH_WORKERS) as pool:
+        for etf, bd in pool.map(_fetch_bench, needed_benchmarks):
+            if bd is not None:
+                benchmark_cache[etf] = bd
+                if etf == "XLE":
+                    xle_data = bd
+
+    # Build a role lookup.
     role_map: dict[str, str] = {}
     for t in loser_tickers:
         role_map[t] = "loser"
     for t in beneficiary_tickers:
-        role_map[t] = "beneficiary"  # beneficiary overwrites if duplicated
+        role_map[t] = "beneficiary"
+
+    # Fetch all tickers in parallel.
+    def _check_one(ticker: str) -> tuple[str, dict]:
+        role = role_map.get(ticker, "beneficiary")
+        return ticker, _check_one_ticker(
+            ticker, role=role, xle_data=xle_data, event_date=event_date,
+            benchmark_cache=benchmark_cache,
+        )
 
     details = {}
-    for ticker in all_tickers:
-        role = role_map.get(ticker, "beneficiary")
-        details[ticker] = _check_one_ticker(ticker, role=role, xle_data=xle_data, event_date=event_date)
+    with _TPE(max_workers=_MAX_FETCH_WORKERS) as pool:
+        for t, result in pool.map(_check_one, all_tickers):
+            details[t] = result
 
     # --- Per-ticker lines ---
     lines = []
@@ -305,6 +389,7 @@ def market_check(
             "return_20d":   v.get("return_20d"),
             "volume_ratio": v.get("volume_ratio"),
             "vs_xle_5d":    v.get("vs_xle_5d"),
+            "spark":        v.get("spark", []),
         }
         for t, v in details.items()
     ]
@@ -335,43 +420,178 @@ def followup_check(tickers: list[dict], event_date: str) -> list[dict]:
     if not tickers or not event_date:
         return []
 
-    results: list[dict] = []
-    for t in tickers:
+    def _check_one_followup(t: dict) -> dict:
         symbol = t.get("symbol", "")
         role   = t.get("role", "beneficiary")
+        _no = {"symbol": symbol, "role": role,
+               "return_1d": None, "return_5d": None, "return_20d": None,
+               "direction": None, "anchor_date": None}
         if not symbol:
-            continue
-
+            return None  # filtered out below
         try:
             data = _fetch_since(symbol, event_date)
             if data is None or len(data) < 2:
-                results.append({
-                    "symbol": symbol, "role": role,
-                    "return_1d": None, "return_5d": None, "return_20d": None,
-                    "direction": None, "anchor_date": None,
-                })
-                continue
-
+                return _no
             anchor = str(data.index[0].date())
             closes = data["Close"]
             r1  = _pct_forward(closes, 1)
             r5  = _pct_forward(closes, 5)
             r20 = _pct_forward(closes, 20)
-
-            results.append({
-                "symbol":      symbol,
-                "role":        role,
-                "return_1d":   round(r1,  2) if r1  is not None else None,
-                "return_5d":   round(r5,  2) if r5  is not None else None,
-                "return_20d":  round(r20, 2) if r20 is not None else None,
-                "direction":   _direction_tag(r5, role),
-                "anchor_date": anchor,
-            })
-        except Exception:
-            results.append({
+            return {
                 "symbol": symbol, "role": role,
-                "return_1d": None, "return_5d": None, "return_20d": None,
-                "direction": None, "anchor_date": None,
-            })
+                "return_1d":  round(r1,  2) if r1  is not None else None,
+                "return_5d":  round(r5,  2) if r5  is not None else None,
+                "return_20d": round(r20, 2) if r20 is not None else None,
+                "direction":  _direction_tag(r5, role),
+                "anchor_date": anchor,
+            }
+        except Exception:
+            return _no
 
+    with _TPE(max_workers=_MAX_FETCH_WORKERS) as pool:
+        raw = list(pool.map(_check_one_followup, tickers))
+    return [r for r in raw if r is not None]
+
+
+# ---------------------------------------------------------------------------
+# Macro context snapshot — yfinance-backed
+# ---------------------------------------------------------------------------
+# Uses the same _fetch/_fetch_since/caching infrastructure as ticker checks.
+# Each instrument is fetched in parallel via ThreadPoolExecutor.
+
+# (yfinance symbol, display label, unit)
+_MACRO_INSTRUMENTS: list[tuple[str, str, str]] = [
+    ("DX-Y.NYB",  "USD",   "idx"),     # US Dollar Index
+    ("^TNX",      "10Y",   "%"),        # 10-year Treasury yield
+    ("^VIX",      "VIX",   ""),         # CBOE VIX
+    ("CL=F",      "WTI",   "$/bbl"),    # WTI crude futures
+    ("BZ=F",      "Brent", "$/bbl"),    # Brent crude futures
+]
+
+
+def macro_snapshot(event_date: str | None = None) -> list[dict]:
+    """Return a compact macro context strip for the given date.
+
+    Each entry: {label, value, change_5d, unit}.
+    Uses the existing yfinance fetch layer with its 10-minute TTL cache.
+    Returns partial results on failure — never raises.
+    """
+    # Fetched serially: yfinance is not thread-safe for concurrent downloads.
+    # With the 10-min TTL cache, second+ calls resolve from memory instantly.
+    results: list[dict] = []
+    for yf_ticker, label, unit in _MACRO_INSTRUMENTS:
+        entry: dict = {"label": label, "value": None, "change_5d": None, "unit": unit}
+        try:
+            data = _fetch_since(yf_ticker, event_date) if event_date else _fetch(yf_ticker)
+            if data is not None and len(data) >= 2:
+                closes = data["Close"]
+                if event_date:
+                    entry["value"] = round(float(closes.iloc[0]), 2)
+                    chg = _pct_forward(closes, 5) if len(closes) > 5 else None
+                else:
+                    entry["value"] = round(float(closes.iloc[-1]), 2)
+                    chg = _pct(closes, 5) if len(closes) > 5 else None
+                if chg is not None:
+                    entry["change_5d"] = round(chg, 2)
+        except Exception:
+            pass
+        results.append(entry)
     return results
+
+
+# ---------------------------------------------------------------------------
+# Ticker detail helpers
+# ---------------------------------------------------------------------------
+
+from datetime import date as _date, timedelta as _timedelta
+
+
+def ticker_chart(symbol: str, event_date: str, window: int = 30) -> list[dict]:
+    """Return daily closes for a ticker centered on event_date.
+
+    Returns a list of {date, close} dicts spanning ~window days before and
+    after the event date.  The event_date index is included so the frontend
+    can draw a vertical marker.
+    """
+    try:
+        anchor = _date.fromisoformat(event_date)
+    except (ValueError, TypeError):
+        return []
+
+    start = (anchor - _timedelta(days=window + 10)).isoformat()  # pad for weekends
+    end = (anchor + _timedelta(days=window + 10)).isoformat()
+
+    import yfinance as yf
+    key = f"chart:{symbol.upper()}:{start}:{end}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    try:
+        data = yf.download(symbol, start=start, end=end, interval="1d",
+                           progress=False, auto_adjust=True)
+        if data.empty:
+            return []
+        if hasattr(data.columns, "levels"):
+            data.columns = data.columns.get_level_values(0)
+    except Exception:
+        return []
+
+    # Trim to window
+    closes = data["Close"]
+    result: list[dict] = []
+    for ts, val in closes.items():
+        d = str(ts.date())  # type: ignore[union-attr]
+        result.append({"date": d, "close": round(float(val), 2)})
+
+    # Trim to roughly window days on each side of the anchor
+    anchor_str = event_date
+    anchor_idx = None
+    for i, r in enumerate(result):
+        if r["date"] >= anchor_str:
+            anchor_idx = i
+            break
+    if anchor_idx is not None:
+        lo = max(0, anchor_idx - window)
+        hi = min(len(result), anchor_idx + window + 1)
+        result = result[lo:hi]
+
+    _cache_set(key, result)
+    return result
+
+
+def ticker_info(symbol: str) -> dict:
+    """Return compact company info for a ticker.
+
+    Uses yfinance's .info property, cached aggressively (1 hour via the
+    ticker cache). Returns a flat dict with name, sector, industry,
+    market_cap, avg_volume. Missing fields default to None.
+    """
+    key = f"info:{symbol.upper()}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    fallback: dict = {
+        "symbol": symbol.upper(),
+        "name": None, "sector": None, "industry": None,
+        "market_cap": None, "avg_volume": None,
+    }
+
+    try:
+        import yfinance as yf
+        t = yf.Ticker(symbol)
+        info = t.info or {}
+        result = {
+            "symbol": symbol.upper(),
+            "name": info.get("longName") or info.get("shortName"),
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+            "market_cap": info.get("marketCap"),
+            "avg_volume": info.get("averageVolume"),
+        }
+    except Exception:
+        result = fallback
+
+    _cache_set(key, result)
+    return result

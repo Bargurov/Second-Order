@@ -1,59 +1,38 @@
 # Future Ideas
 
-## Purpose / How To Use This File
-
-This file is for future ideas only. Completed work, current V1.5 tasks, and
-small fixes that belong in the current code, tests, or docs do not belong
+Use this file only for real later-stage work. If something belongs in the
+current app, tests, or docs, it should be fixed in the repo instead of parked
 here.
 
-## Not For V1.5
+## V3 Later
 
-- If a feature is out of scope for the current phase, record it here instead of building it now.
-- If a task belongs in V1.5, it should live in the active repo work, not in this file.
-- The current V1.5 app works, but UI polish belongs to a later roadmap stage rather than the current backend-focused phase.
+1. WhatsApp and OpenClaw delivery surfaces once the Telegram path is fully settled.
+2. Richer alerting beyond threshold pings, including more contextual watchlist move summaries.
+3. Daily brief evolution toward cleaner morning synthesis, stronger ranking, and better recurring delivery controls.
 
-## Roadmap Stages
+## Analytical Depth Features
 
-- `V1.5`: backend engine plus a basic Streamlit demo
-- `V2`: news ingestion plus an inbox-style review flow
-- `V2.5`: UI/UX rework and polish for demo quality
-- `V3`: OpenClaw and chat-style orchestration
+### V2.5/V3 candidates
 
-## V2 Priorities
+1. Transmission Chain Visualization
+   Parse the mechanism into a visual flow diagram (`event → channel → channel → ticker`). The data already exists in `mechanism_summary`, and this can become a signature demo feature.
+2. Substitution & Second-Round Effects
+   Add an "If This Persists" prompt enhancement so the LLM surfaces substitution effects at 6+ months. This should highlight elasticity and long-run versus short-run dynamics.
+3. Real Yield & Breakeven Inflation Context
+   Add TIPS yield and breakeven inflation to the macro strip, then flag cases where an analysis claims an event is inflationary but breakevens have not moved. This helps demonstrate nominal versus real-rate awareness.
+4. Currency Transmission Channel
+   Show the most relevant currency pair for each event, such as `USD/RUB` for energy shocks, `USD/CNY` for trade-war pressure, or local FX versus `DXY` for EM stress. This connects FX, commodities, and equities more explicitly.
 
-1. **Event-date anchored market check**
-   Tie market validation to the event date instead of only using current prices.
-2. **Ticker-validity pre-check**
-   Add a more durable ticker validation step before market-check downloads.
-3. **Curated per-company knowledge files**
-   Add small reference files for recurring companies and entities that matter to interpretation.
-4. **FRED integration**
-   Add macro data support for rate, inflation, and policy-sensitive event analysis.
-5. **LLM-based classification**
-   Replace or augment keyword classification with model-based stage/persistence classification.
+### V3 candidates
 
-## Robustness Improvements (from V1.5 audit)
+5. Monetary Policy Sensitivity Overlay
+   Flag when an event's mechanism reinforces or conflicts with the current Fed direction, such as fiscal stimulus landing into a hawkish backdrop and creating a headwind warning.
+6. Inventory & Supply Chain Position
+   Surface relevant inventory levels such as EIA gas storage, crude inventories, or LME copper stock so supply events can be judged against actual buffer conditions.
 
-1. **Retry / exponential backoff on API calls**
-   `analyze_event.py` makes one attempt; a transient 500 or rate-limit error
-   crashes straight to the mock fallback. Add 1-2 retries with short backoff.
+### Post-V3 / requires archive depth
 
-2. ~~**Graceful RSS timeout handling**~~ ✅ Done — per-feed `socket.setdefaulttimeout(8)` added.
-
-3. ~~**Structured error display in Streamlit**~~ ✅ Done — mock-detection banner
-   added to `_render_result()` in `app.py`.
-
-4. **`_clean_assets` edge case: non-list, non-string input**
-   If the LLM returns an integer or nested object for a ticker field, the
-   coercion to list currently only handles `str`. Add a broader type guard.
-
-5. **Rate-limit awareness for yfinance**
-   Rapid sequential `yfinance.download()` calls can trigger throttling. Consider
-   batching tickers into a single download call where possible.
-
-6. **Missing-key defaults after JSON parse** ✅ Done — `setdefault()` calls
-   added in `analyze_event.py` so downstream code never hits KeyError.
-
-7. **False-positive keyword matching for short actors** ✅ Done — `_scan_keywords()`
-   now uses `\b` word-boundary regex for pure-alpha keywords ≤ 3 chars
-   (prevents "us" matching "discuss", "eu" matching "reuters").
+7. Cross-Event Correlation Map
+   Detect when two active Market Movers share affected tickers or sectors and flag compounding effects. This becomes much more useful once the archive has deeper event history.
+8. Contagion Risk Indicator
+   Show adjacent sectors or regions at risk of spillover and map them to watchlist ETFs such as `EUFN`, `EZU`, and `EMB`. This is best after the OpenClaw delivery layer exists.

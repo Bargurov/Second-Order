@@ -22,6 +22,12 @@ Return a single JSON object with exactly these fields:
   "losers": ["Same standard. E.g. 'European auto OEMs dependent on Russian palladium', 'Chinese DRAM foundries'"],
   "beneficiary_tickers": ["2-3 US-listed tickers for predicted beneficiaries. NYSE or NASDAQ only. No index symbols (VIX, DXY), no price benchmarks (TTF, JKM, NBP), no foreign-listed single stocks (.T, .L, .TO suffixes). Use a US-listed ETF proxy if needed (e.g. SMH, XME, XLE, GLD)."],
   "loser_tickers": ["2-3 US-listed tickers for predicted losers. Same rules as beneficiary_tickers."],
+  "transmission_chain": [
+    "Step 1: the concrete event or policy change",
+    "Step 2: the transmission channel (e.g. supply disruption, pricing power shift, capital reallocation)",
+    "Step 3: the affected market, price, or constraint",
+    "Step 4: who wins and who loses"
+  ],
   "confidence": "low | medium | high — high only if the causal chain is direct and specific; low if speculative or if mechanism is unclear"
 }}
 
@@ -38,7 +44,35 @@ Persistence: medium
   "losers": ["Canadian oil-sands producers selling WCS (displaced by Venezuelan barrels)", "US LNG exporters if Venezuelan gas volumes return and divert domestic demand"],
   "beneficiary_tickers": ["CVX", "PBF", "VLO"],
   "loser_tickers": ["SU", "CNQ"],
+  "transmission_chain": [
+    "US Treasury grants Chevron a 6-month licence for Venezuelan crude liftings",
+    "Restores supply of heavy sour crude to Gulf Coast coking refineries",
+    "Lowers marginal feedstock cost for configured heavy-crude refiners",
+    "Chevron and Gulf Coast refiners benefit; Canadian WCS sellers lose outlet share"
+  ],
   "confidence": "medium"
+}}
+
+Second example (non-energy sector — use the same quality benchmark):
+
+Headline: "US Commerce Department adds 28 Chinese semiconductor firms to export control list"
+Stage: realized
+Persistence: structural
+
+{{
+  "what_changed": "The US Commerce Department added 28 Chinese semiconductor companies to the Entity List, restricting their access to US-origin chip fabrication equipment and EDA software.",
+  "mechanism_summary": "Chinese fabs lose access to ASML EUV lithography tools, Lam Research etch systems, and Applied Materials deposition equipment — all three hold near-monopoly positions in their segments. Affected Chinese firms must seek inferior domestic alternatives or halt expansion. US/allied equipment makers lose revenue from China orders but benefit from accelerated investment by non-Chinese fabs (TSMC, Samsung, Intel) racing to fill the capacity gap.",
+  "beneficiaries": ["TSMC (capacity scarcity increases pricing power)", "ASML (accelerated orders from non-Chinese fabs)", "US defense semiconductor supply chain"],
+  "losers": ["Chinese DRAM/NAND foundries (CXMT, YMTC)", "Lam Research and Applied Materials (lost China revenue near-term)"],
+  "beneficiary_tickers": ["TSM", "ASML", "SMH"],
+  "loser_tickers": ["LRCX", "AMAT"],
+  "transmission_chain": [
+    "28 Chinese semiconductor firms added to Entity List",
+    "Cuts access to EUV lithography, etch, and deposition equipment",
+    "Chinese fab expansion stalls; non-Chinese fabs gain pricing power",
+    "TSMC/ASML benefit from capacity scarcity; LRCX/AMAT lose China revenue"
+  ],
+  "confidence": "high"
 }}
 
 Rules:

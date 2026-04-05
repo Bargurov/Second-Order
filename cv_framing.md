@@ -2,14 +2,14 @@
 
 ## CV Bullet Points
 
-- Built a Python research workflow with both command-line and Streamlit interfaces for turning geopolitical and policy headlines into structured event records using event lifecycle classification and hidden economic mechanism extraction.
-- Implemented direction-aware market validation that supports both current-price and optional event-date anchored review, then stores reviewed events in a local SQLite research archive.
-- Added an iterative evaluation loop with reusable sample sets, canary runs, and lightweight regression testing to support cheaper, repeatable pipeline improvements.
+- Built a local-first research product with a React frontend and FastAPI backend for turning geopolitical, macro, and policy headlines into structured event reviews.
+- Implemented a live inbox that merges local headline input with curated RSS coverage, clusters overlapping stories, and supports progressive analysis with export and archive workflows.
+- Added direction-aware market validation, event-date anchored backtests, macro context, configurable Anthropic model selection, and a lightweight eval loop for repeatable iteration.
 
 ## GitHub Repo Description
 
-Local research tool with CLI and Streamlit interfaces for classifying headlines, extracting hidden economic mechanisms, validating direction-aware market reactions, and saving results to SQLite.
+Local-first React + FastAPI research app for clustering live headlines, extracting hidden economic mechanisms, validating market reactions, backtesting dated events, and saving reviewed work to SQLite.
 
 ## LinkedIn / Portfolio Description
 
-Second Order is a lightweight Python research workflow for turning headlines into structured event reviews. The project combines event lifecycle classification, hidden economic mechanism extraction, a small Streamlit UI, direction-aware market validation in both current-price and event-date anchored modes, and a local SQLite archive, with iterative evaluation runs used to improve the system in a controlled and repeatable way.
+Second Order is a local-first research app for turning geopolitical, macro, and policy headlines into structured event reviews. The product combines a React frontend, FastAPI backend, a live clustered inbox, progressive analysis, direction-aware market validation, event-date anchored backtests, macro context, Markdown export, and a local SQLite archive, with canary-style evaluation runs used to improve the system in a controlled and repeatable way.

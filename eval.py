@@ -13,6 +13,7 @@
 
 import argparse
 import json
+import os
 from datetime import datetime
 
 SAMPLE_FILE = "sample_events.json"
@@ -49,6 +50,13 @@ def parse_args() -> argparse.Namespace:
         "--limit",
         type=int,
         help="Run only the first N samples after preset/ID selection.",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Anthropic model ID to use (overrides ANTHROPIC_MODEL env var). "
+             "E.g. claude-haiku-4-5-20251001 for faster/cheaper runs.",
     )
     return parser.parse_args()
 
@@ -108,7 +116,7 @@ def select_samples(
     return selected
 
 
-def run_one(sample: dict) -> dict:
+def run_one(sample: dict, model: str | None = None) -> dict:
     """Run one sample headline through the current evaluation flow."""
     from analyze_event import analyze_event
     from classify import classify_persistence, classify_stage
@@ -124,7 +132,7 @@ def run_one(sample: dict) -> dict:
         expected_persistence is not None
         and persistence == expected_persistence
     )
-    analysis = analyze_event(headline, stage, persistence)
+    analysis = analyze_event(headline, stage, persistence, model=model)
     market = market_check(analysis["beneficiary_tickers"], analysis["loser_tickers"])
 
     return {
@@ -160,10 +168,14 @@ def main() -> None:
         limit=args.limit,
     )
 
+    model = args.model
+    if model:
+        print(f"[eval] Using model: {model}")
+
     results = []
     for index, sample in enumerate(selected, start=1):
         print(f"[{index}/{len(selected)}] {sample['headline']}")
-        results.append(run_one(sample))
+        results.append(run_one(sample, model=model))
 
     stage_correct = sum(
         1 for result in results
@@ -184,8 +196,12 @@ def main() -> None:
         if result["expected_persistence"] is not None and not result["persistence_match"]
     )
 
+    from analyze_event import _DEFAULT_MODEL
+    effective_model = model or os.getenv("ANTHROPIC_MODEL", _DEFAULT_MODEL)
+
     output = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "model": effective_model,
         "source_file": SAMPLE_FILE,
         "num_samples": len(selected),
         "summary": {

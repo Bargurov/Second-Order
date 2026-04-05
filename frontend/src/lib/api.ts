@@ -15,6 +15,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export interface AnalyzeRequest {
   headline: string;
   event_date?: string;
+  event_context?: string;
 }
 
 export interface Ticker {
@@ -27,6 +28,7 @@ export interface Ticker {
   return_20d: number;
   volume_ratio: number;
   vs_xle_5d: number | null;
+  spark?: number[];
 }
 
 export interface MarketResult {
@@ -44,6 +46,7 @@ export interface AnalysisDetail {
   loser_tickers: string[];
   assets_to_watch: string[];
   confidence: string;
+  transmission_chain?: string[];
 }
 
 export interface AnalyzeResponse {
@@ -75,10 +78,84 @@ export interface SavedEvent {
   rating: string | null;
 }
 
+export interface RelatedEvent {
+  id: number;
+  headline: string;
+  stage: string;
+  persistence: string;
+  confidence: string;
+  timestamp: string;
+  event_date: string | null;
+}
+
+export interface BacktestOutcome {
+  symbol: string;
+  role: string;
+  return_1d: number | null;
+  return_5d: number | null;
+  return_20d: number | null;
+  direction: string | null;
+  anchor_date: string | null;
+}
+
+export interface BacktestResult {
+  event_id: number;
+  outcomes: BacktestOutcome[];
+  score: { supporting: number; total: number } | null;
+}
+
+export interface MacroEntry {
+  label: string;
+  value: number | null;
+  change_5d: number | null;
+  unit: string;
+}
+
+export interface ChartPoint {
+  date: string;
+  close: number;
+}
+
+export interface TickerInfo {
+  symbol: string;
+  name: string | null;
+  sector: string | null;
+  industry: string | null;
+  market_cap: number | null;
+  avg_volume: number | null;
+}
+
+export interface MarketMover {
+  event_id: number;
+  headline: string;
+  mechanism_summary: string;
+  event_date: string;
+  stage: string;
+  persistence: string;
+  impact: number;
+  support_ratio: number;
+  tickers: {
+    symbol: string;
+    role: string;
+    return_5d: number | null;
+    direction: string | null;
+    spark: number[];
+  }[];
+}
+
+export interface TickerHeadline {
+  headline: string;
+  source_count: number;
+  published_at: string;
+}
+
 export interface NewsCluster {
   headline: string;
-  sources: { name: string }[];
+  summary?: string;
+  consensus?: Record<string, unknown>;
+  sources: { name: string; tier?: string }[];
   source_count: number;
+  agreement?: string;
 }
 
 export interface NewsResponse {
@@ -95,6 +172,59 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  /** Stream analysis via SSE. Calls onEvent for each stage.
+   *  Pass an AbortSignal to cancel the stream (e.g. on re-submit or unmount). */
+  analyzeStream: (
+    body: AnalyzeRequest,
+    onEvent: (stage: string, data: Record<string, unknown>) => void,
+    signal?: AbortSignal,
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      fetch(`${BASE}/analyze/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal,
+      }).then((res) => {
+        if (!res.ok) {
+          res.text().then((t) => reject(new Error(`${res.status}: ${t}`)));
+          return;
+        }
+        const reader = res.body?.getReader();
+        if (!reader) { reject(new Error("No response body")); return; }
+
+        const decoder = new TextDecoder();
+        let buf = "";
+
+        function pump(): void {
+          if (signal?.aborted) { reader!.cancel(); resolve(); return; }
+          reader!.read().then(({ done, value }) => {
+            if (done || signal?.aborted) { resolve(); return; }
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() ?? "";
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const parsed = JSON.parse(line.slice(6));
+                  onEvent(parsed._phase as string, parsed);
+                } catch { /* skip malformed */ }
+              }
+            }
+            pump();
+          }).catch((e) => {
+            if (signal?.aborted) { resolve(); return; }
+            reject(e);
+          });
+        }
+        pump();
+      }).catch((e) => {
+        if (signal?.aborted) { resolve(); return; }
+        reject(e);
+      });
+    });
+  },
+
   events: (limit = 25) =>
     request<SavedEvent[]>(`/events?limit=${limit}`),
 
@@ -103,6 +233,38 @@ export const api = {
       `/events/${eventId}/review`,
       { method: "PATCH", body: JSON.stringify(body) },
     ),
+
+  relatedEvents: (eventId: number) =>
+    request<RelatedEvent[]>(`/events/${eventId}/related`),
+
+  backtest: (eventId: number) =>
+    request<BacktestResult>(`/events/${eventId}/backtest`),
+
+  backtestBatch: (eventIds: number[]) =>
+    request<BacktestResult[]>("/backtest/batch", {
+      method: "POST",
+      body: JSON.stringify({ event_ids: eventIds }),
+    }),
+
+  macro: (eventDate?: string) =>
+    request<MacroEntry[]>(`/macro${eventDate ? `?event_date=${eventDate}` : ""}`),
+
+  macroBatch: (eventDates: string[]) =>
+    request<Record<string, MacroEntry[]>>("/macro/batch", {
+      method: "POST",
+      body: JSON.stringify({ event_dates: eventDates }),
+    }),
+
+  marketMovers: () => request<MarketMover[]>("/market-movers"),
+
+  tickerChart: (symbol: string, eventDate: string) =>
+    request<ChartPoint[]>(`/ticker/${encodeURIComponent(symbol)}/chart?event_date=${eventDate}`),
+
+  tickerInfo: (symbol: string) =>
+    request<TickerInfo>(`/ticker/${encodeURIComponent(symbol)}/info`),
+
+  tickerHeadlines: (symbol: string) =>
+    request<TickerHeadline[]>(`/ticker/${encodeURIComponent(symbol)}/headlines`),
 
   news: () => request<NewsResponse>("/news"),
 };

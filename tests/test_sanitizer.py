@@ -9,7 +9,7 @@ import sys
 import unittest
 
 sys.path.insert(0, ".")
-from analyze_event import _clean_assets, _is_bad_ticker, _coerce_ticker_field
+from analyze_event import _clean_assets, _is_bad_ticker, _coerce_ticker_field, _backfill_losers
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +73,18 @@ class TestIsBadTicker(unittest.TestCase):
     def test_lges_rejected(self):
         # LGES = LG Energy Solution, primary listing is KRX, not US-listed
         self.assertTrue(_is_bad_ticker("LGES"))
+
+    def test_smic_rejected(self):
+        # SMIC = HKEx-primary, OTC ADR is SMICY
+        self.assertTrue(_is_bad_ticker("SMIC"))
+
+    def test_bae_rejected(self):
+        # BAE Systems = LSE-primary, no US common stock
+        self.assertTrue(_is_bad_ticker("BAE"))
+
+    def test_rhmt_rejected(self):
+        # Rheinmetall = FRA-primary, not US-listed
+        self.assertTrue(_is_bad_ticker("RHMT"))
 
     def test_foreign_suffix_rejected(self):
         for ticker in ["8035.T", "FM.TO", "VOD.L", "005930.KS"]:
@@ -141,11 +153,30 @@ class TestCleanAssets(unittest.TestCase):
     def test_backfill_uses_semiconductor_context(self):
         result = _clean_assets(["8035.T", "^VIX"], context="semiconductor chip foundry")
         self.assertGreaterEqual(len(result), 1)
-        self.assertTrue(any(t in result for t in ["SMH", "SOXX"]))
+        self.assertTrue(any(t in result for t in ["SMH", "SOXX", "TSM"]))
+
+    def test_backfill_uses_semiconductor_euv_context(self):
+        result = _clean_assets(["SMIC"], context="euv lithography wafer fabrication")
+        self.assertNotIn("SMIC", result)
+        self.assertTrue(any(t in result for t in ["SMH", "SOXX", "TSM"]))
 
     def test_backfill_uses_shipping_context(self):
         result = _clean_assets(["TTF", "VIX"], context="shipping tanker vessel maritime")
-        self.assertTrue(any(t in result for t in ["FRO", "STNG"]))
+        self.assertTrue(any(t in result for t in ["BDRY", "FRO", "STNG"]))
+
+    def test_backfill_uses_shipping_chokepoint_context(self):
+        result = _clean_assets([], context="dry bulk container suez strait of hormuz red sea")
+        self.assertTrue(any(t in result for t in ["BDRY", "FRO", "STNG"]))
+
+    def test_backfill_uses_defense_context(self):
+        result = _clean_assets(["BAE", "RHMT"], context="defense military weapon nato rearm")
+        self.assertNotIn("BAE", result)
+        self.assertNotIn("RHMT", result)
+        self.assertTrue(any(t in result for t in ["ITA", "XAR", "LMT"]))
+
+    def test_backfill_uses_defense_munitions_context(self):
+        result = _clean_assets([], context="munition rearm defense spend pentagon")
+        self.assertTrue(any(t in result for t in ["ITA", "XAR", "LMT"]))
 
     def test_no_backfill_when_already_three_good_tickers(self):
         # Three clean tickers → backfill should not add anything extra
@@ -197,6 +228,21 @@ class TestCleanAssets(unittest.TestCase):
         self.assertNotIn("LGES", result)
         self.assertIn("ALB", result)          # clean ticker survives
         self.assertGreaterEqual(len(result), 3)  # backfill kicks in
+
+    def test_no_backfill_with_empty_context(self):
+        """When context is empty, no proxy backfill should occur."""
+        result = _clean_assets(["SMIC"], context="")
+        self.assertNotIn("SMIC", result)
+        # No backfill — should just be empty after removing bad ticker
+        self.assertEqual(result, [])
+
+    def test_loser_tickers_not_backfilled_in_pipeline(self):
+        """Verify loser list doesn't get beneficiary proxies via analyze_event."""
+        # This tests the integration: analyze_event passes context=""
+        # to _clean_assets for losers, so no proxy ETFs leak in.
+        result = _clean_assets(["SMIC", "8035.T"], context="")
+        # Both are bad tickers, no context → no backfill
+        self.assertEqual(result, [])
 
     def test_non_string_entries_skipped(self):
         # LLM could theoretically return malformed list items
@@ -251,6 +297,53 @@ class TestCoerceTickerField(unittest.TestCase):
 
     def test_empty_list_returns_empty(self):
         self.assertEqual(_coerce_ticker_field([]), [])
+
+
+# ---------------------------------------------------------------------------
+# Tests for _backfill_losers()
+# ---------------------------------------------------------------------------
+
+class TestBackfillLosers(unittest.TestCase):
+
+    def test_backfill_triggers_when_empty(self):
+        """Empty loser list + context with energy keywords → inverse proxy."""
+        result = _backfill_losers([], "oil crude petroleum barrel pricing")
+        self.assertTrue(len(result) > 0)
+        self.assertTrue(any("(proxy)" in t for t in result))
+
+    def test_no_backfill_when_ticker_survives(self):
+        """At least one valid ticker → no backfill, no proxies injected."""
+        result = _backfill_losers(["SU"], "oil crude petroleum barrel")
+        self.assertEqual(result, ["SU"])
+        self.assertFalse(any("(proxy)" in t for t in result))
+
+    def test_no_backfill_without_context(self):
+        """Empty context → no backfill even if list is empty."""
+        result = _backfill_losers([], "")
+        self.assertEqual(result, [])
+
+    def test_semiconductor_maps_to_soxs(self):
+        result = _backfill_losers([], "semiconductor chip foundry export controls")
+        self.assertTrue(any("SOXS" in t for t in result))
+
+    def test_china_maps_to_yang(self):
+        result = _backfill_losers([], "chinese firms face sanctions from beijing")
+        self.assertTrue(any("YANG" in t for t in result))
+
+    def test_treasury_maps_to_tbt(self):
+        result = _backfill_losers([], "central bank rate hike bond yield")
+        self.assertTrue(any("TBT" in t for t in result))
+
+    def test_proxy_tag_present(self):
+        """All backfilled tickers should have the (proxy) suffix."""
+        result = _backfill_losers([], "oil crude petroleum")
+        for t in result:
+            self.assertIn("(proxy)", t)
+
+    def test_multiple_valid_losers_untouched(self):
+        """Multiple valid tickers → returned as-is."""
+        result = _backfill_losers(["SU", "CNQ", "CEIX"], "oil crude")
+        self.assertEqual(result, ["SU", "CNQ", "CEIX"])
 
 
 if __name__ == "__main__":

@@ -32,6 +32,11 @@ _SOURCE_TIERS: dict[str, str] = {
     "The Guardian Business":  "high",
     "The Guardian World":     "high",
     "WSJ World News":         "high",
+    "AP News":                "high",
+    "FT World":               "high",
+    "OFAC Sanctions":         "medium",
+    "EIA Energy":             "medium",
+    "USTR Trade Policy":      "high",
     "Al Jazeera Economy":     "medium",
     "Al Jazeera":             "medium",
     "local":                  "low",
@@ -97,11 +102,33 @@ def _normalize_timestamp(raw: str) -> str:
     return raw
 
 
+import re as _re_mod
+
+# Common trailing source attributions added by Google News proxies and RSS feeds.
+# Matched case-insensitively at the end of the headline string.
+_ATTRIBUTION_RE = _re_mod.compile(
+    r"\s*(?:[-–—|])\s*"
+    r"(?:Reuters|AP News|Associated Press|BBC[\w\s]*|The Guardian[\w\s]*|"
+    r"Al Jazeera[\w\s]*|Financial Times|FT[\w\s]*|WSJ[\w\s]*|"
+    r"The Wall Street Journal|Bloomberg[\w\s]*|CNN[\w\s]*|"
+    r"New York Times|The New York Times|CNBC[\w\s]*|"
+    r"[A-Z][\w\s,]{2,50}\(\.gov\)|"                      # "Office of Foreign Assets Control (.gov)"
+    r"[A-Z][\w\s,]{2,40}\.(?:com|org|gov|co\.uk|net))"   # "corporatecomplianceinsights.com"
+    r"\s*$",
+    _re_mod.IGNORECASE,
+)
+
+
+def _strip_attribution(title: str) -> str:
+    """Remove trailing '- Reuters', '| BBC News', etc. from a headline."""
+    return _ATTRIBUTION_RE.sub("", title).strip()
+
+
 def _make_record(source: str, title: str, published_at: str, url: str = "") -> dict:
     """Build one normalized headline record."""
     return {
         "source":       source,
-        "title":        title.strip(),
+        "title":        _strip_attribution(title.strip()),
         "published_at": _normalize_timestamp(published_at),
         "url":          url.strip(),
     }
@@ -179,6 +206,26 @@ DEFAULT_FEEDS: list[dict] = [
         "name": "WSJ World News",
         "url":  "https://feeds.a.dj.com/rss/RSSWorldNews.xml",
     },
+    {
+        "name": "AP News",
+        "url":  "https://news.google.com/rss/search?q=site:apnews.com+economy+OR+trade+OR+sanctions&hl=en&gl=US&ceid=US:en",
+    },
+    {
+        "name": "FT World",
+        "url":  "https://www.ft.com/world?format=rss",
+    },
+    {
+        "name": "OFAC Sanctions",
+        "url":  "https://news.google.com/rss/search?q=OFAC+sanctions+designation&hl=en&gl=US&ceid=US:en",
+    },
+    {
+        "name": "EIA Energy",
+        "url":  "https://www.eia.gov/rss/todayinenergy.xml",
+    },
+    {
+        "name": "USTR Trade Policy",
+        "url":  "https://news.google.com/rss/search?q=site:ustr.gov+tariff+OR+trade+OR+%22executive+order%22&hl=en&gl=US&ceid=US:en",
+    },
 ]
 
 
@@ -204,23 +251,37 @@ def load_rss(feeds: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
     if feeds is None:
         feeds = DEFAULT_FEEDS
 
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+
+    def _parse_one_feed(feed_info: dict) -> tuple[str, object, bool]:
+        """Parse one feed via feedparser. Returns (name, parsed, ok)."""
+        name = feed_info["name"]
+        try:
+            parsed = feedparser.parse(feed_info["url"])
+            return (name, parsed, True)
+        except Exception:
+            return (name, None, False)
+
+    # Fetch all feeds in parallel — worst case is ~_FEED_TIMEOUT, not N × _FEED_TIMEOUT.
+    # Each feedparser.parse() does its own HTTP internally; the executor provides
+    # parallelism without touching the process-global socket timeout.
+    with ThreadPoolExecutor(max_workers=max(1, len(feeds))) as pool:
+        futures = {pool.submit(_parse_one_feed, f): f for f in feeds}
+        feed_results: list[tuple[str, object, bool]] = []
+        for future in futures:
+            try:
+                feed_results.append(future.result(timeout=_FEED_TIMEOUT + 2))
+            except (FuturesTimeout, Exception):
+                info = futures[future]
+                feed_results.append((info["name"], None, False))
+
     records = []
     feed_status: list[dict] = []
 
-    for feed_info in feeds:
-        feed_name = feed_info["name"]
-        # Apply a per-feed timeout using the stdlib socket default.
-        # feedparser uses urllib internally, which respects this timeout,
-        # so a slow or hanging feed is cut off after _FEED_TIMEOUT seconds.
-        _prev_timeout = socket.getdefaulttimeout()
-        try:
-            socket.setdefaulttimeout(_FEED_TIMEOUT)
-            parsed = feedparser.parse(feed_info["url"])
-        except Exception:
+    for feed_name, parsed, ok in feed_results:
+        if not ok or parsed is None:
             feed_status.append({"name": feed_name, "ok": False, "headlines": 0})
             continue
-        finally:
-            socket.setdefaulttimeout(_prev_timeout)
 
         count_before = len(records)
         for entry in parsed.entries:
@@ -270,58 +331,193 @@ def _dedup_key(title: str) -> str:
 # ---------------------------------------------------------------------------
 # Headlines must contain at least one domain keyword to pass.  This drops
 # lifestyle, sports, entertainment, and other general-news noise before
-# clustering.  Easy to tune: just add or remove words from the set.
+# clustering.  Easy to tune: just add or remove words from the sets below.
+#
+# Two keyword tiers:
+#   RELEVANCE_KEYWORDS  — safe for substring matching (multi-word phrases or
+#                         long stems unlikely to false-positive).
+#   _WORD_BOUNDARY_KW   — short/ambiguous words that need whole-word matching
+#                         to avoid false positives ("oil" in "deported",
+#                         "port" in "deported", "market" as a bazaar, etc.)
+
+import re as _re
 
 RELEVANCE_KEYWORDS: set[str] = {
     # Geopolitics & conflict
     "geopolit", "sanction", "embargo", "tariff", "duties", "treaty",
     "ceasefire", "truce", "diplomacy", "diplomatic", "nato", "sovereignty",
     "annex", "territorial", "missile", "military", "defense", "defence",
-    "weapons", "nuclear", "drone", "war ", "wartime", "conflict",
+    "weapons", "nuclear", "drone", "wartime",
     "escalat", "de-escalat", "retaliat",
     # Trade & industrial policy
-    "trade", "export", "import", "subsid", "quota", "dumping",
+    "trade", "export", "subsid", "quota", "dumping",
     "industrial policy", "supply chain", "reshoring", "nearshoring",
     "protectionism", "free trade", "trade war", "trade deal",
     # Energy & commodities
-    "oil", "crude", "opec", "natural gas", "lng", "pipeline",
-    "energy", "petroleum", "fuel", "refiner", "coal",
-    "rare earth", "lithium", "cobalt", "mineral",
-    "copper", "steel", "alumin", "metal",
+    "crude", "opec", "natural gas", "lng", "pipeline",
+    "petroleum", "refiner",
+    "rare earth", "lithium", "cobalt",
+    "copper", "steel", "alumin",
     "wheat", "grain", "food security", "commodit",
+    "oil price", "oil output", "oil production", "oil embargo",
+    "oil export", "oil import", "oil sanction",
     # Shipping & logistics
     "shipping", "maritime", "freight", "red sea", "suez",
-    "strait of hormuz", "port", "blockade",
+    "strait of hormuz", "blockade", "dry bulk", "tanker rate",
+    "container rate", "reroute",
     # Central banks & monetary policy
     "central bank", "federal reserve", "interest rate", "rate hike",
     "rate cut", "inflation", "deflation", "monetary policy",
     "ecb", "boj", "pboc", "imf", "world bank",
     "quantitative", "stimulus",
     # Fiscal & regulation
-    "fiscal", "budget", "spending", "debt ceiling", "sovereign debt",
+    "fiscal", "spending", "debt ceiling", "sovereign debt",
     "regulat", "antitrust", "deregulat",
     # Markets & finance
-    "market", "investor", "bond", "treasury", "yield",
-    "equit", "stock", "index", "recession", "gdp",
-    "currency", "dollar", "euro", "yuan", "yen",
-    "crypto", "bitcoin",
+    "investor", "treasury", "recession",
+    "equit", "stock market", "stock index",
+    "currency", "crypto", "bitcoin",
     # Sectors
-    "semiconductor", "chip", "tech sector", "pharma", "biotech",
+    "semiconductor", "tech sector", "pharma", "biotech",
     "aerospace", "auto industry", "automotive",
+    # Semiconductors — supply chain specifics
+    "foundry", "lithograph", "euv", "wafer", "fabricat",
+    "hbm", "dram", "nand",
+    # Defense — procurement & industrial
+    "munition", "rearm", "fighter jet", "warship", "howitzer",
+    "defense contract", "defence contract",
     # Key actors (catch headlines that name actors without other keywords)
-    "white house", "kremlin", "beijing", "brussels",
-    "pentagon", "congress", "parliament",
+    "white house", "kremlin", "brussels",
+    "pentagon", "congress",
+    # Key sector companies as substring (catches "Lockheed Martin", "ASML" etc.)
+    "lockheed", "raytheon", "northrop", "rheinmetall",
+    "asml", "tsmc",
+    "maersk", "frontline",
+}
+
+# Short words that need word-boundary matching (\b...\b) to avoid false
+# positives.  Each entry is compiled into a regex pattern at import time.
+_WORD_BOUNDARY_KW: set[str] = {
+    "oil", "gas", "coal", "fuel", "energy", "petrol", "diesel",
+    "metal", "mineral",
+    "port", "ports",
+    "import", "imports",
+    "chip", "chips",
+    "bond", "bonds", "yield", "yields",
+    "gdp", "budget",
+    "market", "markets",
+    "dollar", "euro", "yuan", "yen",
+    "index",
+    "beijing", "parliament",
+}
+
+_WB_PATTERN: _re.Pattern[str] = _re.compile(
+    r"\b(?:" + "|".join(_re.escape(kw) for kw in _WORD_BOUNDARY_KW) + r")\b",
+    _re.IGNORECASE,
+)
+
+# Keywords that pass the allowlist BUT only count as relevant when the headline
+# also has a concrete economic/policy channel.  Without one, a "war" headline
+# is just general conflict reporting (politics, casualties, opinion polls).
+_NEEDS_ECONOMIC_CONTEXT: set[str] = {"war", "wars", "conflict"}
+
+_NEC_PATTERN: _re.Pattern[str] = _re.compile(
+    r"\b(?:" + "|".join(_re.escape(kw) for kw in _NEEDS_ECONOMIC_CONTEXT) + r")\b",
+    _re.IGNORECASE,
+)
+
+# Economic context keywords that rescue a war/conflict headline.
+_ECON_CONTEXT_KW: set[str] = {
+    "oil", "gas", "fuel", "energy", "crude", "opec", "lng", "pipeline",
+    "refiner", "commodit", "price", "prices", "cost", "costs",
+    "trade", "tariff", "sanction", "embargo", "export", "import",
+    "shipping", "freight", "blockade", "port", "ports", "supply chain",
+    "inflation", "gdp", "recession", "interest rate", "central bank",
+    "mortgage", "currency", "dollar", "euro", "yuan", "yen",
+    "bond", "bonds", "yield", "treasury", "equit", "stock", "shares",
+    "budget", "spending", "fiscal", "subsid", "regulat",
+    "semiconductor", "chip", "chips", "foundry", "wafer", "fab",
+    "defense spend", "defence spend", "munition", "rearm", "arms deal",
+    "tanker", "dry bulk", "container", "reroute",
+    "food", "wheat", "grain", "fertiliser", "fertilizer",
+    "jobs", "employment", "unemployment", "growth", "economic",
+    "business", "firms", "companies", "corporate",
+    "petrol", "diesel",
+}
+
+# ---------------------------------------------------------------------------
+# Rejection patterns — human-interest, casualty-only, symbolic/social
+# ---------------------------------------------------------------------------
+# If a headline matches one of these and has NO strong economic keyword beyond
+# the ambiguous ones, it is rejected even if an allowlist keyword matched.
+
+_REJECT_PATTERNS: list[_re.Pattern[str]] = [
+    # Human-interest cost-of-living / personal hardship
+    _re.compile(r"\b(couple|family|families|pensioner|elderly|resident)\b.*"
+                r"\b(pay|paid|find|afford|cost|bill|heating|rent)\b", _re.I),
+    # Casualty-only war reporting (killed/dead/wounded + no economic channel)
+    _re.compile(r"\b(\d+\s+)?(killed|dead|die|dies|died|wounded|injured|"
+                r"casualties|massacre|slain|bodies)\b", _re.I),
+    # Religious, ceremonial, symbolic events
+    _re.compile(r"\b(pope|pontiff|cardinal|bishop|sermon|prayer|prayers|"
+                r"pilgrimage|liturgy|good friday|easter|christmas mass|"
+                r"funeral service|vigil)\b", _re.I),
+    # Purely social / human-rights framing with no policy mechanism
+    _re.compile(r"\b(deported children|orphan|refugee camp|"
+                r"missing persons?|stranded tourists?)\b", _re.I),
+    # Human-interest war hardship (migrant workers, deadly risk, etc.)
+    _re.compile(r"\bmigrant workers?\b.*\b(deadly|risk|danger|flee|stranded)\b", _re.I),
+    # Prediction/betting markets — not financial markets
+    _re.compile(r"\b(prediction market|betting market|gambling|wager)\b", _re.I),
+]
+
+# If a rejected headline also contains one of these, it survives because
+# there is a concrete economic/policy transmission channel.
+_ECONOMIC_CHANNEL_KW: set[str] = {
+    "sanction", "embargo", "tariff", "trade", "export", "import",
+    "pipeline", "crude", "opec", "lng", "refiner", "energy price",
+    "oil price", "oil production", "oil output", "commodit",
+    "shipping", "freight", "port closure", "blockade", "supply chain",
+    "central bank", "interest rate", "inflation", "gdp", "fiscal",
+    "subsid", "regulat", "infrastructure", "reconstruct",
+    "defense spend", "defence spend", "military budget",
+    "arms deal", "weapons contract", "semiconductor",
+    "chip", "chips", "foundry", "wafer", "fab",
 }
 
 
 def is_relevant(title: str) -> bool:
-    """Return True if the headline matches at least one domain keyword.
+    """Return True if the headline has an economic/policy transmission path.
 
-    Uses substring matching on the lowercased title so that stems like
-    'sanction' catch 'sanctions', 'sanctioned', etc.
+    Four-stage filter:
+    1. Check substring keywords (safe, unambiguous stems).
+    2. Check word-boundary keywords (short words needing exact match).
+    3. If the ONLY match is a context-dependent keyword (war, conflict),
+       require a co-occurring economic channel word.
+    4. Apply rejection patterns — if matched, require an economic channel
+       keyword to survive.
     """
     low = title.lower()
-    return any(kw in low for kw in RELEVANCE_KEYWORDS)
+
+    # Stage 1: check reject patterns first — these override everything.
+    for pat in _REJECT_PATTERNS:
+        if pat.search(title):
+            if any(ch in low for ch in _ECONOMIC_CHANNEL_KW):
+                return True
+            return False
+
+    # Stage 2: does the headline match any allowlist keyword?
+    has_substr = any(kw in low for kw in RELEVANCE_KEYWORDS)
+    has_wb = bool(_WB_PATTERN.search(low))
+
+    if not has_substr and not has_wb:
+        # Stage 3: check context-dependent keywords (war, conflict).
+        # These only count if an economic context word is also present.
+        if _NEC_PATTERN.search(low):
+            return any(ek in low for ek in _ECON_CONTEXT_KW)
+        return False
+
+    return True
 
 
 def fetch_all(local_path: str = LOCAL_FILE,
@@ -375,11 +571,16 @@ _STOP_WORDS: set[str] = {
     "new", "says", "said", "about", "into", "up", "out", "more", "than",
 }
 
-# Jaccard threshold for merging into the same cluster.  0.30 catches obvious
-# overlapping stories without aggressively merging merely topical headlines.
-_CLUSTER_THRESHOLD: float = 0.30
+# Jaccard threshold for merging into the same cluster.  0.25 catches
+# cross-source headlines using different vocabulary for the same event
+# while avoiding false merges from common background words.
+# Tuned on live feeds 2025-04: 0.25 catches cross-source rewording
+# (e.g. "fuel prices surge" ↔ "oil highest price"), while 0.20 caused
+# false merges on headlines sharing only "iran"+"war" (Jaccard ~0.14).
+_CLUSTER_THRESHOLD: float = 0.25
 
 # If any pair inside a cluster falls below this, flag agreement as "mixed".
+# Set below _CLUSTER_THRESHOLD so clusters with borderline pairs get the flag.
 _AGREEMENT_THRESHOLD: float = 0.20
 
 
@@ -432,6 +633,12 @@ _ACTOR_KEYWORDS: dict[str, str] = {
     "federal reserve": "Federal Reserve", "fed": "Federal Reserve",
     "ecb": "ECB", "imf": "IMF",
     "chevron": "Chevron", "boeing": "Boeing", "tsmc": "TSMC",
+    "asml": "ASML", "nvidia": "NVIDIA", "intel": "Intel",
+    "samsung": "Samsung", "sk hynix": "SK Hynix",
+    "lockheed": "Lockheed Martin", "raytheon": "Raytheon",
+    "northrop": "Northrop Grumman", "general dynamics": "General Dynamics",
+    "rheinmetall": "Rheinmetall", "bae systems": "BAE Systems",
+    "maersk": "Maersk", "frontline": "Frontline",
 }
 
 # Ordered by specificity — first match wins.
@@ -450,19 +657,34 @@ _ACTION_KEYWORDS: list[tuple[list[str], str]] = [
 ]
 
 _SECTOR_KEYWORDS: dict[str, str] = {
+    # Critical minerals
     "rare earth": "critical minerals", "mineral": "critical minerals",
-    "lithium": "critical minerals",
-    "semiconductor": "technology", "chip": "technology",
+    "lithium": "critical minerals", "cobalt": "critical minerals",
+    # Semiconductors
+    "semiconductor": "semiconductors", "chip": "semiconductors",
+    "foundry": "semiconductors", "lithography": "semiconductors",
+    "wafer": "semiconductors", "fab": "semiconductors",
+    "euv": "semiconductors", "dram": "semiconductors", "nand": "semiconductors",
+    "hbm": "semiconductors",
+    # Energy
     "oil": "energy", "crude": "energy", "petroleum": "energy",
     "opec": "energy", "gas": "energy", "lng": "energy",
+    "refiner": "energy", "pipeline": "energy",
+    # Metals
     "steel": "metals", "aluminium": "metals", "aluminum": "metals",
     "copper": "metals", "metal": "metals",
+    # Defense
     "defence": "defense", "defense": "defense",
-    "weapon": "defense", "arms": "defense",
-    "shipping": "logistics", "maritime": "logistics",
-    "freight": "logistics", "red sea": "logistics",
-    "wheat": "agriculture", "grain": "agriculture",
-    "food": "agriculture",
+    "weapon": "defense", "arms": "defense", "munition": "defense",
+    "rearm": "defense", "missile defense": "defense",
+    # Shipping & logistics
+    "shipping": "shipping", "maritime": "shipping",
+    "freight": "shipping", "red sea": "shipping",
+    "tanker": "shipping", "dry bulk": "shipping", "container": "shipping",
+    "suez": "shipping", "strait of hormuz": "shipping",
+    # Agriculture
+    "wheat": "agriculture", "grain": "agriculture", "food": "agriculture",
+    # Finance
     "treasury": "finance", "bank": "finance",
 }
 
@@ -793,5 +1015,9 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
             "evidence":     evidence,
         })
 
+    # Sort: multi-source clusters rank above single-source, then newest first
+    # within the same source count. Python's sort is stable so the two-pass
+    # approach preserves recency order within each source-count group.
     result.sort(key=lambda c: c["published_at"] or "", reverse=True)
+    result.sort(key=lambda c: c["source_count"], reverse=True)
     return result

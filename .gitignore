@@ -31,17 +31,29 @@ events.db
 events*.db
 *.db.bak
 *.db-journal
+*.db-wal
+*.db-shm
 
 # Evaluation outputs
 evaluation_output.json
+evaluation_output*.json
 eval_output*.json
 
 # Generated test databases
 tests/test_events*.db
+tests/test_api*.db
+tests/.fuse_hidden*
+
+# Local agent folders
+.claude/
+.codex/
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
+frontend/.cache/
+frontend/*.tsbuildinfo
 
 # VS Code and Windows local files
 .vscode/

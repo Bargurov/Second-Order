@@ -94,11 +94,10 @@ class TestPctForward(unittest.TestCase):
 class TestCheckOneTicker(unittest.TestCase):
 
     def _run(self, closes, volumes=None, ticker="GLD", xle_closes=None):
-        """Convenience: patch _fetch + _is_valid_ticker and call _check_one_ticker."""
+        """Convenience: patch _fetch and call _check_one_ticker."""
         df = _make_df(closes, volumes)
         xle_df = _make_df(xle_closes) if xle_closes is not None else None
-        with patch("market_check._fetch", return_value=df), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df):
             return market_check._check_one_ticker(ticker, xle_data=xle_df)
 
     # -- Label: "notable move" ------------------------------------------------
@@ -151,21 +150,18 @@ class TestCheckOneTicker(unittest.TestCase):
     def test_needs_more_evidence_short_series(self):
         # Fewer than 6 rows → not enough data (pre-check passes, full fetch returns short series)
         df = _make_df([100.0, 101.0, 102.0])
-        with patch("market_check._fetch", return_value=df), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df):
             result = market_check._check_one_ticker("GLD")
         self.assertEqual(result["label"], "needs more evidence")
 
     def test_needs_more_evidence_fetch_returns_none(self):
-        # Pre-check passes but full fetch returns nothing (edge case)
-        with patch("market_check._fetch", return_value=None), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=None):
             result = market_check._check_one_ticker("GLD")
         self.assertEqual(result["label"], "needs more evidence")
 
     def test_needs_more_evidence_on_exception(self):
-        with patch("market_check._fetch", side_effect=RuntimeError("network error")), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", side_effect=RuntimeError("network error")):
+
             result = market_check._check_one_ticker("GLD")
         self.assertEqual(result["label"], "needs more evidence")
         self.assertIn("Error:", result["detail"])
@@ -174,8 +170,7 @@ class TestCheckOneTicker(unittest.TestCase):
         # Regression: yfinance occasionally returns malformed data for legitimate
         # tickers like LI (Li Auto), causing a TypeError deep in the computation.
         # The except Exception handler must catch it and return a clean fallback.
-        with patch("market_check._fetch", side_effect=TypeError("expected float, got NoneType")), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", side_effect=TypeError("expected float, got NoneType")):
             result = market_check._check_one_ticker("LI")
         self.assertEqual(result["label"], "needs more evidence")
         self.assertIn("Error:", result["detail"])
@@ -203,8 +198,7 @@ class TestCheckOneTicker(unittest.TestCase):
         df_uso = _make_df(closes_uso, [2_000_000.0] * 40)
         df_xle = _make_df(closes_xle)
 
-        with patch("market_check._fetch", return_value=df_uso), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df_uso):
             result = market_check._check_one_ticker("USO", xle_data=df_xle)
 
         self.assertIn("vs XLE", result["detail"])
@@ -215,8 +209,7 @@ class TestCheckOneTicker(unittest.TestCase):
         df_gld = _make_df(closes, [2_000_000.0] * 40)
         df_xle = _make_df([50.0] * 40)
 
-        with patch("market_check._fetch", return_value=df_gld), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df_gld):
             result = market_check._check_one_ticker("GLD", xle_data=df_xle)
 
         self.assertNotIn("vs XLE", result["detail"])
@@ -226,11 +219,48 @@ class TestCheckOneTicker(unittest.TestCase):
         closes = [50.0] * 35 + [50.0, 51.0, 52.0, 53.0, 54.0]
         df_xle = _make_df(closes, [2_000_000.0] * 40)
 
-        with patch("market_check._fetch", return_value=df_xle), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df_xle):
             result = market_check._check_one_ticker("XLE", xle_data=df_xle)
 
         self.assertNotIn("vs XLE", result["detail"])
+
+    def test_smh_benchmark_for_semiconductor_ticker(self):
+        """Semiconductor tickers get a vs-benchmark comparison via benchmark_cache."""
+        closes_tsm = [100.0] * 35 + [100.0, 102.0, 104.0, 106.0, 108.0]
+        closes_smh = [50.0]  * 35 + [50.0,  50.5,  51.0,  51.5,  52.0]
+        df_tsm = _make_df(closes_tsm, [2_000_000.0] * 40)
+        df_smh = _make_df(closes_smh)
+
+        with patch("market_check._fetch", return_value=df_tsm):
+            result = market_check._check_one_ticker(
+                "TSM", benchmark_cache={"SMH": df_smh})
+
+        self.assertIsNotNone(result["vs_xle_5d"])
+        self.assertGreater(result["vs_xle_5d"], 0)
+
+    def test_xar_benchmark_for_defense_ticker(self):
+        """Defense tickers get a vs-benchmark comparison via benchmark_cache."""
+        closes_lmt = [100.0] * 35 + [100.0, 101.0, 102.0, 103.0, 104.0]
+        closes_xar = [50.0]  * 35 + [50.0,  50.0,  50.0,  50.0,  50.0]
+        df_lmt = _make_df(closes_lmt, [2_000_000.0] * 40)
+        df_xar = _make_df(closes_xar)
+
+        with patch("market_check._fetch", return_value=df_lmt):
+            result = market_check._check_one_ticker(
+                "LMT", benchmark_cache={"XAR": df_xar})
+
+        self.assertIsNotNone(result["vs_xle_5d"])
+
+    def test_no_benchmark_for_unknown_ticker(self):
+        """Tickers not in any sector set get no relative benchmark."""
+        closes = [100.0] * 35 + [100.0, 101.0, 102.0, 103.0, 104.0]
+        df = _make_df(closes, [2_000_000.0] * 40)
+
+        with patch("market_check._fetch", return_value=df):
+            result = market_check._check_one_ticker(
+                "GLD", benchmark_cache={"SMH": df, "XAR": df})
+
+        self.assertIsNone(result["vs_xle_5d"])
 
 
 # ---------------------------------------------------------------------------
@@ -243,8 +273,7 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
 
     def _run(self, closes, volumes=None, ticker="GLD", role="beneficiary"):
         df = _make_df(closes, volumes)
-        with patch("market_check._fetch", return_value=df), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df):
             return market_check._check_one_ticker(ticker, role=role)
 
     def test_numeric_fields_present_on_success(self):
@@ -274,8 +303,7 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
     def test_numeric_fields_none_when_no_data(self):
         # Only 3 rows — not enough for any return windows (pre-check passes)
         df = _make_df([100.0, 101.0, 102.0])
-        with patch("market_check._fetch", return_value=df), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df):
             result = market_check._check_one_ticker("GLD")
 
         self.assertIsNone(result["return_1d"])
@@ -285,8 +313,7 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         self.assertIsNone(result["vs_xle_5d"])
 
     def test_numeric_fields_none_on_exception(self):
-        with patch("market_check._fetch", side_effect=RuntimeError("network error")), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", side_effect=RuntimeError("network error")):
             result = market_check._check_one_ticker("GLD")
 
         self.assertIsNone(result["return_5d"])
@@ -297,8 +324,7 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         closes = [100.0] * 35 + [100.0, 101.0, 102.0, 103.0, 105.0]
         df_gld = _make_df(closes, [1_000_000.0] * 40)
         df_xle = _make_df([50.0] * 40)
-        with patch("market_check._fetch", return_value=df_gld), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df_gld):
             result = market_check._check_one_ticker("GLD", xle_data=df_xle)
         self.assertIsNone(result["vs_xle_5d"])
 
@@ -308,8 +334,7 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         closes_xle = [50.0]  * 40
         df_uso = _make_df(closes_uso, [1_000_000.0] * 40)
         df_xle = _make_df(closes_xle)
-        with patch("market_check._fetch", return_value=df_uso), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df_uso):
             result = market_check._check_one_ticker("USO", xle_data=df_xle)
         self.assertIsInstance(result["vs_xle_5d"], float)
         self.assertAlmostEqual(result["vs_xle_5d"], 5.0, places=1)
@@ -323,71 +348,49 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         self.assertEqual(result["volume_ratio"], round(result["volume_ratio"], 2))
 
 
-# ---------------------------------------------------------------------------
-# Tests for _is_valid_ticker() and the pre-check gate in _check_one_ticker()
-# ---------------------------------------------------------------------------
+class TestSparklineField(unittest.TestCase):
+    """Verify that _check_one_ticker returns a spark list for sparkline rendering."""
 
-class TestTickerValidityCheck(unittest.TestCase):
+    def _run(self, closes, volumes=None, ticker="GLD"):
+        df = _make_df(closes, volumes)
+        with patch("market_check._fetch", return_value=df):
+            return market_check._check_one_ticker(ticker, role="beneficiary")
 
-    def test_invalid_ticker_returns_unavailable_detail(self):
-        # Pre-check fails → return early with a clear message, no fetch attempted
-        with patch("market_check._is_valid_ticker", return_value=False):
+    def test_spark_present_on_success(self):
+        closes = [100.0 + i for i in range(40)]
+        result = self._run(closes, [1_000_000.0] * 40)
+        self.assertIn("spark", result)
+        self.assertIsInstance(result["spark"], list)
+        self.assertEqual(len(result["spark"]), 20)
+
+    def test_spark_normalised_0_to_1(self):
+        closes = [100.0 + i for i in range(40)]
+        result = self._run(closes, [1_000_000.0] * 40)
+        for v in result["spark"]:
+            self.assertGreaterEqual(v, 0.0)
+            self.assertLessEqual(v, 1.0)
+
+    def test_spark_first_is_0_last_is_1_for_uptrend(self):
+        closes = [100.0 + i for i in range(40)]  # monotonic up
+        result = self._run(closes, [1_000_000.0] * 40)
+        self.assertAlmostEqual(result["spark"][0], 0.0, places=2)
+        self.assertAlmostEqual(result["spark"][-1], 1.0, places=2)
+
+    def test_spark_empty_when_no_data(self):
+        df = _make_df([100.0, 101.0, 102.0])
+        with patch("market_check._fetch", return_value=df):
+            result = market_check._check_one_ticker("GLD")
+        self.assertEqual(result["spark"], [])
+
+    def test_spark_empty_for_no_data_ticker(self):
+        with patch("market_check._fetch", return_value=None):
             result = market_check._check_one_ticker("FAKEXYZ")
-        self.assertEqual(result["label"], "needs more evidence")
-        self.assertIn("Invalid or unavailable", result["detail"])
+        self.assertEqual(result["spark"], [])
 
-    def test_invalid_ticker_has_none_numeric_fields(self):
-        with patch("market_check._is_valid_ticker", return_value=False):
-            result = market_check._check_one_ticker("FAKEXYZ")
-        for field in ("return_1d", "return_5d", "return_20d", "volume_ratio", "vs_xle_5d"):
-            self.assertIsNone(result[field], f"Expected None for {field}")
-
-    def test_invalid_ticker_has_none_direction(self):
-        with patch("market_check._is_valid_ticker", return_value=False):
-            result = market_check._check_one_ticker("FAKEXYZ", role="loser")
-        self.assertIsNone(result["direction"])
-
-    def test_fetch_not_called_for_invalid_ticker(self):
-        # _fetch should never be called when the pre-check already fails
-        with patch("market_check._is_valid_ticker", return_value=False), \
-             patch("market_check._fetch") as mock_fetch:
-            market_check._check_one_ticker("FAKEXYZ")
-        mock_fetch.assert_not_called()
-
-    def test_valid_ticker_proceeds_to_fetch(self):
-        # Pre-check passes → _fetch is called normally
-        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
-        with patch("market_check._is_valid_ticker", return_value=True), \
-             patch("market_check._fetch", return_value=df) as mock_fetch:
-            market_check._check_one_ticker("GLD")
-        mock_fetch.assert_called_once()
-
-    def test_is_valid_ticker_returns_true_for_nonempty_data(self):
-        # _is_valid_ticker does `import yfinance as yf` lazily, so we inject a
-        # mock module via sys.modules before calling it.
-        import sys
-        from unittest.mock import MagicMock
-        yf_mock = MagicMock()
-        yf_mock.download.return_value = _make_df([100.0])   # one row = not empty
-        with patch.dict(sys.modules, {"yfinance": yf_mock}):
-            self.assertTrue(market_check._is_valid_ticker("GLD"))
-
-    def test_is_valid_ticker_returns_false_for_empty_data(self):
-        import sys
-        import pandas as pd
-        from unittest.mock import MagicMock
-        yf_mock = MagicMock()
-        yf_mock.download.return_value = pd.DataFrame()      # empty = not found
-        with patch.dict(sys.modules, {"yfinance": yf_mock}):
-            self.assertFalse(market_check._is_valid_ticker("FAKEXYZ"))
-
-    def test_is_valid_ticker_returns_false_on_exception(self):
-        import sys
-        from unittest.mock import MagicMock
-        yf_mock = MagicMock()
-        yf_mock.download.side_effect = Exception("network error")
-        with patch.dict(sys.modules, {"yfinance": yf_mock}):
-            self.assertFalse(market_check._is_valid_ticker("BADTICKER"))
+    def test_spark_uses_short_window_for_small_dataset(self):
+        closes = [100.0 + i for i in range(10)]  # only 10 closes
+        result = self._run(closes, [1_000_000.0] * 10)
+        self.assertEqual(len(result["spark"]), 10)
 
 
 # ---------------------------------------------------------------------------
@@ -399,9 +402,9 @@ class TestDirectionTag(unittest.TestCase):
     def test_beneficiary_positive_return_supports(self):
         self.assertEqual(market_check._direction_tag(5.0, "beneficiary"), "supports ↑")
 
-    def test_beneficiary_zero_return_supports(self):
-        # Flat is still "supports" for a beneficiary (not contradicting)
-        self.assertEqual(market_check._direction_tag(0.0, "beneficiary"), "supports ↑")
+    def test_beneficiary_zero_return_is_flat(self):
+        # 0% is in the flat zone — inconclusive, not directional
+        self.assertIsNone(market_check._direction_tag(0.0, "beneficiary"))
 
     def test_beneficiary_negative_return_contradicts(self):
         self.assertEqual(market_check._direction_tag(-3.5, "beneficiary"), "contradicts ↓")
@@ -409,9 +412,17 @@ class TestDirectionTag(unittest.TestCase):
     def test_loser_negative_return_supports(self):
         self.assertEqual(market_check._direction_tag(-4.0, "loser"), "supports ↓")
 
-    def test_loser_zero_return_supports(self):
-        # Flat is still "supports" for a loser (not contradicting)
-        self.assertEqual(market_check._direction_tag(0.0, "loser"), "supports ↓")
+    def test_loser_zero_return_is_flat(self):
+        # 0% is in the flat zone — inconclusive
+        self.assertIsNone(market_check._direction_tag(0.0, "loser"))
+
+    def test_flat_zone_boundary(self):
+        # Returns within ±0.5% are inconclusive
+        self.assertIsNone(market_check._direction_tag(0.3, "beneficiary"))
+        self.assertIsNone(market_check._direction_tag(-0.4, "loser"))
+        # Outside flat zone
+        self.assertEqual(market_check._direction_tag(0.5, "beneficiary"), "supports ↑")
+        self.assertEqual(market_check._direction_tag(-0.5, "loser"), "supports ↓")
 
     def test_loser_positive_return_contradicts(self):
         self.assertEqual(market_check._direction_tag(13.3, "loser"), "contradicts ↑")
@@ -430,8 +441,7 @@ class TestCheckOneTickerDirection(unittest.TestCase):
 
     def _run(self, closes, role, volumes=None, ticker="GLD"):
         df = _make_df(closes, volumes)
-        with patch("market_check._fetch", return_value=df), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=df):
             return market_check._check_one_ticker(ticker, role=role)
 
     def test_beneficiary_up_gets_supports(self):
@@ -460,10 +470,60 @@ class TestCheckOneTickerDirection(unittest.TestCase):
 
     def test_no_data_returns_none_direction(self):
         # Only 3 rows — not enough to compute r5 (pre-check passes)
-        with patch("market_check._fetch", return_value=_make_df([100.0, 101.0, 102.0])), \
-             patch("market_check._is_valid_ticker", return_value=True):
+        with patch("market_check._fetch", return_value=_make_df([100.0, 101.0, 102.0])):
             result = market_check._check_one_ticker("GLD", role="beneficiary")
         self.assertIsNone(result["direction"])
+
+
+# ---------------------------------------------------------------------------
+# Tests for the ticker data cache
+# ---------------------------------------------------------------------------
+
+class TestTickerCache(unittest.TestCase):
+
+    def setUp(self):
+        market_check._TICKER_CACHE.clear()
+
+    def tearDown(self):
+        market_check._TICKER_CACHE.clear()
+
+    def test_cache_set_and_get(self):
+        """_cache_set stores a value retrievable by _cache_get."""
+        market_check._cache_set("test:key", 42)
+        self.assertEqual(market_check._cache_get("test:key"), 42)
+
+    def test_cache_miss_returns_none(self):
+        self.assertIsNone(market_check._cache_get("missing:key"))
+
+    def test_cache_expires(self):
+        """Expired entries should return None."""
+        market_check._TICKER_CACHE["old:key"] = (0.0, "stale")  # ts=0 → expired
+        self.assertIsNone(market_check._cache_get("old:key"))
+
+    def test_cache_clear_removes_all(self):
+        """Clearing the cache dict should remove all entries."""
+        market_check._cache_set("a", 1)
+        market_check._cache_set("b", 2)
+        market_check._TICKER_CACHE.clear()
+        self.assertIsNone(market_check._cache_get("a"))
+        self.assertIsNone(market_check._cache_get("b"))
+
+    def test_cache_key_varies_by_start_date(self):
+        """Different start dates should produce different cache keys."""
+        market_check._cache_set("since:TST:2025-01-01", "data_a")
+        market_check._cache_set("since:TST:2025-02-01", "data_b")
+        self.assertEqual(market_check._cache_get("since:TST:2025-01-01"), "data_a")
+        self.assertEqual(market_check._cache_get("since:TST:2025-02-01"), "data_b")
+
+    def test_output_shape_stable_across_calls(self):
+        """Two _check_one_ticker calls should return identical shapes."""
+        closes = [100.0] * 35 + [100.0, 101.0, 102.0, 103.0, 105.0]
+        df = _make_df(closes, [1_000_000.0] * 40)
+        with patch("market_check._fetch", return_value=df):
+            r1 = market_check._check_one_ticker("GLD", role="beneficiary")
+            r2 = market_check._check_one_ticker("GLD", role="beneficiary")
+        for key in ("label", "return_1d", "return_5d", "return_20d", "volume_ratio", "spark"):
+            self.assertEqual(r1[key], r2[key])
 
 
 # ---------------------------------------------------------------------------
@@ -501,7 +561,8 @@ class TestMarketCheck(unittest.TestCase):
 
         ticker_entry = result["tickers"][0]
         for key in ("symbol", "role", "label", "direction_tag",
-                    "return_1d", "return_5d", "return_20d", "volume_ratio", "vs_xle_5d"):
+                    "return_1d", "return_5d", "return_20d", "volume_ratio", "vs_xle_5d",
+                    "spark"):
             self.assertIn(key, ticker_entry, f"Missing key in tickers entry: {key}")
 
     def test_tickers_list_symbol_and_role_correct(self):
@@ -608,21 +669,11 @@ class TestEventDateMode(unittest.TestCase):
     """When event_date is provided, the 5-day validity probe should be skipped
     so that historically valid tickers aren't rejected for lacking recent data."""
 
-    def test_precheck_skipped_when_event_date_provided(self):
-        """_is_valid_ticker should NOT be called when event_date is set."""
-        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
-        with patch("market_check._is_valid_ticker") as mock_valid, \
-             patch("market_check._fetch_since", return_value=df):
-            market_check._check_one_ticker("OLDTICKER", event_date="2020-03-01")
-        mock_valid.assert_not_called()
-
-    def test_precheck_still_runs_without_event_date(self):
-        """Without event_date, the 5-day pre-check should still happen."""
-        df = _make_df([100.0] * 40, [1_000_000.0] * 40)
-        with patch("market_check._is_valid_ticker", return_value=True) as mock_valid, \
-             patch("market_check._fetch", return_value=df):
-            market_check._check_one_ticker("GLD")
-        mock_valid.assert_called_once()
+    def test_no_data_ticker_returns_needs_more_evidence(self):
+        """A ticker that returns no data should get the fallback label."""
+        with patch("market_check._fetch", return_value=None):
+            result = market_check._check_one_ticker("FAKEXYZ")
+        self.assertEqual(result["label"], "needs more evidence")
 
     def test_event_date_uses_fetch_since(self):
         """event_date mode should call _fetch_since, not _fetch."""
@@ -633,16 +684,12 @@ class TestEventDateMode(unittest.TestCase):
         mock_since.assert_called_once_with("GLD", "2020-03-01")
         mock_fetch.assert_not_called()
 
-    def test_event_date_historical_ticker_not_rejected(self):
-        """A ticker that would fail the 5-day recent probe should still
-        return real data when event_date is supplied and historical data exists."""
+    def test_event_date_historical_ticker_returns_data(self):
+        """event_date mode with valid historical data should return results."""
         hist_df = _make_df([100.0] * 35 + [100.0, 101.0, 103.0, 105.0, 108.0],
                            [1_000_000.0] * 40)
-        with patch("market_check._is_valid_ticker", return_value=False), \
-             patch("market_check._fetch_since", return_value=hist_df):
+        with patch("market_check._fetch_since", return_value=hist_df):
             result = market_check._check_one_ticker("OLDTICKER", event_date="2020-03-01")
-        # Should NOT get the "Invalid or unavailable" early-exit
-        self.assertNotIn("Invalid or unavailable", result["detail"])
         self.assertIsNotNone(result["return_5d"])
 
     def test_event_date_empty_historical_data_graceful(self):
@@ -680,8 +727,7 @@ class TestEventDateMode(unittest.TestCase):
     def test_anchor_date_none_in_rolling_mode(self):
         """Rolling (non-event-date) mode should have no anchor_date."""
         df = _make_df([100.0] * 40, [1_000_000.0] * 40)
-        with patch("market_check._is_valid_ticker", return_value=True), \
-             patch("market_check._fetch", return_value=df):
+        with patch("market_check._fetch", return_value=df):
             result = market_check._check_one_ticker("GLD")
         self.assertIsNone(result.get("anchor_date"))
 
@@ -706,11 +752,8 @@ class TestEventDateMode(unittest.TestCase):
         """market_check() with event_date should pass it through and skip
         the pre-check for all tickers."""
         df = _make_df([100.0] * 40, [1_000_000.0] * 40)
-        with patch("market_check._is_valid_ticker") as mock_valid, \
-             patch("market_check._fetch_since", return_value=df):
+        with patch("market_check._fetch_since", return_value=df):
             result = market_check.market_check(["GLD"], ["USO"], event_date="2020-03-01")
-        # _is_valid_ticker should not have been called for any ticker
-        mock_valid.assert_not_called()
         self.assertIn("anchored to event date", result["note"])
         self.assertEqual(len(result["tickers"]), 2)
 
@@ -821,6 +864,79 @@ class TestFollowupCheck(unittest.TestCase):
                 [{"symbol": "GLD", "role": "beneficiary"}], "2025-03-15"
             )
         self.assertIsNone(result[0]["anchor_date"])
+
+
+# ---------------------------------------------------------------------------
+# Tests for macro_snapshot() — yfinance-backed
+# ---------------------------------------------------------------------------
+
+class TestMacroSnapshot(unittest.TestCase):
+    """macro_snapshot should return one entry per macro instrument."""
+
+    def _macro_df(self, n=40):
+        return _make_df([100.0 + i * 0.5 for i in range(n)], [1_000_000.0] * n)
+
+    def test_returns_all_instruments(self):
+        df = self._macro_df()
+        with patch("market_check._fetch", return_value=df):
+            result = market_check.macro_snapshot()
+        self.assertEqual(len(result), 5)
+        labels = {e["label"] for e in result}
+        for expected in ("USD", "10Y", "VIX", "WTI", "Brent"):
+            self.assertIn(expected, labels)
+
+    def test_entries_have_required_keys(self):
+        df = self._macro_df()
+        with patch("market_check._fetch", return_value=df):
+            result = market_check.macro_snapshot()
+        for entry in result:
+            for key in ("label", "value", "change_5d", "unit"):
+                self.assertIn(key, entry)
+
+    def test_value_is_float_when_data_available(self):
+        df = self._macro_df()
+        with patch("market_check._fetch", return_value=df):
+            result = market_check.macro_snapshot()
+        for entry in result:
+            self.assertIsInstance(entry["value"], float)
+
+    def test_change_5d_computed(self):
+        df = self._macro_df()
+        with patch("market_check._fetch", return_value=df):
+            result = market_check.macro_snapshot()
+        for entry in result:
+            self.assertIsNotNone(entry["change_5d"])
+            self.assertGreater(entry["change_5d"], 0)
+
+    def test_returns_partial_on_failure(self):
+        """If one instrument fails, others should still return."""
+        call_count = [0]
+        def _flaky(ticker):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise RuntimeError("network error")
+            return self._macro_df()
+        with patch("market_check._fetch", side_effect=_flaky):
+            result = market_check.macro_snapshot()
+        self.assertEqual(len(result), 5)
+        has_data = [e for e in result if e["value"] is not None]
+        self.assertGreater(len(has_data), 0)
+
+    def test_event_date_mode_uses_fetch_since(self):
+        df = self._macro_df()
+        with patch("market_check._fetch_since", return_value=df) as mock_fs:
+            result = market_check.macro_snapshot(event_date="2025-03-10")
+        self.assertTrue(mock_fs.called)
+        self.assertEqual(len(result), 5)
+        for entry in result:
+            self.assertIsNotNone(entry["value"])
+
+    def test_empty_data_returns_none_values(self):
+        with patch("market_check._fetch", return_value=None):
+            result = market_check.macro_snapshot()
+        self.assertEqual(len(result), 5)
+        for entry in result:
+            self.assertIsNone(entry["value"])
 
 
 if __name__ == "__main__":

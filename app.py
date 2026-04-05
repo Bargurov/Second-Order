@@ -1,5 +1,7 @@
-# app.py — Second Order V1.5
-# Streamlit UI.  Run with: streamlit run app.py
+# app.py — Second Order legacy reference app
+# Frozen Streamlit demo kept for historical reference only.
+# Do not treat this file as the maintained product surface.
+# The current product path is the React frontend plus FastAPI backend.
 #
 # Design references
 # -  Semafor Signals: facts-first story structure, calm editorial tone
@@ -431,6 +433,7 @@ def _run_analysis(headline: str, event_date_input,
 init_db()
 st.set_page_config(page_title="Second Order", page_icon="🌍", layout="centered")
 st.markdown(_CSS, unsafe_allow_html=True)
+st.caption("Frozen legacy Streamlit reference. The maintained app is the React frontend backed by FastAPI.")
 
 # ── Masthead ──
 st.markdown(
@@ -778,3 +781,4 @@ else:
                     st.caption("✓ Saved")
                 except Exception as ex:
                     st.error(f"Could not save review: {ex}")
+

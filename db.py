@@ -66,12 +66,26 @@ def init_db() -> None:
             "ALTER TABLE events ADD COLUMN event_date TEXT DEFAULT NULL",
             "ALTER TABLE events ADD COLUMN notes TEXT DEFAULT ''",
             "ALTER TABLE events ADD COLUMN rating TEXT DEFAULT NULL",
+            "ALTER TABLE events ADD COLUMN model TEXT DEFAULT NULL",
+            "ALTER TABLE events ADD COLUMN transmission_chain TEXT DEFAULT '[]'",
         ]
         for sql in _migrations:
             try:
                 conn.execute(sql)
-            except sqlite3.OperationalError:
-                pass  # column already exists
+            except sqlite3.OperationalError as e:
+                if "duplicate column" in str(e).lower():
+                    pass  # expected — column already exists
+                else:
+                    print(f"[db] Migration warning: {e} — SQL: {sql}")
+
+        # Separate cache table for news payloads — not versioned with events.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS news_cache (
+                id         INTEGER PRIMARY KEY CHECK (id = 1),
+                payload    TEXT NOT NULL,
+                fetched_at TEXT NOT NULL
+            )
+        """)
 
     _db_ready = True
 
@@ -193,8 +207,9 @@ def save_event(event: dict) -> None:
             INSERT INTO events (
                 timestamp, headline, stage, persistence,
                 what_changed, mechanism_summary, beneficiaries, losers,
-                assets_to_watch, confidence, market_note, market_tickers, event_date, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                assets_to_watch, confidence, market_note, market_tickers,
+                event_date, notes, model, transmission_chain
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             event.get("timestamp", datetime.now().isoformat(timespec="seconds")),
             headline,
@@ -210,6 +225,8 @@ def save_event(event: dict) -> None:
             json.dumps(event.get("market_tickers", [])),
             event_date,
             event.get("notes", ""),
+            event.get("model"),
+            json.dumps(event.get("transmission_chain", [])),
         ))
     print(f"Saved to {DB_FILE}.")
 
@@ -329,10 +346,145 @@ def load_recent_events(limit: int = 10) -> list[dict]:
     for row in rows:
         event = dict(row)
         # Decode JSON strings back into Python lists/dicts
-        event["beneficiaries"]  = json.loads(event["beneficiaries"]   or "[]")
-        event["losers"]         = json.loads(event["losers"]          or "[]")
-        event["assets_to_watch"]= json.loads(event["assets_to_watch"] or "[]")
-        event["market_tickers"] = json.loads(event["market_tickers"]  or "[]")
+        event["beneficiaries"]       = json.loads(event["beneficiaries"]       or "[]")
+        event["losers"]              = json.loads(event["losers"]              or "[]")
+        event["assets_to_watch"]     = json.loads(event["assets_to_watch"]     or "[]")
+        event["market_tickers"]      = json.loads(event["market_tickers"]      or "[]")
+        event["transmission_chain"]  = json.loads(event.get("transmission_chain") or "[]")
         events.append(event)
 
     return events
+
+
+def load_event_by_id(event_id: int) -> dict | None:
+    """Return a single event by primary key, or None if not found.
+
+    Unlike load_recent_events, this is not limited to the N most recent rows.
+    """
+    if not _db_ready:
+        return None
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT * FROM events WHERE id = ?", (event_id,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    event = dict(row)
+    event["beneficiaries"]       = json.loads(event["beneficiaries"]       or "[]")
+    event["losers"]              = json.loads(event["losers"]              or "[]")
+    event["assets_to_watch"]     = json.loads(event["assets_to_watch"]     or "[]")
+    event["market_tickers"]      = json.loads(event["market_tickers"]      or "[]")
+    event["transmission_chain"]  = json.loads(event.get("transmission_chain") or "[]")
+    return event
+
+
+# ---------------------------------------------------------------------------
+# Analysis cache — reuse saved events for repeated headlines
+# ---------------------------------------------------------------------------
+
+def find_cached_analysis(
+    headline: str,
+    event_date: str | None = None,
+    model: str | None = None,
+    max_age_seconds: int = 86400,
+) -> dict | None:
+    """Return the most recent saved event matching headline + date + model.
+
+    event_date: when provided, only matches events with the same anchor date.
+    model: when provided, only matches events analyzed with this model.
+    max_age_seconds: rows older than this are treated as stale (default 24 h).
+    Returns a dict with the saved fields, or None if no match or stale.
+    """
+    if not _db_ready:
+        return None
+
+    cutoff = (
+        datetime.now() - timedelta(seconds=max_age_seconds)
+    ).isoformat(timespec="seconds")
+
+    # Build WHERE clause dynamically based on which keys are provided.
+    conditions = ["headline = ?", "timestamp >= ?"]
+    params: list = [headline, cutoff]
+
+    if event_date is not None:
+        conditions.append("event_date = ?")
+        params.append(event_date)
+    else:
+        conditions.append("event_date IS NULL")
+
+    if model is not None:
+        conditions.append("model = ?")
+        params.append(model)
+    # When model is None we match any model — backward compat for old rows.
+
+    sql = f"SELECT * FROM events WHERE {' AND '.join(conditions)} ORDER BY id DESC LIMIT 1"
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(sql, params).fetchone()
+
+    if row is None:
+        return None
+
+    event = dict(row)
+    for field in ("beneficiaries", "losers", "assets_to_watch", "market_tickers", "transmission_chain"):
+        event[field] = json.loads(event.get(field) or "[]")
+    return event
+
+
+# ---------------------------------------------------------------------------
+# News cache — persistent storage for /news payloads
+# ---------------------------------------------------------------------------
+
+def load_news_cache(max_age_seconds: int = 300) -> dict | None:
+    """Return the cached news payload if it exists and is fresh enough.
+
+    Returns None if the cache is empty, stale, or the DB is not ready.
+    """
+    if not _db_ready:
+        return None
+
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT payload, fetched_at FROM news_cache WHERE id = 1"
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    payload_json, fetched_at = row
+    try:
+        fetched = datetime.fromisoformat(fetched_at)
+    except (ValueError, TypeError):
+        return None
+
+    age = (datetime.now() - fetched).total_seconds()
+    if age > max_age_seconds:
+        return None
+
+    try:
+        return json.loads(payload_json)
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def save_news_cache(payload: dict) -> None:
+    """Persist a news payload to the cache table.
+
+    Uses INSERT OR REPLACE on id=1 so there is always at most one row.
+    """
+    if not _db_ready:
+        return
+
+    now = datetime.now().isoformat(timespec="seconds")
+    payload_json = json.dumps(payload)
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO news_cache (id, payload, fetched_at) VALUES (1, ?, ?)",
+            (payload_json, now),
+        )

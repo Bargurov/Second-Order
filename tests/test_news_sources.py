@@ -305,8 +305,8 @@ class TestLoadRss(unittest.TestCase):
 
         self.assertEqual(socket.getdefaulttimeout(), original_timeout)
 
-    def test_default_feeds_list_has_four_entries(self):
-        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 4)
+    def test_default_feeds_list_count(self):
+        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 9)
 
     def test_guardian_is_in_default_feeds(self):
         names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
@@ -324,13 +324,38 @@ class TestLoadRss(unittest.TestCase):
         names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
         self.assertIn("Reuters World", names)
 
+    def test_ap_news_is_in_default_feeds(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("AP News", names)
+
+    def test_ft_world_is_in_default_feeds(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("FT World", names)
+
+    def test_ofac_sanctions_is_in_default_feeds(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("OFAC Sanctions", names)
+
+    def test_eia_energy_is_in_default_feeds(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("EIA Energy", names)
+
+    def test_ustr_trade_policy_is_in_default_feeds(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("USTR Trade Policy", names)
+
     def test_feeds_use_narrow_sections(self):
         """Feeds should target specific sections, not top-level catch-all feeds."""
         for feed in news_sources.DEFAULT_FEEDS:
             url = feed["url"].lower()
             has_section = any(s in url for s in [
                 "/business", "/economy", "/world", "/rssworld",
-                "site:reuters.com",  # Google News proxy filtered to Reuters
+                "site:reuters.com",   # Google News proxy filtered to Reuters
+                "site:apnews.com",    # Google News proxy filtered to AP
+                "format=rss",         # FT direct RSS with section in path
+                "ofac+sanctions",     # OFAC sanctions via Google News
+                "todayinenergy",      # EIA Today in Energy direct RSS
+                "site:ustr.gov",      # USTR via Google News proxy
             ])
             self.assertTrue(
                 has_section,
@@ -488,6 +513,110 @@ class TestJaccard(unittest.TestCase):
         self.assertEqual(news_sources._jaccard({"a"}, set()), 0.0)
 
 
+class TestStripAttribution(unittest.TestCase):
+    """_strip_attribution should remove trailing source suffixes."""
+
+    def test_strips_reuters(self):
+        self.assertEqual(
+            news_sources._strip_attribution("US lifts sanctions on Venezuela - Reuters"),
+            "US lifts sanctions on Venezuela",
+        )
+
+    def test_strips_bbc_news(self):
+        self.assertEqual(
+            news_sources._strip_attribution("Oil prices surge | BBC News"),
+            "Oil prices surge",
+        )
+
+    def test_strips_guardian(self):
+        self.assertEqual(
+            news_sources._strip_attribution("EU tariffs imposed - The Guardian"),
+            "EU tariffs imposed",
+        )
+
+    def test_strips_al_jazeera(self):
+        self.assertEqual(
+            news_sources._strip_attribution("OPEC cuts output | Al Jazeera"),
+            "OPEC cuts output",
+        )
+
+    def test_strips_ap_news(self):
+        self.assertEqual(
+            news_sources._strip_attribution("Trade deal reached - AP News"),
+            "Trade deal reached",
+        )
+
+    def test_strips_ft(self):
+        self.assertEqual(
+            news_sources._strip_attribution("Fed holds rates - Financial Times"),
+            "Fed holds rates",
+        )
+
+    def test_strips_dot_gov_source(self):
+        self.assertEqual(
+            news_sources._strip_attribution(
+                "Russia-related Designation Removal - Office of Foreign Assets Control (.gov)"
+            ),
+            "Russia-related Designation Removal",
+        )
+
+    def test_strips_dot_com_source(self):
+        self.assertEqual(
+            news_sources._strip_attribution(
+                "OFAC Enforcement Trends - corporatecomplianceinsights.com"
+            ),
+            "OFAC Enforcement Trends",
+        )
+
+    def test_preserves_plain_headline(self):
+        self.assertEqual(
+            news_sources._strip_attribution("US imposes new tariffs on steel"),
+            "US imposes new tariffs on steel",
+        )
+
+    def test_preserves_headline_with_dash_in_middle(self):
+        self.assertEqual(
+            news_sources._strip_attribution("US-China trade war intensifies"),
+            "US-China trade war intensifies",
+        )
+
+    def test_strips_em_dash_variant(self):
+        self.assertEqual(
+            news_sources._strip_attribution("Oil prices fall — Reuters"),
+            "Oil prices fall",
+        )
+
+
+class TestClusterSortOrder(unittest.TestCase):
+    """Clusters should rank multi-source above single-source, then by recency."""
+
+    def _rec(self, title, source="local", pub="2026-04-01T12:00:00"):
+        return {"title": title, "source": source, "published_at": pub, "url": ""}
+
+    def test_multi_source_ranks_above_single(self):
+        records = [
+            self._rec("Single source story", "BBC World", pub="2026-04-03T12:00:00"),
+            self._rec("Multi source story A", "BBC World", pub="2026-04-01T10:00:00"),
+            self._rec("Multi source story A variant", "Reuters World", pub="2026-04-01T11:00:00"),
+        ]
+        clusters = news_sources.cluster_headlines(records)
+        # The multi-source cluster (2 sources) should come before the single (1 source),
+        # even though the single source has a newer timestamp.
+        self.assertGreater(clusters[0]["source_count"], 1)
+
+    def test_recency_within_same_source_count(self):
+        # Use very different headlines so they don't cluster together
+        records = [
+            self._rec("Japan earthquake tsunami warning issued", "BBC World", pub="2026-04-01T10:00:00"),
+            self._rec("EU proposes carbon border adjustment mechanism", "Reuters World", pub="2026-04-03T12:00:00"),
+        ]
+        clusters = news_sources.cluster_headlines(records)
+        # Both are single-source — newest first
+        self.assertEqual(len(clusters), 2)
+        self.assertEqual(clusters[0]["headline"], "EU proposes carbon border adjustment mechanism")
+        self.assertEqual(clusters[1]["headline"], "Japan earthquake tsunami warning issued")
+
+
 class TestClusterHeadlines(unittest.TestCase):
 
     def _rec(self, title, source="local", pub="2026-04-01T12:00:00", url=""):
@@ -541,8 +670,8 @@ class TestClusterHeadlines(unittest.TestCase):
         self.assertEqual(len(clusters), 1)
         self.assertEqual(clusters[0]["published_at"], "2026-04-02T10:00:00")
 
-    def test_cluster_with_old_corroboration_still_ranks_high(self):
-        """A multi-source cluster with one old article should rank by its newest source."""
+    def test_multi_source_cluster_ranks_above_newer_single(self):
+        """A multi-source cluster ranks above a newer single-source headline."""
         records = [
             self._rec("Japan earthquake tsunami warning issued", "BBC World", pub="2026-04-03T14:00:00"),
             # Cluster: two sources, one old corroboration
@@ -551,10 +680,10 @@ class TestClusterHeadlines(unittest.TestCase):
         ]
         clusters = news_sources.cluster_headlines(records)
         self.assertEqual(len(clusters), 2)
-        # The steel cluster has a newest source at 12:00 on Apr 3 — should rank second
-        # (Japan at 14:00 is first)
-        self.assertIn("Japan", clusters[0]["headline"])
-        self.assertIn("tariffs", clusters[1]["headline"].lower())
+        # Multi-source (tariffs, 2 sources) ranks above single-source (Japan),
+        # even though Japan is newer.
+        self.assertIn("tariffs", clusters[0]["headline"].lower())
+        self.assertIn("Japan", clusters[1]["headline"])
 
     def test_agreement_consistent_for_similar_headlines(self):
         records = [
@@ -592,6 +721,27 @@ class TestClusterHeadlines(unittest.TestCase):
         clusters = news_sources.cluster_headlines(records)
         self.assertEqual(len(clusters), 1)
         self.assertEqual(clusters[0]["source_count"], 1)
+
+    def test_cross_source_same_event_different_wording(self):
+        """Two sources covering the same fuel/price story should merge."""
+        records = [
+            self._rec("Northern Ireland leads surge in fuel prices since start of Iran war",
+                       "BBC World"),
+            self._rec("Oil nears highest price since start of Iran war",
+                       "Reuters"),
+        ]
+        clusters = news_sources.cluster_headlines(records)
+        self.assertEqual(len(clusters), 1)
+        self.assertEqual(clusters[0]["source_count"], 2)
+
+    def test_unrelated_stories_stay_separate_at_new_threshold(self):
+        """Distinct stories should NOT merge even at the lower threshold."""
+        records = [
+            self._rec("Oil nears highest price since start of Iran war", "BBC World"),
+            self._rec("US jobs surge unexpectedly in March despite Iran war", "Reuters"),
+        ]
+        clusters = news_sources.cluster_headlines(records)
+        self.assertEqual(len(clusters), 2)
 
 
 class TestClusterOrderIndependence(unittest.TestCase):
@@ -1355,6 +1505,192 @@ class TestIsRelevant(unittest.TestCase):
         """Keyword 'sanction' should match 'sanctioned', 'sanctions'."""
         self.assertTrue(news_sources.is_relevant(
             "Several companies were sanctioned by the Treasury"))
+
+    # ── Regression: false positives that must be rejected ──
+
+    def test_rejects_heating_oil_hardship(self):
+        """'oil' in 'heating oil' with human-interest framing is noise."""
+        self.assertFalse(news_sources.is_relevant(
+            "Elderly couple had to find £1k for home heating oil"))
+
+    def test_rejects_casualty_only_market_as_bazaar(self):
+        """'market' here is a physical bazaar, not a financial market."""
+        self.assertFalse(news_sources.is_relevant(
+            "Five killed by Russian strike on market in frontline Ukrainian city"))
+
+    def test_rejects_pope_prayer_deported(self):
+        """'port' substring in 'deported' + religious framing is noise."""
+        self.assertFalse(news_sources.is_relevant(
+            "Pope Leo's Good Friday service offers prayer for deported children"))
+
+    # ── Nearby good examples that must still pass ──
+
+    def test_keeps_oil_price_headline(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Oil prices surge after OPEC production cut"))
+
+    def test_keeps_oil_with_sanctions(self):
+        """Casualty headline rescued by sanctions economic channel."""
+        self.assertTrue(news_sources.is_relevant(
+            "Russia sanctions oil exports to NATO allies"))
+
+    def test_keeps_oil_pipeline_attack(self):
+        """Casualty headline rescued by pipeline economic channel."""
+        self.assertTrue(news_sources.is_relevant(
+            "Five killed in attack on oil pipeline in eastern Syria"))
+
+    def test_keeps_market_crash(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Stock market plunges on recession fears"))
+
+    def test_keeps_port_closure(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Port closures disrupt grain exports from Ukraine"))
+
+    def test_keeps_conflict_with_energy_channel(self):
+        """War headline with energy transmission path is relevant."""
+        self.assertTrue(news_sources.is_relevant(
+            "Missile strikes damage Ukrainian energy infrastructure"))
+
+    def test_keeps_conflict_with_defence_spending(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Germany ramps up defence spending in NATO push"))
+
+    def test_rejects_symbolic_religious_no_policy(self):
+        self.assertFalse(news_sources.is_relevant(
+            "Pope Francis leads Easter prayer for peace in Middle East"))
+
+    def test_rejects_casualty_count_only(self):
+        self.assertFalse(news_sources.is_relevant(
+            "At least 30 dead after bombing in Kabul market district"))
+
+    def test_keeps_casualties_with_trade_impact(self):
+        """Casualties + trade disruption is relevant."""
+        self.assertTrue(news_sources.is_relevant(
+            "12 killed as drone strikes shut down key export terminal"))
+
+    def test_keeps_casualties_near_chip_production(self):
+        """Casualty headline rescued by 'chip' in _ECONOMIC_CHANNEL_KW."""
+        self.assertTrue(news_sources.is_relevant(
+            "15 killed in attack near key chip production hub"))
+
+    # ── War/conflict without economic channel ──
+
+    def test_rejects_war_only_poll(self):
+        self.assertFalse(news_sources.is_relevant(
+            "Americans have bleak views on Iran war, Reuters/Ipsos poll shows"))
+
+    def test_rejects_war_only_cabinet(self):
+        self.assertFalse(news_sources.is_relevant(
+            "Trump weighs broader cabinet shake-up as Iran war pressure grows"))
+
+    def test_rejects_war_only_images(self):
+        self.assertFalse(news_sources.is_relevant(
+            "Satellite firm Planet Labs to indefinitely withhold Iran war images"))
+
+    def test_rejects_war_crimes_legal(self):
+        self.assertFalse(news_sources.is_relevant(
+            "US experts say American strikes on Iran may amount to war crimes"))
+
+    def test_rejects_migrant_workers_deadly_risk(self):
+        self.assertFalse(news_sources.is_relevant(
+            "Asia's migrant workers debate if Gulf jobs are worth deadly risk of Iran war"))
+
+    # ── War/conflict WITH economic channel ──
+
+    def test_keeps_war_with_oil_price(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Oil nears highest price since start of Iran war"))
+
+    def test_keeps_war_with_mortgage_impact(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Iran war may increase mortgage payments for extra 1.3m households"))
+
+    def test_keeps_war_with_jobs(self):
+        self.assertTrue(news_sources.is_relevant(
+            "US jobs surge unexpectedly in March despite Iran war"))
+
+    def test_keeps_war_with_fuel_prices(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Northern Ireland leads surge in fuel prices since start of Iran war"))
+
+    def test_keeps_war_with_food_crisis(self):
+        self.assertTrue(news_sources.is_relevant(
+            "World food price rise set to continue if Iran war lasts, FAO says"))
+
+    def test_keeps_conflict_with_export_disruption(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Hyundai Motor flags export disruptions as Middle East conflict hits shipping"))
+
+    # ── Prediction market rejection ──
+
+    def test_rejects_prediction_market(self):
+        self.assertFalse(news_sources.is_relevant(
+            "Nevada judge extends ban on Kalshi operating prediction market in state"))
+
+    # ── Semiconductor sector ──
+
+    def test_keeps_euv_lithography(self):
+        self.assertTrue(news_sources.is_relevant(
+            "ASML books record EUV lithography orders from Intel"))
+
+    def test_keeps_hbm_fab(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Samsung invests $10B in new HBM memory fab"))
+
+    def test_keeps_wafer_export_controls(self):
+        self.assertTrue(news_sources.is_relevant(
+            "US tightens export controls on wafer fabrication equipment to China"))
+
+    # ── Defense sector ──
+
+    def test_keeps_fighter_jet_contract(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Lockheed Martin wins $5B fighter jet contract"))
+
+    def test_keeps_munitions_production(self):
+        self.assertTrue(news_sources.is_relevant(
+            "European munitions production falls short of Ukraine commitments"))
+
+    def test_keeps_rearmament(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Poland orders 800 South Korean howitzers in NATO rearmament push"))
+
+    # ── Shipping sector ──
+
+    def test_keeps_dry_bulk_rates(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Dry bulk rates surge as China restocks iron ore"))
+
+    def test_keeps_container_reroute(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Maersk reroutes Asia-Europe services around Cape of Good Hope"))
+
+    def test_keeps_tanker_rates(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Tanker rates spike as insurance costs soar for Persian Gulf routes"))
+
+
+    # ── Threshold edge cases from empirical evaluation ──
+
+    def test_rejects_important_not_import(self):
+        """'import' as substring should not match 'important'."""
+        self.assertFalse(news_sources.is_relevant(
+            "The world's most important 21 miles"))
+
+    def test_keeps_import_as_word(self):
+        """'import' as a standalone word should still be relevant."""
+        self.assertTrue(news_sources.is_relevant(
+            "US imports surge after tariff deadline"))
+
+    def test_keeps_petrol_diesel(self):
+        self.assertTrue(news_sources.is_relevant(
+            "Petrol and diesel prices see biggest rise on record in March"))
+
+    def test_keeps_war_with_economic_context(self):
+        """'war' + 'economic' should pass the context gate."""
+        self.assertTrue(news_sources.is_relevant(
+            "Worries about global economic pain deepen as the war drags on"))
 
 
 class TestRelevanceFilterInFetchAll(unittest.TestCase):

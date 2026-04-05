@@ -29,29 +29,70 @@ _BAD_TICKERS = {
     "PCRFY",
     # Foreign-primary listings the model sometimes returns without a suffix
     # LGES = LG Energy Solution (KRX:373220, not US-listed)
-    "LGES",
+    # SMIC = Semiconductor Manufacturing International (HKEx, OTC ADR is SMICY)
+    "LGES", "SMIC",
     # Thin-float or low-AUM tickers with unreliable yfinance data
     # ARNC = Arconic Corp (inconsistent coverage after Howmet spinoff)
     # EGPT = VanEck Egypt ETF (very low volume, frequently returns empty data)
     "ARNC", "EGPT",
+    # Defense/shipping tickers the model sometimes hallucinates
+    # BAE = BAE Systems (LSE-primary, no US-listed common stock)
+    # RHMT = Rheinmetall (FRA-primary, not US-listed)
+    "BAE", "RHMT",
 }
 
 # Keyword → US-proxy-ETF fallback map.
 # Used only when too few clean tickers survive filtering.
 # Keywords are matched against the lowercased headline + mechanism text.
 _PROXY_MAP = [
-    (["semiconductor", "chip", "foundry", "lithography", "wafer", "fab"],  ["SMH", "SOXX"]),
+    # Semiconductors — expanded to cover supply-chain breadth
+    (["semiconductor", "chip", "foundry", "lithography", "wafer", "fab",
+      "asml", "tsmc", "euv", "packaging", "hbm", "dram", "nand"],         ["SMH", "SOXX", "TSM"]),
+    # Defense & aerospace
+    (["defense", "defence", "military", "weapon", "nato", "arms",
+      "missile", "rearm", "munition", "fighter jet", "warship",
+      "pentagon", "defense spend", "defence spend"],                        ["ITA", "XAR", "LMT"]),
+    # Shipping & logistics
+    (["shipping", "tanker", "freight", "vessel", "maritime", "chokepoint",
+      "dry bulk", "container", "suez", "strait of hormuz", "red sea",
+      "port closure", "blockade"],                                          ["BDRY", "FRO", "STNG"]),
+    # Energy — kept for backward compat
+    (["oil", "crude", "opec", "petroleum", "refin", "brent", "barrel"],     ["XLE", "USO", "BNO"]),
+    (["lng", "liquefied natural gas", "gas export", "gas terminal"],        ["LNG", "UNG"]),
+    # Metals & mining
     (["palladium", "platinum", "pgm", "precious metal"],                    ["PALL", "PPLT"]),
     (["metal", "mining", "copper", "nickel", "aluminum", "steel"],          ["XME", "COPX"]),
-    (["lng", "liquefied natural gas", "gas export", "gas terminal"],        ["LNG", "UNG"]),
-    (["oil", "crude", "opec", "petroleum", "refin", "brent", "barrel"],     ["XLE", "USO", "BNO"]),
-    (["shipping", "tanker", "freight", "vessel", "maritime", "chokepoint"], ["FRO", "STNG"]),
+    # Safe-haven & macro
     (["gold", "safe haven", "geopolit", "conflict", "war risk"],            ["GLD"]),
     (["treasury", "rate cut", "rate hike", "central bank", "yield"],        ["TLT", "IEF"]),
+    # EV & battery
     (["ev", "electric vehicle", "battery", "lithium"],                      ["DRIV", "LIT"]),
+    # Agriculture
     (["wheat", "grain", "agriculture", "soybean", "corn"],                  ["WEAT", "DBA"]),
-    (["defense", "military", "weapon", "nato", "arms"],                     ["ITA", "XAR"]),
+    # Country exposure
     (["china", "chinese"],                                                   ["FXI", "KWEB"]),
+    (["taiwan", "taiwanese"],                                                ["EWT"]),
+    (["south korea", "korean"],                                              ["EWY"]),
+]
+
+# Loser-side fallback proxies — inverse/short ETFs by theme.
+# Used only when ALL loser tickers are removed by sanitization.
+# Each proxy is tagged with "(proxy)" in the output so downstream
+# consumers know it's a sector-level fallback, not direct company exposure.
+_LOSER_PROXY_MAP = [
+    (["oil", "crude", "opec", "petroleum", "refin", "brent", "barrel",
+      "energy", "fuel", "pipeline", "lng"],                                  ["SH"]),       # ProShares Short S&P 500 (broad short)
+    (["semiconductor", "chip", "foundry", "lithography", "wafer", "fab",
+      "asml", "tsmc", "euv", "hbm", "dram", "nand"],                        ["SOXS"]),     # Direxion Daily Semiconductor Bear 3x
+    (["metal", "mining", "copper", "nickel", "aluminum", "steel",
+      "rare earth", "lithium", "cobalt"],                                    ["SH"]),
+    (["defense", "defence", "military", "weapon", "nato", "arms"],           ["SH"]),
+    (["shipping", "tanker", "freight", "vessel", "maritime"],                ["SH"]),
+    (["china", "chinese", "beijing"],                                        ["YANG"]),     # Direxion Daily FTSE China Bear 3x
+    (["treasury", "rate cut", "rate hike", "central bank", "yield",
+      "bond", "bonds"],                                                      ["TBT"]),      # ProShares UltraShort 20+ Year Treasury
+    (["gold", "safe haven"],                                                 ["GLL"]),      # ProShares UltraShort Gold
+    (["wheat", "grain", "agriculture", "soybean", "corn", "food"],           ["SH"]),
 ]
 
 
@@ -114,6 +155,23 @@ def _clean_assets(assets: list, context: str = "") -> list:
     # 5. Cap at 5
     return cleaned[:5]
 
+
+def _backfill_losers(cleaned: list[str], context: str) -> list[str]:
+    """Add inverse/short ETF proxies when the loser list is empty after sanitization.
+
+    Only fires when cleaned is empty and context is non-empty.
+    Returns the tickers with a "(proxy)" suffix so the UI/storage can distinguish
+    fallback proxies from direct company tickers.
+    """
+    if cleaned or not context:
+        return cleaned
+    ctx = context.lower()
+    for keywords, proxies in _LOSER_PROXY_MAP:
+        if any(kw in ctx for kw in keywords):
+            return [f"{p} (proxy)" for p in proxies]
+    return cleaned
+
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -123,6 +181,7 @@ except ImportError:
 from prompts import SYSTEM_PROMPT, EVENT_ANALYSIS_PROMPT
 
 _PLACEHOLDER = "your_api_key_here"
+_DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
 def _extract_json(text: str) -> dict | None:
@@ -225,6 +284,7 @@ def _mock(reason: str) -> dict:
         "loser_tickers": ["USO"],
         "assets_to_watch": ["GLD", "USO"],
         "confidence": "low",
+        "transmission_chain": [],
     }
 
 
@@ -245,7 +305,7 @@ def _coerce_ticker_field(value) -> list[str]:
 
 
 def analyze_event(headline: str, stage: str, persistence: str,
-                   event_context: str = "") -> dict:
+                   event_context: str = "", model: str | None = None) -> dict:
     """
     Call the LLM and return a structured analysis of the event.
     Falls back to a mock response if the key is missing or the call fails.
@@ -253,8 +313,12 @@ def analyze_event(headline: str, stage: str, persistence: str,
     event_context: optional multi-source context string.  When provided it is
     injected into the prompt so the model can weigh corroboration, source
     reliability, and inter-source disagreement.
+
+    model: Anthropic model ID to use. Defaults to ANTHROPIC_MODEL env var,
+    then _DEFAULT_MODEL. Pass explicitly to A/B test in eval runs.
     """
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    model = model or os.getenv("ANTHROPIC_MODEL", _DEFAULT_MODEL)
 
     if not api_key or api_key == _PLACEHOLDER:
         print("[analyze_event] No API key found. Returning mock response.")
@@ -273,7 +337,7 @@ def analyze_event(headline: str, stage: str, persistence: str,
 
         client = anthropic.Anthropic(api_key=api_key)
         message = client.messages.create(
-            model="claude-opus-4-6",
+            model=model,
             max_tokens=1024,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
@@ -298,6 +362,7 @@ def analyze_event(headline: str, stage: str, persistence: str,
         result.setdefault("beneficiaries", [])
         result.setdefault("losers", [])
         result.setdefault("confidence", "low")
+        result.setdefault("transmission_chain", [])
 
         # Sanitize both ticker lists separately, then merge into assets_to_watch
         # for backward-compatible db storage.
@@ -307,7 +372,10 @@ def analyze_event(headline: str, stage: str, persistence: str,
         raw_los = _coerce_ticker_field(result.get("loser_tickers"))
 
         beneficiary_tickers = _clean_assets(raw_ben, context=context)
-        loser_tickers = _clean_assets(raw_los, context=context)
+        # Losers: sanitize without long-proxy backfill, then add inverse proxies
+        # if the list is completely empty.
+        loser_tickers = _clean_assets(raw_los, context="")
+        loser_tickers = _backfill_losers(loser_tickers, context)
         # Merge while preserving order and removing duplicates
         seen: set = set()
         assets_to_watch = []

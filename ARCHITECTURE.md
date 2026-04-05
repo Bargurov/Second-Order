@@ -1,30 +1,30 @@
 # Architecture Notes
 
-This document explains the current V1 workflow in plain language. It is meant
-to clarify how the project reasons about headlines without turning the design
+This document explains the repo's reasoning flow in plain language. It is
+meant to clarify how the project handles headlines without turning the design
 into a large framework.
 
-## V1 framing
+## Current product state
 
-The public V1.5 story is energy-focused. The intended use case is to take an
-energy-related headline, classify it, extract the hidden economic mechanism,
-and review whether a simple market check provides supporting evidence. The
-current app works end to end, but the Streamlit layer is still a basic demo
-rather than a polished product interface.
+The maintained product path is now a React frontend backed by FastAPI, with
+SQLite persistence, live inbox ingestion, progressive analysis, recent-event
+review, and dated backtesting. The old Streamlit file remains in the repo only
+as frozen historical reference and should not be read as the current UI plan.
 
-## Roadmap
+## Historical context
 
-- `V1.5`: backend engine plus a basic Streamlit demo
-- `V2`: news ingestion plus an inbox-style review flow
-- `V2.5`: UI/UX rework and polish for demo quality
+- `V1.5`: backend engine plus an early Streamlit demo
+- `V2`: live news ingestion plus an inbox-style review flow
+- `V2.5`: React/FastAPI product surface and demo polish
 - `V3`: OpenClaw and chat-style orchestration
 
 ## Workflow
 
 ### 1. Headline input
 
-The workflow starts with one pasted headline. The system treats the headline
-as a compact description of an event rather than a full article.
+The workflow now starts from the live inbox or a pasted headline. The system
+treats the headline as a compact description of an event rather than a full
+article.
 
 ### 2. Event classification
 
@@ -54,10 +54,11 @@ it is evidence, not proof. A supportive market read can strengthen the case
 for a mechanism, but it does not confirm it. A weak or noisy read does not
 necessarily invalidate the idea either.
 
-### 6. Local persistence
+### 6. Local persistence and review
 
-The resulting record can be saved locally for later review. This keeps the
-workflow inspectable and lightweight.
+The resulting record can be saved locally for later review, related-event
+lookup, notes, ratings, and dated backtesting. This keeps the workflow
+inspectable and lightweight.
 
 ## Interpretation guidance
 
@@ -65,10 +66,11 @@ workflow inspectable and lightweight.
 - Mechanism output is provisional and should be reviewed critically.
 - Market validation is evidence, not proof.
 - The overall workflow is designed for practical review, not formal prediction.
+- The maintained app surface is FastAPI + React, not the legacy Streamlit file.
 
 ## Out of scope
 
 - No RAG
 - No dashboards
 - No OpenClaw in the current phase
-- No full product-grade frontend beyond the current basic Streamlit demo
+- No hosted multi-user platform in the current phase
