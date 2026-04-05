@@ -89,6 +89,34 @@ def _cache_set(key: str, val: object) -> None:
     _TICKER_CACHE[key] = (_time.monotonic(), val)
 
 
+from datetime import date as _date_type, timedelta as _timedelta
+
+def _clamp_to_market_date(date_str: str) -> str:
+    """Clamp a date string to the latest plausible market date.
+
+    - Future dates → today
+    - Weekend dates → preceding Friday
+    - Returns a YYYY-MM-DD string that is always <= today and a weekday.
+    """
+    try:
+        d = _date_type.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        d = _date_type.today()
+
+    today = _date_type.today()
+    if d > today:
+        d = today
+
+    # Roll back to Friday if Saturday (5) or Sunday (6)
+    wd = d.weekday()
+    if wd == 5:
+        d = d - _timedelta(days=1)
+    elif wd == 6:
+        d = d - _timedelta(days=2)
+
+    return d.isoformat()
+
+
 def _fetch(ticker: str):
     """Download ~3 months of daily data for one ticker. Returns a DataFrame or None."""
     key = f"fetch:{ticker.upper()}"
@@ -107,14 +135,19 @@ def _fetch(ticker: str):
 
 
 def _fetch_since(ticker: str, start_date: str):
-    """Download daily data from start_date to today. Returns a DataFrame or None."""
-    key = f"since:{ticker.upper()}:{start_date}"
+    """Download daily data from start_date to today. Returns a DataFrame or None.
+
+    The start_date is clamped to the latest valid market date so future or
+    weekend dates don't produce inverted ranges or empty results.
+    """
+    clamped = _clamp_to_market_date(start_date)
+    key = f"since:{ticker.upper()}:{clamped}"
     cached = _cache_get(key)
     if cached is not None:
         return cached
 
     import yfinance as yf
-    data = yf.download(ticker, start=start_date, interval="1d", progress=False, auto_adjust=True)
+    data = yf.download(ticker, start=clamped, interval="1d", progress=False, auto_adjust=True)
     if data.empty:
         return None
     if hasattr(data.columns, "levels"):
@@ -669,9 +702,6 @@ def classify_decay(return_5d: float | None, return_20d: float | None) -> dict:
 # Ticker detail helpers
 # ---------------------------------------------------------------------------
 
-from datetime import date as _date, timedelta as _timedelta
-
-
 def ticker_chart(symbol: str, event_date: str, window: int = 30) -> list[dict]:
     """Return daily closes for a ticker centered on event_date.
 
@@ -680,12 +710,14 @@ def ticker_chart(symbol: str, event_date: str, window: int = 30) -> list[dict]:
     can draw a vertical marker.
     """
     try:
-        anchor = _date.fromisoformat(event_date)
+        clamped = _clamp_to_market_date(event_date)
+        anchor = _date_type.fromisoformat(clamped)
     except (ValueError, TypeError):
         return []
 
-    start = (anchor - _timedelta(days=window + 10)).isoformat()  # pad for weekends
-    end = (anchor + _timedelta(days=window + 10)).isoformat()
+    today = _date_type.today()
+    start = (anchor - _timedelta(days=window + 10)).isoformat()
+    end = min(anchor + _timedelta(days=window + 10), today).isoformat()
 
     import yfinance as yf
     key = f"chart:{symbol.upper()}:{start}:{end}"

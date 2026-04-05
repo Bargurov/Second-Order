@@ -36,3 +36,5 @@ here.
    Detect when two active Market Movers share affected tickers or sectors and flag compounding effects. This becomes much more useful once the archive has deeper event history.
 8. Contagion Risk Indicator
    Show adjacent sectors or regions at risk of spillover and map them to watchlist ETFs such as `EUFN`, `EZU`, and `EMB`. This is best after the OpenClaw delivery layer exists.
+9. Suppress noisy Yahoo Finance warnings
+   yfinance prints "possibly delisted" and "Failed downloads" to stderr for tickers that are valid but have no data for the requested date range. These are non-fatal and clutter the server log. Options: redirect yfinance logging to a file, filter known-harmless patterns, or switch to a proper market data provider (Polygon/Tiingo) that returns structured errors.

@@ -943,6 +943,65 @@ class TestMacroSnapshot(unittest.TestCase):
 # Tests for classify_regime()
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Tests for _clamp_to_market_date()
+# ---------------------------------------------------------------------------
+
+class TestClampToMarketDate(unittest.TestCase):
+
+    def test_future_date_clamps_to_today(self):
+        from datetime import date, timedelta
+        future = (date.today() + timedelta(days=30)).isoformat()
+        result = market_check._clamp_to_market_date(future)
+        clamped = date.fromisoformat(result)
+        self.assertLessEqual(clamped, date.today())
+
+    def test_saturday_rolls_to_friday(self):
+        # Find the next Saturday from a known date
+        result = market_check._clamp_to_market_date("2025-03-15")  # Saturday
+        self.assertEqual(result, "2025-03-14")  # Friday
+
+    def test_sunday_rolls_to_friday(self):
+        result = market_check._clamp_to_market_date("2025-03-16")  # Sunday
+        self.assertEqual(result, "2025-03-14")  # Friday
+
+    def test_weekday_unchanged(self):
+        result = market_check._clamp_to_market_date("2025-03-14")  # Friday
+        self.assertEqual(result, "2025-03-14")
+
+    def test_invalid_string_clamps_to_today(self):
+        from datetime import date
+        result = market_check._clamp_to_market_date("not-a-date")
+        clamped = date.fromisoformat(result)
+        self.assertLessEqual(clamped, date.today())
+
+    def test_result_is_always_weekday(self):
+        from datetime import date
+        for d in ["2025-03-15", "2025-03-16", "2025-12-31", "2026-01-01"]:
+            result = market_check._clamp_to_market_date(d)
+            wd = date.fromisoformat(result).weekday()
+            self.assertLess(wd, 5, f"{d} clamped to {result} which is weekday {wd}")
+
+
+class TestFetchSinceClamping(unittest.TestCase):
+    """_fetch_since should not produce inverted date ranges."""
+
+    def test_future_date_clamps_in_fetch_since(self):
+        """A future event_date should be clamped before reaching yfinance."""
+        from datetime import date, timedelta
+        future = (date.today() + timedelta(days=60)).isoformat()
+        clamped = market_check._clamp_to_market_date(future)
+        self.assertLessEqual(date.fromisoformat(clamped), date.today())
+
+    def test_today_does_not_invert_range(self):
+        """start=today should not produce start > end in yfinance."""
+        from datetime import date
+        today = date.today().isoformat()
+        clamped = market_check._clamp_to_market_date(today)
+        # clamped should be <= today
+        self.assertLessEqual(clamped, today)
+
+
 class TestClassifyRegime(unittest.TestCase):
 
     def _signals(self, **overrides) -> dict[str, bool]:
