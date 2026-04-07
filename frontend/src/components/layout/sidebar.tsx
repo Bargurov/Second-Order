@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  BarChart3,
   Newspaper,
   FlaskConical,
   Clock,
@@ -14,13 +15,14 @@ import {
   Activity,
 } from "lucide-react";
 
-export type Page = "inbox" | "analyze" | "events" | "backtest";
+export type Page = "overview" | "headlines" | "analyze" | "events" | "backtest";
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ElementType }[] = [
-  { id: "inbox", label: "Feed", icon: Newspaper },
-  { id: "analyze", label: "Analysis", icon: FlaskConical },
-  { id: "events", label: "Research Archive", icon: Clock },
-  { id: "backtest", label: "Backtest", icon: Target },
+  { id: "overview",  label: "Market Overview",  icon: BarChart3 },
+  { id: "headlines",  label: "Headlines",       icon: Newspaper },
+  { id: "analyze",   label: "Analysis",         icon: FlaskConical },
+  { id: "events",    label: "Research Archive",  icon: Clock },
+  { id: "backtest",  label: "Backtest",          icon: Target },
 ];
 
 interface SidebarProps {

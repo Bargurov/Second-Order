@@ -65,13 +65,13 @@ function EventRowSkeleton() {
 
 const RATING_META: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   good:  { icon: TrendingUp,   color: "val-pos",        bg: "bg-emerald-500/10 border-emerald-500/20" },
-  mixed: { icon: Minus,        color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  mixed: { icon: Minus,        color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/20" },
   poor:  { icon: TrendingDown, color: "val-neg",        bg: "bg-red-400/10 border-red-400/20" },
 };
 
 const CONFIDENCE_META: Record<string, { icon: React.ElementType; color: string }> = {
   high:   { icon: ShieldCheck, color: "val-pos" },
-  medium: { icon: Shield,      color: "text-amber-400" },
+  medium: { icon: Shield,      color: "text-gray-400" },
   low:    { icon: ShieldAlert, color: "val-neg" },
 };
 

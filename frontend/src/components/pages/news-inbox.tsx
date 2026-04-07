@@ -1,20 +1,28 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, FlaskConical, Newspaper, ArrowUp } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, type NewsCluster, type NewsResponse } from "@/lib/api";
+import { Sparkline } from "@/components/ui/sparkline";
+import {
+  RefreshCw, FlaskConical, Newspaper, EyeOff,
+  Zap, Calendar, Clock, Loader2, TrendingUp, TrendingDown,
+} from "lucide-react";
+import { api, type NewsCluster, type MarketMover } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
-import { MarketMovers } from "@/components/pages/market-movers";
+import { pct } from "@/lib/ticker-utils";
 import { StressStrip } from "@/components/ui/stress-strip";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function buildClusterContext(c: NewsCluster): string {
   const parts: string[] = [];
@@ -37,24 +45,310 @@ function buildClusterContext(c: NewsCluster): string {
   return parts.join("\n");
 }
 
-const POLL_MS = 5 * 60 * 1000;
+const PAGE_SIZE = 30;
 
-function ClusterSkeleton() {
+// ---------------------------------------------------------------------------
+// Still Moving Markets — hero section (persistent shocks)
+// ---------------------------------------------------------------------------
+
+function PersistentCard({ mover }: { mover: MarketMover }) {
+  const mech = mover.mechanism_summary || "";
+  const snippet = mech.length > 120 ? mech.slice(0, 117) + "..." : mech;
+  const days = mover.days_since_event ?? 0;
+
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-3 space-y-2">
-      <Skeleton className="h-3.5 w-4/5" />
-      <Skeleton className="h-3 w-2/5" />
-      <div className="flex gap-1.5 pt-0.5">
-        <Skeleton className="h-4 w-14 rounded" />
-        <Skeleton className="h-3 w-16" />
+    <Card className="overflow-hidden border-l-[3px] border-l-border">
+      <CardContent className="px-4 py-3 space-y-2">
+        {/* Top: headline + days badge */}
+        <div className="flex items-start gap-2">
+          <h3 className="text-[14px] font-bold leading-snug line-clamp-2 text-foreground flex-1">
+            {mover.headline}
+          </h3>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <Badge variant="outline" className="font-num text-[10px]">
+              {Math.round(mover.support_ratio * 100)}% agreement
+            </Badge>
+            <span className="text-[10px] text-muted-foreground font-num">
+              {days}d ago
+            </span>
+          </div>
+        </div>
+
+        {/* Snippet */}
+        {snippet && (
+          <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">{snippet}</p>
+        )}
+
+        {/* Ticker pills with returns + decay */}
+        <div className="flex flex-wrap gap-1.5">
+          {mover.tickers.slice(0, 3).map((t) => {
+            const up = t.return_5d != null && t.return_5d > 0;
+            const down = t.return_5d != null && t.return_5d < 0;
+            return (
+              <div
+                key={t.symbol}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-2 py-1"
+              >
+                <span className="font-num text-xs font-semibold">{t.symbol}</span>
+                {up && <TrendingUp className="h-3 w-3 val-pos" />}
+                {down && <TrendingDown className="h-3 w-3 val-neg" />}
+                <span className={cn("font-num text-[11px]", up && "val-pos", down && "val-neg")}>
+                  {pct(t.return_5d)}
+                </span>
+                {t.spark && t.spark.length > 2 && (
+                  <Sparkline data={t.spark} width={28} height={10} direction={t.return_5d} />
+                )}
+                {t.decay && t.decay !== "Unknown" && (
+                  <span className={cn(
+                    "text-[9px] font-medium px-1 py-px rounded",
+                    t.decay === "Accelerating" && "bg-red-900/30 text-red-400",
+                    t.decay === "Holding" && "bg-gray-800/40 text-gray-400",
+                  )}>
+                    {t.decay}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Event date */}
+        <span className="text-[10px] text-muted-foreground/50 font-num">{mover.event_date}</span>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StillMovingSection({ movers, isLoading }: { movers: MarketMover[] | undefined; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-bold">Still Moving Markets</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+  if (!movers || movers.length === 0) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-muted-foreground/40" />
+          <span className="text-sm font-bold text-muted-foreground/60">Still Moving Markets</span>
+        </div>
+        <div className="rounded-xl border border-dashed border-border px-4 py-3">
+          <span className="text-xs text-muted-foreground">No long-running effects detected right now</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Zap className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-bold">Still Moving Markets</span>
+        <span className="text-[10px] text-muted-foreground">
+          Second-order effects still active after 7+ days
+        </span>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {movers.map((m) => (
+          <PersistentCard key={m.event_id} mover={m} />
+        ))}
       </div>
     </div>
   );
 }
 
-function headlineSet(clusters: NewsCluster[]): Set<string> {
-  return new Set(clusters.map((c) => c.headline));
+// ---------------------------------------------------------------------------
+// Compact mover list (weekly / today)
+// ---------------------------------------------------------------------------
+
+function MoverMiniList({
+  title, icon, movers, isLoading,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  movers: MarketMover[] | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">{icon}<span className="text-xs font-semibold">{title}</span></div>
+        <div className="flex gap-3 overflow-hidden">
+          <Skeleton className="h-16 w-[300px] shrink-0 rounded-xl" />
+          <Skeleton className="h-16 w-[300px] shrink-0 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+  if (!movers || movers.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {icon}
+        <span className="text-xs font-semibold">{title}</span>
+        <span className="text-[10px] text-muted-foreground">{movers.length} event{movers.length !== 1 && "s"}</span>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {movers.slice(0, 5).map((m) => (
+          <div key={m.event_id} className="shrink-0 w-[300px] rounded-xl border border-border bg-card px-3 py-2 space-y-1">
+            <p className="text-[12px] font-semibold leading-snug line-clamp-2 text-foreground">{m.headline}</p>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Badge variant="outline" className="font-num text-[9px]">{Math.round(m.support_ratio * 100)}% agree</Badge>
+              <span className="font-num">{m.event_date}</span>
+              {m.tickers.length > 0 && (
+                <span className="font-num">{m.tickers.map((t) => t.symbol).join(", ")}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
+
+// ---------------------------------------------------------------------------
+// Headline row
+// ---------------------------------------------------------------------------
+
+function HeadlineRow({
+  c, onAnalyze, muted,
+}: {
+  c: NewsCluster;
+  onAnalyze?: (headline: string, context?: string) => void;
+  muted?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:border-foreground/15",
+        muted && "opacity-50",
+      )}
+    >
+      <Badge
+        variant="outline"
+        className={cn(
+          "shrink-0 font-num text-[10px] tabular-nums",
+          !muted && c.source_count >= 3 && "border-gray-500/40 bg-gray-900/30 text-gray-400",
+        )}
+      >
+        {c.source_count}
+      </Badge>
+      <span className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-foreground line-clamp-2">
+        {c.headline}
+      </span>
+      {onAnalyze && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+          onClick={() => onAnalyze(c.headline, buildClusterContext(c))}
+        >
+          <FlaskConical className="h-3 w-3" />
+          <span className="hidden sm:inline ml-1">Analyze</span>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Paginated headlines with infinite scroll
+// ---------------------------------------------------------------------------
+
+function PaginatedHeadlines({ onAnalyze }: { onAnalyze?: (headline: string, context?: string) => void }) {
+  const [showLowSignal, setShowLowSignal] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
+    queryKey: qk.newsPaginated(PAGE_SIZE),
+    queryFn: ({ pageParam = 0 }) => api.news(PAGE_SIZE, pageParam as number),
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((n, p) => n + p.clusters.length, 0);
+      if (loaded >= lastPage.total_count) return undefined;
+      return loaded;
+    },
+    initialPageParam: 0,
+    staleTime: 300_000,
+  });
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
+      { rootMargin: "200px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const allClusters = data?.pages.flatMap((p) => p.clusters) ?? [];
+  const totalCount = data?.pages[0]?.total_count ?? 0;
+  const normal = allClusters.filter((c) => !c.low_signal);
+  const lowSignal = allClusters.filter((c) => c.low_signal);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-1.5">
+        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Newspaper className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-semibold">Live Headlines</span>
+        <span className="text-[10px] text-muted-foreground">
+          {normal.length} of {totalCount} cluster{totalCount !== 1 && "s"}
+        </span>
+        {lowSignal.length > 0 && (
+          <button
+            onClick={() => setShowLowSignal((s) => !s)}
+            className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+          >
+            <EyeOff className="h-3 w-3" />
+            {showLowSignal ? "Hide" : "Show"} {lowSignal.length} low-signal
+          </button>
+        )}
+      </div>
+      <div className="fade-in grid gap-1.5 xl:grid-cols-2">
+        {normal.map((c) => <HeadlineRow key={c.headline} c={c} onAnalyze={onAnalyze} />)}
+      </div>
+      {showLowSignal && lowSignal.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest">Low signal</span>
+          <div className="grid gap-1.5 xl:grid-cols-2">
+            {lowSignal.map((c) => <HeadlineRow key={c.headline} c={c} onAnalyze={onAnalyze} muted />)}
+          </div>
+        </div>
+      )}
+      <div ref={sentinelRef} className="py-2 text-center">
+        {isFetchingNextPage && (
+          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Loading more headlines
+          </div>
+        )}
+        {!hasNextPage && allClusters.length > 0 && (
+          <span className="text-[11px] text-muted-foreground/50">No more headlines</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Feed page
+// ---------------------------------------------------------------------------
 
 interface NewsInboxProps {
   onAnalyze?: (headline: string, context?: string) => void;
@@ -63,114 +357,64 @@ interface NewsInboxProps {
 export function NewsInbox({ onAnalyze }: NewsInboxProps) {
   const queryClient = useQueryClient();
 
-  // Displayed clusters — separate from the query data so we can diff for "new stories"
-  const [displayed, setDisplayed] = useState<NewsCluster[]>([]);
-  const [displayedTotal, setDisplayedTotal] = useState(0);
-  const displayedRef = useRef<Set<string>>(new Set());
-
-  const [pendingData, setPendingData] = useState<NewsResponse | null>(null);
-  const [newCount, setNewCount] = useState(0);
-
-  const { data: queryData, isLoading, error, isFetching } = useQuery({
-    queryKey: qk.news(),
-    queryFn: () => api.news(),
-    refetchInterval: POLL_MS,
-    refetchIntervalInBackground: false,
+  const { data: initialData, isLoading: initialLoading, error } = useQuery({
+    queryKey: qk.newsPaginated(1),
+    queryFn: () => api.news(1, 0),
+    staleTime: 300_000,
   });
 
-  // Sync query data → displayed state
-  const dataUpdatedAt = queryData ? JSON.stringify(queryData.clusters.length) : "";
-  useEffect(() => {
-    if (!queryData) return;
-    if (displayed.length === 0) {
-      // Initial load
-      setDisplayed(queryData.clusters);
-      setDisplayedTotal(queryData.total_headlines);
-      displayedRef.current = headlineSet(queryData.clusters);
-    } else {
-      // Background refetch — diff for new stories
-      const incoming = headlineSet(queryData.clusters);
-      let count = 0;
-      for (const h of incoming) {
-        if (!displayedRef.current.has(h)) count++;
-      }
-      if (count > 0) {
-        setPendingData(queryData);
-        setNewCount(count);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataUpdatedAt]);
+  const { data: persistentMovers, isLoading: persistentLoading } = useQuery({
+    queryKey: qk.moversPersistent(),
+    queryFn: () => api.moversPersistent(),
+    staleTime: 1_800_000,
+  });
 
-  const applyPending = useCallback(() => {
-    if (!pendingData) return;
-    setDisplayed(pendingData.clusters);
-    setDisplayedTotal(pendingData.total_headlines);
-    displayedRef.current = headlineSet(pendingData.clusters);
-    setPendingData(null);
-    setNewCount(0);
-  }, [pendingData]);
+  const { data: weeklyMovers, isLoading: weeklyLoading } = useQuery({
+    queryKey: qk.moversWeekly(),
+    queryFn: () => api.moversWeekly(),
+    staleTime: 1_800_000,
+  });
+
+  const { data: todayMovers, isLoading: todayLoading } = useQuery({
+    queryKey: qk.moversToday(),
+    queryFn: () => api.moversToday(),
+    staleTime: 300_000,
+  });
 
   const refresh = useCallback(() => {
-    setPendingData(null);
-    setNewCount(0);
-    // Force refetch — onSuccess will update displayed since we clear it first
-    setDisplayed([]);
-    queryClient.invalidateQueries({ queryKey: qk.news() });
+    queryClient.invalidateQueries({ queryKey: ["news"] });
+    queryClient.invalidateQueries({ queryKey: ["movers"] });
   }, [queryClient]);
 
-  const loading = isLoading || (isFetching && displayed.length === 0);
+  const hasClusters = (initialData?.total_count ?? 0) > 0;
+  const loading = initialLoading;
   const errMsg = error instanceof Error ? error.message : error ? String(error) : null;
 
   return (
     <div className="flex h-full flex-col gap-3">
+      {/* Top bar */}
       <div className="soft-panel flex shrink-0 flex-col gap-3 rounded-[22px] px-4 py-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 space-y-1">
           <p className="section-kicker">Coverage</p>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="truncate text-lg font-semibold tracking-[-0.02em] text-foreground">Feed</h2>
-            <span className="metric-chip">
-              <span className="font-num">{displayedTotal}</span>
-              headline{displayedTotal !== 1 && "s"}
-            </span>
+            {initialData && (
+              <span className="metric-chip">
+                <span className="font-num">{initialData.total_headlines}</span> headline{initialData.total_headlines !== 1 && "s"}
+              </span>
+            )}
           </div>
-          <p className="max-w-3xl text-[12px] leading-5 text-foreground/78">
-            Curated policy, macro, energy, trade, and geopolitical coverage merged with your local inbox and clustered into review candidates.
-          </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="hidden rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground/80 md:inline-flex">
-            {loading ? "Refreshing feeds" : "Polling every 5 minutes"}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refresh}
-            disabled={loading}
-            className="shrink-0 disabled:border-border disabled:bg-secondary disabled:text-foreground/50"
-          >
-            <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
-            <span className="hidden sm:inline">Refresh inbox</span>
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className="shrink-0">
+          <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+          <span className="hidden sm:inline">Refresh</span>
+        </Button>
       </div>
-
-      {newCount > 0 && (
-        <button
-          onClick={applyPending}
-          className="fade-in flex shrink-0 items-center justify-center gap-1.5 rounded-[16px] border border-sidebar-primary/25 bg-card px-3 py-2 text-2xs font-semibold text-sidebar-primary shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:bg-sidebar-primary/5"
-        >
-          <ArrowUp className="h-3 w-3" />
-          View <span className="font-num">{newCount}</span> new stor{newCount === 1 ? "y" : "ies"}
-        </button>
-      )}
 
       {errMsg && (
         <Card className="shrink-0 border-destructive/30 bg-destructive/5">
           <CardContent className="flex items-start gap-3 py-4 text-destructive">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white">
-              <Newspaper className="h-4 w-4" />
-            </div>
+            <Newspaper className="h-4 w-4 mt-0.5" />
             <div className="space-y-1">
               <p className="text-[12px] font-medium">Inbox unavailable</p>
               <p className="text-2xs leading-5 text-destructive/90">{errMsg}</p>
@@ -179,91 +423,55 @@ export function NewsInbox({ onAnalyze }: NewsInboxProps) {
         </Card>
       )}
 
-      {loading && displayed.length === 0 && (
-        <div className="min-h-0 flex-1 space-y-1.5">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <ClusterSkeleton key={i} />
-          ))}
+      {loading && (
+        <div className="min-h-0 flex-1 space-y-3">
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
         </div>
       )}
 
-      {!loading && !errMsg && displayed.length === 0 && (
+      {!loading && !errMsg && !hasClusters && (
         <Card className="empty-surface flex flex-1 items-center justify-center">
           <CardContent className="flex max-w-md flex-col items-center gap-3 py-12 text-center text-muted-foreground">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-white">
-              <Newspaper className="h-6 w-6 opacity-70" />
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-foreground">No headlines available</p>
-              <p className="text-[12px] leading-5 text-foreground/72">
-                Start the API, check feed connectivity, or add entries to the local inbox before refreshing.
-              </p>
-            </div>
+            <Newspaper className="h-6 w-6 opacity-70" />
+            <p className="text-sm font-medium text-foreground">No headlines available</p>
+            <p className="text-[12px] leading-5 text-foreground/72">Start the API or check feed connectivity.</p>
           </CardContent>
         </Card>
       )}
 
-      {displayed.length > 0 && (
+      {!loading && hasClusters && (
         <ScrollArea className="min-h-0 flex-1">
-          <div className="pr-2 space-y-5">
-          {/* Stress regime */}
-          <StressStrip />
+          <div className="pr-2 space-y-1">
+            {/* 1. Uncertainty & Market Instability */}
+            <StressStrip />
+            <Separator className="my-3" />
 
-          {/* Market Movers section */}
-          <MarketMovers />
+            {/* 2. Still Moving Markets — hero */}
+            <StillMovingSection movers={persistentMovers} isLoading={persistentLoading} />
+            <Separator className="my-3" />
 
-          {/* Headline feed section */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Newspaper className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs font-semibold">Headlines</span>
-              <span className="text-[10px] text-muted-foreground">
-                Clustered from {displayed.length} source{displayed.length !== 1 && "s"}
-              </span>
-            </div>
-            <div className="fade-in grid gap-2 xl:grid-cols-2">
-            {displayed.map((c) => (
-              <Card
-                key={c.headline}
-                className="group overflow-hidden border-border bg-card transition-colors hover:border-foreground/15 hover:bg-card"
-              >
-                <CardHeader className="gap-3 border-b border-border bg-secondary/35 px-4 py-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="text-[14px] leading-6 font-semibold text-foreground">
-                      {c.headline}
-                    </CardTitle>
-                    {onAnalyze && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0 text-foreground/85 hover:text-foreground"
-                        onClick={() => onAnalyze(c.headline, buildClusterContext(c))}
-                      >
-                        <FlaskConical className="h-3 w-3" />
-                        <span className="hidden sm:inline">Open analysis</span>
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="flex items-center justify-between gap-3 py-3">
-                  <p className="text-[12px] leading-5 text-foreground/76">
-                    Reported by <span className="font-num">{c.source_count}</span> source{c.source_count !== 1 && "s"}. Consolidated for quick review so overlapping coverage becomes one event candidate.
-                  </p>
-                  {onAnalyze && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0 md:hidden"
-                      onClick={() => onAnalyze(c.headline, buildClusterContext(c))}
-                    >
-                      Analyze
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-            </div>
-          </div>
+            {/* 3. This Week's Moves */}
+            <MoverMiniList
+              title="This Week's Moves"
+              icon={<Calendar className="h-3.5 w-3.5 text-muted-foreground" />}
+              movers={weeklyMovers}
+              isLoading={weeklyLoading}
+            />
+            <Separator className="my-3" />
+
+            {/* 4. Today */}
+            <MoverMiniList
+              title="Today"
+              icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />}
+              movers={todayMovers}
+              isLoading={todayLoading}
+            />
+            <Separator className="my-3" />
+
+            {/* 5. Live Headlines */}
+            <PaginatedHeadlines onAnalyze={onAnalyze} />
           </div>
         </ScrollArea>
       )}

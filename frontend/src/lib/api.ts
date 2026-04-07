@@ -31,10 +31,10 @@ export interface TickerBase {
 export interface Ticker extends TickerBase {
   label: string;
   direction_tag: string | null;
-  return_1d: number;
-  return_5d: number;
-  return_20d: number;
-  volume_ratio: number;
+  return_1d: number | null;
+  return_5d: number | null;
+  return_20d: number | null;
+  volume_ratio: number | null;
   vs_xle_5d: number | null;
 }
 
@@ -54,6 +54,52 @@ export interface AnalysisDetail {
   assets_to_watch: string[];
   confidence: string;
   transmission_chain?: string[];
+  if_persists?: IfPersists;
+  currency_channel?: CurrencyChannel;
+  policy_sensitivity?: PolicySensitivity;
+  inventory_context?: InventoryContext;
+  historical_analogs?: HistoricalAnalog[];
+}
+
+export interface IfPersists {
+  substitution?: string | null;
+  delayed_winners?: string[];
+  delayed_losers?: string[];
+  horizon?: string | null;
+}
+
+export interface CurrencyChannel {
+  pair?: string;
+  mechanism?: string;
+  beneficiaries?: string;
+  squeezed?: string;
+}
+
+export interface PolicySensitivity {
+  stance?: "reinforced" | "fighting" | "neutral";
+  explanation?: string;
+  regime?: string;
+}
+
+export interface InventoryContext {
+  status?: "tight" | "comfortable" | "neutral";
+  proxy?: string;
+  proxy_label?: string;
+  return_20d?: number;
+  explanation?: string;
+}
+
+export interface HistoricalAnalog {
+  headline: string;
+  event_date: string | null;
+  stage: string;
+  persistence: string;
+  confidence: string;
+  return_5d: number | null;
+  return_20d: number | null;
+  decay: string;
+  similarity?: number;
+  match_reason?: string;
 }
 
 export interface AnalyzeResponse {
@@ -118,6 +164,43 @@ export interface MacroEntry {
   unit: string;
 }
 
+export interface MarketSnapshot {
+  market: string;
+  symbol: string | null;
+  label: string;
+  unit: string;
+  asset_class: string;
+  source: string;
+  value: number | null;
+  change_1d: number | null;
+  change_5d: number | null;
+  fetched_at: string | null;
+  error: string | null;
+  stale: boolean;
+}
+
+export interface SnapshotsMeta {
+  total: number;
+  fresh: number;
+  stale: number;
+  unavailable: number;
+}
+
+export interface HighlightsMeta {
+  count: number;
+  source: string;
+}
+
+export interface MarketContext {
+  built_at: string;
+  source: string;
+  snapshots: MarketSnapshot[];
+  snapshots_meta: SnapshotsMeta;
+  stress: StressRegime & { available?: boolean };
+  highlights: MarketMover[];
+  highlights_meta: HighlightsMeta;
+}
+
 export interface ChartPoint {
   date: string;
   close: number;
@@ -132,6 +215,20 @@ export interface TickerInfo {
   avg_volume: number | null;
 }
 
+export interface StressComponentDetail {
+  label: string;
+  status: "calm" | "watch" | "stressed";
+  explanation: string;
+  value?: number | null;
+  avg20?: number | null;
+  change_5d?: number | null;
+  vix3m?: number | null;
+  spread_5d?: number | null;
+  gap_5d?: number | null;
+  assets?: Record<string, number | null>;
+  inflow_count?: number;
+}
+
 export interface StressRegime {
   regime: string;
   signals: {
@@ -141,6 +238,22 @@ export interface StressRegime {
     safe_haven_bid: boolean;
     breadth_deterioration: boolean;
   };
+  raw: Record<string, number>;
+  detail?: Record<string, StressComponentDetail>;
+  summary?: string;
+}
+
+export interface RatesContextEntry {
+  label: string;
+  value?: number | null;
+  change_5d?: number | null;
+}
+
+export interface RatesContext {
+  regime: string;
+  nominal: RatesContextEntry;
+  real_proxy: RatesContextEntry;
+  breakeven_proxy: RatesContextEntry;
   raw: Record<string, number>;
 }
 
@@ -163,6 +276,12 @@ export interface MarketMover {
     decay?: string;
     decay_evidence?: string;
   }[];
+  transmission_chain?: string[];
+  if_persists?: IfPersists;
+  currency_channel?: CurrencyChannel;
+  policy_sensitivity?: PolicySensitivity;
+  inventory_context?: InventoryContext;
+  days_since_event?: number;
 }
 
 export interface TickerHeadline {
@@ -177,12 +296,15 @@ export interface NewsCluster {
   consensus?: Record<string, unknown>;
   sources: { name: string; tier?: string }[];
   source_count: number;
+  low_signal?: boolean;
   agreement?: string;
 }
 
 export interface NewsResponse {
   clusters: NewsCluster[];
   total_headlines: number;
+  total_count: number;
+  feed_status?: unknown[];
 }
 
 export const api = {
@@ -268,9 +390,6 @@ export const api = {
       body: JSON.stringify({ event_ids: eventIds }),
     }),
 
-  macro: (eventDate?: string) =>
-    request<MacroEntry[]>(`/macro${eventDate ? `?event_date=${eventDate}` : ""}`),
-
   macroBatch: (eventDates: string[]) =>
     request<Record<string, MacroEntry[]>>("/macro/batch", {
       method: "POST",
@@ -279,7 +398,20 @@ export const api = {
 
   stress: () => request<StressRegime>("/stress"),
 
+  ratesContext: () => request<RatesContext>("/rates-context"),
+
+  snapshots: (refresh = false) =>
+    request<MarketSnapshot[]>(`/snapshots${refresh ? "?refresh=true" : ""}`),
+
+  marketContext: (highlightLimit = 3) =>
+    request<MarketContext>(`/market-context?highlight_limit=${highlightLimit}`),
+
   marketMovers: () => request<MarketMover[]>("/market-movers"),
+
+  moversToday: () => request<MarketMover[]>("/movers/today"),
+  moversWeekly: () => request<MarketMover[]>("/movers/weekly"),
+  moversYearly: () => request<MarketMover[]>("/movers/yearly"),
+  moversPersistent: () => request<MarketMover[]>("/movers/persistent"),
 
   tickerChart: (symbol: string, eventDate: string) =>
     request<ChartPoint[]>(`/ticker/${encodeURIComponent(symbol)}/chart?event_date=${eventDate}`),
@@ -290,5 +422,11 @@ export const api = {
   tickerHeadlines: (symbol: string) =>
     request<TickerHeadline[]>(`/ticker/${encodeURIComponent(symbol)}/headlines`),
 
-  news: () => request<NewsResponse>("/news"),
+  news: (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (offset) params.set("offset", String(offset));
+    const qs = params.toString();
+    return request<NewsResponse>(`/news${qs ? `?${qs}` : ""}`);
+  },
 };

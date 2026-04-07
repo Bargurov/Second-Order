@@ -128,7 +128,7 @@ function EventScorecard({
           <Badge variant="outline">{event.persistence}</Badge>
           <ConfIcon className={cn("h-3 w-3",
             event.confidence === "high" && "val-pos",
-            event.confidence === "medium" && "text-amber-400",
+            event.confidence === "medium" && "text-gray-400",
             event.confidence === "low" && "val-neg",
           )} />
           {event.event_date && (

@@ -3,15 +3,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar, type Page } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
-import { NewsInbox } from "@/components/pages/news-inbox";
+import { MarketOverview } from "@/components/pages/market-overview";
+import { HeadlinesPage } from "@/components/pages/headlines-page";
 import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
 import { Backtest } from "@/components/pages/backtest";
+import { cn } from "@/lib/utils";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,        // 1 min before background refetch
+      staleTime: 60_000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -32,7 +34,7 @@ function useAutoCollapse() {
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>("inbox");
+  const [page, setPage] = useState<Page>("overview");
   const [collapsed, setCollapsed] = useAutoCollapse();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingHeadline, setPendingHeadline] = useState<string | undefined>();
@@ -81,17 +83,18 @@ export default function App() {
                 }
               }}
             />
-            <main className="relative flex-1 overflow-hidden px-3 pb-3 pt-3 md:px-5 md:pb-5 md:pt-4">
-              <div className="mx-auto h-full max-w-[1480px] page-enter" key={page}>
-                {page === "inbox" && (
-                  <NewsInbox onAnalyze={analyzeHeadline} />
+            <main className="relative flex-1 overflow-auto px-3 pb-3 pt-3 md:px-5 md:pb-5 md:pt-4">
+              <div className={cn("mx-auto max-w-[1480px] page-enter", page === "overview" ? "h-full" : "min-h-full")} key={page}>
+                {page === "overview" && <MarketOverview onAnalyze={analyzeHeadline} />}
+                {page === "headlines" && (
+                  <HeadlinesPage onAnalyze={analyzeHeadline} />
                 )}
                 {page === "analyze" && (
                   <AnalysisView
                     initialHeadline={pendingHeadline}
                     initialContext={pendingContext}
                     onHeadlineConsumed={() => { setPendingHeadline(undefined); setPendingContext(undefined); }}
-                    onBack={() => setPage("inbox")}
+                    onBack={() => setPage("overview")}
                   />
                 )}
                 {page === "events" && <RecentEvents />}

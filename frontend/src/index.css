@@ -36,34 +36,34 @@
   }
 
   .dark {
-    --background: 240 6% 6%;       /* ~zinc-950 */
-    --foreground: 60 5% 90%;       /* warm off-white */
-    --card: 240 5% 10%;            /* ~zinc-900 */
-    --card-foreground: 60 5% 90%;
-    --popover: 240 5% 10%;
-    --popover-foreground: 60 5% 90%;
-    --primary: 60 5% 90%;
-    --primary-foreground: 240 6% 6%;
-    --secondary: 240 4% 14%;       /* between bg and card */
-    --secondary-foreground: 60 5% 90%;
-    --muted: 240 4% 14%;
-    --muted-foreground: 240 5% 55%;
-    --accent: 240 4% 14%;
-    --accent-foreground: 60 5% 90%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 248 25% 6%;       /* #0e0e13 */
+    --foreground: 249 50% 93%;      /* #e6e3f7 */
+    --card: 240 23% 12%;            /* #191922 — surface container */
+    --card-foreground: 249 50% 93%;
+    --popover: 240 23% 12%;
+    --popover-foreground: 249 50% 93%;
+    --primary: 181 38% 70%;         /* #93d1d3 — teal */
+    --primary-foreground: 248 25% 6%;
+    --secondary: 240 16% 9%;        /* #13131a — surface-container-low */
+    --secondary-foreground: 249 50% 93%;
+    --muted: 240 16% 9%;
+    --muted-foreground: 245 12% 70%; /* #aba9bc */
+    --accent: 237 16% 17%;          /* #242533 — surface-container-highest */
+    --accent-foreground: 249 50% 93%;
+    --destructive: 3 77% 70%;       /* #ee7d77 */
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 18%;          /* ~zinc-800 */
-    --input: 240 4% 18%;
-    --ring: 240 5% 55%;
+    --border: 237 16% 17%;          /* #242533 */
+    --input: 237 16% 17%;
+    --ring: 181 38% 70%;
 
-    --sidebar-background: 240 6% 7%;   /* slightly lighter than bg */
-    --sidebar-foreground: 60 5% 85%;
-    --sidebar-primary: 220 70% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 14%;
-    --sidebar-accent-foreground: 60 5% 90%;
-    --sidebar-border: 240 4% 18%;
-    --sidebar-ring: 220 70% 55%;
+    --sidebar-background: 248 25% 6%;
+    --sidebar-foreground: 249 50% 86%;
+    --sidebar-primary: 181 38% 70%;
+    --sidebar-primary-foreground: 248 25% 6%;
+    --sidebar-accent: 240 16% 9%;
+    --sidebar-accent-foreground: 249 50% 93%;
+    --sidebar-border: 237 16% 17%;
+    --sidebar-ring: 181 38% 70%;
   }
 }
 
@@ -79,8 +79,14 @@
     -moz-osx-font-smoothing: grayscale;
     font-size: 14px;
     line-height: 1.55;
+  }
+
+  :root body {
     background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.28));
     background-attachment: fixed;
+  }
+  .dark body {
+    background-image: none;
   }
 
   /* Thin scrollbars */
@@ -100,7 +106,7 @@
   }
 
   ::selection {
-    background: hsl(var(--sidebar-primary) / 0.15);
+    background: hsl(var(--primary) / 0.15);
   }
 }
 
@@ -109,16 +115,18 @@
   .font-num {
     font-family: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
     font-variant-numeric: tabular-nums;
-    font-size: 0.85em; /* 1 step smaller than body to equalise x-height */
+    font-size: 0.85em;
     letter-spacing: -0.01em;
   }
 
-  /* Muted directional colours — serious, readable, not neon */
+  /* Directional colours — Stitch palette in dark, muted in light */
   .val-pos { color: #15803d; }
   .val-neg { color: #b91c1c; }
   .val-flat { color: hsl(var(--foreground) / 0.55); }
+  .dark .val-pos { color: #93d1d3; }
+  .dark .val-neg { color: #ee7d77; }
 
-  /* Smooth skeleton shimmer instead of pulse */
+  /* Smooth skeleton shimmer */
   .skel-shimmer {
     background: linear-gradient(
       90deg,
@@ -134,7 +142,6 @@
     100% { background-position: -200% 0; }
   }
 
-  /* Content fade-in for skeleton->data swap */
   .fade-in {
     animation: fade-in 200ms ease-out;
   }
@@ -143,7 +150,6 @@
     to   { opacity: 1; }
   }
 
-  /* Page transition */
   .page-enter {
     animation: page-in 150ms ease-out;
   }
@@ -183,4 +189,30 @@
     border: 1px dashed hsl(var(--border));
     background: hsl(var(--card));
   }
+
+  /* Carbon-fiber texture for uncertainty section */
+  .carbon-texture {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 1px,
+        rgba(255, 255, 255, 0.015) 1px,
+        rgba(255, 255, 255, 0.015) 2px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 1px,
+        rgba(255, 255, 255, 0.015) 1px,
+        rgba(255, 255, 255, 0.015) 2px
+      );
+  }
+
+  /* Tabular nums for financial data (Stitch reference) */
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* Headlines use Manrope */
+  h1, h2, h3 { font-family: 'Manrope', 'Inter', sans-serif; }
+
 }

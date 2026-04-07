@@ -112,7 +112,7 @@ export function TickerDetailPanel({ ticker, eventDate, extra, moverExtra }: Tick
           <span className={cn(
             "ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded",
             moverExtra.decay === "Accelerating" && "bg-red-100 text-red-700",
-            moverExtra.decay === "Holding" && "bg-amber-100 text-amber-700",
+            moverExtra.decay === "Holding" && "bg-gray-800/40 text-gray-400",
             moverExtra.decay === "Fading" && "bg-emerald-100 text-emerald-700",
             moverExtra.decay === "Reversed" && "bg-purple-100 text-purple-700",
           )}>

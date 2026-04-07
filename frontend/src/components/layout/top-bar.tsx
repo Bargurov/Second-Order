@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   PanelLeftClose,
   PanelLeft,
+  BarChart3,
   Newspaper,
   FlaskConical,
   Clock,
@@ -14,10 +15,11 @@ import { qk } from "@/lib/queryKeys";
 import type { Page } from "./sidebar";
 
 const PAGE_META: Record<Page, { title: string; icon: React.ElementType }> = {
-  inbox:     { title: "Feed",             icon: Newspaper },
+  overview:  { title: "Market Overview",  icon: BarChart3 },
+  headlines: { title: "Headlines",        icon: Newspaper },
   analyze:   { title: "Analysis",         icon: FlaskConical },
-  events:    { title: "Research Archive", icon: Clock },
-  backtest:  { title: "Backtest", icon: Target },
+  events:    { title: "Research Archive",  icon: Clock },
+  backtest:  { title: "Backtest",          icon: Target },
 };
 
 interface TopBarProps {
@@ -29,6 +31,7 @@ interface TopBarProps {
 export function TopBar({ page, sidebarCollapsed, onToggleSidebar }: TopBarProps) {
   const meta = PAGE_META[page];
   const Icon = meta.icon;
+  const isOverview = page === "overview";
 
   const { isSuccess, isError } = useQuery({
     queryKey: qk.health(),
@@ -39,7 +42,12 @@ export function TopBar({ page, sidebarCollapsed, onToggleSidebar }: TopBarProps)
   const apiOk = isSuccess ? true : isError ? false : null;
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/80 bg-background/90 px-4 backdrop-blur-sm md:px-5">
+    <header className={cn(
+      "flex h-14 shrink-0 items-center gap-3 px-4 md:px-5",
+      isOverview
+        ? "bg-surface-container-low"
+        : "border-b border-border/80 bg-background/90 backdrop-blur-sm",
+    )}>
       <Button
         variant="ghost"
         size="icon"
@@ -54,27 +62,30 @@ export function TopBar({ page, sidebarCollapsed, onToggleSidebar }: TopBarProps)
         )}
       </Button>
 
-      <div className="h-5 w-px bg-border" />
-
-      <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        </div>
-        <div className="min-w-0">
-          <p className="section-kicker">Workspace</p>
-          <h1 className="truncate text-sm font-semibold tracking-[-0.01em]">{meta.title}</h1>
-        </div>
-      </div>
+      {!isOverview && (
+        <>
+          <div className="h-5 w-px bg-border" />
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-surface-container shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <p className="section-kicker">Workspace</p>
+              <h1 className="truncate text-sm font-semibold tracking-[-0.01em]">{meta.title}</h1>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className={cn(
-        "ml-auto hidden items-center gap-2 text-2xs text-muted-foreground",
+        "ml-auto hidden items-center gap-2 text-2xs text-on-surface-variant",
         "sm:flex",
       )}>
         <span className="metric-chip">
           <span className={cn(
             "h-1.5 w-1.5 rounded-full",
-            apiOk === true && "bg-emerald-500/80",
-            apiOk === false && "bg-red-400/80",
+            apiOk === true && "bg-primary",
+            apiOk === false && "bg-error",
             apiOk === null && "bg-border",
           )} />
           {apiOk === true ? "API live" : apiOk === false ? "API offline" : "API checking"}
