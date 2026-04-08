@@ -18,7 +18,7 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import { api, type AnalyzeResponse, type Ticker, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type HistoricalAnalog } from "@/lib/api";
+import { api, type AnalyzeResponse, type Ticker, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type HistoricalAnalog } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
 
@@ -189,6 +189,942 @@ function InventoryContextBlock({ data }: { data: InventoryContext }) {
 }
 
 // ---------------------------------------------------------------------------
+// Real Yield / Breakeven Inflation Context block
+// ---------------------------------------------------------------------------
+
+const RY_STYLE: Record<string, { icon: string; color: string; bg: string; label: string }> = {
+  confirm: { icon: "✓", color: "text-primary",          bg: "bg-primary/8",                  label: "Macro confirms" },
+  tension: { icon: "⚠", color: "text-error-dim",        bg: "bg-error-dim/8",                label: "Macro check" },
+  neutral: { icon: "→", color: "text-on-surface-variant", bg: "bg-surface-container-highest", label: "Macro inconclusive" },
+  stale:   { icon: "·", color: "text-on-surface-variant/60", bg: "bg-surface-container-highest", label: "Macro unavailable" },
+};
+
+const RY_THESIS_LABEL: Record<string, string> = {
+  inflationary:        "Inflationary thesis",
+  disinflationary:     "Disinflationary thesis",
+  rate_pressure_up:    "Hawkish rate-pressure thesis",
+  rate_pressure_down:  "Dovish rate-pressure thesis",
+};
+
+function RealYieldContextBlock({ data }: { data: RealYieldContext }) {
+  if (!data || !data.thesis || data.thesis === "none" || !data.alignment) return null;
+  const style = RY_STYLE[data.alignment] ?? RY_STYLE.neutral;
+  const thesisLabel = RY_THESIS_LABEL[data.thesis] ?? "Macro context";
+  const fmt = (v: number | null | undefined) =>
+    v == null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+  return (
+    <div className={cn("flex items-start gap-3 rounded-xl px-5 py-4", style.bg, "shadow-[inset_0_0_0_1px_rgba(71,70,86,0.2)]")}>
+      <span className={cn("text-lg font-bold leading-none mt-0.5", style.color)}>{style.icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className={cn("text-[10px] font-bold uppercase tracking-widest", style.color)}>{style.label}</span>
+          <span className="text-[9px] text-on-surface-variant/50">{thesisLabel}</span>
+          {data.regime && (
+            <span className="text-[9px] text-on-surface-variant/40">· {data.regime}</span>
+          )}
+        </div>
+        <p className="text-[12px] text-on-surface-variant leading-relaxed">{data.explanation}</p>
+        {data.available && (
+          <div className="flex items-center gap-3 mt-2 text-[9px] font-num text-on-surface-variant/60">
+            <span>nom 5d <span className="text-on-surface/80">{fmt(data.nominal_5d)}</span></span>
+            <span>real 5d <span className="text-on-surface/80">{fmt(data.real_proxy_5d)}</span></span>
+            <span>BE 5d <span className="text-on-surface/80">{fmt(data.breakeven_proxy_5d)}</span></span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Policy Constraint Engine block
+// ---------------------------------------------------------------------------
+
+const ROOM_STYLE: Record<string, { icon: string; color: string; bg: string; label: string }> = {
+  ample:       { icon: "◆", color: "text-primary",            bg: "bg-primary/8",                  label: "Ample policy room" },
+  limited:     { icon: "◇", color: "text-on-surface-variant", bg: "bg-surface-container-highest", label: "Limited policy room" },
+  constrained: { icon: "▲", color: "text-error-dim",          bg: "bg-error-dim/8",                label: "Constrained" },
+  mixed:       { icon: "◈", color: "text-on-surface-variant", bg: "bg-surface-container-highest", label: "Mixed mandate" },
+  unknown:     { icon: "·", color: "text-on-surface-variant/60", bg: "bg-surface-container-highest", label: "Macro partial" },
+};
+
+function PolicyConstraintBlock({ data }: { data: PolicyConstraint }) {
+  if (!data || !data.binding || !data.policy_room) return null;
+  const room = data.policy_room;
+  const style = ROOM_STYLE[room] ?? ROOM_STYLE.unknown;
+  const bindingLabel = data.binding_label ?? data.binding;
+  const isNone = data.binding === "none";
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Policy Constraint
+        </h4>
+        <div className="flex items-center gap-1.5">
+          <span className={cn("text-xs font-bold leading-none", style.color)}>{style.icon}</span>
+          <span className={cn("text-[9px] font-bold uppercase tracking-widest", style.color)}>
+            {style.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Binding + secondary chips */}
+      <div className="flex items-start gap-3 mb-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-0.5">
+            Binding
+          </div>
+          <div className={cn("text-[13px] font-bold", isNone ? "text-on-surface-variant" : "text-on-surface")}>
+            {bindingLabel}
+          </div>
+        </div>
+        {!!(data.secondary && data.secondary.length > 0) && (
+          <div className="min-w-0 flex-1">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Secondary
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {data.secondary.map((sec) => (
+                <span
+                  key={sec.id}
+                  className="inline-flex items-center gap-1 rounded-full bg-surface-container-highest px-2 py-0.5 text-[10px] text-on-surface-variant"
+                  title={sec.rationale}
+                >
+                  <span className="font-bold text-on-surface/80">{sec.label}</span>
+                  <span className="font-num text-on-surface-variant/50">{sec.score.toFixed(1)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Why + reaction function */}
+      {data.why && (
+        <p className="text-[12px] text-on-surface leading-relaxed mb-2">{data.why}</p>
+      )}
+      {data.reaction_function && !isNone && (
+        <p className="text-[11px] text-on-surface-variant leading-relaxed mb-3 italic">
+          {data.reaction_function}
+        </p>
+      )}
+
+      {/* Key markets */}
+      {!!(data.key_markets && data.key_markets.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+            Watch
+          </span>
+          {data.key_markets.map((m) => (
+            <span
+              key={m}
+              className="font-num text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {m}
+            </span>
+          ))}
+          {data.stale && (
+            <span className="text-[9px] text-on-surface-variant/50 italic">
+              macro partial
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Real vs Nominal Shock Decomposition block
+// ---------------------------------------------------------------------------
+
+const SHOCK_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
+  nominal_yield: { icon: "≡", color: "text-on-surface-variant",    bg: "bg-surface-container-highest" },
+  real_yield:    { icon: "▼", color: "text-primary",               bg: "bg-primary/8" },
+  breakeven:     { icon: "↑", color: "text-error-dim",             bg: "bg-error-dim/8" },
+  fx:            { icon: "$", color: "text-on-surface-variant",    bg: "bg-surface-container-highest" },
+  commodity:     { icon: "◆", color: "text-error-dim",             bg: "bg-error-dim/8" },
+  none:          { icon: "·", color: "text-on-surface-variant/60", bg: "bg-surface-container-highest" },
+};
+
+const SHOCK_CHANNEL_ORDER: Array<{ id: keyof NonNullable<ShockDecomposition["channels"]>; short: string }> = [
+  { id: "nominal_yield", short: "Nominal" },
+  { id: "real_yield",    short: "Real"    },
+  { id: "breakeven",     short: "BE"      },
+  { id: "fx",            short: "DXY"     },
+  { id: "commodity",     short: "Cmdty"   },
+];
+
+function ShockDecompositionBlock({ data }: { data: ShockDecomposition }) {
+  if (!data || !data.primary) return null;
+  const style = SHOCK_STYLE[data.primary] ?? SHOCK_STYLE.none;
+  const isNone = data.primary === "none";
+  const fmt = (v: number | null | undefined) =>
+    v == null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Shock Decomposition
+        </h4>
+        <div className="flex items-center gap-1.5">
+          <span className={cn("text-xs font-bold leading-none", style.color)}>{style.icon}</span>
+          <span className={cn("text-[9px] font-bold uppercase tracking-widest", style.color)}>
+            {isNone ? "No clear shock" : "Primary driver"}
+          </span>
+        </div>
+      </div>
+
+      {/* Primary + secondary chips */}
+      <div className="flex items-start gap-3 mb-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-0.5">
+            Primary
+          </div>
+          <div className={cn("text-[13px] font-bold", isNone ? "text-on-surface-variant" : "text-on-surface")}>
+            {data.primary_label ?? data.primary}
+          </div>
+        </div>
+        {!!(data.secondary && data.secondary.length > 0) && (
+          <div className="min-w-0 flex-1">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Secondary
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {data.secondary.map((s) => (
+                <span
+                  key={s.id}
+                  className="inline-flex items-center gap-1 rounded-full bg-surface-container-highest px-2 py-0.5 text-[10px] text-on-surface-variant"
+                  title={`${fmt(s.move_5d)} / 5d`}
+                >
+                  <span className="font-bold text-on-surface/80">{s.label}</span>
+                  <span className="font-num text-on-surface-variant/50">{s.z.toFixed(1)}σ</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Empirical rationale + macro read */}
+      {data.rationale && (
+        <p className="text-[12px] text-on-surface leading-relaxed mb-2 font-num">
+          {data.rationale}
+        </p>
+      )}
+      {data.macro_read && (
+        <p className="text-[11px] text-on-surface-variant leading-relaxed mb-3 italic">
+          {data.macro_read}
+        </p>
+      )}
+
+      {/* Channel grid — all five channels with magnitudes */}
+      {data.channels && (
+        <div className="grid grid-cols-5 gap-1.5 mb-3">
+          {SHOCK_CHANNEL_ORDER.map((c) => {
+            const ch = data.channels?.[c.id];
+            const isPrimary = data.primary === c.id;
+            return (
+              <div
+                key={c.id}
+                className={cn(
+                  "rounded px-2 py-1.5 text-center",
+                  isPrimary ? "bg-primary/10" : "bg-surface-container-highest",
+                )}
+              >
+                <div className="text-[8px] uppercase tracking-widest text-on-surface-variant/50">
+                  {c.short}
+                </div>
+                <div
+                  className={cn(
+                    "text-[11px] font-num font-bold mt-0.5",
+                    ch?.available ? "text-on-surface" : "text-on-surface-variant/30",
+                  )}
+                >
+                  {ch?.available ? fmt(ch.move_5d) : "—"}
+                </div>
+                {ch?.available && (
+                  <div className="text-[8px] text-on-surface-variant/50 font-num">
+                    {ch.z.toFixed(1)}σ
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Key markets to watch */}
+      {!!(data.key_markets && data.key_markets.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+            Confirm / challenge
+          </span>
+          {data.key_markets.map((m) => (
+            <span
+              key={m}
+              className="font-num text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {m}
+            </span>
+          ))}
+          {data.stale && (
+            <span className="text-[9px] text-on-surface-variant/50 italic">
+              macro partial
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Reaction Function Divergence block
+// ---------------------------------------------------------------------------
+
+const RFD_DIRECTION_STYLE: Record<string, { color: string; arrow: string }> = {
+  hawkish: { color: "text-error-dim",             arrow: "↑" },
+  dovish:  { color: "text-primary",               arrow: "↓" },
+  neutral: { color: "text-on-surface-variant/60", arrow: "·" },
+};
+
+const RFD_DIVERGENCE_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
+  aligned: { icon: "◆", color: "text-primary",               bg: "bg-primary/8" },
+  mild:    { icon: "◇", color: "text-on-surface-variant",    bg: "bg-surface-container-highest" },
+  sharp:   { icon: "▲", color: "text-error-dim",             bg: "bg-error-dim/10" },
+};
+
+function ReactionFunctionDivergenceBlock({ data }: { data: ReactionFunctionDivergence }) {
+  if (!data || !data.implied || !data.priced || !data.divergence) return null;
+  const divStyle = RFD_DIVERGENCE_STYLE[data.divergence] ?? RFD_DIVERGENCE_STYLE.mild;
+  const impliedStyle = RFD_DIRECTION_STYLE[data.implied] ?? RFD_DIRECTION_STYLE.neutral;
+  const pricedStyle = RFD_DIRECTION_STYLE[data.priced] ?? RFD_DIRECTION_STYLE.neutral;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Reaction Function Divergence
+        </h4>
+        <div className={cn("flex items-center gap-1.5 rounded-full px-2 py-0.5", divStyle.bg)}>
+          <span className={cn("text-xs font-bold leading-none", divStyle.color)}>{divStyle.icon}</span>
+          <span className={cn("text-[9px] font-bold uppercase tracking-widest", divStyle.color)}>
+            {data.divergence_label ?? data.divergence}
+          </span>
+        </div>
+      </div>
+
+      {/* Implied vs priced — side-by-side */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="bg-surface-container-highest rounded px-3 py-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className={cn("text-[10px] font-bold leading-none", impliedStyle.color)}>
+              {impliedStyle.arrow}
+            </span>
+            <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+              Event implies
+            </span>
+          </div>
+          <div className={cn("text-[12px] font-bold mb-1", impliedStyle.color)}>
+            {data.implied_label ?? data.implied}
+          </div>
+          {data.implied_basis && (
+            <p className="text-[10px] text-on-surface-variant/80 leading-snug">
+              {data.implied_basis}
+            </p>
+          )}
+        </div>
+
+        <div className="bg-surface-container-highest rounded px-3 py-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className={cn("text-[10px] font-bold leading-none", pricedStyle.color)}>
+              {pricedStyle.arrow}
+            </span>
+            <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+              Markets pricing
+            </span>
+          </div>
+          <div className={cn("text-[12px] font-bold mb-1", pricedStyle.color)}>
+            {data.priced_label ?? data.priced}
+          </div>
+          {data.priced_basis && (
+            <p className="text-[10px] text-on-surface-variant/80 leading-snug font-num">
+              {data.priced_basis}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Rationale + macro read */}
+      {data.rationale && (
+        <p className="text-[12px] text-on-surface leading-relaxed mb-2">
+          {data.rationale}
+        </p>
+      )}
+      {data.macro_read && (
+        <p className="text-[11px] text-on-surface-variant leading-relaxed mb-3 italic">
+          {data.macro_read}
+        </p>
+      )}
+
+      {/* Key markets */}
+      {!!(data.key_markets && data.key_markets.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+            Confirm / challenge
+          </span>
+          {data.key_markets.map((m) => (
+            <span
+              key={m}
+              className="font-num text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {m}
+            </span>
+          ))}
+          {data.stale && (
+            <span className="text-[9px] text-on-surface-variant/50 italic">
+              macro partial
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Surprise vs Anticipation Decomposition block
+// ---------------------------------------------------------------------------
+
+const SURPRISE_REGIME_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
+  surprise_shock:           { icon: "▲", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  anticipated_confirmation: { icon: "◆", color: "text-primary",               bg: "bg-primary/8" },
+  uncertainty_resolution:   { icon: "◇", color: "text-primary/70",            bg: "bg-primary/6" },
+  mixed:                    { icon: "·", color: "text-on-surface-variant",    bg: "bg-surface-container-highest" },
+};
+
+function SurpriseVsAnticipationBlock({ data }: { data: SurpriseVsAnticipation }) {
+  if (!data || !data.regime) return null;
+  const style = SURPRISE_REGIME_STYLE[data.regime] ?? SURPRISE_REGIME_STYLE.mixed;
+  const sig = data.signals ?? {};
+  const share = sig.intraday_share;
+  const vix5d = sig.vix_change_5d;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Surprise vs Anticipation
+        </h4>
+        <div className={cn("flex items-center gap-1.5 rounded-full px-2 py-0.5", style.bg)}>
+          <span className={cn("text-xs font-bold leading-none", style.color)}>{style.icon}</span>
+          <span className={cn("text-[9px] font-bold uppercase tracking-widest", style.color)}>
+            {data.regime_label ?? data.regime}
+          </span>
+        </div>
+      </div>
+
+      {/* Rationale — one-line institutional read */}
+      {data.rationale && (
+        <p className="text-[12px] text-on-surface leading-relaxed mb-3">
+          {data.rationale}
+        </p>
+      )}
+
+      {/* Priced before vs changed on realisation — side-by-side */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="bg-surface-container-highest rounded px-3 py-2.5">
+          <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+            Priced before
+          </div>
+          <p className="text-[11px] text-on-surface/90 leading-snug">
+            {data.priced_before ?? "—"}
+          </p>
+        </div>
+
+        <div className="bg-surface-container-highest rounded px-3 py-2.5">
+          <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+            Changed on realisation
+          </div>
+          <p className="text-[11px] text-on-surface/90 leading-snug">
+            {data.changed_on_realization ?? "—"}
+          </p>
+        </div>
+      </div>
+
+      {/* Signal strip — intraday share, vix 5d, stage */}
+      {(share != null || vix5d != null || sig.stage) && (
+        <div className="flex items-center gap-3 mb-3 text-[10px] text-on-surface-variant/70">
+          {share != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">intraday </span>
+              {(share * 100).toFixed(0)}%
+            </span>
+          )}
+          {vix5d != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">VIX 5d </span>
+              {vix5d >= 0 ? "+" : ""}{vix5d.toFixed(2)}
+            </span>
+          )}
+          {sig.stage && (
+            <span>
+              <span className="text-on-surface-variant/40">stage </span>
+              {sig.stage}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Key markets + stale indicator */}
+      {!!(data.key_markets && data.key_markets.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+            Confirm / challenge
+          </span>
+          {data.key_markets.map((m) => (
+            <span
+              key={m}
+              className="font-num text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {m}
+            </span>
+          ))}
+          {data.stale && (
+            <span className="text-[9px] text-on-surface-variant/50 italic">
+              context partial
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Terms-of-Trade / External Vulnerability block
+// ---------------------------------------------------------------------------
+
+const TOT_CHANNEL_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
+  oil_import:       { icon: "▼", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  oil_export:       { icon: "▲", color: "text-primary",               bg: "bg-primary/8" },
+  usd_funding:      { icon: "$", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  food_import:      { icon: "▼", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  industrial_metal: { icon: "◆", color: "text-primary",               bg: "bg-primary/8" },
+  mixed:            { icon: "·", color: "text-on-surface-variant",    bg: "bg-surface-container-highest" },
+  none:             { icon: "·", color: "text-on-surface-variant/60", bg: "bg-surface-container-highest" },
+};
+
+function ExposureRow({ exposure }: { exposure: TermsOfTradeExposure }) {
+  const isWinner = exposure.role === "winner";
+  return (
+    <div className="flex items-start gap-2 py-1.5">
+      <span
+        className={cn(
+          "mt-0.5 shrink-0 text-[9px] font-bold leading-none w-3",
+          isWinner ? "text-primary" : "text-error-dim",
+        )}
+      >
+        {isWinner ? "▲" : "▼"}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[12px] font-bold text-on-surface leading-tight">
+            {exposure.country}
+          </span>
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/40">
+            {exposure.region}
+          </span>
+        </div>
+        <p className="text-[10px] text-on-surface-variant/80 leading-snug mt-0.5">
+          {exposure.rationale}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TermsOfTradeBlock({ data }: { data: TermsOfTrade }) {
+  if (!data || !data.dominant_channel) return null;
+  if (data.dominant_channel === "none" && (!data.exposures || data.exposures.length === 0)) {
+    return null;
+  }
+  const style = TOT_CHANNEL_STYLE[data.dominant_channel] ?? TOT_CHANNEL_STYLE.mixed;
+  const sig = data.signals ?? {};
+  const crude = sig.crude_5d;
+  const dxy = sig.dxy_5d;
+
+  const winners = (data.exposures ?? []).filter((e) => e.role === "winner");
+  const losers = (data.exposures ?? []).filter((e) => e.role === "loser");
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Terms of Trade / External Vulnerability
+        </h4>
+        <div className={cn("flex items-center gap-1.5 rounded-full px-2 py-0.5", style.bg)}>
+          <span className={cn("text-xs font-bold leading-none", style.color)}>{style.icon}</span>
+          <span className={cn("text-[9px] font-bold uppercase tracking-widest", style.color)}>
+            {data.dominant_channel_label ?? data.dominant_channel}
+          </span>
+        </div>
+      </div>
+
+      {/* Rationale — one-line institutional read */}
+      {data.rationale && (
+        <p className="text-[12px] text-on-surface leading-relaxed mb-3">
+          {data.rationale}
+        </p>
+      )}
+
+      {/* Winners / Losers — side-by-side columns */}
+      {(winners.length > 0 || losers.length > 0) && (
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="bg-surface-container-highest rounded px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              External winners
+            </div>
+            {winners.length > 0 ? (
+              <div className="divide-y divide-outline-variant/10">
+                {winners.map((e) => (
+                  <ExposureRow key={`${e.country}-${e.channel}`} exposure={e} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-on-surface-variant/40 italic">None in frame</p>
+            )}
+          </div>
+
+          <div className="bg-surface-container-highest rounded px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              External losers
+            </div>
+            {losers.length > 0 ? (
+              <div className="divide-y divide-outline-variant/10">
+                {losers.map((e) => (
+                  <ExposureRow key={`${e.country}-${e.channel}`} exposure={e} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-on-surface-variant/40 italic">None in frame</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Signal strip */}
+      {(crude != null || dxy != null || sig.matched_theme) && (
+        <div className="flex items-center gap-3 mb-3 text-[10px] text-on-surface-variant/70">
+          {crude != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">crude 5d </span>
+              {crude >= 0 ? "+" : ""}{crude.toFixed(1)}%
+            </span>
+          )}
+          {dxy != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">DXY 5d </span>
+              {dxy >= 0 ? "+" : ""}{dxy.toFixed(2)}
+            </span>
+          )}
+          {sig.matched_theme && sig.matched_theme !== "none" && (
+            <span>
+              <span className="text-on-surface-variant/40">theme </span>
+              {sig.matched_theme}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Key markets + stale indicator */}
+      {!!(data.key_markets && data.key_markets.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+            Confirm / challenge
+          </span>
+          {data.key_markets.map((m) => (
+            <span
+              key={m}
+              className="font-num text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {m}
+            </span>
+          ))}
+          {data.stale && (
+            <span className="text-[9px] text-on-surface-variant/50 italic">
+              snapshots partial
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Current Account + FX Reserve Stress Overlay
+// ---------------------------------------------------------------------------
+
+const RS_CHANNEL_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
+  dual_oil_dollar:            { icon: "▼", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  oil_import_squeeze:         { icon: "▼", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  usd_funding_stress:         { icon: "$", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  food_importer_stress:       { icon: "▼", color: "text-error-dim",             bg: "bg-error-dim/10" },
+  commodity_exporter_cushion: { icon: "▲", color: "text-primary",               bg: "bg-primary/8" },
+  mixed:                      { icon: "·", color: "text-on-surface-variant",    bg: "bg-surface-container-highest" },
+  none:                       { icon: "·", color: "text-on-surface-variant/60", bg: "bg-surface-container-highest" },
+};
+
+const RS_PRESSURE_STYLE: Record<string, { color: string; bg: string; label: string }> = {
+  elevated:  { color: "text-error-dim",             bg: "bg-error-dim/15",           label: "Elevated"  },
+  moderate:  { color: "text-on-surface",            bg: "bg-surface-container-highest", label: "Moderate"  },
+  contained: { color: "text-on-surface-variant/70", bg: "bg-surface-container-highest", label: "Contained" },
+};
+
+const RS_DRIVER_LABEL: Record<string, string> = {
+  dollar_rally:     "Dollar rally",
+  credit_widening:  "Credit widening",
+  oil_squeeze:      "Oil squeeze",
+  real_yield_rise:  "Real yields up",
+  dual_squeeze:     "Dual squeeze",
+  risk_off_regime:  "Risk-off regime",
+};
+
+function ReserveStressExposureRow({
+  name, region, rationale, score, scoreLabel, winner,
+}: {
+  name: string;
+  region: string;
+  rationale: string;
+  score: number;
+  scoreLabel: string;
+  winner: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-2 py-1.5">
+      <span
+        className={cn(
+          "mt-0.5 shrink-0 text-[9px] font-bold leading-none w-3",
+          winner ? "text-primary" : "text-error-dim",
+        )}
+      >
+        {winner ? "▲" : "▼"}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[12px] font-bold text-on-surface leading-tight">
+            {name}
+          </span>
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/40">
+            {region}
+          </span>
+          <span
+            className={cn(
+              "ml-auto font-num text-[10px] tabular-nums shrink-0",
+              winner ? "text-primary/70" : "text-error-dim/70",
+            )}
+            title={scoreLabel}
+          >
+            {score}/10
+          </span>
+        </div>
+        <p className="text-[10px] text-on-surface-variant/80 leading-snug mt-0.5">
+          {rationale}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ReserveStressBlock({ data }: { data: ReserveStress }) {
+  if (!data || !data.dominant_channel) return null;
+  if (
+    data.dominant_channel === "none"
+    && (!data.vulnerable || data.vulnerable.length === 0)
+    && (!data.insulated || data.insulated.length === 0)
+  ) {
+    return null;
+  }
+
+  const channelStyle = RS_CHANNEL_STYLE[data.dominant_channel] ?? RS_CHANNEL_STYLE.mixed;
+  const pressureKey = data.pressure_label ?? "contained";
+  const pressureStyle = RS_PRESSURE_STYLE[pressureKey] ?? RS_PRESSURE_STYLE.contained;
+  const score = data.pressure_score ?? 0;
+  const sig = data.signals ?? {};
+  const crude = sig.crude_5d;
+  const dxy = sig.dxy_5d;
+  const credit = sig.credit_spread_5d;
+
+  const vulnerable = (data.vulnerable ?? []) as ReserveStressVulnerable[];
+  const insulated = (data.insulated ?? []) as ReserveStressInsulated[];
+
+  // Collapse driver tags across the vulnerable list; they all share the
+  // same driver set so pulling from the first entry is exact.
+  const driverTags = vulnerable[0]?.drivers ?? [];
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3 gap-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Current Account / FX Reserve Stress
+        </h4>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className={cn("flex items-center gap-1.5 rounded-full px-2 py-0.5", channelStyle.bg)}>
+            <span className={cn("text-xs font-bold leading-none", channelStyle.color)}>
+              {channelStyle.icon}
+            </span>
+            <span className={cn("text-[9px] font-bold uppercase tracking-widest", channelStyle.color)}>
+              {data.dominant_channel_label ?? data.dominant_channel}
+            </span>
+          </div>
+          <div className={cn(
+            "flex items-center gap-1 rounded-full px-2 py-0.5",
+            pressureStyle.bg,
+          )}>
+            <span className={cn(
+              "font-num text-[10px] font-bold tabular-nums",
+              pressureStyle.color,
+            )}>
+              {score}
+            </span>
+            <span className={cn(
+              "text-[9px] font-bold uppercase tracking-widest",
+              pressureStyle.color,
+            )}>
+              {pressureStyle.label}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Rationale */}
+      {data.rationale && (
+        <p className="text-[12px] text-on-surface leading-relaxed mb-3">
+          {data.rationale}
+        </p>
+      )}
+
+      {/* Driver tags */}
+      {driverTags.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mr-1">
+            Drivers
+          </span>
+          {driverTags.map((d) => (
+            <span
+              key={d}
+              className="text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {RS_DRIVER_LABEL[d] ?? d}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Vulnerable / Insulated columns */}
+      {(vulnerable.length > 0 || insulated.length > 0) && (
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="bg-surface-container-highest rounded px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Most vulnerable
+            </div>
+            {vulnerable.length > 0 ? (
+              <div className="divide-y divide-outline-variant/10">
+                {vulnerable.map((e) => (
+                  <ReserveStressExposureRow
+                    key={`v-${e.country}`}
+                    name={e.country}
+                    region={e.region}
+                    rationale={e.rationale}
+                    score={e.vulnerability}
+                    scoreLabel="Vulnerability score (0-10)"
+                    winner={false}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-on-surface-variant/40 italic">None in frame</p>
+            )}
+          </div>
+
+          <div className="bg-surface-container-highest rounded px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Most insulated
+            </div>
+            {insulated.length > 0 ? (
+              <div className="divide-y divide-outline-variant/10">
+                {insulated.map((e) => (
+                  <ReserveStressExposureRow
+                    key={`i-${e.country}`}
+                    name={e.country}
+                    region={e.region}
+                    rationale={e.rationale}
+                    score={e.strength}
+                    scoreLabel="Insulation score (0-10)"
+                    winner={true}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-on-surface-variant/40 italic">None in frame</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Signal strip */}
+      {(crude != null || dxy != null || credit != null) && (
+        <div className="flex items-center gap-3 mb-3 text-[10px] text-on-surface-variant/70">
+          {crude != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">crude 5d </span>
+              {crude >= 0 ? "+" : ""}{crude.toFixed(1)}%
+            </span>
+          )}
+          {dxy != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">DXY 5d </span>
+              {dxy >= 0 ? "+" : ""}{dxy.toFixed(2)}
+            </span>
+          )}
+          {credit != null && (
+            <span className="font-num">
+              <span className="text-on-surface-variant/40">HY spread </span>
+              {credit >= 0 ? "+" : ""}{credit.toFixed(2)}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Key markets + stale indicator */}
+      {!!(data.key_markets && data.key_markets.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+            Confirm / challenge
+          </span>
+          {data.key_markets.map((m) => (
+            <span
+              key={m}
+              className="font-num text-[10px] text-on-surface/80 bg-surface-container-highest rounded px-1.5 py-0.5"
+            >
+              {m}
+            </span>
+          ))}
+          {data.stale && (
+            <span className="text-[9px] text-on-surface-variant/50 italic">
+              context partial
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Historical Analogs block
 // ---------------------------------------------------------------------------
@@ -702,6 +1638,41 @@ export function AnalysisView({ initialHeadline, initialContext, onHeadlineConsum
               {/* Inventory / Supply Context */}
               {result.analysis.inventory_context && result.analysis.inventory_context.status && (
                 <InventoryContextBlock data={result.analysis.inventory_context} />
+              )}
+
+              {/* Real Yield / Breakeven Context */}
+              {result.analysis.real_yield_context && result.analysis.real_yield_context.thesis && result.analysis.real_yield_context.thesis !== "none" && (
+                <RealYieldContextBlock data={result.analysis.real_yield_context} />
+              )}
+
+              {/* Policy Constraint Engine */}
+              {result.analysis.policy_constraint && result.analysis.policy_constraint.binding && (
+                <PolicyConstraintBlock data={result.analysis.policy_constraint} />
+              )}
+
+              {/* Real vs Nominal Shock Decomposition */}
+              {result.analysis.shock_decomposition && result.analysis.shock_decomposition.primary && (
+                <ShockDecompositionBlock data={result.analysis.shock_decomposition} />
+              )}
+
+              {/* Reaction Function Divergence */}
+              {result.analysis.reaction_function_divergence && result.analysis.reaction_function_divergence.divergence && (
+                <ReactionFunctionDivergenceBlock data={result.analysis.reaction_function_divergence} />
+              )}
+
+              {/* Surprise vs Anticipation Decomposition */}
+              {result.analysis.surprise_vs_anticipation && result.analysis.surprise_vs_anticipation.regime && (
+                <SurpriseVsAnticipationBlock data={result.analysis.surprise_vs_anticipation} />
+              )}
+
+              {/* Terms-of-Trade / External Vulnerability */}
+              {result.analysis.terms_of_trade && result.analysis.terms_of_trade.dominant_channel && (
+                <TermsOfTradeBlock data={result.analysis.terms_of_trade} />
+              )}
+
+              {/* Current Account + FX Reserve Stress */}
+              {result.analysis.reserve_stress && result.analysis.reserve_stress.dominant_channel && (
+                <ReserveStressBlock data={result.analysis.reserve_stress} />
               )}
 
               {/* If This Persists — big section card */}

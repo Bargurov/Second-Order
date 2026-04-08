@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Second Order | Market Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#7f2927",
+                        "surface-container": "#191922",
+                        "on-tertiary": "#6d3532",
+                        "tertiary-dim": "#ed9f99",
+                        "on-primary-container": "#9ddbdd",
+                        "on-primary-fixed": "#004749",
+                        "primary-dim": "#85c3c5",
+                        "on-error": "#490106",
+                        "surface-tint": "#93d1d3",
+                        "on-error-container": "#ff9993",
+                        "background": "#0e0e13",
+                        "on-surface": "#e6e3f7",
+                        "on-background": "#e6e3f7",
+                        "error-dim": "#bb5551",
+                        "primary-fixed": "#afeef0",
+                        "primary-container": "#004f51",
+                        "on-secondary-container": "#b0c0da",
+                        "on-primary-fixed-variant": "#236567",
+                        "on-secondary-fixed": "#314055",
+                        "surface-dim": "#0e0e13",
+                        "secondary-container": "#2d3c51",
+                        "on-secondary": "#102134",
+                        "on-tertiary-fixed": "#481816",
+                        "on-surface-variant": "#aba9bc",
+                        "surface-container-high": "#1e1f2a",
+                        "surface-container-lowest": "#000000",
+                        "tertiary-fixed": "#fdaca7",
+                        "surface": "#0e0e13",
+                        "surface-container-highest": "#242533",
+                        "primary-fixed-dim": "#a1dfe1",
+                        "inverse-surface": "#fcf8ff",
+                        "tertiary-container": "#fdaca7",
+                        "primary": "#93d1d3",
+                        "surface-variant": "#242533",
+                        "secondary-fixed-dim": "#c5d6f0",
+                        "outline-variant": "#474656",
+                        "tertiary": "#ffbfba",
+                        "inverse-on-surface": "#55545b",
+                        "on-tertiary-fixed-variant": "#6d3531",
+                        "secondary-fixed": "#d3e4fe",
+                        "secondary-dim": "#8f9fb7",
+                        "on-tertiary-container": "#622c29",
+                        "error": "#ee7d77",
+                        "surface-container-low": "#13131a",
+                        "outline": "#757485",
+                        "on-secondary-fixed-variant": "#4d5d73",
+                        "tertiary-fixed-dim": "#ed9f99",
+                        "surface-bright": "#2a2b3b",
+                        "secondary": "#8f9fb7",
+                        "on-primary": "#00484a",
+                        "inverse-primary": "#27686a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .tnum { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-[#13131a] dark:bg-[#13131a] font-manrope text-sm antialiased py-4 space-y-1 shrink-0">
+<div class="px-6 mb-8">
+<h1 class="text-xl font-bold tracking-tighter text-[#93d1d3]">Second Order</h1>
+<p class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-bold">Institutional Grade</p>
+</div>
+<nav class="flex-1">
+<!-- Active Tab: Market Overview -->
+<div class="flex items-center px-6 py-3 text-[#93d1d3] font-bold border-r-2 border-[#93d1d3] bg-[#242533]/50 cursor-pointer">
+<span class="material-symbols-outlined mr-3">analytics</span>
+<span>Market Overview</span>
+</div>
+<div class="flex items-center px-6 py-3 text-[#aba9bc] font-medium hover:bg-[#242533] hover:text-[#93d1d3] transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-lg">newspaper</span>
+<span>Headlines</span>
+</div>
+<div class="flex items-center px-6 py-3 text-[#aba9bc] font-medium hover:bg-[#242533] hover:text-[#93d1d3] transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-lg">insights</span>
+<span>Analysis</span>
+</div>
+<div class="flex items-center px-6 py-3 text-[#aba9bc] font-medium hover:bg-[#242533] hover:text-[#93d1d3] transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-lg">inventory_2</span>
+<span>Research Archive</span>
+</div>
+<div class="flex items-center px-6 py-3 text-[#aba9bc] font-medium hover:bg-[#242533] hover:text-[#93d1d3] transition-all duration-150 cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-lg">precision_manufacturing</span>
+<span>Backtest</span>
+</div>
+</nav>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 h-14 w-full z-50 bg-[#0e0e13] dark:bg-[#0e0e13] bg-[#13131a]">
+<div class="flex items-center gap-4">
+<span class="md:hidden text-xl font-bold tracking-tighter text-[#93d1d3]">Second Order</span>
+<div class="hidden md:flex gap-6">
+<span class="text-[#93d1d3] font-manrope font-semibold tracking-tight cursor-pointer hover:text-white transition-colors duration-200">Dashboard</span>
+<span class="text-[#aba9bc] font-manrope font-semibold tracking-tight cursor-pointer hover:text-white transition-colors duration-200">Portfolios</span>
+<span class="text-[#aba9bc] font-manrope font-semibold tracking-tight cursor-pointer hover:text-white transition-colors duration-200">Watchlist</span>
+</div>
+</div>
+<div class="flex items-center gap-4 text-[#aba9bc]">
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors duration-200">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-white transition-colors duration-200">settings</span>
+<div class="h-8 w-8 rounded-lg bg-surface-container-highest overflow-hidden">
+<img class="object-cover w-full h-full" data-alt="professional male portrait in business attire with neutral grey background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_3zF0Kouyglw5LkANOJmVQtSWjniSxMbBhBaYwL9HAKqxScGzfNKfIIZ9msNNn1a-6gP7V1iukLbfOe7mAu2jB44ylrod0wMFLAt6_rCfqKKmNRhmq1Jhrvcssaoiq23lUz15tjMd89vi-RyeuwY96zCdEPIp8DXTTc2zGg1JrSLOE_8f2owfAyTDBkDqSCK2emq1EzcbC2pYQSjkvlk7pYjIh95VZT9zImrLXDv0fwtJ62iqq5a0ErNmcxQmNffy1XRXAADbaZNV"/>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto px-6 pb-24">
+<!-- 1. Uncertainty & Market Instability (Hero Section) -->
+<section class="mt-4 mb-8">
+<div class="bg-surface-container-low rounded-xl p-6 shadow-2xl relative overflow-hidden group">
+<div class="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+<div class="flex flex-col lg:flex-row gap-8 items-start relative z-10">
+<!-- Left Badge -->
+<div class="lg:w-1/4 shrink-0">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-error-container/20 rounded-full border border-error-dim/30">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-error"></span>
+</span>
+<span class="text-error font-bold text-xs tracking-widest uppercase">STRESSED</span>
+</div>
+<h2 class="text-3xl font-extrabold mt-4 tracking-tighter leading-tight text-white">Uncertainty &amp; Market Instability</h2>
+<p class="text-on-surface-variant text-sm mt-3 leading-relaxed">Credit spreads widening, safe haven inflows detected — elevated risk environment.</p>
+</div>
+<!-- Main Content: Indicators -->
+<div class="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden">
+<!-- Volatility -->
+<div class="bg-surface-container-highest p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Volatility</span>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<div class="text-xl font-bold tnum">VIX 22.4</div>
+<div class="text-[10px] text-on-surface-variant mb-3 italic">vs 20d avg 18.1</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">Implied volatility remains above recent means.</p>
+</div>
+<!-- Term Structure -->
+<div class="bg-surface-container-highest p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Term Structure</span>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<div class="text-xl font-bold tnum">Ratio 0.94</div>
+<div class="text-[10px] text-on-surface-variant mb-3 italic">Backwardation</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">Yield curve inversion deepening across major tenors.</p>
+</div>
+<!-- Credit -->
+<div class="bg-surface-container-highest p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Credit</span>
+<div class="w-2 h-2 rounded-full bg-[#facc15]"></div>
+</div>
+<div class="text-xl font-bold tnum text-secondary-dim">HYG/SHY</div>
+<div class="text-[10px] text-on-surface-variant mb-3 italic">Divergence Detected</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">High yield spreads are beginning to decouple from treasuries.</p>
+</div>
+<!-- Safe Haven -->
+<div class="bg-surface-container-highest p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Safe Haven</span>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<div class="text-xl font-bold tnum">Gold/DXY/TLT</div>
+<div class="text-[10px] text-on-surface-variant mb-3 italic">Safety Flow</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">2 of 3 assets in safety mode — gold and dollar dominating.</p>
+</div>
+<!-- Breadth -->
+<div class="bg-surface-container-highest p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Breadth</span>
+<div class="w-2 h-2 rounded-full bg-[#facc15]"></div>
+</div>
+<div class="text-xl font-bold tnum">RSP / SPY</div>
+<div class="text-[10px] text-on-surface-variant mb-3 italic">Concentration Risk</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">Narrow participation favoring mega-cap technology names.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Second Order Effects -->
+<section class="mb-8">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="text-xl font-bold text-white tracking-tight">Second Order Effects — Still Moving Markets</h2>
+<p class="text-sm text-on-surface-variant">Long-term macro catalysts and delayed reactive outcomes</p>
+</div>
+<div class="text-xs text-primary font-bold uppercase tracking-widest cursor-pointer hover:underline">View All Research</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Effect Card 1 -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-between border border-transparent hover:border-outline-variant transition-colors">
+<div>
+<div class="flex justify-between items-start mb-4">
+<span class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded tracking-widest">43 DAYS AGO</span>
+<div class="text-right">
+<span class="text-xl font-bold text-primary tnum">82%</span>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest">Agreement</p>
+</div>
+</div>
+<h3 class="text-lg font-bold text-white mb-2 leading-snug">The Semiconductor Supply Lag Phase II</h3>
+<p class="text-sm text-on-surface-variant mb-6 leading-relaxed line-clamp-2">Inventory gluts in the mid-stream distribution are starting to impact core automotive manufacturing orders as pricing power shifts.</p>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3 overflow-x-auto pb-2">
+<div class="bg-surface-container-highest px-3 py-2 rounded-lg flex items-center gap-4 shrink-0">
+<span class="text-xs font-bold text-white tracking-wider">KRE</span>
+<div class="w-12 h-6">
+<svg class="w-full h-full text-error-dim" viewbox="0 0 48 24">
+<path d="M0 12 L10 8 L20 14 L30 6 L40 16 L48 4" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+</svg>
+</div>
+<span class="text-xs font-bold text-error-dim tnum">-4.2%</span>
+</div>
+<div class="bg-surface-container-highest px-3 py-2 rounded-lg flex items-center gap-4 shrink-0">
+<span class="text-xs font-bold text-white tracking-wider">XLF</span>
+<div class="w-12 h-6">
+<svg class="w-full h-full text-primary" viewbox="0 0 48 24">
+<path d="M0 18 L10 16 L20 10 L30 14 L40 8 L48 6" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+</svg>
+</div>
+<span class="text-xs font-bold text-primary tnum">+1.8%</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/20">
+<span class="bg-primary-container/20 text-primary text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Still Holding</span>
+<span class="material-symbols-outlined text-on-surface-variant text-lg cursor-pointer">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Effect Card 2 -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col justify-between border border-transparent hover:border-outline-variant transition-colors">
+<div>
+<div class="flex justify-between items-start mb-4">
+<span class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded tracking-widest">12 DAYS AGO</span>
+<div class="text-right">
+<span class="text-xl font-bold text-primary tnum">91%</span>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest">Agreement</p>
+</div>
+</div>
+<h3 class="text-lg font-bold text-white mb-2 leading-snug">Liquidity Drains in the Reverse Repo Market</h3>
+<p class="text-sm text-on-surface-variant mb-6 leading-relaxed line-clamp-2">The rapid drawdown of the RRP facility is beginning to manifest as increased overnight funding volatility for regional lenders.</p>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3 overflow-x-auto pb-2">
+<div class="bg-surface-container-highest px-3 py-2 rounded-lg flex items-center gap-4 shrink-0">
+<span class="text-xs font-bold text-white tracking-wider">SOXX</span>
+<div class="w-12 h-6">
+<svg class="w-full h-full text-primary" viewbox="0 0 48 24">
+<path d="M0 20 L8 15 L16 18 L24 10 L32 12 L48 2" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+</svg>
+</div>
+<span class="text-xs font-bold text-primary tnum">+7.1%</span>
+</div>
+<div class="bg-surface-container-highest px-3 py-2 rounded-lg flex items-center gap-4 shrink-0">
+<span class="text-xs font-bold text-white tracking-wider">SMH</span>
+<div class="w-12 h-6">
+<svg class="w-full h-full text-primary" viewbox="0 0 48 24">
+<path d="M0 22 L12 14 L24 16 L36 8 L48 4" fill="none" stroke="currentColor" stroke-width="1.5"></path>
+</svg>
+</div>
+<span class="text-xs font-bold text-primary tnum">+5.4%</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/20">
+<span class="bg-primary-container/20 text-primary text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest">Still Accelerating</span>
+<span class="material-symbols-outlined text-on-surface-variant text-lg cursor-pointer">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. This Week's Moves -->
+<section class="mb-12">
+<h2 class="text-xl font-bold text-white tracking-tight mb-6">This Week's Moves</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Week Card 1 -->
+<div class="bg-surface-container-highest p-5 rounded-lg">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-sm font-bold text-white leading-tight pr-4">Global Energy Transition Refusal</h3>
+<span class="text-primary font-bold text-xs tnum">64%</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="flex flex-wrap gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">XOP</span>
+<span class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">XLE</span>
+</div>
+<span class="text-[9px] text-on-surface-variant/60 font-medium">OCT 24, 2023</span>
+</div>
+</div>
+<!-- Week Card 2 -->
+<div class="bg-surface-container-highest p-5 rounded-lg">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-sm font-bold text-white leading-tight pr-4">Commercial Real Estate Debt Maturity Wall</h3>
+<span class="text-primary font-bold text-xs tnum">87%</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="flex flex-wrap gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">IYR</span>
+<span class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">VNQ</span>
+</div>
+<span class="text-[9px] text-on-surface-variant/60 font-medium">OCT 23, 2023</span>
+</div>
+</div>
+<!-- Week Card 3 -->
+<div class="bg-surface-container-highest p-5 rounded-lg">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-sm font-bold text-white leading-tight pr-4">Digital Currencies Institutional Pivot</h3>
+<span class="text-primary font-bold text-xs tnum">42%</span>
+</div>
+<div class="flex justify-between items-end">
+<div class="flex flex-wrap gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">BITO</span>
+<span class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">COIN</span>
+</div>
+<span class="text-[9px] text-on-surface-variant/60 font-medium">OCT 21, 2023</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- 4. Today's Movers (Fixed Bottom Strip) -->
+<div class="absolute bottom-0 left-0 right-0 h-14 bg-surface-container border-t border-outline-variant/10 z-40 overflow-hidden flex items-center">
+<div class="bg-primary/10 border-r border-outline-variant/30 px-6 flex items-center h-full shrink-0">
+<span class="text-[10px] font-bold text-primary tracking-[0.2em] uppercase">Today's Movers</span>
+</div>
+<div class="flex-1 overflow-x-auto whitespace-nowrap scrollbar-hide py-3 flex gap-8 px-8 items-center">
+<!-- Mover Item -->
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-white">NVDA</span>
+<span class="text-xs font-bold text-primary tnum">+2.45%</span>
+<span class="text-xs text-on-surface-variant truncate w-40">AI chips demand surge continues...</span>
+</div>
+<div class="w-px h-4 bg-outline-variant/30"></div>
+<!-- Mover Item -->
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-white">JPM</span>
+<span class="text-xs font-bold text-error-dim tnum">-0.82%</span>
+<span class="text-xs text-on-surface-variant truncate w-40">Net interest margin pressure grows...</span>
+</div>
+<div class="w-px h-4 bg-outline-variant/30"></div>
+<!-- Mover Item -->
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-white">AAPL</span>
+<span class="text-xs font-bold text-primary tnum">+1.12%</span>
+<span class="text-xs text-on-surface-variant truncate w-40">Services growth offsets hardware...</span>
+</div>
+<div class="w-px h-4 bg-outline-variant/30"></div>
+<!-- Mover Item -->
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-white">XOM</span>
+<span class="text-xs font-bold text-error-dim tnum">-3.15%</span>
+<span class="text-xs text-on-surface-variant truncate w-40">Crude inventories buildup report...</span>
+</div>
+<div class="w-px h-4 bg-outline-variant/30"></div>
+<!-- Mover Item -->
+<div class="flex items-center gap-3">
+<span class="text-xs font-bold text-white">TSLA</span>
+<span class="text-xs font-bold text-primary tnum">+4.21%</span>
+<span class="text-xs text-on-surface-variant truncate w-40">European expansion phase 3...</span>
+</div>
+</div>
+</div>
+</main>
+</body></html>

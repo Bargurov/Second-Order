@@ -482,10 +482,10 @@ class TestCheckOneTickerDirection(unittest.TestCase):
 class TestTickerCache(unittest.TestCase):
 
     def setUp(self):
-        market_check._TICKER_CACHE.clear()
+        market_check._cache_clear()
 
     def tearDown(self):
-        market_check._TICKER_CACHE.clear()
+        market_check._cache_clear()
 
     def test_cache_set_and_get(self):
         """_cache_set stores a value retrievable by _cache_get."""
@@ -497,14 +497,15 @@ class TestTickerCache(unittest.TestCase):
 
     def test_cache_expires(self):
         """Expired entries should return None."""
-        market_check._TICKER_CACHE["old:key"] = (0.0, "stale")  # ts=0 → expired
+        with market_check._cache_lock:
+            market_check._cache_data["old:key"] = (0.0, "stale")  # ts=0 → expired
         self.assertIsNone(market_check._cache_get("old:key"))
 
     def test_cache_clear_removes_all(self):
-        """Clearing the cache dict should remove all entries."""
+        """Clearing the cache should remove all entries."""
         market_check._cache_set("a", 1)
         market_check._cache_set("b", 2)
-        market_check._TICKER_CACHE.clear()
+        market_check._cache_clear()
         self.assertIsNone(market_check._cache_get("a"))
         self.assertIsNone(market_check._cache_get("b"))
 
@@ -1086,6 +1087,120 @@ class TestComputeStressRegime(unittest.TestCase):
         with patch("market_check._fetch", return_value=None):
             result = market_check.compute_stress_regime()
         self.assertIsInstance(result["regime"], str)
+
+    def test_detail_and_summary_present(self):
+        """compute_stress_regime returns detail dict and summary string."""
+        with patch("market_check._fetch", return_value=None):
+            result = market_check.compute_stress_regime()
+        self.assertIn("detail", result)
+        self.assertIn("summary", result)
+        self.assertIsInstance(result["summary"], str)
+        self.assertIsInstance(result["detail"], dict)
+
+    def test_all_detail_components_present(self):
+        """Even with no data, all 5 detail subsections should exist."""
+        with patch("market_check._fetch", return_value=None):
+            result = market_check.compute_stress_regime()
+        for key in ("volatility", "term_structure", "credit", "safe_haven", "breadth"):
+            self.assertIn(key, result["detail"])
+            comp = result["detail"][key]
+            self.assertIn("label", comp)
+            self.assertIn("status", comp)
+            self.assertIn("explanation", comp)
+
+    @patch("market_check._fetch")
+    def test_detail_explanation_with_data(self, mock_fetch):
+        """With sufficient data, explanations should reference real values."""
+        df = _make_df([20.0 + i * 0.1 for i in range(40)])
+        mock_fetch.return_value = df
+        result = market_check.compute_stress_regime()
+        vol = result["detail"].get("volatility", {})
+        self.assertIn("VIX at", vol.get("explanation", ""))
+
+    def test_backward_compatible_keys(self):
+        """Original keys (regime, signals, raw) still present."""
+        with patch("market_check._fetch", return_value=None):
+            result = market_check.compute_stress_regime()
+        self.assertIn("regime", result)
+        self.assertIn("signals", result)
+        self.assertIn("raw", result)
+
+
+# ---------------------------------------------------------------------------
+# Tests for classify_rates_regime() and compute_rates_context()
+# ---------------------------------------------------------------------------
+
+class TestClassifyRatesRegime(unittest.TestCase):
+    """Pure function tests for the rates/inflation classification."""
+
+    def test_inflation_pressure(self):
+        # Nominals rising, TIP flat → breakevens widening
+        self.assertEqual(market_check.classify_rates_regime(1.5, 0.1), "Inflation pressure")
+
+    def test_inflation_pressure_tip_up(self):
+        # Nominals rising, TIP rising (real yields falling) → breakevens widening more
+        self.assertEqual(market_check.classify_rates_regime(1.0, 0.5), "Inflation pressure")
+
+    def test_real_rate_tightening(self):
+        # TIP falling (real yields rising), nominals flat
+        self.assertEqual(market_check.classify_rates_regime(0.1, -1.0), "Real-rate tightening")
+
+    def test_real_rate_tightening_both_up(self):
+        # Nominals up AND TIP down → real yields rising faster
+        self.assertEqual(market_check.classify_rates_regime(0.5, -0.8), "Real-rate tightening")
+
+    def test_risk_off_growth_scare(self):
+        # Nominals falling, TIP rising → flight to safety
+        self.assertEqual(market_check.classify_rates_regime(-1.0, 0.5), "Risk-off / growth scare")
+
+    def test_risk_off_nominals_down_tip_flat(self):
+        # Nominals falling, TIP flat → growth scare
+        self.assertEqual(market_check.classify_rates_regime(-0.8, 0.0), "Risk-off / growth scare")
+
+    def test_mixed_small_moves(self):
+        # Both moves within noise threshold
+        self.assertEqual(market_check.classify_rates_regime(0.1, -0.1), "Mixed")
+
+    def test_mixed_on_none(self):
+        self.assertEqual(market_check.classify_rates_regime(None, 0.5), "Mixed")
+        self.assertEqual(market_check.classify_rates_regime(0.5, None), "Mixed")
+        self.assertEqual(market_check.classify_rates_regime(None, None), "Mixed")
+
+
+class TestComputeRatesContext(unittest.TestCase):
+    """Tests for the full compute_rates_context() function shape."""
+
+    @patch("market_check._fetch")
+    def test_response_shape_with_data(self, mock_fetch):
+        # 25 bars of monotonically rising data
+        tnx_df = _make_df([4.0 + i * 0.02 for i in range(25)])
+        tip_df = _make_df([110.0 - i * 0.1 for i in range(25)])
+
+        def side_effect(sym):
+            if sym == "^TNX":
+                return tnx_df
+            if sym == "TIP":
+                return tip_df
+            return None
+
+        mock_fetch.side_effect = side_effect
+        result = market_check.compute_rates_context()
+        self.assertIn("regime", result)
+        self.assertIsInstance(result["regime"], str)
+        self.assertIn("nominal", result)
+        self.assertIn("real_proxy", result)
+        self.assertIn("breakeven_proxy", result)
+        self.assertIn("raw", result)
+        self.assertIsNotNone(result["nominal"]["change_5d"])
+        self.assertIsNotNone(result["real_proxy"]["change_5d"])
+
+    @patch("market_check._fetch", return_value=None)
+    def test_fallback_when_no_data(self, _mock):
+        result = market_check.compute_rates_context()
+        self.assertEqual(result["regime"], "Mixed")
+        self.assertIsNone(result["nominal"]["change_5d"])
+        self.assertIsNone(result["real_proxy"]["change_5d"])
+        self.assertIsNone(result["breakeven_proxy"]["change_5d"])
 
 
 # ---------------------------------------------------------------------------

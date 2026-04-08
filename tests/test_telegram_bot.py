@@ -10,7 +10,8 @@ sys.path.insert(0, ".")
 from telegram_bot import (
     format_analysis, format_brief, format_alert, _esc,
     parse_time, build_morning_brief, check_watchlist_alerts, _alerted,
-    extract_headline,
+    extract_headline, format_benchmarks,
+    format_market_context, call_market_context,
 )
 import datetime
 from unittest.mock import patch
@@ -445,6 +446,598 @@ class TestExtractHeadline(unittest.TestCase):
         r = extract_headline(text="wow https://reuters.com/article/abc lol")
         # Both segments are too short after noise strip → fall back to URL
         self.assertIn("reuters.com", r)
+
+
+# ---------------------------------------------------------------------------
+# format_benchmarks — the new liquid benchmarks block
+# ---------------------------------------------------------------------------
+
+class TestFormatBenchmarks(unittest.TestCase):
+    """Tests for the new format_benchmarks() function."""
+
+    EXPECTED_MARKETS = ("ES", "NQ", "RTY", "CL", "GC", "DXY", "2Y", "10Y")
+
+    def _snap(self, market: str, value: float | None = 100.0,
+              change_5d: float | None = 1.5, unit: str = "idx",
+              stale: bool = False, error: str | None = None,
+              source: str = "yfinance") -> dict:
+        return {
+            "market": market,
+            "symbol": f"{market}-SYM",
+            "label": f"{market} label",
+            "unit": unit,
+            "asset_class": "equity_index",
+            "source": source,
+            "value": value,
+            "change_1d": 0.5,
+            "change_5d": change_5d,
+            "fetched_at": "2026-04-07T12:00:00+00:00",
+            "error": error,
+            "stale": stale,
+        }
+
+    def _all_fresh(self) -> list[dict]:
+        return [self._snap(m, value=100.0 + i, change_5d=1.0 + i * 0.1)
+                for i, m in enumerate(self.EXPECTED_MARKETS)]
+
+    # -- Empty / unavailable cases --------------------------------------
+
+    def test_empty_list_returns_empty_string(self):
+        self.assertEqual(format_benchmarks([]), "")
+
+    def test_none_returns_empty_string(self):
+        self.assertEqual(format_benchmarks(None), "")  # type: ignore
+
+    def test_all_unavailable_returns_empty(self):
+        """If every market has no value, the block should be omitted entirely."""
+        snaps = [self._snap(m, value=None, error="no data")
+                 for m in self.EXPECTED_MARKETS]
+        self.assertEqual(format_benchmarks(snaps), "")
+
+    # -- Full data path --------------------------------------------------
+
+    def test_full_data_includes_all_markets(self):
+        result = format_benchmarks(self._all_fresh())
+        for market in self.EXPECTED_MARKETS:
+            self.assertIn(market, result, f"Missing {market} in benchmark block")
+
+    def test_full_data_has_header(self):
+        result = format_benchmarks(self._all_fresh())
+        self.assertIn("Liquid Benchmarks", result)
+
+    def test_full_data_shows_values_and_changes(self):
+        result = format_benchmarks(self._all_fresh())
+        # First snapshot: value=100.0, change=+1.00%
+        self.assertIn("100.00", result)
+        self.assertIn("+1.00%", result)
+
+    def test_canonical_order_in_output(self):
+        """Markets should appear in canonical order regardless of input order."""
+        # Provide reversed
+        snaps = list(reversed(self._all_fresh()))
+        result = format_benchmarks(snaps)
+        positions = [result.find(m) for m in self.EXPECTED_MARKETS]
+        # Each position should be greater than the previous
+        for i in range(1, len(positions)):
+            self.assertLess(positions[i - 1], positions[i],
+                            f"{self.EXPECTED_MARKETS[i]} out of order")
+
+    def test_html_escaping_in_footer(self):
+        """The footer text should be HTML-escaped."""
+        snaps = self._all_fresh()
+        result = format_benchmarks(snaps)
+        # Source label appears via _esc; ensure no raw < or > leak in
+        self.assertNotIn("<script", result.lower())
+
+    def test_signed_change_formatting(self):
+        snaps = [
+            self._snap("ES", value=4500.0, change_5d=2.5),
+            self._snap("NQ", value=15000.0, change_5d=-1.25),
+        ]
+        # Pad to all markets so block isn't empty
+        snaps += [self._snap(m, value=100.0, change_5d=0.0)
+                  for m in ("RTY", "CL", "GC", "DXY", "2Y", "10Y")]
+        result = format_benchmarks(snaps)
+        self.assertIn("+2.50%", result)
+        self.assertIn("-1.25%", result)
+
+    def test_percent_unit_formatting(self):
+        """The 10Y / yield-style markets should render with % suffix on value."""
+        snaps = [self._snap(m, value=100.0, change_5d=0.5)
+                 for m in self.EXPECTED_MARKETS]
+        # Override 10Y to use % unit
+        for s in snaps:
+            if s["market"] == "10Y":
+                s["unit"] = "%"
+                s["value"] = 4.50
+        result = format_benchmarks(snaps)
+        self.assertIn("4.50%", result)
+
+    def test_thousand_separators(self):
+        snaps = [self._snap("ES", value=4523.75)]
+        snaps += [self._snap(m) for m in self.EXPECTED_MARKETS if m != "ES"]
+        result = format_benchmarks(snaps)
+        self.assertIn("4,523.75", result)
+
+    def test_source_in_footer(self):
+        snaps = self._all_fresh()
+        result = format_benchmarks(snaps)
+        self.assertIn("yfinance", result)
+
+    # -- Stale snapshots -------------------------------------------------
+
+    def test_stale_snapshot_tagged(self):
+        snaps = self._all_fresh()
+        snaps[0]["stale"] = True
+        result = format_benchmarks(snaps)
+        # The stale tag should appear inline
+        self.assertIn("stale", result)
+        # The value should still be present
+        self.assertIn("100.00", result)
+
+    def test_stale_count_in_footer(self):
+        snaps = self._all_fresh()
+        snaps[0]["stale"] = True
+        snaps[2]["stale"] = True
+        result = format_benchmarks(snaps)
+        self.assertIn("2 stale", result)
+
+    def test_all_stale_still_renders_data(self):
+        """Every market stale → block still renders (degraded but visible)."""
+        snaps = self._all_fresh()
+        for s in snaps:
+            s["stale"] = True
+        result = format_benchmarks(snaps)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("8 stale", result)
+
+    # -- Partial availability --------------------------------------------
+
+    def test_one_market_unavailable(self):
+        snaps = self._all_fresh()
+        snaps[3]["value"] = None
+        snaps[3]["error"] = "no data"
+        result = format_benchmarks(snaps)
+        self.assertIn("n/a", result)
+        self.assertIn("1 n/a", result)
+        # Other markets still rendered
+        self.assertIn("100.00", result)
+
+    def test_missing_market_shown_as_na(self):
+        """If a market is entirely absent from the response, show n/a."""
+        snaps = self._all_fresh()
+        # Drop the last two
+        snaps = snaps[:-2]
+        result = format_benchmarks(snaps)
+        # Last two markets ("2Y", "10Y") should be marked n/a
+        self.assertIn("2Y", result)
+        self.assertIn("10Y", result)
+        self.assertIn("n/a", result)
+
+    def test_partial_availability_keeps_block(self):
+        """As long as at least one market is usable, render the block."""
+        snaps = [self._snap("ES", value=4500.0, change_5d=1.0)]
+        snaps += [self._snap(m, value=None, error="no data")
+                  for m in self.EXPECTED_MARKETS if m != "ES"]
+        result = format_benchmarks(snaps)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("4,500.00", result)
+        self.assertIn("7 n/a", result)
+
+    def test_mixed_stale_and_unavailable(self):
+        snaps = self._all_fresh()
+        snaps[0]["stale"] = True
+        snaps[1]["value"] = None
+        snaps[1]["error"] = "no data"
+        result = format_benchmarks(snaps)
+        self.assertIn("1 stale", result)
+        self.assertIn("1 n/a", result)
+
+    # -- Integration with build_morning_brief ---------------------------
+
+# NOTE: legacy build_morning_brief tests that exercised the old
+# call_snapshots / format_benchmarks composition were removed when /brief
+# migrated to call_market_context.  See TestFormatMarketContext below for
+# the replacement coverage that hits the unified path.
+
+
+# ---------------------------------------------------------------------------
+# call_market_context — graceful failure
+# ---------------------------------------------------------------------------
+
+class TestCallMarketContext(unittest.TestCase):
+
+    def test_returns_dict_on_success(self):
+        fake = {
+            "built_at": "2026-04-07T12:00:00+00:00",
+            "source": "yfinance",
+            "snapshots": [],
+            "snapshots_meta": {"total": 0, "fresh": 0, "stale": 0, "unavailable": 0},
+            "stress": {"regime": "Calm", "available": True, "signals": {}, "summary": "ok"},
+            "highlights": [],
+            "highlights_meta": {"count": 0, "source": "movers/today"},
+        }
+        with patch("telegram_bot._api_get", return_value=fake):
+            result = call_market_context()
+        self.assertEqual(result, fake)
+
+    def test_returns_empty_dict_on_failure(self):
+        with patch("telegram_bot._api_get", side_effect=Exception("network down")):
+            result = call_market_context()
+        self.assertEqual(result, {})
+
+    def test_returns_empty_dict_on_non_dict_response(self):
+        """A malformed response (e.g. list) should not break the bot."""
+        with patch("telegram_bot._api_get", return_value=[1, 2, 3]):
+            result = call_market_context()
+        self.assertEqual(result, {})
+
+    def test_highlight_limit_in_url(self):
+        captured = {}
+
+        def _spy(path):
+            captured["path"] = path
+            return {"snapshots": [], "stress": {}, "highlights": []}
+
+        with patch("telegram_bot._api_get", side_effect=_spy):
+            call_market_context(highlight_limit=7)
+        self.assertIn("highlight_limit=7", captured["path"])
+
+
+# ---------------------------------------------------------------------------
+# format_market_context — the unified bot composer
+# ---------------------------------------------------------------------------
+
+class TestFormatMarketContext(unittest.TestCase):
+    """Tests for the unified format_market_context() function consuming
+    the /market-context payload."""
+
+    EXPECTED_MARKETS = ("ES", "NQ", "RTY", "CL", "GC", "DXY", "2Y", "10Y")
+
+    def _snap(self, market, value=100.0, change=1.5, stale=False, error=None):
+        return {
+            "market": market,
+            "symbol": f"{market}-SYM",
+            "label": f"{market} label",
+            "unit": "idx",
+            "asset_class": "equity_index",
+            "source": "yfinance",
+            "value": value,
+            "change_1d": 0.5,
+            "change_5d": change,
+            "fetched_at": "2026-04-07T12:00:00+00:00",
+            "error": error,
+            "stale": stale,
+        }
+
+    def _full_snapshots(self):
+        return [self._snap(m, value=100.0 + i, change=1.0 + i * 0.1)
+                for i, m in enumerate(self.EXPECTED_MARKETS)]
+
+    def _stress(self, regime="Calm", active=0, summary="Markets stable"):
+        signals = {
+            "vix_elevated": active > 0,
+            "term_inversion": active > 1,
+            "credit_widening": active > 2,
+            "safe_haven_bid": active > 3,
+            "breadth_deterioration": active > 4,
+        }
+        return {
+            "regime": regime,
+            "summary": summary,
+            "signals": signals,
+            "raw": {},
+            "detail": {},
+            "available": True,
+        }
+
+    def _highlights(self):
+        return [
+            {
+                "event_id": 1,
+                "headline": "OPEC announces surprise production cut",
+                "impact": 4.5,
+                "support_ratio": 1.0,
+                "tickers": [
+                    {"symbol": "USO", "return_5d": 3.20, "role": "beneficiary"},
+                ],
+            },
+            {
+                "event_id": 2,
+                "headline": "EU imposes new tariffs on US steel imports",
+                "impact": 3.2,
+                "support_ratio": 0.5,
+                "tickers": [
+                    {"symbol": "X", "return_5d": -2.10, "role": "loser"},
+                ],
+            },
+        ]
+
+    def _full_context(self):
+        return {
+            "built_at": "2026-04-07T12:00:00+00:00",
+            "source": "yfinance",
+            "snapshots": self._full_snapshots(),
+            "snapshots_meta": {"total": 8, "fresh": 8, "stale": 0, "unavailable": 0},
+            "stress": self._stress(regime="Geopolitical Stress", active=2),
+            "highlights": self._highlights(),
+            "highlights_meta": {"count": 2, "source": "movers/today"},
+        }
+
+    # -- Empty / degraded cases ----------------------------------------
+
+    def test_empty_dict_returns_empty_string(self):
+        self.assertEqual(format_market_context({}), "")
+
+    def test_none_returns_empty_string(self):
+        self.assertEqual(format_market_context(None), "")  # type: ignore
+
+    def test_all_sections_empty_returns_empty_string(self):
+        ctx = {
+            "built_at": "2026-04-07T12:00:00+00:00",
+            "source": "yfinance",
+            "snapshots": [],
+            "snapshots_meta": {"total": 0, "fresh": 0, "stale": 0, "unavailable": 0},
+            "stress": {"regime": "Unknown", "available": False, "signals": {}},
+            "highlights": [],
+            "highlights_meta": {"count": 0, "source": "movers/today"},
+        }
+        self.assertEqual(format_market_context(ctx), "")
+
+    # -- Full data path -------------------------------------------------
+
+    def test_full_context_includes_benchmarks(self):
+        result = format_market_context(self._full_context())
+        self.assertIn("Liquid Benchmarks", result)
+        for m in self.EXPECTED_MARKETS:
+            self.assertIn(m, result)
+
+    def test_full_context_includes_regime(self):
+        result = format_market_context(self._full_context())
+        self.assertIn("Market Regime", result)
+        self.assertIn("Geopolitical Stress", result)
+        self.assertIn("2 signals active", result)
+
+    def test_full_context_includes_highlights(self):
+        result = format_market_context(self._full_context())
+        self.assertIn("Today's Movers", result)
+        self.assertIn("OPEC", result)
+        self.assertIn("EU imposes new tariffs", result)
+
+    def test_full_context_section_order(self):
+        """Benchmarks come first, then regime, then highlights."""
+        result = format_market_context(self._full_context())
+        bench_pos = result.index("Liquid Benchmarks")
+        regime_pos = result.index("Market Regime")
+        movers_pos = result.index("Today's Movers")
+        self.assertLess(bench_pos, regime_pos)
+        self.assertLess(regime_pos, movers_pos)
+
+    def test_highlights_show_top_ticker(self):
+        result = format_market_context(self._full_context())
+        self.assertIn("USO", result)
+        self.assertIn("+3.20%", result)
+        self.assertIn("-2.10%", result)
+
+    def test_highlights_truncate_long_headline(self):
+        long = "A" * 200
+        ctx = self._full_context()
+        ctx["highlights"] = [{
+            "event_id": 1, "headline": long, "tickers": [],
+        }]
+        result = format_market_context(ctx)
+        # Truncated to 70 chars
+        self.assertNotIn("A" * 100, result)
+        self.assertIn("...", result)
+
+    # -- Partial availability -------------------------------------------
+
+    def test_only_benchmarks_available(self):
+        ctx = self._full_context()
+        ctx["stress"] = {"regime": "Unknown", "available": False, "signals": {}}
+        ctx["highlights"] = []
+        ctx["highlights_meta"]["count"] = 0
+        result = format_market_context(ctx)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertNotIn("Market Regime", result)
+        self.assertNotIn("Today's Movers", result)
+
+    def test_only_stress_available(self):
+        ctx = self._full_context()
+        ctx["snapshots"] = []
+        ctx["snapshots_meta"] = {"total": 0, "fresh": 0, "stale": 0, "unavailable": 0}
+        ctx["highlights"] = []
+        result = format_market_context(ctx)
+        self.assertNotIn("Liquid Benchmarks", result)
+        self.assertIn("Market Regime", result)
+        self.assertIn("Geopolitical Stress", result)
+
+    def test_only_highlights_available(self):
+        ctx = self._full_context()
+        ctx["snapshots"] = []
+        ctx["snapshots_meta"] = {"total": 0, "fresh": 0, "stale": 0, "unavailable": 0}
+        ctx["stress"] = {"regime": "Unknown", "available": False, "signals": {}}
+        result = format_market_context(ctx)
+        self.assertNotIn("Liquid Benchmarks", result)
+        self.assertNotIn("Market Regime", result)
+        self.assertIn("Today's Movers", result)
+
+    def test_some_snapshots_unavailable(self):
+        ctx = self._full_context()
+        ctx["snapshots"][0]["value"] = None
+        ctx["snapshots"][0]["error"] = "no data"
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 7, "stale": 0, "unavailable": 1}
+        result = format_market_context(ctx)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("n/a", result)
+
+    def test_stress_unknown_regime_omitted(self):
+        ctx = self._full_context()
+        ctx["stress"]["regime"] = "Unknown"
+        result = format_market_context(ctx)
+        self.assertNotIn("Market Regime", result)
+        # Benchmarks and highlights still rendered
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("Today's Movers", result)
+
+    def test_stress_unavailable_flag_skips_section(self):
+        ctx = self._full_context()
+        ctx["stress"]["available"] = False
+        result = format_market_context(ctx)
+        self.assertNotIn("Market Regime", result)
+
+    # -- Stale-state formatting -----------------------------------------
+
+    def test_stale_snapshot_tagged_inline(self):
+        ctx = self._full_context()
+        ctx["snapshots"][0]["stale"] = True
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 7, "stale": 1, "unavailable": 0}
+        result = format_market_context(ctx)
+        self.assertIn("stale", result)
+        # Value still rendered
+        self.assertIn("100.00", result)
+
+    def test_stale_count_in_benchmarks_footer(self):
+        ctx = self._full_context()
+        ctx["snapshots"][0]["stale"] = True
+        ctx["snapshots"][2]["stale"] = True
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 6, "stale": 2, "unavailable": 0}
+        result = format_market_context(ctx)
+        self.assertIn("2 stale", result)
+
+    def test_all_stale_still_renders(self):
+        ctx = self._full_context()
+        for s in ctx["snapshots"]:
+            s["stale"] = True
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 0, "stale": 8, "unavailable": 0}
+        result = format_market_context(ctx)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("8 stale", result)
+
+    def test_mixed_stale_and_unavailable(self):
+        ctx = self._full_context()
+        ctx["snapshots"][0]["stale"] = True
+        ctx["snapshots"][1]["value"] = None
+        ctx["snapshots"][1]["error"] = "no data"
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 6, "stale": 1, "unavailable": 1}
+        result = format_market_context(ctx)
+        self.assertIn("1 stale", result)
+        self.assertIn("1 n/a", result)
+
+    # -- HTML escaping --------------------------------------------------
+
+    def test_html_escaping_in_highlights(self):
+        ctx = self._full_context()
+        ctx["highlights"][0]["headline"] = "A & B <script> attack"
+        result = format_market_context(ctx)
+        self.assertIn("&amp;", result)
+        self.assertIn("&lt;script&gt;", result)
+        self.assertNotIn("<script>", result)
+
+    # -- Integration with build_morning_brief ----------------------------
+
+    def test_morning_brief_uses_market_context(self):
+        """build_morning_brief should call call_market_context, not call_snapshots."""
+        fake_news = {
+            "clusters": [
+                {"headline": "Test event", "summary": "S",
+                 "consensus": {}, "sources": [], "source_count": 1},
+            ],
+            "total_headlines": 1,
+        }
+        with patch("telegram_bot.call_news", return_value=fake_news), \
+             patch("telegram_bot.call_market_context", return_value=self._full_context()):
+            result = build_morning_brief()
+        self.assertIsNotNone(result)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("Market Regime", result)
+        self.assertIn("Today's Movers", result)
+        self.assertIn("Test event", result)
+        # Context block appears BEFORE the news brief
+        self.assertLess(result.index("Liquid Benchmarks"), result.index("Test event"))
+
+    def test_morning_brief_without_context(self):
+        """When /market-context is empty, brief still renders without the block."""
+        fake_news = {
+            "clusters": [
+                {"headline": "Test event", "summary": "S",
+                 "consensus": {}, "sources": [], "source_count": 1},
+            ],
+            "total_headlines": 1,
+        }
+        with patch("telegram_bot.call_news", return_value=fake_news), \
+             patch("telegram_bot.call_market_context", return_value={}):
+            result = build_morning_brief()
+        self.assertIsNotNone(result)
+        self.assertNotIn("Liquid Benchmarks", result)
+        self.assertNotIn("Market Regime", result)
+        self.assertIn("Test event", result)
+
+    def test_morning_brief_with_partial_context(self):
+        """Partial context produces a degraded block but the news brief still renders."""
+        fake_news = {
+            "clusters": [
+                {"headline": "Test event", "summary": "S",
+                 "consensus": {}, "sources": [], "source_count": 1},
+            ],
+            "total_headlines": 1,
+        }
+        ctx = self._full_context()
+        # Make snapshots partial
+        ctx["snapshots"] = [self._snap("ES", value=4500.0, change=1.0)]
+        ctx["snapshots"] += [self._snap(m, value=None, error="no data")
+                             for m in self.EXPECTED_MARKETS if m != "ES"]
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 1, "stale": 0, "unavailable": 7}
+        # Drop highlights
+        ctx["highlights"] = []
+        ctx["highlights_meta"]["count"] = 0
+        with patch("telegram_bot.call_news", return_value=fake_news), \
+             patch("telegram_bot.call_market_context", return_value=ctx):
+            result = build_morning_brief()
+        self.assertIsNotNone(result)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("4,500.00", result)
+        self.assertIn("7 n/a", result)
+        # Stress still rendered
+        self.assertIn("Market Regime", result)
+        # Highlights omitted
+        self.assertNotIn("Today's Movers", result)
+        self.assertIn("Test event", result)
+
+    def test_morning_brief_stale_snapshots(self):
+        fake_news = {
+            "clusters": [
+                {"headline": "Test event", "summary": "S",
+                 "consensus": {}, "sources": [], "source_count": 1},
+            ],
+            "total_headlines": 1,
+        }
+        ctx = self._full_context()
+        for s in ctx["snapshots"]:
+            s["stale"] = True
+        ctx["snapshots_meta"] = {"total": 8, "fresh": 0, "stale": 8, "unavailable": 0}
+        with patch("telegram_bot.call_news", return_value=fake_news), \
+             patch("telegram_bot.call_market_context", return_value=ctx):
+            result = build_morning_brief()
+        self.assertIsNotNone(result)
+        self.assertIn("Liquid Benchmarks", result)
+        self.assertIn("8 stale", result)
+        self.assertIn("Test event", result)
+
+    def test_morning_brief_context_failure_does_not_break_news(self):
+        """If call_market_context raises, the morning brief should still bail safely."""
+        fake_news = {
+            "clusters": [
+                {"headline": "Test event", "summary": "S",
+                 "consensus": {}, "sources": [], "source_count": 1},
+            ],
+            "total_headlines": 1,
+        }
+        with patch("telegram_bot.call_news", return_value=fake_news), \
+             patch("telegram_bot.call_market_context", side_effect=Exception("ctx down")):
+            result = build_morning_brief()
+        # build_morning_brief catches and returns None on internal failure
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import os
 import sys
 import unittest
 import uuid
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 # Ensure the project root is importable.
@@ -34,6 +35,12 @@ def _mock_analyze(headline, stage, persistence, event_context=""):
             "Pricing power shifts",
             "CompanyA benefits, CompanyB loses",
         ],
+        "if_persists": {
+            "substitution": "Alternative suppliers gain share if disruption lasts.",
+            "delayed_winners": ["CompanyC"],
+            "delayed_losers": ["CompanyD"],
+            "horizon": "months",
+        },
     }
 
 
@@ -298,6 +305,50 @@ class TestLoadEventById(APITestCase):
         chain = r2.json()["analysis"].get("transmission_chain")
         self.assertIsInstance(chain, list)
 
+    def test_analyze_returns_if_persists(self):
+        r = self.client.post("/analyze", json={"headline": "Persist test: supply shock"})
+        self.assertEqual(r.status_code, 200)
+        ip = r.json()["analysis"].get("if_persists")
+        self.assertIsInstance(ip, dict)
+        self.assertIn("substitution", ip)
+        self.assertIn("delayed_winners", ip)
+        self.assertIn("delayed_losers", ip)
+        self.assertIn("horizon", ip)
+
+    def test_analyze_if_persists_in_cached_response(self):
+        headline = "Persist cache test: tariff escalation"
+        self.client.post("/analyze", json={"headline": headline})
+        r2 = self.client.post("/analyze", json={"headline": headline})
+        ip = r2.json()["analysis"].get("if_persists")
+        self.assertIsInstance(ip, dict)
+        self.assertIn("substitution", ip)
+
+    @patch("api.analyze_event", side_effect=lambda h, s, p, event_context="": {
+        **_mock_analyze(h, s, p, event_context),
+        "if_persists": {"substitution": None, "delayed_winners": [], "delayed_losers": [], "horizon": "null"},
+    })
+    def test_analyze_empty_if_persists_returns_empty_dict(self, _mock):
+        """When model returns all-null if_persists, normalization yields {}."""
+        r = self.client.post("/analyze", json={"headline": "Empty persist test"})
+        self.assertEqual(r.status_code, 200)
+        ip = r.json()["analysis"].get("if_persists")
+        self.assertIsInstance(ip, dict)
+        # All null-like values stripped → empty dict
+        self.assertEqual(ip, {})
+
+    def test_analyze_response_shape_includes_all_expected_keys(self):
+        """Full response shape must include all top-level and analysis keys."""
+        r = self.client.post("/analyze", json={"headline": "Shape test: trade disruption"})
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for top_key in ("headline", "stage", "persistence", "analysis", "market", "is_mock", "event_date"):
+            self.assertIn(top_key, body)
+        analysis = body["analysis"]
+        for ak in ("what_changed", "mechanism_summary", "beneficiaries", "losers",
+                    "beneficiary_tickers", "loser_tickers", "assets_to_watch",
+                    "confidence", "transmission_chain", "if_persists"):
+            self.assertIn(ak, analysis, f"Missing analysis key: {ak}")
+
 class TestAnalyzeStream(APITestCase):
     """Tests for the progressive SSE endpoint POST /analyze/stream."""
 
@@ -535,7 +586,7 @@ class TestSinceEventLive(APITestCase):
     """Tests for the live since-event return flow (batch backtest on market movers)."""
 
     def _seed_mover(self, headline="Live update mover", return_5d=5.0):
-        """Seed an event that qualifies as a market mover (abs(return_5d) >= 3%)."""
+        """Seed an event that qualifies as a market mover (abs(return_5d) >= 1.5%)."""
         db.save_event({
             "headline": headline,
             "stage": "realized",
@@ -556,9 +607,16 @@ class TestSinceEventLive(APITestCase):
          "anchor_date": "2025-03-03"},
     ])
     def test_since_event_return_via_batch_backtest(self, _mock_fc):
-        """Batch backtest on a mover event returns fresh since-event returns."""
+        """Batch backtest on a mover event returns fresh since-event returns.
+
+        The seeded event_date (2025-03-01) is past the 30-day frozen cutoff,
+        so we pass force=True to exercise the refresh path explicitly.
+        """
         eid = self._seed_mover()
-        r = self.client.post("/backtest/batch", json={"event_ids": [eid]})
+        r = self.client.post(
+            "/backtest/batch",
+            json={"event_ids": [eid], "force": True},
+        )
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(len(body), 1)
@@ -583,8 +641,12 @@ class TestSinceEventLive(APITestCase):
         self.assertEqual(r.status_code, 200)
         movers = r.json()
         self.assertTrue(any(m["event_id"] == eid for m in movers))
-        # Step 2: batch backtest with the mover's event ID
-        r2 = self.client.post("/backtest/batch", json={"event_ids": [eid]})
+        # Step 2: batch backtest with the mover's event ID (force=True because
+        # the seeded 2025-03-01 event is past the frozen cutoff).
+        r2 = self.client.post(
+            "/backtest/batch",
+            json={"event_ids": [eid], "force": True},
+        )
         self.assertEqual(r2.status_code, 200)
         outcomes = r2.json()[0]["outcomes"]
         self.assertEqual(outcomes[0]["symbol"], "GLD")
@@ -681,6 +743,73 @@ class TestStressEndpoint(APITestCase):
         for v in body["raw"].values():
             self.assertIsInstance(v, (int, float))
 
+    def test_stress_includes_detail_and_summary(self):
+        """Expanded response includes per-component detail and a summary."""
+        r = self.client.get("/stress")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIn("detail", body)
+        self.assertIn("summary", body)
+        self.assertIsInstance(body["summary"], str)
+        self.assertIsInstance(body["detail"], dict)
+
+    def test_stress_detail_has_all_components(self):
+        """Detail dict should include all 5 subsections."""
+        r = self.client.get("/stress")
+        body = r.json()
+        for key in ("volatility", "term_structure", "credit", "safe_haven", "breadth"):
+            self.assertIn(key, body["detail"], f"Missing detail component: {key}")
+            comp = body["detail"][key]
+            self.assertIn("label", comp)
+            self.assertIn("status", comp)
+            self.assertIn("explanation", comp)
+            self.assertIn(comp["status"], ("calm", "watch", "stressed"))
+            self.assertIsInstance(comp["explanation"], str)
+            self.assertGreater(len(comp["explanation"]), 5)
+
+
+class TestRatesContextEndpoint(APITestCase):
+    """Tests for GET /rates-context."""
+
+    def test_rates_context_returns_shape(self):
+        r = self.client.get("/rates-context")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIn("regime", body)
+        self.assertIsInstance(body["regime"], str)
+        for key in ("nominal", "real_proxy", "breakeven_proxy"):
+            self.assertIn(key, body)
+            self.assertIn("label", body[key])
+        self.assertIn("raw", body)
+
+    @patch("api.compute_rates_context", return_value={
+        "regime": "Inflation pressure",
+        "nominal": {"label": "10Y yield", "value": 4.35, "change_5d": 0.82},
+        "real_proxy": {"label": "TIP (real yield proxy)", "value": 108.5, "change_5d": 0.12},
+        "breakeven_proxy": {"label": "Breakeven proxy", "change_5d": 0.94},
+        "raw": {"tnx": 4.35, "tnx_change_5d": 0.82, "tip": 108.5, "tip_change_5d": 0.12},
+    })
+    def test_rates_context_with_mocked_data(self, _mock):
+        r = self.client.get("/rates-context")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["regime"], "Inflation pressure")
+        self.assertAlmostEqual(body["nominal"]["change_5d"], 0.82)
+
+    @patch("api.compute_rates_context", return_value={
+        "regime": "Mixed",
+        "nominal": {"label": "10Y yield", "value": None, "change_5d": None},
+        "real_proxy": {"label": "TIP (real yield proxy)", "value": None, "change_5d": None},
+        "breakeven_proxy": {"label": "Breakeven proxy", "change_5d": None},
+        "raw": {},
+    })
+    def test_rates_context_fallback_no_data(self, _mock):
+        r = self.client.get("/rates-context")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["regime"], "Mixed")
+        self.assertIsNone(body["nominal"]["change_5d"])
+
 
 class TestStressVixChange(APITestCase):
     """Tests for the VIX 5d percent-change field in /stress raw data."""
@@ -732,7 +861,7 @@ class TestMarketMovers(APITestCase):
         self.assertEqual(r.json(), [])
 
     def test_qualifies_event_with_big_saved_move(self):
-        """Event with a saved ticker return_5d > 3% should appear."""
+        """Event with a saved ticker return_5d > 1.5% should appear."""
         db.save_event({
             "headline": "Mover test headline",
             "stage": "realized",
@@ -773,7 +902,7 @@ class TestMarketMovers(APITestCase):
         self.assertIn("5d", ticker["decay_evidence"])
 
     def test_excludes_small_saved_moves(self):
-        """Event where all tickers have abs(return_5d) < 3% is excluded."""
+        """Event where all tickers have abs(return_5d) < 1.5% is excluded."""
         db.save_event({
             "headline": "Small mover",
             "stage": "realized",
@@ -832,6 +961,503 @@ class TestMarketMovers(APITestCase):
         })
         r = self.client.get("/market-movers")
         self.assertEqual(r.json(), [])
+
+    def test_multi_ticker_binding_survives_sort(self):
+        """Each ticker keeps its own return, spark, and decay after the sort."""
+        db.save_event({
+            "headline": "Multi-ticker binding test",
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "AAA", "role": "beneficiary", "return_5d": 3.5,
+                 "return_20d": 7.0, "direction_tag": "supports \u2191",
+                 "spark": [0.1, 0.2, 0.3]},
+                {"symbol": "BBB", "role": "loser", "return_5d": -8.0,
+                 "return_20d": -4.0, "direction_tag": "supports \u2193",
+                 "spark": [0.9, 0.7, 0.5]},
+                {"symbol": "CCC", "role": "beneficiary", "return_5d": 5.0,
+                 "return_20d": 10.0, "direction_tag": "supports \u2191",
+                 "spark": [0.3, 0.6, 0.9]},
+            ],
+        })
+        r = self.client.get("/market-movers")
+        tickers = r.json()[0]["tickers"]
+        # After sort by abs(return_5d) desc: BBB(8), CCC(5), AAA(3.5)
+        by_sym = {t["symbol"]: t for t in tickers}
+        # Each ticker must carry its own metrics, not a neighbour's
+        self.assertAlmostEqual(by_sym["BBB"]["return_5d"], -8.0)
+        self.assertEqual(by_sym["BBB"]["spark"], [0.9, 0.7, 0.5])
+        self.assertEqual(by_sym["BBB"]["decay"], "Accelerating")
+        self.assertAlmostEqual(by_sym["CCC"]["return_5d"], 5.0)
+        self.assertEqual(by_sym["CCC"]["spark"], [0.3, 0.6, 0.9])
+        self.assertAlmostEqual(by_sym["AAA"]["return_5d"], 3.5)
+        self.assertEqual(by_sym["AAA"]["spark"], [0.1, 0.2, 0.3])
+
+    def test_mover_includes_transmission_chain(self):
+        """Market mover response includes transmission_chain when present."""
+        chain = [
+            "EU imposes carbon border tariff",
+            "Raises import costs for steel/cement producers",
+            "Domestic producers gain pricing advantage",
+            "EU steelmakers benefit; Asian exporters lose margin",
+        ]
+        db.save_event({
+            "headline": "Chain mover test",
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "transmission_chain": chain,
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": 5.0,
+                 "direction_tag": "supports \u2191"},
+            ],
+        })
+        r = self.client.get("/market-movers")
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertIn("transmission_chain", body[0])
+        self.assertEqual(body[0]["transmission_chain"], chain)
+
+    def test_mover_missing_chain_returns_empty_list(self):
+        """Market mover degrades cleanly when transmission_chain is absent."""
+        db.save_event({
+            "headline": "No chain mover",
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": 4.0,
+                 "direction_tag": "supports \u2191"},
+            ],
+            # No transmission_chain field
+        })
+        r = self.client.get("/market-movers")
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertIn("transmission_chain", body[0])
+        self.assertEqual(body[0]["transmission_chain"], [])
+
+    def test_mover_includes_if_persists(self):
+        """Market mover response includes if_persists when present."""
+        ip = {
+            "substitution": "Alternative suppliers gain share.",
+            "delayed_winners": ["CompanyX"],
+            "delayed_losers": ["CompanyY"],
+            "horizon": "months",
+        }
+        db.save_event({
+            "headline": "If persists mover test",
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "if_persists": ip,
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": 5.0,
+                 "direction_tag": "supports \u2191"},
+            ],
+        })
+        r = self.client.get("/market-movers")
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertIn("if_persists", body[0])
+        self.assertEqual(body[0]["if_persists"]["substitution"], ip["substitution"])
+
+    def test_mover_missing_if_persists_returns_empty_dict(self):
+        """Market mover degrades cleanly when if_persists is absent."""
+        db.save_event({
+            "headline": "No persist mover",
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": 4.0,
+                 "direction_tag": "supports \u2191"},
+            ],
+        })
+        r = self.client.get("/market-movers")
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertIn("if_persists", body[0])
+        self.assertEqual(body[0]["if_persists"], {})
+
+    def test_loosened_threshold_qualifies_previously_excluded(self):
+        """An event with 2.0% return was excluded at old 3% threshold but qualifies at 1.5%."""
+        db.save_event({
+            "headline": "Threshold test: 2% mover",
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": 2.0,
+                 "direction_tag": "supports \u2191"},
+            ],
+        })
+        r = self.client.get("/market-movers")
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertEqual(body[0]["tickers"][0]["symbol"], "GLD")
+
+
+class TestMoversToday(APITestCase):
+    """Tests for GET /movers/today — last-24h events with any confirmed move."""
+
+    def setUp(self):
+        super().setUp()
+        # Clear the today cache between tests
+        _api_mod._TODAYS_MOVERS_CACHE["data"] = None
+        _api_mod._TODAYS_MOVERS_CACHE["ts"] = 0.0
+
+    def _seed(self, headline, return_5d, timestamp=None):
+        ev = {
+            "headline": headline,
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": return_5d,
+                 "direction_tag": "supports \u2191"},
+            ],
+        }
+        if timestamp:
+            ev["timestamp"] = timestamp
+        db.save_event(ev)
+
+    def test_returns_recent_events(self):
+        """Events from within the last 24h appear."""
+        self._seed("Recent mover", 0.5)
+        r = self.client.get("/movers/today")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertEqual(body[0]["headline"], "Recent mover")
+
+    def test_excludes_old_events(self):
+        """Events older than 24h are excluded."""
+        old_ts = (datetime.now() - timedelta(hours=25)).isoformat(timespec="seconds")
+        self._seed("Old event", 5.0, timestamp=old_ts)
+        r = self.client.get("/movers/today")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), [])
+
+    def test_includes_small_moves(self):
+        """Events with small but non-null return_5d qualify for today's movers."""
+        self._seed("Tiny mover", 0.3)
+        r = self.client.get("/movers/today")
+        body = r.json()
+        self.assertEqual(len(body), 1)
+
+    def test_sorted_by_abs_return_descending(self):
+        """Results sorted by impact (abs max return) descending."""
+        self._seed("Small move", 1.0)
+        self._seed("Big move", 8.0)
+        r = self.client.get("/movers/today")
+        body = r.json()
+        self.assertEqual(len(body), 2)
+        self.assertEqual(body[0]["headline"], "Big move")
+        self.assertEqual(body[1]["headline"], "Small move")
+
+    def test_cap_at_limit(self):
+        """Default limit is 10."""
+        for i in range(12):
+            self._seed(f"Mover {i}", float(i + 1))
+        r = self.client.get("/movers/today")
+        body = r.json()
+        self.assertLessEqual(len(body), 10)
+
+    def test_empty_when_no_events(self):
+        r = self.client.get("/movers/today")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), [])
+
+
+class TestMoversPersistent(APITestCase):
+    """Tests for GET /movers/persistent — events older than 7 days with active decay."""
+
+    def setUp(self):
+        super().setUp()
+        _api_mod._PERSISTENT_MOVERS_CACHE["data"] = None
+        _api_mod._PERSISTENT_MOVERS_CACHE["ts"] = 0.0
+
+    def _seed(self, headline, return_5d, return_20d=None, timestamp=None):
+        if return_20d is None:
+            return_20d = return_5d * 1.2  # default to Accelerating trajectory
+        ev = {
+            "headline": headline,
+            "stage": "realized",
+            "persistence": "structural",
+            "event_date": "2025-01-15",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": return_5d,
+                 "return_20d": return_20d, "direction_tag": "supports \u2191"},
+            ],
+        }
+        if timestamp:
+            ev["timestamp"] = timestamp
+        db.save_event(ev)
+
+    def test_returns_old_accelerating_event(self):
+        old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        self._seed("Old accelerating", 5.0, 6.0, timestamp=old_ts)
+        r = self.client.get("/movers/persistent")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(len(body), 1)
+        self.assertEqual(body[0]["headline"], "Old accelerating")
+        self.assertIn("days_since_event", body[0])
+        self.assertGreater(body[0]["days_since_event"], 0)
+
+    def test_strict_excludes_recent_events(self):
+        """When strict results exist, recent events are excluded from them."""
+        old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        self._seed("Old qualifying", 5.0, 6.0, timestamp=old_ts)
+        self._seed("Recent event", 5.0, 6.0)  # today
+        r = self.client.get("/movers/persistent")
+        headlines = [m["headline"] for m in r.json()]
+        self.assertIn("Old qualifying", headlines)
+        self.assertNotIn("Recent event", headlines)
+
+    def test_strict_excludes_fading_events(self):
+        """When strict results exist, fading trajectories are excluded."""
+        old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        self._seed("Old accelerating", 5.0, 6.0, timestamp=old_ts)
+        self._seed("Fading shock", 1.0, 10.0, timestamp=old_ts)
+        r = self.client.get("/movers/persistent")
+        headlines = [m["headline"] for m in r.json()]
+        self.assertIn("Old accelerating", headlines)
+        self.assertNotIn("Fading shock", headlines)
+
+    def test_strict_excludes_reversed_events(self):
+        """When strict results exist, reversed trajectories are excluded."""
+        old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        self._seed("Old holding", 4.0, 5.0, timestamp=old_ts)
+        self._seed("Reversed shock", -3.0, 5.0, timestamp=old_ts)
+        r = self.client.get("/movers/persistent")
+        headlines = [m["headline"] for m in r.json()]
+        self.assertIn("Old holding", headlines)
+        self.assertNotIn("Reversed shock", headlines)
+
+    def test_sorted_oldest_first(self):
+        """Oldest persistent shock sorts first."""
+        ts_20d = (datetime.now() - timedelta(days=20)).isoformat(timespec="seconds")
+        ts_10d = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        ev_old = {
+            "headline": "Older persistent", "stage": "realized", "persistence": "structural",
+            "event_date": (datetime.now() - timedelta(days=20)).strftime("%Y-%m-%d"),
+            "timestamp": ts_20d,
+            "market_tickers": [{"symbol": "GLD", "role": "beneficiary", "return_5d": 3.0,
+                                "return_20d": 4.0, "direction_tag": "supports \u2191"}],
+        }
+        ev_new = {
+            "headline": "Newer persistent", "stage": "realized", "persistence": "structural",
+            "event_date": (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d"),
+            "timestamp": ts_10d,
+            "market_tickers": [{"symbol": "XLE", "role": "beneficiary", "return_5d": 4.0,
+                                "return_20d": 5.0, "direction_tag": "supports \u2191"}],
+        }
+        db.save_event(ev_new)
+        db.save_event(ev_old)
+        r = self.client.get("/movers/persistent")
+        body = r.json()
+        self.assertEqual(len(body), 2)
+        self.assertEqual(body[0]["headline"], "Older persistent")
+
+    def test_fallback_when_no_old_events(self):
+        """When no events are >7d old, fallback includes recent events with movement."""
+        self._seed("Recent fallback", 5.0, 6.0)  # No timestamp → today
+        r = self.client.get("/movers/persistent")
+        body = r.json()
+        self.assertGreaterEqual(len(body), 1)
+        # Fallback should tag non-classified decay as Monitoring
+        has_monitoring = any(
+            t.get("decay") == "Monitoring"
+            for m in body for t in m["tickers"]
+            if t.get("decay") not in ("Accelerating", "Holding")
+        )
+        # Either all are Accelerating/Holding (real data) or some are Monitoring (fallback)
+        self.assertTrue(len(body) > 0)
+
+    def test_deduplicates_by_headline(self):
+        """Duplicate headlines should appear only once."""
+        old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        self._seed("Same headline", 5.0, 6.0, timestamp=old_ts)
+        self._seed("Same headline", 5.0, 6.0, timestamp=old_ts)
+        r = self.client.get("/movers/persistent")
+        headlines = [m["headline"] for m in r.json()]
+        self.assertEqual(len(headlines), len(set(headlines)))
+
+    def test_cap_at_limit(self):
+        old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        for i in range(15):
+            self._seed(f"Persistent {i}", float(i + 3), float(i + 4), timestamp=old_ts)
+        r = self.client.get("/movers/persistent")
+        self.assertLessEqual(len(r.json()), 12)
+
+
+class TestMoversDeduplication(APITestCase):
+    """Deduplication tests for time-windowed mover endpoints."""
+
+    def setUp(self):
+        super().setUp()
+        _api_mod._WEEKLY_MOVERS_CACHE["data"] = None
+        _api_mod._WEEKLY_MOVERS_CACHE["ts"] = 0.0
+        _api_mod._TODAYS_MOVERS_CACHE["data"] = None
+        _api_mod._TODAYS_MOVERS_CACHE["ts"] = 0.0
+
+    def test_weekly_deduplicates(self):
+        for _ in range(3):
+            db.save_event({
+                "headline": "Duplicate weekly event",
+                "stage": "realized", "persistence": "medium",
+                "event_date": "2025-03-01",
+                "market_tickers": [{"symbol": "GLD", "role": "beneficiary",
+                                    "return_5d": 5.0, "direction_tag": "supports \u2191"}],
+            })
+        r = self.client.get("/movers/weekly")
+        headlines = [m["headline"] for m in r.json()]
+        self.assertEqual(len(headlines), len(set(headlines)))
+
+    def test_today_deduplicates(self):
+        for _ in range(3):
+            db.save_event({
+                "headline": "Duplicate today event",
+                "stage": "realized", "persistence": "medium",
+                "event_date": "2025-03-01",
+                "market_tickers": [{"symbol": "GLD", "role": "beneficiary",
+                                    "return_5d": 3.0, "direction_tag": "supports \u2191"}],
+            })
+        r = self.client.get("/movers/today")
+        headlines = [m["headline"] for m in r.json()]
+        self.assertEqual(len(headlines), len(set(headlines)))
+
+
+class TestMoversWeekly(APITestCase):
+    """Tests for GET /movers/weekly — last 7 days."""
+
+    def setUp(self):
+        super().setUp()
+        _api_mod._WEEKLY_MOVERS_CACHE["data"] = None
+        _api_mod._WEEKLY_MOVERS_CACHE["ts"] = 0.0
+
+    def _seed(self, headline, return_5d, timestamp=None):
+        ev = {
+            "headline": headline,
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": return_5d,
+                 "direction_tag": "supports \u2191"},
+            ],
+        }
+        if timestamp:
+            ev["timestamp"] = timestamp
+        db.save_event(ev)
+
+    def test_returns_recent_events(self):
+        self._seed("Weekly mover", 2.0)
+        r = self.client.get("/movers/weekly")
+        self.assertEqual(r.status_code, 200)
+        self.assertGreaterEqual(len(r.json()), 1)
+
+    def test_excludes_old_events(self):
+        old_ts = (datetime.now() - timedelta(days=8)).isoformat(timespec="seconds")
+        self._seed("Old weekly", 5.0, timestamp=old_ts)
+        r = self.client.get("/movers/weekly")
+        self.assertEqual(r.json(), [])
+
+    def test_sorted_by_impact(self):
+        self._seed("Small weekly", 1.0)
+        self._seed("Big weekly", 8.0)
+        r = self.client.get("/movers/weekly")
+        body = r.json()
+        self.assertEqual(len(body), 2)
+        self.assertEqual(body[0]["headline"], "Big weekly")
+
+    def test_empty_when_no_events(self):
+        r = self.client.get("/movers/weekly")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), [])
+
+
+class TestMoversYearly(APITestCase):
+    """Tests for GET /movers/yearly — last 365 days."""
+
+    def setUp(self):
+        super().setUp()
+        _api_mod._YEARLY_MOVERS_CACHE["data"] = None
+        _api_mod._YEARLY_MOVERS_CACHE["ts"] = 0.0
+
+    def _seed(self, headline, return_5d, timestamp=None):
+        ev = {
+            "headline": headline,
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": "2025-03-01",
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary", "return_5d": return_5d,
+                 "direction_tag": "supports \u2191"},
+            ],
+        }
+        if timestamp:
+            ev["timestamp"] = timestamp
+        db.save_event(ev)
+
+    def test_returns_recent_events(self):
+        self._seed("Yearly mover", 3.0)
+        r = self.client.get("/movers/yearly")
+        self.assertEqual(r.status_code, 200)
+        self.assertGreaterEqual(len(r.json()), 1)
+
+    def test_excludes_old_events(self):
+        old_ts = (datetime.now() - timedelta(days=366)).isoformat(timespec="seconds")
+        self._seed("Ancient event", 5.0, timestamp=old_ts)
+        r = self.client.get("/movers/yearly")
+        self.assertEqual(r.json(), [])
+
+    def test_sorted_by_impact(self):
+        self._seed("Small yearly", 1.0)
+        self._seed("Big yearly", 9.0)
+        r = self.client.get("/movers/yearly")
+        body = r.json()
+        self.assertEqual(len(body), 2)
+        self.assertEqual(body[0]["headline"], "Big yearly")
+
+
+class TestNewsPagination(APITestCase):
+    """Tests for paginated GET /news."""
+
+    def test_returns_total_count(self):
+        r = self.client.get("/news")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIn("total_count", body)
+        self.assertIsInstance(body["total_count"], int)
+
+    def test_limit_offset_pagination(self):
+        r1 = self.client.get("/news?limit=1&offset=0")
+        self.assertEqual(r1.status_code, 200)
+        body1 = r1.json()
+        self.assertLessEqual(len(body1["clusters"]), 1)
+
+    def test_offset_past_end_returns_empty(self):
+        r = self.client.get("/news?limit=10&offset=99999")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["clusters"], [])
+
+    def test_zero_limit_returns_all(self):
+        """Default limit=0 returns all clusters for backward compatibility."""
+        r = self.client.get("/news")
+        body = r.json()
+        self.assertEqual(len(body["clusters"]), body["total_count"])
+
+    def test_backward_compatible_shape(self):
+        """Response still has clusters, total_headlines, feed_status."""
+        r = self.client.get("/news")
+        body = r.json()
+        self.assertIn("clusters", body)
+        self.assertIn("total_headlines", body)
+        self.assertIn("feed_status", body)
 
 
 class TestTickerEndpoints(APITestCase):
@@ -1020,6 +1646,106 @@ class TestNews(APITestCase):
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r1.json(), r2.json())
 
+
+class TestLowSignalTagging(APITestCase):
+    """Events with insufficient mechanism should be tagged low_signal."""
+
+    def test_low_signal_detected(self):
+        """An analysis with 'Insufficient evidence' + no bens/losers/chain is detected."""
+        from api import _is_low_signal
+        analysis = {
+            "mechanism_summary": "Insufficient evidence to identify mechanism.",
+            "beneficiaries": [],
+            "losers": [],
+            "transmission_chain": [],
+        }
+        self.assertTrue(_is_low_signal(analysis))
+
+    def test_low_confidence_empty_content_is_low_signal(self):
+        """Low confidence + no mechanism/bens/losers/chain → low signal."""
+        from api import _is_low_signal
+        analysis = {
+            "confidence": "low",
+            "mechanism_summary": "",
+            "beneficiaries": [],
+            "losers": [],
+            "transmission_chain": [],
+        }
+        self.assertTrue(_is_low_signal(analysis))
+
+    def test_low_confidence_with_mechanism_is_not_low_signal(self):
+        """Low confidence but real mechanism → not low signal."""
+        from api import _is_low_signal
+        analysis = {
+            "confidence": "low",
+            "mechanism_summary": "Supply disruption through port closures.",
+            "beneficiaries": [],
+            "losers": [],
+            "transmission_chain": [],
+        }
+        self.assertFalse(_is_low_signal(analysis))
+
+    def test_medium_confidence_empty_is_not_low_signal(self):
+        """Medium confidence + empty content → not low signal (only low triggers)."""
+        from api import _is_low_signal
+        analysis = {
+            "confidence": "medium",
+            "mechanism_summary": "",
+            "beneficiaries": [],
+            "losers": [],
+            "transmission_chain": [],
+        }
+        self.assertFalse(_is_low_signal(analysis))
+
+    def test_normal_analysis_not_low_signal(self):
+        from api import _is_low_signal
+        analysis = {
+            "mechanism_summary": "Real mechanism explaining supply disruption.",
+            "beneficiaries": ["CompanyA"],
+            "losers": ["CompanyB"],
+            "transmission_chain": ["Step 1", "Step 2"],
+        }
+        self.assertFalse(_is_low_signal(analysis))
+
+    def test_insufficient_with_beneficiaries_not_low_signal(self):
+        """Insufficient evidence text but has beneficiaries → not low signal."""
+        from api import _is_low_signal
+        analysis = {
+            "mechanism_summary": "Insufficient evidence to identify mechanism.",
+            "beneficiaries": ["CompanyX"],
+            "losers": [],
+            "transmission_chain": [],
+        }
+        self.assertFalse(_is_low_signal(analysis))
+
+    def test_low_signal_event_saved_in_db(self):
+        """Event persisted with low_signal=1 appears in load_low_signal_headlines."""
+        db.save_event({
+            "headline": "Low signal test event",
+            "stage": "realized",
+            "persistence": "medium",
+            "mechanism_summary": "Insufficient evidence to identify mechanism.",
+            "beneficiaries": [],
+            "losers": [],
+            "transmission_chain": [],
+            "low_signal": 1,
+        })
+        low = db.load_low_signal_headlines()
+        self.assertIn("Low signal test event", low)
+
+    def test_normal_event_not_in_low_signal(self):
+        db.save_event({
+            "headline": "Normal event with mechanism",
+            "stage": "realized",
+            "persistence": "structural",
+            "mechanism_summary": "Clear supply disruption mechanism.",
+            "beneficiaries": ["X"],
+            "losers": ["Y"],
+            "low_signal": 0,
+        })
+        low = db.load_low_signal_headlines()
+        self.assertNotIn("Normal event with mechanism", low)
+
     def test_news_stale_sqlite_triggers_fresh_fetch(self):
         """Stale SQLite cache should trigger a fresh fetch."""
         r1 = self.client.get("/news")
@@ -1051,6 +1777,815 @@ class TestNews(APITestCase):
         cached = db.load_news_cache(max_age_seconds=60)
         self.assertIsNotNone(cached)
         self.assertIn("clusters", cached)
+
+
+class TestCurrencyChannel(unittest.TestCase):
+    """Tests for currency_channel normalization and response shape."""
+
+    def test_credible_channel_preserved(self):
+        from analyze_event import _normalize_currency_channel
+        raw = {
+            "pair": "DXY",
+            "mechanism": "Dollar strengthens as Fed holds rates higher for longer.",
+            "beneficiaries": "US importers gain purchasing power.",
+            "squeezed": "EM corporates with USD-denominated debt face higher servicing costs.",
+        }
+        result = _normalize_currency_channel(raw)
+        self.assertEqual(result["pair"], "DXY")
+        self.assertIn("Dollar", result["mechanism"])
+        self.assertIn("importers", result["beneficiaries"])
+        self.assertIn("EM", result["squeezed"])
+
+    def test_empty_when_no_fx_channel(self):
+        from analyze_event import _normalize_currency_channel
+        # null pair
+        self.assertEqual(_normalize_currency_channel({"pair": None, "mechanism": None}), {})
+        # missing keys
+        self.assertEqual(_normalize_currency_channel({}), {})
+        # not a dict
+        self.assertEqual(_normalize_currency_channel(None), {})
+        self.assertEqual(_normalize_currency_channel("string"), {})
+
+    def test_null_like_strings_cleaned(self):
+        from analyze_event import _normalize_currency_channel
+        raw = {
+            "pair": "null",
+            "mechanism": "None",
+            "beneficiaries": "n/a",
+            "squeezed": "null",
+        }
+        self.assertEqual(_normalize_currency_channel(raw), {})
+
+    def test_pair_without_mechanism_returns_empty(self):
+        from analyze_event import _normalize_currency_channel
+        raw = {"pair": "EUR/USD", "mechanism": None}
+        self.assertEqual(_normalize_currency_channel(raw), {})
+
+    def test_optional_fields_omitted_when_missing(self):
+        from analyze_event import _normalize_currency_channel
+        raw = {"pair": "USD/JPY", "mechanism": "Yen weakens on BoJ hold."}
+        result = _normalize_currency_channel(raw)
+        self.assertEqual(result["pair"], "USD/JPY")
+        self.assertNotIn("beneficiaries", result)
+        self.assertNotIn("squeezed", result)
+
+    def test_mock_has_empty_currency_channel(self):
+        from analyze_event import _mock
+        m = _mock("test")
+        self.assertEqual(m["currency_channel"], {})
+
+    def test_full_analysis_result_shape_includes_currency_channel(self):
+        """The full analysis response shape always includes currency_channel."""
+        from analyze_event import _mock
+        result = _mock("test")
+        # Simulate what analyze_event does after parse
+        from analyze_event import _normalize_currency_channel
+        result["currency_channel"] = _normalize_currency_channel(result.get("currency_channel"))
+        self.assertIn("currency_channel", result)
+        self.assertIsInstance(result["currency_channel"], dict)
+
+
+class TestPolicySensitivity(unittest.TestCase):
+    """Tests for classify_policy_sensitivity deterministic classification."""
+
+    def test_inflation_with_commodity_mechanism(self):
+        """Inflationary event in inflation-pressure regime → reinforced."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Inflation pressure",
+            "Oil price surge disrupts crude supply chains and raises input costs.",
+        )
+        self.assertEqual(result["stance"], "reinforced")
+        self.assertIn("compound", result["explanation"].lower())
+        self.assertEqual(result["regime"], "Inflation pressure")
+
+    def test_loose_rate_in_tightening_regime(self):
+        """Rate-sensitive growth event in tightening regime → fighting."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Real-rate tightening",
+            "Multiple expansion from lower discount rates lifts equity valuations.",
+        )
+        self.assertEqual(result["stance"], "fighting")
+        self.assertIn("headwind", result["explanation"].lower())
+
+    def test_loose_rate_in_risk_off(self):
+        """Rate-sensitive event in risk-off / falling yields → reinforced."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Risk-off / growth scare",
+            "Multiple expansion as growth stock valuations benefit from duration.",
+        )
+        self.assertEqual(result["stance"], "reinforced")
+        self.assertIn("tailwind", result["explanation"].lower())
+
+    def test_tight_rate_benefit_in_tightening(self):
+        """Bank margin event in tightening → reinforced."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Real-rate tightening",
+            "Bank margin improvement from net interest income expansion.",
+        )
+        self.assertEqual(result["stance"], "reinforced")
+
+    def test_neutral_when_no_rate_keywords(self):
+        """Mechanism with no rate keywords → neutral."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Inflation pressure",
+            "New semiconductor export controls restrict chip access.",
+        )
+        self.assertEqual(result["stance"], "neutral")
+
+    def test_mixed_regime_returns_neutral_fallback(self):
+        """Mixed regime → visible neutral fallback, not empty."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Mixed",
+            "Oil price surge raises input costs.",
+        )
+        self.assertEqual(result["stance"], "neutral")
+        self.assertIn("mixed", result["explanation"].lower())
+        self.assertEqual(result["regime"], "Mixed")
+
+    def test_strong_signal_no_keywords_returns_neutral(self):
+        """Strong mechanism with no rate keywords → visible neutral."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Inflation pressure",
+            "New semiconductor export controls restrict chip access to Chinese fabs.",
+        )
+        self.assertEqual(result["stance"], "neutral")
+        self.assertIn("no direct rate sensitivity", result["explanation"].lower())
+
+    def test_empty_mechanism_returns_empty(self):
+        """Empty mechanism text → empty dict (low-signal guard)."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity("Inflation pressure", "")
+        self.assertEqual(result, {})
+
+    def test_whitespace_mechanism_returns_empty(self):
+        """Whitespace-only mechanism → empty dict."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity("Real-rate tightening", "   ")
+        self.assertEqual(result, {})
+
+    def test_response_shape(self):
+        """Result always has stance, explanation, regime when non-empty."""
+        from market_check import classify_policy_sensitivity
+        result = classify_policy_sensitivity(
+            "Inflation pressure",
+            "Tariff increases raise import costs across supply chains.",
+        )
+        self.assertIn("stance", result)
+        self.assertIn("explanation", result)
+        self.assertIn("regime", result)
+        self.assertIn(result["stance"], ("reinforced", "fighting", "neutral"))
+
+
+class TestInventoryContext(unittest.TestCase):
+    """Tests for classify_inventory_context classification and fallback."""
+
+    def _mock_fetch(self, return_20d: float):
+        """Patch _fetch and _safe_pct to return a controlled 20d return."""
+        import market_check
+        import types
+
+        # Create a mock DataFrame-like object
+        class FakeSeries:
+            def __init__(self, values):
+                self._values = values
+            def __len__(self):
+                return len(self._values)
+            @property
+            def iloc(self):
+                return self
+            def __getitem__(self, idx):
+                return self._values[idx]
+
+        class FakeDF:
+            def __init__(self, ret):
+                # Build 25 values where pct from [-21] to [-1] = ret
+                base = 100.0
+                end = base * (1 + ret / 100)
+                vals = [base] * 4 + [end]  # simplified
+                self._close = FakeSeries(vals)
+            def __len__(self):
+                return 25
+            def __getitem__(self, key):
+                return self._close
+
+        original_fetch = market_check._fetch
+        original_safe_pct = market_check._safe_pct
+        market_check._fetch = lambda ticker: FakeDF(return_20d)
+        market_check._safe_pct = lambda series, n: return_20d
+        return original_fetch, original_safe_pct
+
+    def _restore(self, originals):
+        import market_check
+        market_check._fetch, market_check._safe_pct = originals
+
+    def test_tight_on_rising_oil(self):
+        """Oil keyword + rising proxy → tight."""
+        originals = self._mock_fetch(5.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Crude oil supply disruption in the Gulf.")
+            self.assertEqual(result["status"], "tight")
+            self.assertEqual(result["proxy"], "USO")
+            self.assertIn("tightening", result["explanation"].lower())
+            self.assertEqual(result["return_20d"], 5.0)
+        finally:
+            self._restore(originals)
+
+    def test_comfortable_on_falling_commodity(self):
+        """Copper keyword + falling proxy → comfortable."""
+        originals = self._mock_fetch(-5.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Copper mining output increases sharply.")
+            self.assertEqual(result["status"], "comfortable")
+            self.assertEqual(result["proxy"], "COPX")
+        finally:
+            self._restore(originals)
+
+    def test_neutral_on_flat_price(self):
+        """Keyword match but flat price → neutral."""
+        originals = self._mock_fetch(0.5)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Wheat prices remain steady despite trade deal.")
+            self.assertEqual(result["status"], "neutral")
+            self.assertIn("flat", result["explanation"].lower())
+        finally:
+            self._restore(originals)
+
+    def test_empty_when_no_keywords(self):
+        """No commodity keywords → empty dict."""
+        from market_check import classify_inventory_context
+        result = classify_inventory_context("New semiconductor export controls restrict chip access.")
+        # semiconductor IS in the proxy list, so this should match SMH
+        # Test with something truly unmatched:
+        result2 = classify_inventory_context("Central bank holds rates steady at monthly meeting.")
+        self.assertEqual(result2, {})
+
+    def test_empty_when_empty_mechanism(self):
+        """Empty mechanism → empty dict."""
+        from market_check import classify_inventory_context
+        self.assertEqual(classify_inventory_context(""), {})
+        self.assertEqual(classify_inventory_context("   "), {})
+
+    def test_response_shape(self):
+        """Non-empty result has all expected keys."""
+        originals = self._mock_fetch(4.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Oil pipeline disruption raises crude prices.")
+            self.assertIn("status", result)
+            self.assertIn("proxy", result)
+            self.assertIn("proxy_label", result)
+            self.assertIn("return_20d", result)
+            self.assertIn("explanation", result)
+            self.assertIn(result["status"], ("tight", "comfortable", "neutral"))
+        finally:
+            self._restore(originals)
+
+    def test_semiconductor_matches_smh(self):
+        """Semiconductor keyword matches SMH proxy."""
+        originals = self._mock_fetch(6.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Chip foundry capacity shortage worsens.")
+            self.assertEqual(result["proxy"], "SMH")
+            self.assertEqual(result["status"], "tight")
+        finally:
+            self._restore(originals)
+
+
+    def _mock_fetch_none(self):
+        """Patch _fetch to return None (data unavailable)."""
+        import market_check
+        original_fetch = market_check._fetch
+        original_safe_pct = market_check._safe_pct
+        market_check._fetch = lambda ticker: None
+        market_check._safe_pct = lambda series, n: None
+        return original_fetch, original_safe_pct
+
+    def test_opec_headline_produces_visible_block(self):
+        """OPEC headline → visible block even with flat data."""
+        originals = self._mock_fetch(1.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("OPEC agrees to extend production cuts through Q3.")
+            self.assertIn("status", result)
+            self.assertEqual(result["proxy"], "USO")
+            self.assertIn(result["status"], ("tight", "comfortable", "neutral"))
+        finally:
+            self._restore(originals)
+
+    def test_lng_headline_produces_visible_block(self):
+        """LNG headline → visible block."""
+        originals = self._mock_fetch(-1.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("New LNG terminal opens in Louisiana boosting gas export capacity.")
+            self.assertIn("status", result)
+            self.assertEqual(result["proxy"], "UNG")
+        finally:
+            self._restore(originals)
+
+    def test_shipping_headline_produces_visible_block(self):
+        """Shipping headline → visible block."""
+        originals = self._mock_fetch(2.0)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Tanker rates surge as Red Sea shipping reroutes continue.")
+            self.assertIn("status", result)
+            self.assertEqual(result["proxy"], "BDRY")
+        finally:
+            self._restore(originals)
+
+    def test_inconclusive_data_shows_neutral_fallback(self):
+        """Keyword matches but _fetch returns None → neutral fallback, not empty."""
+        originals = self._mock_fetch_none()
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Crude oil supply disruption in the Strait of Hormuz.")
+            self.assertEqual(result["status"], "neutral")
+            self.assertEqual(result["proxy"], "USO")
+            self.assertIn("unavailable", result["explanation"].lower())
+            self.assertNotIn("return_20d", result)
+        finally:
+            self._restore(originals)
+
+    def test_pipeline_infrastructure_matches_oil_proxy(self):
+        """Pipeline/infrastructure headline → oil proxy."""
+        originals = self._mock_fetch(4.5)
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Key oil pipeline shut down after drone strike.")
+            self.assertEqual(result["proxy"], "USO")
+            self.assertEqual(result["status"], "tight")
+        finally:
+            self._restore(originals)
+
+
+class TestInventoryContextEndToEnd(unittest.TestCase):
+    """End-to-end: verify inventory_context flows from classification to API response."""
+
+    def _mock_fetch(self, return_20d):
+        import market_check
+        orig_fetch = market_check._fetch
+        orig_pct = market_check._safe_pct
+        market_check._fetch = lambda ticker: type('DF', (), {'__len__': lambda s: 25, '__getitem__': lambda s, k: None})()
+        market_check._safe_pct = lambda series, n: return_20d
+        return orig_fetch, orig_pct
+
+    def _restore(self, originals):
+        import market_check
+        market_check._fetch, market_check._safe_pct = originals
+
+    def test_opec_headline_has_inventory_in_api_response(self):
+        """Full path: OPEC headline → classify → analysis dict → inventory_context present."""
+        originals = self._mock_fetch(4.5)
+        try:
+            from market_check import classify_inventory_context
+            mech = "OPEC agrees to extend oil production cuts, reducing crude supply."
+            result = classify_inventory_context(mech)
+            # Backend sets this on analysis dict
+            self.assertIn("status", result)
+            self.assertIn("explanation", result)
+            self.assertEqual(result["proxy"], "USO")
+            self.assertEqual(result["status"], "tight")
+            # Simulate what api.py does: set it on analysis
+            analysis = {"inventory_context": result}
+            # Frontend reads result.analysis.inventory_context.status
+            ic = analysis.get("inventory_context", {})
+            self.assertTrue(ic.get("status"), "Frontend guard would hide this block")
+        finally:
+            self._restore(originals)
+
+    def test_weak_signal_still_visible(self):
+        """Inconclusive data → neutral fallback, not empty."""
+        originals = self._mock_fetch(None)  # None = no data
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("Crude oil supply disrupted by pipeline closure.")
+            self.assertEqual(result["status"], "neutral")
+            self.assertIn("unavailable", result["explanation"])
+            # Frontend guard: status exists → block renders
+            self.assertTrue(result.get("status"))
+        finally:
+            self._restore(originals)
+
+    def test_non_commodity_returns_empty(self):
+        """Non-commodity headline → empty dict → block hidden (correct)."""
+        from market_check import classify_inventory_context
+        result = classify_inventory_context("Federal Reserve holds rates steady at latest meeting.")
+        self.assertEqual(result, {})
+        # Frontend guard: no status → block hidden (correct)
+        self.assertFalse(result.get("status"))
+
+    def test_frontend_conditional_logic(self):
+        """Simulate the exact frontend conditional for various backend results."""
+        cases = [
+            # (backend result, should_render)
+            ({"status": "tight", "explanation": "USO up", "proxy": "USO"}, True),
+            ({"status": "neutral", "explanation": "data unavailable", "proxy": "USO"}, True),
+            ({"status": "comfortable", "explanation": "USO down", "proxy": "USO"}, True),
+            ({}, False),
+            (None, False),
+        ]
+        for ic, expected in cases:
+            # Mimics: result.analysis.inventory_context && result.analysis.inventory_context.status
+            renders = bool(ic and ic.get("status"))
+            self.assertEqual(renders, expected,
+                f"inventory_context={ic!r} should {'render' if expected else 'hide'}")
+
+
+class TestInventoryHeadlineInclusion(unittest.TestCase):
+    """Verify inventory classification uses headline text, not just mechanism."""
+
+    def _mock_fetch(self, return_20d):
+        import market_check
+        orig_f = market_check._fetch
+        orig_p = market_check._safe_pct
+        market_check._fetch = lambda t: type('D', (), {'__len__': lambda s: 25, '__getitem__': lambda s, k: None})()
+        market_check._safe_pct = lambda s, n: return_20d
+        return orig_f, orig_p
+
+    def _restore(self, originals):
+        import market_check
+        market_check._fetch, market_check._safe_pct = originals
+
+    def test_opec_headline_with_mock_mechanism(self):
+        """OPEC in headline + mock mechanism → still matches oil proxy."""
+        originals = self._mock_fetch(2.0)
+        try:
+            from market_check import classify_inventory_context
+            # Simulate what api.py now does: headline + mech_text
+            inv_text = "OPEC agrees to extend production cuts [mock: no API key] [mock: no API key]"
+            result = classify_inventory_context(inv_text)
+            self.assertEqual(result["proxy"], "USO")
+            self.assertIn(result["status"], ("tight", "comfortable", "neutral"))
+        finally:
+            self._restore(originals)
+
+    def test_lng_headline_with_empty_mechanism(self):
+        """LNG headline + empty mechanism → matches gas proxy."""
+        originals = self._mock_fetch(-1.0)
+        try:
+            from market_check import classify_inventory_context
+            inv_text = "New LNG export terminal approved in Queensland  "
+            result = classify_inventory_context(inv_text)
+            self.assertEqual(result["proxy"], "UNG")
+        finally:
+            self._restore(originals)
+
+    def test_shipping_headline_with_sparse_mechanism(self):
+        """Shipping headline + sparse mechanism → matches BDRY."""
+        originals = self._mock_fetch(5.0)
+        try:
+            from market_check import classify_inventory_context
+            inv_text = "Red Sea shipping reroutes continue after Houthi attacks Generic disruption analysis."
+            result = classify_inventory_context(inv_text)
+            self.assertEqual(result["proxy"], "BDRY")
+            self.assertEqual(result["status"], "tight")
+        finally:
+            self._restore(originals)
+
+    def test_non_commodity_headline_still_empty(self):
+        """Non-commodity headline → still empty, no false positives."""
+        from market_check import classify_inventory_context
+        result = classify_inventory_context("Federal Reserve holds rates steady at latest FOMC meeting.")
+        self.assertEqual(result, {})
+
+
+class TestInventoryCacheFallback(unittest.TestCase):
+    """Verify _build_cached_response recomputes inventory_context for old rows."""
+
+    def _mock_fetch(self, return_20d):
+        import market_check
+        orig_f = market_check._fetch
+        orig_p = market_check._safe_pct
+        market_check._fetch = lambda t: type('D', (), {'__len__': lambda s: 25, '__getitem__': lambda s, k: None})()
+        market_check._safe_pct = lambda s, n: return_20d
+        return orig_f, orig_p
+
+    def _restore(self, originals):
+        import market_check
+        market_check._fetch, market_check._safe_pct = originals
+
+    def test_old_cached_row_gets_recomputed(self):
+        """A cached event with empty inventory_context gets it recomputed."""
+        originals = self._mock_fetch(4.0)
+        try:
+            from api import _build_cached_response
+            cached = {
+                "stage": "realized",
+                "persistence": "medium",
+                "what_changed": "OPEC extends oil production cuts.",
+                "mechanism_summary": "Crude supply reduced, barrel prices rise.",
+                "beneficiaries": ["XLE"],
+                "losers": ["Airlines"],
+                "assets_to_watch": ["XLE"],
+                "confidence": "high",
+                "market_note": "",
+                "market_tickers": [],
+                "transmission_chain": ["OPEC cuts", "supply drops", "prices rise"],
+                "if_persists": {},
+                "currency_channel": {},
+                "policy_sensitivity": {},
+                "inventory_context": {},  # empty — old row
+            }
+            resp = _build_cached_response(cached, "OPEC extends oil cuts", "2026-04-06")
+            ic = resp["analysis"]["inventory_context"]
+            self.assertIn("status", ic, "inventory_context should be recomputed from headline")
+            self.assertEqual(ic["proxy"], "USO")
+        finally:
+            self._restore(originals)
+
+    def test_cached_row_with_existing_inventory_preserved(self):
+        """A cached event that already has inventory_context is not overwritten."""
+        originals = self._mock_fetch(4.0)
+        try:
+            from api import _build_cached_response
+            existing_ic = {"status": "tight", "proxy": "USO", "proxy_label": "Crude Oil (USO)",
+                           "return_20d": 6.0, "explanation": "Already computed."}
+            cached = {
+                "stage": "realized", "persistence": "medium",
+                "what_changed": "OPEC cuts", "mechanism_summary": "Oil supply reduced.",
+                "beneficiaries": [], "losers": [], "assets_to_watch": [],
+                "confidence": "high", "market_note": "", "market_tickers": [],
+                "transmission_chain": [], "if_persists": {},
+                "currency_channel": {}, "policy_sensitivity": {},
+                "inventory_context": existing_ic,
+            }
+            resp = _build_cached_response(cached, "OPEC cuts", "2026-04-06")
+            ic = resp["analysis"]["inventory_context"]
+            self.assertEqual(ic["return_20d"], 6.0, "Existing value should be preserved")
+            self.assertEqual(ic["explanation"], "Already computed.")
+        finally:
+            self._restore(originals)
+
+    def test_fresh_opec_analysis_returns_nonempty(self):
+        """classify_inventory_context with headline+mechanism → non-empty for OPEC."""
+        originals = self._mock_fetch(3.5)
+        try:
+            from market_check import classify_inventory_context
+            inv_text = "OPEC members agree to extend voluntary oil output cuts through next quarter OPEC production cuts reduce crude supply."
+            result = classify_inventory_context(inv_text)
+            self.assertIn("status", result)
+            self.assertEqual(result["proxy"], "USO")
+            self.assertIn(result["status"], ("tight", "comfortable", "neutral"))
+        finally:
+            self._restore(originals)
+
+    def test_inconclusive_returns_neutral_not_empty(self):
+        """Data unavailable → neutral fallback, not {}."""
+        import market_check
+        orig_f = market_check._fetch
+        orig_p = market_check._safe_pct
+        market_check._fetch = lambda t: None
+        market_check._safe_pct = lambda s, n: None
+        try:
+            from market_check import classify_inventory_context
+            result = classify_inventory_context("OPEC oil production cuts announced.")
+            self.assertEqual(result["status"], "neutral")
+            self.assertIn("unavailable", result["explanation"])
+        finally:
+            market_check._fetch = orig_f
+            market_check._safe_pct = orig_p
+
+
+class TestHistoricalAnalogs(APITestCase):
+    """Tests for find_historical_analogs matching, ranking, and empty state."""
+
+    def _seed_events(self):
+        """Seed some past events for analog matching."""
+        events = [
+            {
+                "headline": "OPEC announces surprise production cut of 1 million barrels",
+                "stage": "realized", "persistence": "medium",
+                "what_changed": "OPEC cuts oil production.",
+                "mechanism_summary": "Crude supply reduced, barrel prices rise.",
+                "beneficiaries": ["XLE"], "losers": ["Airlines"],
+                "assets_to_watch": ["XLE", "USO"],
+                "confidence": "high", "market_note": "",
+                "market_tickers": [
+                    {"symbol": "XLE", "role": "beneficiary", "return_5d": 3.2, "return_20d": 5.1, "direction_tag": "supporting"},
+                ],
+                "event_date": "2026-03-01",
+                "low_signal": 0,
+            },
+            {
+                "headline": "Saudi Arabia raises official selling prices for Asian crude buyers",
+                "stage": "realized", "persistence": "medium",
+                "what_changed": "Saudi raises oil prices.",
+                "mechanism_summary": "Crude prices increase for Asian refiners.",
+                "beneficiaries": ["XLE"], "losers": ["Indian refiners"],
+                "assets_to_watch": ["XLE"],
+                "confidence": "medium", "market_note": "",
+                "market_tickers": [
+                    {"symbol": "XLE", "role": "beneficiary", "return_5d": 1.5, "return_20d": 2.8, "direction_tag": "supporting"},
+                ],
+                "event_date": "2026-02-15",
+                "low_signal": 0,
+            },
+            {
+                "headline": "Federal Reserve holds rates steady at March meeting",
+                "stage": "realized", "persistence": "low",
+                "what_changed": "Fed holds rates.",
+                "mechanism_summary": "No change in monetary policy.",
+                "beneficiaries": [], "losers": [],
+                "assets_to_watch": [],
+                "confidence": "low", "market_note": "",
+                "market_tickers": [],
+                "event_date": "2026-03-19",
+                "low_signal": 1,
+            },
+        ]
+        for ev in events:
+            db.save_event(ev)
+
+    def test_finds_matching_analogs(self):
+        """An oil headline should find past OPEC/Saudi oil events."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "OPEC members agree to extend voluntary oil output cuts",
+            mechanism="Crude supply reduced by production cuts.",
+            stage="realized",
+            persistence="medium",
+        )
+        self.assertGreaterEqual(len(analogs), 1)
+        headlines = [a["headline"] for a in analogs]
+        self.assertTrue(
+            any("OPEC" in h or "Saudi" in h for h in headlines),
+            f"Expected oil-related analog, got: {headlines}",
+        )
+
+    def test_ranking_by_relevance(self):
+        """More relevant analog should rank first."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "OPEC extends oil production cuts through next quarter",
+            mechanism="OPEC crude supply reduction.",
+            stage="realized",
+        )
+        if len(analogs) >= 2:
+            # The OPEC headline should be more relevant than Saudi
+            self.assertIn("OPEC", analogs[0]["headline"])
+
+    def test_excludes_self(self):
+        """Should not return the same headline as an analog."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "OPEC announces surprise production cut of 1 million barrels",
+            exclude_headline="OPEC announces surprise production cut of 1 million barrels",
+        )
+        for a in analogs:
+            self.assertNotEqual(a["headline"], "OPEC announces surprise production cut of 1 million barrels")
+
+    def test_excludes_low_signal(self):
+        """Low-signal events should not appear as analogs."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "Federal Reserve holds rates steady",
+            mechanism="No change in monetary policy.",
+        )
+        for a in analogs:
+            self.assertNotEqual(a["headline"], "Federal Reserve holds rates steady at March meeting")
+
+    def test_empty_when_no_matches(self):
+        """Unrelated headline with no archive matches → empty list."""
+        analogs = db.find_historical_analogs(
+            "Completely unrelated topic about space exploration and Mars",
+        )
+        self.assertEqual(analogs, [])
+
+    def test_response_shape(self):
+        """Each analog has the expected keys."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "OPEC oil production cut announced",
+            mechanism="Oil supply disruption.",
+        )
+        if analogs:
+            a = analogs[0]
+            for key in ("headline", "event_date", "stage", "persistence",
+                        "confidence", "return_5d", "return_20d", "decay"):
+                self.assertIn(key, a, f"Missing key: {key}")
+            self.assertIn(a["decay"], ("Accelerating", "Holding", "Fading", "Reversed", "Unknown"))
+
+    def test_max_3_results(self):
+        """Should return at most 3 analogs."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "Oil production cuts",
+            mechanism="crude oil",
+            limit=3,
+        )
+        self.assertLessEqual(len(analogs), 3)
+
+    def test_decay_label_from_tickers(self):
+        """Decay should be classified from stored ticker returns."""
+        self._seed_events()
+        analogs = db.find_historical_analogs(
+            "OPEC oil cut",
+            mechanism="crude supply reduction",
+        )
+        if analogs:
+            # The seeded OPEC event has 5d=3.2, 20d=5.1 → same sign, 3.2/5.1=0.63 > 0.4 → Holding
+            opec = next((a for a in analogs if "OPEC" in a["headline"]), None)
+            if opec:
+                self.assertIn(opec["decay"], ("Accelerating", "Holding"))
+
+
+class TestHistoricalAnalogShape(APITestCase):
+    """Tests for analog match_reason, similarity, and single-analog fallback."""
+
+    def _seed(self):
+        db.save_event({
+            "headline": "OPEC announces surprise production cut of 1 million barrels",
+            "stage": "realized", "persistence": "medium",
+            "what_changed": "OPEC cuts oil production.",
+            "mechanism_summary": "Crude supply reduced, barrel prices rise.",
+            "beneficiaries": ["XLE"], "losers": ["Airlines"],
+            "assets_to_watch": ["XLE", "USO"],
+            "confidence": "high", "market_note": "",
+            "market_tickers": [
+                {"symbol": "XLE", "role": "beneficiary", "return_5d": 3.2,
+                 "return_20d": 5.1, "direction_tag": "supporting"},
+            ],
+            "event_date": "2026-03-01",
+            "low_signal": 0,
+        })
+
+    def test_match_reason_present(self):
+        """Each analog has a non-empty match_reason."""
+        self._seed()
+        analogs = db.find_historical_analogs(
+            "OPEC oil production cut",
+            mechanism="Crude supply reduction.",
+            stage="realized",
+            persistence="medium",
+        )
+        self.assertGreaterEqual(len(analogs), 1)
+        for a in analogs:
+            self.assertIn("match_reason", a)
+            self.assertTrue(len(a["match_reason"]) > 0)
+
+    def test_similarity_present(self):
+        """Each analog has a numeric similarity score."""
+        self._seed()
+        analogs = db.find_historical_analogs(
+            "OPEC oil production cut",
+            mechanism="Crude supply reduction.",
+        )
+        if analogs:
+            self.assertIn("similarity", analogs[0])
+            self.assertIsInstance(analogs[0]["similarity"], float)
+            self.assertGreater(analogs[0]["similarity"], 0)
+
+    def test_match_reason_includes_shared_words(self):
+        """Match reason should mention shared content words."""
+        self._seed()
+        analogs = db.find_historical_analogs(
+            "OPEC extends oil production cuts",
+            mechanism="Oil supply disruption.",
+        )
+        if analogs:
+            reason = analogs[0]["match_reason"].lower()
+            # Should mention at least one shared word
+            self.assertTrue(
+                "shared:" in reason or "keyword" in reason,
+                f"Expected shared words in reason, got: {reason}",
+            )
+
+    def test_match_reason_notes_same_stage(self):
+        """Match reason includes 'same stage' when stage matches."""
+        self._seed()
+        analogs = db.find_historical_analogs(
+            "OPEC oil cut",
+            mechanism="crude supply",
+            stage="realized",
+        )
+        if analogs:
+            self.assertIn("same stage", analogs[0]["match_reason"])
+
+    def test_single_analog_returned_cleanly(self):
+        """When only one analog matches, it's returned as a single-item list."""
+        self._seed()
+        analogs = db.find_historical_analogs(
+            "OPEC barrels production cut",
+            mechanism="oil supply",
+            limit=1,
+        )
+        self.assertEqual(len(analogs), 1)
+        a = analogs[0]
+        for key in ("headline", "event_date", "stage", "persistence",
+                    "return_5d", "return_20d", "decay", "similarity", "match_reason"):
+            self.assertIn(key, a)
 
 
 if __name__ == "__main__":

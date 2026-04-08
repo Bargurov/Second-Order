@@ -8,11 +8,14 @@
 # No database writes happen here — this module just collects and returns.
 
 import json
+import logging
 import os
 import re
 import socket
 from datetime import datetime
 from email.utils import parsedate_to_datetime
+
+_log = logging.getLogger("second_order.news")
 
 # Maximum seconds to wait for any single RSS feed before skipping it.
 _FEED_TIMEOUT = 8
@@ -26,6 +29,7 @@ _FEED_TIMEOUT = 8
 # regional.  "low" = user-submitted / unverified.
 
 _SOURCE_TIERS: dict[str, str] = {
+    # Wire services & broadsheets
     "BBC Business":          "high",
     "BBC World":             "high",
     "Reuters World":         "high",
@@ -34,11 +38,32 @@ _SOURCE_TIERS: dict[str, str] = {
     "WSJ World News":         "high",
     "AP News":                "high",
     "FT World":               "high",
+    "AFP World":              "high",
+    "NPR World":              "high",
+    # Financial / markets
+    "CNBC World":             "high",
+    "MarketWatch":            "medium",
+    "Yahoo Finance":          "medium",
+    "Investing.com":          "medium",
+    # Geopolitical
+    "Al Jazeera Economy":     "medium",
+    "Al Jazeera":             "medium",
+    # Energy / commodities
+    "OilPrice.com":           "medium",
+    "Rigzone":                "medium",
+    "S&P Global Commodities": "high",
+    # Asia / emerging markets
+    "Bloomberg Markets":      "high",
+    "Nikkei Asia":            "high",
+    "SCMP Economy":           "medium",
+    # Defense
+    "Defense News":           "medium",
+    # Government / policy
     "OFAC Sanctions":         "medium",
     "EIA Energy":             "medium",
     "USTR Trade Policy":      "high",
-    "Al Jazeera Economy":     "medium",
-    "Al Jazeera":             "medium",
+    "Fed Press Releases":     "high",
+    "ECB Press Releases":     "high",
     "local":                  "low",
 }
 
@@ -108,10 +133,16 @@ import re as _re_mod
 # Matched case-insensitively at the end of the headline string.
 _ATTRIBUTION_RE = _re_mod.compile(
     r"\s*(?:[-–—|])\s*"
-    r"(?:Reuters|AP News|Associated Press|BBC[\w\s]*|The Guardian[\w\s]*|"
+    r"(?:Reuters|AP News|Associated Press|AFP|France24[\w\s]*|"
+    r"BBC[\w\s]*|The Guardian[\w\s]*|NPR[\w\s]*|"
     r"Al Jazeera[\w\s]*|Financial Times|FT[\w\s]*|WSJ[\w\s]*|"
     r"The Wall Street Journal|Bloomberg[\w\s]*|CNN[\w\s]*|"
     r"New York Times|The New York Times|CNBC[\w\s]*|"
+    r"MarketWatch[\w\s]*|Yahoo Finance[\w\s]*|Investing\.com[\w\s]*|"
+    r"OilPrice\.com[\w\s]*|Rigzone[\w\s]*|S&P Global[\w\s]*|"
+    r"Bloomberg[\w\s]*|Nikkei[\w\s]*|South China Morning Post[\w\s]*|"
+    r"Defense News[\w\s]*|"
+    r"Federal Reserve[\w\s]*|ECB[\w\s]*|"
     r"[A-Z][\w\s,]{2,50}\(\.gov\)|"                      # "Office of Foreign Assets Control (.gov)"
     r"[A-Z][\w\s,]{2,40}\.(?:com|org|gov|co\.uk|net))"   # "corporatecomplianceinsights.com"
     r"\s*$",
@@ -179,16 +210,21 @@ def load_local(path: str = LOCAL_FILE) -> list[dict]:
 # Source 2: RSS feeds
 # ---------------------------------------------------------------------------
 
-# Curated feeds — narrowed to business / world / politics / policy sections
-# to reduce general-news noise (sports, entertainment, lifestyle, etc.).
+# Curated feeds — narrowed to business / world / politics / policy / energy
+# sections to reduce general-news noise (sports, entertainment, lifestyle).
+#
+# 27 feeds across wire services, geopolitical, financial, energy/commodities,
+# central bank, defense, and Asia/emerging-market sources.
 #
 # Feed selection notes:
-#   - Reuters World via Google News RSS proxy — Reuters shut down their own
-#     public feeds, but Google News exposes a topic-filtered Atom feed that
-#     reliably surfaces Reuters world/business content.
-#   - The Guardian uses /business/rss (not /world/rss) for better trade/macro.
-#   - BBC uses /news/business to avoid lifestyle and sports stories.
+#   - Reuters/AFP/Al Jazeera/MarketWatch/S&P Global via Google News RSS proxy:
+#     these outlets block or gate their direct RSS but Google News exposes a
+#     topic-filtered Atom feed that reliably surfaces their content.
+#   - The Guardian: both /business/rss and /world/rss for trade/macro breadth.
+#   - BBC: both /news/business and /news/world for geopolitical coverage.
 #   - WSJ World News: financial + geopolitical, naturally filtered.
+#   - Energy: OilPrice.com, Rigzone, S&P Global for commodity-specific depth.
+#   - Central banks: Fed and ECB press releases for policy announcements.
 DEFAULT_FEEDS: list[dict] = [
     {
         "name": "Reuters World",
@@ -226,6 +262,85 @@ DEFAULT_FEEDS: list[dict] = [
         "name": "USTR Trade Policy",
         "url":  "https://news.google.com/rss/search?q=site:ustr.gov+tariff+OR+trade+OR+%22executive+order%22&hl=en&gl=US&ceid=US:en",
     },
+    # --- Wire services ---
+    {
+        "name": "AFP World",
+        "url":  "https://news.google.com/rss/search?q=site:france24.com+economy+OR+trade+OR+sanctions&hl=en&gl=US&ceid=US:en",
+    },
+    # --- Geopolitical / general ---
+    {
+        "name": "Al Jazeera Economy",
+        "url":  "https://news.google.com/rss/search?q=site:aljazeera.com+economy+OR+trade+OR+sanctions&hl=en&gl=US&ceid=US:en",
+    },
+    {
+        "name": "BBC World",
+        "url":  "https://feeds.bbci.co.uk/news/world/rss.xml",
+    },
+    {
+        "name": "NPR World",
+        "url":  "https://feeds.npr.org/1004/rss.xml",
+    },
+    {
+        "name": "The Guardian World",
+        "url":  "https://www.theguardian.com/world/rss",
+    },
+    # --- Financial / markets ---
+    {
+        "name": "MarketWatch",
+        "url":  "https://news.google.com/rss/search?q=site:marketwatch.com+market+OR+economy+OR+fed&hl=en&gl=US&ceid=US:en",
+    },
+    {
+        "name": "CNBC World",
+        "url":  "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362",
+    },
+    {
+        "name": "Yahoo Finance",
+        "url":  "https://finance.yahoo.com/news/rssindex",
+    },
+    {
+        "name": "Investing.com",
+        "url":  "https://www.investing.com/rss/news.rss",
+    },
+    # --- Energy / commodities ---
+    {
+        "name": "OilPrice.com",
+        "url":  "https://oilprice.com/rss/main",
+    },
+    {
+        "name": "Rigzone",
+        "url":  "https://www.rigzone.com/news/rss/rigzone_latest.aspx",
+    },
+    {
+        "name": "S&P Global Commodities",
+        "url":  "https://news.google.com/rss/search?q=site:spglobal.com+commodities+OR+oil+OR+gas&hl=en&gl=US&ceid=US:en",
+    },
+    # --- Central banks / macro ---
+    {
+        "name": "Fed Press Releases",
+        "url":  "https://www.federalreserve.gov/feeds/press_all.xml",
+    },
+    {
+        "name": "ECB Press Releases",
+        "url":  "https://www.ecb.europa.eu/rss/press.html",
+    },
+    # --- Asia / emerging markets ---
+    {
+        "name": "Bloomberg Markets",
+        "url":  "https://news.google.com/rss/search?q=site:bloomberg.com+economy+OR+market+OR+trade&hl=en&gl=US&ceid=US:en",
+    },
+    {
+        "name": "Nikkei Asia",
+        "url":  "https://news.google.com/rss/search?q=site:asia.nikkei.com+economy+OR+trade+OR+semiconductor&hl=en&gl=US&ceid=US:en",
+    },
+    {
+        "name": "SCMP Economy",
+        "url":  "https://news.google.com/rss/search?q=site:scmp.com+economy+OR+trade+OR+sanctions&hl=en&gl=US&ceid=US:en",
+    },
+    # --- Defense ---
+    {
+        "name": "Defense News",
+        "url":  "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",
+    },
 ]
 
 
@@ -253,34 +368,38 @@ def load_rss(feeds: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
 
     from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 
-    def _parse_one_feed(feed_info: dict) -> tuple[str, object, bool]:
-        """Parse one feed via feedparser. Returns (name, parsed, ok)."""
+    def _parse_one_feed(feed_info: dict) -> tuple[str, object, bool, str]:
+        """Parse one feed via feedparser. Returns (name, parsed, ok, error)."""
         name = feed_info["name"]
         try:
             parsed = feedparser.parse(feed_info["url"])
-            return (name, parsed, True)
-        except Exception:
-            return (name, None, False)
+            return (name, parsed, True, "")
+        except Exception as e:
+            return (name, None, False, str(e))
 
     # Fetch all feeds in parallel — worst case is ~_FEED_TIMEOUT, not N × _FEED_TIMEOUT.
     # Each feedparser.parse() does its own HTTP internally; the executor provides
     # parallelism without touching the process-global socket timeout.
     with ThreadPoolExecutor(max_workers=max(1, len(feeds))) as pool:
         futures = {pool.submit(_parse_one_feed, f): f for f in feeds}
-        feed_results: list[tuple[str, object, bool]] = []
+        feed_results: list[tuple[str, object, bool, str]] = []
         for future in futures:
             try:
                 feed_results.append(future.result(timeout=_FEED_TIMEOUT + 2))
-            except (FuturesTimeout, Exception):
+            except (FuturesTimeout, Exception) as e:
                 info = futures[future]
-                feed_results.append((info["name"], None, False))
+                feed_results.append((info["name"], None, False, f"timeout/exception: {e}"))
 
     records = []
     feed_status: list[dict] = []
 
-    for feed_name, parsed, ok in feed_results:
+    for feed_name, parsed, ok, err_msg in feed_results:
         if not ok or parsed is None:
-            feed_status.append({"name": feed_name, "ok": False, "headlines": 0})
+            feed_status.append({
+                "name": feed_name, "ok": False, "headlines": 0,
+                "error": err_msg or "fetch failed",
+            })
+            _log.warning("[feed] %-30s  ERROR: %s", feed_name, err_msg or "fetch failed")
             continue
 
         count_before = len(records)
@@ -308,10 +427,13 @@ def load_rss(feeds: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
             ))
 
         added = len(records) - count_before
+        if added == 0:
+            _log.warning("[feed] %-30s  0 headlines (parsed OK but empty)", feed_name)
         feed_status.append({
             "name":      feed_name,
             "ok":        added > 0,
             "headlines": added,
+            "error":     None if added > 0 else "0 entries after parse",
         })
 
     return records, feed_status
@@ -535,6 +657,16 @@ def fetch_all(local_path: str = LOCAL_FILE,
         feed_status: per-feed status dicts from load_rss().
     """
     rss_records, feed_status = load_rss(feeds)
+
+    # Log per-feed headline counts — every feed, not just successes
+    for fs in feed_status:
+        if fs.get("error") and fs["headlines"] == 0:
+            _log.warning("[feed] %-30s  FAIL: %s", fs["name"], fs.get("error", "unknown"))
+        elif fs["headlines"] == 0:
+            _log.warning("[feed] %-30s  0 headlines", fs["name"])
+        else:
+            _log.info("[feed] %-30s  %3d headlines", fs["name"], fs["headlines"])
+
     all_records = load_local(local_path) + rss_records
 
     # Deduplicate by (source, normalized title) — same source + same title
@@ -551,6 +683,8 @@ def fetch_all(local_path: str = LOCAL_FILE,
     # Drop headlines that don't match any domain keyword
     relevant = [rec for rec in unique if is_relevant(rec["title"])]
 
+    _log.info("[refresh] %d raw → %d unique → %d relevant", len(all_records), len(unique), len(relevant))
+
     # Sort newest-first; records without a timestamp go to the end
     relevant.sort(key=lambda r: r["published_at"] or "", reverse=True)
     return relevant, feed_status
@@ -561,36 +695,151 @@ def fetch_all(local_path: str = LOCAL_FILE,
 # ---------------------------------------------------------------------------
 # Groups near-duplicate headlines from different publishers into a single
 # "event cluster" with one representative headline and a ranked source list.
-# Uses word-set Jaccard similarity — deterministic, no heavy dependencies.
+# Uses TF-IDF cosine similarity — rare/distinctive words matter more than
+# common ones, catching cross-source rewording that pure word-overlap misses.
+
+import math as _math
+import logging as _logging
+
+_cluster_log = _logging.getLogger("second_order.cluster")
+
+import re as _re_mod
 
 _STOP_WORDS: set[str] = {
+    # English function words
     "the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "or",
     "is", "are", "was", "were", "by", "with", "from", "as", "its", "it",
     "that", "this", "be", "has", "have", "had", "not", "but", "will",
     "would", "could", "should", "may", "might", "after", "before", "over",
     "new", "says", "said", "about", "into", "up", "out", "more", "than",
+    # Financial/news domain words — high frequency, low discriminating power.
+    "market", "markets", "stock", "stocks", "shares", "index",
+    "price", "prices", "trading", "traders",
+    "global", "economy", "economic",
+    "billion", "million", "trillion",
+    "report", "reports", "reporting",
+    "investors", "investor", "analysts", "analyst",
 }
 
-# Jaccard threshold for merging into the same cluster.  0.25 catches
-# cross-source headlines using different vocabulary for the same event
-# while avoiding false merges from common background words.
-# Tuned on live feeds 2025-04: 0.25 catches cross-source rewording
-# (e.g. "fuel prices surge" ↔ "oil highest price"), while 0.20 caused
-# false merges on headlines sharing only "iran"+"war" (Jaccard ~0.14).
-_CLUSTER_THRESHOLD: float = 0.25
+_PUNCT_RE = _re_mod.compile(r"^[^\w]+|[^\w]+$")
+
+# ---------------------------------------------------------------------------
+# Polarity words — used to prevent clustering of opposite-direction headlines.
+# "Stock markets rally after Fed decision" must NOT cluster with
+# "Stock markets fall after Fed decision" even though cosine is very high.
+# ---------------------------------------------------------------------------
+_POLARITY_POS: frozenset[str] = frozenset({
+    "surge", "surges", "soar", "soars", "rally", "rallies",
+    "rise", "rises", "jump", "jumps", "gain", "gains",
+    "boost", "climb", "climbs", "rebound", "rebounds",
+    "strengthen", "strengthens", "recovery",
+})
+_POLARITY_NEG: frozenset[str] = frozenset({
+    "drop", "drops", "fall", "falls", "crash", "crashes",
+    "plunge", "plunges", "decline", "declines",
+    "slump", "slumps", "sink", "sinks",
+    "tumble", "tumbles", "weaken", "weakens",
+    "selloff", "sell-off", "collapse",
+})
+
+
+def _headline_polarity(tokens: list[str] | set[str]) -> int:
+    """Return +1 for positive, -1 for negative, 0 for neutral/mixed.
+
+    Only fires when the headline has a clear single-direction signal.
+    If both positive and negative words appear, returns 0 (ambiguous).
+    """
+    has_pos = any(t in _POLARITY_POS for t in tokens)
+    has_neg = any(t in _POLARITY_NEG for t in tokens)
+    if has_pos and not has_neg:
+        return 1
+    if has_neg and not has_pos:
+        return -1
+    return 0
+
+
+# Cosine similarity threshold for merging into the same cluster.
+# TF-IDF cosine on short (5-10 word) headlines runs lower than Jaccard
+# because IDF penalises common cross-headline terms.  Calibrated on
+# live feeds 2026-04: 0.20 catches cross-source rewording (e.g.
+# "fuel prices surge Iran war" ↔ "oil highest price Iran war") while
+# keeping unrelated stories apart (cosine ≈ 0 when no content overlap).
+_CLUSTER_THRESHOLD: float = 0.20
 
 # If any pair inside a cluster falls below this, flag agreement as "mixed".
-# Set below _CLUSTER_THRESHOLD so clusters with borderline pairs get the flag.
-_AGREEMENT_THRESHOLD: float = 0.20
+_AGREEMENT_THRESHOLD: float = 0.12
 
 
 def _headline_words(title: str) -> set[str]:
     """Extract content words from a headline for similarity comparison."""
-    return set(title.lower().split()) - _STOP_WORDS
+    words: set[str] = set()
+    for raw in title.lower().split():
+        cleaned = _PUNCT_RE.sub("", raw)
+        if cleaned and cleaned not in _STOP_WORDS:
+            words.add(cleaned)
+    return words
+
+
+def _tokenize(title: str) -> list[str]:
+    """Split a headline into lowercase, punctuation-stripped content tokens."""
+    tokens: list[str] = []
+    for raw in title.lower().split():
+        cleaned = _PUNCT_RE.sub("", raw)
+        if cleaned and cleaned not in _STOP_WORDS:
+            tokens.append(cleaned)
+    return tokens
+
+
+def _build_tfidf_vectors(titles: list[str]) -> tuple[list[dict[str, float]], dict[str, float]]:
+    """Build TF-IDF vectors for a list of titles.
+
+    Returns (vectors, idf_map) where each vector is a dict mapping
+    token → TF-IDF weight.  Uses log-IDF with add-one smoothing.
+    """
+    n = len(titles)
+    token_lists = [_tokenize(t) for t in titles]
+
+    # Document frequency: how many titles contain each token
+    df: dict[str, int] = {}
+    for tokens in token_lists:
+        for w in set(tokens):
+            df[w] = df.get(w, 0) + 1
+
+    # IDF with add-one smoothing: log((n + 1) / (df + 1)) + 1
+    idf: dict[str, float] = {}
+    for w, count in df.items():
+        idf[w] = _math.log((n + 1) / (count + 1)) + 1.0
+
+    # TF-IDF vectors
+    vectors: list[dict[str, float]] = []
+    for tokens in token_lists:
+        tf: dict[str, int] = {}
+        for w in tokens:
+            tf[w] = tf.get(w, 0) + 1
+        vec = {w: tf[w] * idf.get(w, 1.0) for w in tf}
+        vectors.append(vec)
+
+    return vectors, idf
+
+
+def _cosine_sim(a: dict[str, float], b: dict[str, float]) -> float:
+    """Cosine similarity between two sparse TF-IDF vectors."""
+    if not a or not b:
+        return 0.0
+    # Dot product over shared keys
+    shared = set(a) & set(b)
+    if not shared:
+        return 0.0
+    dot = sum(a[k] * b[k] for k in shared)
+    norm_a = _math.sqrt(sum(v * v for v in a.values()))
+    norm_b = _math.sqrt(sum(v * v for v in b.values()))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
 
 
 def _jaccard(a: set[str], b: set[str]) -> float:
-    """Jaccard index between two word sets.  Returns 0.0 when either is empty."""
+    """Jaccard index between two word sets.  Kept for agreement checking."""
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
@@ -894,7 +1143,7 @@ def _build_evidence(recs: list[dict], best_title: str,
 def cluster_headlines(records: list[dict]) -> list[dict]:
     """Group near-duplicate headlines into event clusters.
 
-    Uses pairwise Jaccard similarity with union-find so that clustering is
+    Uses TF-IDF cosine similarity with union-find so that clustering is
     order-independent and transitive: if A≈B and B≈C, all three end up in
     one cluster regardless of input order.
 
@@ -935,11 +1184,30 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
         if ra != rb:
             parent[rb] = ra
 
-    word_sets = [_headline_words(rec["title"]) for rec in records]
+    # Build TF-IDF vectors for cosine similarity
+    titles = [rec["title"] for rec in records]
+    tfidf_vecs, _ = _build_tfidf_vectors(titles)
+    token_lists = [_tokenize(t) for t in titles]
+    polarities = [_headline_polarity(toks) for toks in token_lists]
 
     for i in range(n):
         for j in range(i + 1, n):
-            if _jaccard(word_sets[i], word_sets[j]) >= _CLUSTER_THRESHOLD:
+            sim = _cosine_sim(tfidf_vecs[i], tfidf_vecs[j])
+            if sim >= _CLUSTER_THRESHOLD:
+                # Block merge if both headlines have clear but opposite polarity.
+                # E.g. "Oil prices surge" vs "Oil prices drop" — high cosine
+                # because they share subject words, but are different events.
+                pi, pj = polarities[i], polarities[j]
+                if pi != 0 and pj != 0 and pi != pj:
+                    _cluster_log.info(
+                        "BLOCK cos=%.3f polarity=%+d/%+d\n  A: %s\n  B: %s",
+                        sim, pi, pj, titles[i], titles[j],
+                    )
+                    continue
+                _cluster_log.info(
+                    "MERGE cos=%.3f\n  A: %s\n  B: %s",
+                    sim, titles[i], titles[j],
+                )
                 _union(i, j)
 
     # Group record indices by their root
@@ -980,13 +1248,14 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
         pub_dates = [r["published_at"] for r in recs if r["published_at"]]
         published_at = max(pub_dates) if pub_dates else ""
 
-        # -- Agreement: check all pairs within cluster --
+        # -- Agreement: check all pairs within cluster via cosine --
         agreement = "consistent"
         if len(recs) > 1:
-            word_sets = [_headline_words(r["title"]) for r in recs]
-            for i in range(len(word_sets)):
-                for j in range(i + 1, len(word_sets)):
-                    if _jaccard(word_sets[i], word_sets[j]) < _AGREEMENT_THRESHOLD:
+            cluster_titles = [r["title"] for r in recs]
+            cluster_vecs, _ = _build_tfidf_vectors(cluster_titles)
+            for i in range(len(cluster_vecs)):
+                for j in range(i + 1, len(cluster_vecs)):
+                    if _cosine_sim(cluster_vecs[i], cluster_vecs[j]) < _AGREEMENT_THRESHOLD:
                         agreement = "mixed"
                         break
                 if agreement == "mixed":
@@ -1020,4 +1289,17 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
     # approach preserves recency order within each source-count group.
     result.sort(key=lambda c: c["published_at"] or "", reverse=True)
     result.sort(key=lambda c: c["source_count"], reverse=True)
+
+    multi = [c for c in result if c["source_count"] >= 2]
+    triple = [c for c in result if c["source_count"] >= 3]
+    _cluster_log.info(
+        "[cluster] %d records → %d clusters (%d multi-source, %d with 3+ sources)",
+        n, len(result), len(multi), len(triple),
+    )
+    for c in triple:
+        srcs = ", ".join(s["name"] for s in c["sources"])
+        _cluster_log.info(
+            "[cluster] 3+ sources: %r  ← %s", c["headline"][:70], srcs,
+        )
+
     return result

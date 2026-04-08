@@ -95,6 +95,22 @@ def call_news() -> dict:
     return _api_get("/news")
 
 
+def call_market_context(highlight_limit: int = 3) -> dict:
+    """Call /market-context — the single normalized market state surface.
+
+    Returns the full context dict on success.  On any failure, returns a
+    minimal degraded shape so the caller can render a brief without crashing.
+    """
+    try:
+        result = _api_get(f"/market-context?highlight_limit={highlight_limit}")
+        if not isinstance(result, dict):
+            return {}
+        return result
+    except Exception as e:
+        logger.warning(f"call_market_context failed: {e}")
+        return {}
+
+
 # ---------------------------------------------------------------------------
 # Response formatting
 # ---------------------------------------------------------------------------
@@ -225,6 +241,236 @@ def format_brief(clusters: list[dict], max_items: int = 5) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Benchmark snapshots block — consumed from /snapshots
+# ---------------------------------------------------------------------------
+
+# Canonical display order — matches LIQUID_MARKETS in market_universe.py.
+_BENCHMARK_ORDER: tuple[str, ...] = (
+    "ES", "NQ", "RTY", "CL", "GC", "DXY", "2Y", "10Y",
+)
+
+
+def _fmt_benchmark_value(value: float | None, unit: str) -> str:
+    """Format a snapshot value for compact Telegram display."""
+    if value is None:
+        return "—"
+    if unit == "%":
+        return f"{value:.2f}%"
+    # Thousand separators, two decimals
+    return f"{value:,.2f}"
+
+
+def _fmt_benchmark_change(change: float | None) -> str:
+    """Format a 5-day change as a signed percentage, or empty if missing."""
+    if change is None:
+        return ""
+    sign = "+" if change >= 0 else ""
+    return f"{sign}{change:.2f}%"
+
+
+def format_benchmarks(snapshots: list[dict]) -> str:
+    """Format the liquid benchmarks snapshot block for Telegram.
+
+    Renders one compact line per market in canonical order.  Markets that
+    are unavailable show "n/a".  Stale snapshots are tagged inline.  Returns
+    an empty string when nothing useful is available so callers can omit
+    the section entirely.
+    """
+    if not snapshots:
+        return ""
+
+    by_market: dict[str, dict] = {}
+    for s in snapshots:
+        market = (s.get("market") or "").upper()
+        if market:
+            by_market[market] = s
+
+    # Count how many markets actually have data so we can decide whether
+    # to show the block at all.
+    usable = sum(
+        1 for s in snapshots
+        if s.get("value") is not None and s.get("error") is None
+    )
+    if usable == 0:
+        return ""
+
+    lines: list[str] = []
+    lines.append("<b>Liquid Benchmarks</b>")
+
+    # Track quiet status: count stale + unavailable for the footer
+    stale_count = 0
+    unavailable_count = 0
+    sources: set[str] = set()
+
+    for market in _BENCHMARK_ORDER:
+        snap = by_market.get(market)
+        if snap is None:
+            unavailable_count += 1
+            lines.append(f"  <code>{market:<3}</code> n/a")
+            continue
+
+        value = snap.get("value")
+        error = snap.get("error")
+        if value is None or error is not None:
+            unavailable_count += 1
+            lines.append(f"  <code>{market:<3}</code> n/a")
+            continue
+
+        unit = snap.get("unit") or ""
+        change = snap.get("change_5d")
+        is_stale = bool(snap.get("stale"))
+        if is_stale:
+            stale_count += 1
+        src = snap.get("source")
+        if src:
+            sources.add(src)
+
+        val_str = _fmt_benchmark_value(value, unit)
+        chg_str = _fmt_benchmark_change(change)
+
+        # Compact line: ES   4500.25  +1.20%   [stale]
+        parts = [f"  <code>{market:<3}</code>", val_str]
+        if chg_str:
+            parts.append(chg_str)
+        if is_stale:
+            parts.append("<i>stale</i>")
+        lines.append(" ".join(parts))
+
+    # Quiet footer with source + freshness summary
+    footer_bits: list[str] = []
+    if sources:
+        footer_bits.append(f"src: {' / '.join(sorted(sources))}")
+    if stale_count or unavailable_count:
+        if stale_count and unavailable_count:
+            footer_bits.append(
+                f"{stale_count} stale, {unavailable_count} n/a"
+            )
+        elif stale_count:
+            footer_bits.append(f"{stale_count} stale")
+        else:
+            footer_bits.append(f"{unavailable_count} n/a")
+    if footer_bits:
+        lines.append(f"  <i>{_esc(' · '.join(footer_bits))}</i>")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Unified market context block — consumed from /market-context
+# ---------------------------------------------------------------------------
+
+def _format_stress_line(stress: dict | None) -> str:
+    """Render the stress regime as a single quiet line.  Empty if unavailable."""
+    if not isinstance(stress, dict):
+        return ""
+    if stress.get("available") is False:
+        return ""
+    regime = stress.get("regime")
+    if not regime or regime == "Unknown":
+        return ""
+
+    # Active signal count for a quiet hint
+    signals = stress.get("signals") or {}
+    active = sum(1 for v in signals.values() if v)
+    summary = stress.get("summary") or ""
+
+    parts = [f"<b>Regime:</b> {_esc(str(regime))}"]
+    if active:
+        parts.append(f"({active} signal{'s' if active != 1 else ''} active)")
+    line = "  " + " ".join(parts)
+    if summary:
+        # Keep it compact — one truncated summary line under the regime
+        compact = summary if len(summary) <= 140 else summary[:137] + "..."
+        line += f"\n  <i>{_esc(compact)}</i>"
+    return line
+
+
+def _format_highlights_lines(highlights: list[dict]) -> list[str]:
+    """Render up to N highlights as compact lines.  Empty list if none."""
+    out: list[str] = []
+    if not highlights:
+        return out
+    for h in highlights:
+        headline = h.get("headline", "")
+        if not headline:
+            continue
+        # Trim to keep Telegram lines readable
+        if len(headline) > 70:
+            headline = headline[:67] + "..."
+        # Top ticker for a quick anchor
+        tickers = h.get("tickers") or []
+        anchor = ""
+        if tickers:
+            top = tickers[0]
+            sym = top.get("symbol")
+            r5 = top.get("return_5d")
+            if sym and isinstance(r5, (int, float)):
+                sign = "+" if r5 >= 0 else ""
+                anchor = f" <code>{_esc(sym)}</code> {sign}{r5:.2f}%"
+        out.append(f"  • {_esc(headline)}{anchor}")
+    return out
+
+
+def format_market_context(ctx: dict) -> str:
+    """Format the unified /market-context payload as a Telegram block.
+
+    Composes benchmarks + stress + highlights from one fetch.  Each
+    sub-section is rendered independently and degrades cleanly when its
+    underlying data is missing.  Returns an empty string when nothing
+    useful is available so callers can omit the block entirely.
+    """
+    if not isinstance(ctx, dict) or not ctx:
+        return ""
+
+    snapshots = ctx.get("snapshots") or []
+    stress = ctx.get("stress") or {}
+    highlights = ctx.get("highlights") or []
+
+    sections: list[str] = []
+
+    # 1. Benchmarks — reuses the existing format_benchmarks contract
+    bench_block = format_benchmarks(snapshots)
+    if bench_block:
+        sections.append(bench_block)
+
+    # 2. Stress regime — single quiet line
+    stress_line = _format_stress_line(stress)
+    if stress_line:
+        sections.append(f"<b>Market Regime</b>\n{stress_line}")
+
+    # 3. Highlights — top movers
+    highlight_lines = _format_highlights_lines(highlights)
+    if highlight_lines:
+        sections.append("<b>Today's Movers</b>\n" + "\n".join(highlight_lines))
+
+    if not sections:
+        return ""
+
+    # Top-level freshness footer (quiet)
+    source = ctx.get("source")
+    snaps_meta = ctx.get("snapshots_meta") or {}
+    stale = snaps_meta.get("stale", 0)
+    unavailable = snaps_meta.get("unavailable", 0)
+    footer_bits: list[str] = []
+    if source:
+        footer_bits.append(f"src: {source}")
+    if stale or unavailable:
+        notes = []
+        if stale:
+            notes.append(f"{stale} stale")
+        if unavailable:
+            notes.append(f"{unavailable} n/a")
+        footer_bits.append(", ".join(notes))
+    footer = ""
+    if footer_bits and not bench_block:
+        # Only add a top-level footer when the benchmarks block didn't
+        # already render its own (avoids duplicate src/stale lines).
+        footer = f"\n<i>{_esc(' · '.join(footer_bits))}</i>"
+
+    return "\n\n".join(sections) + footer
+
+
+# ---------------------------------------------------------------------------
 # Schedule helpers
 # ---------------------------------------------------------------------------
 
@@ -245,13 +491,24 @@ def parse_time(s: str) -> _dt.time | None:
 
 
 def build_morning_brief() -> str | None:
-    """Fetch news and format a morning brief. Returns message text or None."""
+    """Fetch news and format a morning brief. Returns message text or None.
+
+    Prepends the unified market-context block (benchmarks + regime + movers)
+    on top of the news brief.  Falls back to news-only when /market-context
+    is empty or unreachable.
+    """
     try:
         data = call_news()
         clusters = data.get("clusters", [])
         if not clusters:
             return None
-        return format_brief(clusters, max_items=5)
+        brief = format_brief(clusters, max_items=5)
+        # One fetch, three sub-sections — replaces the previous separate
+        # call_snapshots + format_benchmarks composition.
+        ctx_block = format_market_context(call_market_context(highlight_limit=3))
+        if ctx_block:
+            return f"{ctx_block}\n\n{brief}"
+        return brief
     except Exception as e:
         logger.error(f"[morning_brief] Failed to build brief: {e}")
         return None
@@ -534,7 +791,10 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /brief — return top clustered headlines from the inbox."""
+    """Handle /brief — return top clustered headlines from the inbox,
+    prepended with the unified market-context block (benchmarks + regime
+    + today's movers) when available.
+    """
     await update.message.chat.send_action("typing")
 
     try:
@@ -544,6 +804,11 @@ async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("No headlines in the inbox right now.")
             return
         reply = format_brief(clusters)
+        # Single fetch composes benchmarks + stress regime + today's movers.
+        # Replaces the previous separate call_snapshots + format_benchmarks path.
+        ctx_block = format_market_context(call_market_context(highlight_limit=3))
+        if ctx_block:
+            reply = f"{ctx_block}\n\n{reply}"
         await update.message.reply_text(reply, parse_mode="HTML")
     except urllib.error.URLError as e:
         logger.error(f"API connection failed: {e}")

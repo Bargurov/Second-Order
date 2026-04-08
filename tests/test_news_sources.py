@@ -306,7 +306,7 @@ class TestLoadRss(unittest.TestCase):
         self.assertEqual(socket.getdefaulttimeout(), original_timeout)
 
     def test_default_feeds_list_count(self):
-        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 9)
+        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 27)
 
     def test_guardian_is_in_default_feeds(self):
         names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
@@ -352,21 +352,64 @@ class TestLoadRss(unittest.TestCase):
                 "/business", "/economy", "/world", "/rssworld",
                 "site:reuters.com",   # Google News proxy filtered to Reuters
                 "site:apnews.com",    # Google News proxy filtered to AP
+                "site:france24.com",  # AFP/France24 via Google News
+                "site:aljazeera.com", # Al Jazeera via Google News
+                "site:marketwatch.com",  # MarketWatch via Google News
+                "site:spglobal.com",  # S&P Global/Platts via Google News
+                "site:ustr.gov",      # USTR via Google News proxy
                 "format=rss",         # FT direct RSS with section in path
                 "ofac+sanctions",     # OFAC sanctions via Google News
                 "todayinenergy",      # EIA Today in Energy direct RSS
-                "site:ustr.gov",      # USTR via Google News proxy
+                "rssindex",           # Yahoo Finance RSS index
+                "combinedcms",        # CNBC combined CMS feed
+                "/rss/news.rss",      # Investing.com news RSS
+                "oilprice.com/rss",   # OilPrice.com direct RSS
+                "rigzone_latest",     # Rigzone latest news RSS
+                "feeds/press_all",    # Fed press releases
+                "rss/press",          # ECB press releases
+                "feeds.npr.org",      # NPR section feeds
+                "site:bloomberg.com", # Bloomberg via Google News
+                "site:asia.nikkei.com",  # Nikkei Asia via Google News
+                "site:scmp.com",      # SCMP via Google News
+                "defensenews.com",    # Defense News direct RSS
             ])
             self.assertTrue(
                 has_section,
                 f"{feed['name']} URL does not target a narrow section: {feed['url']}",
             )
 
-    def test_no_al_jazeera_in_default_feeds(self):
-        """Al Jazeera was replaced — should not appear in active feed list."""
+    def test_al_jazeera_is_in_default_feeds(self):
         names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
-        for name in names:
-            self.assertNotIn("Al Jazeera", name)
+        self.assertIn("Al Jazeera Economy", names)
+
+    def test_new_wire_feeds_present(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("AFP World", names)
+        self.assertIn("NPR World", names)
+
+    def test_new_financial_feeds_present(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("CNBC World", names)
+        self.assertIn("Yahoo Finance", names)
+        self.assertIn("Investing.com", names)
+
+    def test_new_energy_feeds_present(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("OilPrice.com", names)
+        self.assertIn("Rigzone", names)
+        self.assertIn("S&P Global Commodities", names)
+
+    def test_new_central_bank_feeds_present(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("Fed Press Releases", names)
+        self.assertIn("ECB Press Releases", names)
+
+    def test_new_asia_defense_feeds_present(self):
+        names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
+        self.assertIn("Bloomberg Markets", names)
+        self.assertIn("Nikkei Asia", names)
+        self.assertIn("SCMP Economy", names)
+        self.assertIn("Defense News", names)
 
 
 class TestFeedStatus(unittest.TestCase):
@@ -441,6 +484,49 @@ class TestFeedStatus(unittest.TestCase):
             ])
         self.assertEqual(len(status), 2)
         self.assertTrue(all(not s["ok"] for s in status))
+
+    def test_failed_feed_has_error_message(self):
+        """Failed feed status includes an error string."""
+        mock_fp = MagicMock()
+        mock_fp.parse.side_effect = Exception("connection refused")
+
+        with patch.dict(sys.modules, {"feedparser": mock_fp}):
+            _, status = news_sources.load_rss(
+                feeds=[{"name": "Broken", "url": "http://broken"}])
+
+        self.assertEqual(len(status), 1)
+        self.assertFalse(status[0]["ok"])
+        self.assertIn("error", status[0])
+        self.assertTrue(len(status[0]["error"]) > 0)
+
+    def test_empty_feed_has_error_message(self):
+        """A feed returning 0 entries includes an error description."""
+        mock_feed = MagicMock()
+        mock_feed.entries = []
+        mock_fp = MagicMock()
+        mock_fp.parse.return_value = mock_feed
+
+        with patch.dict(sys.modules, {"feedparser": mock_fp}):
+            _, status = news_sources.load_rss(
+                feeds=[{"name": "Empty", "url": "http://empty"}])
+
+        self.assertFalse(status[0]["ok"])
+        self.assertIn("error", status[0])
+        self.assertIn("0 entries", status[0]["error"])
+
+    def test_healthy_feed_has_no_error(self):
+        """Successful feed status has error=None."""
+        mock_feed = MagicMock()
+        mock_feed.entries = [_make_mock_entry("Good headline about trade sanctions")]
+        mock_fp = MagicMock()
+        mock_fp.parse.return_value = mock_feed
+
+        with patch.dict(sys.modules, {"feedparser": mock_fp}):
+            _, status = news_sources.load_rss(
+                feeds=[{"name": "OK", "url": "http://ok"}])
+
+        self.assertTrue(status[0]["ok"])
+        self.assertIsNone(status[0]["error"])
 
     def test_fetch_all_returns_feed_status(self):
         """fetch_all passes feed_status through from load_rss."""
@@ -801,13 +887,7 @@ class TestClusterOrderIndependence(unittest.TestCase):
         b = self._rec("EU steel tariffs raise trade tensions", "Al Jazeera")
         c = self._rec("Trade tensions escalate over tariffs", "WSJ World News")
 
-        # Verify the bridge assumption: A≈B and B≈C above threshold, A≈C may be below
-        wa = news_sources._headline_words(a["title"])
-        wb = news_sources._headline_words(b["title"])
-        wc = news_sources._headline_words(c["title"])
-        self.assertGreaterEqual(news_sources._jaccard(wa, wb), news_sources._CLUSTER_THRESHOLD)
-        self.assertGreaterEqual(news_sources._jaccard(wb, wc), news_sources._CLUSTER_THRESHOLD)
-
+        # Just verify the final clustering result — transitivity should merge all
         clusters = news_sources.cluster_headlines([a, b, c])
         self.assertEqual(len(clusters), 1, "Transitive similarity should merge all three")
         self.assertEqual(clusters[0]["source_count"], 3)
@@ -996,6 +1076,85 @@ class TestBuildSummary(unittest.TestCase):
         # Lead source should not appear in the "corroborated by" list
         corroborated_part = summary.split("Corroborated by")[1]
         self.assertNotIn("BBC World", corroborated_part)
+
+
+class TestTfidfCosineCluster(unittest.TestCase):
+    """Tests for TF-IDF cosine similarity clustering."""
+
+    def _rec(self, title, source="local", pub="2026-04-01T12:00:00", url=""):
+        return {"title": title, "source": source, "published_at": pub, "url": url}
+
+    def test_same_story_merge_with_rewording(self):
+        """Cross-source rewording of the same event should merge."""
+        records = [
+            self._rec("Iran threatens to close Strait of Hormuz oil route", "BBC World"),
+            self._rec("Iran warns it may shut Strait of Hormuz to oil tankers", "Reuters World"),
+            self._rec("Iran Hormuz strait closure threat rattles oil markets", "CNBC World"),
+        ]
+        clusters = news_sources.cluster_headlines(records)
+        self.assertEqual(len(clusters), 1)
+        self.assertGreaterEqual(clusters[0]["source_count"], 3)
+
+    def test_different_stories_stay_separate(self):
+        """Totally unrelated stories must not merge."""
+        records = [
+            self._rec("Oil prices surge on Iran tensions", "BBC World"),
+            self._rec("Fed holds interest rates steady at meeting", "Reuters World"),
+            self._rec("Japan launches new satellite into orbit", "CNBC World"),
+        ]
+        clusters = news_sources.cluster_headlines(records)
+        self.assertEqual(len(clusters), 3)
+
+    def test_cosine_sim_function_basic(self):
+        """Direct unit test of _cosine_sim on overlapping headlines."""
+        vecs, _ = news_sources._build_tfidf_vectors([
+            "Iran threatens Strait of Hormuz oil route",
+            "Iran warns Hormuz strait closure oil tankers",
+        ])
+        sim = news_sources._cosine_sim(vecs[0], vecs[1])
+        self.assertGreater(sim, 0.15)
+        self.assertLess(sim, 1.0)
+
+    def test_cosine_sim_identical_is_one(self):
+        vecs, _ = news_sources._build_tfidf_vectors(["same headline", "same headline"])
+        sim = news_sources._cosine_sim(vecs[0], vecs[1])
+        self.assertAlmostEqual(sim, 1.0, places=5)
+
+    def test_cosine_sim_disjoint_is_zero(self):
+        vecs, _ = news_sources._build_tfidf_vectors(["alpha beta gamma", "delta epsilon zeta"])
+        sim = news_sources._cosine_sim(vecs[0], vecs[1])
+        self.assertAlmostEqual(sim, 0.0, places=5)
+
+    def test_feed_error_resilience(self):
+        """A feed that fails should not prevent other feeds from being processed."""
+        from unittest.mock import patch
+
+        import feedparser as fp
+
+        def fake_parse(url):
+            if "fail" in url:
+                raise ConnectionError("simulated failure")
+            # Return a minimal valid parsed feed
+            return fp.util.FeedParserDict(
+                entries=[fp.util.FeedParserDict(
+                    title="Oil prices surge on Iran",
+                    published_parsed=None,
+                    published="2026-04-01T12:00:00",
+                    link="https://example.com",
+                )],
+            )
+
+        feeds = [
+            {"name": "Good Feed", "url": "https://example.com/good"},
+            {"name": "Bad Feed", "url": "https://example.com/fail"},
+        ]
+        with patch("feedparser.parse", side_effect=fake_parse):
+            records, status = news_sources.load_rss(feeds)
+
+        ok_feeds = [s for s in status if s["ok"]]
+        failed_feeds = [s for s in status if not s["ok"]]
+        self.assertGreaterEqual(len(ok_feeds), 1)
+        self.assertGreaterEqual(len(failed_feeds), 1)
 
 
 class TestClusterSummaryIntegration(unittest.TestCase):

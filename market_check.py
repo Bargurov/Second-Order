@@ -6,6 +6,11 @@
 # Evaluates whether each ticker moved in the direction the hypothesis predicts.
 # This is a rough screen — not proof of anything.
 
+import math as _math
+import logging as _logging
+
+_log = _logging.getLogger("second_order.market")
+
 # Sector benchmark map: ticker → benchmark ETF for relative return comparison.
 # Each sector has one benchmark ETF; tickers in the set get a vs_<benchmark>
 # column so the analyst can see idiosyncratic vs sector-wide moves.
@@ -38,21 +43,47 @@ for _sect, (_bench, _members) in SECTOR_BENCHMARKS.items():
 ENERGY_PROXIES = SECTOR_BENCHMARKS["energy"][1]
 
 
+def _is_finite(v) -> bool:
+    """Return True if *v* is a real finite number (rejects None, NaN, ±inf)."""
+    try:
+        return v is not None and _math.isfinite(float(v))
+    except (TypeError, ValueError):
+        return False
+
+
 def _pct(series, periods: int) -> float | None:
-    """Percentage change over the last N periods (rolling / current-price mode)."""
+    """Percentage change over the last N periods (rolling / current-price mode).
+
+    Returns None when there are insufficient rows or when the values
+    involved are NaN / non-finite (e.g. from yfinance gaps).
+    """
     if len(series) < periods + 1:
         return None
-    return float((series.iloc[-1] - series.iloc[-(periods + 1)]) / series.iloc[-(periods + 1)] * 100)
+    end = float(series.iloc[-1])
+    start = float(series.iloc[-(periods + 1)])
+    if not _is_finite(end) or not _is_finite(start) or start == 0:
+        return None
+    return float((end - start) / start * 100)
 
 
 def _pct_forward(series, periods: int) -> float | None:
-    """Percentage change from series[0] to series[periods] (event-date-anchored mode)."""
+    """Percentage change from series[0] to series[periods] (event-date-anchored mode).
+
+    Returns None when there are insufficient rows or when the values
+    involved are NaN / non-finite.
+    """
     if len(series) < periods + 1:
         return None
-    return float((series.iloc[periods] - series.iloc[0]) / series.iloc[0] * 100)
+    end = float(series.iloc[periods])
+    start = float(series.iloc[0])
+    if not _is_finite(end) or not _is_finite(start) or start == 0:
+        return None
+    return float((end - start) / start * 100)
 
 
 import time as _time
+import threading as _threading
+from collections import OrderedDict as _OrderedDict
 from concurrent.futures import ThreadPoolExecutor as _TPE
 
 # Max parallel yfinance downloads. 6 keeps us under typical rate-limit
@@ -60,33 +91,62 @@ from concurrent.futures import ThreadPoolExecutor as _TPE
 _MAX_FETCH_WORKERS = 6
 
 # ---------------------------------------------------------------------------
-# In-memory TTL cache for ticker data
+# Thread-safe, bounded TTL cache for ticker data
 # ---------------------------------------------------------------------------
 # Avoids redundant yfinance downloads within the same analysis session.
 # Keyed by (ticker, mode, start_date). Short TTL: 10 minutes.
+#
+# Bounded to 512 entries — empirically calibrated against 54 live events:
+#   89 unique symbols (rolling) + 231 worst-case since-mode keys = 320.
+#   512 gives generous headroom without risking unbounded memory growth.
+#
+# Thread-safe via a lock that protects all reads and writes.  This is safe
+# under both CPython (GIL) and free-threaded Python 3.13+.
 
-_TICKER_CACHE: dict[str, tuple[float, object]] = {}
-_TICKER_CACHE_TTL = 600  # 10 minutes
+_TICKER_CACHE_TTL = 600       # 10 minutes
+_TICKER_CACHE_MAXSIZE = 512   # max entries before LRU eviction
+
+_cache_lock = _threading.Lock()
+_cache_data: _OrderedDict[str, tuple[float, object]] = _OrderedDict()
 
 
 def _cache_get(key: str):
-    """Return cached value or None if missing/expired.
-
-    Uses pop() instead of del to avoid KeyError races when multiple
-    ThreadPoolExecutor threads expire the same key simultaneously.
-    """
-    entry = _TICKER_CACHE.get(key)
-    if entry is None:
-        return None
-    ts, val = entry
-    if (_time.monotonic() - ts) > _TICKER_CACHE_TTL:
-        _TICKER_CACHE.pop(key, None)  # atomic under CPython GIL; no KeyError
-        return None
-    return val
+    """Return cached value or None if missing/expired.  Thread-safe."""
+    with _cache_lock:
+        entry = _cache_data.get(key)
+        if entry is None:
+            return None
+        ts, val = entry
+        if (_time.monotonic() - ts) > _TICKER_CACHE_TTL:
+            _cache_data.pop(key, None)
+            return None
+        # Move to end (most recently used)
+        _cache_data.move_to_end(key)
+        return val
 
 
 def _cache_set(key: str, val: object) -> None:
-    _TICKER_CACHE[key] = (_time.monotonic(), val)
+    """Store a value in the cache, evicting the oldest entry if full.  Thread-safe."""
+    now = _time.monotonic()
+    with _cache_lock:
+        if key in _cache_data:
+            _cache_data.move_to_end(key)
+        _cache_data[key] = (now, val)
+        # Evict oldest entries if over capacity
+        while len(_cache_data) > _TICKER_CACHE_MAXSIZE:
+            _cache_data.popitem(last=False)
+
+
+def _cache_clear() -> None:
+    """Clear the entire cache.  Exposed for testing."""
+    with _cache_lock:
+        _cache_data.clear()
+
+
+def _cache_len() -> int:
+    """Return the number of entries in the cache.  Exposed for testing."""
+    with _cache_lock:
+        return len(_cache_data)
 
 
 from datetime import date as _date_type, timedelta as _timedelta
@@ -118,18 +178,21 @@ def _clamp_to_market_date(date_str: str) -> str:
 
 
 def _fetch(ticker: str):
-    """Download ~3 months of daily data for one ticker. Returns a DataFrame or None."""
+    """Download ~3 months of daily data for one ticker. Returns a DataFrame or None.
+
+    Routed through the SQLite price cache, which only hits the provider for
+    date ranges that aren't already persisted locally.  The in-memory TTL
+    cache above remains the hot per-session layer.
+    """
     key = f"fetch:{ticker.upper()}"
     cached = _cache_get(key)
     if cached is not None:
         return cached
 
-    import yfinance as yf
-    data = yf.download(ticker, period="3mo", interval="1d", progress=False, auto_adjust=True)
-    if data.empty:
+    from price_cache import fetch_daily_cached
+    data = fetch_daily_cached(ticker, period="3mo", auto_adjust=True)
+    if data is None:
         return None
-    if hasattr(data.columns, "levels"):
-        data.columns = data.columns.get_level_values(0)
     _cache_set(key, data)
     return data
 
@@ -139,6 +202,14 @@ def _fetch_since(ticker: str, start_date: str):
 
     The start_date is clamped to the latest valid market date so future or
     weekend dates don't produce inverted ranges or empty results.
+
+    Uses auto_adjust=False to avoid retroactive price adjustments from
+    future dividends/splits.  This eliminates lookahead bias when computing
+    forward returns for backtests and follow-through checks.  Raw 'Close'
+    values are what a trader would have observed on each historical date.
+
+    Routed through the SQLite price cache.  Raw closes never change once
+    fetched, so backtest flows become essentially free after the first run.
     """
     clamped = _clamp_to_market_date(start_date)
     key = f"since:{ticker.upper()}:{clamped}"
@@ -146,12 +217,10 @@ def _fetch_since(ticker: str, start_date: str):
     if cached is not None:
         return cached
 
-    import yfinance as yf
-    data = yf.download(ticker, start=clamped, interval="1d", progress=False, auto_adjust=True)
-    if data.empty:
+    from price_cache import fetch_daily_cached
+    data = fetch_daily_cached(ticker, start=clamped, auto_adjust=False)
+    if data is None:
         return None
-    if hasattr(data.columns, "levels"):
-        data.columns = data.columns.get_level_values(0)
     _cache_set(key, data)
     return data
 
@@ -165,9 +234,9 @@ def _direction_tag(r5: float | None, role: str) -> str | None:
       loser       + down → hypothesis says this should fall   → supports ↓
       loser       + up   → moves against the prediction       → contradicts ↑
 
-    Returns None when r5 is unavailable (not enough data).
+    Returns None when r5 is unavailable, NaN, or non-finite.
     """
-    if r5 is None:
+    if not _is_finite(r5):
         return None
     # Flat zone: returns within ±0.5% are inconclusive, not directional.
     if abs(r5) < 0.5:
@@ -309,6 +378,7 @@ def _check_one_ticker(
         }
 
     except Exception as e:
+        _log.warning("_check_one_ticker(%s) failed: %s", ticker, e, exc_info=True)
         no_data_error = dict(_no_data)
         no_data_error["detail"] = f"Error: {e}"
         return no_data_error
@@ -487,18 +557,22 @@ def followup_check(tickers: list[dict], event_date: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Macro context snapshot — yfinance-backed
+# Macro context snapshot — provider-backed via market_universe
 # ---------------------------------------------------------------------------
 # Uses the same _fetch/_fetch_since/caching infrastructure as ticker checks.
-# Each instrument is fetched in parallel via ThreadPoolExecutor.
+#
+# Each instrument is identified by either:
+#   - a liquid market identifier (DXY, 10Y, CL) — resolved via market_universe
+#     to whichever ticker the active provider can serve, or
+#   - a raw symbol (^VIX, BZ=F) — used as-is when no liquid mapping exists.
 
-# (yfinance symbol, display label, unit)
+# (identifier, display label, unit)
 _MACRO_INSTRUMENTS: list[tuple[str, str, str]] = [
-    ("DX-Y.NYB",  "USD",   "idx"),     # US Dollar Index
-    ("^TNX",      "10Y",   "%"),        # 10-year Treasury yield
-    ("^VIX",      "VIX",   ""),         # CBOE VIX
-    ("CL=F",      "WTI",   "$/bbl"),    # WTI crude futures
-    ("BZ=F",      "Brent", "$/bbl"),    # Brent crude futures
+    ("DXY",  "USD",   "idx"),     # US Dollar Index — resolved per provider
+    ("10Y",  "10Y",   "%"),        # 10-year Treasury — resolved per provider
+    ("^VIX", "VIX",   ""),         # CBOE VIX — no liquid-market entry
+    ("CL",   "WTI",   "$/bbl"),    # WTI crude — resolved per provider
+    ("BZ=F", "Brent", "$/bbl"),    # Brent crude — no liquid-market entry
 ]
 
 
@@ -506,16 +580,22 @@ def macro_snapshot(event_date: str | None = None) -> list[dict]:
     """Return a compact macro context strip for the given date.
 
     Each entry: {label, value, change_5d, unit}.
-    Uses the existing yfinance fetch layer with its 10-minute TTL cache.
+    Resolves liquid market identifiers via market_universe so the active
+    provider's preferred symbol is used.  Falls back to literal symbols
+    for instruments outside the liquid-market catalogue.
     Returns partial results on failure — never raises.
     """
+    from market_universe import resolve_symbol
     # Fetched serially: yfinance is not thread-safe for concurrent downloads.
     # With the 10-min TTL cache, second+ calls resolve from memory instantly.
     results: list[dict] = []
-    for yf_ticker, label, unit in _MACRO_INSTRUMENTS:
+    for identifier, label, unit in _MACRO_INSTRUMENTS:
         entry: dict = {"label": label, "value": None, "change_5d": None, "unit": unit}
+        # Resolve liquid market IDs (DXY, 10Y, CL) to provider-specific
+        # tickers; pass through raw symbols (^VIX, BZ=F) unchanged.
+        ticker = resolve_symbol(identifier) or identifier
         try:
-            data = _fetch_since(yf_ticker, event_date) if event_date else _fetch(yf_ticker)
+            data = _fetch_since(ticker, event_date) if event_date else _fetch(ticker)
             if data is not None and len(data) >= 2:
                 closes = data["Close"]
                 if event_date:
@@ -527,7 +607,8 @@ def macro_snapshot(event_date: str | None = None) -> list[dict]:
                 if chg is not None:
                     entry["change_5d"] = round(chg, 2)
         except Exception:
-            pass
+            _log.warning("macro_snapshot: failed to fetch %s (%s): %s",
+                          identifier, ticker, __import__('sys').exc_info()[1])
         results.append(entry)
     return results
 
@@ -546,11 +627,363 @@ def _safe_pct(series, n: int) -> float | None:
     return float((series.iloc[-1] - series.iloc[-(n + 1)]) / series.iloc[-(n + 1)] * 100)
 
 
+# ---------------------------------------------------------------------------
+# Inflation / rates context
+# ---------------------------------------------------------------------------
+# Three liquid proxies, all available through yfinance:
+#   ^TNX  — 10-year nominal yield (CBOE)
+#   TIP   — iShares TIPS Bond ETF (moves inversely with real yields)
+#   Breakeven ≈ nominal yield move − real yield move
+#
+# TIP price *falls* when real yields *rise*, so:
+#   real_yield_move ≈ −TIP_price_change
+# This is a proxy, not an exact number, but directionally reliable for
+# the classification we need.
+
+def classify_rates_regime(
+    nominal_5d: float | None,
+    tip_5d: float | None,
+) -> str:
+    """Classify the rates/inflation regime from 5-day moves.
+
+    nominal_5d: 5d % change in ^TNX (positive = yields rising)
+    tip_5d:     5d % change in TIP price (positive = real yields falling)
+
+    Returns one of:
+      "Inflation pressure"    — breakevens rising (nominals up, real yields flat/down)
+      "Real-rate tightening"  — real yields rising faster than breakevens
+      "Risk-off / growth scare" — nominals falling (flight to safety)
+      "Mixed"                 — no clear pattern or insufficient data
+    """
+    if nominal_5d is None or tip_5d is None:
+        return "Mixed"
+
+    # Directional thresholds — small moves are noise
+    THRESH = 0.3  # percent
+
+    nom_up   = nominal_5d >  THRESH
+    nom_down = nominal_5d < -THRESH
+    tip_down = tip_5d < -THRESH   # real yields rising
+    tip_up   = tip_5d >  THRESH   # real yields falling
+
+    if nom_up and (tip_up or abs(tip_5d) <= THRESH):
+        # Nominals rising but real yields flat or falling → breakevens widening
+        return "Inflation pressure"
+    if tip_down and (not nom_up or nom_down):
+        # Real yields rising with flat/falling nominals → pure tightening
+        return "Real-rate tightening"
+    if tip_down and nom_up:
+        # Both moving: real yields rising AND nominals rising → also tightening
+        return "Real-rate tightening"
+    if nom_down and tip_up:
+        # Nominals falling, TIPS rallying → flight to safety
+        return "Risk-off / growth scare"
+    if nom_down and not tip_down:
+        # Nominals falling, real yields not rising → growth scare
+        return "Risk-off / growth scare"
+    return "Mixed"
+
+
+def compute_rates_context() -> dict:
+    """Compute a compact inflation/rates context snapshot.
+
+    Returns {regime, nominal, real_proxy, breakeven_proxy, raw}.
+    Uses ^TNX and TIP via the existing _fetch + TTL cache.
+    """
+    raw: dict = {}
+    nominal_5d: float | None = None
+    tip_5d: float | None = None
+
+    try:
+        tnx = _fetch("^TNX")
+        if tnx is not None and len(tnx) >= 6:
+            val = float(tnx["Close"].iloc[-1])
+            raw["tnx"] = round(val, 2)
+            nominal_5d = _safe_pct(tnx["Close"], 5)
+            if nominal_5d is not None:
+                raw["tnx_change_5d"] = round(nominal_5d, 2)
+    except Exception:
+        _log.warning("compute_rates_context: ^TNX fetch/calc failed", exc_info=True)
+
+    try:
+        tip = _fetch("TIP")
+        if tip is not None and len(tip) >= 6:
+            val = float(tip["Close"].iloc[-1])
+            raw["tip"] = round(val, 2)
+            tip_5d = _safe_pct(tip["Close"], 5)
+            if tip_5d is not None:
+                raw["tip_change_5d"] = round(tip_5d, 2)
+    except Exception:
+        _log.warning("compute_rates_context: TIP fetch/calc failed", exc_info=True)
+
+    # Breakeven proxy: if nominals rise and TIP price is flat,
+    # breakevens are widening.  Approximate as nominal_move + tip_move
+    # (since TIP moves inversely with real yields).
+    if nominal_5d is not None and tip_5d is not None:
+        be_proxy = nominal_5d + tip_5d
+        raw["breakeven_proxy_5d"] = round(be_proxy, 2)
+
+    regime = classify_rates_regime(nominal_5d, tip_5d)
+
+    return {
+        "regime": regime,
+        "nominal": {
+            "label": "10Y yield",
+            "value": raw.get("tnx"),
+            "change_5d": raw.get("tnx_change_5d"),
+        },
+        "real_proxy": {
+            "label": "TIP (real yield proxy)",
+            "value": raw.get("tip"),
+            "change_5d": raw.get("tip_change_5d"),
+        },
+        "breakeven_proxy": {
+            "label": "Breakeven proxy",
+            "change_5d": raw.get("breakeven_proxy_5d"),
+        },
+        "raw": raw,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Monetary policy sensitivity classifier
+# ---------------------------------------------------------------------------
+# Determines whether an event's mechanism is reinforced, opposed, or
+# unaffected by the current rates/inflation regime.  Purely deterministic:
+# cross-references the rates regime with keyword signals from the analysis.
+
+# Keywords signalling the event benefits from loose/falling rates
+_LOOSE_RATE_KW: set[str] = {
+    "multiple expansion", "lower discount", "risk-on", "rate cut",
+    "valuation lift", "growth stock", "housing", "mortgage",
+    "refinanc", "equity rally", "buyback", "leveraged", "duration",
+    "real estate", "reit", "construction", "home",
+}
+
+# Keywords signalling the event benefits from tight/rising rates
+_TIGHT_RATE_KW: set[str] = {
+    "bank margin", "net interest", "money market", "saver",
+    "deposit rate", "insurance yield", "cash yield", "t-bill",
+    "short duration", "floating rate", "rate hike benefit",
+}
+
+# Keywords signalling an inflationary channel
+_INFLATION_KW: set[str] = {
+    "oil price", "crude", "commodity", "supply shock", "input cost",
+    "food price", "wage pressure", "tariff", "import cost",
+    "energy price", "fuel cost", "pipeline", "opec", "shipping cost",
+}
+
+
+def classify_policy_sensitivity(
+    rates_regime: str,
+    mechanism_text: str,
+) -> dict:
+    """Classify whether the event mechanism is reinforced or opposed by rates.
+
+    Parameters
+    ----------
+    rates_regime : str
+        Output of classify_rates_regime(): "Inflation pressure",
+        "Real-rate tightening", "Risk-off / growth scare", or "Mixed".
+    mechanism_text : str
+        The mechanism_summary + what_changed from the analysis.
+
+    Returns
+    -------
+    dict with keys:
+        stance: "reinforced" | "fighting" | "neutral"
+        explanation: one plain-English sentence
+        regime: the rates regime used for classification
+    Returns {} only when mechanism_text is empty (low-signal guard).
+    For mixed/unclear regimes, returns a visible neutral fallback.
+    """
+    if not mechanism_text or not mechanism_text.strip():
+        return {}
+    if rates_regime == "Mixed":
+        return {
+            "stance": "neutral",
+            "explanation": "No clear rates tilt — mixed signals across nominal and real yields.",
+            "regime": "Mixed",
+        }
+
+    mech_low = mechanism_text.lower()
+
+    has_loose = any(kw in mech_low for kw in _LOOSE_RATE_KW)
+    has_tight = any(kw in mech_low for kw in _TIGHT_RATE_KW)
+    has_inflation = any(kw in mech_low for kw in _INFLATION_KW)
+
+    # If neither signal matches, the event is rates-neutral
+    if not has_loose and not has_tight and not has_inflation:
+        return {
+            "stance": "neutral",
+            "explanation": f"This event's mechanism has no direct rate sensitivity. Current regime: {rates_regime}.",
+            "regime": rates_regime,
+        }
+
+    stance = "neutral"
+    explanation = ""
+
+    if rates_regime == "Inflation pressure":
+        if has_inflation:
+            stance = "reinforced"
+            explanation = "Inflationary event amplified by a rising-breakeven environment — price pressures compound."
+        elif has_loose:
+            stance = "fighting"
+            explanation = "Event mechanism benefits from easy money, but inflation pressure may force tighter policy."
+        elif has_tight:
+            stance = "reinforced"
+            explanation = "Tight-rate beneficiary aligned with current inflation-driven tightening expectations."
+
+    elif rates_regime == "Real-rate tightening":
+        if has_loose:
+            stance = "fighting"
+            explanation = "Event mechanism needs lower rates, but real rates are rising — headwind for the thesis."
+        elif has_tight:
+            stance = "reinforced"
+            explanation = "Event benefits from higher real rates, which the current tightening regime delivers."
+        elif has_inflation:
+            stance = "fighting"
+            explanation = "Inflationary channel is being offset by aggressive real-rate tightening."
+
+    elif rates_regime == "Risk-off / growth scare":
+        if has_loose:
+            stance = "reinforced"
+            explanation = "Falling yields support the event's rate-sensitive mechanism — tailwind."
+        elif has_tight:
+            stance = "fighting"
+            explanation = "Event needs rate income, but yields are collapsing in a risk-off move."
+        elif has_inflation:
+            stance = "fighting"
+            explanation = "Supply-side inflation channel weakened by demand destruction in a growth scare."
+
+    if not explanation:
+        return {
+            "stance": "neutral",
+            "explanation": f"Mixed signals — no clear alignment with {rates_regime}.",
+            "regime": rates_regime,
+        }
+
+    return {
+        "stance": stance,
+        "explanation": explanation,
+        "regime": rates_regime,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Inventory / supply context classifier
+# ---------------------------------------------------------------------------
+# Deterministic: checks whether relevant commodity/supply proxies signal
+# tightness or comfort, then cross-references with mechanism keywords.
+# Uses liquid Yahoo-finance ETFs only — no paid data.
+
+# Proxy tickers: each maps a commodity theme to an ETF whose price action
+# reflects inventory/supply tightness.  Rising price = tighter supply.
+_INVENTORY_PROXIES: list[tuple[set[str], str, str]] = [
+    # (mechanism keywords, ticker, label)
+    ({"oil", "crude", "petroleum", "opec", "barrel", "refin", "fuel",
+      "gasoline", "diesel", "pipeline"},                    "USO",  "Crude Oil (USO)"),
+    ({"natural gas", "lng", "gas export", "gas terminal"},  "UNG",  "Natural Gas (UNG)"),
+    ({"copper", "metal", "mining", "aluminum", "steel"},    "COPX", "Copper Miners (COPX)"),
+    ({"wheat", "grain", "food", "corn", "soybean",
+      "agriculture", "fertiliz"},                           "WEAT", "Wheat (WEAT)"),
+    ({"shipping", "freight", "tanker", "dry bulk",
+      "container", "maritime"},                             "BDRY", "Dry Bulk Shipping (BDRY)"),
+    ({"semiconductor", "chip", "foundry", "wafer", "fab",
+      "dram", "nand", "hbm"},                               "SMH",  "Semiconductors (SMH)"),
+]
+
+# Thresholds for 20-day return classification
+_TIGHT_THRESHOLD = 3.0    # >+3% in 20d → supply tightening signal
+_COMFORT_THRESHOLD = -3.0 # <-3% in 20d → supply easing signal
+
+
+def classify_inventory_context(mechanism_text: str) -> dict:
+    """Classify inventory/supply context from commodity proxy price action.
+
+    Parameters
+    ----------
+    mechanism_text : str
+        Combined what_changed + mechanism_summary from analysis.
+
+    Returns
+    -------
+    dict with keys:
+        status: "tight" | "comfortable" | "neutral"
+        proxy: the ETF ticker used
+        proxy_label: human-readable label
+        return_20d: the 20-day return (%)
+        explanation: one plain-English sentence
+    Returns {} when no commodity/supply keywords match or data unavailable.
+    """
+    if not mechanism_text or not mechanism_text.strip():
+        return {}
+
+    mech_low = mechanism_text.lower()
+
+    # Find the best-matching proxy
+    matched_proxy = None
+    for keywords, ticker, label in _INVENTORY_PROXIES:
+        if any(kw in mech_low for kw in keywords):
+            matched_proxy = (ticker, label)
+            break
+
+    if not matched_proxy:
+        return {}
+
+    ticker, label = matched_proxy
+
+    # Fetch 20d return — fall back to neutral if data unavailable
+    ret_20d: float | None = None
+    try:
+        data = _fetch(ticker)
+        if data is not None and len(data) >= 21:
+            ret_20d = _safe_pct(data["Close"], 20)
+            if ret_20d is not None:
+                ret_20d = round(ret_20d, 2)
+    except Exception:
+        pass
+
+    if ret_20d is None:
+        return {
+            "status": "neutral",
+            "proxy": ticker,
+            "proxy_label": label,
+            "explanation": f"{label} data unavailable — no inventory signal. Supply-relevant event detected.",
+        }
+
+    if ret_20d > _TIGHT_THRESHOLD:
+        status = "tight"
+        explanation = f"{label} up {ret_20d:+.1f}% over 20 days — supply tightening, inventory drawdowns likely."
+    elif ret_20d < _COMFORT_THRESHOLD:
+        status = "comfortable"
+        explanation = f"{label} down {ret_20d:+.1f}% over 20 days — supply easing, inventory builds likely."
+    else:
+        status = "neutral"
+        explanation = f"{label} flat ({ret_20d:+.1f}% / 20d) — no strong inventory signal from price action."
+
+    return {
+        "status": status,
+        "proxy": ticker,
+        "proxy_label": label,
+        "return_20d": ret_20d,
+        "explanation": explanation,
+    }
+
+
+def _stress_status(active: bool) -> str:
+    """Return 'stressed' / 'watch' / 'calm' for a single signal."""
+    return "stressed" if active else "calm"
+
+
 def compute_stress_regime() -> dict:
     """Compute a composite market-stress regime from live data.
 
-    Returns {regime, signals: {vix_elevated, term_inversion, credit_widening,
-    safe_haven_bid, breadth_deterioration}, raw: {vix, vix_avg20, ...}}.
+    Returns {regime, signals, raw, detail, summary}.
+    - detail: per-component dicts with value, context, status, explanation.
+    - summary: one-sentence overall summary.
+    Backward-compatible: regime, signals, raw are unchanged.
     Uses the existing _fetch + TTL cache so repeated calls are instant.
     """
     raw: dict = {}
@@ -561,9 +994,15 @@ def compute_stress_regime() -> dict:
         "safe_haven_bid": False,
         "breadth_deterioration": False,
     }
+    detail: dict[str, dict] = {}
 
+    _failed_signals: list[str] = []
+
+    # --- Volatility: VIX vs 20d average ---
+    vix_data = None
+    vix_now: float | None = None
+    vix_avg20: float | None = None
     try:
-        # VIX vs 20d average
         vix_data = _fetch("^VIX")
         if vix_data is not None and len(vix_data) >= 20:
             vix_now = float(vix_data["Close"].iloc[-1])
@@ -573,41 +1012,147 @@ def compute_stress_regime() -> dict:
             vix_5d = _safe_pct(vix_data["Close"], 5)
             if vix_5d is not None:
                 raw["vix_change_5d"] = round(vix_5d, 2)
-            signals["vix_elevated"] = vix_now > vix_avg20 * 1.20  # >20% above 20d avg
+            signals["vix_elevated"] = vix_now > vix_avg20 * 1.20
 
-        # VIX term structure: ^VIX vs ^VIX3M
+            ratio_pct = round((vix_now / vix_avg20 - 1) * 100, 1) if vix_avg20 else 0
+            if signals["vix_elevated"]:
+                expl = f"VIX at {raw['vix']} vs 20d avg of {raw['vix_avg20']} — elevated ({ratio_pct:+.0f}% above average), signaling heightened fear"
+            elif ratio_pct > 5:
+                expl = f"VIX at {raw['vix']} vs 20d avg of {raw['vix_avg20']} — slightly elevated but within normal range"
+            else:
+                expl = f"VIX at {raw['vix']} vs 20d avg of {raw['vix_avg20']} — volatility (fear gauge) is subdued"
+            detail["volatility"] = {
+                "label": "Volatility",
+                "value": raw["vix"], "avg20": raw["vix_avg20"],
+                "change_5d": raw.get("vix_change_5d"),
+                "status": _stress_status(signals["vix_elevated"]),
+                "explanation": expl,
+            }
+        else:
+            detail["volatility"] = {
+                "label": "Volatility", "value": None, "avg20": None,
+                "change_5d": None, "status": "calm",
+                "explanation": "VIX (volatility index) data unavailable",
+            }
+    except Exception:
+        _log.error("compute_stress_regime: volatility signal failed", exc_info=True)
+        _failed_signals.append("volatility")
+        detail["volatility"] = {
+            "label": "Volatility", "value": None, "avg20": None,
+            "change_5d": None, "status": "calm",
+            "explanation": "VIX computation error — treating as unknown",
+        }
+
+    # --- Term Structure: VIX vs VIX3M ---
+    try:
         vix3m_data = _fetch("^VIX3M")
         if vix_data is not None and vix3m_data is not None and len(vix3m_data) > 0:
-            vix_now = float(vix_data["Close"].iloc[-1]) if "vix" not in raw else raw["vix"]
+            if vix_now is None:
+                vix_now = raw.get("vix")
             vix3m = float(vix3m_data["Close"].iloc[-1])
             raw["vix3m"] = round(vix3m, 2)
-            signals["term_inversion"] = vix_now > vix3m  # backwardation = stress
+            signals["term_inversion"] = (vix_now or 0) > vix3m
+            if signals["term_inversion"]:
+                expl = f"Short-term vol ({raw.get('vix', '?')}) above long-term ({raw['vix3m']}) — backwardation signals immediate panic"
+            else:
+                expl = f"Short-term vol below long-term (contango) — no immediate panic"
+            detail["term_structure"] = {
+                "label": "Term Structure",
+                "value": raw.get("vix"), "vix3m": raw["vix3m"],
+                "status": _stress_status(signals["term_inversion"]),
+                "explanation": expl,
+            }
+        else:
+            detail["term_structure"] = {
+                "label": "Term Structure", "value": None, "vix3m": None,
+                "status": "calm",
+                "explanation": "VIX term structure data unavailable",
+            }
+    except Exception:
+        _log.error("compute_stress_regime: term_structure signal failed", exc_info=True)
+        _failed_signals.append("term_structure")
+        detail["term_structure"] = {
+            "label": "Term Structure", "value": None, "vix3m": None,
+            "status": "calm",
+            "explanation": "Term structure computation error — treating as unknown",
+        }
 
-        # Credit spread direction: HYG vs SHY 5d relative
+    # --- Credit Stress: HYG vs SHY ---
+    try:
         hyg_data = _fetch("HYG")
         shy_data = _fetch("SHY")
         if hyg_data is not None and shy_data is not None:
             hyg_5d = _safe_pct(hyg_data["Close"], 5)
             shy_5d = _safe_pct(shy_data["Close"], 5)
             if hyg_5d is not None and shy_5d is not None:
-                spread_move = shy_5d - hyg_5d  # positive = widening
+                spread_move = shy_5d - hyg_5d
                 raw["credit_spread_5d"] = round(spread_move, 2)
                 signals["credit_widening"] = spread_move > 0.5
+                if signals["credit_widening"]:
+                    expl = f"High-yield bonds underperforming treasuries by {abs(raw['credit_spread_5d']):.1f}% over 5d — credit stress rising"
+                else:
+                    expl = "High-yield bonds steady vs treasuries — credit markets calm"
+                detail["credit"] = {
+                    "label": "Credit Stress",
+                    "spread_5d": raw["credit_spread_5d"],
+                    "status": _stress_status(signals["credit_widening"]),
+                    "explanation": expl,
+                }
+            else:
+                detail["credit"] = {
+                    "label": "Credit Stress", "spread_5d": None, "status": "calm",
+                    "explanation": "Credit spread data insufficient",
+                }
+        else:
+            detail["credit"] = {
+                "label": "Credit Stress", "spread_5d": None, "status": "calm",
+                "explanation": "Credit spread data unavailable",
+            }
+    except Exception:
+        _log.error("compute_stress_regime: credit signal failed", exc_info=True)
+        _failed_signals.append("credit")
+        detail["credit"] = {
+            "label": "Credit Stress", "spread_5d": None, "status": "calm",
+            "explanation": "Credit stress computation error — treating as unknown",
+        }
 
-        # Safe-haven composite: GLD, DXY, TLT — average 5d return
+    # --- Safe Haven Flows: GLD, DXY, TLT ---
+    try:
+        haven_detail: dict[str, float | None] = {}
         haven_returns: list[float] = []
-        for sym in ["GLD", "DX-Y.NYB", "TLT"]:
+        for sym, name in [("GLD", "Gold"), ("DX-Y.NYB", "Dollar"), ("TLT", "Long Bonds")]:
             d = _fetch(sym)
-            if d is not None:
-                r = _safe_pct(d["Close"], 5)
-                if r is not None:
-                    haven_returns.append(r)
+            r = _safe_pct(d["Close"], 5) if d is not None else None
+            haven_detail[name] = round(r, 2) if r is not None else None
+            if r is not None:
+                haven_returns.append(r)
+        inflows = sum(1 for v in haven_detail.values() if v is not None and v > 0.3)
         if haven_returns:
             avg_haven = sum(haven_returns) / len(haven_returns)
             raw["haven_avg_5d"] = round(avg_haven, 2)
             signals["safe_haven_bid"] = avg_haven > 0.5
+        if signals["safe_haven_bid"]:
+            expl = f"{inflows} of 3 safe havens showing inflows — flight to safety underway"
+        else:
+            expl = f"{inflows} of 3 safe havens showing inflows — no flight to safety"
+        detail["safe_haven"] = {
+            "label": "Safe Haven Flows",
+            "assets": haven_detail,
+            "inflow_count": inflows,
+            "status": _stress_status(signals["safe_haven_bid"]),
+            "explanation": expl,
+        }
+    except Exception:
+        _log.error("compute_stress_regime: safe_haven signal failed", exc_info=True)
+        _failed_signals.append("safe_haven")
+        detail["safe_haven"] = {
+            "label": "Safe Haven Flows", "assets": {}, "inflow_count": 0,
+            "status": "calm",
+            "explanation": "Safe haven computation error — treating as unknown",
+        }
 
-        # Breadth proxy: RSP vs SPY 5d relative
+    # --- Breadth: RSP vs SPY ---
+    try:
         rsp_data = _fetch("RSP")
         spy_data = _fetch("SPY")
         if rsp_data is not None and spy_data is not None:
@@ -617,12 +1162,60 @@ def compute_stress_regime() -> dict:
                 breadth_gap = rsp_5d - spy_5d
                 raw["breadth_gap_5d"] = round(breadth_gap, 2)
                 signals["breadth_deterioration"] = breadth_gap < -0.5
-
+                if signals["breadth_deterioration"]:
+                    expl = f"Equal-weight lagging cap-weight by {abs(raw['breadth_gap_5d']):.1f}% — narrow leadership, fewer stocks participating"
+                else:
+                    expl = "Equal-weight keeping pace with cap-weight — broad market participation"
+                detail["breadth"] = {
+                    "label": "Market Breadth",
+                    "gap_5d": raw["breadth_gap_5d"],
+                    "status": _stress_status(signals["breadth_deterioration"]),
+                    "explanation": expl,
+                }
+            else:
+                detail["breadth"] = {
+                    "label": "Market Breadth", "gap_5d": None, "status": "calm",
+                    "explanation": "Breadth data insufficient",
+                }
+        else:
+            detail["breadth"] = {
+                "label": "Market Breadth", "gap_5d": None, "status": "calm",
+                "explanation": "Breadth data unavailable",
+            }
     except Exception:
-        pass
+        _log.error("compute_stress_regime: breadth signal failed", exc_info=True)
+        _failed_signals.append("breadth")
+        detail["breadth"] = {
+            "label": "Market Breadth", "gap_5d": None, "status": "calm",
+            "explanation": "Breadth computation error — treating as unknown",
+        }
+
+    if _failed_signals:
+        _log.warning("compute_stress_regime: %d of 5 signals failed: %s",
+                      len(_failed_signals), ", ".join(_failed_signals))
 
     regime = classify_regime(signals)
-    return {"regime": regime, "signals": signals, "raw": raw}
+
+    # One-sentence summary
+    active_count = sum(signals.values())
+    if active_count == 0:
+        summary = "Markets stable — no signs of stress across volatility, credit, or safe havens"
+    elif regime == "Systemic Stress":
+        summary = "Multiple stress signals firing — elevated volatility, credit widening, and term structure inversion"
+    elif regime == "Geopolitical Stress":
+        summary = "Volatility elevated with safe-haven flows — geopolitical risk is being priced"
+    elif regime == "Calm with Undercurrent":
+        summary = f"{active_count} secondary signal{'s' if active_count > 1 else ''} active — surface calm but watch for escalation"
+    else:
+        summary = f"{active_count} signal{'s' if active_count > 1 else ''} active — mixed but no systemic pattern"
+
+    return {
+        "regime": regime,
+        "signals": signals,
+        "raw": raw,
+        "detail": detail,
+        "summary": summary,
+    }
 
 
 def classify_regime(signals: dict[str, bool]) -> str:
@@ -656,6 +1249,14 @@ def classify_regime(signals: dict[str, bool]) -> str:
 # Shock decay classification
 # ---------------------------------------------------------------------------
 
+# Moves below this threshold (in %) are treated as market noise.
+# Calibrated against 169 ticker-pairs from the live event archive:
+#   p5 = 0.15%, p10 = 0.15% — so ~10% of real event returns land below 0.3%.
+#   Only 1 of 169 pairs had *both* legs under 0.3%.
+# 0.3% filters noise without discarding real modest moves (e.g. 0.5%).
+DECAY_DE_MINIMIS: float = 0.3
+
+
 def classify_decay(return_5d: float | None, return_20d: float | None) -> dict:
     """Classify the trajectory of a ticker's post-event move.
 
@@ -668,25 +1269,34 @@ def classify_decay(return_5d: float | None, return_20d: float | None) -> dict:
         return {"label": "Unknown", "evidence": "Insufficient return data"}
 
     r5, r20 = return_5d, return_20d
+    abs5, abs20 = abs(r5), abs(r20)
 
-    # Same sign check
+    # De minimis: if both legs are below the noise floor, don't classify.
+    if abs5 < DECAY_DE_MINIMIS and abs20 < DECAY_DE_MINIMIS:
+        return {
+            "label": "Negligible",
+            "evidence": f"5d {r5:+.1f}% / 20d {r20:+.1f}% — both below noise threshold",
+        }
+
+    # Sign check — treats zero as unsigned (falls through to magnitude checks)
     same_sign = (r5 > 0 and r20 > 0) or (r5 < 0 and r20 < 0)
 
-    if not same_sign and abs(r5) > 0.5 and abs(r20) > 0.5:
+    # Reversed: different signs and at least one leg is above de minimis.
+    # The old check required both legs > 0.5%, which missed genuine reversals
+    # where one leg was modest (e.g. r5=-0.3%, r20=+0.8%).
+    if not same_sign and r5 != 0 and r20 != 0 and max(abs5, abs20) >= DECAY_DE_MINIMIS:
         return {
             "label": "Reversed",
             "evidence": f"5d {r5:+.1f}% vs 20d {r20:+.1f}% — direction flipped",
         }
 
-    abs5, abs20 = abs(r5), abs(r20)
-
-    if same_sign and abs5 > abs20 * 0.8:
+    if same_sign and abs5 >= abs20 * 0.8:
         return {
             "label": "Accelerating",
             "evidence": f"5d move ({r5:+.1f}%) is still intensifying vs 20d ({r20:+.1f}%)",
         }
 
-    if same_sign and abs5 > abs20 * 0.4:
+    if same_sign and abs5 >= abs20 * 0.4:
         return {
             "label": "Holding",
             "evidence": f"5d {r5:+.1f}% retains most of 20d {r20:+.1f}% move",
@@ -719,20 +1329,14 @@ def ticker_chart(symbol: str, event_date: str, window: int = 30) -> list[dict]:
     start = (anchor - _timedelta(days=window + 10)).isoformat()
     end = min(anchor + _timedelta(days=window + 10), today).isoformat()
 
-    import yfinance as yf
     key = f"chart:{symbol.upper()}:{start}:{end}"
     cached = _cache_get(key)
     if cached is not None:
         return cached
 
-    try:
-        data = yf.download(symbol, start=start, end=end, interval="1d",
-                           progress=False, auto_adjust=True)
-        if data.empty:
-            return []
-        if hasattr(data.columns, "levels"):
-            data.columns = data.columns.get_level_values(0)
-    except Exception:
+    from price_cache import fetch_daily_cached
+    data = fetch_daily_cached(symbol, start=start, end=end, auto_adjust=True)
+    if data is None or data.empty:
         return []
 
     # Trim to window
@@ -761,35 +1365,16 @@ def ticker_chart(symbol: str, event_date: str, window: int = 30) -> list[dict]:
 def ticker_info(symbol: str) -> dict:
     """Return compact company info for a ticker.
 
-    Uses yfinance's .info property, cached aggressively (1 hour via the
-    ticker cache). Returns a flat dict with name, sector, industry,
-    market_cap, avg_volume. Missing fields default to None.
+    Delegates to the active MarketDataProvider.  Returns a flat dict with
+    name, sector, industry, market_cap, avg_volume. Missing fields default
+    to None.  Cached via the shared ticker cache (10-minute TTL).
     """
     key = f"info:{symbol.upper()}"
     cached = _cache_get(key)
     if cached is not None:
         return cached
 
-    fallback: dict = {
-        "symbol": symbol.upper(),
-        "name": None, "sector": None, "industry": None,
-        "market_cap": None, "avg_volume": None,
-    }
-
-    try:
-        import yfinance as yf
-        t = yf.Ticker(symbol)
-        info = t.info or {}
-        result = {
-            "symbol": symbol.upper(),
-            "name": info.get("longName") or info.get("shortName"),
-            "sector": info.get("sector"),
-            "industry": info.get("industry"),
-            "market_cap": info.get("marketCap"),
-            "avg_volume": info.get("averageVolume"),
-        }
-    except Exception:
-        result = fallback
-
+    from market_data import get_provider
+    result = get_provider().fetch_info(symbol)
     _cache_set(key, result)
     return result
