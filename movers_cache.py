@@ -90,8 +90,15 @@ def _is_mover_event(ev: dict) -> list[dict]:
     """Return the list of tickers on ``ev`` that have non-null 5d returns.
 
     Empty list means the event does not qualify as a mover at all.
+
+    Cross-contaminated persisted ticker rows (multiple distinct symbols
+    sharing byte-identical return_5d / spark — a yfinance race
+    signature) are suppressed via ``market_check._suppress_duplicate_tickers``
+    BEFORE the qualification check, so a corrupted event never
+    parades duplicate cards through any movers slice.
     """
-    tickers = ev.get("market_tickers", []) or []
+    from market_check import _suppress_duplicate_tickers
+    tickers = _suppress_duplicate_tickers(ev.get("market_tickers", []) or [])
     return [t for t in tickers if t.get("return_5d") is not None]
 
 
@@ -118,6 +125,10 @@ def _compute_time_slice(
     Events newer than ``cutoff_iso``, deduplicated by headline, any
     ticker with ``return_5d`` qualifies, sorted by impact descending.
     """
+    from market_check import (
+        _suppress_duplicate_tickers,
+        _scrub_implausible_ticker_returns,
+    )
     scored: list[dict] = []
     seen_headlines: set[str] = set()
     for ev in events:
@@ -128,13 +139,18 @@ def _compute_time_slice(
         if hl in seen_headlines:
             continue
         seen_headlines.add(hl)
-        with_return = _is_mover_event(ev)
+        # Scrub absurd returns AND suppress cross-contaminated rows
+        # once per event so the mover qualification, support-ratio
+        # calculation, and emitted ticker list all see the same
+        # cleaned data.
+        raw_tickers = ev.get("market_tickers", []) or []
+        clean_tickers = _suppress_duplicate_tickers(
+            _scrub_implausible_ticker_returns(raw_tickers)
+        )
+        with_return = [t for t in clean_tickers if t.get("return_5d") is not None]
         if not with_return:
             continue
-        with_dir = [
-            t for t in ev.get("market_tickers", []) or []
-            if t.get("direction_tag") is not None
-        ]
+        with_dir = [t for t in clean_tickers if t.get("direction_tag") is not None]
         supporting = [
             t for t in with_dir if "supports" in (t.get("direction_tag") or "")
         ]
@@ -160,15 +176,27 @@ def _compute_persistent_slice(
              trajectories relabelled as "Monitoring".  The hero section
              is never allowed to come back empty.
     """
+    from market_check import (
+        _suppress_duplicate_tickers,
+        _scrub_implausible_ticker_returns,
+    )
     cutoff_recent = (now_dt - timedelta(days=7)).isoformat(timespec="seconds")
     unique_events = _dedupe_by_headline(events)
+
+    def _clean(ev: dict) -> list[dict]:
+        return _suppress_duplicate_tickers(
+            _scrub_implausible_ticker_returns(
+                ev.get("market_tickers", []) or []
+            )
+        )
 
     strict: list[dict] = []
     for ev in unique_events:
         ts = ev.get("timestamp", "") or ""
         if ts >= cutoff_recent:
             continue
-        with_return = _is_mover_event(ev)
+        clean_tickers = _clean(ev)
+        with_return = [t for t in clean_tickers if t.get("return_5d") is not None]
         if not with_return:
             continue
         has_persistent = any(
@@ -188,7 +216,8 @@ def _compute_persistent_slice(
     # don't have a clean trajectory classification.
     fallback: list[dict] = []
     for ev in unique_events:
-        with_return = _is_mover_event(ev)
+        clean_tickers = _clean(ev)
+        with_return = [t for t in clean_tickers if t.get("return_5d") is not None]
         if not with_return:
             continue
         summary = build_persistent_summary(ev, with_return, now_dt)

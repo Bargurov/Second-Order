@@ -225,6 +225,169 @@ def _fetch_since(ticker: str, start_date: str):
     return data
 
 
+# ---------------------------------------------------------------------------
+# Sanity bounds for return values
+# ---------------------------------------------------------------------------
+#
+# Returns above these absolute magnitudes are essentially impossible
+# for any liquid equity / ETF / liquid future, and indicate corrupted
+# source data — yfinance race conditions, stub bars in the price
+# cache (e.g. close values 0.0, 1.0, 2.0, ...), unadjusted splits,
+# etc.  When a return exceeds the bound the compute layer drops it
+# to None instead of propagating a value like +1348.50% into the
+# persisted ``market_tickers`` payload and the UI.
+#
+# Numbers chosen to be conservative — they catch obviously-broken
+# fetches (the 1348% XLE bug, +624% one-day moves) without
+# false-positiving on plausible high-volatility moves (VIX +80% in a
+# day during a crash, single-name penny-stock spikes).
+
+_RETURN_SANITY_R1_PCT:  float = 100.0   # 1d move ceiling
+_RETURN_SANITY_R5_PCT:  float = 200.0   # 5d move ceiling
+_RETURN_SANITY_R20_PCT: float = 500.0   # 20d move ceiling
+
+
+def _sanitize_returns(
+    r1: float | None,
+    r5: float | None,
+    r20: float | None,
+) -> tuple[float | None, float | None, float | None]:
+    """Drop implausibly large absolute return values to None.
+
+    Three independent caps so a corrupt single-bar fetch can blow
+    out r1 / r5 without nuking a still-valid r20 (or vice versa).
+    Pure function — no side effects, fully unit-testable.
+    """
+    if r1 is not None and abs(r1) > _RETURN_SANITY_R1_PCT:
+        r1 = None
+    if r5 is not None and abs(r5) > _RETURN_SANITY_R5_PCT:
+        r5 = None
+    if r20 is not None and abs(r20) > _RETURN_SANITY_R20_PCT:
+        r20 = None
+    return r1, r5, r20
+
+
+def _scrub_implausible_ticker_returns(tickers: list[dict]) -> list[dict]:
+    """Apply sanity bounds to a list of persisted ticker dicts.
+
+    Catches the case where corrupted persisted ``market_tickers`` JSON
+    rows (saved before this layer existed) carry absurd return values
+    like the +1348.50% XLE bug.  When a 5d return is dropped, the
+    derived ``direction_tag`` is also cleared because it was computed
+    from the now-suspect number.
+
+    Returns a fresh list of fresh dicts; never mutates input.
+    """
+    out: list[dict] = []
+    for t in tickers:
+        scrubbed = dict(t)
+        r1 = scrubbed.get("return_1d")
+        r5 = scrubbed.get("return_5d")
+        r20 = scrubbed.get("return_20d")
+        r1_s, r5_s, r20_s = _sanitize_returns(r1, r5, r20)
+        scrubbed["return_1d"] = r1_s
+        scrubbed["return_5d"] = r5_s
+        scrubbed["return_20d"] = r20_s
+        # If r5 was scrubbed away, the direction_tag derived from it
+        # (via _direction_tag) is now stale and should not lead the UI.
+        if r5_s is None and r5 is not None:
+            scrubbed["direction_tag"] = None
+        out.append(scrubbed)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Defensive validation: per-ticker independence
+# ---------------------------------------------------------------------------
+#
+# Two distinct symbols should never produce byte-identical (return_5d,
+# spark) pairs.  When that happens it is a high-confidence corruption
+# signature from the upstream fetch layer (yfinance race conditions,
+# cross-contaminated price-cache rows, shared DataFrame references,
+# etc.).  We surface this as "needs more evidence" pending entries
+# instead of misleading the UI with shared values across distinct
+# cards.  See ``_suppress_duplicate_tickers`` below.
+
+def _ticker_signature(t: dict) -> tuple | None:
+    """Return a (return_5d, spark-tuple) signature for a ticker, or
+    None if there is not enough numeric data to compare."""
+    r5 = t.get("return_5d")
+    spark = t.get("spark") or []
+    if r5 is None or not spark:
+        return None
+    try:
+        r5_q = round(float(r5), 4)
+        spark_q = tuple(round(float(x), 4) for x in spark)
+    except (TypeError, ValueError):
+        return None
+    return (r5_q, spark_q)
+
+
+def _make_pending_ticker(t: dict) -> dict:
+    """Return a fresh pending placeholder dict that preserves the
+    symbol/role of the input but clears all numeric / series fields."""
+    return {
+        "symbol":       t.get("symbol", "?"),
+        "role":         t.get("role", "beneficiary"),
+        "label":        "needs more evidence",
+        "direction_tag": None,
+        "return_1d":    None,
+        "return_5d":    None,
+        "return_20d":   None,
+        "volume_ratio": None,
+        "vs_xle_5d":    None,
+        "spark":        [],
+    }
+
+
+def _suppress_duplicate_tickers(tickers: list[dict]) -> list[dict]:
+    """Replace cross-contaminated ticker dicts with pending placeholders.
+
+    Walks ``tickers`` and groups entries by their (return_5d, spark)
+    signature.  Any signature that appears across two or more distinct
+    symbols is treated as corruption — the upstream fetch layer leaked
+    one ticker's data into another's slot — and EVERY entry in that
+    group is rewritten to a pending placeholder so the UI displays
+    "needs more evidence" instead of repeating the same numbers.
+
+    The chance of two distinct, real symbols producing pixel-identical
+    20-bar normalized sparks AND identical 5d returns is effectively
+    zero.  Suppressing the entire colliding group (rather than keeping
+    one "winner") is intentional: when the data is corrupt, we don't
+    know which slot — if any — actually belongs to the right symbol.
+
+    Always returns a fresh list of fresh dicts, with fresh ``spark``
+    lists for the entries that pass through unchanged.
+    """
+    if len(tickers) < 2:
+        # Still return a fresh-copy list so callers can mutate freely.
+        return [
+            {**t, "spark": list(t.get("spark") or [])}
+            for t in tickers
+        ]
+    by_signature: dict[tuple, list[int]] = {}
+    for i, t in enumerate(tickers):
+        sig = _ticker_signature(t)
+        if sig is None:
+            continue
+        by_signature.setdefault(sig, []).append(i)
+    duplicates: set[int] = set()
+    for sig, indices in by_signature.items():
+        if len(indices) >= 2:
+            # Collision across distinct symbols only counts as corruption.
+            symbols = {tickers[i].get("symbol") for i in indices}
+            if len(symbols) >= 2:
+                duplicates.update(indices)
+    out: list[dict] = []
+    for i, t in enumerate(tickers):
+        if i in duplicates:
+            out.append(_make_pending_ticker(t))
+        else:
+            # Fresh copy with fresh spark list — no shared references.
+            out.append({**t, "spark": list(t.get("spark") or [])})
+    return out
+
+
 def _direction_tag(r5: float | None, role: str) -> str | None:
     """Return a direction tag based on 5-day return and the ticker's predicted role.
 
@@ -303,6 +466,12 @@ def _check_one_ticker(
         r1  = pct_fn(closes, 1)
         r5  = pct_fn(closes, 5)
         r20 = pct_fn(closes, 20)
+
+        # Sanity bounds — drop implausibly large returns produced by
+        # corrupt source bars (yfinance race, stub price_cache rows
+        # like 0.0/1.0/2.0, unadjusted splits).  See
+        # ``_RETURN_SANITY_*`` constants at the top of this module.
+        r1, r5, r20 = _sanitize_returns(r1, r5, r20)
 
         # --- Volume: latest day vs 20-day average ---
         latest_vol = float(volumes.iloc[-1])
@@ -481,8 +650,20 @@ def market_check(
 
     # Structured ticker list — one dict per ticker with numeric fields for storage/analysis.
     # `details` (dict keyed by symbol) is kept for backward compatibility with existing callers.
-    tickers = [
-        {
+    #
+    # Defensive emission: dedupe by symbol (already unique by dict
+    # construction, but re-asserted here so a future regression can't
+    # leak shared cards into the frontend) and copy ``spark`` into a
+    # fresh list per ticker so no two ticker dicts share the same
+    # underlying sequence reference.
+    tickers: list[dict] = []
+    seen_symbols: set[str] = set()
+    for t, v in details.items():
+        if t in seen_symbols:
+            continue
+        seen_symbols.add(t)
+        spark_src = v.get("spark") or []
+        tickers.append({
             "symbol":       t,
             "role":         role_map.get(t, "beneficiary"),
             "label":        v["label"],
@@ -492,10 +673,17 @@ def market_check(
             "return_20d":   v.get("return_20d"),
             "volume_ratio": v.get("volume_ratio"),
             "vs_xle_5d":    v.get("vs_xle_5d"),
-            "spark":        v.get("spark", []),
-        }
-        for t, v in details.items()
-    ]
+            "spark":        list(spark_src),
+        })
+
+    # Final defensive pass: sanity-bound returns AND suppress
+    # cross-contaminated rows.  The sanity scrub catches absurdly
+    # large persisted values (e.g. +1348% from corrupt price_cache
+    # bars); the dedupe suppression catches yfinance-race
+    # cross-contamination.  Both pass over fresh-copy ticker dicts
+    # so no shared references leak into the response payload.
+    tickers = _scrub_implausible_ticker_returns(tickers)
+    tickers = _suppress_duplicate_tickers(tickers)
 
     result = {"note": note, "details": details, "tickers": tickers}
     if anchor_date:
@@ -646,8 +834,10 @@ def classify_rates_regime(
 ) -> str:
     """Classify the rates/inflation regime from 5-day moves.
 
-    nominal_5d: 5d % change in ^TNX (positive = yields rising)
-    tip_5d:     5d % change in TIP price (positive = real yields falling)
+    nominal_5d: 5d absolute change in ^TNX in percentage points
+                (positive = yields rising, e.g. 0.15 = +15 bps)
+    tip_5d:     5d % change in TIP ETF price
+                (positive = real yields falling, since TIP is inversely priced)
 
     Returns one of:
       "Inflation pressure"    — breakevens rising (nominals up, real yields flat/down)
@@ -658,8 +848,10 @@ def classify_rates_regime(
     if nominal_5d is None or tip_5d is None:
         return "Mixed"
 
-    # Directional thresholds — small moves are noise
-    THRESH = 0.3  # percent
+    # Directional thresholds — small moves are noise.
+    # For nominal_5d (pp): 0.3 = 30 bps threshold.
+    # For tip_5d (%): 0.3 = 0.3% TIP price move threshold.
+    THRESH = 0.3
 
     nom_up   = nominal_5d >  THRESH
     nom_down = nominal_5d < -THRESH
@@ -697,11 +889,24 @@ def compute_rates_context() -> dict:
     try:
         tnx = _fetch("^TNX")
         if tnx is not None and len(tnx) >= 6:
-            val = float(tnx["Close"].iloc[-1])
+            closes_tnx = tnx["Close"]
+            val = float(closes_tnx.iloc[-1])
             raw["tnx"] = round(val, 2)
-            nominal_5d = _safe_pct(tnx["Close"], 5)
+            # Use absolute pp change (not _safe_pct) so that nominal_5d is in
+            # the same unit as _CHANNEL_SCALE["nominal_yield"] = 0.20 (20 bps).
+            # _safe_pct would give the *percentage change in yield level* (e.g.
+            # +3.45% for a 15 bps move on a 4.5% yield), inflating z-scores
+            # by 20-25× and producing absurd values when old cache rows are
+            # near zero (e.g. COVID-era stubs → +2680%).
+            end_val = float(closes_tnx.iloc[-1])
+            start_val = float(closes_tnx.iloc[-6])
+            if _is_finite(end_val) and _is_finite(start_val):
+                diff = end_val - start_val
+                # Hard cap: ±5 pp (±500 bps) in 5 trading days is beyond any
+                # historical extreme; larger values indicate corrupt cache rows.
+                nominal_5d = round(diff, 4) if abs(diff) <= 5.0 else None
             if nominal_5d is not None:
-                raw["tnx_change_5d"] = round(nominal_5d, 2)
+                raw["tnx_change_5d"] = round(nominal_5d, 4)
     except Exception:
         _log.warning("compute_rates_context: ^TNX fetch/calc failed", exc_info=True)
 

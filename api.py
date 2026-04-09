@@ -24,6 +24,7 @@ for _ln in ("second_order.news", "second_order.cluster"):
         _lgr.addHandler(_so_handler)
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -39,12 +40,14 @@ from market_check import (
     compute_stress_regime, compute_rates_context, classify_decay,
     classify_policy_sensitivity,
     classify_inventory_context,
+    _suppress_duplicate_tickers,
+    _scrub_implausible_ticker_returns,
 )
 from market_check_freshness import refresh_market_for_saved_event
 import movers_cache
 from real_yield_context import build_real_yield_context
 from policy_constraint import compute_policy_constraint
-from shock_decomposition import compute_shock_decomposition
+from shock_decomposition import compute_shock_decomposition, sanitize_shock_decomposition_block
 from reaction_function_divergence import compute_reaction_function_divergence
 from regime_vector import build_regime_vector
 from surprise_vs_anticipation import compute_surprise_vs_anticipation
@@ -79,6 +82,62 @@ async def _lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Second Order API", version="0.1.0", lifespan=_lifespan)
+
+
+# ---------------------------------------------------------------------------
+# CORS — env-driven so local dev, same-origin deploys, and split-origin
+# deploys all work from the same codebase.
+#
+# Resolution rules (``CORS_ALLOWED_ORIGINS``):
+#   - unset or empty string  → no CORS middleware registered.  Safe
+#                              default for same-origin deploys where the
+#                              frontend is served from the same host as
+#                              the API (via a reverse-proxy rewrite or a
+#                              static-file mount), and for local dev
+#                              where Vite's ``/api`` proxy keeps every
+#                              request same-origin already.
+#   - ``*``                  → wildcard (any origin).  Use only for
+#                              smoke-testing public read-only endpoints;
+#                              it disables credentialed CORS.
+#   - comma-separated list   → exact origin allowlist, e.g.
+#                              ``https://app.example.com,https://staging.example.com``.
+#
+# Credentialed requests are enabled for exact allowlists so cookies /
+# Authorization headers work in split-origin deploys.  Wildcard mode
+# keeps credentials off per the CORS spec.
+# ---------------------------------------------------------------------------
+
+
+def _resolve_cors_origins() -> list[str]:
+    """Parse ``CORS_ALLOWED_ORIGINS`` into a clean list of allowed origins.
+
+    Pure helper — unit-tested directly.  Returns ``[]`` when the env
+    var is missing, empty, or whitespace-only (caller interprets this
+    as "do not register CORSMiddleware").  Returns ``["*"]`` for the
+    wildcard case.  Otherwise returns the comma-split, whitespace-
+    trimmed, empty-filtered list of exact origins.
+    """
+    raw = os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()
+    if not raw:
+        return []
+    if raw == "*":
+        return ["*"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+_cors_origins = _resolve_cors_origins()
+if _cors_origins:
+    # Wildcard disables credentials per the CORS spec; exact allowlists
+    # turn them on so cookies / Authorization headers pass through.
+    _wildcard = _cors_origins == ["*"]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_credentials=not _wildcard,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -242,6 +301,25 @@ def _augment_market_freshness(
     return out
 
 
+def _sanitize_floats(obj: Any) -> Any:
+    """Recursively replace NaN / ±inf with None so json.dumps never raises.
+
+    FastAPI's JSONResponse uses stdlib json which rejects non-finite floats.
+    Market-data helpers (yfinance, custom computations) can produce NaN when
+    a ticker has no price history — especially in test environments that don't
+    hit the network.  This scrubber is the last line of defence before any
+    dict leaves the API layer.
+    """
+    import math
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_floats(v) for v in obj]
+    return obj
+
+
 def _build_cached_response(
     cached: dict,
     headline: str,
@@ -309,7 +387,15 @@ def _build_cached_response(
             "last_market_check_at": cached.get("last_market_check_at"),
             "market_check_staleness": "error",
         }
-    tickers = market_block.get("tickers", [])
+    # Defensive emission: scrub implausibly large persisted return
+    # values (the +1348% XLE bug from corrupt price_cache bars) and
+    # suppress cross-contaminated rows where two distinct symbols
+    # share byte-identical (return_5d, spark) data.  Both run on
+    # fresh-copy dicts; neither mutates upstream payloads.
+    tickers = _scrub_implausible_ticker_returns(
+        market_block.get("tickers", [])
+    )
+    tickers = _suppress_duplicate_tickers(tickers)
 
     mech_text = f"{cached.get('what_changed', '')} {cached.get('mechanism_summary', '')}"
     inv_text = f"{headline} {mech_text}"
@@ -320,7 +406,12 @@ def _build_cached_response(
         policy_sensitivity = cached.get("policy_sensitivity") or {}
         real_yield_ctx = cached.get("real_yield_context") or {}
         policy_constraint_ctx = cached.get("policy_constraint") or {}
-        shock_decomp_ctx = cached.get("shock_decomposition") or {}
+        # Scrub persisted shock-decomposition blocks: events saved before the
+        # nominal-yield unit fix may carry move_5d values like +2680% from
+        # _safe_pct applied to near-zero historical ^TNX cache rows.
+        shock_decomp_ctx = sanitize_shock_decomposition_block(
+            cached.get("shock_decomposition") or {}
+        )
         reaction_div_ctx = cached.get("reaction_function_divergence") or {}
         surprise_ctx = cached.get("surprise_vs_anticipation") or {}
         terms_of_trade_ctx = cached.get("terms_of_trade") or {}
@@ -427,7 +518,7 @@ def _build_cached_response(
             _log.warning("reserve_stress failed (cached rebuild)", exc_info=True)
             reserve_stress_ctx = {}
 
-    return {
+    response = {
         "headline":    headline,
         "stage":       cached["stage"],
         "persistence": cached["persistence"],
@@ -476,6 +567,7 @@ def _build_cached_response(
         "is_mock":     False,
         "event_date":  effective_date,
     }
+    return _sanitize_floats(response)
 
 
 def _is_low_signal(analysis: dict) -> bool:
@@ -566,6 +658,14 @@ class AnalyzeRequest(BaseModel):
         None, max_length=5000,
         description="Optional multi-source context from inbox clustering",
     )
+    event_id: Optional[int] = Field(
+        None, ge=1,
+        description=(
+            "When provided, load this specific event by primary key instead of "
+            "doing a headline-string lookup.  Guarantees correct routing when "
+            "two near-duplicate headlines share the same anchor date."
+        ),
+    )
     force: bool = Field(
         False,
         description=(
@@ -595,6 +695,18 @@ def analyze(req: AnalyzeRequest):
     headline = req.headline.strip()
     effective_date = req.event_date or datetime.now().strftime("%Y-%m-%d")
     model = _active_model()
+
+    # When event_id is supplied (card-click from Market Overview), load the
+    # specific event directly — bypasses headline-string lookup so near-
+    # duplicate stories can never cross-route.
+    if req.event_id is not None:
+        cached = load_event_by_id(req.event_id)
+        if cached is not None:
+            # Use the stored event_date so macro context is anchored correctly.
+            effective_date = cached.get("event_date") or effective_date
+            return _build_cached_response(
+                cached, headline, effective_date, force=req.force,
+            )
 
     cached = find_cached_analysis(headline, event_date=effective_date, model=model)
     if cached is not None:
@@ -757,7 +869,7 @@ def analyze(req: AnalyzeRequest):
     )
     mkt_with_freshness = _augment_market_freshness(mkt, age_classification)
 
-    return {
+    return _sanitize_floats({
         "headline":    headline,
         "stage":       stage,
         "persistence": persistence,
@@ -766,7 +878,7 @@ def analyze(req: AnalyzeRequest):
         "freshness":   _freshness_payload(age_classification),
         "is_mock":     mock,
         "event_date":  effective_date,
-    }
+    })
 
 
 def _sse_event(phase: str, data: dict) -> str:
@@ -786,12 +898,26 @@ def analyze_stream(req: AnalyzeRequest):
     effective_date = req.event_date or datetime.now().strftime("%Y-%m-%d")
     model = _active_model()
 
+    # Capture for the closure — mutable so the by-ID branch can update it.
+    _effective_date = [effective_date]
+
     def generate():
-        cached = find_cached_analysis(headline, event_date=effective_date, model=model)
+        # When event_id is supplied (card-click), bypass headline lookup.
+        if req.event_id is not None:
+            by_id = load_event_by_id(req.event_id)
+            if by_id is not None:
+                _effective_date[0] = by_id.get("event_date") or _effective_date[0]
+                yield _sse_event(
+                    "complete",
+                    _build_cached_response(by_id, headline, _effective_date[0], force=req.force),
+                )
+                return
+
+        cached = find_cached_analysis(headline, event_date=_effective_date[0], model=model)
         if cached is not None:
             yield _sse_event(
                 "complete",
-                _build_cached_response(cached, headline, effective_date, force=req.force),
+                _build_cached_response(cached, headline, _effective_date[0], force=req.force),
             )
             return
 
@@ -876,10 +1002,10 @@ def analyze_stream(req: AnalyzeRequest):
             current_regime_vector=current_regime_vec,
         )
         mock = "[mock:" in analysis.get("what_changed", "")
-        yield _sse_event("analysis", {
+        yield _sse_event("analysis", _sanitize_floats({
             "analysis": analysis,
             "is_mock": mock,
-        })
+        }))
 
         mkt = market_check(
             analysis.get("beneficiary_tickers", []),
@@ -934,7 +1060,7 @@ def analyze_stream(req: AnalyzeRequest):
         )
         mkt_with_freshness = _augment_market_freshness(mkt, age_classification)
 
-        yield _sse_event("complete", {
+        yield _sse_event("complete", _sanitize_floats({
             "headline":    headline,
             "stage":       stage,
             "persistence": persistence,
@@ -943,7 +1069,7 @@ def analyze_stream(req: AnalyzeRequest):
             "freshness":   _freshness_payload(age_classification),
             "is_mock":     mock,
             "event_date":  effective_date,
-        })
+        }))
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
@@ -1278,27 +1404,108 @@ def market_context(highlight_limit: int = 3):
 
 _MOVER_THRESHOLD = 1.5  # abs(return_5d) minimum for Market Movers qualification
 
+# Maximum number of preview ticker chips a mover card emits.  Bumped
+# from 3 → 4 so the persistent / weekly cards can carry richer
+# evidence (one classic 2x2 grid of winner/loser/winner/loser shapes
+# without dropping the second-best loser).
+_MOVER_PREVIEW_LIMIT = 4
+
+
+def _compute_support_ratio(tickers: list[dict]) -> float:
+    """Deterministic agreement-percent computation.
+
+    The single source of truth for the "X% agreement" pill that every
+    mover card surfaces.  Three different call sites used to compute
+    this independently and inconsistently — _score_event over the
+    suppressed list, movers_today over the suppressed list, and
+    _persistent_summary over the raw market_tickers (skipping
+    suppression entirely).  Same event → three different agreement
+    percentages depending on which endpoint built the card.
+
+    Contract:
+      * Counts only tickers that carry BOTH a non-null direction_tag
+        AND a non-null return_5d (the analytical denominator that
+        users see as "ticker that actually moved with a verdict").
+      * "Supporting" = direction_tag startswith ``"supports"`` —
+        same predicate the score line and the analyse view use.
+      * Returns a float in [0, 1].  Empty denominator → 0.0.
+      * Caller is expected to pass the SUPPRESSED tickers list so
+        cross-contaminated rows don't pollute the count.
+    """
+    eligible = [
+        t for t in tickers
+        if t.get("direction_tag") is not None
+        and t.get("return_5d") is not None
+    ]
+    if not eligible:
+        return 0.0
+    supporting = sum(
+        1 for t in eligible
+        if (t.get("direction_tag") or "").startswith("supports")
+    )
+    return supporting / len(eligible)
+
 
 def _build_mover_summary(ev: dict, big_moves: list[dict], support_ratio: float) -> dict:
-    """Build a single Market Mover summary dict from an event and its qualifying tickers."""
+    """Build a single Market Mover summary dict from an event and its qualifying tickers.
+
+    Each emitted ticker carries:
+      * Its own fresh ``spark`` list (no shared references with the
+        input dicts so a downstream mutation of one card cannot leak
+        into another).
+      * The ``anchor_date`` field captured at analyse time, so the
+        frontend can label cards with "anchored to YYYY-MM-DD" and
+        users understand why the same ticker (e.g. XLE) shows
+        different return windows on different cards: the windows are
+        anchored to different event dates.
+
+    The card-level header carries:
+      * ``last_market_check_at`` — when the persisted ticker numbers
+        were last refreshed against the provider, plumbed through
+        from the saved event row.
+      * ``event_age_days`` — for "anchored 12d ago" UI footers.
+
+    Tickers are sorted with a deterministic key: largest absolute 5d
+    move first, then alphabetical by symbol as a tiebreaker.  The
+    preview is capped at ``_MOVER_PREVIEW_LIMIT`` chips so cards
+    carry richer evidence than a single thin chip while still fitting
+    the existing card layout.
+    """
     max_move = max(abs(t["return_5d"]) for t in big_moves)
     impact = max_move * (1.0 + support_ratio)
 
-    big_moves.sort(key=lambda t: abs(t.get("return_5d") or 0), reverse=True)
+    # Deterministic sort: largest abs(return_5d) first, then symbol
+    # ascending as a stable tiebreaker.  Without the symbol tiebreaker
+    # two tickers with identical absolute moves would land in
+    # iteration order, which is non-deterministic across reload.
+    big_moves_sorted = sorted(
+        big_moves,
+        key=lambda t: (-abs(t.get("return_5d") or 0.0), t.get("symbol", "")),
+    )
+
     ticker_summaries = []
-    for t in big_moves[:3]:
+    for t in big_moves_sorted[:_MOVER_PREVIEW_LIMIT]:
         r5 = t.get("return_5d")
         r20 = t.get("return_20d")
         decay = classify_decay(r5, r20)
+        # Fresh spark list per emitted card — never share the input
+        # reference, so two adjacent cards can never end up bound to
+        # the same underlying sequence.
+        spark_src = t.get("spark") or []
         ticker_summaries.append({
             "symbol": t.get("symbol", "?"),
             "role": t.get("role", "?"),
             "return_5d": r5,
             "return_20d": r20,
             "direction": t.get("direction_tag"),
-            "spark": t.get("spark", []),
+            "spark": list(spark_src),
             "decay": decay["label"],
             "decay_evidence": decay["evidence"],
+            # Anchor date — the first trading bar the forward returns
+            # were measured from.  Lets the frontend show "anchored
+            # YYYY-MM-DD" and explain why the same symbol can read
+            # differently across cards anchored to different dates.
+            "anchor_date": t.get("anchor_date"),
         })
 
     return {
@@ -1313,12 +1520,21 @@ def _build_mover_summary(ev: dict, big_moves: list[dict], support_ratio: float) 
         "tickers": ticker_summaries,
         "transmission_chain": ev.get("transmission_chain", []),
         "if_persists": ev.get("if_persists", {}),
+        # Per-card freshness header — surfaced to the frontend so
+        # cards display "as of HH:MM" / staleness state.  These
+        # come straight from the persisted event row; on legacy rows
+        # they default to None and the frontend hides the indicator.
+        "last_market_check_at": ev.get("last_market_check_at"),
     }
 
 
 def _score_event(ev: dict, threshold: float) -> dict | None:
     """Score an event for Market Movers qualification. Returns None if it doesn't qualify."""
-    tickers = ev.get("market_tickers", [])
+    # Scrub implausibly large persisted returns AND suppress cross-
+    # contaminated rows BEFORE qualification.  A 1348% XLE row would
+    # otherwise dominate the impact ranking with garbage data.
+    tickers = _scrub_implausible_ticker_returns(ev.get("market_tickers", []))
+    tickers = _suppress_duplicate_tickers(tickers)
     if not tickers:
         return None
 
@@ -1329,13 +1545,7 @@ def _score_event(ev: dict, threshold: float) -> dict | None:
     if not big_moves:
         return None
 
-    with_dir = [t for t in tickers if t.get("direction_tag") is not None]
-    supporting = [
-        t for t in with_dir
-        if "supports" in (t.get("direction_tag") or "")
-    ]
-    support_ratio = len(supporting) / len(with_dir) if with_dir else 0.0
-
+    support_ratio = _compute_support_ratio(tickers)
     return _build_mover_summary(ev, big_moves, support_ratio)
 
 
@@ -1390,7 +1600,12 @@ def movers_today(limit: int = 10):
             continue
         seen_headlines.add(hl)
 
-        tickers = ev.get("market_tickers", [])
+        # Scrub absurd return values, then suppress cross-
+        # contaminated rows.  Order matters: scrubbing first nukes
+        # garbage values to None so the dedup signature isn't
+        # polluted by 1348%-style outliers.
+        tickers = _scrub_implausible_ticker_returns(ev.get("market_tickers", []))
+        tickers = _suppress_duplicate_tickers(tickers)
         if not tickers:
             continue
 
@@ -1398,10 +1613,10 @@ def movers_today(limit: int = 10):
         if not with_return:
             continue
 
-        with_dir = [t for t in tickers if t.get("direction_tag") is not None]
-        supporting = [t for t in with_dir if "supports" in (t.get("direction_tag") or "")]
-        support_ratio = len(supporting) / len(with_dir) if with_dir else 0.0
-
+        # Use the unified deterministic helper so today's-movers
+        # cards report the same agreement % as /market-movers and
+        # /movers/persistent for the same event.
+        support_ratio = _compute_support_ratio(tickers)
         scored.append(_build_mover_summary(ev, with_return, support_ratio))
 
     scored.sort(key=lambda x: x["impact"], reverse=True)
@@ -1485,11 +1700,17 @@ def movers_persistent(limit: int = 12):
 
 
 def _persistent_summary(ev: dict, with_return: list[dict], now_dt) -> dict:
-    """Build a mover summary with days_since_event for the persistent section."""
-    tickers = ev.get("market_tickers", [])
-    with_dir = [t for t in tickers if t.get("direction_tag") is not None]
-    supporting = [t for t in with_dir if "supports" in (t.get("direction_tag") or "")]
-    support_ratio = len(supporting) / len(with_dir) if with_dir else 0.0
+    """Build a mover summary with days_since_event for the persistent section.
+
+    Uses the unified ``_compute_support_ratio`` helper over the
+    suppressed ticker list so the agreement % matches what
+    ``/market-movers`` and ``/movers/today`` report for the same
+    event.  Pre-fix this path read raw ``market_tickers`` (skipping
+    suppression) and computed support_ratio inline, so the same event
+    could surface different agreement values across endpoints.
+    """
+    tickers = _suppress_duplicate_tickers(ev.get("market_tickers", []))
+    support_ratio = _compute_support_ratio(tickers)
     summary = _build_mover_summary(ev, with_return, support_ratio)
     event_date = ev.get("event_date") or ev.get("timestamp", "")[:10]
     try:

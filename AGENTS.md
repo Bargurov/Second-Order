@@ -2,69 +2,63 @@
 
 ## Project goal
 
-Build and maintain a local-first research app that turns geopolitical, macro,
-and policy headlines into structured event reviews. The current product path is
-FastAPI plus two maintained clients: a React frontend and a Telegram bot, with
-SQLite persistence, headline clustering, analysis, recent-event review, and
-dated backtesting.
+Build and maintain Second Order as a local-first research product for
+geopolitical, macro, and policy headlines. The current maintained workflow is
+FastAPI plus two clients: the React app and the Telegram bot.
 
 ## Current product scope
 
-- React app in `frontend/` served by Vite
+- React app in `frontend/`
 - FastAPI backend in `api.py`
 - Telegram bot in `telegram_bot.py`
-- Live inbox from local JSON plus curated RSS feeds
-- Progressive event analysis with stage, persistence, mechanism summary, watchlists, and streamed UI updates
-- Market validation, macro context, recent events, notes, ratings, and backtest
-- Local SQLite persistence plus two-layer news caching with refresh support
-- Chat delivery for headline analysis plus `/brief` inbox summaries
-- Lightweight eval runner for repeated sample checks
+- Live clustered inbox from local JSON plus curated RSS feeds
+- Progressive analysis (`/analyze` + `/analyze/stream`)
+- Market validation, macro overlays, market-context flow, movers, archive, backtest, and export
+- SQLite persistence plus cache layers for news and market data
+- Evaluation runner in `eval.py`
 
 ## Boundaries
 
-- Keep the app local-first; no auth, multi-user sync, or hosted platform work unless explicitly requested
-- No speculative architecture work during normal feature tasks
-- No API or schema redesign unless the task actually requires it
-- Keep frontend changes aligned with the existing visual system unless the task explicitly asks for redesign
-- If something clearly belongs later, record it in `future_ideas.md` instead of partially building it
+- Keep the app local-first unless the task explicitly requests hosted/platform work
+- Do not treat `app.py` as a maintained product surface
+- Avoid speculative architecture work during normal tasks
+- Do not redesign APIs, schemas, or UI structure unless the task requires it
+- If work clearly belongs later, record it in `future_ideas.md` instead of partially building it
 
-## Tool ownership
+## File ownership
 
-- `frontend/src/`: user-facing React UI, labels, empty states, loading/error copy, page-level presentation, progressive analysis states, and inbox refresh wiring
-- `api.py`: FastAPI endpoints, streamed and non-streamed analysis flow, news cache bypass on refresh, and API-side orchestration
-- `telegram_bot.py`: Telegram command handling, local API calls, brief delivery, and scheduled bot jobs
-- `news_sources.py`: local inbox loading, RSS ingestion, normalization, relevance filtering, and clustering
-- `classify.py`: deterministic stage and persistence classification
-- `analyze_event.py`: mechanism extraction, ticker sanitization, mock fallback, and model configuration
-- `market_check.py`: market validation, follow-up checks, and macro snapshot helpers
-- `db.py`: SQLite schema, persistence, related-event lookup, and cache storage
-- `main.py`: CLI helper flow for local use
-- `app.py`: frozen legacy Streamlit reference; do not treat it as the maintained product surface
-- `eval.py`: sample-set evaluation runner
-- `README.md`, `.env.example`, `EVALUATION.md`, `future_ideas.md`: docs, setup, eval workflow, and scoped backlog
+- `frontend/src/`: React UI, page presentation, labels/copy, loading/error states, and client-side flow
+- `api.py`: FastAPI routes, streaming analysis, export, market-context endpoints, movers endpoints, cache bypass on refresh
+- `telegram_bot.py`: Telegram commands, bot-side delivery flow, `/brief`, and scheduled jobs
+- `news_sources.py`, `news_cluster_store.py`: headline ingestion, normalization, clustering, and persisted news cache
+- `classify.py`: deterministic stage/persistence classification
+- `analyze_event.py`, `prompts.py`: model prompt flow, mechanism extraction, sanitization, fallback behavior
+- `market_check.py`, `market_context.py`, `market_data.py`, `market_snapshots.py`, `price_cache.py`, `movers_cache.py`: market validation, overlays, provider access, warm caches, and movers support
+- `db.py`, `events_export.py`: archive schema, persistence, related events, and export helpers
+- `eval.py`, `EVALUATION.md`: sample-set eval flow and review guidance
+- `README.md`, `.env.example`, `.gitignore`, `future_ideas.md`: setup, config, hygiene, and scoped backlog
 
 ## Workflow expectations
 
 - Prefer small, inspectable changes over broad refactors
-- Preserve existing behavior unless the task explicitly asks for behavior changes
-- Treat FastAPI, the React frontend, and the Telegram bot as the current maintained product surfaces
-- For UI polish tasks, limit changes to copy, labels, and obvious presentation issues unless deeper work is requested
-- For bot tasks, document commands and required env vars whenever setup changes
-- For backend tasks, keep API, DB, and tests in sync
-- Treat mock analysis output as a fallback path, not a production-quality result
-- Prefer using the clustered source context already produced by the backend instead of rebuilding parallel headline logic in the UI
+- Preserve current behavior unless the task explicitly asks for a behavior change
+- Keep docs/config aligned with the real maintained product path
+- For bot or API setup changes, update `README.md`, `.env.example`, and `requirements.txt` in the same pass when dependencies or config keys change
+- For backend/shared changes, keep tests in sync
+- For frontend polish tasks, stay within presentation and UX unless deeper product work is requested
 
 ## Testing expectations
 
 - Prefer built-in `unittest`
-- Keep tests readable and targeted
+- Keep tests targeted and readable
 - Use mocks instead of live network calls when practical
-- Run `python -m unittest discover -s tests -v` after relevant backend or shared changes
-- For frontend-only copy polish, also confirm `cd frontend && npm run dev` starts cleanly
+- When setup or dependency files change, verify `python -m pip install -r requirements.txt` still reflects the real imports used by the app/tests
+- Run `python -m unittest discover -s tests -v` after backend or shared changes
+- For frontend-only work, also confirm `cd frontend && npm run dev` starts cleanly when feasible
 
 ## Code style
 
 - Prefer plain functions and straightforward control flow
 - Avoid unnecessary abstractions and classes
-- Use clear names and short docstrings when helpful
+- Use clear names and short docstrings where they help
 - Keep files approachable for future contributors

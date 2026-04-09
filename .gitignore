@@ -1,5 +1,6 @@
 # Python bytecode and caches
 __pycache__/
+tests/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -11,6 +12,11 @@ ENV/
 
 # Environment files
 .env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # Test, coverage, and type-check caches
 .pytest_cache/
@@ -29,6 +35,9 @@ pip-wheel-metadata/
 # Local project databases
 events.db
 events*.db
+*.db
+*.sqlite
+*.sqlite3
 *.db.bak
 *.db-journal
 *.db-wal
@@ -43,6 +52,9 @@ eval_output*.json
 tests/test_events*.db
 tests/test_api*.db
 tests/.fuse_hidden*
+*.tmp
+*.temp
+*.log
 
 # Local agent folders
 .claude/
@@ -54,6 +66,7 @@ frontend/dist/
 frontend/.vite/
 frontend/.cache/
 frontend/*.tsbuildinfo
+*.tsbuildinfo
 
 # VS Code and Windows local files
 .vscode/

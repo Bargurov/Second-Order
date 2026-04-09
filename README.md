@@ -1,33 +1,32 @@
 # Second Order
 
-Second Order is a local-first research app for turning geopolitical, macro,
-and policy headlines into structured event reviews. The maintained product
-surface is a FastAPI backend with two current clients: a React app for rich
-manual research and a Telegram bot for lightweight chat-based delivery.
+Second Order is a local-first geopolitical and macro research app. The current
+product is a FastAPI backend with two maintained client surfaces:
 
-It is built for manual research and demo use: ingest live headlines, review a
-fused event, run progressive analysis, inspect market evidence, save the
-result, backtest dated events, and optionally push brief/alert-style output
-through Telegram without needing any hosted platform services.
+- a React app for live inbox review, progressive analysis, archive/backtest work, and export
+- a Telegram bot for direct headline analysis, `/brief`, and optional scheduled delivery
 
-## What The App Does
+The system is designed for analyst workflows: ingest live headlines, cluster
+overlapping coverage, run classify -> analysis -> market stages, layer in macro
+and market-context overlays, save the result locally, and revisit dated events.
 
-- Live inbox from `news_inbox.json` plus curated RSS sources across policy, macro, energy, trade, and geopolitics
-- Headline clustering so overlapping coverage becomes one review candidate
-- Source-aware inbox reviews with corroborating coverage preserved across publishers
-- Stage and persistence classification
-- Anthropic-backed mechanism extraction with sanitized ticker watchlists
-- Progressive analysis flow that renders classify, analysis, and market stages as they complete
-- Direction-aware market validation with optional event-date anchoring
-- Recent events archive with notes, ratings, and related-event linking
-- Backtest view for saved events with event dates
-- Markdown export from the analysis view
-- Macro context strip for DXY, yields, VIX, and oil
-- Telegram bot for direct headline analysis plus live-inbox briefing
-- Two-layer news caching: in-memory hot cache plus SQLite persistence, with manual refresh bypassing cache
-- Configurable Anthropic model for app runs and evals
+## Current Capabilities
 
-## Current Run Path
+- Live inbox from `news_inbox.json` plus curated RSS sources
+- Source-preserving clustering and manual refresh via `/news/refresh`
+- Progressive analysis through `/analyze/stream`
+- Stage, persistence, mechanism summary, watchlists, and transmission-chain style analysis output
+- Market validation plus macro and market-context overlays
+- Recent events archive, related-event linking, and dated backtests
+- Export of saved events as JSON or CSV via `/events/export`
+- Movers and stress/context endpoints for current market state
+- Telegram delivery for headline analysis and live-inbox briefing
+- Layered caching:
+  - news cache: in-memory hot cache + SQLite persistence
+  - price/ticker cache for market data
+  - optional snapshot warmer for liquid market benchmarks
+
+## Run Locally
 
 ### 1. Backend
 
@@ -39,7 +38,7 @@ python -m unittest discover -s tests -v
 python -m uvicorn api:app --reload
 ```
 
-The API starts at `http://127.0.0.1:8000`.
+API base URL: `http://127.0.0.1:8000`
 
 ### 2. React Frontend
 
@@ -49,109 +48,102 @@ npm install
 npm run dev
 ```
 
-The Vite dev server runs at `http://localhost:5173` and proxies `/api/*` to
-the FastAPI backend on port `8000`.
+Vite runs at `http://localhost:5173` and proxies `/api/*` to the backend.
 
 ### 3. Telegram Bot
 
-Run the bot from the repo root after the FastAPI backend is already up:
+From the repo root, after the backend is running:
 
 ```powershell
 python telegram_bot.py
 ```
 
-The bot calls the local API defined by `SECOND_ORDER_API_URL` and can be run
-alongside the React app or on its own.
+The bot uses `SECOND_ORDER_API_URL` to call the local FastAPI service.
 
-`FastAPI + React + Telegram bot` are the current maintained product paths. The
-old Streamlit app is still kept in the repo as a frozen reference and is not
-the maintained surface.
+## Deploy
+
+For a minimal public API deploy on Render, use `render.yaml`.
+Set `ANTHROPIC_API_KEY` only if you want real model output in the deployed app; otherwise the API still boots with mock-analysis fallback. Render injects `PORT` automatically.
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in only what you need:
+Copy `.env.example` to `.env` for local use and keep `.env` untracked. Real current keys are:
 
-- `ANTHROPIC_API_KEY`: optional, required for real model-backed analysis
-- `ANTHROPIC_MODEL`: optional override for the default Anthropic model
-- `TELEGRAM_BOT_TOKEN`: required only if you want to run `telegram_bot.py`
-- `SECOND_ORDER_API_URL`: API base URL used by the Telegram bot
-- `DAILY_BRIEF_ENABLED`, `DAILY_BRIEF_CHAT_ID`, `DAILY_BRIEF_TIME`: optional scheduled morning brief
-- `WATCHLIST_ENABLED`, `WATCHLIST_CHAT_ID`, `WATCHLIST_INTERVAL_MIN`, `WATCHLIST_THRESHOLD_PCT`: optional scheduled watchlist alerts
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL`
+- `CORS_ALLOWED_ORIGINS`
+- `TELEGRAM_BOT_TOKEN`
+- `SECOND_ORDER_API_URL`
+- `DAILY_BRIEF_ENABLED`
+- `DAILY_BRIEF_CHAT_ID`
+- `DAILY_BRIEF_TIME`
+- `WATCHLIST_ENABLED`
+- `WATCHLIST_CHAT_ID`
+- `WATCHLIST_INTERVAL_MIN`
+- `WATCHLIST_THRESHOLD_PCT`
+- `MARKET_DATA_PROVIDER`
+- `POLYGON_API_KEY`
+- `MARKET_SNAPSHOTS_ENABLED`
+- `MARKET_SNAPSHOTS_INTERVAL`
 
-If `ANTHROPIC_API_KEY` is missing, analysis falls back to a mock response for
-local UI and testing flows. Mock analyses are not saved to the archive.
+If `ANTHROPIC_API_KEY` is missing, analysis falls back to mock output for local
+UI and testing flows. Mock analyses are not saved.
 
-## Telegram Bot Setup
-
-### Required env vars
-
-- `TELEGRAM_BOT_TOKEN`: create this with `@BotFather`
-- `SECOND_ORDER_API_URL`: usually `http://127.0.0.1:8000` for local runs
-
-### Optional bot env vars
-
-- `DAILY_BRIEF_ENABLED=true` plus `DAILY_BRIEF_CHAT_ID` and `DAILY_BRIEF_TIME`
-- `WATCHLIST_ENABLED=true` plus `WATCHLIST_CHAT_ID`, `WATCHLIST_INTERVAL_MIN`, and `WATCHLIST_THRESHOLD_PCT`
-
-### Local run order
-
-1. Create and populate `.env`.
-2. Start `uvicorn` from the repo root.
-3. Start the React frontend from `frontend/` if you want the browser UI.
-4. Start the Telegram bot with `python telegram_bot.py`.
-
-### Bot commands
+## Telegram Commands
 
 - `/start`: intro and usage hint
-- `/help`: command summary and output description
-- `/brief`: top clustered headlines from the live inbox
-- Plain text message or forwarded headline: run the analysis pipeline and return a compact summary
+- `/help`: command summary
+- `/brief`: top clustered headlines with current market-context block
+- plain text or forwarded headline: run the analysis pipeline and return a compact summary
 
-## Typical Workflow
+## Typical Flow
 
-1. Start the FastAPI backend.
-2. Start the React frontend and/or Telegram bot depending on the client surface you want to use.
-3. Review the live inbox fed by `news_inbox.json` and curated RSS sources, then force-refresh feeds from the UI when needed.
-4. Open a headline in Analysis or send a headline to the Telegram bot.
-5. Run analysis with or without an event date anchor and watch the classify, analysis, and market stages fill in progressively.
-6. Inspect mechanism, watchlists, macro context, and market evidence.
-7. Save the result into the archive.
-8. Revisit dated events in Backtest to score later market follow-through.
+1. Start FastAPI.
+2. Start the React app and/or Telegram bot.
+3. Review the inbox, refresh feeds when needed, and open a candidate event.
+4. Run progressive analysis and inspect mechanism, watchlists, market validation, and macro overlays.
+5. Save the event, review related follow-ups, and revisit it in Backtest later.
+6. Export saved events from the archive when needed.
 
 ## Key Files
 
 - `frontend/`: React + TypeScript app
-- `api.py`: FastAPI API surface used by the frontend
-- `telegram_bot.py`: Telegram delivery surface for commands, briefs, and headline analysis
-- `db.py`: SQLite schema, archive persistence, and news cache helpers
-- `news_sources.py`: local inbox + RSS ingestion, normalization, and clustering
-- `analyze_event.py`: mechanism extraction, sanitization, and fallback behavior
-- `market_check.py`: market validation, follow-up checks, and macro context
-- `eval.py`: repeatable sample-set evaluation runner
-- `app.py`: frozen legacy Streamlit reference kept for historical context
+- `api.py`: FastAPI surface and orchestration
+- `telegram_bot.py`: Telegram client surface and scheduled jobs
+- `news_sources.py`: inbox loading, RSS ingestion, normalization, clustering
+- `db.py`: SQLite persistence and cache storage
+- `market_check.py`, `market_context.py`, `market_data.py`, `price_cache.py`, `market_snapshots.py`: market validation, overlays, provider access, and warm caches
+- `eval.py`: sample-set evaluation runner
 
 ## Evaluation
 
-Use the sample set in `sample_events.json` to run quick checks:
+Quick canary run:
 
 ```powershell
 python eval.py --preset canary
-python eval.py --model claude-haiku-4-5-20251001
+```
+
+Model comparison example:
+
+```powershell
+python eval.py --preset canary --model claude-haiku-4-5-20251001
 python eval.py --preset canary --model claude-sonnet-4-20250514
 ```
 
-Each run writes a timestamped `eval_output_*.json` file for manual review.
-See [EVALUATION.md](EVALUATION.md) for the current flow, including canary model
-comparison guidance.
+See [EVALUATION.md](EVALUATION.md) for the current eval flow and limits.
 
-## Scope And Limits
+## Test
 
-- The app is local-first and intended for research support, not automated trading.
-- Classification and mechanism extraction are still heuristic in important places.
-- Market validation is supporting evidence, not proof.
-- Backtest, clustering, and directional tagging are analyst-support tools, not calibrated trading signals.
-- FastAPI, the React app, and the Telegram bot are the maintained product paths.
-- `app.py` remains in the repo as a frozen reference, not a current workflow surface.
+From the repo root:
 
-Future upgrades and out-of-scope ideas are tracked in
-[future_ideas.md](future_ideas.md).
+```powershell
+python -m unittest discover -s tests -v
+```
+
+## Scope
+
+- Local-first research support, not automated trading
+- Heuristic classification and market validation remain analyst-support tools
+- FastAPI, the React app, and the Telegram bot are the maintained product paths
+
+Later-stage work belongs in [future_ideas.md](future_ideas.md).

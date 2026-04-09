@@ -336,22 +336,32 @@ def _merge_followup_into_stored(
         if sym:
             by_symbol[sym] = row
 
+    # Dedupe stored ticker rows by symbol on the way out and copy any
+    # mutable sub-lists (``spark``) so two emitted tickers can never
+    # share the same underlying sequence reference.  Defensive: this
+    # is the boundary at which cached-response payloads land on the
+    # API contract.
     out: list[dict] = []
+    seen: set[str] = set()
     for t in stored:
         sym = t.get("symbol")
-        fu = by_symbol.get(sym)
-        if not fu:
-            out.append(dict(t))
+        if not sym or sym in seen:
             continue
+        seen.add(sym)
+        fu = by_symbol.get(sym)
         merged = dict(t)
-        for k in ("return_1d", "return_5d", "return_20d"):
-            v = fu.get(k)
-            if v is not None:
-                merged[k] = v
-        if fu.get("direction") is not None:
-            merged["direction_tag"] = fu["direction"]
-        if fu.get("anchor_date"):
-            merged.setdefault("anchor_date", fu["anchor_date"])
+        spark_src = merged.get("spark")
+        if isinstance(spark_src, list):
+            merged["spark"] = list(spark_src)
+        if fu:
+            for k in ("return_1d", "return_5d", "return_20d"):
+                v = fu.get(k)
+                if v is not None:
+                    merged[k] = v
+            if fu.get("direction") is not None:
+                merged["direction_tag"] = fu["direction"]
+            if fu.get("anchor_date"):
+                merged.setdefault("anchor_date", fu["anchor_date"])
         out.append(merged)
     return out
 

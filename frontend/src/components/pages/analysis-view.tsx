@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
 import { MarketBackdropStrip } from "@/components/ui/market-backdrop-strip";
@@ -1245,7 +1245,11 @@ function HistoricalAnalogsBlock({ analogs }: { analogs: HistoricalAnalog[] }) {
         count >= 3 && "grid-cols-1 md:grid-cols-3",
       )}>
         {analogs.map((a, i) => (
-          <AnalogCard key={i} analog={a} rank={i + 1} />
+          <AnalogCard
+            key={`${a.headline}-${a.event_date ?? "no-date"}-${i}`}
+            analog={a}
+            rank={i + 1}
+          />
         ))}
       </div>
     </div>
@@ -1268,7 +1272,14 @@ function directionBadge(t: Ticker): { label: string; cls: string } {
   return { label: "Pending", cls: "bg-outline-variant/20 text-on-surface-variant" };
 }
 
-function TickerCard({ ticker, selected, onToggle }: { ticker: Ticker; selected: boolean; onToggle: () => void }) {
+// Memoised so that selecting one card cannot trigger other cards to
+// re-render with leaked props.  Each card is a pure function of its
+// own ticker dict + selected flag — the equality check below pins
+// rendering to identity of those scalar fields, never to the parent
+// closure.
+const TickerCard = memo(function TickerCard({
+  ticker, selected, onToggle,
+}: { ticker: Ticker; selected: boolean; onToggle: () => void }) {
   if (ticker.label === "needs more evidence") {
     return (
       <div className={cn(INNER_CARD, "p-4 opacity-40")}>
@@ -1308,7 +1319,15 @@ function TickerCard({ ticker, selected, onToggle }: { ticker: Ticker; selected: 
       <ChevronDown className={cn("h-3 w-3 text-on-surface-variant/40 mt-1 mx-auto transition-transform", selected && "rotate-180")} />
     </button>
   );
-}
+}, (prev, next) => (
+  prev.selected === next.selected
+  && prev.ticker.symbol === next.ticker.symbol
+  && prev.ticker.label === next.ticker.label
+  && prev.ticker.return_5d === next.ticker.return_5d
+  && prev.ticker.return_20d === next.ticker.return_20d
+  && prev.ticker.direction_tag === next.ticker.direction_tag
+  && prev.ticker.spark === next.ticker.spark
+));
 
 function MarketSection({ tickers, eventDate }: { tickers: Ticker[]; eventDate?: string }) {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
@@ -1319,8 +1338,17 @@ function MarketSection({ tickers, eventDate }: { tickers: Ticker[]; eventDate?: 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {tickers.map((t) => (
-          <TickerCard key={t.symbol} ticker={t} selected={selectedSymbol === t.symbol} onToggle={() => setSelectedSymbol((s) => (s === t.symbol ? null : t.symbol))} />
+        {tickers.map((t, i) => (
+          // Compound key — survives any backend regression that
+          // accidentally emits two ticker dicts with the same symbol
+          // (which would otherwise cause React to reconcile them into
+          // a single card and visibly leak data between cards).
+          <TickerCard
+            key={`${t.symbol}-${i}`}
+            ticker={t}
+            selected={selectedSymbol === t.symbol}
+            onToggle={() => setSelectedSymbol((s) => (s === t.symbol ? null : t.symbol))}
+          />
         ))}
       </div>
       {selectedTicker && selectedTicker.label !== "needs more evidence" && (
@@ -1368,18 +1396,24 @@ function AnalysisSkeleton() {
 interface AnalysisViewProps {
   initialHeadline?: string;
   initialContext?: string;
+  /** When set, the backend will load this event by primary key instead of
+   *  doing a headline-string lookup — prevents near-duplicate stories from
+   *  cross-routing.  Supplied by Market Overview card clicks. */
+  initialEventId?: number;
   onHeadlineConsumed?: () => void;
   onBack?: () => void;
 }
 
 type Phase = "idle" | "classify" | "analysis" | "market" | "complete";
 
-export function AnalysisView({ initialHeadline, initialContext, onHeadlineConsumed, onBack }: AnalysisViewProps) {
+export function AnalysisView({ initialHeadline, initialContext, initialEventId, onHeadlineConsumed, onBack }: AnalysisViewProps) {
   const [headline, setHeadline] = useState("");
   const [eventDate] = useState("");
   const contextRef = useRef<string | undefined>(initialContext);
   const eventDateRef = useRef(eventDate);
   eventDateRef.current = eventDate;
+  // Keep track of the pending event_id across the async submit cycle.
+  const pendingEventIdRef = useRef<number | undefined>(initialEventId);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -1388,7 +1422,7 @@ export function AnalysisView({ initialHeadline, initialContext, onHeadlineConsum
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  const submit = useCallback(async (h?: string) => {
+  const submit = useCallback(async (h?: string, eventId?: number) => {
     const text = (h ?? headline).trim();
     if (!text) return;
     abortRef.current?.abort();
@@ -1401,7 +1435,12 @@ export function AnalysisView({ initialHeadline, initialContext, onHeadlineConsum
     let partial: Partial<AnalyzeResponse> = { headline: text };
     try {
       await api.analyzeStream(
-        { headline: text, event_date: eventDateRef.current || undefined, event_context: contextRef.current || undefined },
+        {
+          headline: text,
+          event_date: eventDateRef.current || undefined,
+          event_context: contextRef.current || undefined,
+          event_id: eventId ?? pendingEventIdRef.current,
+        },
         (stage, data) => {
           if (ctrl.signal.aborted) return;
           if (stage === "classify") {
@@ -1431,8 +1470,9 @@ export function AnalysisView({ initialHeadline, initialContext, onHeadlineConsum
     if (initialHeadline) {
       setHeadline(initialHeadline);
       contextRef.current = initialContext;
+      pendingEventIdRef.current = initialEventId;
       onHeadlineConsumed?.();
-      submit(initialHeadline);
+      submit(initialHeadline, initialEventId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialHeadline]);
@@ -1449,16 +1489,25 @@ export function AnalysisView({ initialHeadline, initialContext, onHeadlineConsum
 
   return (
     <div className="pb-8">
-      {/* ── TOP AREA ── */}
-      <div className="mb-8">
-        {onBack && (
-          <button onClick={onBack} className="group flex items-center gap-2 mb-5 text-on-surface-variant hover:text-primary transition-colors">
+      {/* Sticky back-nav row.  Sits directly under the (also sticky)
+          TopBar (`top-14`) so the user can return to Market Overview
+          from anywhere in a long analysis without scrolling back to
+          the page top.  Negative margins extend the bar to the
+          workspace padding edges so its backdrop reaches full width.
+      */}
+      {onBack && (
+        <div className="sticky top-14 z-20 -mx-3 -mt-3 mb-4 px-3 py-2 bg-background/85 backdrop-blur-sm md:-mx-5 md:-mt-4 md:px-5">
+          <button onClick={onBack} className="group flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors">
             <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-container-highest group-hover:bg-surface-bright transition-colors">
               <ArrowLeft className="h-4 w-4" />
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.15em]">Market Overview</span>
           </button>
-        )}
+        </div>
+      )}
+
+      {/* ── TOP AREA ── */}
+      <div className="mb-8">
 
         {result ? (
           <h1 className="font-headline text-[22px] font-extrabold tracking-tighter text-on-surface leading-tight max-w-3xl">

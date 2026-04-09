@@ -1,21 +1,125 @@
-const BASE = "/api";
+/** Resolve the API base URL from build-time env, with a safe same-origin
+ *  fallback.
+ *
+ *  Resolution order:
+ *    1. ``VITE_API_BASE_URL`` (set at ``vite build`` / ``vite dev`` time)
+ *       — honoured verbatim when non-empty.  Use this to point a
+ *       deployed static frontend at a separate API origin, e.g.
+ *       ``VITE_API_BASE_URL=https://api.example.com`` — or to an
+ *       origin-local path prefix other than ``/api``.
+ *    2. ``/api`` — the default.  In local development this is handled
+ *       by the Vite dev-server proxy in ``vite.config.ts``.  In a
+ *       same-origin production deploy this works when a reverse
+ *       proxy (nginx, Render, Cloudflare) rewrites ``/api/*`` to the
+ *       backend.
+ *
+ *  A trailing slash on the env value is stripped so path composition
+ *  is predictable ("https://api.example.com/" + "/health" would emit
+ *  a double slash otherwise).  Exported so unit tests (and dev tools)
+ *  can assert the resolution contract without re-implementing it.
+ */
+export function resolveApiBase(
+  envValue: string | undefined = import.meta.env.VITE_API_BASE_URL as
+    | string
+    | undefined,
+): string {
+  const raw = (envValue ?? "").trim();
+  if (!raw) return "/api";
+  return raw.replace(/\/+$/, "");
+}
+
+const BASE = resolveApiBase();
+
+/** Structured error thrown by the api client.
+ *
+ *  Pages can render `error.message` directly — it's already a short,
+ *  user-facing string ("Cannot reach the backend.", "Server error.",
+ *  etc.) — and inspect `status` if they need to branch on the HTTP
+ *  code.  ``detail`` carries the raw FastAPI ``{"detail": ...}`` body
+ *  (or response text) for debugging contexts that want it. */
+export class ApiError extends Error {
+  status: number;
+  detail: string;
+  constructor(message: string, status: number, detail: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+/** Map an HTTP status code to a short, friendly user-facing message.
+ *  status === 0 means the fetch itself failed (offline, CORS, server
+ *  not running) — by far the most common first-run failure mode. */
+function _friendlyMessage(status: number, detail: string): string {
+  if (status === 0) return "Cannot reach the backend. Is the API server running?";
+  if (status === 404) return "Not found.";
+  if (status === 422) return detail || "Invalid request.";
+  if (status >= 500) return "Server error. Please try again in a moment.";
+  if (status >= 400) return detail || "Request failed.";
+  return detail || `Unexpected response (${status}).`;
+}
+
+/** Try to pull a useful error string out of a FastAPI error body.
+ *  FastAPI conventionally returns ``{"detail": "..."}`` for raised
+ *  HTTPExceptions; for validation errors it's a list of dicts.  Falls
+ *  back to the raw text if the body isn't JSON. */
+function _extractDetail(body: string): string {
+  if (!body) return "";
+  try {
+    const parsed = JSON.parse(body);
+    if (typeof parsed?.detail === "string") return parsed.detail;
+    if (Array.isArray(parsed?.detail) && parsed.detail.length > 0) {
+      const first = parsed.detail[0];
+      if (typeof first?.msg === "string") return first.msg;
+    }
+  } catch {
+    /* not JSON — fall through */
+  }
+  return body.slice(0, 200);
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...init,
+    });
+  } catch (e) {
+    // Network failure: server unreachable, DNS, CORS, offline.
+    // Surface a uniform friendly message instead of "TypeError: failed to fetch".
+    throw new ApiError(
+      _friendlyMessage(0, ""),
+      0,
+      e instanceof Error ? e.message : String(e),
+    );
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+    const detail = _extractDetail(body);
+    throw new ApiError(_friendlyMessage(res.status, detail), res.status, detail);
   }
-  return res.json() as Promise<T>;
+  try {
+    return (await res.json()) as T;
+  } catch (e) {
+    // 200 OK but the body wasn't JSON — treat as a backend bug.
+    throw new ApiError(
+      "Server returned an invalid response.",
+      res.status,
+      e instanceof Error ? e.message : String(e),
+    );
+  }
 }
 
 export interface AnalyzeRequest {
   headline: string;
   event_date?: string;
   event_context?: string;
+  /** When provided, the backend loads this specific event by primary key
+   *  instead of doing a headline-string lookup.  This guarantees the
+   *  correct event is opened when two near-duplicate headlines exist. */
+  event_id?: number;
   /** Bypass the event-age freeze policy when re-running a cached
    *  archive event.  Only meaningful on /analyze cache hits; the
    *  fresh path ignores it.  Defaults to false. */
@@ -537,6 +641,23 @@ export interface RatesContext {
   raw: Record<string, number>;
 }
 
+/** One ticker chip on a Market Mover card. */
+export interface MoverTicker {
+  symbol: string;
+  role: string;
+  return_5d: number | null;
+  return_20d?: number | null;
+  direction: string | null;
+  spark: number[];
+  decay?: string;
+  decay_evidence?: string;
+  /** First trading bar the forward returns were measured from.  Lets
+   *  the UI label cards with "anchored YYYY-MM-DD" so users can see
+   *  why the same symbol (e.g. XLE) reads differently across cards
+   *  anchored to different event dates. */
+  anchor_date?: string | null;
+}
+
 export interface MarketMover {
   event_id: number;
   headline: string;
@@ -546,16 +667,7 @@ export interface MarketMover {
   persistence: string;
   impact: number;
   support_ratio: number;
-  tickers: {
-    symbol: string;
-    role: string;
-    return_5d: number | null;
-    return_20d?: number | null;
-    direction: string | null;
-    spark: number[];
-    decay?: string;
-    decay_evidence?: string;
-  }[];
+  tickers: MoverTicker[];
   transmission_chain?: string[];
   if_persists?: IfPersists;
   currency_channel?: CurrencyChannel;
@@ -564,6 +676,10 @@ export interface MarketMover {
   real_yield_context?: RealYieldContext;
   policy_constraint?: PolicyConstraint;
   days_since_event?: number;
+  /** ISO timestamp of the most recent provider refresh for this
+   *  event's ticker payload.  Surfaced on the card so users see
+   *  "as of HH:MM" and understand the freshness of the numbers. */
+  last_market_check_at?: string | null;
 }
 
 export interface TickerHeadline {

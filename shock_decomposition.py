@@ -58,15 +58,39 @@ _CHANNEL_LABELS: dict[str, str] = {
     "commodity":     "Commodities",
 }
 
-# Institutional 1-sigma 5d move scales (in %).  These are the "normal"
-# magnitudes a macro desk uses to call something a real shock.  A move
-# of ~1.5x the scale starts to feel real; >2.5x is a regime event.
+# Institutional 1-sigma 5d move scales.
+#
+# Unit conventions (must match compute_rates_context output):
+#   nominal_yield — absolute pp change in ^TNX Close
+#                   (e.g. 0.20 = 20 bps.  NOT percentage change in yield level.)
+#   real_yield    — percentage change in TIP ETF price
+#                   (e.g. 0.50 = TIP fell/rose 0.50%)
+#   breakeven     — nominal_pp_change + TIP_pct_change proxy
+#                   (same order of magnitude as nominal pp)
+#   fx            — percentage change in DXY (DX-Y.NYB or equivalent)
+#   commodity     — percentage change in CL (crude) or GC (gold)
+#
+# A move of ~1.5× the scale starts to feel real; >2.5× is a regime event.
 _CHANNEL_SCALE: dict[str, float] = {
-    "nominal_yield": 0.20,   # 20 bps on ^TNX
-    "real_yield":    0.50,   # TIP price move
-    "breakeven":     0.20,   # breakeven proxy
-    "fx":            0.70,   # DXY price
-    "commodity":     3.00,   # crude-equivalent baseline
+    "nominal_yield": 0.20,   # 20 bps absolute change in ^TNX
+    "real_yield":    0.50,   # 0.50% TIP ETF price move
+    "breakeven":     0.20,   # breakeven proxy (nominal pp + TIP pct)
+    "fx":            0.70,   # 0.70% DXY move
+    "commodity":     3.00,   # 3% crude-equivalent move
+}
+
+# Sanity caps per channel: move_5d values beyond these thresholds are
+# artifacts of corrupted price-cache data (stub rows near zero, or
+# _safe_pct applied to a near-zero historical yield start point producing
+# values like +2680%).  Discard rather than propagate.
+#
+# Units match _CHANNEL_SCALE above.
+_CHANNEL_MOVE_CAPS: dict[str, float] = {
+    "nominal_yield": 5.0,    # ±500 bps in 5 days has never been recorded
+    "real_yield":    20.0,   # TIP ETF ±20% in 5 days is physically impossible
+    "breakeven":     7.0,    # derived proxy; ceiling a bit above nominal
+    "fx":            15.0,   # DXY ±15% in 5 days has never happened
+    "commodity":     60.0,   # crude can spike hard but not 60%+ in 5 days
 }
 
 # Canonical liquid markets to watch per channel.  These are the same
@@ -129,6 +153,18 @@ def _f(val) -> Optional[float]:
         return float(val)
     except (TypeError, ValueError):
         return None
+
+
+def _safe_move(cid: str, move: Optional[float]) -> Optional[float]:
+    """Return move if within the sanity cap for this channel, else None.
+
+    Prevents corrupted price-cache values (e.g. +2680% from near-zero
+    historical ^TNX rows) from reaching the z-score ranking.
+    """
+    if move is None:
+        return None
+    cap = _CHANNEL_MOVE_CAPS.get(cid, 100.0)
+    return move if abs(move) <= cap else None
 
 
 def _rates_usable(rates_context: Optional[dict]) -> bool:
@@ -194,9 +230,9 @@ def _extract_channels(
     }
 
     rc = rates_context or {}
-    nom_5d = _f((rc.get("nominal") or {}).get("change_5d"))
-    real_5d = _f((rc.get("real_proxy") or {}).get("change_5d"))
-    be_5d = _f((rc.get("breakeven_proxy") or {}).get("change_5d"))
+    nom_5d = _safe_move("nominal_yield", _f((rc.get("nominal") or {}).get("change_5d")))
+    real_5d = _safe_move("real_yield", _f((rc.get("real_proxy") or {}).get("change_5d")))
+    be_5d = _safe_move("breakeven", _f((rc.get("breakeven_proxy") or {}).get("change_5d")))
 
     if nom_5d is not None:
         out["nominal_yield"]["move_5d"] = nom_5d
@@ -209,10 +245,10 @@ def _extract_channels(
         out["breakeven"]["available"] = True
 
     # FX: prefer snapshot DXY, fall back to safe-haven Dollar.
-    dxy_5d = _snap_change_5d(snapshots, "DXY")
+    dxy_5d = _safe_move("fx", _snap_change_5d(snapshots, "DXY"))
     if dxy_5d is None:
         haven = _stress_haven_assets(stress_regime)
-        dxy_5d = _f(haven.get("Dollar"))
+        dxy_5d = _safe_move("fx", _f(haven.get("Dollar")))
     if dxy_5d is not None:
         out["fx"]["move_5d"] = dxy_5d
         out["fx"]["available"] = True
@@ -220,11 +256,11 @@ def _extract_channels(
     # Commodities: composite of crude + gold (whichever is moving more,
     # measured against its own scale).  This avoids the equal-weight bias
     # that would let small gold moves outweigh big crude moves.
-    cl_5d = _snap_change_5d(snapshots, "CL")
-    gc_5d = _snap_change_5d(snapshots, "GC")
+    cl_5d = _safe_move("commodity", _snap_change_5d(snapshots, "CL"))
+    gc_5d = _safe_move("commodity", _snap_change_5d(snapshots, "GC"))
     if gc_5d is None:
         haven = _stress_haven_assets(stress_regime)
-        gc_5d = _f(haven.get("Gold"))
+        gc_5d = _safe_move("commodity", _f(haven.get("Gold")))
 
     cmdty_components: list[tuple[str, float, float]] = []
     if cl_5d is not None:
@@ -408,6 +444,53 @@ def compute_shock_decomposition(
         "available":     True,
         "stale":         stale,
     }
+
+
+def sanitize_shock_decomposition_block(block: dict) -> dict:
+    """Clamp absurd move_5d values in a persisted shock-decomposition block.
+
+    Frozen-archive events were saved before the unit fix landed; their channel
+    dicts may carry move_5d values like +2680 (from _safe_pct on near-zero
+    historical ^TNX rows).  This function applies _CHANNEL_MOVE_CAPS and
+    recalculates z-scores so the frontend never sees those artifacts.
+
+    Returns a deep copy with clamped values — does not mutate the input.
+    Idempotent: safe to call on already-sanitized blocks.
+    """
+    import copy
+    if not block or not isinstance(block, dict):
+        return block or {}
+
+    block = copy.deepcopy(block)
+
+    channels = block.get("channels") or {}
+    for cid, ch in channels.items():
+        if not isinstance(ch, dict):
+            continue
+        move = ch.get("move_5d")
+        if move is None:
+            continue
+        cap = _CHANNEL_MOVE_CAPS.get(cid, 100.0)
+        if abs(float(move)) > cap:
+            ch["move_5d"] = None
+            ch["available"] = False
+            ch["z"] = 0.0
+
+    # Sanitize secondary list — drop any entry whose move is absurd.
+    secondary = block.get("secondary") or []
+    clean_secondary = []
+    for s in secondary:
+        if not isinstance(s, dict):
+            continue
+        cid = s.get("id", "")
+        move = s.get("move_5d")
+        cap = _CHANNEL_MOVE_CAPS.get(cid, 100.0)
+        if move is not None and abs(float(move)) > cap:
+            continue
+        clean_secondary.append(s)
+    block["secondary"] = clean_secondary
+
+    return block
 
 
 def _channels_for_payload(channels: dict[str, dict]) -> dict[str, dict]:

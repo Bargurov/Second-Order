@@ -1,8 +1,12 @@
 anthropic
-python-dotenv
-yfinance
-streamlit
 feedparser
 fastapi
-uvicorn[standard]
 httpx
+numpy
+pandas
+pydantic
+python-dotenv
+python-telegram-bot[job-queue]
+streamlit
+uvicorn[standard]
+yfinance

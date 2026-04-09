@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   RefreshCw,
@@ -286,15 +285,18 @@ function EventDetail({
   };
 
   return (
-    <div className="page-enter flex h-full flex-col">
-      <div className="mb-2 shrink-0">
+    // Page-level scroll: detail view is plain flow.  The sticky back
+    // button stays accessible while reading long event details — it
+    // pins under the (also sticky) shell TopBar at top-14.
+    <div className="page-enter flex flex-col">
+      <div className="sticky top-14 z-20 -mx-3 -mt-3 mb-2 px-3 py-2 bg-background/85 backdrop-blur-sm md:-mx-5 md:-mt-4 md:px-5">
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
           <ArrowLeft className="h-3 w-3" />
           Back
         </Button>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1">
         <div className="fade-in space-y-3 pb-4 pr-2">
           {/* Header */}
           <Card className="overflow-hidden border-border/80 bg-white/95">
@@ -516,7 +518,7 @@ function EventDetail({
             </>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
@@ -555,7 +557,8 @@ export function RecentEvents() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    // Page-level scroll: list view is plain flow.
+    <div className="flex flex-col gap-3">
       <div className="soft-panel flex shrink-0 flex-col gap-3 rounded-[22px] px-4 py-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-white">
@@ -602,13 +605,11 @@ export function RecentEvents() {
       )}
 
       {events.length > 0 && (
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="fade-in space-y-2 pr-2">
-            {events.map((ev) => (
-              <EventRow key={ev.id} event={ev} onClick={() => setSelectedId(ev.id)} />
-            ))}
-          </div>
-        </ScrollArea>
+        <div className="fade-in space-y-2 pr-2">
+          {events.map((ev) => (
+            <EventRow key={ev.id} event={ev} onClick={() => setSelectedId(ev.id)} />
+          ))}
+        </div>
       )}
     </div>
   );

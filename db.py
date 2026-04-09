@@ -729,7 +729,25 @@ def find_historical_analogs(
     # Use stable two-pass: first by date desc, then by score desc
     scored.sort(key=lambda pair: pair[1].get("event_date") or "", reverse=True)
     scored.sort(key=lambda pair: pair[0], reverse=True)
-    candidates = [ev for _, ev in scored[:candidate_limit]]
+
+    # Story-family dedup BEFORE truncation/rerank.  Two analogs that
+    # share the same normalised content-word set + event_date are the
+    # same story (re-analysis, slight rewording, case differences).
+    # Walking the already-sorted list and keeping the first occurrence
+    # per key preserves the highest-scoring representative without
+    # touching the rerank logic.
+    seen_keys: set[tuple] = set()
+    deduped: list[tuple[float, dict]] = []
+    for sim_score, ev in scored:
+        words_key = frozenset(_headline_words(ev.get("headline") or ""))
+        date_key = ev.get("event_date") or ""
+        key = (words_key or (ev.get("headline") or "").lower(), date_key)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        deduped.append((sim_score, ev))
+
+    candidates = [ev for _, ev in deduped[:candidate_limit]]
 
     # Regime-conditioned re-rank as a layer over topic similarity.  Falls
     # back to no-op when current_regime_vector is unavailable.

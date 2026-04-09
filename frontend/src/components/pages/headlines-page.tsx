@@ -45,7 +45,7 @@ function HeadlineRow({
   c, onAnalyze, muted,
 }: {
   c: NewsCluster;
-  onAnalyze?: (headline: string, context?: string) => void;
+  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
   muted?: boolean;
 }) {
   return (
@@ -71,7 +71,7 @@ function HeadlineRow({
           variant="ghost"
           size="sm"
           className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-          onClick={() => onAnalyze(c.headline, buildClusterContext(c))}
+          onClick={() => onAnalyze(c.headline, { context: buildClusterContext(c) })}
         >
           <FlaskConical className="h-3 w-3" />
           <span className="hidden sm:inline ml-1">Analyze</span>
@@ -86,7 +86,7 @@ function HeadlineRow({
 // ---------------------------------------------------------------------------
 
 interface HeadlinesPageProps {
-  onAnalyze?: (headline: string, context?: string) => void;
+  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
 }
 
 export function HeadlinesPage({ onAnalyze }: HeadlinesPageProps) {
@@ -132,7 +132,10 @@ export function HeadlinesPage({ onAnalyze }: HeadlinesPageProps) {
   const loadedCount = allClusters.length;
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-auto">
+    // Page-level scroll: shell scrolls the document; this page is plain
+    // flow.  Removed `h-full` + nested `overflow-auto` so the layout no
+    // longer creates an inner scroll container.
+    <div className="flex flex-col gap-3">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
         <Newspaper className="h-4 w-4 text-muted-foreground" />

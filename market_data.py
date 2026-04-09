@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import threading
 from datetime import date as _date, timedelta as _timedelta
 from typing import Optional, Protocol, runtime_checkable
 from urllib.error import HTTPError, URLError
@@ -33,6 +34,19 @@ from urllib.request import Request, urlopen
 import pandas as pd
 
 _log = logging.getLogger("second_order.market_data")
+
+# Module-level provider lock — yfinance's underlying session and
+# global cache are NOT safe for concurrent calls.  Worker threads
+# in market_check / price_cache that hammer ``provider.fetch_daily``
+# from a ThreadPoolExecutor have been observed to receive
+# cross-contaminated DataFrames (one ticker's bars persisted under
+# another ticker's symbol in the SQLite price cache).  Wrapping the
+# provider call in this lock serialises only the network/yfinance
+# step; cache reads still run in parallel, so the hot path is
+# unaffected.  Cold-cache fetches degrade to serial — slow but
+# correct.  See ``macro_snapshot`` in market_check.py for the same
+# rationale on the macro snapshot path.
+_PROVIDER_FETCH_LOCK = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
@@ -114,13 +128,18 @@ class YFinanceProvider:
 
         try:
             kwargs = {"interval": "1d", "progress": False, "auto_adjust": auto_adjust}
-            if period:
-                data = yf.download(ticker, period=period, **kwargs)
-            else:
-                if end:
-                    data = yf.download(ticker, start=start, end=end, **kwargs)
+            # Serialise the actual yf.download call — see the lock
+            # docstring at the top of the module.  Concurrent calls
+            # from worker threads otherwise cross-contaminate the
+            # DataFrames yfinance returns.
+            with _PROVIDER_FETCH_LOCK:
+                if period:
+                    data = yf.download(ticker, period=period, **kwargs)
                 else:
-                    data = yf.download(ticker, start=start, **kwargs)
+                    if end:
+                        data = yf.download(ticker, start=start, end=end, **kwargs)
+                    else:
+                        data = yf.download(ticker, start=start, **kwargs)
         except Exception as e:
             _log.warning("YFinanceProvider.fetch_daily(%s) failed: %s", ticker, e)
             return None

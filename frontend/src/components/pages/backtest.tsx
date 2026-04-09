@@ -296,7 +296,8 @@ export function Backtest() {
   const untestable = events.filter((e) => !e.event_date);
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    // Page-level scroll: dropped `h-full` so the page is normal flow.
+    <div className="flex flex-col gap-3">
       <div className="soft-panel flex shrink-0 flex-col gap-3 rounded-[22px] px-4 py-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-white">
