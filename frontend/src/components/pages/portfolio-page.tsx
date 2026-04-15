@@ -1,9 +1,12 @@
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   api,
   type PortfolioEntry,
   type PersistenceSignal,
+  type SimulatePortfolioResponse,
   type SimulatePosition,
+  type SimulateWarning,
   getStaleDisplay,
 } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
@@ -189,6 +192,348 @@ function LifecycleBadge({ sig }: { sig: PersistenceSignal }) {
 }
 
 // ---------------------------------------------------------------------------
+// Simulator subcomponents
+// ---------------------------------------------------------------------------
+
+function PickRow({
+  entry,
+  selected,
+  onToggle,
+}: {
+  entry: PortfolioEntry;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className={cn(
+        "w-full rounded-lg p-2.5 text-left transition-all",
+        "shadow-[inset_0_0_0_1px_rgba(71,70,86,0.35)]",
+        selected &&
+          "bg-primary/5 shadow-[inset_0_0_0_1px_rgba(147,209,211,0.25)]",
+      )}
+    >
+      <div className="flex items-start gap-2.5">
+        {/* Checkbox */}
+        <div
+          className={cn(
+            "mt-0.5 flex h-3 w-3 shrink-0 items-center justify-center rounded border",
+            selected
+              ? "border-primary/50 bg-primary/15"
+              : "border-outline-variant/40 bg-transparent",
+          )}
+        >
+          {selected && (
+            <span className="block h-1.5 w-1.5 rounded-sm bg-primary" />
+          )}
+        </div>
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "line-clamp-2 text-[10px] font-semibold leading-snug",
+              selected ? "text-on-surface" : "text-on-surface/50",
+            )}
+          >
+            {entry.headline}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <ValidationBadge
+              outcome={entry.validation_outcome}
+              ratio={null}
+            />
+            <ConfidenceChip value={entry.confidence} />
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function SnapshotStrip({
+  summary,
+}: {
+  summary: SimulatePortfolioResponse["summary"];
+}) {
+  const metrics: Array<{
+    label: string;
+    value: string;
+    positive?: boolean;
+    negative?: boolean;
+  }> = [
+    {
+      label: "Return",
+      value:
+        summary.portfolio_return !== null
+          ? formatReturn(summary.portfolio_return)
+          : "—",
+      positive:
+        summary.portfolio_return !== null && summary.portfolio_return >= 0,
+      negative:
+        summary.portfolio_return !== null && summary.portfolio_return < 0,
+    },
+    {
+      label: "Win Rate",
+      value:
+        summary.win_rate !== null
+          ? `${Math.round(summary.win_rate * 100)}%`
+          : "—",
+    },
+    {
+      label: "Coverage",
+      value: `${Math.round(summary.data_coverage * 100)}%`,
+    },
+    {
+      label: "Positions",
+      value: String(summary.positions_total),
+    },
+  ];
+
+  return (
+    <div className={cn(SECTION_CARD, "px-4 py-3")}>
+      <p className="section-kicker mb-3">
+        Portfolio Snapshot · {summary.events_contributing} positions
+      </p>
+      <div className="flex gap-6">
+        {metrics.map((m) => (
+          <div key={m.label} className="flex flex-col items-center gap-0.5">
+            <span
+              className={cn(
+                "text-[20px] font-bold tabular-nums leading-none",
+                m.positive
+                  ? "text-[#6ec6a5]"
+                  : m.negative
+                    ? "text-[#ee7d77]"
+                    : "text-primary",
+              )}
+            >
+              {m.value}
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+              {m.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EventOutcomes({
+  positions,
+  entries,
+}: {
+  positions: SimulatePosition[];
+  entries: PortfolioEntry[];
+}) {
+  const grouped = useMemo(() => groupPositionsByEvent(positions), [positions]);
+  const entryMap = useMemo(
+    () => new Map(entries.map((e) => [e.id, e])),
+    [entries],
+  );
+
+  return (
+    <div className={cn(SECTION_CARD, "px-4 py-3")}>
+      <p className="section-kicker mb-3">Per-event outcomes</p>
+      <div className="space-y-3">
+        {Array.from(grouped.entries()).map(([eventId, eventPositions]) => {
+          const entry = entryMap.get(eventId);
+          const headline = eventPositions[0]?.event_headline ?? "";
+          const allMissing = eventPositions.every(
+            (p) => p.return_source === "missing",
+          );
+
+          return (
+            <div
+              key={eventId}
+              className="flex items-start gap-3 border-b border-border/20 pb-3 last:border-0 last:pb-0"
+            >
+              {/* Status dot */}
+              <span
+                className={cn(
+                  "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
+                  entry?.validation_outcome === "validated"
+                    ? "bg-[#6ec6a5]"
+                    : entry?.validation_outcome === "contradicted"
+                      ? "bg-[#ee7d77]"
+                      : "bg-muted-foreground/30",
+                )}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="mb-1.5 line-clamp-1 text-[10.5px] font-semibold text-on-surface">
+                  {headline}
+                </p>
+                {allMissing ? (
+                  <span className="text-[10px] text-muted-foreground/50">
+                    No data
+                  </span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {eventPositions.map((pos) => (
+                      <span
+                        key={pos.symbol}
+                        className={cn(
+                          "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-medium",
+                          pos.gross_return === null
+                            ? "bg-surface-container text-muted-foreground/50"
+                            : pos.gross_return >= 0
+                              ? "bg-[#6ec6a5]/10 text-[#6ec6a5]"
+                              : "bg-[#ee7d77]/10 text-[#ee7d77]",
+                        )}
+                      >
+                        {pos.symbol}
+                        <span className="opacity-70">
+                          {formatReturn(pos.gross_return)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {entry && (
+                <ValidationBadge
+                  outcome={entry.validation_outcome}
+                  ratio={null}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function WarningsList({ warnings }: { warnings: SimulateWarning[] }) {
+  if (warnings.length === 0) return null;
+
+  return (
+    <div className={cn(SECTION_CARD, "px-4 py-3")}>
+      <p className="section-kicker mb-3">Overlap & concentration</p>
+      <div className="space-y-2">
+        {warnings.map((w, i) => (
+          <div
+            key={i}
+            className={cn(
+              "rounded-md px-3 py-2 text-[11px]",
+              w.type === "concentration"
+                ? "border border-[#ee7d77]/18 bg-[#ee7d77]/6 text-[#ee7d77]"
+                : "bg-surface-container text-muted-foreground",
+            )}
+          >
+            {w.type === "concentration" && (
+              <span className="mr-1">⚠</span>
+            )}
+            {w.message}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SimResults({
+  selectedIds,
+  entries,
+}: {
+  selectedIds: Set<number>;
+  entries: PortfolioEntry[];
+}) {
+  const sortedIds = useMemo(
+    () => [...selectedIds].sort((a, b) => a - b),
+    [selectedIds],
+  );
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: qk.simulate(sortedIds),
+    queryFn: () =>
+      api.simulatePortfolio({
+        event_ids: sortedIds,
+        horizon: "5d",
+        direction_filter: "supporting",
+        include_shorts: false,
+      }),
+    enabled: sortedIds.length > 0,
+    staleTime: 2 * 60_000,
+  });
+
+  if (sortedIds.length === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center text-center">
+        <p className="text-[12px] text-muted-foreground/50">
+          Select positions from the left to run a simulation
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-20 w-full rounded-xl" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <Skeleton className="h-20 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className={cn(SECTION_CARD, "p-6 text-center")}>
+        <p className="text-[12px] text-muted-foreground">
+          Simulation failed — try again
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <SnapshotStrip summary={data.summary} />
+      {data.positions.length > 0 && (
+        <EventOutcomes positions={data.positions} entries={entries} />
+      )}
+      <WarningsList warnings={data.warnings} />
+    </div>
+  );
+}
+
+function SimulatorTab({
+  entries,
+  selectedIds,
+  onToggle,
+}: {
+  entries: PortfolioEntry[];
+  selectedIds: Set<number>;
+  onToggle: (id: number) => void;
+}) {
+  return (
+    <div className="grid grid-cols-[260px_1fr] gap-4">
+      {/* LEFT: pick list */}
+      <div>
+        <p className="section-kicker mb-2">
+          Select positions ({selectedIds.size} / {entries.length})
+        </p>
+        <div className="space-y-1.5">
+          {entries.map((entry) => (
+            <PickRow
+              key={entry.id}
+              entry={entry}
+              selected={selectedIds.has(entry.id)}
+              onToggle={() => onToggle(entry.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT: results */}
+      <SimResults selectedIds={selectedIds} entries={entries} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Portfolio card
 // ---------------------------------------------------------------------------
 
@@ -368,11 +713,28 @@ interface PortfolioPageProps {
 }
 
 export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
+  const [activeTab, setActiveTab] = useState<"portfolio" | "simulator">(
+    "portfolio",
+  );
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
   const { data, isLoading, isError } = useQuery({
     queryKey: qk.portfolio(),
     queryFn: () => api.portfolio(),
     staleTime: 5 * 60_000,
   });
+
+  function toggleId(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -393,6 +755,26 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
           </span>
         )}
       </div>
+
+      {/* ── Tab bar (only once data is loaded) ── */}
+      {data && data.length > 0 && (
+        <div className="flex gap-0 border-b border-border/30">
+          {(["portfolio", "simulator"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "-mb-px px-4 py-2 text-[11px] font-medium capitalize transition-colors",
+                activeTab === tab
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-on-surface",
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Loading skeletons ── */}
       {isLoading && (
@@ -425,8 +807,8 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
         </div>
       )}
 
-      {/* ── Cards ── */}
-      {data && data.length > 0 && (
+      {/* ── Portfolio tab ── */}
+      {data && data.length > 0 && activeTab === "portfolio" && (
         <div className="space-y-3">
           {data.map((entry) => (
             <PortfolioCard
@@ -436,6 +818,15 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
             />
           ))}
         </div>
+      )}
+
+      {/* ── Simulator tab ── */}
+      {data && data.length > 0 && activeTab === "simulator" && (
+        <SimulatorTab
+          entries={data}
+          selectedIds={selectedIds}
+          onToggle={toggleId}
+        />
       )}
     </div>
   );
