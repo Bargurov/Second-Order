@@ -372,7 +372,7 @@ function EventOutcomes({
                   <div className="flex flex-wrap gap-1">
                     {eventPositions.map((pos) => (
                       <span
-                        key={pos.symbol}
+                        key={`${pos.symbol}-${pos.direction_tag ?? "n"}`}
                         className={cn(
                           "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-medium",
                           pos.gross_return === null
