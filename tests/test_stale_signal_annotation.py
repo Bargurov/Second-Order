@@ -104,5 +104,33 @@ class TestEventsListAnnotation(unittest.TestCase):
             self.assertIn("stale_signal", row)
 
 
+class TestPortfolioListAnnotation(unittest.TestCase):
+    def setUp(self):
+        self.client = TestClient(_api_mod.app)
+
+    def _get_portfolio(self, rows):
+        with patch("routes.portfolio.load_recent_events", return_value=rows):
+            return self.client.get("/portfolio?limit=5").json()
+
+    def test_portfolio_entry_has_stale_signal(self):
+        rows = [_make_event(10, last_check_offset_hours=1.0)]
+        result = self._get_portfolio(rows)
+        # Portfolio filters out mock mechanisms; _make_event uses "Test mechanism"
+        self.assertTrue(len(result) > 0)
+        self.assertIn("stale_signal", result[0])
+
+    def test_portfolio_stale_event(self):
+        rows = [_make_event(11, last_check_offset_hours=8.0, event_age_days=2)]
+        result = self._get_portfolio(rows)
+        self.assertTrue(len(result) > 0)
+        self.assertEqual(result[0]["stale_signal"], "stale")
+
+    def test_portfolio_frozen_event(self):
+        rows = [_make_event(12, last_check_offset_hours=2.0, event_age_days=35)]
+        result = self._get_portfolio(rows)
+        self.assertTrue(len(result) > 0)
+        self.assertEqual(result[0]["stale_signal"], "frozen")
+
+
 if __name__ == "__main__":
     unittest.main()
