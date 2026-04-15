@@ -1,5 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type PortfolioEntry, getStaleDisplay } from "@/lib/api";
+import {
+  api,
+  type PortfolioEntry,
+  type PersistenceSignal,
+  type SimulatePosition,
+  getStaleDisplay,
+} from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +26,33 @@ import {
 
 const SECTION_CARD =
   "bg-surface-container-low rounded-xl shadow-[inset_0_0_0_1px_rgba(71,70,86,0.35),0_4px_12px_rgba(0,0,0,0.2)]";
+
+// ---------------------------------------------------------------------------
+// Simulator pure helpers (exported for tests)
+// ---------------------------------------------------------------------------
+
+/** Group positions by event_id, preserving insertion order. */
+export function groupPositionsByEvent(
+  positions: SimulatePosition[],
+): Map<number, SimulatePosition[]> {
+  const map = new Map<number, SimulatePosition[]>();
+  for (const pos of positions) {
+    const existing = map.get(pos.event_id);
+    if (existing) {
+      existing.push(pos);
+    } else {
+      map.set(pos.event_id, [pos]);
+    }
+  }
+  return map;
+}
+
+/** Format a nullable return value as "+4.2%" / "-2.1%" / "—". */
+export function formatReturn(r: number | null): string {
+  if (r === null) return "—";
+  const sign = r >= 0 ? "+" : "";
+  return `${sign}${r.toFixed(1)}%`;
+}
 
 // ---------------------------------------------------------------------------
 // Subcomponents
@@ -134,6 +167,24 @@ function RevisitDots({ snapshots }: { snapshots: PortfolioEntry["revisit_snapsho
         </span>
       ))}
     </div>
+  );
+}
+
+function LifecycleBadge({ sig }: { sig: PersistenceSignal }) {
+  if (sig.status === "watching") return null;
+  const cfg = {
+    active:   { color: "text-[#93d1d3]", bg: "bg-[#93d1d3]/10" },
+    fading:   { color: "text-[#ee7d77]", bg: "bg-[#ee7d77]/10" },
+    resolved: { color: "text-muted-foreground", bg: "bg-surface-container" },
+  } as const;
+  const { color, bg } = cfg[sig.status];
+  return (
+    <span
+      className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium", color, bg)}
+      title={sig.evidence}
+    >
+      {sig.label}
+    </span>
   );
 }
 
@@ -264,12 +315,17 @@ function PortfolioCard({
           </div>
         )}
 
-        {/* ── Bottom strip: validation + revisit + confidence ── */}
+        {/* ── Bottom strip: validation + lifecycle + revisit + confidence ── */}
         <div className="flex items-center justify-between gap-2 border-t border-border/30 pt-2.5">
-          <ValidationBadge
-            outcome={entry.validation_outcome}
-            ratio={entry.support_ratio}
-          />
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <ValidationBadge
+              outcome={entry.validation_outcome}
+              ratio={entry.support_ratio}
+            />
+            {entry.persistence_signal && (
+              <LifecycleBadge sig={entry.persistence_signal} />
+            )}
+          </div>
           <div className="flex items-center gap-3">
             {stale.showIndicator && (
               <div className="flex items-center gap-1">
@@ -281,6 +337,7 @@ function PortfolioCard({
             <ConfidenceChip value={entry.confidence} />
           </div>
         </div>
+
       </div>
     </button>
 
