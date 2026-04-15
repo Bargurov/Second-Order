@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
 import { MarketBackdropStrip } from "@/components/ui/market-backdrop-strip";
@@ -17,10 +19,23 @@ import {
   Eye,
   ChevronDown,
   Check,
+  Copy,
+  ClipboardCheck,
+  FileText,
+  Download,
+  RefreshCw,
+  Clock,
+  MessageSquare,
 } from "lucide-react";
-import { api, type AnalyzeResponse, type Ticker, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type HistoricalAnalog } from "@/lib/api";
+import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type RevisitSnapshot, type ConfidenceCalibration } from "@/lib/api";
+import { deriveAllHorizons, deriveTrajectory, type HorizonSummary, type ThesisTrajectory } from "@/lib/revisit-derivation";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
+import { formatMemo, formatBlurb, formatMemoMarkdown } from "@/lib/format-memo";
+import { EvidenceQualityStrip } from "@/components/ui/evidence-quality-strip";
+import { MarketValidationStatus } from "@/components/ui/market-validation-status";
+import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
+import { DegradedBanner } from "@/components/ui/degraded-banner";
 
 /*
   Tonal hierarchy (from Stitch reference):
@@ -33,7 +48,7 @@ import { pct } from "@/lib/ticker-utils";
 // Confidence — three clearly distinct muted colours
 // ---------------------------------------------------------------------------
 
-const CONFIDENCE: Record<string, {
+const CONFIDENCE: Record<Confidence, {
   icon: React.ElementType;
   dot: string;
   text: string;
@@ -78,6 +93,199 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       <span className="w-1 h-3 bg-primary rounded-full" />
       {children}
     </h4>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Macro Backdrop — compact regime/rates summary that was fed into the LLM
+// ---------------------------------------------------------------------------
+
+function MacroBackdropBlock({ analysis }: { analysis: AnalysisDetail }) {
+  const ps  = analysis.policy_sensitivity;
+  const ryc = analysis.real_yield_context;
+  const sd  = analysis.shock_decomposition;
+
+  const regime      = ps?.regime;
+  const stance      = ps?.stance;
+  const ryAlignment = ryc?.alignment && ryc.alignment !== "stale" ? ryc.alignment : undefined;
+  const shockLabel  = sd?.primary_label && sd.primary !== "none" ? sd.primary_label : undefined;
+
+  if (!regime && !stance && !ryAlignment && !shockLabel) return null;
+
+  const formatRegime = (r: string) =>
+    r.replace(/_/g, " ").replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
+
+  const stanceColor =
+    stance === "reinforced" ? "text-[#6ec6a5]" :
+    stance === "fighting"   ? "text-[#ee7d77]" :
+    "text-on-surface-variant/60";
+
+  const stanceLabel =
+    stance === "reinforced" ? "Reinforced" :
+    stance === "fighting"   ? "Fighting CB" :
+    stance === "neutral"    ? "Neutral" :
+    stance ?? "";
+
+  const ryColor =
+    ryAlignment === "confirm"  ? "text-[#6ec6a5]" :
+    ryAlignment === "tension"  ? "text-[#ee7d77]" :
+    "text-on-surface-variant/60";
+
+  const ryLabel =
+    ryAlignment === "confirm"  ? "Confirming" :
+    ryAlignment === "tension"  ? "In tension" :
+    ryAlignment === "neutral"  ? "Neutral" :
+    "";
+
+  type Chip = { key: string; label: string; value: string; valueClass: string };
+  const chips: Chip[] = [];
+  if (regime)      chips.push({ key: "regime",  label: "Rates Regime",  value: formatRegime(regime), valueClass: "text-on-surface-variant/80" });
+  if (stance)      chips.push({ key: "stance",  label: "CB Stance",     value: stanceLabel,           valueClass: stanceColor });
+  if (ryAlignment) chips.push({ key: "ry",      label: "Real Yield",    value: ryLabel,               valueClass: ryColor });
+  if (shockLabel)  chips.push({ key: "shock",   label: "Shock Channel", value: shockLabel,            valueClass: "text-on-surface-variant/80" });
+
+  return (
+    <section className={cn(SECTION_CARD, "px-6 py-4")}>
+      <p className="section-kicker mb-3">Macro Backdrop at Analysis</p>
+      <div className="flex flex-wrap gap-2">
+        {chips.map(({ key, label, value, valueClass }) => (
+          <div key={key} className={cn(INNER_CARD, "px-3 py-2 flex flex-col gap-0.5 min-w-[90px]")}>
+            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">{label}</span>
+            <span className={cn("text-[11px] font-medium leading-snug", valueClass)}>{value}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// Research Output memo — collapsible copy-friendly text block
+// ---------------------------------------------------------------------------
+
+function ResearchMemoBlock({ result }: { result: AnalyzeResponse }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [blurbCopied, setBlurbCopied] = useState(false);
+
+  const memo = formatMemo(result);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(memo).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleBlurb = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(formatBlurb(result)).then(() => {
+      setBlurbCopied(true);
+      setTimeout(() => setBlurbCopied(false), 2000);
+    });
+  };
+
+  const _slug = () =>
+    result.headline
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 48);
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const blob = new Blob([memo], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `second-order-${_slug()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadMd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const blob = new Blob([formatMemoMarkdown(result)], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `second-order-${_slug()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <section className={cn(SECTION_CARD, "overflow-hidden")}>
+      <div
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left group cursor-pointer"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && setOpen((v) => !v)}
+      >
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant flex items-center gap-2">
+          <FileText className="h-3.5 w-3.5 text-primary/60" />
+          Research Output
+        </span>
+        <span className="flex items-center gap-2">
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors bg-surface-container-highest text-on-surface-variant/60 hover:text-on-surface-variant"
+          >
+            <Download className="h-3 w-3" />
+            .txt
+          </button>
+          <button
+            onClick={handleDownloadMd}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors bg-surface-container-highest text-on-surface-variant/60 hover:text-on-surface-variant"
+          >
+            <Download className="h-3 w-3" />
+            .md
+          </button>
+          <button
+            onClick={handleBlurb}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+              blurbCopied
+                ? "bg-primary/15 text-primary"
+                : "bg-surface-container-highest text-on-surface-variant/60 hover:text-on-surface-variant",
+            )}
+          >
+            {blurbCopied ? <ClipboardCheck className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+            {blurbCopied ? "Copied" : "Blurb"}
+          </button>
+          <button
+            onClick={handleCopy}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors",
+              copied
+                ? "bg-primary/15 text-primary"
+                : "bg-surface-container-highest text-on-surface-variant/60 hover:text-on-surface-variant",
+            )}
+          >
+            {copied ? <ClipboardCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 text-on-surface-variant/40 transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </span>
+      </div>
+      {open && (
+        <div className="px-6 pb-5">
+          <div className={cn(INNER_CARD, "p-4 overflow-x-auto")}>
+            <pre className="font-mono text-[11px] leading-relaxed text-on-surface-variant/80 whitespace-pre-wrap">
+              {memo}
+            </pre>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -131,7 +339,7 @@ const STANCE_STYLE: Record<string, { icon: string; color: string; bg: string }> 
 
 function PolicySensitivityBlock({ data }: { data: PolicySensitivity }) {
   if (!data.stance || !data.explanation) return null;
-  const style = STANCE_STYLE[data.stance] ?? STANCE_STYLE.neutral;
+  const style = (STANCE_STYLE[data.stance] ?? STANCE_STYLE.neutral)!;
   const label = data.stance === "reinforced" ? "Reinforced by rates"
     : data.stance === "fighting" ? "Fighting current rates"
     : "Rates-neutral";
@@ -163,7 +371,7 @@ const INV_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
 
 function InventoryContextBlock({ data }: { data: InventoryContext }) {
   if (!data.status || !data.explanation) return null;
-  const style = INV_STYLE[data.status] ?? INV_STYLE.neutral;
+  const style = (INV_STYLE[data.status] ?? INV_STYLE.neutral)!;
   const label = data.status === "tight" ? "Inventory-tight"
     : data.status === "comfortable" ? "Inventory-comfortable"
     : "Inventory-neutral";
@@ -208,7 +416,7 @@ const RY_THESIS_LABEL: Record<string, string> = {
 
 function RealYieldContextBlock({ data }: { data: RealYieldContext }) {
   if (!data || !data.thesis || data.thesis === "none" || !data.alignment) return null;
-  const style = RY_STYLE[data.alignment] ?? RY_STYLE.neutral;
+  const style = (RY_STYLE[data.alignment] ?? RY_STYLE.neutral)!;
   const thesisLabel = RY_THESIS_LABEL[data.thesis] ?? "Macro context";
   const fmt = (v: number | null | undefined) =>
     v == null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
@@ -251,7 +459,7 @@ const ROOM_STYLE: Record<string, { icon: string; color: string; bg: string; labe
 function PolicyConstraintBlock({ data }: { data: PolicyConstraint }) {
   if (!data || !data.binding || !data.policy_room) return null;
   const room = data.policy_room;
-  const style = ROOM_STYLE[room] ?? ROOM_STYLE.unknown;
+  const style = (ROOM_STYLE[room] ?? ROOM_STYLE.unknown)!;
   const bindingLabel = data.binding_label ?? data.binding;
   const isNone = data.binding === "none";
 
@@ -358,7 +566,7 @@ const SHOCK_CHANNEL_ORDER: Array<{ id: keyof NonNullable<ShockDecomposition["cha
 
 function ShockDecompositionBlock({ data }: { data: ShockDecomposition }) {
   if (!data || !data.primary) return null;
-  const style = SHOCK_STYLE[data.primary] ?? SHOCK_STYLE.none;
+  const style = (SHOCK_STYLE[data.primary] ?? SHOCK_STYLE.none)!;
   const isNone = data.primary === "none";
   const fmt = (v: number | null | undefined) =>
     v == null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
@@ -499,9 +707,9 @@ const RFD_DIVERGENCE_STYLE: Record<string, { icon: string; color: string; bg: st
 
 function ReactionFunctionDivergenceBlock({ data }: { data: ReactionFunctionDivergence }) {
   if (!data || !data.implied || !data.priced || !data.divergence) return null;
-  const divStyle = RFD_DIVERGENCE_STYLE[data.divergence] ?? RFD_DIVERGENCE_STYLE.mild;
-  const impliedStyle = RFD_DIRECTION_STYLE[data.implied] ?? RFD_DIRECTION_STYLE.neutral;
-  const pricedStyle = RFD_DIRECTION_STYLE[data.priced] ?? RFD_DIRECTION_STYLE.neutral;
+  const divStyle = (RFD_DIVERGENCE_STYLE[data.divergence] ?? RFD_DIVERGENCE_STYLE.mild)!;
+  const impliedStyle = (RFD_DIRECTION_STYLE[data.implied] ?? RFD_DIRECTION_STYLE.neutral)!;
+  const pricedStyle = (RFD_DIRECTION_STYLE[data.priced] ?? RFD_DIRECTION_STYLE.neutral)!;
 
   return (
     <section className={cn(SECTION_CARD, "p-5")}>
@@ -596,6 +804,136 @@ function ReactionFunctionDivergenceBlock({ data }: { data: ReactionFunctionDiver
 }
 
 // ---------------------------------------------------------------------------
+// Narrative Divergence block
+// ---------------------------------------------------------------------------
+
+const ND_LABEL_STYLE: Record<string, { icon: string; color: string; bg: string; text: string }> = {
+  confident_miss:      { icon: "▼", color: "text-error-dim",          bg: "bg-error-dim/10",    text: "Confident Miss"      },
+  surprise_validation: { icon: "▲", color: "text-primary",            bg: "bg-primary/8",       text: "Surprise Validation" },
+  aligned:             { icon: "◆", color: "text-on-surface-variant", bg: "bg-surface-container-highest", text: "Aligned"  },
+  mixed:               { icon: "◇", color: "text-on-surface-variant", bg: "bg-surface-container-highest", text: "Mixed"    },
+  validated:           { icon: "◆", color: "text-primary",            bg: "bg-primary/8",       text: "Validated"           },
+  contradicted:        { icon: "▼", color: "text-error-dim",          bg: "bg-error-dim/10",    text: "Contradicted"        },
+};
+
+const ROLE_SIGNAL_COLOR: Record<RoleSignal, string> = {
+  aligned:  "text-primary",
+  contra:   "text-error-dim",
+  mixed:    "text-on-surface-variant",
+  no_data:  "text-on-surface-variant/40",
+};
+
+const ROLE_SIGNAL_LABEL: Record<RoleSignal, string> = {
+  aligned:  "Aligned",
+  contra:   "Contra",
+  mixed:    "Mixed",
+  no_data:  "—",
+};
+
+function NarrativeDivergenceBlock({ data }: { data: NarrativeDivergence }) {
+  if (!data || !data.available || !data.label) return null;
+
+  const style = ND_LABEL_STYLE[data.label] ?? { icon: "◆", color: "text-on-surface-variant", bg: "bg-surface-container-highest", text: "Aligned" };
+  const hasCalibration = data.expected_rate != null && data.gap != null;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+          Narrative Divergence
+        </h4>
+        <div className={cn("flex items-center gap-1.5 rounded-full px-2 py-0.5", style.bg)}>
+          <span className={cn("text-xs font-bold leading-none", style.color)}>{style.icon}</span>
+          <span className={cn("text-[9px] font-bold uppercase tracking-widest", style.color)}>
+            {style.text}
+          </span>
+        </div>
+      </div>
+
+      {/* Rate comparison */}
+      {hasCalibration && (
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="bg-surface-container-highest rounded px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Actual validation
+            </div>
+            <div className={cn("text-[18px] font-bold font-num leading-none", style.color)}>
+              {Math.round((data.actual_rate ?? 0) * 100)}%
+            </div>
+            <div className="text-[9px] text-on-surface-variant/50 mt-0.5 font-num">
+              {data.n_supporting ?? 0}/{data.n_total ?? 0} tickers
+            </div>
+          </div>
+          <div className="bg-surface-container-highest rounded px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Calibrated base rate
+            </div>
+            <div className="text-[18px] font-bold font-num leading-none text-on-surface-variant">
+              {Math.round((data.expected_rate ?? 0) * 100)}%
+            </div>
+            {data.n_calibration_events != null && (
+              <div className="text-[9px] text-on-surface-variant/50 mt-0.5 font-num">
+                n={data.n_calibration_events} events
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* No-calibration single stat */}
+      {!hasCalibration && data.actual_rate != null && (
+        <div className="bg-surface-container-highest rounded px-3 py-2.5 mb-3 flex items-center gap-3">
+          <div>
+            <div className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 mb-1">
+              Validation rate
+            </div>
+            <div className={cn("text-[18px] font-bold font-num leading-none", style.color)}>
+              {Math.round(data.actual_rate * 100)}%
+            </div>
+          </div>
+          <div className="text-[10px] text-on-surface-variant/50 italic leading-snug">
+            No calibration data yet
+          </div>
+        </div>
+      )}
+
+      {/* Role signals */}
+      {(data.beneficiary_signal || data.loser_signal) && (
+        <div className="flex items-center gap-4 mb-3">
+          {data.beneficiary_signal && data.beneficiary_signal !== "no_data" && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+                Beneficiaries
+              </span>
+              <span className={cn("text-[10px] font-bold", ROLE_SIGNAL_COLOR[data.beneficiary_signal])}>
+                {ROLE_SIGNAL_LABEL[data.beneficiary_signal]}
+              </span>
+            </div>
+          )}
+          {data.loser_signal && data.loser_signal !== "no_data" && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50">
+                Losers
+              </span>
+              <span className={cn("text-[10px] font-bold", ROLE_SIGNAL_COLOR[data.loser_signal])}>
+                {ROLE_SIGNAL_LABEL[data.loser_signal]}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Rationale */}
+      {data.rationale && (
+        <p className="text-[12px] text-on-surface leading-relaxed">
+          {data.rationale}
+        </p>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Surprise vs Anticipation Decomposition block
 // ---------------------------------------------------------------------------
 
@@ -608,7 +946,7 @@ const SURPRISE_REGIME_STYLE: Record<string, { icon: string; color: string; bg: s
 
 function SurpriseVsAnticipationBlock({ data }: { data: SurpriseVsAnticipation }) {
   if (!data || !data.regime) return null;
-  const style = SURPRISE_REGIME_STYLE[data.regime] ?? SURPRISE_REGIME_STYLE.mixed;
+  const style = (SURPRISE_REGIME_STYLE[data.regime] ?? SURPRISE_REGIME_STYLE.mixed)!;
   const sig = data.signals ?? {};
   const share = sig.intraday_share;
   const vix5d = sig.vix_change_5d;
@@ -752,7 +1090,7 @@ function TermsOfTradeBlock({ data }: { data: TermsOfTrade }) {
   if (data.dominant_channel === "none" && (!data.exposures || data.exposures.length === 0)) {
     return null;
   }
-  const style = TOT_CHANNEL_STYLE[data.dominant_channel] ?? TOT_CHANNEL_STYLE.mixed;
+  const style = (TOT_CHANNEL_STYLE[data.dominant_channel] ?? TOT_CHANNEL_STYLE.mixed)!;
   const sig = data.signals ?? {};
   const crude = sig.crude_5d;
   const dxy = sig.dxy_5d;
@@ -950,9 +1288,9 @@ function ReserveStressBlock({ data }: { data: ReserveStress }) {
     return null;
   }
 
-  const channelStyle = RS_CHANNEL_STYLE[data.dominant_channel] ?? RS_CHANNEL_STYLE.mixed;
+  const channelStyle = (RS_CHANNEL_STYLE[data.dominant_channel] ?? RS_CHANNEL_STYLE.mixed)!;
   const pressureKey = data.pressure_label ?? "contained";
-  const pressureStyle = RS_PRESSURE_STYLE[pressureKey] ?? RS_PRESSURE_STYLE.contained;
+  const pressureStyle = (RS_PRESSURE_STYLE[pressureKey] ?? RS_PRESSURE_STYLE.contained)!;
   const score = data.pressure_score ?? 0;
   const sig = data.signals ?? {};
   const crude = sig.crude_5d;
@@ -1138,7 +1476,7 @@ const DECAY_STYLE: Record<string, { color: string; bg: string; label: string }> 
 };
 
 function AnalogCard({ analog, rank }: { analog: HistoricalAnalog; rank: number }) {
-  const decay = DECAY_STYLE[analog.decay] ?? DECAY_STYLE.Unknown;
+  const decay = (DECAY_STYLE[analog.decay] ?? DECAY_STYLE.Unknown)!;
   return (
     <div className={cn(INNER_CARD, "p-4 flex flex-col")}>
       {/* Rank + headline + date */}
@@ -1329,7 +1667,173 @@ const TickerCard = memo(function TickerCard({
   && prev.ticker.spark === next.ticker.spark
 ));
 
-function MarketSection({ tickers, eventDate }: { tickers: Ticker[]; eventDate?: string }) {
+// ---------------------------------------------------------------------------
+// Revisit Timeline — multi-timeframe follow-through section
+// ---------------------------------------------------------------------------
+
+const _VERDICT_STYLE: Record<string, { label: string; color: string; bg: string }> = {
+  validated:    { label: "Validated",    color: "text-primary",            bg: "bg-primary/10" },
+  contradicted: { label: "Contradicted", color: "text-error-dim",          bg: "bg-error-dim/10" },
+  mixed:        { label: "Mixed",        color: "text-on-surface-variant", bg: "bg-surface-container-highest" },
+  no_data:      { label: "Pending",      color: "text-on-surface-variant/40", bg: "bg-surface-container-highest/30" },
+};
+
+const _TRAJECTORY_STYLE: Record<ThesisTrajectory, { label: string; icon: typeof TrendingUp; color: string }> = {
+  holding:   { label: "Thesis holding",  icon: TrendingUp,   color: "text-primary" },
+  fading:    { label: "Signal fading",   icon: TrendingDown,  color: "text-on-surface-variant" },
+  reversed:  { label: "Thesis reversed", icon: TrendingDown,  color: "text-error-dim" },
+  mixed:     { label: "Mixed signals",   icon: AlertTriangle, color: "text-on-surface-variant" },
+  too_early: { label: "Too early",       icon: Clock,         color: "text-on-surface-variant/40" },
+};
+
+function HorizonColumn({ h }: { h: HorizonSummary }) {
+  const vs = (_VERDICT_STYLE[h.verdict] ?? _VERDICT_STYLE.no_data)!;
+  return (
+    <div className={cn(
+      "flex-1 min-w-[120px] rounded-lg p-3",
+      h.available ? "bg-surface-container-highest" : "bg-surface-container-highest/15 opacity-50",
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/60">{h.label}</span>
+        <span className={cn("text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded", vs.bg, vs.color)}>
+          {vs.label}
+        </span>
+      </div>
+
+      {/* Avg return */}
+      {h.avgReturn != null ? (
+        <div className={cn(
+          "text-[18px] font-bold tabular-nums leading-none mb-2",
+          h.avgReturn > 0.2 ? "text-primary" : h.avgReturn < -0.2 ? "text-error-dim" : "text-on-surface-variant",
+        )}>
+          {h.avgReturn > 0 ? "+" : ""}{h.avgReturn.toFixed(1)}%
+        </div>
+      ) : (
+        <div className="text-[18px] font-bold text-on-surface-variant/20 leading-none mb-2">&mdash;</div>
+      )}
+
+      {/* Support ratio */}
+      {h.total > 0 && (
+        <div className="text-[9px] text-on-surface-variant/50 mb-2">
+          {h.supporting}/{h.total} supporting
+        </div>
+      )}
+
+      {/* Per-ticker rows */}
+      {h.tickers.length > 0 && (
+        <div className="space-y-1">
+          {h.tickers.map((t) => (
+            <div key={t.symbol} className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center gap-1 min-w-0">
+                {t.direction === "supports" && <TrendingUp className="w-2.5 h-2.5 text-primary shrink-0" />}
+                {t.direction === "contradicts" && <TrendingDown className="w-2.5 h-2.5 text-error-dim shrink-0" />}
+                {t.direction === "neutral" && <span className="w-2.5 h-2.5 shrink-0" />}
+                <span className="font-medium text-on-surface/80 truncate">{t.symbol}</span>
+              </div>
+              {t.returnValue != null ? (
+                <span className={cn(
+                  "font-num font-bold tabular-nums",
+                  t.returnValue > 0 ? "text-primary" : t.returnValue < 0 ? "text-error-dim" : "text-on-surface-variant",
+                )}>
+                  {t.returnValue > 0 ? "+" : ""}{t.returnValue.toFixed(1)}%
+                </span>
+              ) : (
+                <span className="text-on-surface-variant/30">&mdash;</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RevisitTimeline({
+  eventId,
+  snapshots: initial,
+}: {
+  eventId: number;
+  snapshots: RevisitSnapshot[];
+}) {
+  const [snapshots, setSnapshots] = useState<RevisitSnapshot[]>(initial);
+  const [capturing, setCapturing] = useState(false);
+
+  useEffect(() => {
+    if (initial.length > 0) return;
+    let cancelled = false;
+    api.getRevisitTimeline(eventId).then((res) => {
+      if (!cancelled) setSnapshots(res.snapshots);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [eventId, initial.length]);
+
+  const capture = useCallback(async () => {
+    setCapturing(true);
+    try {
+      const res = await api.captureRevisit(eventId);
+      setSnapshots(res.snapshots);
+    } catch { /* silent */ }
+    finally { setCapturing(false); }
+  }, [eventId]);
+
+  const horizons = deriveAllHorizons(snapshots);
+  const trajectory = deriveTrajectory(horizons);
+  const traj = _TRAJECTORY_STYLE[trajectory];
+  const TrajIcon = traj.icon;
+  const hasAny = horizons.some((h) => h.available);
+
+  return (
+    <div className="space-y-4">
+      {/* Header row */}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="section-kicker mb-1.5">Revisit Timeline</p>
+          {hasAny ? (
+            <span
+              className={cn("flex items-center gap-1.5 text-[13px] font-semibold leading-none", traj.color)}
+              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+            >
+              <TrajIcon className="w-3.5 h-3.5" />
+              {traj.label}
+            </span>
+          ) : (
+            <span className="text-[11px] text-on-surface-variant/35 italic">No follow-through data yet</span>
+          )}
+        </div>
+        <button
+          onClick={capture}
+          disabled={capturing}
+          className="flex items-center gap-1.5 text-[10px] text-primary/60 hover:text-primary transition-colors disabled:opacity-40 mt-0.5"
+        >
+          <RefreshCw className={cn("w-3 h-3", capturing && "animate-spin")} />
+          {capturing ? "Capturing…" : "Capture now"}
+        </button>
+      </div>
+
+      {/* Four-column horizon grid (1d / 5d / 20d / 60d) */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {horizons.map((h) => (
+          <HorizonColumn key={h.day} h={h} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function _buildWhyNote(ticker: Ticker, analysis: AnalysisDetail): string {
+  const pool = ticker.role === "beneficiary" ? analysis.beneficiaries : analysis.losers;
+  const sym = ticker.symbol.toUpperCase();
+  const match = pool.find((entry) => entry.toUpperCase().includes(sym));
+  if (match) return match.length > 140 ? match.slice(0, 137) + "…" : match;
+  const mech = analysis.mechanism_summary;
+  const mechTrunc = mech.length > 110 ? mech.slice(0, 107) + "…" : mech;
+  return ticker.role === "beneficiary"
+    ? `Identified as beneficiary — ${mechTrunc}`
+    : `Exposed to downside — ${mechTrunc}`;
+}
+
+function MarketSection({ tickers, eventDate, analysis }: { tickers: Ticker[]; eventDate?: string; analysis?: AnalysisDetail }) {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const selectedTicker = tickers.find((t) => t.symbol === selectedSymbol);
   if (tickers.length === 0) return <p className="text-xs text-on-surface-variant text-center py-4">No market data returned.</p>;
@@ -1352,7 +1856,18 @@ function MarketSection({ tickers, eventDate }: { tickers: Ticker[]; eventDate?: 
         ))}
       </div>
       {selectedTicker && selectedTicker.label !== "needs more evidence" && (
-        <TickerDetailPanel ticker={selectedTicker} eventDate={eventDate} extra={{ label: selectedTicker.label, direction_tag: selectedTicker.direction_tag, return_1d: selectedTicker.return_1d, volume_ratio: selectedTicker.volume_ratio, vs_xle_5d: selectedTicker.vs_xle_5d }} />
+        <TickerDetailPanel
+          ticker={selectedTicker}
+          eventDate={eventDate}
+          extra={{
+            label: selectedTicker.label,
+            direction_tag: selectedTicker.direction_tag,
+            return_1d: selectedTicker.return_1d,
+            volume_ratio: selectedTicker.volume_ratio,
+            vs_xle_5d: selectedTicker.vs_xle_5d,
+            why: analysis ? _buildWhyNote(selectedTicker, analysis) : undefined,
+          }}
+        />
       )}
       {withDir.length > 0 && (
         <p className="text-[10px] text-on-surface-variant">
@@ -1402,11 +1917,17 @@ interface AnalysisViewProps {
   initialEventId?: number;
   onHeadlineConsumed?: () => void;
   onBack?: () => void;
+  /** Called when analysis completes as failed (analysis_failed) or mock
+   *  (is_mock).  HeadlinesPage uses this to mark the row as retryable. */
+  onAnalysisFailed?: (headline: string) => void;
+  /** Called when analysis completes successfully (not failed, not mock).
+   *  HeadlinesPage uses this to clear a previously-failed row back to normal. */
+  onAnalysisSucceeded?: (headline: string) => void;
 }
 
 type Phase = "idle" | "classify" | "analysis" | "market" | "complete";
 
-export function AnalysisView({ initialHeadline, initialContext, initialEventId, onHeadlineConsumed, onBack }: AnalysisViewProps) {
+export function AnalysisView({ initialHeadline, initialContext, initialEventId, onHeadlineConsumed, onBack, onAnalysisFailed, onAnalysisSucceeded }: AnalysisViewProps) {
   const [headline, setHeadline] = useState("");
   const [eventDate] = useState("");
   const contextRef = useRef<string | undefined>(initialContext);
@@ -1418,7 +1939,18 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const onAnalysisFailedRef = useRef(onAnalysisFailed);
+  onAnalysisFailedRef.current = onAnalysisFailed;
+  const onAnalysisSucceededRef = useRef(onAnalysisSucceeded);
+  onAnalysisSucceededRef.current = onAnalysisSucceeded;
   const loading = phase !== "idle" && phase !== "complete";
+
+  const { data: calibData } = useQuery<ConfidenceCalibration>({
+    queryKey: qk.confidenceCalibration(),
+    queryFn: api.confidenceCalibration,
+    staleTime: 300_000,
+    retry: 1,
+  });
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
@@ -1452,7 +1984,15 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             setResult(partial as AnalyzeResponse);
             setPhase("market");
           } else if (stage === "complete") {
-            setResult(data as unknown as AnalyzeResponse);
+            const resp = data as unknown as AnalyzeResponse;
+            if (resp.analysis_failed || resp.is_mock) {
+              onAnalysisFailedRef.current?.(text);
+              setError(resp.failure_reason || "Model unavailable — try again in a moment.");
+              setPhase("idle");
+              return;
+            }
+            onAnalysisSucceededRef.current?.(text);
+            setResult(resp);
             setPhase("complete");
           }
         },
@@ -1465,6 +2005,23 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
       setPhase("idle");
     }
   }, [headline]);
+
+  // --- Market-only refresh (no LLM re-run) ---
+  const [marketRefreshing, setMarketRefreshing] = useState(false);
+
+  const refreshMarket = useCallback(async () => {
+    const eid = pendingEventIdRef.current;
+    if (!eid || !result) return;
+    setMarketRefreshing(true);
+    try {
+      const res = await api.refreshMarket(eid);
+      setResult((prev) => prev ? { ...prev, market: res.market } : prev);
+    } catch {
+      // silent — market block stays as-is
+    } finally {
+      setMarketRefreshing(false);
+    }
+  }, [result]);
 
   useEffect(() => {
     if (initialHeadline) {
@@ -1481,6 +2038,10 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
     ? (CONFIDENCE[result.analysis.confidence] ?? CONFIDENCE.low)
     : null;
   const ConfIcon = conf?.icon ?? Shield;
+
+  const calibBucket = result?.analysis?.confidence && calibData
+    ? calibData[result.analysis.confidence as Confidence]
+    : undefined;
 
   const isLowSignal = result?.analysis
     && (result.analysis.mechanism_summary || "").toLowerCase().includes("insufficient evidence")
@@ -1535,7 +2096,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               {result.persistence}
             </span>
           )}
-          {result?.is_mock && (
+          {result?.is_mock && !result?.analysis_failed && (
             <span className="text-[9px] px-2 py-0.5 rounded bg-error-container/30 text-error font-bold uppercase tracking-widest">Mock</span>
           )}
           {conf && result?.analysis && (
@@ -1543,6 +2104,11 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               <span className={cn("w-1.5 h-1.5 rounded-full", conf.dot)} />
               <ConfIcon className="h-3 w-3" />
               {conf.label}
+            </span>
+          )}
+          {calibBucket && (
+            <span className="text-[9px] text-on-surface-variant/35 tabular-nums" title={`Historical validation rate for ${result?.analysis?.confidence}-confidence calls`}>
+              {Math.round(calibBucket.hit_rate * 100)}% validated historically (n={calibBucket.n})
             </span>
           )}
           {result?.event_date && (
@@ -1586,6 +2152,14 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
       {/* ── SKELETON ── */}
       {phase === "classify" && !result && <AnalysisSkeleton />}
 
+      {/* ── EVIDENCE QUALITY / SOURCE CONSENSUS ── */}
+      {result && result.analysis && !isLowSignal && (
+        <div className="mb-6">
+          <p className="section-kicker mb-2">Source Consensus</p>
+          <EvidenceQualityStrip result={result} />
+        </div>
+      )}
+
       {/* ── RESULTS ── */}
       {result && (
         <div className="space-y-8">
@@ -1595,6 +2169,10 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             <MarketBackdropStrip />
           </section>
 
+          {/* Macro backdrop — regime/rates snapshot that informed the thesis */}
+          {result.analysis && (
+            <MacroBackdropBlock analysis={result.analysis} />
+          )}
 
           {/* ── STATE A: Strong signal ── */}
           {result.analysis && !isLowSignal && (
@@ -1709,6 +2287,11 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                 <ReactionFunctionDivergenceBlock data={result.analysis.reaction_function_divergence} />
               )}
 
+              {/* Narrative Divergence */}
+              {result.analysis.narrative_divergence?.available && (
+                <NarrativeDivergenceBlock data={result.analysis.narrative_divergence} />
+              )}
+
               {/* Surprise vs Anticipation Decomposition */}
               {result.analysis.surprise_vs_anticipation && result.analysis.surprise_vs_anticipation.regime && (
                 <SurpriseVsAnticipationBlock data={result.analysis.surprise_vs_anticipation} />
@@ -1738,6 +2321,9 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               {result.analysis.historical_analogs && result.analysis.historical_analogs.length > 0 && (
                 <HistoricalAnalogsBlock analogs={result.analysis.historical_analogs} />
               )}
+
+              {/* Research Output — collapsible analyst memo */}
+              <ResearchMemoBlock result={result} />
             </div>
           )}
 
@@ -1776,14 +2362,55 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             </div>
           ) : (
             <section className={cn(SECTION_CARD, "p-6")}>
-              <div className="flex items-center justify-between mb-4">
-                <SectionLabel>Real-Time Market Validation</SectionLabel>
-                <span className="text-[10px] text-on-surface-variant/40">
-                  {result.market.tickers.length} ticker{result.market.tickers.length !== 1 && "s"}
-                  {result.analysis?.assets_to_watch.length ? <> &middot; {result.analysis.assets_to_watch.join(", ")}</> : null}
-                </span>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="section-kicker mb-1.5">Market Validation</p>
+                  <div className="flex items-center gap-2.5">
+                    <h3
+                      className="text-[13px] font-semibold leading-none tracking-[-0.01em] text-on-surface"
+                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                    >
+                      Real-Time Confirmation
+                    </h3>
+                    <MarketValidationStatus market={result.market} freshness={result.freshness} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {!!pendingEventIdRef.current && (
+                    <button
+                      onClick={refreshMarket}
+                      disabled={marketRefreshing}
+                      className="flex items-center gap-1.5 text-[10px] text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
+                    >
+                      <RefreshCw className={cn("w-3 h-3", marketRefreshing && "animate-spin")} />
+                      {marketRefreshing ? "Refreshing…" : "Re-run"}
+                    </button>
+                  )}
+                  <span className="text-[10px] text-on-surface-variant/40 tabular-nums">
+                    {result.market.tickers.length} ticker{result.market.tickers.length !== 1 && "s"}
+                    {result.analysis?.assets_to_watch.length ? <> · {result.analysis.assets_to_watch.join(", ")}</> : null}
+                  </span>
+                </div>
               </div>
-              <MarketSection tickers={result.market.tickers} eventDate={result.event_date ?? undefined} />
+              {(() => {
+                const _dn = deriveDegradedNotice(result.market, result.analysis);
+                return _dn ? (
+                  <DegradedBanner
+                    title={_dn.label}
+                    detail={_dn.detail ?? undefined}
+                    severity={_dn.severity}
+                    className="mb-3"
+                  />
+                ) : null;
+              })()}
+              <MarketSection tickers={result.market.tickers} eventDate={result.event_date ?? undefined} analysis={result.analysis ?? undefined} />
+            </section>
+          )}
+
+          {/* ── REVISIT TIMELINE — own section card, below market validation ── */}
+          {result.market && !!pendingEventIdRef.current && (
+            <section className={cn(SECTION_CARD, "p-6")}>
+              <RevisitTimeline eventId={pendingEventIdRef.current} snapshots={[]} />
             </section>
           )}
         </div>
