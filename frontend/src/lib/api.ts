@@ -144,6 +144,12 @@ export interface Ticker extends TickerBase {
   return_20d: number | null;
   volume_ratio: number | null;
   vs_xle_5d: number | null;
+  /** Backend always sends spark; override TickerBase optional. */
+  spark: number[];
+  /** True when the ticker's latest bar is stale (delisted / halted / data gap). */
+  stale?: boolean;
+  /** ISO date of the last available trading bar when stale is true. */
+  last_trade_date?: string;
 }
 
 /** Freshness metadata attached to every /analyze response's market block.
@@ -174,6 +180,10 @@ export interface MarketResult extends MarketFreshness {
   note: string;
   details: Record<string, unknown>;
   tickers: Ticker[];
+  /** "ok" when most tickers have data; "degraded" when ≥50% lack prices. */
+  data_quality?: "ok" | "degraded";
+  /** Human-readable explanation when data_quality is "degraded". */
+  data_quality_note?: string;
 }
 
 /** Bucket classification for the event-age freeze policy.
@@ -186,13 +196,16 @@ export type FreshnessBucket =
   | "legacy";
 
 export interface FreshnessBlock {
-  bucket?: FreshnessBucket;
+  /** Backend always sends all 5 fields from _freshness_payload(). */
+  bucket: FreshnessBucket;
   /** The unforced classification — "frozen" when force_bypassed is true. */
-  natural_bucket?: FreshnessBucket;
-  event_age_days?: number | null;
-  is_frozen?: boolean;
-  force_bypassed?: boolean;
+  natural_bucket: FreshnessBucket;
+  event_age_days: number;
+  is_frozen: boolean;
+  force_bypassed: boolean;
 }
+
+export type Confidence = "low" | "medium" | "high";
 
 export interface AnalysisDetail {
   what_changed: string;
@@ -202,7 +215,7 @@ export interface AnalysisDetail {
   beneficiary_tickers: string[];
   loser_tickers: string[];
   assets_to_watch: string[];
-  confidence: string;
+  confidence: Confidence;
   transmission_chain?: string[];
   if_persists?: IfPersists;
   currency_channel?: CurrencyChannel;
@@ -215,7 +228,12 @@ export interface AnalysisDetail {
   surprise_vs_anticipation?: SurpriseVsAnticipation;
   terms_of_trade?: TermsOfTrade;
   reserve_stress?: ReserveStress;
+  narrative_divergence?: NarrativeDivergence;
   historical_analogs?: HistoricalAnalog[];
+  /** True when the analysis was degraded (missing overlays/context). */
+  degraded?: boolean;
+  /** Validation warnings from rule checks (only present when non-empty). */
+  validation_warnings?: string[];
 }
 
 export interface IfPersists {
@@ -459,6 +477,34 @@ export interface ReserveStress {
   signals?: ReserveStressSignals;
 }
 
+export type NarrativeDivergenceLabel =
+  | "confident_miss"
+  | "surprise_validation"
+  | "aligned"
+  | "mixed"
+  | "validated"
+  | "contradicted";
+
+export type NarrativeDivergenceSeverity = "none" | "mild" | "sharp";
+export type RoleSignal = "aligned" | "contra" | "mixed" | "no_data";
+
+export interface NarrativeDivergence {
+  available: boolean;
+  confidence?: string;
+  actual_rate?: number;
+  expected_rate?: number | null;
+  gap?: number | null;
+  label?: NarrativeDivergenceLabel;
+  severity?: NarrativeDivergenceSeverity;
+  rationale?: string | null;
+  n_supporting?: number;
+  n_contradicting?: number;
+  n_total?: number;
+  beneficiary_signal?: RoleSignal;
+  loser_signal?: RoleSignal;
+  n_calibration_events?: number | null;
+}
+
 export interface HistoricalAnalog {
   headline: string;
   event_date: string | null;
@@ -484,6 +530,10 @@ export interface AnalyzeResponse {
   freshness?: FreshnessBlock;
   is_mock: boolean;
   event_date: string | null;
+  /** True when the LLM returned a mock/fallback — not a real analysis. */
+  analysis_failed?: boolean;
+  /** Human-readable reason for the failure (e.g. "anthropic overload"). */
+  failure_reason?: string;
 }
 
 export interface SavedEvent {
@@ -503,6 +553,10 @@ export interface SavedEvent {
   event_date: string | null;
   notes: string;
   rating: string | null;
+  /** Staleness signal injected by the /events list endpoint. */
+  stale_signal?: StaleSignal;
+  hours_since_check?: number | null;
+  event_age_days?: number | null;
 }
 
 export interface RelatedEvent {
@@ -541,6 +595,27 @@ export interface BacktestResult {
   error?: string;
 }
 
+/** A single ticker's return at a specific revisit horizon. */
+export interface RevisitTicker {
+  symbol: string;
+  role: string;
+  direction: string | null;
+  [key: string]: unknown; // return_1d / return_5d / return_20d
+}
+
+/** One revisit snapshot — a point-in-time capture at day N after event. */
+export interface RevisitSnapshot {
+  day: number;
+  captured_at: string;
+  tickers: RevisitTicker[];
+}
+
+export interface RevisitTimeline {
+  event_id: number;
+  snapshots: RevisitSnapshot[];
+  note?: string;
+}
+
 export interface MacroEntry {
   label: string;
   value: number | null;
@@ -575,12 +650,24 @@ export interface HighlightsMeta {
   source: string;
 }
 
+export interface RegimeVector {
+  inflation: string;
+  policy_stance: string;
+  fx: string;
+  growth_stress: string;
+  available: boolean;
+  stale?: boolean;
+}
+
 export interface MarketContext {
   built_at: string;
   source: string;
   snapshots: MarketSnapshot[];
   snapshots_meta: SnapshotsMeta;
+  /** Backend always sends stress/rates/regime_vector (with available:false when degraded). */
   stress: StressRegime & { available?: boolean };
+  rates: RatesContext & { available?: boolean };
+  regime_vector: RegimeVector;
   highlights: MarketMover[];
   highlights_meta: HighlightsMeta;
 }
@@ -649,8 +736,9 @@ export interface MoverTicker {
   return_20d?: number | null;
   direction: string | null;
   spark: number[];
-  decay?: string;
-  decay_evidence?: string;
+  /** Backend always sends decay and decay_evidence on mover tickers. */
+  decay: string;
+  decay_evidence: string;
   /** First trading bar the forward returns were measured from.  Lets
    *  the UI label cards with "anchored YYYY-MM-DD" so users can see
    *  why the same symbol (e.g. XLE) reads differently across cards
@@ -670,17 +758,37 @@ export interface MarketMover {
   tickers: MoverTicker[];
   transmission_chain?: string[];
   if_persists?: IfPersists;
-  currency_channel?: CurrencyChannel;
-  policy_sensitivity?: PolicySensitivity;
-  inventory_context?: InventoryContext;
-  real_yield_context?: RealYieldContext;
-  policy_constraint?: PolicyConstraint;
   days_since_event?: number;
   /** ISO timestamp of the most recent provider refresh for this
    *  event's ticker payload.  Surfaced on the card so users see
    *  "as of HH:MM" and understand the freshness of the numbers. */
   last_market_check_at?: string | null;
 }
+
+export interface TrackRecord {
+  total: number;
+  validated: number;
+  contradicted: number;
+  unresolved: number;
+  avg_support_ratio: number | null;
+  /** Number of events scored from revisit follow-through data
+   *  (1d/5d/20d snapshots) rather than initial market-check direction. */
+  revisit_scored: number;
+  rated_good: number;
+  rated_mixed: number;
+  rated_poor: number;
+}
+
+export interface ConfidenceCalibrationBucket {
+  /** Fraction of events with ≥1 supporting ticker (0.0–1.0). */
+  hit_rate: number;
+  /** Number of events with usable directional outcomes in this bucket. */
+  n: number;
+}
+
+/** Historical validation rate per confidence bucket.
+ *  A bucket is omitted when n < 3 (insufficient data). */
+export type ConfidenceCalibration = Partial<Record<Confidence, ConfidenceCalibrationBucket>>;
 
 export interface TickerHeadline {
   headline: string;
@@ -698,15 +806,179 @@ export interface NewsCluster {
   agreement?: string;
 }
 
+export type MacroStatus = "upcoming" | "today" | "recent" | "past";
+
+export interface MacroRelease {
+  name: string;
+  release_date: string;
+  period: string;
+  status: MacroStatus;
+  days_until: number;
+}
+
+export type PolicyType = "tariff" | "sanction" | "regulation" | "executive_order" | "rate_decision";
+export type PolicyStatus = "upcoming" | "active" | "revisit_due" | "past";
+
+export interface PolicyItem {
+  name: string;
+  policy_type: PolicyType;
+  jurisdiction: string;
+  effective_date: string;
+  revisit_date: string;
+  description: string;
+  status: PolicyStatus;
+  days_until: number;
+  days_until_revisit: number;
+}
+
+export interface RefreshMeta {
+  status?: "ok" | "degraded" | "error" | "recent" | "throttled";
+  known: number;
+  new: number;
+  merged: number;
+  created: number;
+  reused: number;
+  source: "incremental" | "stored" | "stored_fallback" | "full_recluster" | "cached_fallback" | "empty";
+  ok_feeds?: number;
+  fail_feeds?: number;
+  error?: string;
+  last_successful_refresh?: string | null;
+  freshness?: "fresh" | "degraded" | "stale";
+}
+
 export interface NewsResponse {
   clusters: NewsCluster[];
   total_headlines: number;
   total_count: number;
   feed_status?: unknown[];
+  refresh_meta?: RefreshMeta;
+  macro_releases?: MacroRelease[];
+  policy_items?: PolicyItem[];
+}
+
+/** Supported single-event export formats. Maps directly to API URL segments. */
+export type ExportFormat = "text" | "markdown" | "csv" | "json";
+
+/** Raw staleness classification from compute_staleness() on the backend. */
+export type StaleSignal = "fresh" | "stale" | "frozen" | "legacy";
+
+/** Maps a StaleSignal to display state for the Archive and Portfolio pages. */
+export interface StaleDisplay {
+  showIndicator: boolean;
+  label: string;
+  dotClass: string;
+  showRefresh: boolean;
+}
+
+export function getStaleDisplay(signal: StaleSignal | undefined): StaleDisplay {
+  if (!signal || signal === "fresh") {
+    return { showIndicator: false, label: "", dotClass: "", showRefresh: false };
+  }
+  if (signal === "frozen") {
+    return {
+      showIndicator: true,
+      label: "Archived",
+      dotClass: "bg-muted-foreground/40",
+      showRefresh: false,
+    };
+  }
+  // stale | legacy
+  return {
+    showIndicator: true,
+    label: "Data outdated",
+    dotClass: "bg-amber-500/70",
+    showRefresh: true,
+  };
+}
+
+export interface PortfolioTicker {
+  symbol: string;
+  role: string;
+  direction_tag: string | null;
+  return_5d: number | null;
+}
+
+export interface PortfolioEntry {
+  id: number;
+  headline: string;
+  event_date: string | null;
+  timestamp: string | null;
+  stage: string | null;
+  persistence: string | null;
+  mechanism_summary: string;
+  beneficiaries: string[];
+  losers: string[];
+  market_tickers: PortfolioTicker[];
+  confidence: string | null;
+  rating: string | null;
+  revisit_snapshots: RevisitSnapshot[];
+  validation_outcome: "validated" | "contradicted" | "unresolved" | "no_data";
+  support_ratio: number | null;
+  /** Staleness signal injected by the /portfolio list endpoint. */
+  stale_signal?: StaleSignal;
+  hours_since_check?: number | null;
+  event_age_days?: number | null;
+}
+
+export interface PlaybookLeadTicker {
+  symbol: string | null;
+  return_5d: number | null;
+  direction_tag: string | null;
+}
+
+export interface PlaybookEntry {
+  id: number;
+  headline: string;
+  event_date: string | null;
+  stage: string | null;
+  persistence: string | null;
+  mechanism_summary: string;
+  confidence: string | null;
+  validation_outcome: "validated" | "contradicted" | "unresolved" | "no_data";
+  support_ratio: number | null;
+  lead_ticker: PlaybookLeadTicker | null;
+  revisit_count: number;
+}
+
+export interface HealthDetail {
+  api_status: string;
+  refresh_at: string | null;
+  refresh_age_seconds: number | null;
+  feed_health: {
+    ok: number;
+    failed: number;
+    total: number;
+    failing: { name: string; error: string }[];
+  };
+  pipeline: {
+    clusters_cached: number;
+    total_headlines: number;
+    freshness: "fresh" | "degraded" | "stale" | null;
+  };
+  overall: "ok" | "degraded" | "error" | "no_data";
+}
+
+/**
+ * Build the /news path with pagination params.
+ *
+ * Uses explicit `!== undefined` checks so that offset=0 (first page of an
+ * infinite query) is included in the URL just like offset=30 (second page).
+ * The previous `if (offset)` check silently dropped offset=0, making
+ * first-page and next-page request URLs structurally inconsistent.
+ *
+ * Exported for unit tests.
+ */
+export function _buildNewsPath(limit?: number, offset?: number): string {
+  const params = new URLSearchParams();
+  if (limit !== undefined) params.set("limit", String(limit));
+  if (offset !== undefined) params.set("offset", String(offset));
+  const qs = params.toString();
+  return qs ? `/news?${qs}` : "/news";
 }
 
 export const api = {
   health: () => request<{ status: string }>("/health"),
+  healthDetail: () => request<HealthDetail>("/health/detail"),
 
   analyze: (body: AnalyzeRequest) =>
     request<AnalyzeResponse>("/analyze", {
@@ -776,8 +1048,101 @@ export const api = {
       { method: "PATCH", body: JSON.stringify(body) },
     ),
 
+  deleteEvent: (eventId: number) =>
+    request<{ ok: boolean; event_id: number }>(
+      `/events/${eventId}`,
+      { method: "DELETE" },
+    ),
+
+  /** Fetch the text memo for one saved event as a Blob for browser download. */
+  downloadEventText: async (eventId: number): Promise<Blob> => {
+    const res = await fetch(`${BASE}/events/${eventId}/export/text`);
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new ApiError(
+        res.status === 404 ? "Event not found." : "Export failed.",
+        res.status,
+        detail,
+      );
+    }
+    return res.blob();
+  },
+
+  /** Fetch one saved event as a Blob in any supported format.
+   *  The format maps directly to the URL segment: /events/{id}/export/{format}. */
+  downloadEventBlob: async (eventId: number, format: ExportFormat): Promise<Blob> => {
+    const res = await fetch(`${BASE}/events/${eventId}/export/${format}`);
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new ApiError(
+        res.status === 404 ? "Event not found." : "Export failed.",
+        res.status,
+        detail,
+      );
+    }
+    return res.blob();
+  },
+
+  /** Export selected events as a portfolio-style Markdown report with cover page. */
+  downloadPortfolio: async (eventIds: number[]): Promise<Blob> => {
+    const res = await fetch(`${BASE}/events/export/portfolio`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_ids: eventIds }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new ApiError("Portfolio export failed.", res.status, detail);
+    }
+    return res.blob();
+  },
+
+  /** Export selected events as a zip of individual markdown memos. */
+  downloadSelectionZip: async (eventIds: number[]): Promise<Blob> => {
+    const res = await fetch(`${BASE}/events/export/zip`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_ids: eventIds }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new ApiError("Zip export failed.", res.status, detail);
+    }
+    return res.blob();
+  },
+
+  /** Fetch the full event archive as a bulk export blob (CSV or JSON). */
+  downloadBulkExport: async (format: "csv" | "json", limit = 10_000): Promise<Blob> => {
+    const res = await fetch(`${BASE}/events/export?format=${format}&limit=${limit}`);
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new ApiError("Bulk export failed.", res.status, detail);
+    }
+    return res.blob();
+  },
+
   relatedEvents: (eventId: number) =>
     request<RelatedEvent[]>(`/events/${eventId}/related`),
+
+  /** Re-run market check for a saved event without re-running LLM analysis.
+   *  Returns the refreshed market block so the UI can update in place. */
+  refreshMarket: (eventId: number) =>
+    request<{ event_id: number; market: MarketResult }>(
+      `/events/${eventId}/refresh-market`,
+      { method: "POST" },
+    ),
+
+  /** Fetch stored revisit timeline snapshots for an event. */
+  getRevisitTimeline: (eventId: number) =>
+    request<RevisitTimeline>(`/events/${eventId}/revisit`),
+
+  /** Capture a new revisit snapshot (1d/5d/20d follow-through). */
+  captureRevisit: (eventId: number) =>
+    request<RevisitTimeline>(`/events/${eventId}/revisit`, { method: "POST" }),
+
+  /** Fetch a saved event as a structured JSON object for read-only views (e.g. share page). */
+  getEventJson: (eventId: number) =>
+    request<SavedEvent>(`/events/${eventId}/export/json`),
 
   backtest: (eventId: number, force = false) =>
     request<BacktestResult>(
@@ -813,6 +1178,18 @@ export const api = {
   moversYearly: () => request<MarketMover[]>("/movers/yearly"),
   moversPersistent: () => request<MarketMover[]>("/movers/persistent"),
 
+  trackRecord: () => request<TrackRecord>("/stats/track-record"),
+
+  confidenceCalibration: () => request<ConfidenceCalibration>("/stats/confidence-calibration"),
+
+  portfolio: (limit = 20) =>
+    request<PortfolioEntry[]>(`/portfolio?limit=${limit}`),
+
+  regimePlaybook: (regime: string, limit = 4) =>
+    request<PlaybookEntry[]>(
+      `/regime-playbook?regime=${encodeURIComponent(regime)}&limit=${limit}`,
+    ),
+
   tickerChart: (symbol: string, eventDate: string) =>
     request<ChartPoint[]>(`/ticker/${encodeURIComponent(symbol)}/chart?event_date=${eventDate}`),
 
@@ -822,11 +1199,9 @@ export const api = {
   tickerHeadlines: (symbol: string) =>
     request<TickerHeadline[]>(`/ticker/${encodeURIComponent(symbol)}/headlines`),
 
-  news: (limit?: number, offset?: number) => {
-    const params = new URLSearchParams();
-    if (limit) params.set("limit", String(limit));
-    if (offset) params.set("offset", String(offset));
-    const qs = params.toString();
-    return request<NewsResponse>(`/news${qs ? `?${qs}` : ""}`);
-  },
+  news: (limit?: number, offset?: number) =>
+    request<NewsResponse>(_buildNewsPath(limit, offset)),
+
+  newsRefresh: (signal?: AbortSignal) =>
+    request<NewsResponse>("/news/refresh", { method: "POST", signal }),
 };
