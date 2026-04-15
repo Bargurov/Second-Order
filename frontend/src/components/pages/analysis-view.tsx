@@ -2179,14 +2179,9 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             <div className="space-y-8">
               {/* Transmission chain — big section card */}
               {result.analysis.transmission_chain && result.analysis.transmission_chain.length > 0 && (
-                <section className={cn(SECTION_CARD, "p-10 relative overflow-hidden")}>
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/4 blur-[100px] -mr-32 -mt-32" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-on-surface-variant mb-10 text-center relative z-10">
-                    Event Transmission Architecture
-                  </h3>
-                  <div className="relative z-10">
-                    <TransmissionChain steps={result.analysis.transmission_chain} />
-                  </div>
+                <section className={cn(SECTION_CARD, "px-5 py-4")}>
+                  <p className="section-kicker mb-4">Transmission Path</p>
+                  <TransmissionChain steps={result.analysis.transmission_chain} />
                 </section>
               )}
 
