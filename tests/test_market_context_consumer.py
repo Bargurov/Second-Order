@@ -348,6 +348,7 @@ class TestUncertaintyConcentration(_Base):
         self.assertIn("uncertainty_scope", uc)
         self.assertIn("sector_uncertainty", uc)
         self.assertIn("lead_sector", uc)
+        self.assertIn("available", uc)
 
     def test_scope_valid_value(self):
         data = self._full()
@@ -369,6 +370,7 @@ class TestUncertaintyConcentration(_Base):
         self.assertEqual(uc["uncertainty_scope"], "global")
         self.assertEqual(uc["sector_uncertainty"], [])
         self.assertIsNone(uc["lead_sector"])
+        self.assertFalse(uc["available"])
 
     def test_all_sections_fail_still_has_uncertainty_concentration(self):
         with patch("market_snapshots.get_all_snapshots", side_effect=RuntimeError("snap")), \

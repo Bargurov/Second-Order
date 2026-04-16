@@ -124,8 +124,10 @@ def _normalize_regime_vector(vec: Optional[dict]) -> dict:
 def _normalize_uncertainty_concentration(uc: Optional[dict]) -> dict:
     """Ensure uncertainty_concentration always has a stable fallback shape."""
     if not uc or not isinstance(uc, dict):
-        return {"uncertainty_scope": "global", "sector_uncertainty": [], "lead_sector": None}
-    return uc
+        return {"available": False, "uncertainty_scope": "global", "sector_uncertainty": [], "lead_sector": None}
+    out = dict(uc)
+    out.setdefault("available", True)
+    return out
 
 
 def compose_market_context(
@@ -154,6 +156,7 @@ def compose_market_context(
         regime_vector:   compact 4-axis regime vector
         highlights:      list[mover dict]
         highlights_meta: {count, source}
+        uncertainty_concentration: news-derived sector concentration (with `available` flag)
       }
     """
     return {
