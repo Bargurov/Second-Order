@@ -536,6 +536,14 @@ export interface AnalyzeResponse {
   failure_reason?: string;
 }
 
+export interface PersistenceSignal {
+  status: "watching" | "active" | "fading" | "resolved";
+  label: string;
+  evidence: string;
+  horizon_days: number;
+  days_elapsed: number;
+}
+
 export interface SavedEvent {
   id: number;
   timestamp: string;
@@ -557,6 +565,7 @@ export interface SavedEvent {
   stale_signal?: StaleSignal;
   hours_since_check?: number | null;
   event_age_days?: number | null;
+  persistence_signal?: PersistenceSignal;
 }
 
 export interface RelatedEvent {
@@ -567,6 +576,25 @@ export interface RelatedEvent {
   confidence: string;
   timestamp: string;
   event_date: string | null;
+}
+
+export interface CascadeNode {
+  id: number;
+  headline: string;
+  stage: string;
+  persistence: string;
+  confidence: string;
+  timestamp: string;
+  event_date: string | null;
+  mechanism_summary: string;
+  hop: number;
+  parent_id: number;
+  similarity: number;
+}
+
+export interface CascadeGraph {
+  root: { id: number; headline: string } | null;
+  nodes: CascadeNode[];
 }
 
 export interface BacktestOutcome {
@@ -670,6 +698,7 @@ export interface MarketContext {
   regime_vector: RegimeVector;
   highlights: MarketMover[];
   highlights_meta: HighlightsMeta;
+  uncertainty_concentration?: NewsUncertaintyConcentration;
 }
 
 export interface ChartPoint {
@@ -700,6 +729,36 @@ export interface StressComponentDetail {
   inflow_count?: number;
 }
 
+export interface SectorVolEntry {
+  sector: string;
+  etf: string;
+  vol_20d: number;
+  vol_ratio: number;
+  status: "stressed" | "watch" | "calm";
+}
+
+export interface SectorUncertainty {
+  available: boolean;
+  spy_vol_20d?: number;
+  concentration?: "concentrated" | "mixed" | "diffuse";
+  lead_sector?: string | null;
+  sectors?: SectorVolEntry[];
+}
+
+export interface NewsSectorUncertaintyEntry {
+  sector: string;
+  score: number;
+  cluster_count: number;
+  high_fraction: number;
+}
+
+export interface NewsUncertaintyConcentration {
+  available: boolean;
+  uncertainty_scope: "global" | "sector" | "mixed";
+  sector_uncertainty: NewsSectorUncertaintyEntry[];
+  lead_sector: string | null;
+}
+
 export interface StressRegime {
   regime: string;
   signals: {
@@ -712,6 +771,7 @@ export interface StressRegime {
   raw: Record<string, number>;
   detail?: Record<string, StressComponentDetail>;
   summary?: string;
+  sector_uncertainty?: SectorUncertainty;
 }
 
 export interface RatesContextEntry {
@@ -918,6 +978,7 @@ export interface PortfolioEntry {
   stale_signal?: StaleSignal;
   hours_since_check?: number | null;
   event_age_days?: number | null;
+  persistence_signal?: PersistenceSignal;
 }
 
 export interface PlaybookLeadTicker {
@@ -938,6 +999,62 @@ export interface PlaybookEntry {
   support_ratio: number | null;
   lead_ticker: PlaybookLeadTicker | null;
   revisit_count: number;
+}
+
+export interface NewsTrend {
+  headline: string;
+  source_count: number;
+  record_count: number;
+  latest_published_at: string;
+  score: number;
+}
+
+export interface SimulatePortfolioRequest {
+  event_ids: number[];
+  horizon?: "1d" | "5d" | "20d";
+  include_shorts?: boolean;
+  direction_filter?: "all" | "supporting";
+}
+
+export interface SimulatePosition {
+  event_id: number;
+  event_headline: string;
+  event_date: string | null;
+  event_confidence: string | null;
+  symbol: string;
+  role: string;
+  direction_tag: string | null;
+  weight: number;
+  gross_return: number | null;
+  portfolio_return: number | null;
+  return_source: "revisit" | "market_check" | "missing";
+  short: boolean;
+}
+
+export interface SimulateWarning {
+  type: "concentration" | "missing_data" | "low_confidence";
+  symbol?: string;
+  event_count: number;
+  total_weight?: number;
+  message: string;
+}
+
+export interface SimulatePortfolioResponse {
+  summary: {
+    events_requested: number;
+    events_contributing: number;
+    events_with_data: number;
+    positions_total: number;
+    positions_with_data: number;
+    portfolio_return: number | null;
+    data_coverage: number;
+    win_rate: number | null;
+    horizon: string;
+    include_shorts: boolean;
+    direction_filter: string;
+  };
+  positions: SimulatePosition[];
+  warnings: SimulateWarning[];
 }
 
 export interface HealthDetail {
@@ -1124,6 +1241,9 @@ export const api = {
   relatedEvents: (eventId: number) =>
     request<RelatedEvent[]>(`/events/${eventId}/related`),
 
+  cascadeGraph: (eventId: number) =>
+    request<CascadeGraph>(`/events/${eventId}/cascade`),
+
   /** Re-run market check for a saved event without re-running LLM analysis.
    *  Returns the refreshed market block so the UI can update in place. */
   refreshMarket: (eventId: number) =>
@@ -1204,4 +1324,12 @@ export const api = {
 
   newsRefresh: (signal?: AbortSignal) =>
     request<NewsResponse>("/news/refresh", { method: "POST", signal }),
+
+  newsTrends: () => request<NewsTrend[]>("/news/trends"),
+
+  simulatePortfolio: (body: SimulatePortfolioRequest) =>
+    request<SimulatePortfolioResponse>("/portfolio/simulate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
