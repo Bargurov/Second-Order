@@ -50,8 +50,9 @@ SNAPSHOT_REQUIRED_KEYS = {
 CONTEXT_REQUIRED_KEYS = {
     "built_at", "source",
     "snapshots", "snapshots_meta",
-    "stress",
+    "stress", "rates", "regime_vector",
     "highlights", "highlights_meta",
+    "uncertainty_concentration",
 }
 
 # Frontend reads these from snapshots_meta to size the partial availability footer.
@@ -328,6 +329,56 @@ class TestStaleStateRendering(_Base):
             self.assertIn("fetched_at", snap)
             self.assertIn("stale", snap)
             self.assertIn("source", snap)
+
+
+class TestUncertaintyConcentration(_Base):
+
+    def _full(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+            return self.client.get("/market-context?highlight_limit=10").json()
+
+    def test_field_present(self):
+        data = self._full()
+        self.assertIn("uncertainty_concentration", data)
+
+    def test_shape(self):
+        data = self._full()
+        uc = data["uncertainty_concentration"]
+        self.assertIn("uncertainty_scope", uc)
+        self.assertIn("sector_uncertainty", uc)
+        self.assertIn("lead_sector", uc)
+
+    def test_scope_valid_value(self):
+        data = self._full()
+        self.assertIn(
+            data["uncertainty_concentration"]["uncertainty_scope"],
+            {"global", "sector", "mixed"},
+        )
+
+    def test_sector_uncertainty_is_list(self):
+        data = self._full()
+        self.assertIsInstance(data["uncertainty_concentration"]["sector_uncertainty"], list)
+
+    def test_fallback_on_compute_failure(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        with patch("api.compute_news_uncertainty", side_effect=RuntimeError("uc_fail")):
+            data = self.client.get("/market-context").json()
+        uc = data["uncertainty_concentration"]
+        self.assertEqual(uc["uncertainty_scope"], "global")
+        self.assertEqual(uc["sector_uncertainty"], [])
+        self.assertIsNone(uc["lead_sector"])
+
+    def test_all_sections_fail_still_has_uncertainty_concentration(self):
+        with patch("market_snapshots.get_all_snapshots", side_effect=RuntimeError("snap")), \
+             patch("api.compute_stress_regime", side_effect=RuntimeError("stress")), \
+             patch("api.movers_today", side_effect=RuntimeError("movers")), \
+             patch("api.compute_news_uncertainty", side_effect=RuntimeError("uc")):
+            data = self.client.get("/market-context").json()
+        self.assertIn("uncertainty_concentration", data)
+        uc = data["uncertainty_concentration"]
+        self.assertEqual(uc["uncertainty_scope"], "global")
 
 
 if __name__ == "__main__":

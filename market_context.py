@@ -103,14 +103,42 @@ def _summarize_highlights(highlights: list[dict]) -> dict:
 # Pure composer — no I/O, fully testable with mock data
 # ---------------------------------------------------------------------------
 
+def _normalize_rates(rates: Optional[dict]) -> dict:
+    """Ensure rates context always has a stable shape."""
+    if not rates or not isinstance(rates, dict):
+        return {"available": False, "regime": "Unknown"}
+    out = dict(rates)
+    out.setdefault("available", True)
+    return out
+
+
+def _normalize_regime_vector(vec: Optional[dict]) -> dict:
+    """Ensure regime vector always has a stable shape."""
+    if not vec or not isinstance(vec, dict):
+        return {"available": False}
+    out = dict(vec)
+    out.setdefault("available", True)
+    return out
+
+
+def _normalize_uncertainty_concentration(uc: Optional[dict]) -> dict:
+    """Ensure uncertainty_concentration always has a stable fallback shape."""
+    if not uc or not isinstance(uc, dict):
+        return {"uncertainty_scope": "global", "sector_uncertainty": [], "lead_sector": None}
+    return uc
+
+
 def compose_market_context(
     snapshots: list[dict],
     stress: Optional[dict],
     highlights: list[dict],
     *,
+    rates: Optional[dict] = None,
+    regime_vector: Optional[dict] = None,
     source: Optional[str] = None,
+    uncertainty_concentration: Optional[dict] = None,
 ) -> dict:
-    """Combine the three pre-fetched sections into the unified context object.
+    """Combine the pre-fetched sections into the unified context object.
 
     All sections are optional — pass empty lists / None when a fetch failed
     and the resulting context will simply mark that section as degraded.
@@ -122,6 +150,8 @@ def compose_market_context(
         snapshots:       list[snapshot dict]   (per-market freshness inside)
         snapshots_meta:  {total, fresh, stale, unavailable}
         stress:          stress regime dict   (with `available` flag)
+        rates:           rates context dict   (with `available` flag)
+        regime_vector:   compact 4-axis regime vector
         highlights:      list[mover dict]
         highlights_meta: {count, source}
       }
@@ -132,6 +162,9 @@ def compose_market_context(
         "snapshots": list(snapshots or []),
         "snapshots_meta": _summarize_snapshots(snapshots or []),
         "stress": _normalize_stress(stress),
+        "rates": _normalize_rates(rates),
+        "regime_vector": _normalize_regime_vector(regime_vector),
         "highlights": list(highlights or []),
         "highlights_meta": _summarize_highlights(highlights or []),
+        "uncertainty_concentration": _normalize_uncertainty_concentration(uncertainty_concentration),
     }
