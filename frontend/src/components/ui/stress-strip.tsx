@@ -323,7 +323,7 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
                     <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", rc.dot)} />
                   </span>
                   <span className={cn("font-bold text-xs tracking-widest uppercase", rc.text)}>
-                    {uncertaintyConcentration!.lead_sector} · Concentration
+                    {uncertaintyConcentration!.lead_sector ?? "Sector"} · Concentration
                   </span>
                 </div>
               ) : (
