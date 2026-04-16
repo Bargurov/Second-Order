@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, type StressComponentDetail, type StressRegime } from "@/lib/api";
+import { api, type StressComponentDetail, type StressRegime, type SectorVolEntry, type NewsSectorUncertaintyEntry, type NewsUncertaintyConcentration } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, AlertTriangle } from "lucide-react";
+import { deriveStressDegraded, deriveIndicatorDegraded } from "@/lib/macro-degraded";
 
 // ---------------------------------------------------------------------------
 // Status dot colour — matches Stitch reference exactly
@@ -34,6 +35,7 @@ function regimeColor(regime: string): { dot: string; text: string; badge: string
 function IndicatorCard({ detail }: { detail: StressComponentDetail }) {
   const [open, setOpen] = useState(false);
   const dot = statusDot(detail.status);
+  const degraded = deriveIndicatorDegraded(detail);
 
   // Build value line
   let valueLine = "";
@@ -91,11 +93,20 @@ function IndicatorCard({ detail }: { detail: StressComponentDetail }) {
         </span>
         <div className={cn("w-2 h-2 rounded-full shrink-0", dot)} />
       </div>
-      {valueLine && (
-        <div className="text-xl font-bold tnum text-on-surface">{valueLine}</div>
-      )}
-      {subLine && (
-        <div className="text-[10px] text-on-surface-variant mb-3 italic">{subLine}</div>
+      {degraded ? (
+        <div className="flex items-center gap-1 mt-1 mb-3">
+          <AlertTriangle className="h-3 w-3 text-on-surface-variant/40 shrink-0" />
+          <span className="text-[10px] text-on-surface-variant/50">{degraded}</span>
+        </div>
+      ) : (
+        <>
+          {valueLine && (
+            <div className="text-xl font-bold tnum text-on-surface">{valueLine}</div>
+          )}
+          {subLine && (
+            <div className="text-[10px] text-on-surface-variant mb-3 italic">{subLine}</div>
+          )}
+        </>
       )}
       <p className="text-[11px] text-on-surface-variant leading-tight">{detail.explanation}</p>
 
@@ -123,6 +134,111 @@ function IndicatorCard({ detail }: { detail: StressComponentDetail }) {
 }
 
 // ---------------------------------------------------------------------------
+// Sector pressure row — compact chip strip shown when concentration is
+// "concentrated" or "mixed". Hidden when diffuse or unavailable.
+// ---------------------------------------------------------------------------
+
+function sectorDot(status: SectorVolEntry["status"]): string {
+  if (status === "stressed") return "bg-error";
+  if (status === "watch")    return "bg-[#facc15]";
+  return "bg-primary";
+}
+
+function SectorPressureRow({ sectors, spyVol }: {
+  sectors: SectorVolEntry[];
+  spyVol: number | undefined;
+}) {
+  // Only show elevated sectors (watch + stressed) capped at 8
+  const elevated = sectors.filter((s) => s.vol_ratio >= 1.3).slice(0, 8);
+  if (elevated.length === 0) return null;
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 shrink-0">
+        Sector vol
+      </span>
+      {spyVol !== undefined && (
+        <span className="text-[10px] text-on-surface-variant/50 shrink-0 font-mono">
+          SPY {spyVol.toFixed(1)}%
+        </span>
+      )}
+      <span className="text-on-surface-variant/20 shrink-0 text-[10px]">·</span>
+      <div className="flex flex-wrap gap-1.5">
+        {elevated.map((s) => (
+          <span
+            key={s.etf}
+            title={`${s.sector}: ${s.vol_20d.toFixed(1)}% vol (${s.vol_ratio.toFixed(2)}× SPY)`}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium font-mono",
+              s.status === "stressed" && "bg-error/10 text-error",
+              s.status === "watch"    && "bg-[#facc15]/10 text-[#facc15]",
+            )}
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", sectorDot(s.status))} />
+            {s.etf}
+            <span className="opacity-60">{s.vol_ratio.toFixed(2)}×</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sector lead row — shown when news-derived uncertainty_scope === "sector".
+// Displays up to 3 top-scoring sectors with optional vol corroboration badge.
+// ---------------------------------------------------------------------------
+
+function SectorLeadRow({
+  topSectors,
+  volSectors,
+}: {
+  topSectors: NewsSectorUncertaintyEntry[];
+  volSectors?: SectorVolEntry[];
+}) {
+  const displayed = topSectors.slice(0, 3);
+  if (displayed.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {displayed.map((s) => {
+        const volEntry = volSectors?.find(
+          (v) => v.sector.toLowerCase() === s.sector.toLowerCase(),
+        );
+        const hasBadge = volEntry != null && volEntry.vol_ratio >= 1.3;
+        const isHigh = s.high_fraction > 0.5;
+
+        return (
+          <span
+            key={s.sector}
+            title={`${s.sector} — score ${s.score}, ${s.cluster_count} clusters, ${Math.round(s.high_fraction * 100)}% high-uncertainty`}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium border",
+              isHigh
+                ? "bg-error/10 text-error border-error-dim/20"
+                : "bg-surface-container-highest text-on-surface-variant border-outline-variant/20",
+            )}
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full shrink-0",
+                isHigh ? "bg-error" : "bg-on-surface-variant/40",
+              )}
+            />
+            <span className="capitalize">{s.sector}</span>
+            {hasBadge && (
+              <span className="text-primary/80 font-mono text-[10px] opacity-80">
+                {volEntry!.vol_ratio.toFixed(2)}×
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Two-column Uncertainty section — matches Stitch reference exactly
 // ---------------------------------------------------------------------------
 
@@ -132,9 +248,13 @@ interface UncertaintySectionProps {
    *  component falls back to its own /stress query for backward compat. */
   stress?: StressRegime | null;
   isLoading?: boolean;
+  /** News-derived sector uncertainty concentration from /market-context.
+   *  When uncertainty_scope is "sector", the section leads with sector chips
+   *  and the 5-signal grid becomes a secondary baseline. */
+  uncertaintyConcentration?: NewsUncertaintyConcentration | null;
 }
 
-export function UncertaintySection({ stress, isLoading: parentLoading }: UncertaintySectionProps = {}) {
+export function UncertaintySection({ stress, isLoading: parentLoading, uncertaintyConcentration }: UncertaintySectionProps = {}) {
   // Parent-provided data takes precedence; only fetch when nothing was passed in.
   const enabled = stress === undefined;
   const { data: fetched, isLoading: fetchedLoading } = useQuery({
@@ -173,9 +293,14 @@ export function UncertaintySection({ stress, isLoading: parentLoading }: Uncerta
   const rc = regimeColor(data.regime);
   const detail = data.detail ?? {};
   const detailKeys = ["volatility", "term_structure", "credit", "safe_haven", "breadth"] as const;
+  const sectionDegraded = deriveStressDegraded(data);
 
   // Short label for regime
   const regimeLabel = data.regime.toUpperCase();
+
+  const isSectorLed =
+    uncertaintyConcentration?.uncertainty_scope === "sector" &&
+    (uncertaintyConcentration.sector_uncertainty?.length ?? 0) > 0;
 
   return (
     <section className="mt-4 mb-8">
@@ -183,35 +308,95 @@ export function UncertaintySection({ stress, isLoading: parentLoading }: Uncerta
         {/* Carbon fibre texture */}
         <div className="absolute inset-0 opacity-5 pointer-events-none carbon-texture" />
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start relative z-10">
-          {/* Left Badge — lg:w-1/4 */}
-          <div className="lg:w-1/4 shrink-0">
-            <div className={cn(
-              "inline-flex items-center gap-2 px-3 py-1 rounded-full border",
-              rc.badge, rc.badgeBorder,
-            )}>
-              <span className="relative flex h-2.5 w-2.5">
-                <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
-                <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", rc.dot)} />
-              </span>
-              <span className={cn("font-bold text-xs tracking-widest uppercase", rc.text)}>{regimeLabel}</span>
+        <div className="flex flex-col gap-6 relative z-10">
+          {/* Top row: left badge + right content */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Left Badge */}
+            <div className="lg:w-1/4 shrink-0">
+              {isSectorLed ? (
+                <div className={cn(
+                  "inline-flex items-center gap-2 px-3 py-1 rounded-full border",
+                  rc.badge, rc.badgeBorder,
+                )}>
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
+                    <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", rc.dot)} />
+                  </span>
+                  <span className={cn("font-bold text-xs tracking-widest uppercase", rc.text)}>
+                    {uncertaintyConcentration!.lead_sector} · Concentration
+                  </span>
+                </div>
+              ) : (
+                <div className={cn(
+                  "inline-flex items-center gap-2 px-3 py-1 rounded-full border",
+                  rc.badge, rc.badgeBorder,
+                )}>
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
+                    <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", rc.dot)} />
+                  </span>
+                  <span className={cn("font-bold text-xs tracking-widest uppercase", rc.text)}>{regimeLabel}</span>
+                </div>
+              )}
+              <h2 className="text-3xl font-headline font-extrabold mt-4 tracking-tighter leading-tight text-white">
+                Uncertainty &amp; Market Instability
+              </h2>
+              {data.summary && (
+                <p className="text-on-surface-variant text-sm mt-3 leading-relaxed">{data.summary}</p>
+              )}
+              {sectionDegraded && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <AlertTriangle className="h-3 w-3 text-error-dim/60 shrink-0" />
+                  <span className="text-[10px] text-error-dim/60">{sectionDegraded}</span>
+                </div>
+              )}
             </div>
-            <h2 className="text-3xl font-headline font-extrabold mt-4 tracking-tighter leading-tight text-white">
-              Uncertainty &amp; Market Instability
-            </h2>
-            {data.summary && (
-              <p className="text-on-surface-variant text-sm mt-3 leading-relaxed">{data.summary}</p>
+
+            {/* Right — sector chips (sector-led) or 5 indicator cards (global) */}
+            {isSectorLed ? (
+              <div className="flex-1 flex flex-col gap-3">
+                <SectorLeadRow
+                  topSectors={uncertaintyConcentration!.sector_uncertainty}
+                  volSectors={data.sector_uncertainty?.sectors}
+                />
+                <div>
+                  <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/40 font-bold">
+                    Baseline
+                  </span>
+                  <div className="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden opacity-50">
+                    {detailKeys.map((k) => {
+                      const d = detail[k];
+                      if (!d) return null;
+                      return <IndicatorCard key={k} detail={d} />;
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden">
+                {detailKeys.map((k) => {
+                  const d = detail[k];
+                  if (!d) return null;
+                  return <IndicatorCard key={k} detail={d} />;
+                })}
+              </div>
             )}
           </div>
 
-          {/* Right — 5 indicator cards in gap-px grid */}
-          <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden">
-            {detailKeys.map((k) => {
-              const d = detail[k];
-              if (!d) return null;
-              return <IndicatorCard key={k} detail={d} />;
-            })}
-          </div>
+          {/* Sector pressure row — vol-based, only in global mode when concentrated/mixed */}
+          {!isSectorLed && (() => {
+            const su = data.sector_uncertainty;
+            if (!su?.available) return null;
+            if (su.concentration === "diffuse") return null;
+            return (
+              <div className="border-t border-outline-variant/15 pt-4">
+                <SectorPressureRow
+                  sectors={su.sectors ?? []}
+                  spyVol={su.spy_vol_20d}
+                />
+              </div>
+            );
+          })()}
         </div>
       </div>
     </section>
