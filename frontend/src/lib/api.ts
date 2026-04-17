@@ -877,13 +877,14 @@ export interface MacroRelease {
 }
 
 export type PolicyType = "tariff" | "sanction" | "regulation" | "executive_order" | "rate_decision";
-export type PolicyStatus = "upcoming" | "active" | "revisit_due" | "past";
+export type PolicyStatus = "announced" | "pre_effective" | "active" | "revisit_due" | "past";
 
 export interface PolicyItem {
   name: string;
   policy_type: PolicyType;
   jurisdiction: string;
   effective_date: string;
+  announcement_date: string;
   revisit_date: string;
   description: string;
   status: PolicyStatus;

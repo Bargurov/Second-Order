@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, AlertTriangle, FlaskConical } from "lucide-react";
-import { api, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry } from "@/lib/api";
+import { ArrowRight, AlertTriangle, FlaskConical, Scale } from "lucide-react";
+import { api, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
@@ -808,6 +808,74 @@ function LatestHeadlinesStrip({
 }
 
 // ---------------------------------------------------------------------------
+// Policy context strip — active / pre-effective / revisit-due items only
+// ---------------------------------------------------------------------------
+
+const _MO_POLICY_TYPE_LABEL: Record<string, string> = {
+  tariff:          "Tariff",
+  sanction:        "Sanction",
+  regulation:      "Rule",
+  executive_order: "EO",
+  rate_decision:   "Rate",
+};
+
+const _MO_POLICY_PHASE_LABEL: Record<string, string> = {
+  pre_effective: "Pre-effective",
+  active:        "Active",
+  revisit_due:   "Revisit due",
+};
+
+function PolicyContextStrip({ items }: { items: PolicyItem[] }) {
+  const visible = items.filter(
+    (i) => i.status === "active" || i.status === "revisit_due" || i.status === "pre_effective",
+  );
+  if (visible.length === 0) return null;
+
+  return (
+    <section className="mb-4">
+      <div className="flex items-center gap-1.5 mb-2 text-[10px] text-muted-foreground/50 uppercase tracking-widest">
+        <Scale className="h-3 w-3" />
+        <span>Policy Tracker</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {visible.map((item) => (
+          <span
+            key={`${item.policy_type}-${item.effective_date}-${item.name}`}
+            title={item.description}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded px-2 py-1 text-[10px] border bg-[#13131a]",
+              item.status === "revisit_due"   ? "border-[#ee7d77]/20"
+                : item.status === "pre_effective" ? "border-[#facc15]/20"
+                : "border-border/20",
+            )}
+          >
+            <span className={cn(
+              "h-1.5 w-1.5 rounded-full shrink-0",
+              item.status === "revisit_due"   ? "bg-[#ee7d77]"
+                : item.status === "pre_effective" ? "bg-[#facc15]"
+                : "bg-muted-foreground/25",
+            )} />
+            <span className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground/50">
+              {_MO_POLICY_TYPE_LABEL[item.policy_type] ?? item.policy_type}
+            </span>
+            <span className="text-muted-foreground/40 text-[9px]">{item.jurisdiction}</span>
+            <span className="font-medium text-foreground/70 max-w-[140px] truncate">{item.name}</span>
+            <span className={cn(
+              "text-[9px] shrink-0",
+              item.status === "revisit_due"   ? "text-[#ee7d77]/70"
+                : item.status === "pre_effective" ? "text-[#facc15]/70"
+                : "text-muted-foreground/40",
+            )}>
+              {_MO_POLICY_PHASE_LABEL[item.status] ?? item.status}
+            </span>
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -939,10 +1007,13 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       {/* 1b. Macro Regime — rates regime + regime vector axes */}
       <RegimeStrip rates={rates} regimeVec={regimeVec} isLoading={ctxLoading} />
 
-      {/* 1c. Trending Themes — dominant actions/sectors across recent clusters */}
+      {/* 1c. Policy Context — active, pre-effective, and revisit-due policy items */}
+      <PolicyContextStrip items={newsData?.policy_items ?? []} />
+
+      {/* 1d. Trending Themes — dominant actions/sectors across recent clusters */}
       <TrendingThemesPanel clusters={newsData?.clusters ?? []} regimeVec={regimeVec} isLoading={newsLoading} />
 
-      {/* 1d. Regime Playbook — past patterns in similar conditions */}
+      {/* 1e. Regime Playbook — past patterns in similar conditions */}
       {stress?.regime && stress.regime !== "Calm" && stress.available !== false && (
         <RegimePlaybook regime={stress.regime} onAnalyze={onAnalyze} />
       )}
