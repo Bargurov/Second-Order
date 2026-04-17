@@ -190,12 +190,17 @@ function MoverCard({ mover, liveMap }: { mover: MarketMover; liveMap: LiveMap | 
         {expandedSymbol && (() => {
           const t = mover.tickers.find((x) => x.symbol === expandedSymbol);
           if (!t) return null;
+          const mech = mover.mechanism_summary || "";
+          const mechTrunc = mech.length > 110 ? mech.slice(0, 107) + "…" : mech;
+          const whyNote = t.role === "beneficiary"
+            ? `Beneficiary — ${mechTrunc}`
+            : `Exposed to downside — ${mechTrunc}`;
           return (
             <div className="mt-2">
               <TickerDetailPanel
                 ticker={t}
                 eventDate={mover.event_date}
-                moverExtra={{ decay: t.decay, decay_evidence: t.decay_evidence }}
+                moverExtra={{ decay: t.decay, decay_evidence: t.decay_evidence, why: whyNote }}
               />
             </div>
           );
