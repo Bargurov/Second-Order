@@ -17,11 +17,15 @@ interface AnalysisExtra {
   return_1d?: number | null;
   volume_ratio?: number | null;
   vs_xle_5d?: number | null;
+  /** Short explanation connecting this ticker to the event thesis. */
+  why?: string;
 }
 
 interface MoverExtra {
   decay?: string;
   decay_evidence?: string;
+  /** Short causal note shown in the why-it-matters block. */
+  why?: string;
 }
 
 interface TickerDetailPanelProps {
@@ -57,22 +61,26 @@ export function TickerDetailPanel({ ticker, eventDate, extra, moverExtra }: Tick
   const vol = extra?.volume_ratio ?? null;
   const volHigh = vol != null && vol >= 1.25;
 
+  // Strip "(proxy)" annotation before making any provider-backed requests.
+  // The display label (ticker.symbol) is intentionally kept as-is.
+  const apiSymbol = ticker.symbol.replace(/\s*\(proxy\)\s*$/i, "").trim();
+
   const { data: chartData, isLoading: chartLoading } = useQuery({
-    queryKey: qk.tickerChart(ticker.symbol, eventDate ?? ""),
-    queryFn: () => api.tickerChart(ticker.symbol, eventDate!),
+    queryKey: qk.tickerChart(apiSymbol, eventDate ?? ""),
+    queryFn: () => api.tickerChart(apiSymbol, eventDate!),
     enabled: !!eventDate,
     staleTime: 600_000,
   });
 
   const { data: info, isLoading: infoLoading } = useQuery({
-    queryKey: qk.tickerInfo(ticker.symbol),
-    queryFn: () => api.tickerInfo(ticker.symbol),
+    queryKey: qk.tickerInfo(apiSymbol),
+    queryFn: () => api.tickerInfo(apiSymbol),
     staleTime: 3_600_000,
   });
 
   const { data: headlines } = useQuery({
-    queryKey: qk.tickerHeadlines(ticker.symbol),
-    queryFn: () => api.tickerHeadlines(ticker.symbol),
+    queryKey: qk.tickerHeadlines(apiSymbol),
+    queryFn: () => api.tickerHeadlines(apiSymbol),
     staleTime: 300_000,
   });
 
@@ -138,6 +146,18 @@ export function TickerDetailPanel({ ticker, eventDate, extra, moverExtra }: Tick
       {!infoLoading && !hasInfo && (
         <div className="border-t border-border px-4 py-1.5">
           <span className="text-[10px] text-muted-foreground/60">Company info unavailable</span>
+        </div>
+      )}
+
+      {/* Why it matters */}
+      {(extra?.why || moverExtra?.why) && (
+        <div className="border-t border-border px-4 py-2">
+          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
+            Why it matters
+          </p>
+          <p className="text-xs leading-relaxed text-on-surface-variant">
+            {extra?.why ?? moverExtra?.why}
+          </p>
         </div>
       )}
 
