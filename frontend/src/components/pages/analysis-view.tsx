@@ -1822,14 +1822,30 @@ function RevisitTimeline({
 }
 
 function _buildWhyNote(ticker: Ticker, analysis: AnalysisDetail): string {
-  const pool = ticker.role === "beneficiary" ? analysis.beneficiaries : analysis.losers;
-  const sym = ticker.symbol.toUpperCase();
-  const match = pool.find((entry) => entry.toUpperCase().includes(sym));
-  if (match) return match.length > 140 ? match.slice(0, 137) + "…" : match;
-  const mech = analysis.mechanism_summary;
+  const role = ticker.role;
+  const sd = analysis.shock_decomposition;
+  const ps = analysis.policy_sensitivity;
+
+  // Tier 1: shock-anchored note
+  if (sd?.primary_label) {
+    const connector = role === "beneficiary" ? "beneficiary through" : "exposed via";
+    const channelRaw = sd.rationale || analysis.mechanism_summary || "";
+    const channel = channelRaw.length > 80 ? channelRaw.slice(0, 77) + "…" : channelRaw;
+    return `${sd.primary_label} — ${connector} ${channel}`;
+  }
+
+  // Tier 2: policy-sensitive note
+  if ((ps?.stance === "reinforced" || ps?.stance === "fighting") && ps?.explanation) {
+    const prefix = ps.stance === "fighting" ? "Policy headwind" : "Policy-sensitive";
+    const expl = ps.explanation.length > 100 ? ps.explanation.slice(0, 97) + "…" : ps.explanation;
+    return `${prefix} — ${expl}`;
+  }
+
+  // Tier 3: mechanism fallback
+  const mech = analysis.mechanism_summary || "";
   const mechTrunc = mech.length > 110 ? mech.slice(0, 107) + "…" : mech;
-  return ticker.role === "beneficiary"
-    ? `Identified as beneficiary — ${mechTrunc}`
+  return role === "beneficiary"
+    ? `Beneficiary — ${mechTrunc}`
     : `Exposed to downside — ${mechTrunc}`;
 }
 
