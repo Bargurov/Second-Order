@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 os.environ.setdefault("ANTHROPIC_API_KEY", "")
 
+import api as _api_bootstrap  # noqa: F401 — must import api before routes.events to avoid circular init
 import db
 from db import query_events_filtered
 
@@ -149,6 +150,38 @@ class TestQueryEventsFiltered(unittest.TestCase):
     def test_no_match_returns_empty(self):
         rows = query_events_filtered(search="zzz-no-match-zzz")
         self.assertEqual(rows, [])
+
+
+class TestScoreValidation(unittest.TestCase):
+    """_score_validation derives status from direction_tags."""
+
+    def _score(self, tags: list[str]) -> str:
+        from routes.events import _score_validation
+        return _score_validation({"market_tickers": [{"direction_tag": t} for t in tags]})
+
+    def test_validated_when_supporting_majority(self):
+        self.assertEqual(self._score(["supporting", "supporting", "contradicting"]), "validated")
+
+    def test_validated_single_supporting(self):
+        self.assertEqual(self._score(["supporting"]), "validated")
+
+    def test_contradicted_when_contradicting_majority(self):
+        self.assertEqual(self._score(["contradicting", "contradicting"]), "contradicted")
+
+    def test_contradicted_on_tie(self):
+        # tie: contradicting >= supporting → contradicted
+        self.assertEqual(self._score(["supporting", "contradicting"]), "contradicted")
+
+    def test_unresolved_when_no_tickers(self):
+        from routes.events import _score_validation
+        self.assertEqual(_score_validation({"market_tickers": []}), "unresolved")
+
+    def test_unresolved_when_all_neutral_tags(self):
+        self.assertEqual(self._score(["neutral", "neutral"]), "unresolved")
+
+    def test_unresolved_when_market_tickers_absent(self):
+        from routes.events import _score_validation
+        self.assertEqual(_score_validation({}), "unresolved")
 
 
 if __name__ == "__main__":

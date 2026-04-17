@@ -8,9 +8,9 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 
 from db import (
-    load_recent_events, update_review, delete_event,
+    update_review, delete_event,
     find_related_events, get_event_cascade, append_revisit_snapshot, load_revisit_snapshots,
-    dedup_events,
+    dedup_events, query_events_filtered,
 )
 from market_check import (
     _suppress_duplicate_tickers, _scrub_implausible_ticker_returns,
@@ -23,19 +23,65 @@ import api as _api
 router = APIRouter()
 
 
+def _score_validation(row: dict) -> str:
+    """Derive validation status from stored market_tickers direction_tags.
+
+    Returns:
+        "validated"    — supporting > contradicting, ≥1 supporting
+        "contradicted" — contradicting >= supporting, ≥1 contradicting
+        "unresolved"   — no tickers, or all tags are absent/neutral
+    """
+    tickers = row.get("market_tickers") or []
+    supporting    = sum(1 for t in tickers if t.get("direction_tag") == "supporting")
+    contradicting = sum(1 for t in tickers if t.get("direction_tag") == "contradicting")
+    if supporting == 0 and contradicting == 0:
+        return "unresolved"
+    if supporting > contradicting:
+        return "validated"
+    return "contradicted"
+
+
 @router.get("/events")
-def events(limit: int = 25):
-    cap = min(limit, 100)
-    # Over-fetch so dedup doesn't reduce the returned count below what was asked for.
-    rows = load_recent_events(limit=min(cap * 2, 200))
-    rows = dedup_events(rows)[:cap]
+def events(
+    limit:       int        = Query(25, ge=1, le=100),
+    offset:      int        = Query(0, ge=0),
+    search:      str | None = Query(None),
+    stage:       str | None = Query(None),
+    persistence: str | None = Query(None),
+    confidence:  str | None = Query(None),
+    rating:      str | None = Query(None),
+    date_from:   str | None = Query(None),
+    date_to:     str | None = Query(None),
+    validated:   str | None = Query(None, pattern="^(validated|contradicted|unresolved)$"),
+):
+    rows = query_events_filtered(
+        search=search,
+        stage=stage,
+        persistence=persistence,
+        confidence=confidence,
+        rating=rating,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    # Dedup, then decorate every row with computed signals.
+    rows = dedup_events(rows)
     for row in rows:
         sig = compute_staleness(row)
-        row["stale_signal"] = sig["status"]
-        row["hours_since_check"] = sig.get("hours_since_check")
-        row["event_age_days"] = sig.get("event_age_days")
+        row["stale_signal"]       = sig["status"]
+        row["hours_since_check"]  = sig.get("hours_since_check")
+        row["event_age_days"]     = sig.get("event_age_days")
         row["persistence_signal"] = classify_persistence_signal(row)
-    return _api._sanitize_floats(rows)
+        row["validation_status"]  = _score_validation(row)
+
+    # Post-filter by validation status (Python-side; no schema change needed).
+    if validated:
+        rows = [r for r in rows if r["validation_status"] == validated]
+
+    total = len(rows)
+    items = rows[offset: offset + limit]
+
+    return _api._sanitize_floats({"items": items, "total": total, "offset": offset, "limit": limit})
 
 
 @router.get("/events/export")
@@ -179,6 +225,30 @@ def export_events_portfolio(req: _api.BulkExportRequest):
                         "Content-Disposition": 'attachment; filename="research_portfolio.md"',
                         "X-Skipped-Ids": ",".join(str(i) for i in skipped_list) if skipped_list else "",
                     })
+
+
+@router.post("/events/export/deck")
+def export_events_deck(req: _api.BulkExportRequest):
+    from presentation_deck import build_presentation_deck
+    found_list: list[dict] = []
+    skipped_list: list[int] = []
+    for eid in req.event_ids:
+        ev = _api.load_event_by_id(eid)
+        if ev:
+            found_list.append(ev)
+        else:
+            skipped_list.append(eid)
+    if not found_list:
+        raise HTTPException(404, "No valid events found for the requested IDs.")
+    body = build_presentation_deck(found_list)
+    return Response(
+        content=body,
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="briefing_deck.md"',
+            "X-Skipped-Ids": ",".join(str(i) for i in skipped_list) if skipped_list else "",
+        },
+    )
 
 
 @router.get("/events/{event_id}/export/json")

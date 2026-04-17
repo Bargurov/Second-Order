@@ -223,7 +223,9 @@ class TestEmptyDbEndpointSmoke(unittest.TestCase):
     def test_events_returns_empty_list(self):
         r = self.client.get("/events")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        body = r.json()
+        self.assertIn("items", body)
+        self.assertEqual(body["items"], [])
 
     def test_events_export_returns_well_formed_payload(self):
         r = self.client.get("/events/export")

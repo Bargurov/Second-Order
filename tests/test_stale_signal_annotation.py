@@ -56,8 +56,8 @@ class TestEventsListAnnotation(unittest.TestCase):
         self.client = TestClient(_api_mod.app)
 
     def _get_events(self, rows):
-        with patch("routes.events.load_recent_events", return_value=rows):
-            return self.client.get("/events?limit=10").json()
+        with patch("routes.events.query_events_filtered", return_value=rows):
+            return self.client.get("/events?limit=10").json()["items"]
 
     def test_fresh_event_gets_fresh_signal(self):
         """An event checked 1 hour ago (well within 4h threshold) is fresh."""

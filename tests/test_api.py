@@ -18,7 +18,7 @@ import api as _api_mod  # noqa: E402 — imported after path fix
 import db  # noqa: E402
 
 
-def _mock_analyze(headline, stage, persistence, event_context=""):
+def _mock_analyze(inp):
     """Deterministic stand-in for analyze_event."""
     return {
         "what_changed": "Test policy change",
@@ -103,6 +103,9 @@ class APITestCase(unittest.TestCase):
         # Clear the /news TTL cache so each test gets a fresh call.
         _api_mod._news_cache["data"] = None
         _api_mod._news_cache["ts"] = 0.0
+        # Reset refresh guard so tests don't interfere with each other
+        _api_mod._last_refresh_at = 0.0
+        _api_mod._last_refresh_payload = None
 
     def tearDown(self):
         db.DB_FILE = self._orig
@@ -323,8 +326,8 @@ class TestLoadEventById(APITestCase):
         self.assertIsInstance(ip, dict)
         self.assertIn("substitution", ip)
 
-    @patch("api.analyze_event", side_effect=lambda h, s, p, event_context="": {
-        **_mock_analyze(h, s, p, event_context),
+    @patch("api.analyze_event", side_effect=lambda inp: {
+        **_mock_analyze(inp),
         "if_persists": {"substitution": None, "delayed_winners": [], "delayed_losers": [], "horizon": "null"},
     })
     def test_analyze_empty_if_persists_returns_empty_dict(self, _mock):
@@ -408,7 +411,9 @@ class TestEvents(APITestCase):
     def test_events_empty(self):
         r = self.client.get("/events")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        body = r.json()
+        self.assertIn("items", body)
+        self.assertEqual(body["items"], [])
 
     def test_events_after_save(self):
         db.save_event({
@@ -418,9 +423,53 @@ class TestEvents(APITestCase):
         })
         r = self.client.get("/events?limit=5")
         self.assertEqual(r.status_code, 200)
-        data = r.json()
+        data = r.json()["items"]
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["headline"], "Saved event")
+
+    def test_events_nan_in_market_tickers_returns_200(self):
+        """NaN in stored market_tickers must not cause a 500."""
+        import math
+        db.save_event({
+            "headline": "NaN ticker event",
+            "stage": "realized",
+            "persistence": "medium",
+            "market_tickers": [
+                {"symbol": "XYZ", "role": "beneficiary",
+                 "return_1d": float("nan"), "return_5d": float("nan"),
+                 "return_20d": float("inf"), "volume_ratio": float("-inf")},
+            ],
+        })
+        r = self.client.get("/events")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()["items"]
+        self.assertEqual(len(data), 1)
+        ticker = data[0]["market_tickers"][0]
+        self.assertIsNone(ticker["return_1d"])
+        self.assertIsNone(ticker["return_5d"])
+        self.assertIsNone(ticker["return_20d"])
+        self.assertIsNone(ticker["volume_ratio"])
+
+    def test_events_nan_in_nested_dict_fields_returns_200(self):
+        """NaN in dict overlay fields (e.g. shock_decomposition) must not 500."""
+        db.save_event({
+            "headline": "NaN overlay event",
+            "stage": "developing",
+            "persistence": "low",
+            "shock_decomposition": {"channels": {"rates": {"move_5d": float("nan"), "z": float("inf")}}},
+            "real_yield_context": {"breakeven_5y": float("nan")},
+        })
+        r = self.client.get("/events")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()["items"]
+        self.assertEqual(len(data), 1)
+        # NaN/inf should be None after sanitization
+        sd = data[0].get("shock_decomposition", {})
+        ryc = data[0].get("real_yield_context", {})
+        if sd and sd.get("channels", {}).get("rates"):
+            self.assertIsNone(sd["channels"]["rates"].get("move_5d"))
+        if ryc:
+            self.assertIsNone(ryc.get("breakeven_5y"))
 
 
 class TestReview(APITestCase):
@@ -986,13 +1035,18 @@ class TestMarketMovers(APITestCase):
         # After sort by abs(return_5d) desc: BBB(8), CCC(5), AAA(3.5)
         by_sym = {t["symbol"]: t for t in tickers}
         # Each ticker must carry its own metrics, not a neighbour's
+        from market_check import SPARK_LENGTH
         self.assertAlmostEqual(by_sym["BBB"]["return_5d"], -8.0)
-        self.assertEqual(by_sym["BBB"]["spark"], [0.9, 0.7, 0.5])
+        self.assertEqual(len(by_sym["BBB"]["spark"]), SPARK_LENGTH)
+        # Last 3 values should be the original spark data (left-padded)
+        self.assertEqual(by_sym["BBB"]["spark"][-3:], [0.9, 0.7, 0.5])
         self.assertEqual(by_sym["BBB"]["decay"], "Accelerating")
         self.assertAlmostEqual(by_sym["CCC"]["return_5d"], 5.0)
-        self.assertEqual(by_sym["CCC"]["spark"], [0.3, 0.6, 0.9])
+        self.assertEqual(len(by_sym["CCC"]["spark"]), SPARK_LENGTH)
+        self.assertEqual(by_sym["CCC"]["spark"][-3:], [0.3, 0.6, 0.9])
         self.assertAlmostEqual(by_sym["AAA"]["return_5d"], 3.5)
-        self.assertEqual(by_sym["AAA"]["spark"], [0.1, 0.2, 0.3])
+        self.assertEqual(len(by_sym["AAA"]["spark"]), SPARK_LENGTH)
+        self.assertEqual(by_sym["AAA"]["spark"][-3:], [0.1, 0.2, 0.3])
 
     def test_mover_includes_transmission_chain(self):
         """Market mover response includes transmission_chain when present."""
@@ -1125,42 +1179,50 @@ class TestMoversToday(APITestCase):
 
     def test_returns_recent_events(self):
         """Events from within the last 24h appear."""
-        self._seed("Recent mover", 0.5)
+        self._seed("OPEC cuts output by 500k bpd", 0.5)
         r = self.client.get("/movers/today")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(len(body), 1)
-        self.assertEqual(body[0]["headline"], "Recent mover")
+        self.assertEqual(body[0]["headline"], "OPEC cuts output by 500k bpd")
 
     def test_excludes_old_events(self):
         """Events older than 24h are excluded."""
         old_ts = (datetime.now() - timedelta(hours=25)).isoformat(timespec="seconds")
-        self._seed("Old event", 5.0, timestamp=old_ts)
+        self._seed("EU sanctions on Russian energy", 5.0, timestamp=old_ts)
         r = self.client.get("/movers/today")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), [])
 
     def test_includes_small_moves(self):
         """Events with small but non-null return_5d qualify for today's movers."""
-        self._seed("Tiny mover", 0.3)
+        self._seed("EU sanctions on Russian oil exports", 0.3)
         r = self.client.get("/movers/today")
         body = r.json()
         self.assertEqual(len(body), 1)
 
     def test_sorted_by_abs_return_descending(self):
         """Results sorted by impact (abs max return) descending."""
-        self._seed("Small move", 1.0)
-        self._seed("Big move", 8.0)
+        self._seed("EU sanctions on Russian energy", 1.0)
+        self._seed("OPEC cuts output by 500k bpd", 8.0)
         r = self.client.get("/movers/today")
         body = r.json()
         self.assertEqual(len(body), 2)
-        self.assertEqual(body[0]["headline"], "Big move")
-        self.assertEqual(body[1]["headline"], "Small move")
+        self.assertEqual(body[0]["headline"], "OPEC cuts output by 500k bpd")
+        self.assertEqual(body[1]["headline"], "EU sanctions on Russian energy")
 
     def test_cap_at_limit(self):
         """Default limit is 10."""
+        _HL = [
+            "OPEC cuts output", "EU sanctions expand", "US tariff on steel",
+            "China retaliatory tariffs", "NATO defense spending",
+            "Natural gas disruption", "Federal Reserve rate cut",
+            "Oil embargo on Iran", "Semiconductor export controls",
+            "LNG terminal explosion", "Pipeline attack in Europe",
+            "Trade war escalation",
+        ]
         for i in range(12):
-            self._seed(f"Mover {i}", float(i + 1))
+            self._seed(_HL[i], float(i + 1))
         r = self.client.get("/movers/today")
         body = r.json()
         self.assertLessEqual(len(body), 10)
@@ -1198,58 +1260,67 @@ class TestMoversPersistent(APITestCase):
 
     def test_returns_old_accelerating_event(self):
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
-        self._seed("Old accelerating", 5.0, 6.0, timestamp=old_ts)
+        self._seed("OPEC cuts output by 500k bpd", 5.0, 6.0, timestamp=old_ts)
         r = self.client.get("/movers/persistent")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(len(body), 1)
-        self.assertEqual(body[0]["headline"], "Old accelerating")
+        self.assertEqual(body[0]["headline"], "OPEC cuts output by 500k bpd")
         self.assertIn("days_since_event", body[0])
         self.assertGreater(body[0]["days_since_event"], 0)
 
     def test_strict_excludes_recent_events(self):
-        """When strict results exist, recent events are excluded from them."""
+        """When strict results are plentiful, recent events are excluded."""
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
-        self._seed("Old qualifying", 5.0, 6.0, timestamp=old_ts)
-        self._seed("Recent event", 5.0, 6.0)  # today
+        self._seed("EU sanctions on Russian energy", 5.0, 6.0, timestamp=old_ts)
+        self._seed("Oil embargo on Iran tightens", 4.0, 5.0, timestamp=old_ts)
+        self._seed("OPEC extends production cuts", 6.0, 7.0, timestamp=old_ts)
+        self._seed("Pipeline attack in Eastern Europe", 3.0, 4.0, timestamp=old_ts)
+        self._seed("US tariff on steel imports", 5.0, 6.0)  # today — should be excluded
         r = self.client.get("/movers/persistent")
         headlines = [m["headline"] for m in r.json()]
-        self.assertIn("Old qualifying", headlines)
-        self.assertNotIn("Recent event", headlines)
+        self.assertIn("EU sanctions on Russian energy", headlines)
+        self.assertNotIn("US tariff on steel imports", headlines)
 
     def test_strict_excludes_fading_events(self):
-        """When strict results exist, fading trajectories are excluded."""
+        """When strict results are plentiful, fading trajectories are excluded."""
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
-        self._seed("Old accelerating", 5.0, 6.0, timestamp=old_ts)
-        self._seed("Fading shock", 1.0, 10.0, timestamp=old_ts)
+        self._seed("OPEC cuts output by 500k bpd", 5.0, 6.0, timestamp=old_ts)
+        self._seed("Oil embargo on Iran tightens", 4.0, 5.0, timestamp=old_ts)
+        self._seed("EU sanctions expand further", 6.0, 7.0, timestamp=old_ts)
+        self._seed("Pipeline disruption in Europe", 3.0, 4.0, timestamp=old_ts)
+        self._seed("China tariffs on US agriculture", 1.0, 10.0, timestamp=old_ts)  # Fading
         r = self.client.get("/movers/persistent")
         headlines = [m["headline"] for m in r.json()]
-        self.assertIn("Old accelerating", headlines)
-        self.assertNotIn("Fading shock", headlines)
+        self.assertIn("OPEC cuts output by 500k bpd", headlines)
+        self.assertNotIn("China tariffs on US agriculture", headlines)
 
     def test_strict_excludes_reversed_events(self):
-        """When strict results exist, reversed trajectories are excluded."""
+        """When strict results are plentiful, reversed trajectories are excluded."""
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
-        self._seed("Old holding", 4.0, 5.0, timestamp=old_ts)
-        self._seed("Reversed shock", -3.0, 5.0, timestamp=old_ts)
+        self._seed("EU sanctions on Russian energy sector", 4.0, 5.0, timestamp=old_ts)
+        self._seed("Oil embargo on Iran tightens", 5.0, 6.0, timestamp=old_ts)
+        self._seed("OPEC extends production cuts", 6.0, 7.0, timestamp=old_ts)
+        self._seed("Pipeline disruption in Europe", 3.0, 4.0, timestamp=old_ts)
+        self._seed("NATO defense spending increase", -3.0, 5.0, timestamp=old_ts)  # Reversed
         r = self.client.get("/movers/persistent")
         headlines = [m["headline"] for m in r.json()]
-        self.assertIn("Old holding", headlines)
-        self.assertNotIn("Reversed shock", headlines)
+        self.assertIn("EU sanctions on Russian energy sector", headlines)
+        self.assertNotIn("NATO defense spending increase", headlines)
 
     def test_sorted_oldest_first(self):
         """Oldest persistent shock sorts first."""
         ts_20d = (datetime.now() - timedelta(days=20)).isoformat(timespec="seconds")
         ts_10d = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
         ev_old = {
-            "headline": "Older persistent", "stage": "realized", "persistence": "structural",
+            "headline": "Oil embargo tightens on Iran exports", "stage": "realized", "persistence": "structural",
             "event_date": (datetime.now() - timedelta(days=20)).strftime("%Y-%m-%d"),
             "timestamp": ts_20d,
             "market_tickers": [{"symbol": "GLD", "role": "beneficiary", "return_5d": 3.0,
                                 "return_20d": 4.0, "direction_tag": "supports \u2191"}],
         }
         ev_new = {
-            "headline": "Newer persistent", "stage": "realized", "persistence": "structural",
+            "headline": "Semiconductor export controls extended", "stage": "realized", "persistence": "structural",
             "event_date": (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d"),
             "timestamp": ts_10d,
             "market_tickers": [{"symbol": "XLE", "role": "beneficiary", "return_5d": 4.0,
@@ -1260,11 +1331,11 @@ class TestMoversPersistent(APITestCase):
         r = self.client.get("/movers/persistent")
         body = r.json()
         self.assertEqual(len(body), 2)
-        self.assertEqual(body[0]["headline"], "Older persistent")
+        self.assertEqual(body[0]["headline"], "Oil embargo tightens on Iran exports")
 
     def test_fallback_when_no_old_events(self):
         """When no events are >7d old, fallback includes recent events with movement."""
-        self._seed("Recent fallback", 5.0, 6.0)  # No timestamp → today
+        self._seed("Natural gas supply disruption in Europe", 5.0, 6.0)  # No timestamp → today
         r = self.client.get("/movers/persistent")
         body = r.json()
         self.assertGreaterEqual(len(body), 1)
@@ -1280,16 +1351,25 @@ class TestMoversPersistent(APITestCase):
     def test_deduplicates_by_headline(self):
         """Duplicate headlines should appear only once."""
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
-        self._seed("Same headline", 5.0, 6.0, timestamp=old_ts)
-        self._seed("Same headline", 5.0, 6.0, timestamp=old_ts)
+        self._seed("OPEC cuts output by 500k bpd", 5.0, 6.0, timestamp=old_ts)
+        self._seed("OPEC cuts output by 500k bpd", 5.0, 6.0, timestamp=old_ts)
         r = self.client.get("/movers/persistent")
         headlines = [m["headline"] for m in r.json()]
         self.assertEqual(len(headlines), len(set(headlines)))
 
     def test_cap_at_limit(self):
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        _HL = [
+            "OPEC cuts output", "EU sanctions expand", "US tariff on steel",
+            "China retaliatory tariffs", "NATO defense spending",
+            "Natural gas disruption", "Federal Reserve rate cut",
+            "Oil embargo on Iran", "Semiconductor export controls",
+            "LNG terminal explosion", "Pipeline attack in Europe",
+            "Trade war escalation", "Crude oil supply shock",
+            "Inflation data surprises", "Central bank emergency meeting",
+        ]
         for i in range(15):
-            self._seed(f"Persistent {i}", float(i + 3), float(i + 4), timestamp=old_ts)
+            self._seed(_HL[i], float(i + 3), float(i + 4), timestamp=old_ts)
         r = self.client.get("/movers/persistent")
         self.assertLessEqual(len(r.json()), 12)
 
@@ -1307,7 +1387,7 @@ class TestMoversDeduplication(APITestCase):
     def test_weekly_deduplicates(self):
         for _ in range(3):
             db.save_event({
-                "headline": "Duplicate weekly event",
+                "headline": "OPEC cuts output by 500k bpd",
                 "stage": "realized", "persistence": "medium",
                 "event_date": "2025-03-01",
                 "market_tickers": [{"symbol": "GLD", "role": "beneficiary",
@@ -1320,7 +1400,7 @@ class TestMoversDeduplication(APITestCase):
     def test_today_deduplicates(self):
         for _ in range(3):
             db.save_event({
-                "headline": "Duplicate today event",
+                "headline": "EU sanctions on Russian energy",
                 "stage": "realized", "persistence": "medium",
                 "event_date": "2025-03-01",
                 "market_tickers": [{"symbol": "GLD", "role": "beneficiary",
@@ -1355,24 +1435,24 @@ class TestMoversWeekly(APITestCase):
         db.save_event(ev)
 
     def test_returns_recent_events(self):
-        self._seed("Weekly mover", 2.0)
+        self._seed("US tariff on steel imports", 2.0)
         r = self.client.get("/movers/weekly")
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(len(r.json()), 1)
 
     def test_excludes_old_events(self):
         old_ts = (datetime.now() - timedelta(days=8)).isoformat(timespec="seconds")
-        self._seed("Old weekly", 5.0, timestamp=old_ts)
+        self._seed("EU sanctions on Russian oil", 5.0, timestamp=old_ts)
         r = self.client.get("/movers/weekly")
         self.assertEqual(r.json(), [])
 
     def test_sorted_by_impact(self):
-        self._seed("Small weekly", 1.0)
-        self._seed("Big weekly", 8.0)
+        self._seed("EU sanctions on Russian energy", 1.0)
+        self._seed("OPEC cuts output by 500k bpd", 8.0)
         r = self.client.get("/movers/weekly")
         body = r.json()
         self.assertEqual(len(body), 2)
-        self.assertEqual(body[0]["headline"], "Big weekly")
+        self.assertEqual(body[0]["headline"], "OPEC cuts output by 500k bpd")
 
     def test_empty_when_no_events(self):
         r = self.client.get("/movers/weekly")
@@ -1404,24 +1484,24 @@ class TestMoversYearly(APITestCase):
         db.save_event(ev)
 
     def test_returns_recent_events(self):
-        self._seed("Yearly mover", 3.0)
+        self._seed("China retaliatory tariffs on US agriculture", 3.0)
         r = self.client.get("/movers/yearly")
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(len(r.json()), 1)
 
     def test_excludes_old_events(self):
         old_ts = (datetime.now() - timedelta(days=366)).isoformat(timespec="seconds")
-        self._seed("Ancient event", 5.0, timestamp=old_ts)
+        self._seed("EU sanctions on Russian energy", 5.0, timestamp=old_ts)
         r = self.client.get("/movers/yearly")
         self.assertEqual(r.json(), [])
 
     def test_sorted_by_impact(self):
-        self._seed("Small yearly", 1.0)
-        self._seed("Big yearly", 9.0)
+        self._seed("EU sanctions on Russian oil exports", 1.0)
+        self._seed("OPEC cuts output by 500k bpd", 9.0)
         r = self.client.get("/movers/yearly")
         body = r.json()
         self.assertEqual(len(body), 2)
-        self.assertEqual(body[0]["headline"], "Big yearly")
+        self.assertEqual(body[0]["headline"], "OPEC cuts output by 500k bpd")
 
 
 class TestNewsPagination(APITestCase):
@@ -1976,14 +2056,14 @@ class TestInventoryContext(unittest.TestCase):
                 return self._close
 
         original_fetch = market_check._fetch
-        original_safe_pct = market_check._safe_pct
+        original_compute_move = market_check.compute_move
         market_check._fetch = lambda ticker: FakeDF(return_20d)
-        market_check._safe_pct = lambda series, n: return_20d
-        return original_fetch, original_safe_pct
+        market_check.compute_move = lambda series, n, unit: return_20d
+        return original_fetch, original_compute_move
 
     def _restore(self, originals):
         import market_check
-        market_check._fetch, market_check._safe_pct = originals
+        market_check._fetch, market_check.compute_move = originals
 
     def test_tight_on_rising_oil(self):
         """Oil keyword + rising proxy → tight."""
@@ -2066,10 +2146,10 @@ class TestInventoryContext(unittest.TestCase):
         """Patch _fetch to return None (data unavailable)."""
         import market_check
         original_fetch = market_check._fetch
-        original_safe_pct = market_check._safe_pct
+        original_compute = market_check.compute_move
         market_check._fetch = lambda ticker: None
-        market_check._safe_pct = lambda series, n: None
-        return original_fetch, original_safe_pct
+        market_check.compute_move = lambda series, n, unit: None
+        return original_fetch, original_compute
 
     def test_opec_headline_produces_visible_block(self):
         """OPEC headline → visible block even with flat data."""
@@ -2136,14 +2216,14 @@ class TestInventoryContextEndToEnd(unittest.TestCase):
     def _mock_fetch(self, return_20d):
         import market_check
         orig_fetch = market_check._fetch
-        orig_pct = market_check._safe_pct
+        orig_compute = market_check.compute_move
         market_check._fetch = lambda ticker: type('DF', (), {'__len__': lambda s: 25, '__getitem__': lambda s, k: None})()
-        market_check._safe_pct = lambda series, n: return_20d
-        return orig_fetch, orig_pct
+        market_check.compute_move = lambda series, n, unit: return_20d
+        return orig_fetch, orig_compute
 
     def _restore(self, originals):
         import market_check
-        market_check._fetch, market_check._safe_pct = originals
+        market_check._fetch, market_check.compute_move = originals
 
     def test_opec_headline_has_inventory_in_api_response(self):
         """Full path: OPEC headline → classify → analysis dict → inventory_context present."""
@@ -2209,14 +2289,14 @@ class TestInventoryHeadlineInclusion(unittest.TestCase):
     def _mock_fetch(self, return_20d):
         import market_check
         orig_f = market_check._fetch
-        orig_p = market_check._safe_pct
+        orig_c = market_check.compute_move
         market_check._fetch = lambda t: type('D', (), {'__len__': lambda s: 25, '__getitem__': lambda s, k: None})()
-        market_check._safe_pct = lambda s, n: return_20d
-        return orig_f, orig_p
+        market_check.compute_move = lambda s, n, unit: return_20d
+        return orig_f, orig_c
 
     def _restore(self, originals):
         import market_check
-        market_check._fetch, market_check._safe_pct = originals
+        market_check._fetch, market_check.compute_move = originals
 
     def test_opec_headline_with_mock_mechanism(self):
         """OPEC in headline + mock mechanism → still matches oil proxy."""
@@ -2267,14 +2347,14 @@ class TestInventoryCacheFallback(unittest.TestCase):
     def _mock_fetch(self, return_20d):
         import market_check
         orig_f = market_check._fetch
-        orig_p = market_check._safe_pct
+        orig_c = market_check.compute_move
         market_check._fetch = lambda t: type('D', (), {'__len__': lambda s: 25, '__getitem__': lambda s, k: None})()
-        market_check._safe_pct = lambda s, n: return_20d
-        return orig_f, orig_p
+        market_check.compute_move = lambda s, n, unit: return_20d
+        return orig_f, orig_c
 
     def _restore(self, originals):
         import market_check
-        market_check._fetch, market_check._safe_pct = originals
+        market_check._fetch, market_check.compute_move = originals
 
     def test_old_cached_row_gets_recomputed(self):
         """A cached event with empty inventory_context gets it recomputed."""
