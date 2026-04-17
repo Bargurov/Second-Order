@@ -9,12 +9,14 @@ from fastapi.responses import Response
 
 from db import (
     load_recent_events, update_review, delete_event,
-    find_related_events, append_revisit_snapshot, load_revisit_snapshots,
+    find_related_events, get_event_cascade, append_revisit_snapshot, load_revisit_snapshots,
+    dedup_events,
 )
 from market_check import (
     _suppress_duplicate_tickers, _scrub_implausible_ticker_returns,
 )
 from market_check_freshness import compute_staleness
+from persistence_signal import classify_persistence_signal
 
 import api as _api
 
@@ -23,12 +25,16 @@ router = APIRouter()
 
 @router.get("/events")
 def events(limit: int = 25):
-    rows = load_recent_events(limit=min(limit, 100))
+    cap = min(limit, 100)
+    # Over-fetch so dedup doesn't reduce the returned count below what was asked for.
+    rows = load_recent_events(limit=min(cap * 2, 200))
+    rows = dedup_events(rows)[:cap]
     for row in rows:
         sig = compute_staleness(row)
         row["stale_signal"] = sig["status"]
         row["hours_since_check"] = sig.get("hours_since_check")
         row["event_age_days"] = sig.get("event_age_days")
+        row["persistence_signal"] = classify_persistence_signal(row)
     return _api._sanitize_floats(rows)
 
 
@@ -88,6 +94,20 @@ def export_event_markdown(event_id: int):
     filename = _api._safe_event_filename(event_id, ev.get("headline", ""), "md")
     return Response(content=body, media_type="text/markdown; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@router.get("/events/{event_id}/export/memo")
+def export_event_memo(event_id: int):
+    ev = _api.load_event_by_id(event_id)
+    if not ev:
+        raise HTTPException(404, f"Event {event_id} not found.")
+    body = _api._build_event_research_memo(ev)
+    filename = _api._safe_event_filename(event_id, ev.get("headline", ""), "md")
+    return Response(
+        content=body,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="memo_{filename}"'},
+    )
 
 
 @router.post("/events/export/markdown")
@@ -186,6 +206,14 @@ def related(event_id: int):
     if not target:
         raise HTTPException(404, f"Event {event_id} not found.")
     return find_related_events(event_id, target["headline"])
+
+
+@router.get("/events/{event_id}/cascade")
+def cascade(event_id: int):
+    result = get_event_cascade(event_id)
+    if result["root"] is None:
+        raise HTTPException(404, f"Event {event_id} not found.")
+    return _api._sanitize_floats(result)
 
 
 @router.get("/events/{event_id}/backtest")
