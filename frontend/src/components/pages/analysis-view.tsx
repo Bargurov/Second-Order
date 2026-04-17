@@ -1844,6 +1844,7 @@ function _buildWhyNote(ticker: Ticker, analysis: AnalysisDetail): string {
   // Tier 3: mechanism fallback
   const mech = analysis.mechanism_summary || "";
   const mechTrunc = mech.length > 110 ? mech.slice(0, 107) + "…" : mech;
+  if (!mechTrunc) return "";
   return role === "beneficiary"
     ? `Beneficiary — ${mechTrunc}`
     : `Exposed to downside — ${mechTrunc}`;
