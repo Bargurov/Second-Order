@@ -1827,7 +1827,7 @@ function _buildWhyNote(ticker: Ticker, analysis: AnalysisDetail): string {
   const ps = analysis.policy_sensitivity;
 
   // Tier 1: shock-anchored note
-  if (sd?.primary_label) {
+  if (sd?.primary_label && sd.primary !== "none") {
     const connector = role === "beneficiary" ? "beneficiary through" : "exposed via";
     const channelRaw = sd.rationale || analysis.mechanism_summary || "";
     const channel = channelRaw.length > 80 ? channelRaw.slice(0, 77) + "…" : channelRaw;
