@@ -192,9 +192,9 @@ function MoverCard({ mover, liveMap }: { mover: MarketMover; liveMap: LiveMap | 
           if (!t) return null;
           const mech = mover.mechanism_summary || "";
           const mechTrunc = mech.length > 110 ? mech.slice(0, 107) + "…" : mech;
-          const whyNote = t.role === "beneficiary"
-            ? `Beneficiary — ${mechTrunc}`
-            : `Exposed to downside — ${mechTrunc}`;
+          const whyNote = mechTrunc
+            ? (t.role === "beneficiary" ? `Beneficiary — ${mechTrunc}` : `Exposed to downside — ${mechTrunc}`)
+            : undefined;
           return (
             <div className="mt-2">
               <TickerDetailPanel
