@@ -4,7 +4,7 @@ import io
 import zipfile
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import Response
 
 from db import (
@@ -32,8 +32,9 @@ def _score_validation(row: dict) -> str:
         "unresolved"   — no tickers, or all tags are absent/neutral
     """
     tickers = row.get("market_tickers") or []
-    supporting    = sum(1 for t in tickers if t.get("direction_tag") == "supporting")
-    contradicting = sum(1 for t in tickers if t.get("direction_tag") == "contradicting")
+    tag = lambda t: t.get("direction_tag") or ""
+    supporting    = sum(1 for t in tickers if tag(t).startswith("supports"))
+    contradicting = sum(1 for t in tickers if tag(t).startswith("contradicts"))
     if supporting == 0 and contradicting == 0:
         return "unresolved"
     if supporting > contradicting:
@@ -99,7 +100,10 @@ def events_export(
 
 
 @router.patch("/events/{event_id}/review")
-def review(event_id: int, req: _api.ReviewRequest):
+def review(
+    event_id: int = Path(..., ge=1),
+    req: _api.ReviewRequest = ...,
+):
     if req.rating is None and req.notes is None:
         raise HTTPException(400, "Provide at least one of rating or notes.")
     updated = update_review(event_id, rating=req.rating, notes=req.notes)

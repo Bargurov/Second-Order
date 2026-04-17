@@ -46,8 +46,8 @@ class TestQueryEventsFiltered(unittest.TestCase):
             "beneficiaries": [],
             "losers": [],
             "market_tickers": [
-                {"direction_tag": "supporting"},
-                {"direction_tag": "supporting"},
+                {"direction_tag": "supports ↑"},
+                {"direction_tag": "supports ↑"},
             ],
         })
         # Event 2: beneficiaries contains "energy-sector-tag", stage=developing
@@ -71,8 +71,8 @@ class TestQueryEventsFiltered(unittest.TestCase):
             "beneficiaries": [],
             "losers": ["loser-tag"],
             "market_tickers": [
-                {"direction_tag": "contradicting"},
-                {"direction_tag": "contradicting"},
+                {"direction_tag": "contradicts ↓"},
+                {"direction_tag": "contradicts ↓"},
             ],
         })
         # Event 4: headline contains "alpha-keyword", stage=developing, tie → contradicted
@@ -85,8 +85,8 @@ class TestQueryEventsFiltered(unittest.TestCase):
             "beneficiaries": [],
             "losers": [],
             "market_tickers": [
-                {"direction_tag": "supporting"},
-                {"direction_tag": "contradicting"},
+                {"direction_tag": "supports ↑"},
+                {"direction_tag": "contradicts ↓"},
             ],
         })
 
@@ -160,17 +160,17 @@ class TestScoreValidation(unittest.TestCase):
         return _score_validation({"market_tickers": [{"direction_tag": t} for t in tags]})
 
     def test_validated_when_supporting_majority(self):
-        self.assertEqual(self._score(["supporting", "supporting", "contradicting"]), "validated")
+        self.assertEqual(self._score(["supports ↑", "supports ↑", "contradicts ↓"]), "validated")
 
     def test_validated_single_supporting(self):
-        self.assertEqual(self._score(["supporting"]), "validated")
+        self.assertEqual(self._score(["supports ↑"]), "validated")
 
     def test_contradicted_when_contradicting_majority(self):
-        self.assertEqual(self._score(["contradicting", "contradicting"]), "contradicted")
+        self.assertEqual(self._score(["contradicts ↓", "contradicts ↓"]), "contradicted")
 
     def test_contradicted_on_tie(self):
         # tie: contradicting >= supporting → contradicted
-        self.assertEqual(self._score(["supporting", "contradicting"]), "contradicted")
+        self.assertEqual(self._score(["supports ↑", "contradicts ↓"]), "contradicted")
 
     def test_unresolved_when_no_tickers(self):
         from routes.events import _score_validation

@@ -47,7 +47,37 @@ from telegram.ext import (
 # ---------------------------------------------------------------------------
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-API_URL = os.getenv("SECOND_ORDER_API_URL", "http://127.0.0.1:8000")
+
+# ---------------------------------------------------------------------------
+# URL resolution — guard against .env.example placeholder trap
+# ---------------------------------------------------------------------------
+
+_DEFAULT_API_URL = "http://127.0.0.1:8000"
+
+
+def _resolve_api_url(raw: str | None = None) -> str:
+    """Return the API base URL, falling back to localhost for blank/placeholder values.
+
+    When ``.env.example`` is copied to ``.env`` unchanged,
+    ``SECOND_ORDER_API_URL`` is set to the literal placeholder string
+    ``your_second_order_api_url_here``.  That value must not reach the bot
+    as a real URL — this function catches it (and any ``your_…`` pattern)
+    and returns the safe localhost default instead.
+
+    Resolution order:
+      1. ``raw`` argument (used by tests to inject values without env mutation).
+      2. ``SECOND_ORDER_API_URL`` environment variable.
+      3. ``_DEFAULT_API_URL`` when the result is blank or a placeholder.
+    """
+    if raw is None:
+        raw = os.getenv("SECOND_ORDER_API_URL", "")
+    raw = (raw or "").strip()
+    if not raw or raw.startswith("your_"):
+        return _DEFAULT_API_URL
+    return raw
+
+
+API_URL = _resolve_api_url()
 
 # Daily morning brief schedule
 DAILY_BRIEF_ENABLED = os.getenv("DAILY_BRIEF_ENABLED", "").lower() in ("1", "true", "yes")
@@ -554,7 +584,8 @@ def check_watchlist_alerts(threshold: float = WATCHLIST_THRESHOLD_PCT) -> list[d
     """
     alerts: list[dict] = []
     try:
-        events = _api_get("/events?limit=25")
+        resp = _api_get("/events?limit=25")
+        events = resp.get("items", []) if isinstance(resp, dict) else resp
     except Exception as e:
         logger.error(f"[watchlist] Failed to load events: {e}")
         return []
