@@ -96,6 +96,14 @@ def init_db() -> None:
             "ALTER TABLE events ADD COLUMN surprise_vs_anticipation TEXT DEFAULT '{}'",
             "ALTER TABLE events ADD COLUMN terms_of_trade TEXT DEFAULT '{}'",
             "ALTER TABLE events ADD COLUMN reserve_stress TEXT DEFAULT '{}'",
+            # Revisit timeline — JSON array of follow-through snapshots
+            # captured at 1d/5d/20d after event.  Each entry is a dict:
+            # {day: int, captured_at: str, tickers: [{symbol, return_Nd, direction}]}
+            "ALTER TABLE events ADD COLUMN revisit_snapshots TEXT DEFAULT '[]'",
+            # Narrative divergence — thesis vs market price-action discrepancy.
+            # Computed in routes/analyze.py after market_check; persisted so
+            # the frozen-archive response path can surface the original reading.
+            "ALTER TABLE events ADD COLUMN narrative_divergence TEXT DEFAULT '{}'",
         ]
         for sql in _migrations:
             try:
@@ -145,13 +153,21 @@ def init_db() -> None:
         # named slice ("weekly", "yearly", "persistent", ...).
         conn.execute("""
             CREATE TABLE IF NOT EXISTS movers_cache (
-                slice        TEXT PRIMARY KEY,
-                payload      TEXT NOT NULL,
-                built_at     TEXT NOT NULL,
-                event_count  INTEGER NOT NULL DEFAULT 0,
-                max_event_id INTEGER NOT NULL DEFAULT 0
+                slice            TEXT PRIMARY KEY,
+                payload          TEXT NOT NULL,
+                built_at         TEXT NOT NULL,
+                event_count      INTEGER NOT NULL DEFAULT 0,
+                max_event_id     INTEGER NOT NULL DEFAULT 0,
+                compute_version  INTEGER NOT NULL DEFAULT 0
             )
         """)
+        # Migration for existing DBs that lack the compute_version column.
+        try:
+            conn.execute(
+                "ALTER TABLE movers_cache ADD COLUMN compute_version INTEGER DEFAULT 0"
+            )
+        except sqlite3.OperationalError:
+            pass  # column already exists (fresh DB or already migrated)
 
         # Persisted news clusters — one row per live cluster.  See
         # news_cluster_store.py.  ``payload_json`` carries the full
@@ -352,11 +368,11 @@ def save_event(event: dict) -> None:
                     regime_snapshot, last_market_check_at,
                     real_yield_context, policy_constraint, shock_decomposition,
                     reaction_function_divergence, surprise_vs_anticipation,
-                    terms_of_trade, reserve_stress
+                    terms_of_trade, reserve_stress, narrative_divergence
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?
                 )
             """, (
                 ts_value,
@@ -389,6 +405,7 @@ def save_event(event: dict) -> None:
                 json.dumps(event.get("surprise_vs_anticipation", {})),
                 json.dumps(event.get("terms_of_trade", {})),
                 json.dumps(event.get("reserve_stress", {})),
+                json.dumps(event.get("narrative_divergence", {})),
             ))
             conn.execute("COMMIT")
         except Exception:
@@ -457,6 +474,86 @@ def update_event_market_refresh(
     return updated
 
 
+def append_revisit_snapshot(event_id: int, snapshot: dict) -> bool:
+    """Append a revisit follow-through snapshot to an event's timeline.
+
+    Each snapshot is a dict: {day, captured_at, tickers}.
+    Deduplicates by ``day`` — if a snapshot for the same day already
+    exists it is replaced with the new one (re-capture).
+
+    Returns True if the row existed and was updated.
+
+    Atomicity
+    ---------
+    The read-modify-write (SELECT → mutate → UPDATE) is wrapped in
+    ``BEGIN IMMEDIATE`` so concurrent captures for the same event
+    serialise on SQLite's write lock instead of racing.  Without this,
+    two concurrent calls could both read the same snapshot list, each
+    append its own entry, and the second writer would silently clobber
+    the first one's snapshot.
+    """
+    if not _db_ready:
+        return False
+    conn = sqlite3.connect(DB_FILE, isolation_level=None, timeout=30.0)
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT revisit_snapshots FROM events WHERE id = ?",
+                (event_id,),
+            ).fetchone()
+            if row is None:
+                conn.execute("ROLLBACK")
+                return False
+            raw = row["revisit_snapshots"] if row["revisit_snapshots"] else "[]"
+            try:
+                existing = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                existing = []
+            # Replace any entry for the same day.
+            day = snapshot.get("day")
+            existing = [s for s in existing if s.get("day") != day]
+            existing.append(snapshot)
+            existing.sort(key=lambda s: s.get("day", 0))
+            conn.execute(
+                "UPDATE events SET revisit_snapshots = ? WHERE id = ?",
+                (json.dumps(existing), event_id),
+            )
+            conn.execute("COMMIT")
+        except Exception:
+            try:
+                conn.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass
+            raise
+    finally:
+        conn.close()
+    return True
+
+
+def load_revisit_snapshots(event_id: int) -> list[dict]:
+    """Return the revisit timeline snapshots for an event.
+
+    Returns [] if event not found or no snapshots stored.
+    """
+    if not _db_ready:
+        return []
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT revisit_snapshots FROM events WHERE id = ?",
+            (event_id,),
+        ).fetchone()
+    if row is None:
+        return []
+    raw = row["revisit_snapshots"] if row["revisit_snapshots"] else "[]"
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
 def update_review(event_id: int, rating: str = None, notes: str = None) -> bool:
     """Update the rating and/or notes for an existing event.
 
@@ -489,35 +586,276 @@ def update_review(event_id: int, rating: str = None, notes: str = None) -> bool:
         return cur.rowcount > 0
 
 
+def delete_event(event_id: int) -> bool:
+    """Delete a saved event by primary key.
+
+    Returns True if the event existed and was deleted, False if not found.
+    Raises RuntimeError if init_db() has not been called.
+    """
+    if not _db_ready:
+        raise RuntimeError(
+            "Database not initialised. Call init_db() before delete_event()."
+        )
+    with sqlite3.connect(DB_FILE) as conn:
+        cur = conn.execute("DELETE FROM events WHERE id = ?", (event_id,))
+        return cur.rowcount > 0
+
+
+# ---------------------------------------------------------------------------
+# Track record — aggregate thesis outcomes across all saved events
+# ---------------------------------------------------------------------------
+
+
+def _resolve_direction_tag(t: dict) -> str:
+    """Extract the direction string from a ticker dict regardless of key name.
+
+    market_tickers rows use ``direction_tag``, revisit snapshot tickers
+    use ``direction``.  This helper tries both in a fixed order so the
+    scoring logic never silently falls back to unresolved just because
+    the upstream path chose a different key name.
+    """
+    return t.get("direction_tag") or t.get("direction") or ""
+
+
+def _score_directions(ticker_list: list[dict]) -> tuple[bool, bool, int, int]:
+    """Score a list of ticker dicts for supports/contradicts.
+
+    Returns (has_supports, has_contradicts, supporting_count, with_direction_count).
+
+    Works with both ``direction_tag`` (market_tickers) and ``direction``
+    (revisit snapshots) via ``_resolve_direction_tag`` — callers no
+    longer need to specify which key to read.
+    """
+    has_supports = False
+    has_contradicts = False
+    supporting = 0
+    with_direction = 0
+    for t in ticker_list:
+        if not isinstance(t, dict):
+            continue
+        tag = _resolve_direction_tag(t)
+        if not tag:
+            continue
+        with_direction += 1
+        if tag.startswith("supports"):
+            has_supports = True
+            supporting += 1
+        elif tag.startswith("contradicts"):
+            has_contradicts = True
+    return has_supports, has_contradicts, supporting, with_direction
+
+
+def _best_revisit_snapshot(snapshots: list) -> list[dict] | None:
+    """Return the longest-horizon revisit snapshot's tickers, or None.
+
+    Prefers 20d > 5d > 1d.  Returns None if no snapshots exist or
+    the best snapshot has no tickers.
+    """
+    if not snapshots:
+        return None
+    # Sort descending by day; pick the first with tickers.
+    for snap in sorted(snapshots, key=lambda s: s.get("day", 0), reverse=True):
+        tickers = snap.get("tickers")
+        if tickers:
+            return tickers
+    return None
+
+
+def compute_track_record() -> dict:
+    """Aggregate thesis outcomes and user ratings across all events.
+
+    Scoring per event — prefers revisit snapshots when available:
+      1. If the event has revisit_snapshots, use the longest-horizon
+         snapshot (20d > 5d > 1d) to classify the outcome.
+      2. Otherwise fall back to the initial market_tickers direction_tag.
+
+    Classification (same for both sources):
+      validated    = at least 1 ticker direction starts with "supports"
+      contradicted = at least 1 "contradicts" AND zero "supports"
+      unresolved   = all direction tags are null / empty
+
+    Returns a flat dict of counts + avg_support_ratio + revisit_scored.
+    """
+    if not _db_ready:
+        return {
+            "total": 0, "validated": 0, "contradicted": 0, "unresolved": 0,
+            "avg_support_ratio": None, "revisit_scored": 0,
+            "rated_good": 0, "rated_mixed": 0, "rated_poor": 0,
+        }
+
+    with sqlite3.connect(DB_FILE) as conn:
+        # Include revisit_snapshots in the query.
+        try:
+            rows = conn.execute(
+                "SELECT market_tickers, rating, revisit_snapshots FROM events"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # Column may not exist yet on ancient DBs.
+            rows = conn.execute(
+                "SELECT market_tickers, rating FROM events"
+            ).fetchall()
+            rows = [(r[0], r[1], None) for r in rows]
+
+    total = len(rows)
+    validated = 0
+    contradicted = 0
+    unresolved = 0
+    revisit_scored = 0
+    rated_good = 0
+    rated_mixed = 0
+    rated_poor = 0
+    support_ratios: list[float] = []
+
+    for row in rows:
+        raw_tickers = row[0]
+        rating = row[1]
+        raw_revisit = row[2] if len(row) > 2 else None
+
+        # --- Try revisit snapshots first ---
+        try:
+            revisit_snaps = json.loads(raw_revisit or "[]")
+        except (json.JSONDecodeError, TypeError):
+            revisit_snaps = []
+
+        best_revisit = _best_revisit_snapshot(revisit_snaps)
+        used_revisit = False
+
+        if best_revisit is not None:
+            has_sup, has_con, sup_cnt, dir_cnt = _score_directions(
+                best_revisit,
+            )
+            if dir_cnt > 0:
+                used_revisit = True
+                revisit_scored += 1
+
+        # --- Fall back to market_tickers ---
+        if not used_revisit:
+            try:
+                tickers = json.loads(raw_tickers or "[]")
+            except (json.JSONDecodeError, TypeError):
+                tickers = []
+            has_sup, has_con, sup_cnt, dir_cnt = _score_directions(tickers)
+
+        # --- Classify ---
+        if has_sup:
+            validated += 1
+        elif has_con:
+            contradicted += 1
+        else:
+            unresolved += 1
+
+        if dir_cnt > 0:
+            support_ratios.append(sup_cnt / dir_cnt)
+
+        if rating == "good":
+            rated_good += 1
+        elif rating == "mixed":
+            rated_mixed += 1
+        elif rating == "poor":
+            rated_poor += 1
+
+    avg_sr = round(sum(support_ratios) / len(support_ratios), 3) if support_ratios else None
+
+    return {
+        "total": total,
+        "validated": validated,
+        "contradicted": contradicted,
+        "unresolved": unresolved,
+        "avg_support_ratio": avg_sr,
+        "revisit_scored": revisit_scored,
+        "rated_good": rated_good,
+        "rated_mixed": rated_mixed,
+        "rated_poor": rated_poor,
+    }
+
+
+def get_confidence_calibration_stats(min_events: int = 3) -> dict:
+    """Per-bucket validation rate for events with usable directional outcomes.
+
+    An event has a usable outcome if at least one ticker has a direction_tag
+    of 'supports ...' or 'contradicts ...'.  Uses the same source-preference
+    logic as compute_track_record (revisit snapshots preferred, market_tickers
+    as fallback).
+
+    Returns::
+
+        {
+            "low":    {"hit_rate": 0.35, "n": 45},  # present when n >= min_events
+            "medium": {"hit_rate": 0.52, "n": 67},
+            "high":   {"hit_rate": 0.68, "n": 23},
+        }
+
+    Buckets with fewer than ``min_events`` usable events are omitted.
+    """
+    if not _db_ready:
+        return {}
+
+    with sqlite3.connect(DB_FILE) as conn:
+        try:
+            rows = conn.execute(
+                "SELECT confidence, market_tickers, revisit_snapshots FROM events "
+                "WHERE confidence IN ('low', 'medium', 'high')"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            rows = conn.execute(
+                "SELECT confidence, market_tickers FROM events "
+                "WHERE confidence IN ('low', 'medium', 'high')"
+            ).fetchall()
+            rows = [(r[0], r[1], None) for r in rows]
+
+    buckets: dict[str, dict] = {
+        "low":    {"validated": 0, "total": 0},
+        "medium": {"validated": 0, "total": 0},
+        "high":   {"validated": 0, "total": 0},
+    }
+
+    for row in rows:
+        conf = row[0] or "low"
+        raw_tickers = row[1]
+        raw_revisit = row[2] if len(row) > 2 else None
+
+        # Prefer the best revisit snapshot; fall back to initial tickers.
+        try:
+            revisit_snaps = json.loads(raw_revisit or "[]")
+        except (json.JSONDecodeError, TypeError):
+            revisit_snaps = []
+
+        best = _best_revisit_snapshot(revisit_snaps)
+        if best is not None:
+            has_sup, _has_con, _sup_cnt, dir_cnt = _score_directions(best)
+        else:
+            try:
+                tickers = json.loads(raw_tickers or "[]")
+            except (json.JSONDecodeError, TypeError):
+                tickers = []
+            has_sup, _has_con, _sup_cnt, dir_cnt = _score_directions(tickers)
+
+        if dir_cnt == 0:
+            continue  # no usable outcome for this event
+
+        b = buckets.get(conf)
+        if b is None:
+            continue
+        b["total"] += 1
+        if has_sup:
+            b["validated"] += 1
+
+    result: dict = {}
+    for bucket, s in buckets.items():
+        if s["total"] >= min_events:
+            result[bucket] = {
+                "hit_rate": round(s["validated"] / s["total"], 3),
+                "n": s["total"],
+            }
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Timeline: link related saved events
 # ---------------------------------------------------------------------------
 
-import re as _re
-
-_STOP_WORDS: set[str] = {
-    # English function words
-    "the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "or",
-    "is", "are", "was", "were", "by", "with", "from", "as", "its", "it",
-    "that", "this", "be", "has", "have", "had", "not", "but", "will",
-    "would", "could", "should", "may", "might", "after", "before", "over",
-    "new", "says", "said", "about", "into", "up", "out", "more", "than",
-    # Financial/news domain words — high frequency, low discriminating power.
-    # These inflate Jaccard similarity between unrelated financial headlines
-    # (e.g. "China launches space module" matching "China imposes tariffs"
-    # via shared "market" or "global" tokens).  Validated against 54 live
-    # events: only 1 of 20 headlines contained any of these tokens.
-    "market", "markets", "stock", "stocks", "shares", "index",
-    "price", "prices", "trading", "traders",
-    "global", "economy", "economic",
-    "billion", "million", "trillion",
-    "report", "reports", "reporting",
-    "investors", "investor", "analysts", "analyst",
-}
-
-# Regex that strips leading/trailing punctuation from a token, keeping
-# internal hyphens and apostrophes (e.g. "multi-year" stays intact).
-_PUNCT_RE = _re.compile(r"^[^\w]+|[^\w]+$")
+from token_norm import _STOP_WORDS, _normalize_token, _headline_words
+from news_relevance import _is_calendar_headline
 
 # Similarity threshold for linking saved events — deliberately stricter than
 # the 0.30 used for inbox clustering.  Better to miss a link than to create
@@ -525,20 +863,35 @@ _PUNCT_RE = _re.compile(r"^[^\w]+|[^\w]+$")
 _RELATED_THRESHOLD: float = 0.35
 
 
-def _headline_words(title: str) -> set[str]:
-    """Content words from a headline (lowercase, punctuation-stripped, stop-words removed)."""
-    words: set[str] = set()
-    for raw in title.lower().split():
-        cleaned = _PUNCT_RE.sub("", raw)
-        if cleaned and cleaned not in _STOP_WORDS:
-            words.add(cleaned)
-    return words
-
-
 def _jaccard(a: set[str], b: set[str]) -> float:
     if not a or not b:
         return 0.0
     return len(a & b) / len(a | b)
+
+
+# Minimum shared content-tokens required when the *shorter* headline
+# (after stop-word removal) has very few words.  A single shared generic
+# term like "oil" or "tariff" between two 2-word headlines yields a
+# Jaccard of 0.33 — above the related-events threshold — but carries
+# almost no semantic signal.  Requiring ≥2 shared tokens for short
+# headlines blocks these false positives while preserving genuine
+# matches like "OPEC cuts output" ↔ "OPEC production cut" (shared:
+# opec, cut).
+_MIN_SHARED_TOKENS: int = 2
+_SHORT_HEADLINE_THRESHOLD: int = 4  # applies when min(len(a), len(b)) <= this
+
+
+def _short_headline_guard(a: set[str], b: set[str]) -> bool:
+    """Return True if the match should be KEPT, False to suppress.
+
+    When both sets are above ``_SHORT_HEADLINE_THRESHOLD`` content words
+    the guard always passes — Jaccard alone is discriminating enough for
+    longer headlines.  For short headlines, require at least
+    ``_MIN_SHARED_TOKENS`` shared words.
+    """
+    if min(len(a), len(b)) > _SHORT_HEADLINE_THRESHOLD:
+        return True
+    return len(a & b) >= _MIN_SHARED_TOKENS
 
 
 def load_low_signal_headlines() -> set[str]:
@@ -578,13 +931,181 @@ def find_related_events(event_id: int, headline: str,
 
     scored: list[tuple[float, dict]] = []
     for row in rows:
-        sim = _jaccard(target_words, _headline_words(row["headline"]))
-        if sim >= _RELATED_THRESHOLD:
+        if _is_calendar_headline(row["headline"]):
+            continue
+        row_words = _headline_words(row["headline"])
+        sim = _jaccard(target_words, row_words)
+        if sim >= _RELATED_THRESHOLD and _short_headline_guard(target_words, row_words):
             scored.append((sim, dict(row)))
 
     # Sort by similarity descending, then newest first as tiebreaker
     scored.sort(key=lambda pair: (-pair[0], -(pair[1].get("id") or 0)))
     return [ev for _, ev in scored[:limit]]
+
+
+def get_event_cascade(
+    event_id: int,
+    per_level: int = 5,
+    hop2_per_parent: int = 2,
+) -> dict:
+    """BFS cascade: root → hop-1 (direct Jaccard-related) → hop-2 (follow-on from hop-1).
+
+    Returns { "root": dict | None, "nodes": list[dict] }.
+    Each node carries: id, headline, stage, persistence, confidence,
+    timestamp, event_date, mechanism_summary, hop, parent_id, similarity.
+    Nodes are sorted chronologically by event_date / timestamp.
+    """
+    if not _db_ready:
+        return {"root": None, "nodes": []}
+
+    _COLS = (
+        "id, headline, stage, persistence, confidence, "
+        "timestamp, event_date, mechanism_summary"
+    )
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        root_row = conn.execute(
+            f"SELECT {_COLS} FROM events WHERE id = ?", (event_id,)
+        ).fetchone()
+        if not root_row:
+            return {"root": None, "nodes": []}
+        root = dict(root_row)
+
+        all_rows = conn.execute(
+            f"SELECT {_COLS} FROM events WHERE id != ? ORDER BY id DESC",
+            (event_id,),
+        ).fetchall()
+    all_rows = [dict(r) for r in all_rows]
+
+    root_words = _headline_words(root["headline"])
+    if not root_words:
+        return {"root": root, "nodes": []}
+
+    # Pre-compute word sets for non-calendar events
+    row_words: dict[int, set[str]] = {}
+    for r in all_rows:
+        if not _is_calendar_headline(r["headline"]):
+            row_words[r["id"]] = _headline_words(r["headline"])
+
+    # Hop 1
+    hop1_scored: list[tuple[float, dict]] = []
+    for r in all_rows:
+        rw = row_words.get(r["id"])
+        if rw is None:
+            continue
+        sim = _jaccard(root_words, rw)
+        if sim >= _RELATED_THRESHOLD and _short_headline_guard(root_words, rw):
+            hop1_scored.append((sim, r))
+    hop1_scored.sort(key=lambda p: (-p[0], -(p[1]["id"] or 0)))
+    hop1_scored = hop1_scored[:per_level]
+
+    seen: set[int] = {event_id} | {r["id"] for _, r in hop1_scored}
+    nodes: list[dict] = []
+    for sim, r in hop1_scored:
+        nodes.append({**r, "hop": 1, "parent_id": event_id, "similarity": round(sim, 3)})
+
+    # Hop 2
+    for _sim1, h1_row in hop1_scored:
+        h1_id = h1_row["id"]
+        h1_words = row_words.get(h1_id)
+        if not h1_words:
+            continue
+        hop2_scored: list[tuple[float, dict]] = []
+        for r in all_rows:
+            if r["id"] in seen:
+                continue
+            rw = row_words.get(r["id"])
+            if rw is None:
+                continue
+            sim = _jaccard(h1_words, rw)
+            if sim >= _RELATED_THRESHOLD and _short_headline_guard(h1_words, rw):
+                hop2_scored.append((sim, r))
+        hop2_scored.sort(key=lambda p: (-p[0], -(p[1]["id"] or 0)))
+        for sim2, h2_row in hop2_scored[:hop2_per_parent]:
+            seen.add(h2_row["id"])
+            nodes.append({**h2_row, "hop": 2, "parent_id": h1_id, "similarity": round(sim2, 3)})
+
+    # Sort chronologically
+    def _chron_key(n: dict) -> str:
+        return n.get("event_date") or n.get("timestamp") or ""
+
+    nodes.sort(key=_chron_key)
+    return {"root": root, "nodes": nodes}
+
+
+# ---------------------------------------------------------------------------
+# Read-time deduplication
+# ---------------------------------------------------------------------------
+
+_DEDUP_THRESHOLD: float = 0.65
+_DEDUP_DATE_WINDOW_DAYS: int = 2
+
+
+def _event_dates_close(
+    d1: str | None, d2: str | None,
+    ts1: str = "", ts2: str = "",
+) -> bool:
+    """Return True when two event_dates are close enough to be the same event."""
+    if d1 is not None and d2 is not None:
+        try:
+            dt1 = datetime.fromisoformat(d1).date()
+            dt2 = datetime.fromisoformat(d2).date()
+            return abs((dt1 - dt2).days) <= _DEDUP_DATE_WINDOW_DAYS
+        except (ValueError, TypeError):
+            return d1 == d2
+    if d1 is None and d2 is None:
+        # Fall back to save-timestamp proximity for legacy rows without event_date
+        try:
+            t1 = datetime.fromisoformat(ts1[:19]) if ts1 else None
+            t2 = datetime.fromisoformat(ts2[:19]) if ts2 else None
+            if t1 and t2:
+                return abs((t1 - t2).days) <= 7
+        except (ValueError, TypeError):
+            pass
+        return True
+    return False  # one has event_date, the other doesn't → distinct events
+
+
+def dedup_events(events: list[dict]) -> list[dict]:
+    """Collapse near-duplicate saved events at read time.
+
+    Input must be sorted newest-first (by id DESC).  The first (newest)
+    event per duplicate group is kept as canonical; older near-duplicates
+    are suppressed.  Pure filter — no DB writes.
+
+    Two events are collapsed when BOTH:
+    - Headline Jaccard similarity >= _DEDUP_THRESHOLD (0.65)
+    - event_date within _DEDUP_DATE_WINDOW_DAYS of each other (or both
+      None with timestamps within 7 days for legacy rows)
+    """
+    if len(events) <= 1:
+        return events
+
+    word_sets = [_headline_words(ev.get("headline") or "") for ev in events]
+    keep = [True] * len(events)
+
+    for i in range(len(events)):
+        if not keep[i]:
+            continue
+        wi = word_sets[i]
+        if not wi:
+            continue
+        di = events[i].get("event_date")
+        ti = events[i].get("timestamp", "")
+
+        for j in range(i + 1, len(events)):
+            if not keep[j]:
+                continue
+            dj = events[j].get("event_date")
+            if not _event_dates_close(di, dj, ti, events[j].get("timestamp", "")):
+                continue
+            wj = word_sets[j]
+            sim = _jaccard(wi, wj)
+            if sim >= _DEDUP_THRESHOLD and _short_headline_guard(wi, wj):
+                keep[j] = False
+
+    return [ev for ev, k in zip(events, keep) if k]
 
 
 def find_historical_analogs(
@@ -637,7 +1158,8 @@ def find_historical_analogs(
             "FROM events ORDER BY id DESC LIMIT 500"
         ).fetchall()
 
-    target_words = _headline_words(headline)
+    target_hl_words = _headline_words(headline)
+    target_words = set(target_hl_words)
     if mechanism:
         target_words |= _headline_words(mechanism)
     if not target_words:
@@ -655,7 +1177,15 @@ def find_historical_analogs(
         if row["low_signal"]:
             continue
 
-        row_words = _headline_words(row_hl)
+        row_hl_words = _headline_words(row_hl)
+
+        # Guard fires on headline-only words BEFORE mechanism expansion so
+        # mechanism-text overlap alone can never rescue a short-headline pair
+        # that lacks sufficient headline-word agreement.
+        if not _short_headline_guard(target_hl_words, row_hl_words):
+            continue
+
+        row_words = set(row_hl_words)
         mech_text = row["mechanism_summary"] or ""
         if mech_text:
             row_words |= _headline_words(mech_text)
@@ -766,6 +1296,7 @@ def find_historical_analogs(
 _EVENT_LIST_FIELDS: tuple[str, ...] = (
     "beneficiaries", "losers", "assets_to_watch",
     "market_tickers", "transmission_chain",
+    "revisit_snapshots",
 )
 _EVENT_DICT_FIELDS: tuple[str, ...] = (
     "if_persists", "currency_channel", "policy_sensitivity",
@@ -819,6 +1350,95 @@ def load_recent_events(limit: int = 10) -> list[dict]:
         """, (limit,)).fetchall()
 
     return [_decode_event_row(row) for row in rows]
+
+
+def load_events_since(since_ts: str) -> list[dict]:
+    """Return every event with ``timestamp >= since_ts``, newest first.
+
+    Unlike ``load_recent_events`` this is bounded by *time*, not by a
+    row count, so a burst of low-value rows can never push relevant
+    events out of the result set.  ``since_ts`` must be an ISO-8601
+    timestamp string (the same format ``save_event`` writes).
+
+    Returns an empty list when the DB is uninitialised or no events
+    fall inside the window — callers never need to handle None.
+    """
+    if not _db_ready:
+        return []
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT * FROM events WHERE timestamp >= ? ORDER BY id DESC",
+            (since_ts,),
+        ).fetchall()
+
+    return [_decode_event_row(row) for row in rows]
+
+
+def query_events_filtered(
+    *,
+    search: str | None = None,
+    stage: str | None = None,
+    persistence: str | None = None,
+    confidence: str | None = None,
+    rating: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[dict]:
+    """Return events matching the provided filters, newest first.
+
+    All parameters are optional. With no parameters the function returns
+    every event in the database (equivalent to load_recent_events with no
+    limit). The caller is responsible for dedup and pagination.
+
+    search     — LIKE match on headline, mechanism_summary, beneficiaries, losers
+    stage      — exact match
+    persistence — exact match
+    confidence — exact match
+    rating     — exact match
+    date_from  — inclusive lower bound on timestamp (ISO date "YYYY-MM-DD")
+    date_to    — inclusive upper bound on timestamp (ISO date "YYYY-MM-DD")
+    """
+    if not _db_ready:
+        return []
+
+    clauses: list[str] = []
+    params: list[object] = []
+
+    if search:
+        term = f"%{search}%"
+        clauses.append(
+            "(headline LIKE ? OR mechanism_summary LIKE ? OR beneficiaries LIKE ? OR losers LIKE ?)"
+        )
+        params.extend([term, term, term, term])
+    if stage:
+        clauses.append("stage = ?")
+        params.append(stage)
+    if persistence:
+        clauses.append("persistence = ?")
+        params.append(persistence)
+    if confidence:
+        clauses.append("confidence = ?")
+        params.append(confidence)
+    if rating:
+        clauses.append("rating = ?")
+        params.append(rating)
+    if date_from:
+        clauses.append("timestamp >= ?")
+        params.append(date_from)
+    if date_to:
+        clauses.append("timestamp <= ?")
+        params.append(date_to + "T23:59:59")
+
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    sql = f"SELECT * FROM events {where} ORDER BY id DESC"
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(sql, params).fetchall()
+
+    return [_decode_event_row(r) for r in rows]
 
 
 def load_event_by_id(event_id: int) -> dict | None:
@@ -878,6 +1498,12 @@ def find_cached_analysis(
         conditions.append("model = ?")
         params.append(model)
     # When model is None we match any model — backward compat for old rows.
+
+    # Exclude mock/fallback rows — they contain placeholder text, not
+    # real analysis, and must never be served as cache hits.  Legacy
+    # rows persisted before the mock-guard was added carry
+    # what_changed = "[mock: <reason>]".
+    conditions.append("what_changed NOT LIKE '%[mock:%'")
 
     sql = f"SELECT * FROM events WHERE {' AND '.join(conditions)} ORDER BY id DESC LIMIT 1"
 
@@ -986,7 +1612,7 @@ def load_movers_cache(slice_name: str) -> dict | None:
 
     with sqlite3.connect(DB_FILE) as conn:
         row = conn.execute(
-            "SELECT payload, built_at, event_count, max_event_id "
+            "SELECT payload, built_at, event_count, max_event_id, compute_version "
             "FROM movers_cache WHERE slice = ?",
             (slice_name,),
         ).fetchone()
@@ -994,7 +1620,7 @@ def load_movers_cache(slice_name: str) -> dict | None:
     if row is None:
         return None
 
-    payload_json, built_at, event_count, max_event_id = row
+    payload_json, built_at, event_count, max_event_id, compute_version = row
     try:
         payload = json.loads(payload_json)
     except (json.JSONDecodeError, TypeError):
@@ -1005,6 +1631,7 @@ def load_movers_cache(slice_name: str) -> dict | None:
         "built_at": built_at,
         "event_count": int(event_count or 0),
         "max_event_id": int(max_event_id or 0),
+        "compute_version": int(compute_version or 0),
     }
 
 
@@ -1014,6 +1641,8 @@ def save_movers_cache(
     built_at: str,
     event_count: int,
     max_event_id: int,
+    *,
+    compute_version: int = 0,
 ) -> None:
     """Persist a precomputed mover slice.  One row per slice name."""
     if not _db_ready:
@@ -1023,9 +1652,10 @@ def save_movers_cache(
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute(
             "INSERT OR REPLACE INTO movers_cache "
-            "(slice, payload, built_at, event_count, max_event_id) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (slice_name, payload_json, built_at, int(event_count), int(max_event_id)),
+            "(slice, payload, built_at, event_count, max_event_id, compute_version) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (slice_name, payload_json, built_at, int(event_count),
+             int(max_event_id), int(compute_version)),
         )
 
 
@@ -1177,6 +1807,50 @@ def delete_news_cluster(cluster_id: int) -> bool:
             (int(cluster_id),),
         )
         return cur.rowcount > 0
+
+
+def get_trending_clusters(
+    window_hours: int = 72,
+    min_sources: int = 3,
+    limit: int = 8,
+) -> list[dict]:
+    """Return top trending clusters scored by source_count * sqrt(1 + record_count)."""
+    if not _db_ready:
+        return []
+    import math
+    cutoff = (datetime.now() - timedelta(hours=window_hours)).isoformat(timespec="seconds")
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT headline, payload_json, records_json, latest_published_at "
+            "FROM news_clusters WHERE latest_published_at >= ? "
+            "ORDER BY latest_published_at DESC",
+            (cutoff,),
+        ).fetchall()
+    results = []
+    for row in rows:
+        try:
+            payload = json.loads(row["payload_json"])
+        except (json.JSONDecodeError, TypeError):
+            continue
+        source_count = int(payload.get("source_count") or 0)
+        if source_count < min_sources:
+            continue
+        try:
+            records = json.loads(row["records_json"] or "[]")
+        except (json.JSONDecodeError, TypeError):
+            records = []
+        record_count = len(records)
+        score = source_count * math.sqrt(1 + record_count)
+        results.append({
+            "headline": row["headline"] or "",
+            "source_count": source_count,
+            "record_count": record_count,
+            "latest_published_at": row["latest_published_at"] or "",
+            "score": round(score, 2),
+        })
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:limit]
 
 
 def load_news_headline_assignments() -> dict[tuple[str, str], int]:
