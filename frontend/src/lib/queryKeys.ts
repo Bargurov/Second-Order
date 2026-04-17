@@ -1,10 +1,12 @@
+import type { EventsQuery } from "@/lib/api";
+
 /**
  * Centralised query key factory for React Query.
  * Using a factory keeps keys consistent and makes invalidation predictable.
  */
 export const qk = {
   news:       () => ["news"] as const,
-  events:     (limit: number) => ["events", limit] as const,
+  events:     (query: EventsQuery) => ["events", query] as const,
   eventById:  (id: number) => ["events", id] as const,
   eventShare: (id: number) => ["events", id, "share"] as const,
   related:    (id: number) => ["events", id, "related"] as const,

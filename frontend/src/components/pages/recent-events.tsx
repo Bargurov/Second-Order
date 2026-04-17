@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import {
@@ -26,7 +26,7 @@ import {
   ShieldAlert,
   Calendar,
   Clock,
-  Link2,
+  Network,
   Save,
   Loader2,
   Archive,
@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
-import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, getStaleDisplay } from "@/lib/api";
+import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -97,6 +97,24 @@ function directionIcon(tag: string | null) {
     default:
       return <Minus className="h-3 w-3 val-flat" />;
   }
+}
+
+function LifecycleBadge({ sig }: { sig: PersistenceSignal }) {
+  if (sig.status === "watching") return null;
+  const cfg = {
+    active:   { color: "text-[#93d1d3]", bg: "bg-[#93d1d3]/10 border-[#93d1d3]/20" },
+    fading:   { color: "text-[#ee7d77]", bg: "bg-[#ee7d77]/10 border-[#ee7d77]/20" },
+    resolved: { color: "text-muted-foreground", bg: "bg-surface-container-highest border-border/30" },
+  } as const;
+  const { color, bg } = cfg[sig.status];
+  return (
+    <span
+      className={cn("inline-flex items-center rounded-full border px-1.5 py-px text-[9px] font-medium", color, bg)}
+      title={sig.evidence}
+    >
+      {sig.label}
+    </span>
+  );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -551,6 +569,9 @@ function EventRow({
                   thin
                 </span>
               )}
+              {event.persistence_signal && (
+                <LifecycleBadge sig={event.persistence_signal} />
+              )}
               {rating && (
                 <Badge variant="outline" className={cn("sm:hidden", rating.color)}>
                   {event.rating}
@@ -773,6 +794,121 @@ function MarketTable({ tickers }: { tickers: Ticker[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Cascade graph view
+// ---------------------------------------------------------------------------
+
+function _cascadeDaysDelta(rootTs: string, nodeTs: string): string {
+  try {
+    const diff = Math.round(
+      (new Date(nodeTs).getTime() - new Date(rootTs).getTime()) / 86_400_000,
+    );
+    if (diff === 0) return "same day";
+    return diff > 0 ? `+${diff}d` : `${diff}d`;
+  } catch {
+    return "";
+  }
+}
+
+function CascadeNodeCard({
+  node,
+  rootTs,
+  dim = false,
+}: {
+  node: CascadeNode;
+  rootTs: string;
+  dim?: boolean;
+}) {
+  const ts = node.event_date || node.timestamp;
+  const delta = ts ? _cascadeDaysDelta(rootTs, ts) : "";
+
+  return (
+    <div className={cn(
+      "rounded-[6px] border px-3 py-2",
+      dim
+        ? "border-border/25 bg-background"
+        : "border-[#93d1d3]/12 bg-[#13131a]",
+    )}>
+      <p className={cn(
+        "text-[12px] font-medium leading-snug",
+        dim && "text-foreground/65",
+      )}>
+        {node.headline}
+      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-1">
+        <Badge variant="outline" className={cn("text-[9px]", dim && "opacity-60")}>{node.stage}</Badge>
+        {!dim && (
+          <Badge variant="outline" className="text-[9px]">{node.persistence}</Badge>
+        )}
+        {delta && (
+          <span className={cn(
+            "font-num text-[10px] tabular-nums",
+            dim ? "text-muted-foreground/40" : "text-[#93d1d3]/60",
+          )}>
+            {delta}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CascadeView({ event }: { event: SavedEvent }) {
+  const { data: cascadeData } = useQuery({
+    queryKey: qk.cascade(event.id),
+    queryFn: () => api.cascadeGraph(event.id),
+  });
+
+  const nodes = cascadeData?.nodes ?? [];
+  if (nodes.length === 0) return null;
+
+  const rootTs = event.event_date || event.timestamp;
+  const hop1 = nodes.filter((n) => n.hop === 1);
+
+  // Group hop-2 by parent
+  const hop2Map = new Map<number, CascadeNode[]>();
+  nodes.filter((n) => n.hop === 2).forEach((n) => {
+    const list = hop2Map.get(n.parent_id) ?? [];
+    list.push(n);
+    hop2Map.set(n.parent_id, list);
+  });
+
+  const hasChildren = hop1.some((n) => (hop2Map.get(n.id)?.length ?? 0) > 0);
+
+  return (
+    <>
+      <Separator />
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 uppercase tracking-widest">
+          <Network className="h-3 w-3" />
+          <span>Event Cascade</span>
+          <span className="text-muted-foreground/30">
+            · {nodes.length} linked{hasChildren ? ", 2 levels" : ""}
+          </span>
+        </div>
+
+        <div className="space-y-1.5">
+          {hop1.map((node) => {
+            const children = hop2Map.get(node.id) ?? [];
+            return (
+              <div key={node.id}>
+                <CascadeNodeCard node={node} rootTs={rootTs} />
+                {children.length > 0 && (
+                  <div className="ml-4 mt-1 space-y-1 border-l border-border/25 pl-3">
+                    {children.map((child) => (
+                      <CascadeNodeCard key={child.id} node={child} rootTs={rootTs} dim />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Detail panel
 // ---------------------------------------------------------------------------
 
@@ -799,11 +935,6 @@ function EventDetail({
   const ConfIcon = conf.icon;
   const rating = event.rating ? (RATING_META[event.rating] ?? null) : null;
 
-  const { data: relatedData } = useQuery({
-    queryKey: qk.related(event.id),
-    queryFn: () => api.relatedEvents(event.id),
-  });
-  const related = relatedData ?? [];
 
   const setRating = async (r: string) => {
     const newRating = r === event.rating ? undefined : r;
@@ -1072,30 +1203,8 @@ function EventDetail({
             </CardContent>
           </Card>
 
-          {/* Related events */}
-          {related.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <SectionLabel>Related Events</SectionLabel>
-                <div className="space-y-2">
-                  {related.map((r) => (
-                    <div key={r.id} className="flex items-start gap-2 rounded-[16px] border border-border/40 bg-card px-3 py-2.5">
-                      <Link2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium leading-snug">{r.headline}</p>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                          <Badge variant="outline">{r.stage}</Badge>
-                          <Badge variant="outline">{r.persistence}</Badge>
-                          <span className="font-num text-2xs text-muted-foreground">{formatTimestamp(r.timestamp)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+          {/* Cascade view */}
+          <CascadeView event={event} />
         </div>
       </div>
     </div>
@@ -1110,6 +1219,9 @@ export function RecentEvents() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [validationFilter, setValidationFilter] = useState<"validated" | "contradicted" | "unresolved" | null>(null);
+  const [offset, setOffset] = useState(0);
   const [stageFilter, setStageFilter] = useState<string | null>(null);
   const [confFilter, setConfFilter] = useState<string | null>(null);
   const [persistenceFilter, setPersistenceFilter] = useState<string | null>(null);
@@ -1131,42 +1243,60 @@ export function RecentEvents() {
   const [selectionExporting, setSelectionExporting] = useState<"portfolio" | "zip" | null>(null);
   const [selectionExportError, setSelectionExportError] = useState(false);
 
-  const { data: events = [], isLoading: loading, error: queryError, refetch } = useQuery({
-    queryKey: qk.events(50),
-    queryFn: () => api.events(50),
-    // Don't hammer a broken backend: skip retries on 5xx; allow one retry otherwise.
+  // Debounce the search input so the query doesn't fire on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset to page 0 whenever any filter changes.
+  useEffect(() => {
+    setOffset(0);
+  }, [debouncedSearch, stageFilter, confFilter, persistenceFilter, ratingFilter, dateFrom, dateTo, validationFilter]);
+
+  const PAGE_SIZE = 25;
+
+  const query: EventsQuery = {
+    limit:       PAGE_SIZE,
+    offset,
+    search:      debouncedSearch || undefined,
+    stage:       stageFilter     ?? undefined,
+    persistence: persistenceFilter ?? undefined,
+    confidence:  confFilter      ?? undefined,
+    rating:      ratingFilter    ?? undefined,
+    date_from:   dateFrom        || undefined,
+    date_to:     dateTo          || undefined,
+    validated:   validationFilter ?? undefined,
+  };
+
+  const { data, isLoading: loading, error: queryError, refetch } = useQuery({
+    queryKey: qk.events(query),
+    queryFn:  () => api.events(query),
     retry: (failureCount, err) =>
       !(err instanceof ApiError && err.status >= 500) && failureCount < 1,
   });
   const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
 
-  const filters: ArchiveFilters = useMemo(
-    () => ({
-      search,
-      stage: stageFilter,
-      confidence: confFilter,
-      persistence: persistenceFilter,
-      rating: ratingFilter,
-      dateFrom: dateFrom || null,
-      dateTo: dateTo || null,
-    }),
-    [search, stageFilter, confFilter, persistenceFilter, ratingFilter, dateFrom, dateTo],
-  );
-  const filtered = useMemo(
-    () => applyPinSort(sortEvents(filterEvents(events, filters), sortKey), pinnedIds),
-    [events, filters, sortKey, pinnedIds],
+  const events = data?.items ?? [];
+  const total  = data?.total ?? 0;
+
+  // Sort and pin are client-side refinements on the server-returned page.
+  const displayed = useMemo(
+    () => applyPinSort(sortEvents(events, sortKey), pinnedIds),
+    [events, sortKey, pinnedIds],
   );
 
   const pinnedCount = useMemo(
-    () => filtered.filter((e) => pinnedIds.has(e.id)).length,
-    [filtered, pinnedIds],
+    () => displayed.filter((e) => pinnedIds.has(e.id)).length,
+    [displayed, pinnedIds],
   );
 
   const selectedEvent = events.find((e) => e.id === selectedId) ?? null;
 
   const updateEvent = useCallback((updated: SavedEvent) => {
-    queryClient.setQueryData<SavedEvent[]>(qk.events(50), (old) =>
-      old?.map((e) => (e.id === updated.id ? updated : e)) ?? [],
+    queryClient.setQueriesData<EventsPage>(
+      { queryKey: ["events"] },
+      (old) => old ? { ...old, items: old.items.map((e) => (e.id === updated.id ? updated : e)) } : old,
     );
   }, [queryClient]);
 
@@ -1181,8 +1311,11 @@ export function RecentEvents() {
     setPendingDelete({ id, phase: "deleting" });
     try {
       await api.deleteEvent(id);
-      queryClient.setQueryData<SavedEvent[]>(qk.events(50), (old) =>
-        old?.filter((e) => e.id !== id) ?? [],
+      queryClient.setQueriesData<EventsPage>(
+        { queryKey: ["events"] },
+        (old) => old
+          ? { ...old, items: old.items.filter((e) => e.id !== id), total: old.total - 1 }
+          : old,
       );
       setPendingDelete(null);
     } catch {
@@ -1263,8 +1396,8 @@ export function RecentEvents() {
   }, []);
 
   const selectAll = useCallback(() => {
-    setSelectedIds(new Set(filtered.map((e) => e.id)));
-  }, [filtered]);
+    setSelectedIds(new Set(displayed.map((e) => e.id)));
+  }, [displayed]);
 
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
@@ -1326,13 +1459,13 @@ export function RecentEvents() {
             <p className="text-[12px] leading-5 text-muted-foreground">
               {loading ? "Loading archive..."
                 : error ? "Could not load archive."
-                : <><span className="font-num">{events.length}</span> saved event{events.length !== 1 ? "s" : ""} with notes, ratings, and linked follow-ups.</>}
+                : <><span className="font-num">{total}</span> saved event{total !== 1 ? "s" : ""}{total > 0 ? " with notes, ratings, and linked follow-ups." : "."}</>}
             </p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {/* Bulk export */}
-          {events.length > 0 && (
+          {total > 0 && (
             <div className="relative">
               {bulkExporting ? (
                 <Button variant="outline" size="sm" disabled className="shrink-0">
@@ -1369,7 +1502,7 @@ export function RecentEvents() {
               )}
             </div>
           )}
-          {events.length > 0 && (
+          {total > 0 && (
             <Button
               variant={selectionMode ? "secondary" : "outline"}
               size="sm"
@@ -1411,8 +1544,8 @@ export function RecentEvents() {
         </div>
       )}
 
-      {/* Search + filters — only shown when events exist */}
-      {events.length > 0 && (
+      {/* Search + filters — shown when there are results OR when filters are active */}
+      {(total > 0 || search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo || validationFilter) && !loading && (
         <div className="flex flex-col gap-2 rounded-[18px] border border-border/30 bg-surface-container-low px-3 py-3 shadow-[inset_0_0_0_1px_rgba(71,70,86,0.18)]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -1486,6 +1619,21 @@ export function RecentEvents() {
                 {r}
               </button>
             ))}
+            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-1">Validated</span>
+            {(["validated", "contradicted", "unresolved"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setValidationFilter(validationFilter === v ? null : v)}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  validationFilter === v
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                )}
+              >
+                {v}
+              </button>
+            ))}
           </div>
           {/* Sort + date range + active count */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -1518,16 +1666,16 @@ export function RecentEvents() {
               onChange={(e) => setDateTo(e.target.value)}
               className="rounded border border-border/60 bg-surface-container px-1.5 py-0.5 text-[10px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
             />
-            {(search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo) && (
+            {(search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo || validationFilter) && (
               <span className="ml-auto text-[10px] font-num text-muted-foreground/50">
-                {filtered.length}/{events.length}
+                {total} result{total !== 1 ? "s" : ""}
               </span>
             )}
           </div>
         </div>
       )}
 
-      {!loading && !error && events.length === 0 && (
+      {!loading && !error && total === 0 && !search && !stageFilter && !confFilter && !persistenceFilter && !ratingFilter && !dateFrom && !dateTo && !validationFilter && (
         <Card className="empty-surface flex flex-1 items-center justify-center bg-transparent">
           <CardContent className="flex max-w-md flex-col items-center gap-3 py-12 text-center text-muted-foreground">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border/50 bg-surface-container-highest">
@@ -1599,11 +1747,11 @@ export function RecentEvents() {
         </div>
       )}
 
-      {filtered.length > 0 && (
+      {displayed.length > 0 && (
         <div className="fade-in space-y-2 pr-2">
-          {filtered.map((ev, idx) => (
+          {displayed.map((ev, idx) => (
             <div key={ev.id}>
-              {idx === pinnedCount && pinnedCount > 0 && pinnedCount < filtered.length && (
+              {idx === pinnedCount && pinnedCount > 0 && pinnedCount < displayed.length && (
                 <div className="flex items-center gap-2 py-1">
                   <div className="h-px flex-1 bg-border/40" />
                   <span className="text-[9px] uppercase tracking-widest text-muted-foreground/40">archive</span>
@@ -1634,10 +1782,33 @@ export function RecentEvents() {
         </div>
       )}
 
-      {events.length > 0 && filtered.length === 0 && (
+      {total > 0 && displayed.length === 0 && (
         <p className="py-8 text-center text-[12px] text-muted-foreground/50">
           No events match the current filters.
         </p>
+      )}
+
+      {/* Pagination — only shown when there are more results than one page */}
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between px-1 py-2 text-[11px] text-muted-foreground">
+          <button
+            disabled={offset === 0}
+            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+            className="disabled:opacity-30 hover:text-foreground transition-colors"
+          >
+            ← Prev
+          </button>
+          <span className="font-num tabular-nums">
+            {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
+          </span>
+          <button
+            disabled={offset + PAGE_SIZE >= total}
+            onClick={() => setOffset(offset + PAGE_SIZE)}
+            className="disabled:opacity-30 hover:text-foreground transition-colors"
+          >
+            Next →
+          </button>
+        </div>
       )}
     </div>
   );

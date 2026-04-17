@@ -566,6 +566,27 @@ export interface SavedEvent {
   hours_since_check?: number | null;
   event_age_days?: number | null;
   persistence_signal?: PersistenceSignal;
+  validation_status?: "validated" | "contradicted" | "unresolved";
+}
+
+export interface EventsQuery {
+  limit?:       number;
+  offset?:      number;
+  search?:      string;
+  stage?:       string;
+  persistence?: string;
+  confidence?:  string;
+  rating?:      string;
+  date_from?:   string;
+  date_to?:     string;
+  validated?:   "validated" | "contradicted" | "unresolved";
+}
+
+export interface EventsPage {
+  items:  SavedEvent[];
+  total:  number;
+  offset: number;
+  limit:  number;
 }
 
 export interface RelatedEvent {
@@ -1157,8 +1178,21 @@ export const api = {
     });
   },
 
-  events: (limit = 25) =>
-    request<SavedEvent[]>(`/events?limit=${limit}`),
+  events: (query: EventsQuery = {}): Promise<EventsPage> => {
+    const params = new URLSearchParams();
+    if (query.limit   != null) params.set("limit",       String(query.limit));
+    if (query.offset  != null) params.set("offset",      String(query.offset));
+    if (query.search)          params.set("search",      query.search);
+    if (query.stage)           params.set("stage",       query.stage);
+    if (query.persistence)     params.set("persistence", query.persistence);
+    if (query.confidence)      params.set("confidence",  query.confidence);
+    if (query.rating)          params.set("rating",      query.rating);
+    if (query.date_from)       params.set("date_from",   query.date_from);
+    if (query.date_to)         params.set("date_to",     query.date_to);
+    if (query.validated)       params.set("validated",   query.validated);
+    const qs = params.toString();
+    return request<EventsPage>(`/events${qs ? `?${qs}` : ""}`);
+  },
 
   updateReview: (eventId: number, body: { rating?: string; notes?: string }) =>
     request<{ ok: boolean; event_id: number }>(

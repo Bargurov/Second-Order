@@ -257,10 +257,11 @@ function AggregateSummary({ results }: { results: Map<number, BacktestResult> })
 
 export function Backtest() {
   // Load events list
-  const { data: events = [], isLoading: eventsLoading, error: eventsError } = useQuery({
-    queryKey: qk.events(50),
-    queryFn: () => api.events(50),
+  const { data: eventsPage, isLoading: eventsLoading, error: eventsError } = useQuery({
+    queryKey: qk.events({ limit: 50 }),
+    queryFn:  () => api.events({ limit: 50 }),
   });
+  const events = eventsPage?.items ?? [];
 
   const testable = events.filter((e) => e.event_date && e.market_tickers.length > 0);
   const testableIds = testable.map((e) => e.id);
