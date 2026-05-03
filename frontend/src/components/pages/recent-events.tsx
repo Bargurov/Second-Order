@@ -218,15 +218,30 @@ export function sortEvents(events: SavedEvent[], key: SortKey): SavedEvent[] {
   const copy = [...events];
   switch (key) {
     case "newest":
-      copy.sort((a, b) => (b.timestamp > a.timestamp ? 1 : b.timestamp < a.timestamp ? -1 : 0));
+      // Sort by id DESC — matches the server's ``ORDER BY id DESC`` used by
+      // /events, so pagination stays consistent page-to-page.  id is the
+      // auto-increment primary key, so newer events always have higher ids
+      // and ties cannot occur.  ``timestamp`` is a secondary key only for
+      // legacy rows lacking id.
+      copy.sort((a, b) => {
+        if (b.id !== a.id) return b.id - a.id;
+        return b.timestamp > a.timestamp ? 1 : b.timestamp < a.timestamp ? -1 : 0;
+      });
       break;
     case "oldest":
-      copy.sort((a, b) => (a.timestamp > b.timestamp ? 1 : a.timestamp < b.timestamp ? -1 : 0));
+      copy.sort((a, b) => {
+        if (a.id !== b.id) return a.id - b.id;
+        return a.timestamp > b.timestamp ? 1 : a.timestamp < b.timestamp ? -1 : 0;
+      });
       break;
     case "impact":
+      // Page-local sort: the server paginates in id DESC so switching to an
+      // impact ranking re-orders the current page only.  This is intentional —
+      // server-side impact sort is out of scope here.
       copy.sort((a, b) => _maxAbsReturn(b) - _maxAbsReturn(a));
       break;
     case "confidence":
+      // Page-local sort (see impact comment above).
       copy.sort((a, b) => (_CONF_RANK[a.confidence] ?? 3) - (_CONF_RANK[b.confidence] ?? 3));
       break;
   }
@@ -1448,18 +1463,16 @@ export function RecentEvents() {
   return (
     // Page-level scroll: list view is plain flow.
     <div className="flex flex-col gap-3">
-      <div className="soft-panel flex shrink-0 flex-col gap-3 rounded-[22px] px-4 py-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border/50 bg-surface-container-highest">
-            <Archive className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="min-w-0 space-y-1">
-            <p className="section-kicker">Archive</p>
-            <h2 className="truncate text-lg font-semibold tracking-[-0.02em] text-foreground">Archive</h2>
-            <p className="text-[12px] leading-5 text-muted-foreground">
-              {loading ? "Loading archive..."
+      <div className="flex shrink-0 flex-col gap-3 px-1 pb-1 pt-1 md:flex-row md:items-end md:justify-between">
+        <div className="flex min-w-0 items-end gap-3">
+          <div className="min-w-0">
+            <h2 className="font-headline truncate text-[22px] font-bold leading-tight tracking-[-0.015em] text-on-surface">
+              Archive
+            </h2>
+            <p className="mt-1 text-[12.5px] text-on-surface-variant/75">
+              {loading ? "Loading archive…"
                 : error ? "Could not load archive."
-                : <><span className="font-num">{total}</span> saved event{total !== 1 ? "s" : ""}{total > 0 ? " with notes, ratings, and linked follow-ups." : "."}</>}
+                : <><span className="font-mono tabular-nums text-on-surface">{total}</span> saved event{total !== 1 ? "s" : ""}{total > 0 ? " with notes, ratings, and linked follow-ups." : "."}</>}
             </p>
           </div>
         </div>
@@ -1546,89 +1559,89 @@ export function RecentEvents() {
 
       {/* Search + filters — shown when there are results OR when filters are active */}
       {(total > 0 || search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo || validationFilter) && !loading && (
-        <div className="flex flex-col gap-2 rounded-[18px] border border-border/30 bg-surface-container-low px-3 py-3 shadow-[inset_0_0_0_1px_rgba(71,70,86,0.18)]">
+        <div className="flex flex-col gap-2.5 rounded-lg bg-card px-3.5 py-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-on-surface-variant/55" />
             <input
               type="text"
-              placeholder="Search headlines..."
+              placeholder="Search headlines…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-border/50 bg-surface-container pl-9 pr-3 py-2 text-[13px] text-foreground placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-1 focus:ring-primary/40"
+              className="w-full rounded-md bg-white/[0.025] pl-9 pr-3 py-2 text-[13px] text-on-surface placeholder:text-on-surface-variant/55 focus:outline-none focus:ring-1 focus:ring-primary/40"
             />
           </div>
           {/* Filter pills: Stage, Persistence, Confidence, Rating */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mr-0.5">Stage</span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55 mr-1">Stage</span>
             {["developing", "realized", "anticipated"].map((s) => (
               <button
                 key={s}
                 onClick={() => setStageFilter(stageFilter === s ? null : s)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                   stageFilter === s
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
                 )}
               >
                 {s}
               </button>
             ))}
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-1">Persist</span>
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">Persist</span>
             {["low", "medium", "high"].map((p) => (
               <button
                 key={p}
                 onClick={() => setPersistenceFilter(persistenceFilter === p ? null : p)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                   persistenceFilter === p
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
                 )}
               >
                 {p}
               </button>
             ))}
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-1">Conf</span>
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">Conf</span>
             {["high", "medium", "low"].map((c) => (
               <button
                 key={c}
                 onClick={() => setConfFilter(confFilter === c ? null : c)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                   confFilter === c
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
                 )}
               >
                 {c}
               </button>
             ))}
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-1">Rating</span>
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">Rating</span>
             {["good", "mixed", "poor"].map((r) => (
               <button
                 key={r}
                 onClick={() => setRatingFilter(ratingFilter === r ? null : r)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                   ratingFilter === r
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
                 )}
               >
                 {r}
               </button>
             ))}
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-1">Validated</span>
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">Validated</span>
             {(["validated", "contradicted", "unresolved"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setValidationFilter(validationFilter === v ? null : v)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                   validationFilter === v
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
                 )}
               >
                 {v}
@@ -1637,37 +1650,37 @@ export function RecentEvents() {
           </div>
           {/* Sort + date range + active count */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mr-0.5">Sort</span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55 mr-1">Sort</span>
             {(["newest", "oldest", "impact", "confidence"] as SortKey[]).map((k) => (
               <button
                 key={k}
                 onClick={() => setSortKey(k)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                   sortKey === k
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-on-surface-variant hover:border-border hover:text-foreground",
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
                 )}
               >
                 {k}
               </button>
             ))}
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-1">From</span>
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">From</span>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded border border-border/60 bg-surface-container px-1.5 py-0.5 text-[10px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+              className="rounded-md bg-white/[0.03] px-2 py-1 text-[11px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40"
             />
-            <span className="text-[10px] text-on-surface-variant/70 uppercase tracking-widest mx-0.5">To</span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">To</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded border border-border/60 bg-surface-container px-1.5 py-0.5 text-[10px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+              className="rounded-md bg-white/[0.03] px-2 py-1 text-[11px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40"
             />
             {(search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo || validationFilter) && (
-              <span className="ml-auto text-[10px] font-num text-muted-foreground/50">
+              <span className="ml-auto font-mono text-[10.5px] tabular-nums text-on-surface-variant/55">
                 {total} result{total !== 1 ? "s" : ""}
               </span>
             )}

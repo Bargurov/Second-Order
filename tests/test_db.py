@@ -1,29 +1,62 @@
 import io
+import gc
 import os
+import shutil
 import sqlite3
 import sys
-import tempfile
+import time
 import unittest
 import uuid
 
 import db
 
 
+def _make_temp_db(prefix: str) -> tuple[str, str]:
+    tmp_dir = os.path.join(os.path.dirname(__file__), f"{prefix}{uuid.uuid4().hex}")
+    os.makedirs(tmp_dir)
+    return tmp_dir, os.path.join(tmp_dir, "events.db")
+
+
+def _remove_temp_dir(path: str) -> None:
+    last_error = None
+    for _ in range(5):
+        gc.collect()
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError as exc:
+            last_error = exc
+            time.sleep(0.05)
+    if last_error is not None:
+        raise last_error
+
+
+class TempDbCleanupTests(unittest.TestCase):
+    def test_temp_db_directory_cleanup_removes_db_file(self) -> None:
+        tmp_dir, db_file = _make_temp_db("test_events_")
+        original_db_file = db.DB_FILE
+        original_ready = db._db_ready
+        try:
+            db.DB_FILE = db_file
+            db.init_db()
+            self.assertTrue(os.path.exists(db_file))
+        finally:
+            db.DB_FILE = original_db_file
+            db._db_ready = original_ready
+            _remove_temp_dir(tmp_dir)
+
+        self.assertFalse(os.path.exists(db_file))
+
+
 class DatabaseSmokeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.original_db_file = db.DB_FILE
-        self.test_db_file = os.path.join(
-            tempfile.gettempdir(), f"test_events_{uuid.uuid4().hex}.db",
-        )
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
         db.DB_FILE = self.test_db_file
 
     def tearDown(self) -> None:
         db.DB_FILE = self.original_db_file
-        if os.path.exists(self.test_db_file):
-            try:
-                os.remove(self.test_db_file)
-            except PermissionError:
-                pass
+        _remove_temp_dir(self._tmp_dir)
 
     def test_init_db_creates_database_file(self) -> None:
         db.init_db()
@@ -94,19 +127,13 @@ class DuplicateGuardTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self.original_db_file = db.DB_FILE
-        self.test_db_file = os.path.join(
-            tempfile.gettempdir(), f"test_events_{uuid.uuid4().hex}.db",
-        )
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
         db.DB_FILE = self.test_db_file
         db.init_db()
 
     def tearDown(self) -> None:
         db.DB_FILE = self.original_db_file
-        if os.path.exists(self.test_db_file):
-            try:
-                os.remove(self.test_db_file)
-            except PermissionError:
-                pass
+        _remove_temp_dir(self._tmp_dir)
 
     def _event(self, **overrides) -> dict:
         base = {
@@ -163,20 +190,12 @@ class DuplicateGuardTests(unittest.TestCase):
 class SchemaVersionTests(unittest.TestCase):
     def setUp(self) -> None:
         self.original_db_file = db.DB_FILE
-        self.test_db_file = os.path.join(
-            tempfile.gettempdir(),
-            f"test_events_{uuid.uuid4().hex}.db",
-        )
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
         db.DB_FILE = self.test_db_file
 
     def tearDown(self) -> None:
         db.DB_FILE = self.original_db_file
-        for path in (self.test_db_file, self.test_db_file + ".bak"):
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                except PermissionError:
-                    pass
+        _remove_temp_dir(self._tmp_dir)
 
     def test_fresh_database_gets_version_stamped(self):
         db.init_db()
@@ -375,20 +394,14 @@ class DbReadyGuardTests(unittest.TestCase):
     def setUp(self) -> None:
         self.original_db_file = db.DB_FILE
         self.original_ready = db._db_ready
-        self.test_db_file = os.path.join(
-            tempfile.gettempdir(), f"test_events_{uuid.uuid4().hex}.db",
-        )
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
         db.DB_FILE = self.test_db_file
         db._db_ready = False   # simulate init_db not called
 
     def tearDown(self) -> None:
         db.DB_FILE = self.original_db_file
         db._db_ready = self.original_ready
-        if os.path.exists(self.test_db_file):
-            try:
-                os.remove(self.test_db_file)
-            except PermissionError:
-                pass
+        _remove_temp_dir(self._tmp_dir)
 
     def test_save_event_raises_without_init(self):
         with self.assertRaises(RuntimeError):
@@ -422,19 +435,13 @@ class FindRelatedEventsTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self.original_db_file = db.DB_FILE
-        self.test_db_file = os.path.join(
-            tempfile.gettempdir(), f"test_events_{uuid.uuid4().hex}.db",
-        )
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
         db.DB_FILE = self.test_db_file
         db.init_db()
 
     def tearDown(self) -> None:
         db.DB_FILE = self.original_db_file
-        if os.path.exists(self.test_db_file):
-            try:
-                os.remove(self.test_db_file)
-            except PermissionError:
-                pass
+        _remove_temp_dir(self._tmp_dir)
 
     def _save(self, headline, **kw) -> int:
         base = {"headline": headline, "stage": "realized",
@@ -530,19 +537,13 @@ class UpdateReviewTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self.original_db_file = db.DB_FILE
-        self.test_db_file = os.path.join(
-            tempfile.gettempdir(), f"test_events_{uuid.uuid4().hex}.db",
-        )
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
         db.DB_FILE = self.test_db_file
         db.init_db()
 
     def tearDown(self) -> None:
         db.DB_FILE = self.original_db_file
-        if os.path.exists(self.test_db_file):
-            try:
-                os.remove(self.test_db_file)
-            except PermissionError:
-                pass
+        _remove_temp_dir(self._tmp_dir)
 
     def _save(self, headline="Test headline", **kw) -> int:
         base = {"headline": headline, "stage": "realized",
@@ -608,6 +609,151 @@ class UpdateReviewTests(unittest.TestCase):
         db.update_review(eid, "good", "")
         events = db.load_recent_events(1)
         self.assertEqual(events[0]["rating"], "good")
+
+
+class InstitutionalResearchFieldsRoundTripTests(unittest.TestCase):
+    """Round-trip coverage for the five new institutional research
+    fields.  These are JSON-encoded list columns — the test catches the
+    failure mode where a new list column is added to ``save_event`` but
+    not to ``_EVENT_LIST_FIELDS``, which would cause the loaded value
+    to come back as a raw JSON string instead of a Python list."""
+
+    def setUp(self) -> None:
+        self.original_db_file = db.DB_FILE
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
+        db.DB_FILE = self.test_db_file
+
+    def tearDown(self) -> None:
+        db.DB_FILE = self.original_db_file
+        _remove_temp_dir(self._tmp_dir)
+
+    def _base_event(self, **overrides: object) -> dict:
+        event = {
+            "headline":          "Institutional research fields smoke event",
+            "stage":              "realized",
+            "persistence":        "medium",
+            "mechanism_summary":  "A concrete mechanism with enough length.",
+            "beneficiaries":      ["CVX"],
+            "losers":             ["SU"],
+            "assets_to_watch":    ["CVX", "SU"],
+            "confidence":         "medium",
+            "market_note":        "",
+            "notes":              "",
+        }
+        event.update(overrides)
+        return event
+
+    def test_new_fields_default_to_empty_lists_on_legacy_save(self) -> None:
+        """A save that does NOT specify the new fields must still produce
+        a row whose readback carries the five new fields as empty lists,
+        not raw JSON strings and not missing keys."""
+        db.init_db()
+        db.save_event(self._base_event())
+        rows = db.load_recent_events(limit=1)
+        self.assertEqual(len(rows), 1)
+        for field in (
+            "primary_assets", "secondary_assets", "hedge_or_signal_assets",
+            "key_falsifiers", "minimum_proof_set",
+        ):
+            self.assertIn(field, rows[0], f"{field!r} missing from loaded row")
+            self.assertIsInstance(
+                rows[0][field], list,
+                f"{field!r} came back as {type(rows[0][field])!r}, not list — "
+                f"likely missing from _EVENT_LIST_FIELDS",
+            )
+            self.assertEqual(rows[0][field], [])
+
+    def test_ranked_asset_dicts_round_trip(self) -> None:
+        db.init_db()
+        event = self._base_event(
+            primary_assets=[
+                {"symbol": "CVX", "rank": 1,
+                 "rationale": "Direct licence holder with heavy-sour lift exposure."},
+                {"symbol": "PBF", "rank": 2,
+                 "rationale": "Gulf Coast coking refiner gains feedstock cost advantage."},
+            ],
+            secondary_assets=[
+                {"symbol": "VLO", "rank": 1,
+                 "rationale": "Large Gulf refiner — secondary follow-through."},
+            ],
+            hedge_or_signal_assets=[
+                {"symbol": "UUP", "rank": 1,
+                 "rationale": "Dollar-signal proxy for FX confirmation."},
+            ],
+        )
+        db.save_event(event)
+        rows = db.load_recent_events(limit=1)
+        self.assertEqual(
+            [e["symbol"] for e in rows[0]["primary_assets"]], ["CVX", "PBF"],
+        )
+        self.assertEqual(rows[0]["primary_assets"][0]["rank"], 1)
+        self.assertIn(
+            "Direct licence",
+            rows[0]["primary_assets"][0]["rationale"],
+        )
+        self.assertEqual(
+            [e["symbol"] for e in rows[0]["secondary_assets"]], ["VLO"],
+        )
+        self.assertEqual(
+            [e["symbol"] for e in rows[0]["hedge_or_signal_assets"]], ["UUP"],
+        )
+
+    def test_key_falsifiers_and_minimum_proof_set_round_trip(self) -> None:
+        db.init_db()
+        event = self._base_event(
+            key_falsifiers=[
+                "PDVSA issues operational-delay statement within 5d",
+                "Congressional resolution narrows the licence within 20d",
+            ],
+            minimum_proof_set=[
+                {"observation": "WCS-WTI discount widens",
+                 "channel": "commodities",
+                 "threshold": "≥2pp vs pre-licence baseline",
+                 "timing": "5-20d"},
+            ],
+        )
+        db.save_event(event)
+        rows = db.load_recent_events(limit=1)
+        self.assertEqual(len(rows[0]["key_falsifiers"]), 2)
+        self.assertIn("PDVSA", rows[0]["key_falsifiers"][0])
+        self.assertEqual(len(rows[0]["minimum_proof_set"]), 1)
+        self.assertEqual(
+            rows[0]["minimum_proof_set"][0]["channel"], "commodities",
+        )
+
+    def test_legacy_column_reads_unaffected(self) -> None:
+        """A save that exercises both the old and the new fields must
+        not regress the legacy column reads — the point of the
+        expansion is stability, not schema churn."""
+        db.init_db()
+        event = self._base_event(
+            primary_assets=[
+                {"symbol": "CVX", "rank": 1,
+                 "rationale": "Direct licence holder with enough rationale length."},
+            ],
+        )
+        db.save_event(event)
+        rows = db.load_recent_events(limit=1)
+        # Legacy committed lists still land exactly as saved.
+        self.assertEqual(rows[0]["beneficiaries"], ["CVX"])
+        self.assertEqual(rows[0]["losers"], ["SU"])
+        self.assertEqual(rows[0]["assets_to_watch"], ["CVX", "SU"])
+        self.assertEqual(rows[0]["confidence"], "medium")
+
+    def test_column_added_to_existing_db(self) -> None:
+        """init_db() must idempotently add the five new columns to an
+        older DB that was created before the research-fields migration."""
+        # First init creates the modern schema.
+        db.init_db()
+        db.save_event(self._base_event())
+        # Second init is a no-op on the ALTER TABLE ADD COLUMN statements.
+        db.init_db()
+        rows = db.load_recent_events(limit=1)
+        for field in (
+            "primary_assets", "secondary_assets", "hedge_or_signal_assets",
+            "key_falsifiers", "minimum_proof_set",
+        ):
+            self.assertIn(field, rows[0])
 
 
 if __name__ == "__main__":

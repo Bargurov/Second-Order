@@ -130,6 +130,18 @@ def _normalize_uncertainty_concentration(uc: Optional[dict]) -> dict:
     return out
 
 
+def _normalize_generic(block: Optional[dict]) -> dict:
+    """Pass-through normaliser for blocks that already carry their own
+    ``available`` flag.  Falls back to ``{"available": False}`` when
+    the input is missing or malformed so the frontend can always branch
+    on presence without a None-check."""
+    if not block or not isinstance(block, dict):
+        return {"available": False}
+    out = dict(block)
+    out.setdefault("available", True)
+    return out
+
+
 def compose_market_context(
     snapshots: list[dict],
     stress: Optional[dict],
@@ -139,6 +151,15 @@ def compose_market_context(
     regime_vector: Optional[dict] = None,
     source: Optional[str] = None,
     uncertainty_concentration: Optional[dict] = None,
+    # --- Deeper macro-engine blocks --------------------------------------
+    # Each is optional: the route computes them as pure composers over
+    # data it already fetched (no extra provider calls).  Missing blocks
+    # carry {"available": False} in the output so the frontend can skip
+    # the corresponding panel.
+    credit_regime: Optional[dict] = None,
+    funding_stress_mode: Optional[dict] = None,
+    sector_rotation: Optional[dict] = None,
+    finance_playbook: Optional[dict] = None,
 ) -> dict:
     """Combine the pre-fetched sections into the unified context object.
 
@@ -170,4 +191,9 @@ def compose_market_context(
         "highlights": list(highlights or []),
         "highlights_meta": _summarize_highlights(highlights or []),
         "uncertainty_concentration": _normalize_uncertainty_concentration(uncertainty_concentration),
+        # Deeper engine blocks — pure composers over the inputs above.
+        "credit_regime":        _normalize_generic(credit_regime),
+        "funding_stress_mode":  _normalize_generic(funding_stress_mode),
+        "sector_rotation":      _normalize_generic(sector_rotation),
+        "finance_playbook":     _normalize_generic(finance_playbook),
     }

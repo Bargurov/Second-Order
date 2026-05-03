@@ -493,21 +493,21 @@ class TestApiBoundariesApplySuppression(unittest.TestCase):
         """The suppression must NOT throw away legitimately-distinct
         ticker data — the clean event must still render with both
         cards intact."""
-        self._seed_clean_event(headline="Clean event survives")
+        self._seed_clean_event(headline="Oil sanctions survive filtering")
         # Backdate slightly so it sits in the weekly window.
         import sqlite3
         old_ts = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
         with sqlite3.connect(self._tmp) as conn:
             conn.execute(
                 "UPDATE events SET timestamp = ? WHERE headline = ?",
-                (old_ts, "Clean event survives"),
+                (old_ts, "Oil sanctions survive filtering"),
             )
 
         r = self.client.get("/movers/weekly")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         clean = next(
-            (m for m in body if m["headline"] == "Clean event survives"),
+            (m for m in body if m["headline"] == "Oil sanctions survive filtering"),
             None,
         )
         self.assertIsNotNone(clean, f"clean event was filtered out: {body}")

@@ -37,6 +37,28 @@ from __future__ import annotations
 
 from typing import Optional
 
+from benchmark_quarantine import (
+    _HARD_FAIL_REASONS,
+    channel_quality_block,
+    compute_benchmark_quarantine,
+)
+from cross_rate_fx import compute_cross_rate_fx
+
+
+# Channel → representative benchmark ticker used for quarantine lookups.
+# Nominal/real/breakeven use the 10Y tape since their moves are derived
+# from it; FX and commodity-composite channels use the lead price ticker
+# (DXY / CL / GLD).  Credit is a composite so it's skipped (None) —
+# quarantine lives on the underlying HYG / LQD prints themselves, which
+# run through cross_asset_coherence.
+_CHANNEL_BENCHMARK_TICKER: dict[str, str] = {
+    "nominal_yield": "10Y",
+    "real_yield":    "TIP",
+    "breakeven":     "10Y",
+    "fx":            "DXY",
+    "commodity":     "CL",
+}
+
 
 # ---------------------------------------------------------------------------
 # Channel metadata
@@ -48,6 +70,7 @@ CHANNEL_IDS: tuple[str, ...] = (
     "breakeven",
     "fx",
     "commodity",
+    "credit",
 )
 
 _CHANNEL_LABELS: dict[str, str] = {
@@ -56,6 +79,7 @@ _CHANNEL_LABELS: dict[str, str] = {
     "breakeven":     "Breakeven inflation",
     "fx":            "Dollar / FX",
     "commodity":     "Commodities",
+    "credit":        "Credit spreads",
 }
 
 # Institutional 1-sigma 5d move scales.
@@ -65,18 +89,20 @@ _CHANNEL_LABELS: dict[str, str] = {
 #                   (e.g. 0.20 = 20 bps.  NOT percentage change in yield level.)
 #   real_yield    — percentage change in TIP ETF price
 #                   (e.g. 0.50 = TIP fell/rose 0.50%)
-#   breakeven     — nominal_pp_change + TIP_pct_change proxy
+#   breakeven     — Fisher decomposition proxy (pp):
+#                   nominal_pp + TIP_pct / _TIP_DURATION
 #                   (same order of magnitude as nominal pp)
 #   fx            — percentage change in DXY (DX-Y.NYB or equivalent)
 #   commodity     — percentage change in CL (crude) or GC (gold)
 #
 # A move of ~1.5× the scale starts to feel real; >2.5× is a regime event.
 _CHANNEL_SCALE: dict[str, float] = {
-    "nominal_yield": 0.20,   # 20 bps absolute change in ^TNX
-    "real_yield":    0.50,   # 0.50% TIP ETF price move
-    "breakeven":     0.20,   # breakeven proxy (nominal pp + TIP pct)
-    "fx":            0.70,   # 0.70% DXY move
-    "commodity":     3.00,   # 3% crude-equivalent move
+    "nominal_yield": 0.20,   # 20 bps absolute change in ^TNX  (pp-unit; same scale as breakeven)
+    "real_yield":    0.75,   # 0.75% TIP ETF price move        (5y 1-sigma: 0.776 %)
+    "breakeven":     0.20,   # breakeven proxy (pp)            (same pp-unit as nominal_yield)
+    "fx":            0.90,   # 0.90% DXY move                  (5y 1-sigma: 0.956 %)
+    "commodity":     5.00,   # 5% crude-equivalent move        (5y 1-sigma: 5.347 %)
+    "credit":        1.00,   # 1.0 pp HY-vs-Treasury 5d spread (SHY_5d - HYG_5d); +0.5 fires ~20%, +1.0 ~8%
 }
 
 # Sanity caps per channel: move_5d values beyond these thresholds are
@@ -91,16 +117,29 @@ _CHANNEL_MOVE_CAPS: dict[str, float] = {
     "breakeven":     7.0,    # derived proxy; ceiling a bit above nominal
     "fx":            15.0,   # DXY ±15% in 5 days has never happened
     "commodity":     60.0,   # crude can spike hard but not 60%+ in 5 days
+    "credit":        10.0,   # HY-vs-Treasury 5d spread ±10pp is GFC-territory tail
 }
 
 # Canonical liquid markets to watch per channel.  These are the same
 # market IDs the rest of the product already understands.
+# Display units per channel — so rationale text and the payload carry the
+# correct suffix instead of blanket "%".
+_CHANNEL_UNITS: dict[str, str] = {
+    "nominal_yield": "pp",   # absolute percentage-point change
+    "real_yield":    "%",    # TIP ETF price percentage change
+    "breakeven":     "pp",   # composite proxy, same order as nominal
+    "fx":            "%",    # DXY percentage change
+    "commodity":     "%",    # crude/gold percentage change
+    "credit":        "pp",   # HY-vs-Treasury relative spread (SHY_5d − HYG_5d)
+}
+
 _CHANNEL_MARKETS: dict[str, list[str]] = {
     "nominal_yield": ["10Y", "2Y", "30Y", "TLT"],
     "real_yield":    ["TIP", "10Y", "TLT", "GC"],
     "breakeven":     ["TIP", "10Y", "GC", "CL"],
     "fx":            ["DXY", "10Y", "GC", "ES"],
     "commodity":     ["CL", "GC", "DXY", "10Y"],
+    "credit":        ["HYG", "LQD", "VIX", "SPY"],
 }
 
 # Macro-read sentence templates per primary driver.
@@ -125,6 +164,11 @@ _MACRO_READ: dict[str, str] = {
     "commodity": (
         "Commodity-led shock — passthrough to inflation expectations and "
         "energy/materials equities is the main monitoring axis."
+    ),
+    "credit": (
+        "Credit spreads are doing the work — risk premia are repricing "
+        "faster than rates; equity vol and HY-sensitive names will lead "
+        "the reaction function."
     ),
     "none": (
         "All channels are below their normal noise band — no single shock "
@@ -173,6 +217,370 @@ def _rates_usable(rates_context: Optional[dict]) -> bool:
     nom = (rates_context.get("nominal") or {}).get("change_5d")
     real = (rates_context.get("real_proxy") or {}).get("change_5d")
     return nom is not None or real is not None
+
+
+# ---------------------------------------------------------------------------
+# Rates pack: curve shape
+# ---------------------------------------------------------------------------
+# SHY ETF tracks 1-3Y Treasuries; effective duration ≈ 1.9y. A 1% price
+# move in SHY therefore translates to roughly -0.53 pp in the underlying
+# front-end yield (inverse price/yield).  This is a proxy — nothing like
+# a clean 2Y futures print — but gives a usable slope-change signal that
+# is correct in sign and order-of-magnitude for curve classification.
+_SHY_DURATION: float = 1.9
+
+# Noise floor per leg (pp).  A 5d leg-move under this is treated as "flat".
+# Empirical: 10Y 1-sigma ≈ 0.13pp, 2Y_proxy 1-sigma ≈ 0.10pp.  0.10pp fires
+# the classifier only when at least one leg has meaningfully moved.
+_CURVE_LEG_FLOOR: float = 0.10
+
+# Slope-change significance (pp).  Below this, legs move in tandem and we
+# call the move "parallel" instead of steepening/flattening.
+_CURVE_SLOPE_FLOOR: float = 0.08
+
+
+def _twoy_change_pp_from_shy(shy_pct_5d: Optional[float]) -> Optional[float]:
+    """Convert SHY ETF % price move to an approximate 2Y yield change (pp).
+
+    SHY rises → 2Y yield fell; invert sign and divide by duration.
+    """
+    if shy_pct_5d is None:
+        return None
+    return -float(shy_pct_5d) / _SHY_DURATION
+
+
+def _classify_curve_shape(tenyr_pp: Optional[float], twoy_pp: Optional[float]) -> str:
+    """Classify the 2s10s curve move.
+
+    Returns one of:
+      bull_steepener, bear_steepener, bull_flattener, bear_flattener,
+      parallel_up, parallel_down, flat, unavailable.
+
+    Convention: slope = 10Y - 2Y.  slope rising → steepening.  Bull/bear
+    tags the sign of the 10Y leg (bull = rates falling, bear = rising).
+    """
+    if tenyr_pp is None or twoy_pp is None:
+        return "unavailable"
+
+    slope_change = tenyr_pp - twoy_pp
+
+    # Both legs quiet → flat.
+    if abs(tenyr_pp) < _CURVE_LEG_FLOOR and abs(twoy_pp) < _CURVE_LEG_FLOOR:
+        return "flat"
+
+    # Slope move is within the parallel band → parallel shift.
+    if abs(slope_change) < _CURVE_SLOPE_FLOOR:
+        if tenyr_pp > 0 or twoy_pp > 0:
+            return "parallel_up"
+        return "parallel_down"
+
+    steepening = slope_change > 0
+    # Direction of the 10Y leg (fallback to 2Y when 10Y is quiet).
+    leg_up = tenyr_pp > 0 if abs(tenyr_pp) >= _CURVE_LEG_FLOOR else twoy_pp > 0
+
+    if steepening and leg_up:
+        return "bear_steepener"
+    if steepening and not leg_up:
+        return "bull_steepener"
+    if (not steepening) and leg_up:
+        return "bear_flattener"
+    return "bull_flattener"
+
+
+def _magnitude_tier(slope_change_pp: Optional[float]) -> str:
+    """Classify the size of a slope move.
+
+    ``small`` = within the parallel floor (below the classifier's sensitivity).
+    ``medium`` = between the parallel floor and ~2x the leg floor.
+    ``large``  = beyond ~2x the leg floor (a meaningful steepener/flattener).
+    """
+    if slope_change_pp is None:
+        return "unavailable"
+    mag = abs(slope_change_pp)
+    if mag < _CURVE_SLOPE_FLOOR:
+        return "small"
+    if mag < 2 * _CURVE_LEG_FLOOR:
+        return "medium"
+    return "large"
+
+
+# ---------------------------------------------------------------------------
+# Long-end curve: 5s30s
+# ---------------------------------------------------------------------------
+# 5s30s is an independent curve read from 2s10s: a 5Y-30Y steepener can occur
+# with a flat 2s10s when term-premium is re-pricing at the long end only
+# (classic "long-end-driven" move).  A bull-steepener of the whole curve
+# (rates falling, slopes widening across both) reads completely differently.
+
+
+def _classify_long_curve_shape(
+    thirtyyr_pp: Optional[float],
+    fiveyr_pp: Optional[float],
+) -> str:
+    """Classify the 5s30s curve move using the same taxonomy as 2s10s.
+
+    Convention: long_slope = 30Y − 5Y.  long_slope rising → long-end
+    steepening.  Bull/bear tags the sign of the 30Y leg.
+    """
+    if thirtyyr_pp is None or fiveyr_pp is None:
+        return "unavailable"
+
+    slope_change = thirtyyr_pp - fiveyr_pp
+
+    if abs(thirtyyr_pp) < _CURVE_LEG_FLOOR and abs(fiveyr_pp) < _CURVE_LEG_FLOOR:
+        return "flat"
+
+    if abs(slope_change) < _CURVE_SLOPE_FLOOR:
+        if thirtyyr_pp > 0 or fiveyr_pp > 0:
+            return "parallel_up"
+        return "parallel_down"
+
+    steepening = slope_change > 0
+    leg_up = thirtyyr_pp > 0 if abs(thirtyyr_pp) >= _CURVE_LEG_FLOOR else fiveyr_pp > 0
+
+    if steepening and leg_up:
+        return "bear_steepener"
+    if steepening and not leg_up:
+        return "bull_steepener"
+    if (not steepening) and leg_up:
+        return "bear_flattener"
+    return "bull_flattener"
+
+
+# ---------------------------------------------------------------------------
+# Combined regime state — distinguishes level-driven from curve-driven moves
+# ---------------------------------------------------------------------------
+
+# Regime-state taxonomy.  Each label is mutually exclusive; the composer picks
+# whichever reads most cleanly from the available legs.
+_REGIME_STATE_LABELS: dict[str, str] = {
+    "parallel_shift_up":           "Parallel shift up (all tenors rising)",
+    "parallel_shift_down":         "Parallel shift down (all tenors falling)",
+    "bear_steepener_whole":        "Bear steepener (whole curve)",
+    "bull_steepener_whole":        "Bull steepener (whole curve)",
+    "bear_flattener_whole":        "Bear flattener (whole curve)",
+    "bull_flattener_whole":        "Bull flattener (whole curve)",
+    "twist_short_steep_long_flat": "Twist — front steepens, long flattens",
+    "twist_short_flat_long_steep": "Twist — front flattens, long steepens",
+    "short_end_driven":            "Front-end driven (long end quiet)",
+    "long_end_driven":             "Long-end driven (front quiet)",
+    "mixed":                       "Mixed curve moves",
+    "flat_quiet":                  "Quiet — no meaningful move",
+    "unavailable":                 "Curve inputs unavailable",
+}
+
+
+def _classify_regime_state(
+    twoy_pp: Optional[float],
+    tenyr_pp: Optional[float],
+    fiveyr_pp: Optional[float],
+    thirtyyr_pp: Optional[float],
+) -> str:
+    """Combined 2s10s + 5s30s regime read.
+
+    Returns a label from ``_REGIME_STATE_LABELS`` that distinguishes
+    curve-driven moves (steepener/flattener/twist), level-driven moves
+    (parallel shifts), and partial moves (one section of the curve only).
+    """
+    short_avail = twoy_pp is not None and tenyr_pp is not None
+    long_avail  = thirtyyr_pp is not None and fiveyr_pp is not None
+
+    if not short_avail and not long_avail:
+        return "unavailable"
+
+    legs = [v for v in (twoy_pp, tenyr_pp, fiveyr_pp, thirtyyr_pp) if v is not None]
+    max_leg = max((abs(v) for v in legs), default=0.0)
+    if max_leg < _CURVE_LEG_FLOOR:
+        return "flat_quiet"
+
+    # Only one section of the curve available — degrade gracefully.
+    if short_avail and not long_avail:
+        short_slope = tenyr_pp - twoy_pp
+        if abs(short_slope) < _CURVE_SLOPE_FLOOR:
+            return "parallel_shift_up" if tenyr_pp > 0 else "parallel_shift_down"
+        return "short_end_driven"
+    if long_avail and not short_avail:
+        long_slope = thirtyyr_pp - fiveyr_pp
+        if abs(long_slope) < _CURVE_SLOPE_FLOOR:
+            return "parallel_shift_up" if thirtyyr_pp > 0 else "parallel_shift_down"
+        return "long_end_driven"
+
+    # Both sections available.
+    short_slope = tenyr_pp - twoy_pp
+    long_slope  = thirtyyr_pp - fiveyr_pp
+
+    short_steep = short_slope > _CURVE_SLOPE_FLOOR
+    short_flat  = short_slope < -_CURVE_SLOPE_FLOOR
+    long_steep  = long_slope > _CURVE_SLOPE_FLOOR
+    long_flat   = long_slope < -_CURVE_SLOPE_FLOOR
+    short_quiet = not short_steep and not short_flat
+    long_quiet  = not long_steep and not long_flat
+
+    # Parallel shift — both sections quiet but at least one leg moved.
+    if short_quiet and long_quiet:
+        signs = [v > 0 for v in legs]
+        if all(signs):
+            return "parallel_shift_up"
+        if not any(signs):
+            return "parallel_shift_down"
+        return "mixed"
+
+    # Twist — short and long move in opposite directions beyond the floor.
+    if short_steep and long_flat:
+        return "twist_short_steep_long_flat"
+    if short_flat and long_steep:
+        return "twist_short_flat_long_steep"
+
+    # Whole-curve moves — both sections agree on direction.
+    if short_steep and long_steep:
+        return "bear_steepener_whole" if tenyr_pp > 0 else "bull_steepener_whole"
+    if short_flat and long_flat:
+        return "bear_flattener_whole" if tenyr_pp > 0 else "bull_flattener_whole"
+
+    # One section moving, the other quiet.
+    if short_quiet and not long_quiet:
+        return "long_end_driven"
+    if long_quiet and not short_quiet:
+        return "short_end_driven"
+
+    return "mixed"
+
+
+def _regime_class(regime_state: str) -> str:
+    """Summary class: level_move vs curve_move vs partial vs quiet.
+
+    Gives consumers a coarse read without branching over the full taxonomy.
+    """
+    if regime_state in ("parallel_shift_up", "parallel_shift_down"):
+        return "level_move"
+    if regime_state in (
+        "bear_steepener_whole", "bull_steepener_whole",
+        "bear_flattener_whole", "bull_flattener_whole",
+        "twist_short_steep_long_flat", "twist_short_flat_long_steep",
+    ):
+        return "curve_move"
+    if regime_state in ("short_end_driven", "long_end_driven"):
+        return "partial"
+    if regime_state in ("flat_quiet", "unavailable"):
+        return regime_state
+    return "mixed"
+
+
+def _leg_driver(tenyr_pp: Optional[float], twoy_pp: Optional[float]) -> str:
+    """Attribute the curve move to the leg that moved more.
+
+    Useful because a 20bp steepening from the 10Y alone has a different
+    transmission read (term-premium reset, long-duration selling) than a
+    20bp steepening from a 2Y rally alone (cut priced in).
+    """
+    if tenyr_pp is None or twoy_pp is None:
+        return "unavailable"
+    if abs(tenyr_pp) < _CURVE_LEG_FLOOR and abs(twoy_pp) < _CURVE_LEG_FLOOR:
+        return "flat"
+    # If one leg dominates by >= 1.5x the other, attribute to it.
+    if abs(tenyr_pp) >= 1.5 * abs(twoy_pp) and abs(tenyr_pp) >= _CURVE_LEG_FLOOR:
+        return "long_end"
+    if abs(twoy_pp) >= 1.5 * abs(tenyr_pp) and abs(twoy_pp) >= _CURVE_LEG_FLOOR:
+        return "short_end"
+    return "both"
+
+
+def _build_rates_pack(
+    tenyr_pp: Optional[float],
+    shy_pct_5d: Optional[float],
+    fiveyr_pp: Optional[float] = None,
+    thirtyyr_pp: Optional[float] = None,
+) -> dict:
+    """Compose the rates pack: 2s10s + 5s30s + combined regime-state read.
+
+    Short-end fields (2s10s, derived from 10Y and SHY-implied 2Y):
+      - tenyr_5d_pp, twoy_5d_pp, slope_5d_pp
+      - curve_shape            : bull/bear steepener/flattener label
+      - parallel_component_pp  : average of legs (pure parallel shift portion)
+      - twist_component_pp     : half of slope_5d (rotation-only portion)
+      - driver                 : "long_end" | "short_end" | "both" | "flat"
+      - magnitude_tier         : "small" | "medium" | "large"
+
+    Long-end fields (5s30s, derived from 5Y and 30Y yields):
+      - fiveyr_5d_pp, thirtyyr_5d_pp, long_slope_5d_pp
+      - long_curve_shape       : same taxonomy as curve_shape
+      - long_magnitude_tier    : size classification for the 5s30s slope move
+
+    Combined read:
+      - regime_state           : detailed label across both sections of the curve
+      - regime_state_label     : human-readable version of regime_state
+      - regime_class           : "level_move" | "curve_move" | "partial" | "flat_quiet"
+
+    Always returns a dict; fields are None when inputs are missing so the
+    payload shape is stable.
+    """
+    twoy_pp = _twoy_change_pp_from_shy(shy_pct_5d)
+
+    slope_5d = None
+    parallel_component = None
+    twist_component = None
+    if tenyr_pp is not None and twoy_pp is not None:
+        slope_5d = tenyr_pp - twoy_pp
+        parallel_component = (tenyr_pp + twoy_pp) / 2.0
+        twist_component = slope_5d / 2.0
+
+    long_slope_5d = None
+    long_parallel_component = None
+    long_twist_component = None
+    if fiveyr_pp is not None and thirtyyr_pp is not None:
+        long_slope_5d = thirtyyr_pp - fiveyr_pp
+        long_parallel_component = (fiveyr_pp + thirtyyr_pp) / 2.0
+        long_twist_component = long_slope_5d / 2.0
+
+    regime_state = _classify_regime_state(twoy_pp, tenyr_pp, fiveyr_pp, thirtyyr_pp)
+
+    return {
+        # 2s10s leg
+        "tenyr_5d_pp":           round(tenyr_pp, 3) if tenyr_pp is not None else None,
+        "twoy_5d_pp":            round(twoy_pp, 3)  if twoy_pp  is not None else None,
+        "slope_5d_pp":           round(slope_5d, 3) if slope_5d is not None else None,
+        "curve_shape":           _classify_curve_shape(tenyr_pp, twoy_pp),
+        "parallel_component_pp": round(parallel_component, 3) if parallel_component is not None else None,
+        "twist_component_pp":    round(twist_component, 3)    if twist_component is not None else None,
+        "driver":                _leg_driver(tenyr_pp, twoy_pp),
+        "magnitude_tier":        _magnitude_tier(slope_5d),
+        # 5s30s leg
+        "fiveyr_5d_pp":                  round(fiveyr_pp, 3) if fiveyr_pp is not None else None,
+        "thirtyyr_5d_pp":                round(thirtyyr_pp, 3) if thirtyyr_pp is not None else None,
+        "long_slope_5d_pp":              round(long_slope_5d, 3) if long_slope_5d is not None else None,
+        "long_curve_shape":              _classify_long_curve_shape(thirtyyr_pp, fiveyr_pp),
+        "long_parallel_component_pp":    round(long_parallel_component, 3) if long_parallel_component is not None else None,
+        "long_twist_component_pp":       round(long_twist_component, 3) if long_twist_component is not None else None,
+        "long_magnitude_tier":           _magnitude_tier(long_slope_5d),
+        # Combined read
+        "regime_state":       regime_state,
+        "regime_state_label": _REGIME_STATE_LABELS.get(regime_state, regime_state),
+        "regime_class":       _regime_class(regime_state),
+        "available":          tenyr_pp is not None and twoy_pp is not None,
+    }
+
+
+def _stress_credit_spread(stress_regime: Optional[dict]) -> Optional[float]:
+    """Return the 5d credit-spread proxy (SHY_5d − HYG_5d, pp).
+
+    Positive = high-yield underperforming Treasuries (widening).
+    Reads from stress_regime detail first, then raw.
+    """
+    if not stress_regime or not isinstance(stress_regime, dict):
+        return None
+    detail = stress_regime.get("detail") or {}
+    credit = detail.get("credit") or {}
+    spread = credit.get("spread_5d")
+    if spread is None:
+        spread = (stress_regime.get("raw") or {}).get("credit_spread_5d")
+    return _f(spread)
+
+
+def _stress_shy_5d(stress_regime: Optional[dict]) -> Optional[float]:
+    """Return SHY ETF 5d % change from stress_regime.raw (if exposed)."""
+    if not stress_regime or not isinstance(stress_regime, dict):
+        return None
+    return _f((stress_regime.get("raw") or {}).get("shy_5d"))
 
 
 def _stress_haven_assets(stress_regime: Optional[dict]) -> dict:
@@ -262,6 +670,23 @@ def _extract_channels(
         haven = _stress_haven_assets(stress_regime)
         gc_5d = _safe_move("commodity", _f(haven.get("Gold")))
 
+    # Credit: prefer snapshot HYG/LQD/SHY, fall back to stress_regime
+    # detail.credit.spread_5d (SHY_5d − HYG_5d).  Sign convention: positive
+    # value = widening (HY underperforming Treasuries / safe credit).
+    credit_5d: Optional[float] = None
+    hyg_snap = _snap_change_5d(snapshots, "HYG")
+    lqd_snap = _snap_change_5d(snapshots, "LQD")
+    shy_snap = _snap_change_5d(snapshots, "SHY")
+    if hyg_snap is not None and (lqd_snap is not None or shy_snap is not None):
+        # LQD is a cleaner duration-matched reference; prefer it when present.
+        ref = lqd_snap if lqd_snap is not None else shy_snap
+        credit_5d = _safe_move("credit", ref - hyg_snap)
+    if credit_5d is None:
+        credit_5d = _safe_move("credit", _stress_credit_spread(stress_regime))
+    if credit_5d is not None:
+        out["credit"]["move_5d"] = credit_5d
+        out["credit"]["available"] = True
+
     cmdty_components: list[tuple[str, float, float]] = []
     if cl_5d is not None:
         cmdty_components.append(("crude", cl_5d, 3.0))
@@ -283,6 +708,96 @@ def _extract_channels(
         out["commodity"]["scale"] = leader[2]
 
     return out
+
+
+# ---------------------------------------------------------------------------
+# Benchmark quarantine hook
+# ---------------------------------------------------------------------------
+
+def _apply_benchmark_quarantine(
+    channels: dict[str, dict],
+    snapshots: Optional[list[dict]],
+) -> tuple[dict[str, dict], list[dict]]:
+    """Score each channel's move through the benchmark quarantine layer.
+
+    Adds ``data_quality`` and ``reasons`` to every channel dict.  When a
+    channel is quarantined (hard-fail), zeros out its ``move_5d`` and
+    marks it unavailable so downstream ranking / rationale doesn't read
+    a corrupt print.  Healthy-path channels ("ok") are unchanged beyond
+    the new metadata keys.
+
+    Returns (mutated-channels, list-of-verdicts) so the caller can
+    build the top-level ``channel_quality`` block.  The verdict list
+    covers only channels that map to a benchmark — the credit channel
+    is a composite and skipped.
+    """
+    verdicts: list[dict] = []
+    for cid, ch in channels.items():
+        market = _CHANNEL_BENCHMARK_TICKER.get(cid)
+        if market is None:
+            # No direct benchmark mapping for this channel; still emit a
+            # default data_quality so the UI shape is stable.
+            ch.setdefault("data_quality", "ok")
+            ch.setdefault("reasons", [])
+            continue
+
+        # Pull the last price from the snapshot if available so the
+        # price_floor guard has something to check against.
+        last_price: Optional[float] = None
+        if snapshots:
+            target = market.upper()
+            for s in snapshots:
+                if not isinstance(s, dict):
+                    continue
+                if (s.get("market") or "").upper() == target:
+                    last_price = _f(s.get("value"))
+                    break
+
+        verdict = compute_benchmark_quarantine(
+            market,
+            move_5d=ch.get("move_5d"),
+            last_price=last_price,
+        )
+        # The benchmark-quarantine layer applies a stricter per-ticker
+        # ``hard_cap`` calibrated for raw ticker prints.  The
+        # channel-level ``_CHANNEL_MOVE_CAPS`` is the declared sanity
+        # bound for the derived channel move.  A value at or below the
+        # channel cap is legitimate by contract — don't let the
+        # benchmark layer's stricter hard_cap reject it.
+        move_val = ch.get("move_5d")
+        channel_cap = _CHANNEL_MOVE_CAPS.get(cid)
+        reasons = list(verdict["reasons"])
+        data_quality = verdict["data_quality"]
+        if (move_val is not None
+                and channel_cap is not None
+                and abs(float(move_val)) <= channel_cap
+                and "hard_bound_violation" in reasons):
+            reasons = [r for r in reasons if r != "hard_bound_violation"]
+            # Recompute quality now that the hard-fail reason is gone.
+            hard_left = any(r in _HARD_FAIL_REASONS for r in reasons)
+            if hard_left:
+                data_quality = "quarantined"
+            elif reasons:
+                data_quality = "warn"
+            else:
+                data_quality = "ok"
+
+        verdict_channel = dict(verdict)
+        verdict_channel["channel"]      = cid
+        verdict_channel["reasons"]      = reasons
+        verdict_channel["data_quality"] = data_quality
+        verdicts.append(verdict_channel)
+
+        ch["data_quality"] = data_quality
+        ch["reasons"]      = reasons
+
+        if data_quality == "quarantined":
+            # Hard-fail: downstream ranking + rationale must not see
+            # the corrupt value.  Drop move_5d and mark the channel
+            # unavailable so it doesn't contribute to primary selection.
+            ch["move_5d"]    = None
+            ch["available"]  = False
+    return channels, verdicts
 
 
 # ---------------------------------------------------------------------------
@@ -315,10 +830,12 @@ def _rank_channels(channels: dict[str, dict]) -> list[tuple[str, float]]:
 # Rationale builder
 # ---------------------------------------------------------------------------
 
-def _fmt_move(move: Optional[float]) -> str:
+def _fmt_move(move: Optional[float], cid: str = "") -> str:
+    """Format a channel move with the correct unit suffix."""
     if move is None:
         return "—"
-    return f"{move:+.2f}%"
+    unit = _CHANNEL_UNITS.get(cid, "%")
+    return f"{move:+.2f} {unit}"
 
 
 def _rationale(primary: str, channels: dict[str, dict],
@@ -334,7 +851,7 @@ def _rationale(primary: str, channels: dict[str, dict],
         ch = channels[top[0]]
         return (
             f"All channels below noise band — leader is "
-            f"{_CHANNEL_LABELS[top[0]].lower()} at {_fmt_move(ch.get('move_5d'))} / 5d "
+            f"{_CHANNEL_LABELS[top[0]].lower()} at {_fmt_move(ch.get('move_5d'), top[0])} / 5d "
             f"({top[1]:.1f}σ)."
         )
 
@@ -343,7 +860,7 @@ def _rationale(primary: str, channels: dict[str, dict],
     primary_z = _normalized_magnitude(primary_ch)
 
     bits = [
-        f"{_CHANNEL_LABELS[primary].lower()} {_fmt_move(primary_move)} / 5d "
+        f"{_CHANNEL_LABELS[primary].lower()} {_fmt_move(primary_move, primary)} / 5d "
         f"({primary_z:.1f}σ)"
     ]
 
@@ -351,7 +868,7 @@ def _rationale(primary: str, channels: dict[str, dict],
     for cid, z in ranked[1:3]:
         ch = channels[cid]
         bits.append(
-            f"{_CHANNEL_LABELS[cid].lower()} {_fmt_move(ch.get('move_5d'))} ({z:.1f}σ)"
+            f"{_CHANNEL_LABELS[cid].lower()} {_fmt_move(ch.get('move_5d'), cid)} ({z:.1f}σ)"
         )
 
     return f"Primary mover: {bits[0]}" + (
@@ -381,7 +898,55 @@ def compute_shock_decomposition(
                      and (stress_regime.get("raw") or stress_regime.get("detail")))
 
     channels = _extract_channels(rates_context, stress_regime, snapshots)
+    # Benchmark-quarantine pass — label warn-grade channels and
+    # hard-fail quarantined ones before ranking sees them.  Healthy
+    # prints pass through unchanged.
+    channels, quarantine_verdicts = _apply_benchmark_quarantine(
+        channels, snapshots,
+    )
+    channel_quality = channel_quality_block(quarantine_verdicts)
     available_count = sum(1 for c in channels.values() if c["available"])
+
+    # Rates pack — 2s10s + 5s30s decomposition + combined regime-state read.
+    # 10Y and SHY-proxy-2Y form the front-end slope; 5Y and 30Y (surfaced on
+    # rates_context under mid_nominal / long_nominal since v2) form the long
+    # end.  Any tenor missing degrades its section of the curve to
+    # unavailable without disturbing the others.
+    tenyr_pp = _f((rates_context or {}).get("nominal", {}).get("change_5d")) \
+        if rates_context else None
+    tenyr_pp = _safe_move("nominal_yield", tenyr_pp)
+    shy_pct = _snap_change_5d(snapshots, "2Y")
+    if shy_pct is None:
+        shy_pct = _snap_change_5d(snapshots, "SHY")
+    if shy_pct is None:
+        shy_pct = _stress_shy_5d(stress_regime)
+
+    fiveyr_pp = _f((rates_context or {}).get("mid_nominal", {}).get("change_5d")) \
+        if rates_context else None
+    fiveyr_pp = _safe_move("nominal_yield", fiveyr_pp)
+    thirtyyr_pp = _f((rates_context or {}).get("long_nominal", {}).get("change_5d")) \
+        if rates_context else None
+    thirtyyr_pp = _safe_move("nominal_yield", thirtyyr_pp)
+
+    rates_pack = _build_rates_pack(tenyr_pp, shy_pct, fiveyr_pp, thirtyyr_pp)
+
+    # FX pack — cross-rate decomposition (EURUSD/USDJPY/USDCNY) on top of
+    # DXY.  Snapshots can override stress_regime values when present.
+    fx_pack_override: dict = {}
+    for pid, snap_key in (("EURUSD", "EURUSD"), ("USDJPY", "USDJPY"),
+                           ("USDCNY", "USDCNY"), ("DXY", "DXY")):
+        mv = _snap_change_5d(snapshots, snap_key)
+        if mv is not None:
+            fx_pack_override[pid] = mv
+    fx_pack = compute_cross_rate_fx(
+        stress_regime=stress_regime,
+        fx_pack=fx_pack_override or None,
+    )
+
+    # Breakeven curve — per-tenor (2Y/5Y/10Y/30Y) decomposition + inflation
+    # shape + policy-space read.  Comes pre-assembled on rates_context so
+    # this module just surfaces it.  Safe passthrough when missing.
+    breakeven_curve = (rates_context or {}).get("breakeven_curve") or {}
 
     # Hard short-circuit: nothing to say at all.
     if available_count == 0 and not rates_ok and not stress_ok:
@@ -400,6 +965,10 @@ def compute_shock_decomposition(
             "macro_read":    _MACRO_READ["none"],
             "key_markets":   [],
             "channels":      _channels_for_payload(channels),
+            "rates_pack":    rates_pack,
+            "fx_pack":       fx_pack,
+            "breakeven_curve": breakeven_curve,
+            "channel_quality": channel_quality,
             "available":     False,
             "stale":         True,
         }
@@ -418,6 +987,7 @@ def compute_shock_decomposition(
             "id":       cid,
             "label":    _CHANNEL_LABELS[cid],
             "move_5d":  channels[cid].get("move_5d"),
+            "unit":     _CHANNEL_UNITS.get(cid, "%"),
             "z":        round(z, 2),
         })
         if len(secondary) >= 3:
@@ -441,6 +1011,10 @@ def compute_shock_decomposition(
         "macro_read":    macro_read,
         "key_markets":   key_markets,
         "channels":      _channels_for_payload(channels),
+        "rates_pack":    rates_pack,
+        "fx_pack":       fx_pack,
+        "breakeven_curve": breakeven_curve,
+        "channel_quality": channel_quality,
         "available":     True,
         "stale":         stale,
     }
@@ -500,6 +1074,7 @@ def _channels_for_payload(channels: dict[str, dict]) -> dict[str, dict]:
         entry = {
             "label":     ch["label"],
             "move_5d":   round(ch["move_5d"], 3) if ch.get("move_5d") is not None else None,
+            "unit":      _CHANNEL_UNITS.get(cid, "%"),
             "available": ch["available"],
             "z":         round(_normalized_magnitude(ch), 2),
         }
@@ -510,5 +1085,10 @@ def _channels_for_payload(channels: dict[str, dict]) -> dict[str, dict]:
             entry["gold_5d"] = round(ch["gold_5d"], 3)
         if "leader" in ch:
             entry["leader"] = ch["leader"]
+        # Benchmark-quarantine metadata — always present so the UI shape
+        # is stable.  Defaults to "ok"/[] for channels not mapped to a
+        # benchmark (e.g. credit composite).
+        entry["data_quality"] = ch.get("data_quality", "ok")
+        entry["reasons"]      = list(ch.get("reasons") or [])
         out[cid] = entry
     return out

@@ -521,10 +521,24 @@ class TestSnapshotsEndpoint(unittest.TestCase):
         get_store().clear()
         market_check._cache_clear()
 
-    def test_empty_store_returns_empty_list(self):
-        response = self.client.get("/snapshots")
+    def test_empty_store_refreshes_on_read(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            response = self.client.get("/snapshots")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
+        data = response.json()
+        self.assertEqual(len(data), len(LIQUID_MARKETS))
+        self.assertTrue(all(s["value"] is not None for s in data))
+        self.assertTrue(all(s["fetched_at"] is not None for s in data))
+
+    def test_empty_store_exposes_provider_failure_reason(self):
+        with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
+            response = self.client.get("/snapshots")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), len(LIQUID_MARKETS))
+        for snap in data:
+            self.assertIsNone(snap["value"])
+            self.assertIn("fetch error: provider down", snap["error"])
 
     def test_after_refresh_returns_all_markets(self):
         with patch("market_check._fetch", return_value=_good_df()):

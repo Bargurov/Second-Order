@@ -246,7 +246,15 @@ _W_DXY_MODERATE:      int = 15   # dxy ≥ 0.5%
 _W_DXY_STRONG:        int = 25   # dxy ≥ 1.0% (replaces, not stacks on, moderate)
 _W_DXY_EXTREME:       int = 35   # dxy ≥ 2.0% (replaces strong)
 
-_W_CREDIT_WIDENING:   int = 20
+_W_CREDIT_WIDENING:   int = 20   # fallback (binary signal) when credit_regime unavailable
+
+# Tiered credit contribution — used when credit_regime is available.  Default-risk
+# widening is a stronger funding signal than duration-led widening (the latter is
+# rate-driven and less indicative of refinancing pressure on leveraged issuers).
+_W_CREDIT_DEFAULT_WIDENING:  int = 25   # HY underperforms IG → real default risk
+_W_CREDIT_DURATION_WIDENING: int = 10   # HY + IG fall together → rate-led
+_W_CREDIT_RISK_OFF:          int = 20   # HY-only selloff (IG leg unavailable)
+_W_CREDIT_DECOUPLED:         int = 5    # HY / IG diverge — mixed signal
 _W_CRUDE_OIL_THEME:   int = 20
 _W_CRUDE_STRONG:      int = 5    # stacks on oil_theme when crude ≥ 5%
 _W_REAL_YIELD_RISE:   int = 15
@@ -259,6 +267,13 @@ _W_DUAL_SQUEEZE:      int = 15
 # Geopolitical Stress (which by construction has
 # credit_widening=False) never adds pressure here.
 _W_STRESS_REGIME_HIT: int = 10
+
+# EM-FX pressure: broad USD strength against EM crosses (primarily USDCNY
+# above +0.5%/5d) AND / OR a carry-unwind fingerprint.  Sits at the same
+# order as DXY_STRONG — EM FX stress is not additive to a vanilla DXY
+# rally unless the dispersion / carry signals add genuinely new information,
+# which is what em_fx_pressure() in country_fx_passthrough checks for.
+_W_EM_FX_PRESSURE:    int = 20
 
 # Bucketing
 _PRESSURE_ELEVATED_MIN: int = 60
@@ -461,6 +476,28 @@ def _resolve_channel(
 # ---------------------------------------------------------------------------
 
 
+def _credit_score_from_regime(credit_regime: Optional[dict]) -> tuple[int, Optional[str]]:
+    """Return (score_contribution, driver_tag) based on the richer credit_regime
+    classifier.  ``driver_tag`` is None when no credit signal fires.
+
+    Tiered so that **default-risk widening** contributes more than
+    **duration widening**: the former is a refinancing-pressure signal,
+    the latter is primarily a rates move.
+    """
+    if not isinstance(credit_regime, dict):
+        return 0, None
+    regime = credit_regime.get("regime")
+    if regime == "default_risk_widening":
+        return _W_CREDIT_DEFAULT_WIDENING, "credit_default_widening"
+    if regime == "duration_widening":
+        return _W_CREDIT_DURATION_WIDENING, "credit_duration_widening"
+    if regime == "risk_off":
+        return _W_CREDIT_RISK_OFF, "credit_risk_off"
+    if regime == "decoupled":
+        return _W_CREDIT_DECOUPLED, "credit_decoupled"
+    return 0, None
+
+
 def _compute_pressure_score(
     crude_5d: Optional[float],
     dxy_5d: Optional[float],
@@ -468,6 +505,8 @@ def _compute_pressure_score(
     real_yield_5d: Optional[float],
     stress_regime: Optional[dict],
     theme: str,
+    em_fx_fired: bool = False,
+    credit_regime: Optional[dict] = None,
 ) -> tuple[int, list[str]]:
     """Return (score 0..100, list of driver keys that contributed).
 
@@ -499,8 +538,16 @@ def _compute_pressure_score(
             score += _W_DXY_MODERATE
         drivers.append("dollar_rally")
 
-    # --- Credit widening: structured signal first, numeric fallback ---
-    if _credit_widening_active(stress_regime, credit_spread_5d):
+    # --- Credit contribution: prefer the richer credit_regime classifier
+    #     (tiered: default-risk > duration > decoupled) when available.
+    #     Fall back to the binary credit_widening signal when credit_regime
+    #     is absent, which matches legacy behaviour for older stress blocks.
+    cr_weight, cr_driver = _credit_score_from_regime(credit_regime)
+    if cr_weight > 0:
+        score += cr_weight
+        if cr_driver:
+            drivers.append(cr_driver)
+    elif _credit_widening_active(stress_regime, credit_spread_5d):
         score += _W_CREDIT_WIDENING
         drivers.append("credit_widening")
 
@@ -532,6 +579,15 @@ def _compute_pressure_score(
     if _stress_regime_confirms_funding_pressure(stress_regime):
         score += _W_STRESS_REGIME_HIT
         drivers.append("risk_off_regime")
+
+    # --- EM FX pressure (cross-rate driver) ---
+    # Fires when the cross_rate_fx composer says EM FX is bleeding (USDCNY
+    # materially up AND/OR broad USD with carry unwind).  Meaningfully
+    # different from a plain DXY rally: this signal survives even when DXY
+    # itself is subdued because a single EM pair is driving the stress.
+    if em_fx_fired:
+        score += _W_EM_FX_PRESSURE
+        drivers.append("em_fx_pressure")
 
     return min(score, 100), drivers
 
@@ -703,6 +759,7 @@ def compute_reserve_stress(
     terms_of_trade: Optional[dict] = None,
     rates_context: Optional[dict] = None,
     stress_regime: Optional[dict] = None,
+    credit_regime: Optional[dict] = None,
 ) -> dict:
     """Score external-balance / reserve stress for one event.
 
@@ -735,10 +792,26 @@ def compute_reserve_stress(
     real_yield_5d = _real_yield_5d_from_rates(rates_context)
     matched_theme = (tot_signals.get("matched_theme") or "none")
 
+    # Cross-rate FX pack — powers the em_fx_pressure driver below and
+    # feeds the surfaced signals block.  Safe when stress_regime lacks FX
+    # cross data: compute_cross_rate_fx returns an empty dict.
+    fx_pack: dict = {}
+    em_fx_info: dict = {"fired": False, "score": 0, "basis": ""}
+    try:
+        from cross_rate_fx import compute_cross_rate_fx
+        from country_fx_passthrough import em_fx_pressure as _em_fx_pressure_score
+        fx_pack = compute_cross_rate_fx(stress_regime=stress_regime) or {}
+        em_fx_info = _em_fx_pressure_score(fx_pack)
+    except Exception:
+        # Additive: any failure falls through with no EM-FX driver.
+        pass
+
     # Score.
     pressure_score, drivers = _compute_pressure_score(
         crude_5d, dxy_5d, credit_spread_5d, real_yield_5d,
         stress_regime, matched_theme,
+        em_fx_fired=bool(em_fx_info.get("fired")),
+        credit_regime=credit_regime,
     )
 
     # Channel resolution.
@@ -769,6 +842,27 @@ def compute_reserve_stress(
     vulnerable = _build_vulnerable_list(channel, drivers, pressure_score)
     insulated = _build_insulated_list(channel, drivers)
 
+    # Enrich vulnerable entries with per-country FX + commodity passthrough.
+    try:
+        from country_fx_passthrough import enrich_country_exposures
+        vulnerable = enrich_country_exposures(
+            vulnerable, fx_pack=fx_pack,
+            crude_5d=crude_5d, gold_5d=None,
+        )
+    except Exception:
+        pass
+
+    # Attach country-vulnerability backdrop on every entry whose country
+    # resolves in the local fixture.  Entries without a profile pass
+    # through byte-identically so unprofiled rows keep the same shape
+    # they had before.
+    try:
+        from country_backdrop import attach_country_backdrop
+        vulnerable = attach_country_backdrop(vulnerable)
+        insulated = attach_country_backdrop(insulated)
+    except Exception:
+        pass
+
     rationale = _rationale(
         channel, pressure_score, drivers,
         crude_5d, dxy_5d, credit_spread_5d,
@@ -783,6 +877,8 @@ def compute_reserve_stress(
         "pressure_label":         _pressure_label(pressure_score),
         "rationale":              rationale,
         "key_markets":            list(_CHANNEL_MARKETS[channel]),
+        "fx_pack":                fx_pack,
+        "em_fx_pressure":         em_fx_info,
         "available":              True,
         "stale":                  stale,
         "signals": {
@@ -793,6 +889,7 @@ def compute_reserve_stress(
             "stress_regime":    _stress_regime_label(stress_regime),
             "matched_channel":  channel,
             "matched_theme":    matched_theme,
+            "em_fx_score":      em_fx_info.get("score"),
             "thresholds": (
                 f"DXY moderate≥{_DXY_MODERATE_MOVE_PCT}%  "
                 f"strong≥{_DXY_STRONG_MOVE_PCT}%; "

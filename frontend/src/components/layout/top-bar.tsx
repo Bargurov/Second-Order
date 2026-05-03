@@ -4,22 +4,22 @@ import { Button } from "@/components/ui/button";
 import {
   PanelLeftClose,
   PanelLeft,
-  BarChart3,
-  Newspaper,
-  FlaskConical,
-  Clock,
-  Target,
+  Search,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import type { Page } from "./sidebar";
 
-const PAGE_META: Record<Page, { title: string; icon: React.ElementType }> = {
-  overview:  { title: "Market Overview",  icon: BarChart3 },
-  headlines: { title: "Headlines",        icon: Newspaper },
-  analyze:   { title: "Analysis",         icon: FlaskConical },
-  events:    { title: "Research Archive",  icon: Clock },
-  backtest:  { title: "Backtest",          icon: Target },
+const PAGE_META: Record<Page, { group: string; title: string }> = {
+  market:    { group: "Workspace", title: "Market" },
+  // Back-compat alias — App.tsx routes ``overview`` to the same
+  // MarketOverview surface as ``market`` so older callers still resolve.
+  overview:  { group: "Workspace", title: "Market" },
+  portfolio: { group: "Workspace", title: "Portfolio"      },
+  headlines: { group: "Workspace", title: "Headlines"      },
+  analyze:   { group: "Workspace", title: "Analyze"        },
+  events:    { group: "Research",  title: "Archive"        },
+  backtest:  { group: "Research",  title: "Backtest"       },
 };
 
 interface TopBarProps {
@@ -30,8 +30,6 @@ interface TopBarProps {
 
 export function TopBar({ page, sidebarCollapsed, onToggleSidebar }: TopBarProps) {
   const meta = PAGE_META[page];
-  const Icon = meta.icon;
-  const isOverview = page === "overview";
 
   const { isSuccess, isError } = useQuery({
     queryKey: qk.health(),
@@ -39,19 +37,31 @@ export function TopBar({ page, sidebarCollapsed, onToggleSidebar }: TopBarProps)
     refetchInterval: 30_000,
     retry: false,
   });
-  const apiOk = isSuccess ? true : isError ? false : null;
+  const apiStatus: "live" | "offline" | "pending" =
+    isSuccess ? "live" : isError ? "offline" : "pending";
+
+  const statusTone =
+    apiStatus === "live"
+      ? "text-primary"
+      : apiStatus === "offline"
+      ? "text-destructive"
+      : "text-on-surface-variant/70";
+
+  const statusLabel =
+    apiStatus === "live" ? "live" : apiStatus === "offline" ? "offline" : "syncing";
 
   return (
-    <header className={cn(
-      "flex h-14 shrink-0 items-center gap-3 px-4 md:px-5",
-      isOverview
-        ? "bg-surface-container-low"
-        : "border-b border-border/80 bg-background/90 backdrop-blur-sm",
-    )}>
+    <header
+      className={cn(
+        "flex h-14 shrink-0 items-center gap-3 px-3 md:px-5",
+        "border-b border-border/40",
+        "bg-background/85 backdrop-blur-md",
+      )}
+    >
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 rounded-xl"
+        className="h-7 w-7 rounded-md text-on-surface-variant/70 hover:text-on-surface hover:bg-white/[0.04]"
         onClick={onToggleSidebar}
         aria-label="Toggle sidebar"
       >
@@ -62,34 +72,55 @@ export function TopBar({ page, sidebarCollapsed, onToggleSidebar }: TopBarProps)
         )}
       </Button>
 
-      {!isOverview && (
-        <>
-          <div className="h-5 w-px bg-border" />
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-surface-container shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="section-kicker">Workspace</p>
-              <h1 className="truncate text-sm font-semibold tracking-[-0.01em]">{meta.title}</h1>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Breadcrumb */}
+      <div className="flex min-w-0 items-center gap-2 text-[12px]">
+        <span className="text-on-surface-variant/60">{meta.group}</span>
+        <span className="text-on-surface-variant/40">›</span>
+        <span className="font-medium text-on-surface">{meta.title}</span>
+      </div>
 
-      <div className={cn(
-        "ml-auto hidden items-center gap-2 text-2xs text-on-surface-variant",
-        "sm:flex",
-      )}>
-        <span className="metric-chip">
-          <span className={cn(
-            "h-1.5 w-1.5 rounded-full",
-            apiOk === true && "bg-primary",
-            apiOk === false && "bg-error",
-            apiOk === null && "bg-border",
-          )} />
-          {apiOk === true ? "API live" : apiOk === false ? "API offline" : "API checking"}
+      {/* Search pill */}
+      <div
+        className={cn(
+          "ml-3 hidden h-8 items-center gap-2 rounded-md px-2.5 md:flex",
+          "w-[320px] max-w-[36vw]",
+          "bg-white/[0.025] border border-border/40",
+          "text-on-surface-variant/65",
+        )}
+        aria-hidden
+      >
+        <Search className="h-3 w-3 text-on-surface-variant/45" />
+        <span className="truncate text-[12px]">
+          Search studies, tickers, mechanisms…
         </span>
+        <span
+          className={cn(
+            "ml-auto font-num tabular-nums text-[10.5px]",
+            "rounded-sm border border-border/40 bg-white/[0.04] px-1.5 py-px",
+            "text-on-surface-variant/65",
+          )}
+        >
+          ⌘K
+        </span>
+      </div>
+
+      {/* Right cluster */}
+      <div className="ml-auto flex items-center gap-3 text-[11.5px]">
+        <div className="hidden items-center gap-1.5 sm:flex">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              apiStatus === "live"
+                ? "bg-primary shadow-[0_0_6px_rgba(147,209,211,0.55)] animate-pulse"
+                : apiStatus === "offline"
+                ? "bg-destructive"
+                : "bg-on-surface-variant/40",
+            )}
+          />
+          <span className={cn("font-mono tabular-nums uppercase tracking-[0.06em]", statusTone)}>
+            {statusLabel}
+          </span>
+        </div>
       </div>
     </header>
   );

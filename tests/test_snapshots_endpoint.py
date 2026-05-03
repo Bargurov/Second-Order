@@ -160,11 +160,37 @@ class TestWarmCachePreference(SnapshotsEndpointBase):
         data = response.json()
         self.assertEqual(len(data), 8)
 
-    def test_empty_store_returns_empty_list(self):
-        """When the background thread has not run, the endpoint returns []."""
-        response = self.client.get("/snapshots")
+    def test_empty_store_refreshes_synchronously_when_data_available(self):
+        """When the background thread has not run, the endpoint makes one
+        synchronous refresh attempt before padding rows.  If provider data
+        is available, users should see real benchmark values rather than
+        a full slate of ``not_refreshed`` placeholders."""
+        with patch("market_check._fetch", return_value=_good_df()):
+            response = self.client.get("/snapshots")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
+        data = response.json()
+        self.assertEqual(len(data), 8)
+        self.assertEqual([s["market"] for s in data], list(LIQUID_MARKETS))
+        for snap in data:
+            self.assertEqual(set(snap.keys()), REQUIRED_KEYS)
+            self.assertIsNone(snap["error"])
+            self.assertIsNotNone(snap["value"])
+            self.assertIsNotNone(snap["fetched_at"])
+
+    def test_empty_store_exposes_true_provider_failure(self):
+        """If the cold refresh cannot fetch provider data, the endpoint
+        should expose the actual failure reason from refresh_market rather
+        than leaving every row as ``not_refreshed``."""
+        with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
+            response = self.client.get("/snapshots")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 8)
+        for snap in data:
+            self.assertEqual(set(snap.keys()), REQUIRED_KEYS)
+            self.assertIsNone(snap["value"])
+            self.assertIsNone(snap["fetched_at"])
+            self.assertIn("fetch error: provider down", snap["error"])
 
     def test_force_refresh_query_param(self):
         with patch("market_check._fetch", return_value=_good_df()):

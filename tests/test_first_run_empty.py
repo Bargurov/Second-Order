@@ -236,35 +236,63 @@ class TestEmptyDbEndpointSmoke(unittest.TestCase):
 
     # ---- market data endpoints ------------------------------------------
 
-    def test_market_movers_returns_empty_list(self):
-        r = self.client.get("/market-movers")
+    def _assert_empty_mover_surface(self, r):
+        """Mover surfaces default to a bare list (legacy contract pinned
+        by ``test_market_context_contract.TestMoversBareListContract``).
+        An empty surface is therefore an empty ``[]``.  The
+        ``{items, meta}`` envelope is opt-in via ``?include_meta=true``;
+        we cover the empty-meta-block contract once below using that
+        explicit path so first-run users get the same zeroed counters
+        whichever shape the caller asks for."""
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        body = r.json()
+        self.assertIsInstance(body, list)
+        self.assertEqual(body, [])
+
+    def _assert_empty_mover_surface_with_meta(self, path):
+        r = self.client.get(path, params={"include_meta": "true"})
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertIsInstance(body, dict)
+        self.assertEqual(body.get("items"), [])
+        meta = body.get("meta", {})
+        self.assertEqual(meta.get("surfaced_count"), 0)
+        self.assertEqual(meta.get("unique_clusters"), 0)
+        self.assertEqual(meta.get("unique_families"), 0)
+
+    def test_market_movers_returns_empty_list(self):
+        self._assert_empty_mover_surface(self.client.get("/market-movers"))
+        self._assert_empty_mover_surface_with_meta("/market-movers")
 
     def test_movers_today_returns_empty_list(self):
-        r = self.client.get("/movers/today")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        self._assert_empty_mover_surface(self.client.get("/movers/today"))
+        self._assert_empty_mover_surface_with_meta("/movers/today")
 
     def test_movers_weekly_returns_empty_list(self):
-        r = self.client.get("/movers/weekly")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        self._assert_empty_mover_surface(self.client.get("/movers/weekly"))
+        self._assert_empty_mover_surface_with_meta("/movers/weekly")
 
     def test_movers_yearly_returns_empty_list(self):
-        r = self.client.get("/movers/yearly")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        self._assert_empty_mover_surface(self.client.get("/movers/yearly"))
+        self._assert_empty_mover_surface_with_meta("/movers/yearly")
 
     def test_movers_persistent_returns_empty_list(self):
-        r = self.client.get("/movers/persistent")
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        self._assert_empty_mover_surface(self.client.get("/movers/persistent"))
+        self._assert_empty_mover_surface_with_meta("/movers/persistent")
 
-    def test_snapshots_returns_empty_list(self):
+    def test_snapshots_returns_shaped_unavailable_rows(self):
+        """Fresh DB / empty store — /snapshots must still return one
+        shaped row per liquid market with ``error='not_refreshed'`` so
+        the frontend benchmark strip renders placeholders rather than
+        disappearing."""
         r = self.client.get("/snapshots")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), [])
+        body = r.json()
+        self.assertIsInstance(body, list)
+        self.assertEqual(len(body), 8)
+        for snap in body:
+            self.assertEqual(snap["error"], "not_refreshed")
+            self.assertIsNone(snap["value"])
 
     def test_stress_returns_well_formed_dict(self):
         r = self.client.get("/stress")
@@ -274,7 +302,17 @@ class TestEmptyDbEndpointSmoke(unittest.TestCase):
         self.assertIn("signals", body)
 
     def test_market_context_returns_full_shape_when_empty(self):
-        """The unified context endpoint must always return all five sections."""
+        """The unified context endpoint must always return all five sections.
+
+        ``/market-context`` reuses the padded snapshots payload — when
+        the warm store is empty, every liquid market still surfaces as
+        a shaped row with ``error="not_refreshed"`` so the frontend
+        renders placeholders rather than dropping the strip.  The
+        truthful unavailable state is therefore counted under
+        ``snapshots_meta.unavailable``, not collapsed into an empty
+        list.  See the matching contract test in
+        ``test_market_context_contract.TestMarketContextDataIntegrity``.
+        """
         r = self.client.get("/market-context")
         self.assertEqual(r.status_code, 200)
         body = r.json()
@@ -282,9 +320,20 @@ class TestEmptyDbEndpointSmoke(unittest.TestCase):
         for key in ("built_at", "source", "snapshots", "snapshots_meta",
                     "stress", "highlights", "highlights_meta"):
             self.assertIn(key, body, f"Missing top-level key: {key}")
-        self.assertEqual(body["snapshots"], [])
+        # Padded snapshots: one row per liquid market, all not_refreshed.
+        snaps = body["snapshots"]
+        self.assertIsInstance(snaps, list)
+        self.assertGreater(len(snaps), 0)
+        for row in snaps:
+            self.assertIsNone(row.get("value"))
+            self.assertEqual(row.get("error"), "not_refreshed")
+        meta = body["snapshots_meta"]
+        self.assertEqual(meta["total"], len(snaps))
+        self.assertEqual(meta["unavailable"], len(snaps))
+        self.assertEqual(meta["fresh"], 0)
+        self.assertEqual(meta["stale"], 0)
+        # Highlights stay an empty list with a zeroed counter.
         self.assertEqual(body["highlights"], [])
-        self.assertEqual(body["snapshots_meta"]["total"], 0)
         self.assertEqual(body["highlights_meta"]["count"], 0)
 
     def test_news_returns_empty_clusters_when_no_feeds(self):

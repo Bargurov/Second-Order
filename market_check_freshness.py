@@ -354,7 +354,7 @@ def _merge_followup_into_stored(
         if isinstance(spark_src, list):
             merged["spark"] = list(spark_src)
         if fu:
-            for k in ("return_1d", "return_5d", "return_20d"):
+            for k in ("return_1d", "return_5d", "return_20d", "return_60d"):
                 v = fu.get(k)
                 if v is not None:
                     merged[k] = v
@@ -422,6 +422,11 @@ def refresh_market_for_saved_event(
     stored_note = event.get("market_note") or ""
     last_check = event.get("last_market_check_at")
 
+    try:
+        from market_check import derive_data_quality as _derive_dq
+    except Exception:  # pragma: no cover
+        _derive_dq = None  # type: ignore[assignment]
+
     base_payload: dict[str, Any] = {
         "tickers": stored_tickers,
         "note": stored_note,
@@ -431,6 +436,8 @@ def refresh_market_for_saved_event(
         "freshness_reason": staleness["reason"],
         "event_age_days": staleness["event_age_days"],
     }
+    if _derive_dq is not None:
+        base_payload.update(_derive_dq(stored_tickers))
 
     if not should_refresh(staleness):
         return base_payload
@@ -523,7 +530,7 @@ def refresh_market_for_saved_event(
     else:
         new_staleness = "forced_refreshed"
 
-    return {
+    refreshed: dict[str, Any] = {
         "tickers": new_tickers,
         "note": new_note,
         "details": {},
@@ -532,3 +539,6 @@ def refresh_market_for_saved_event(
         "freshness_reason": staleness["reason"],
         "event_age_days": staleness["event_age_days"],
     }
+    if _derive_dq is not None:
+        refreshed.update(_derive_dq(new_tickers))
+    return refreshed

@@ -266,3 +266,63 @@ def is_naturally_frozen(event: dict, *, now: Optional[_dt] = None) -> bool:
 def bucket_for_event(event: dict, *, now: Optional[_dt] = None) -> str:
     """Return the raw natural bucket string, no force handling."""
     return classify_event_age(event, now=now, force=False)["bucket"]
+
+
+def eligible_for_overlay_refresh(
+    event: dict, *, now: Optional[_dt] = None,
+) -> dict[str, Any]:
+    """Can this event have its macro-overlay blocks recomputed safely?
+
+    Overlay refresh is a deliberately narrower operation than the
+    standard market-data refresh path:
+
+        * the LLM thesis (what_changed / mechanism_summary / tickers /
+          direction tags / confidence) stays EXACTLY as originally
+          written — no historical ground-truth is overwritten;
+        * only composer-derived *macro-tier* blocks (rates/stress-driven
+          overlays, credit regime, shock decomposition, regime vector …)
+          are replaced with values computed against today's tape.
+
+    That makes it safe to run on FROZEN events, which is precisely the
+    case the ``is_frozen`` / ``refresh_market_for_saved_event`` path
+    refuses.  The two guards are complementary: ``is_frozen`` gates
+    destructive refreshes (LLM + market returns), ``eligible_for_
+    overlay_refresh`` gates the non-destructive macro-view re-render.
+
+    Returned shape::
+
+        {
+          "eligible":       bool,
+          "bucket":         str,                    # natural bucket
+          "event_age_days": int,
+          "reason":         str,                    # human-readable
+        }
+
+    Only events missing a parsable anchor (``legacy`` bucket) are
+    ineligible — we can't compute an age and won't blindly stamp one.
+    """
+    cls = classify_event_age(event, now=now, force=False)
+    bucket = cls["natural_bucket"]
+
+    if bucket == "legacy":
+        return {
+            "eligible":       False,
+            "bucket":         bucket,
+            "event_age_days": cls["event_age_days"],
+            "reason": (
+                "Event has no parsable anchor; overlay refresh would have "
+                "no date to anchor live macro context against."
+            ),
+        }
+
+    age = cls["event_age_days"]
+    human_bucket = bucket.capitalize()
+    return {
+        "eligible":       True,
+        "bucket":         bucket,
+        "event_age_days": age,
+        "reason": (
+            f"{human_bucket} event (age {age}d): overlay-only refresh "
+            "leaves thesis text + market tickers intact."
+        ),
+    }

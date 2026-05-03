@@ -212,11 +212,21 @@ class TestBackdropPartialAvailability(_Base):
         self.assertEqual(len(data["snapshots"]), 8)
 
     def test_warm_store_empty_endpoint_still_returns(self):
-        """Most realistic dev state: snapshot store empty, other sections work."""
+        """Most realistic dev state: snapshot store empty, other sections work.
+
+        Contract today: ``/market-context`` auto-warms an empty
+        SnapshotStore with one synchronous refresh so the user does
+        not need to call ``/snapshots`` first.  ``market_check._fetch``
+        is patched to a healthy frame, so the auto-refresh succeeds and
+        every snapshot returns warmed.  Stress + highlights continue
+        to compute independently.
+        """
         with patch("market_check._fetch", return_value=_good_df()):
             data = self.client.get("/market-context").json()
-        self.assertEqual(data["snapshots"], [])
-        # Stress and highlights still computed
+        self.assertEqual(len(data["snapshots"]), 8)
+        for snap in data["snapshots"]:
+            self.assertIsNone(snap["error"])
+            self.assertIsNotNone(snap["value"])
         self.assertIn("regime", data["stress"])
 
     def test_all_sections_fail_endpoint_still_200(self):

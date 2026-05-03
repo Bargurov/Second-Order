@@ -650,6 +650,28 @@ class TestFinalizeAnalysis(unittest.TestCase):
                 ),
             },
             "confidence": "high",
+            # Actionable-tier evidence — without these the new
+            # evidence_quality gate caps a watch_only study at medium.
+            "competing_thesis": {
+                "primary_thesis": (
+                    "Entity List adds 28 Chinese fabs; equipment access cut "
+                    "lifts TSMC/ASML scarcity premium; LRCX/AMAT lose China "
+                    "revenue near-term."
+                ),
+            },
+            "primary_assets": [
+                {"symbol": "TSM",  "rank": 1,
+                 "rationale": "Sole-source EUV beneficiary — accelerated non-China orders."},
+                {"symbol": "LRCX", "rank": 2,
+                 "rationale": "Etch-equipment revenue to 28 named Chinese fabs is the gated line."},
+            ],
+            "minimum_proof_set": [
+                {"observation": "TSM outperforms SMH by ≥1pp on the announcement day",
+                 "channel": "equities", "timing": "1d"},
+            ],
+            "key_falsifiers": [
+                "Carve-out or licence issued for the 28 named fabs within 5d",
+            ],
         }
 
     def test_good_parsed_passes_through_unchanged(self):
@@ -776,6 +798,237 @@ class TestDegradedVsMock(unittest.TestCase):
         }
         out = _finalize_analysis(parsed, "chip export", "realized", "structural")
         self.assertNotIn("degraded", out)
+
+
+# ---------------------------------------------------------------------------
+# Proof-structure persistence — DB round-trip + old-row fallback
+# ---------------------------------------------------------------------------
+#
+# The six proof-structure fields (five lists + competing_thesis dict) must
+# survive save → load without loss and must read back as stable empty
+# defaults on rows that pre-date these columns.
+
+
+import json
+import os
+import sqlite3
+import tempfile
+import uuid
+from fastapi.testclient import TestClient
+
+import api as _api_mod
+import db as _db_mod
+
+
+class ProofStructurePersistenceBase(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig = _db_mod.DB_FILE
+        self._tmp = os.path.join(
+            tempfile.gettempdir(), f"proofstruct_{uuid.uuid4().hex}.db",
+        )
+        _db_mod.DB_FILE = self._tmp
+        _db_mod._db_ready = False
+
+    def tearDown(self) -> None:
+        _db_mod.DB_FILE = self._orig
+        _db_mod._db_ready = False
+        if os.path.exists(self._tmp):
+            try:
+                os.remove(self._tmp)
+            except PermissionError:
+                pass
+
+    def _base_event(self, **overrides) -> dict:
+        ev = {
+            "headline":          "Proof-structure smoke event",
+            "stage":              "realized",
+            "persistence":        "medium",
+            "mechanism_summary":  "A concrete mechanism with enough length to save.",
+            "beneficiaries":      ["CVX"],
+            "losers":             ["SU"],
+            "assets_to_watch":    ["CVX", "SU"],
+            "confidence":         "medium",
+            "market_note":        "",
+            "notes":              "",
+        }
+        ev.update(overrides)
+        return ev
+
+
+class TestProofStructureRoundTrip(ProofStructurePersistenceBase):
+    def test_all_six_fields_round_trip(self) -> None:
+        _db_mod.init_db()
+        ev = self._base_event(
+            primary_assets=[
+                {"symbol": "CVX", "rank": 1,
+                 "rationale": "Direct licence holder — restored lift volumes."},
+            ],
+            secondary_assets=[
+                {"symbol": "VLO", "rank": 1,
+                 "rationale": "Gulf Coast refiner follow-through."},
+            ],
+            hedge_or_signal_assets=[
+                {"symbol": "UUP", "rank": 1,
+                 "rationale": "Dollar-signal proxy for FX confirmation."},
+            ],
+            key_falsifiers=[
+                "PDVSA issues operational-delay statement within 5d",
+                "Congressional resolution narrows the licence within 20d",
+            ],
+            minimum_proof_set=[
+                {"observation": "WCS-WTI discount widens",
+                 "channel": "commodities",
+                 "threshold": "≥2pp vs baseline",
+                 "timing": "5-20d"},
+            ],
+            competing_thesis={
+                "primary_thesis": "Venezuelan liftings restore Gulf feedstock.",
+                "alternative_thesis": "Delivered volumes fall short of headline.",
+                "evidence_favoring_primary": [
+                    {"observation": "CVX cargoes loading", "channel": "commodities"},
+                ],
+                "evidence_favoring_alternative": [
+                    {"observation": "PDVSA delay notice", "channel": "commodities"},
+                ],
+                "discriminator": {
+                    "observation": "Vessel tracking data",
+                    "channel": "commodities",
+                    "outcome_if_primary": "≥50kbd new flow within 5d",
+                    "outcome_if_alternative": "Zero new loadings",
+                    "timing": "1-5d",
+                },
+            },
+        )
+        _db_mod.save_event(ev)
+        rows = _db_mod.load_recent_events(limit=1)
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+
+        # Lists round-trip as lists, not raw JSON strings.
+        for f in ("primary_assets", "secondary_assets",
+                  "hedge_or_signal_assets", "key_falsifiers",
+                  "minimum_proof_set"):
+            self.assertIsInstance(
+                r[f], list,
+                f"{f!r} came back as {type(r[f])!r}, not list",
+            )
+        self.assertEqual(r["primary_assets"][0]["symbol"], "CVX")
+        self.assertEqual(r["secondary_assets"][0]["symbol"], "VLO")
+        self.assertEqual(r["hedge_or_signal_assets"][0]["symbol"], "UUP")
+        self.assertIn("PDVSA", r["key_falsifiers"][0])
+        self.assertEqual(r["minimum_proof_set"][0]["channel"], "commodities")
+
+        # competing_thesis round-trips as a dict, not a raw string.
+        self.assertIsInstance(
+            r["competing_thesis"], dict,
+            "competing_thesis came back as non-dict; _EVENT_DICT_FIELDS "
+            "likely missing the entry",
+        )
+        self.assertEqual(
+            r["competing_thesis"]["discriminator"]["timing"], "1-5d",
+        )
+
+    def test_load_event_by_id_returns_proof_structure(self) -> None:
+        _db_mod.init_db()
+        _db_mod.save_event(self._base_event(
+            primary_assets=[
+                {"symbol": "PBF", "rank": 1,
+                 "rationale": "Gulf Coast heavy-sour coking refiner."},
+            ],
+            competing_thesis={
+                "primary_thesis": "A",
+                "alternative_thesis": "B",
+                "discriminator": {
+                    "observation": "X",
+                    "channel": "equities",
+                    "outcome_if_primary": "up",
+                    "outcome_if_alternative": "down",
+                    "timing": "1d",
+                },
+            },
+        ))
+        # pick whatever id the row landed on
+        rows = _db_mod.load_recent_events(limit=1)
+        eid = rows[0]["id"]
+        single = _db_mod.load_event_by_id(eid)
+        self.assertIsNotNone(single)
+        self.assertEqual(single["primary_assets"][0]["symbol"], "PBF")
+        self.assertIsInstance(single["competing_thesis"], dict)
+
+    def test_old_row_reads_as_empty_defaults(self) -> None:
+        """A row written before these columns existed must still load —
+        decoded values come back as stable empty lists / empty dict,
+        never missing keys or raw JSON strings."""
+        _db_mod.init_db()
+        _db_mod.save_event(self._base_event())
+
+        # Simulate a pre-migration row: set every proof-structure column
+        # to NULL directly.  ``_decode_event_row`` must still coerce
+        # those NULLs to stable empty defaults on readback.
+        with sqlite3.connect(_db_mod.DB_FILE) as conn:
+            conn.execute("""
+                UPDATE events SET
+                  primary_assets = NULL,
+                  secondary_assets = NULL,
+                  hedge_or_signal_assets = NULL,
+                  key_falsifiers = NULL,
+                  minimum_proof_set = NULL,
+                  competing_thesis = NULL
+            """)
+        rows = _db_mod.load_recent_events(limit=1)
+        r = rows[0]
+        for f in ("primary_assets", "secondary_assets",
+                  "hedge_or_signal_assets", "key_falsifiers",
+                  "minimum_proof_set"):
+            self.assertEqual(r[f], [], f"{f!r} did not default to []")
+        self.assertEqual(r["competing_thesis"], {})
+
+
+class TestEventsDetailEndpoint(ProofStructurePersistenceBase):
+    """GET /events/{event_id} surfaces the proof-structure fields."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        _db_mod.init_db()
+        self.client = TestClient(_api_mod.app)
+
+    def test_endpoint_returns_proof_structure(self) -> None:
+        _db_mod.save_event(self._base_event(
+            primary_assets=[
+                {"symbol": "PBF", "rank": 1,
+                 "rationale": "Gulf Coast heavy-sour coking refiner."},
+            ],
+            key_falsifiers=["PDVSA issues operational-delay statement"],
+            competing_thesis={
+                "primary_thesis": "A rival read.",
+                "alternative_thesis": "B rival read.",
+                "discriminator": {
+                    "observation": "X", "channel": "equities",
+                    "outcome_if_primary": "up",
+                    "outcome_if_alternative": "down", "timing": "1d",
+                },
+            },
+        ))
+        rows = _db_mod.load_recent_events(limit=1)
+        eid = rows[0]["id"]
+
+        r = self.client.get(f"/events/{eid}")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        # Existing keys unchanged.
+        self.assertEqual(body["headline"], "Proof-structure smoke event")
+        self.assertEqual(body["confidence"], "medium")
+        # Proof-structure fields surface in the detail response.
+        self.assertEqual(body["primary_assets"][0]["symbol"], "PBF")
+        self.assertEqual(len(body["key_falsifiers"]), 1)
+        self.assertIsInstance(body["competing_thesis"], dict)
+        self.assertEqual(
+            body["competing_thesis"]["discriminator"]["timing"], "1d",
+        )
+
+    def test_endpoint_404_on_missing_event(self) -> None:
+        r = self.client.get("/events/999999")
+        self.assertEqual(r.status_code, 404)
 
 
 if __name__ == "__main__":

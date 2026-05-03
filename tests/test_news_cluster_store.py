@@ -463,6 +463,15 @@ class TestNewsEndpointContract(unittest.TestCase):
         db.init_db()
         self.api._news_cache["data"] = None
         self.api._news_cache["ts"] = 0.0
+        # Reset refresh guard so tests don't interfere with each other
+        import api as _api
+        _api._last_refresh_at = 0.0
+        _api._last_refresh_payload = None
+        self._api_mod = _api
+
+    def _expire_cooldown(self):
+        """Reset the refresh cooldown so the next POST /news/refresh runs fresh."""
+        self._api_mod._last_refresh_at = 0.0
 
     def tearDown(self):
         db.DB_FILE = self._orig
@@ -541,6 +550,7 @@ class TestNewsEndpointContract(unittest.TestCase):
         ]
         with patch("api.fetch_all", return_value=(records, feed_status)):
             r1 = self.client.post("/news/refresh")
+            self._expire_cooldown()
             r2 = self.client.post("/news/refresh")
 
         self.assertEqual(r1.status_code, 200)
@@ -549,6 +559,403 @@ class TestNewsEndpointContract(unittest.TestCase):
         self.assertEqual(r1.json()["total_headlines"], 1)
         self.assertEqual(r2.json()["total_headlines"], 1)
         self.assertGreaterEqual(len(r2.json()["clusters"]), 1)
+
+    # ------------------------------------------------------------------
+    # Refresh metadata
+    # ------------------------------------------------------------------
+
+    def test_refresh_meta_present(self):
+        """POST /news/refresh returns refresh_meta in the response."""
+        from unittest.mock import patch
+
+        records = [
+            {"source": "BBC", "title": "Meta test headline",
+             "published_at": "2026-04-10T10:00:00", "url": ""},
+        ]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        self.assertEqual(r.status_code, 200)
+        meta = r.json().get("refresh_meta")
+        self.assertIsNotNone(meta, "refresh_meta missing from response")
+        for key in ("known", "new", "merged", "created", "reused", "source"):
+            self.assertIn(key, meta, f"refresh_meta missing key: {key}")
+
+    def test_refresh_meta_first_call_creates(self):
+        """First refresh with new headlines reports source=incremental."""
+        from unittest.mock import patch
+
+        records = [
+            {"source": "BBC", "title": "First call test",
+             "published_at": "2026-04-10T10:00:00", "url": ""},
+        ]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["new"], 1)
+        self.assertEqual(meta["known"], 0)
+        self.assertEqual(meta["created"], 1)
+        self.assertEqual(meta["source"], "incremental")
+
+    def test_refresh_meta_second_call_reuses(self):
+        """Second refresh with same headlines reports known > 0, new = 0."""
+        from unittest.mock import patch
+
+        records = [
+            {"source": "BBC", "title": "Reuse test headline",
+             "published_at": "2026-04-10T10:00:00", "url": ""},
+        ]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            self.client.post("/news/refresh")
+            self._expire_cooldown()
+            r2 = self.client.post("/news/refresh")
+
+        meta = r2.json()["refresh_meta"]
+        self.assertEqual(meta["known"], 1)
+        self.assertEqual(meta["new"], 0)
+        self.assertGreaterEqual(meta["reused"], 1)
+        self.assertIn(meta["source"], ("stored", "stored_fallback"))
+
+    def test_refresh_meta_stored_fallback(self):
+        """When clusters age out of recency, fallback path is labeled."""
+        from unittest.mock import patch
+
+        # Use an old published_at so clusters fall outside the 48h window
+        records = [
+            {"source": "BBC", "title": "Fallback test headline",
+             "published_at": "2026-04-07T10:00:00", "url": ""},
+        ]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            self.client.post("/news/refresh")
+            self._expire_cooldown()
+            r2 = self.client.post("/news/refresh")
+
+        meta = r2.json()["refresh_meta"]
+        self.assertEqual(meta["source"], "stored_fallback")
+        self.assertGreaterEqual(len(r2.json()["clusters"]), 1)
+
+    def test_get_news_includes_refresh_meta(self):
+        """GET /news passes through refresh_meta from the cached payload."""
+        from unittest.mock import patch
+
+        records = [
+            {"source": "BBC", "title": "GET meta passthrough",
+             "published_at": "2026-04-10T10:00:00", "url": ""},
+        ]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+        ]
+        # Force a fresh fetch by clearing the cache
+        self.api._news_cache["data"] = None
+        self.api._news_cache["ts"] = 0.0
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.get("/news")
+
+        self.assertEqual(r.status_code, 200)
+        meta = r.json().get("refresh_meta")
+        self.assertIsNotNone(meta, "GET /news should include refresh_meta")
+        self.assertIn("source", meta)
+
+    def test_get_news_synthesizes_meta_on_legacy_cache(self):
+        """GET /news from a legacy cache (no refresh_meta) synthesizes one."""
+        # Populate in-memory cache with a payload that has no refresh_meta
+        self.api._news_cache["data"] = {
+            "clusters": [{"headline": "cached", "sources": [], "source_count": 0}],
+            "total_headlines": 1,
+            "feed_status": [],
+        }
+        import time
+        self.api._news_cache["ts"] = time.monotonic()
+
+        r = self.client.get("/news")
+        self.assertEqual(r.status_code, 200)
+        meta = r.json().get("refresh_meta")
+        self.assertIsNotNone(meta, "refresh_meta should always be present")
+        self.assertEqual(meta["freshness"], "stale")
+        self.assertEqual(meta["source"], "cached_fallback")
+
+    # ------------------------------------------------------------------
+    # Refresh status: ok / degraded / error
+    # ------------------------------------------------------------------
+
+    def test_refresh_status_ok_on_success(self):
+        """All feeds succeed → status=ok."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Status ok test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["status"], "ok")
+        self.assertEqual(meta["ok_feeds"], 1)
+        self.assertEqual(meta["fail_feeds"], 0)
+        self.assertNotIn("error", meta)
+
+    def test_refresh_status_degraded_on_partial_failure(self):
+        """Some feeds fail → status=degraded."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Degraded test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+            {"name": "Reuters", "url": "", "ok": False, "count": 0, "error": "timeout"},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["status"], "degraded")
+        self.assertEqual(meta["ok_feeds"], 1)
+        self.assertEqual(meta["fail_feeds"], 1)
+        self.assertIn("error", meta)
+        # Clusters should still be returned
+        self.assertGreaterEqual(len(r.json()["clusters"]), 1)
+
+    def test_refresh_status_error_all_feeds_fail(self):
+        """All feeds fail → status=error, clusters still returned if any."""
+        from unittest.mock import patch
+
+        records = []
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": False, "count": 0, "error": "timeout"},
+            {"name": "Reuters", "url": "", "ok": False, "count": 0, "error": "timeout"},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        self.assertEqual(r.status_code, 200)
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["status"], "error")
+        self.assertIn("error", meta)
+
+    def test_refresh_status_error_fetch_raises(self):
+        """fetch_all() raises → status=error, returns last cached data."""
+        from unittest.mock import patch
+
+        # Seed the cache with known data first
+        records = [{"source": "BBC", "title": "Seed for fallback",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r1 = self.client.post("/news/refresh")
+        self.assertEqual(r1.status_code, 200)
+        self.assertGreaterEqual(len(r1.json()["clusters"]), 1)
+
+        # Now make fetch_all raise
+        self._expire_cooldown()
+        with patch("api.fetch_all", side_effect=ConnectionError("network down")):
+            r2 = self.client.post("/news/refresh")
+
+        self.assertEqual(r2.status_code, 200)
+        meta = r2.json()["refresh_meta"]
+        self.assertEqual(meta["status"], "error")
+        self.assertEqual(meta["source"], "cached_fallback")
+        # Clusters from the previous seed should be returned
+        self.assertGreaterEqual(len(r2.json()["clusters"]), 1)
+
+    def test_refresh_status_error_fetch_raises_no_cache(self):
+        """fetch_all() raises with no prior cache → empty response."""
+        from unittest.mock import patch
+
+        self.api._news_cache["data"] = None
+        self.api._news_cache["ts"] = 0.0
+        with patch("api.fetch_all", side_effect=ConnectionError("network down")):
+            r = self.client.post("/news/refresh")
+
+        self.assertEqual(r.status_code, 200)
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["status"], "error")
+        self.assertEqual(meta["source"], "empty")
+        self.assertEqual(r.json()["clusters"], [])
+
+    # ------------------------------------------------------------------
+    # Freshness metadata
+    # ------------------------------------------------------------------
+
+    def test_freshness_fresh_on_success(self):
+        """Successful refresh stamps freshness=fresh + last_successful_refresh."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Freshness test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["freshness"], "fresh")
+        self.assertIsNotNone(meta["last_successful_refresh"])
+        # Timestamp should be a valid ISO string
+        from datetime import datetime
+        datetime.fromisoformat(meta["last_successful_refresh"])
+
+    def test_freshness_stale_on_error(self):
+        """Failed refresh marks freshness=stale."""
+        from unittest.mock import patch
+
+        self.api._news_cache["data"] = None
+        self.api._news_cache["ts"] = 0.0
+        with patch("api.fetch_all", side_effect=ConnectionError("down")):
+            r = self.client.post("/news/refresh")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["freshness"], "stale")
+
+    def test_freshness_preserves_last_success_on_error(self):
+        """When refresh fails, last_successful_refresh from prior success is kept."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Prior success",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r1 = self.client.post("/news/refresh")
+        prev_ts = r1.json()["refresh_meta"]["last_successful_refresh"]
+        self.assertIsNotNone(prev_ts)
+
+        # Now fail
+        self._expire_cooldown()
+        with patch("api.fetch_all", side_effect=ConnectionError("down")):
+            r2 = self.client.post("/news/refresh")
+
+        meta = r2.json()["refresh_meta"]
+        self.assertEqual(meta["freshness"], "stale")
+        self.assertEqual(meta["last_successful_refresh"], prev_ts)
+
+    def test_freshness_degraded_on_partial_failure(self):
+        """Partial feed failure marks freshness=degraded."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Partial test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [
+            {"name": "BBC", "url": "", "ok": True, "count": 1, "error": None},
+            {"name": "Reuters", "url": "", "ok": False, "count": 0, "error": "timeout"},
+        ]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["freshness"], "degraded")
+        self.assertIsNotNone(meta["last_successful_refresh"])
+
+    # ------------------------------------------------------------------
+    # Refresh throttle / dedup
+    # ------------------------------------------------------------------
+
+    def test_immediate_repeat_refresh_returns_recent(self):
+        """Calling refresh twice in quick succession returns status=recent."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Throttle test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r1 = self.client.post("/news/refresh")
+            r2 = self.client.post("/news/refresh")
+
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(r1.json()["refresh_meta"]["status"], "ok")
+        self.assertEqual(r2.status_code, 200)
+        self.assertEqual(r2.json()["refresh_meta"]["status"], "recent")
+        # Clusters still present on the throttled response
+        self.assertGreaterEqual(len(r2.json()["clusters"]), 1)
+
+    def test_refresh_after_cooldown_runs_normally(self):
+        """After the cooldown window, refresh runs a fresh fetch."""
+        from unittest.mock import patch
+        import api as _api
+
+        records = [{"source": "BBC", "title": "Cooldown test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r1 = self.client.post("/news/refresh")
+
+        self.assertEqual(r1.json()["refresh_meta"]["status"], "ok")
+
+        # Simulate cooldown expiry
+        _api._last_refresh_at = 0.0
+
+        records2 = [{"source": "BBC", "title": "Cooldown test 2",
+                      "published_at": "2026-04-10T11:00:00", "url": ""}]
+        with patch("api.fetch_all", return_value=(records2, feed_status)):
+            r2 = self.client.post("/news/refresh")
+
+        # Should run a real refresh, not return "recent"
+        self.assertEqual(r2.json()["refresh_meta"]["status"], "ok")
+
+    def test_normal_refresh_still_works(self):
+        """Single refresh call returns ok with clusters (regression check)."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Normal regression test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.post("/news/refresh")
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["refresh_meta"]["status"], "ok")
+        self.assertGreaterEqual(len(body["clusters"]), 1)
+        self.assertEqual(body["total_headlines"], 1)
+        self.assertIn("feed_status", body)
+
+    # ------------------------------------------------------------------
+    # Initial-load metadata (GET /news always carries refresh_meta)
+    # ------------------------------------------------------------------
+
+    def test_get_news_always_has_refresh_meta(self):
+        """GET /news always returns refresh_meta, even on cold start."""
+        from unittest.mock import patch
+
+        self.api._news_cache["data"] = None
+        self.api._news_cache["ts"] = 0.0
+        records = [{"source": "BBC", "title": "Initial load test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            r = self.client.get("/news")
+
+        self.assertEqual(r.status_code, 200)
+        meta = r.json().get("refresh_meta")
+        self.assertIsNotNone(meta)
+        self.assertIn("status", meta)
+        self.assertIn("freshness", meta)
+        self.assertIn("last_successful_refresh", meta)
+
+    def test_get_news_meta_persists_across_cache_reads(self):
+        """After refresh, subsequent GET /news returns the same meta."""
+        from unittest.mock import patch
+
+        records = [{"source": "BBC", "title": "Persist meta test",
+                     "published_at": "2026-04-10T10:00:00", "url": ""}]
+        feed_status = [{"name": "BBC", "url": "", "ok": True, "count": 1, "error": None}]
+        with patch("api.fetch_all", return_value=(records, feed_status)):
+            self.client.post("/news/refresh")
+            r = self.client.get("/news")
+
+        meta = r.json()["refresh_meta"]
+        self.assertEqual(meta["status"], "ok")
+        self.assertEqual(meta["freshness"], "fresh")
 
 
 if __name__ == "__main__":

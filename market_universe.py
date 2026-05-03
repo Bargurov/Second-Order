@@ -42,28 +42,41 @@ _log = logging.getLogger("second_order.market_universe")
 # ---------------------------------------------------------------------------
 
 LIQUID_MARKETS: tuple[str, ...] = (
-    "ES",   # S&P 500 e-mini futures (or SPY proxy)
-    "NQ",   # Nasdaq 100 e-mini futures (or QQQ proxy)
-    "RTY",  # Russell 2000 e-mini futures (or IWM proxy)
-    "CL",   # WTI crude oil futures (or USO proxy)
-    "GC",   # Gold futures (or GLD proxy)
-    "DXY",  # US Dollar Index (or UUP proxy)
-    "2Y",   # 2-year Treasury (SHY ETF used by both providers)
-    "10Y",  # 10-year Treasury yield (^TNX) or IEF ETF for Polygon
+    "ES",     # S&P 500 e-mini futures (or SPY proxy)
+    "NQ",     # Nasdaq 100 e-mini futures (or QQQ proxy)
+    "RTY",    # Russell 2000 e-mini futures (or IWM proxy)
+    "CL",     # WTI crude oil futures (or USO proxy)
+    "GC",     # Gold futures (or GLD proxy)
+    "DXY",    # US Dollar Index (or UUP proxy)
+    "2Y",     # 2-year Treasury (SHY ETF used by both providers)
+    "10Y",    # 10-year Treasury yield (^TNX) or IEF ETF for Polygon
+)
+
+# FX cross-rate aliases — resolvable by explicit callers but NOT part
+# of the default ``LIQUID_MARKETS`` sweep.  Keeping them out of the
+# default tuple preserves the current 8-market product contract the
+# /snapshots and /market-context consumers expect while leaving the
+# symbol resolver open for future work (asset_registry uses these
+# aliases for non-US FX coherence checks).
+FX_ALIAS_MARKETS: tuple[str, ...] = (
+    "EURUSD", "USDJPY", "USDCNY",
 )
 
 
 # Display metadata per market.  The "asset_class" field is for grouping;
 # "label" is what the UI shows; "unit" is the natural unit of the value.
 LIQUID_MARKET_INFO: dict[str, dict] = {
-    "ES":  {"label": "S&P 500 (ES)",     "unit": "idx",   "asset_class": "equity_index"},
-    "NQ":  {"label": "Nasdaq 100 (NQ)",  "unit": "idx",   "asset_class": "equity_index"},
-    "RTY": {"label": "Russell 2000",     "unit": "idx",   "asset_class": "equity_index"},
-    "CL":  {"label": "WTI Crude",        "unit": "$/bbl", "asset_class": "commodity"},
-    "GC":  {"label": "Gold",             "unit": "$/oz",  "asset_class": "commodity"},
-    "DXY": {"label": "USD Index",        "unit": "idx",   "asset_class": "currency"},
-    "2Y":  {"label": "2Y Treasury",      "unit": "$",     "asset_class": "rate"},
-    "10Y": {"label": "10Y Treasury",     "unit": "%",     "asset_class": "rate"},
+    "ES":     {"label": "S&P 500 (ES)",    "unit": "idx",   "asset_class": "equity_index"},
+    "NQ":     {"label": "Nasdaq 100 (NQ)", "unit": "idx",   "asset_class": "equity_index"},
+    "RTY":    {"label": "Russell 2000",    "unit": "idx",   "asset_class": "equity_index"},
+    "CL":     {"label": "WTI Crude",       "unit": "$/bbl", "asset_class": "commodity"},
+    "GC":     {"label": "Gold",            "unit": "$/oz",  "asset_class": "commodity"},
+    "DXY":    {"label": "USD Index",       "unit": "idx",   "asset_class": "currency"},
+    "2Y":     {"label": "2Y Treasury",     "unit": "$",     "asset_class": "rate"},
+    "10Y":    {"label": "10Y Treasury",    "unit": "%",     "asset_class": "rate"},
+    "EURUSD": {"label": "EUR / USD",       "unit": "fx",    "asset_class": "currency"},
+    "USDJPY": {"label": "USD / JPY",       "unit": "fx",    "asset_class": "currency"},
+    "USDCNY": {"label": "USD / CNY",       "unit": "fx",    "asset_class": "currency"},
 }
 
 
@@ -82,14 +95,17 @@ LIQUID_MARKET_INFO: dict[str, dict] = {
 
 _PROVIDER_SYMBOLS: dict[str, dict[str, str]] = {
     "yfinance": {
-        "ES":  "ES=F",
-        "NQ":  "NQ=F",
-        "RTY": "RTY=F",
-        "CL":  "CL=F",
-        "GC":  "GC=F",
-        "DXY": "DX-Y.NYB",
-        "2Y":  "SHY",       # SHY ETF — yfinance has no clean 2Y yield symbol
-        "10Y": "^TNX",
+        "ES":     "ES=F",
+        "NQ":     "NQ=F",
+        "RTY":    "RTY=F",
+        "CL":     "CL=F",
+        "GC":     "GC=F",
+        "DXY":    "DX-Y.NYB",
+        "2Y":     "SHY",       # SHY ETF — yfinance has no clean 2Y yield symbol
+        "10Y":    "^TNX",
+        "EURUSD": "EURUSD=X",  # yfinance FX pair; close is EUR→USD spot
+        "USDJPY": "JPY=X",     # yfinance convention: JPY=X is USDJPY
+        "USDCNY": "CNY=X",     # yfinance convention: CNY=X is USDCNY
     },
     "polygon": {
         "ES":  "SPY",
@@ -100,6 +116,9 @@ _PROVIDER_SYMBOLS: dict[str, dict[str, str]] = {
         "DXY": "UUP",
         "2Y":  "SHY",
         "10Y": "IEF",
+        # FX pairs: Polygon free tier has no FX coverage.  Intentionally absent;
+        # resolve_symbol() returns None and refresh_market() records an empty
+        # snapshot with "no symbol mapping" error.
     },
 }
 

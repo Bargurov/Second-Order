@@ -21,16 +21,30 @@ export const qk = {
   ratesContext:  () => ["rates-context"] as const,
   snapshots:     () => ["snapshots"] as const,
   marketContext: () => ["market-context"] as const,
+  registryDiagnostics: () => ["registry", "diagnostics"] as const,
+  backfillPreview: (limit: number, sinceHours: number) =>
+    ["movers", "backfill-preview", limit, sinceHours] as const,
   marketMovers:  () => ["market-movers"] as const,
   moversToday:   () => ["movers", "today"] as const,
   moversWeekly:  () => ["movers", "weekly"] as const,
   moversYearly:     () => ["movers", "yearly"] as const,
   moversPersistent: () => ["movers", "persistent"] as const,
   trackRecord:            () => ["stats", "track-record"] as const,
+  trackRecordBreakdown:   () => ["stats", "track-record", "breakdown"] as const,
   confidenceCalibration:  () => ["stats", "confidence-calibration"] as const,
   newsPaginated: (limit: number) => ["news", "paginated", limit] as const,
   newsTrends:    () => ["news", "trends"] as const,
-  portfolio:         () => ["portfolio"] as const,
+  portfolio:         (filterFingerprint?: string) =>
+    filterFingerprint
+      ? (["portfolio", "filtered", filterFingerprint] as const)
+      : (["portfolio"] as const),
+  cohortResearch:    () => ["portfolio", "cohort-research"] as const,
+  archiveDrift:      () => ["portfolio", "archive-drift"] as const,
+  eventGraph:        () => ["portfolio", "event-graph"] as const,
+  cohortComparison:  (a: string, b: string) => ["portfolio", "cohort-comparison", a, b] as const,
+  crossEventStudies: () => ["portfolio", "cross-event-studies"] as const,
+  savedStudies:      (studyType?: string | null) =>
+    ["portfolio", "saved-studies", studyType ?? "all"] as const,
   simulate:          (ids: number[]) => ["portfolio", "simulate", ...ids] as const,
   refreshMarket: (id: number) => ["events", id, "refresh-market"] as const,
   regimePlaybook:    (regime: string) => ["regime-playbook", regime] as const,

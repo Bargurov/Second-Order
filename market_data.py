@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import threading
+import time as _time
 from datetime import date as _date, timedelta as _timedelta
 from typing import Optional, Protocol, runtime_checkable
 from urllib.error import HTTPError, URLError
@@ -127,11 +128,14 @@ class YFinanceProvider:
             return None
 
         try:
-            kwargs = {"interval": "1d", "progress": False, "auto_adjust": auto_adjust}
-            # Serialise the actual yf.download call — see the lock
-            # docstring at the top of the module.  Concurrent calls
-            # from worker threads otherwise cross-contaminate the
-            # DataFrames yfinance returns.
+            # timeout= caps how long a single download blocks waiting
+            # for a stalled network connection.  Supported by yfinance
+            # 0.2+ (the version in use).  Serialise the call to prevent
+            # cross-contamination of DataFrames from concurrent threads.
+            kwargs = {
+                "interval": "1d", "progress": False,
+                "auto_adjust": auto_adjust, "timeout": _YFINANCE_TIMEOUT,
+            }
             with _PROVIDER_FETCH_LOCK:
                 if period:
                     data = yf.download(ticker, period=period, **kwargs)
@@ -196,7 +200,13 @@ _POLYGON_PERIOD_DAYS: dict[str, int] = {
 }
 
 _POLYGON_BASE = "https://api.polygon.io"
-_POLYGON_TIMEOUT = 10  # seconds
+_POLYGON_TIMEOUT = 10           # seconds per HTTP attempt
+_POLYGON_MAX_RETRIES = 3        # total attempts (1 initial + 2 retries)
+_POLYGON_RETRY_BACKOFF_BASE = 0.5  # first sleep duration in seconds; doubles each retry
+
+# yfinance download timeout — passed directly to yf.download(timeout=N).
+# Bounds the time spent waiting on a single network call.
+_YFINANCE_TIMEOUT = 30          # seconds
 
 
 class PolygonProvider:
@@ -215,27 +225,48 @@ class PolygonProvider:
     # -- internal HTTP helper -------------------------------------------------
 
     def _get(self, path: str, params: Optional[dict] = None) -> Optional[dict]:
-        """GET a Polygon endpoint and return parsed JSON, or None on error."""
+        """GET a Polygon endpoint and return parsed JSON, or None on error.
+
+        Retries up to ``_POLYGON_MAX_RETRIES`` times on transient network
+        failures (URLError, unexpected exceptions) with exponential backoff.
+        HTTP errors and parse errors are not retried — they are authoritative
+        or unrecoverable and the fallback provider is the right escape valve.
+        """
         query = dict(params or {})
         query["apiKey"] = self._api_key
         url = f"{_POLYGON_BASE}{path}?{urlencode(query)}"
-        try:
-            req = Request(url, headers={"User-Agent": "second-order/1.0"})
-            with urlopen(req, timeout=_POLYGON_TIMEOUT) as resp:
-                body = resp.read().decode("utf-8")
-            return json.loads(body)
-        except HTTPError as e:
-            _log.warning("Polygon HTTP %d for %s", e.code, path)
-            return None
-        except URLError as e:
-            _log.warning("Polygon network error for %s: %s", path, e.reason)
-            return None
-        except (json.JSONDecodeError, ValueError) as e:
-            _log.warning("Polygon response parse error for %s: %s", path, e)
-            return None
-        except Exception as e:
-            _log.warning("Polygon unexpected error for %s: %s", path, e)
-            return None
+        req = Request(url, headers={"User-Agent": "second-order/1.0"})
+
+        for attempt in range(_POLYGON_MAX_RETRIES):
+            if attempt > 0:
+                sleep_s = _POLYGON_RETRY_BACKOFF_BASE * (2 ** (attempt - 1))
+                _log.info(
+                    "Polygon retry %d/%d for %s (backoff %.1fs)",
+                    attempt, _POLYGON_MAX_RETRIES, path, sleep_s,
+                )
+                _time.sleep(sleep_s)
+            try:
+                with urlopen(req, timeout=_POLYGON_TIMEOUT) as resp:
+                    body = resp.read().decode("utf-8")
+                return json.loads(body)
+            except HTTPError as e:
+                # Authoritative server response — don't retry.
+                _log.warning("Polygon HTTP %d for %s", e.code, path)
+                return None
+            except (json.JSONDecodeError, ValueError) as e:
+                # Malformed response — not a transient network issue.
+                _log.warning("Polygon response parse error for %s: %s", path, e)
+                return None
+            except Exception as e:
+                # Covers URLError (network failures, timeouts) and anything
+                # else unexpected.  All are worth retrying within budget.
+                _log.warning(
+                    "Polygon transient error for %s (attempt %d/%d): %s",
+                    path, attempt + 1, _POLYGON_MAX_RETRIES, e,
+                )
+
+        _log.warning("Polygon gave up on %s after %d attempts", path, _POLYGON_MAX_RETRIES)
+        return None
 
     # -- date-range helpers ---------------------------------------------------
 
@@ -269,16 +300,43 @@ class PolygonProvider:
         if not period and not start:
             raise ValueError("fetch_daily requires either period or start")
 
+        # Guard: yfinance-specific symbol conventions are not supported by
+        # Polygon's equities API.  Reject early so macro/stress paths fall
+        # back to yfinance without burning free-tier Polygon quota on a
+        # request that will always return zero rows.
+        #
+        #   ^VIX, ^TNX, ^GSPC  — CBOE / Yahoo index convention (caret-prefixed)
+        #   CL=F, BZ=F, GC=F   — futures contracts (=F suffix)
+        #   EURUSD=X, DX-Y.NYB — forex pairs as yfinance encodes them (=X suffix)
+        if ticker.startswith("^"):
+            _log.warning(
+                "PolygonProvider.fetch_daily(%s): skipped — "
+                "caret-prefixed index tickers are not supported by Polygon",
+                ticker,
+            )
+            return None
+        _upper = ticker.upper()
+        if _upper.endswith("=F"):
+            _log.warning(
+                "PolygonProvider.fetch_daily(%s): skipped — "
+                "futures tickers (=F suffix) are not supported by Polygon",
+                ticker,
+            )
+            return None
+        if _upper.endswith("=X"):
+            _log.warning(
+                "PolygonProvider.fetch_daily(%s): skipped — "
+                "forex tickers (=X suffix) are not supported by Polygon",
+                ticker,
+            )
+            return None
+
         try:
             start_iso, end_iso = self._resolve_range(period, start, end)
         except ValueError as e:
             _log.warning("PolygonProvider.fetch_daily(%s): bad date input: %s", ticker, e)
             return None
 
-        # Polygon symbols use '.' for class shares (e.g. BRK.B), no caret prefix
-        # for indices.  We pass the ticker through as-is — caller should already
-        # have a valid Polygon symbol.  Indices like ^VIX are not supported and
-        # will return no results, which we surface as None.
         path = f"/v2/aggs/ticker/{ticker}/range/1/day/{start_iso}/{end_iso}"
         params = {
             "adjusted": "true" if auto_adjust else "false",
@@ -340,31 +398,120 @@ class PolygonProvider:
 
 
 # ---------------------------------------------------------------------------
+# Fallback provider — tries primary, falls back to secondary on failure
+# ---------------------------------------------------------------------------
+
+class FallbackProvider:
+    """Wraps a primary and secondary provider with automatic failover.
+
+    ``fetch_daily`` tries the primary; on ``None`` result it retries
+    with the secondary (if available).  The last successful source is
+    recorded in ``last_source`` so callers can surface which path
+    served the data.
+
+    ``fetch_info`` follows the same pattern.
+
+    Thread-safe: ``last_source`` is written atomically (single string
+    assignment) and is advisory — a stale read is harmless.
+    """
+
+    def __init__(
+        self,
+        primary: MarketDataProvider,
+        secondary: MarketDataProvider | None = None,
+    ):
+        self.primary = primary
+        self.secondary = secondary
+        self.last_source: str = "primary"
+
+    def fetch_daily(
+        self,
+        ticker: str,
+        *,
+        period: Optional[str] = None,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        auto_adjust: bool = True,
+    ) -> Optional[pd.DataFrame]:
+        result = self.primary.fetch_daily(
+            ticker, period=period, start=start, end=end,
+            auto_adjust=auto_adjust,
+        )
+        if result is not None:
+            self.last_source = "primary"
+            return result
+
+        if self.secondary is None:
+            return None
+
+        _log.info(
+            "FallbackProvider: primary returned None for %s, trying secondary",
+            ticker,
+        )
+        result = self.secondary.fetch_daily(
+            ticker, period=period, start=start, end=end,
+            auto_adjust=auto_adjust,
+        )
+        if result is not None:
+            self.last_source = "fallback"
+        return result
+
+    def fetch_info(self, ticker: str) -> dict:
+        info = self.primary.fetch_info(ticker)
+        if info.get("name") is not None:
+            self.last_source = "primary"
+            return info
+
+        if self.secondary is None:
+            return info
+
+        _log.info(
+            "FallbackProvider: primary info empty for %s, trying secondary",
+            ticker,
+        )
+        fallback_info = self.secondary.fetch_info(ticker)
+        if fallback_info.get("name") is not None:
+            self.last_source = "fallback"
+            return fallback_info
+        return info
+
+
+# ---------------------------------------------------------------------------
 # Provider selection
 # ---------------------------------------------------------------------------
 
 def _build_default_provider() -> MarketDataProvider:
     """Build the default provider from env vars.
 
-    MARKET_DATA_PROVIDER=polygon → PolygonProvider (requires POLYGON_API_KEY)
-    Anything else (or unset)     → YFinanceProvider
+    MARKET_DATA_PROVIDER=polygon → FallbackProvider(Polygon primary, YFinance secondary)
+    Anything else (or unset)     → plain YFinanceProvider
+
+    Polygon only participates when explicitly requested.  A bare
+    POLYGON_API_KEY without MARKET_DATA_PROVIDER=polygon does NOT
+    activate Polygon — the key is available for get_secondary_provider()
+    but the default path is always YFinance.
     """
     requested = (os.environ.get("MARKET_DATA_PROVIDER") or "yfinance").strip().lower()
+    polygon_key = os.environ.get("POLYGON_API_KEY", "").strip()
+
     if requested == "polygon":
-        api_key = os.environ.get("POLYGON_API_KEY", "").strip()
-        if not api_key:
+        if not polygon_key:
             _log.warning(
                 "MARKET_DATA_PROVIDER=polygon but POLYGON_API_KEY is not set; "
                 "falling back to YFinanceProvider"
             )
             return YFinanceProvider()
         _log.info("Using PolygonProvider for market data")
-        return PolygonProvider(api_key=api_key)
+        return PolygonProvider(api_key=polygon_key)
+
     if requested not in ("yfinance", ""):
         _log.warning(
             "Unknown MARKET_DATA_PROVIDER=%r; falling back to YFinanceProvider",
             requested,
         )
+
+    # Default: plain YFinanceProvider.  Polygon only participates when
+    # explicitly requested via MARKET_DATA_PROVIDER=polygon.
     return YFinanceProvider()
 
 
@@ -395,3 +542,22 @@ def reload_provider_from_env() -> MarketDataProvider:
     global _provider
     _provider = _build_default_provider()
     return _provider
+
+
+def get_secondary_provider() -> "MarketDataProvider | None":
+    """Return a provider different from the active one, or None.
+
+    Used for dual-source verification: if the primary is YFinance and a
+    Polygon API key is configured, returns a PolygonProvider.  If the
+    primary is Polygon, returns YFinance.  Returns None when only one
+    provider is available.
+    """
+    primary = _provider
+    if isinstance(primary, YFinanceProvider):
+        api_key = os.environ.get("POLYGON_API_KEY", "").strip()
+        if api_key:
+            return PolygonProvider(api_key=api_key)
+        return None
+    if isinstance(primary, PolygonProvider):
+        return YFinanceProvider()
+    return None

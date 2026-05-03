@@ -338,12 +338,20 @@ class TestDeploymentTemplatesAligned(unittest.TestCase):
         src = self._read("frontend", ".env.example")
         self.assertIn("VITE_API_BASE_URL", src)
 
+    def test_frontend_env_example_documents_dev_proxy_override(self):
+        src = self._read("frontend", ".env.example")
+        self.assertIn("VITE_DEV_API_PROXY_TARGET", src)
+
     def test_vite_config_keeps_dev_proxy(self):
         """The dev proxy at ``/api`` is what makes the same default work
         locally and in prod.  Deleting it would break dev."""
         src = self._read("frontend", "vite.config.ts")
         self.assertIn("/api", src)
         self.assertIn("proxy", src)
+
+    def test_vite_config_reads_dev_proxy_override(self):
+        src = self._read("frontend", "vite.config.ts")
+        self.assertIn("VITE_DEV_API_PROXY_TARGET", src)
 
 
 if __name__ == "__main__":

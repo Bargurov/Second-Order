@@ -98,7 +98,8 @@ class TestCheckOneTicker(unittest.TestCase):
         df = _make_df(closes, volumes)
         xle_df = _make_df(xle_closes) if xle_closes is not None else None
         with patch("market_check._fetch", return_value=df):
-            return market_check._check_one_ticker(ticker, xle_data=xle_df)
+            with patch("market_data.get_secondary_provider", return_value=None):
+                return market_check._check_one_ticker(ticker, xle_data=xle_df)
 
     # -- Label: "notable move" ------------------------------------------------
 
@@ -301,8 +302,11 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         self.assertAlmostEqual(result["return_5d"], 5.0, places=1)
 
     def test_numeric_fields_none_when_no_data(self):
-        # Only 3 rows — not enough for any return windows (pre-check passes)
-        df = _make_df([100.0, 101.0, 102.0])
+        # Only 1 row — not enough for any return window (pre-check
+        # rejects ``len(data) < 2``).  Three rows would now populate
+        # ``return_1d`` because the threshold was lowered to unblock
+        # /movers/today for events younger than 6 trading bars.
+        df = _make_df([100.0])
         with patch("market_check._fetch", return_value=df):
             result = market_check._check_one_ticker("GLD")
 
@@ -311,6 +315,18 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         self.assertIsNone(result["return_20d"])
         self.assertIsNone(result["volume_ratio"])
         self.assertIsNone(result["vs_xle_5d"])
+
+    def test_return_1d_populates_with_two_rows(self):
+        # Two rows is the new minimum: return_1d computes, the longer
+        # windows stay None.  This is the path /movers/today depends on
+        # for events younger than 6 trading bars.
+        df = _make_df([100.0, 101.0])
+        with patch("market_check._fetch", return_value=df):
+            result = market_check._check_one_ticker("GLD")
+
+        self.assertIsNotNone(result["return_1d"])
+        self.assertIsNone(result["return_5d"])
+        self.assertIsNone(result["return_20d"])
 
     def test_numeric_fields_none_on_exception(self):
         with patch("market_check._fetch", side_effect=RuntimeError("network error")):
@@ -348,6 +364,56 @@ class TestCheckOneTickerNumericFields(unittest.TestCase):
         self.assertEqual(result["volume_ratio"], round(result["volume_ratio"], 2))
 
 
+class TestSameDayFallback(unittest.TestCase):
+    """When ``event_date`` mode produces only the event-day bar (no forward
+    bar yet), ``_check_one_ticker`` must fall back to a rolling fetch and
+    surface ``return_1d`` as the same-day reaction.  Without this fallback
+    /movers/today stays empty for events whose ticker validation runs
+    before the next session — the today-window surface gates on
+    ``return_1d`` when ``return_5d`` hasn't matured yet, so a row with
+    every return None is invisible.
+    """
+
+    def test_falls_back_to_rolling_when_since_returns_one_row(self):
+        single = _make_df([105.0])
+        rolling = _make_df([100.0] * 35 + [101.0, 102.0, 103.0, 104.0, 105.0])
+        with patch("market_check._fetch_since", return_value=single), \
+             patch("market_check._fetch", return_value=rolling):
+            result = market_check._check_one_ticker(
+                "GLD", role="beneficiary", event_date="2026-05-01",
+            )
+        # Same-day return_1d ≈ (105 - 104) / 104 = +0.96%
+        self.assertIsNotNone(result["return_1d"])
+        self.assertAlmostEqual(result["return_1d"], 0.96, places=1)
+        # r5 / r20 stay None — rolling _pct over those windows would be
+        # backward-looking pre-event noise, not a post-event read.
+        self.assertIsNone(result["return_5d"])
+        self.assertIsNone(result["return_20d"])
+
+    def test_returns_no_data_when_both_paths_empty(self):
+        single = _make_df([100.0])
+        with patch("market_check._fetch_since", return_value=single), \
+             patch("market_check._fetch", return_value=None):
+            result = market_check._check_one_ticker(
+                "GLD", role="beneficiary", event_date="2026-05-01",
+            )
+        self.assertIsNone(result["return_1d"])
+        self.assertIsNone(result["return_5d"])
+        self.assertIsNone(result["return_20d"])
+
+    def test_normal_forward_path_unchanged_when_since_has_two_rows(self):
+        # Two forward bars: regular event-anchored path, return_1d from
+        # iloc[0] → iloc[1].  No fallback should engage.
+        forward = _make_df([100.0, 102.0])
+        with patch("market_check._fetch_since", return_value=forward), \
+             patch("market_check._fetch") as rolling_mock:
+            result = market_check._check_one_ticker(
+                "GLD", role="beneficiary", event_date="2026-05-01",
+            )
+        rolling_mock.assert_not_called()
+        self.assertAlmostEqual(result["return_1d"], 2.0, places=1)
+
+
 class TestSparklineField(unittest.TestCase):
     """Verify that _check_one_ticker returns a spark list for sparkline rendering."""
 
@@ -377,7 +443,11 @@ class TestSparklineField(unittest.TestCase):
         self.assertAlmostEqual(result["spark"][-1], 1.0, places=2)
 
     def test_spark_empty_when_no_data(self):
-        df = _make_df([100.0, 101.0, 102.0])
+        # One row trips the ``len(data) < 2`` early-return so spark
+        # stays empty.  The previous 3-row case now populates a real
+        # spark because the lowered threshold lets short windows
+        # through for /movers/today.
+        df = _make_df([100.0])
         with patch("market_check._fetch", return_value=df):
             result = market_check._check_one_ticker("GLD")
         self.assertEqual(result["spark"], [])
@@ -390,7 +460,9 @@ class TestSparklineField(unittest.TestCase):
     def test_spark_uses_short_window_for_small_dataset(self):
         closes = [100.0 + i for i in range(10)]  # only 10 closes
         result = self._run(closes, [1_000_000.0] * 10)
-        self.assertEqual(len(result["spark"]), 10)
+        # normalize_spark pads short arrays to SPARK_LENGTH (20)
+        from market_check import SPARK_LENGTH
+        self.assertEqual(len(result["spark"]), SPARK_LENGTH)
 
 
 # ---------------------------------------------------------------------------
@@ -875,7 +947,9 @@ class TestMacroSnapshot(unittest.TestCase):
     """macro_snapshot should return one entry per macro instrument."""
 
     def _macro_df(self, n=40):
-        return _make_df([100.0 + i * 0.5 for i in range(n)], [1_000_000.0] * n)
+        # Start at 75.0 with small step so iloc[-6] stays within _MACRO_PRICE_FLOORS
+        # for all instruments (binding constraint: VIX ceiling = 90).
+        return _make_df([75.0 + i * 0.2 for i in range(n)], [1_000_000.0] * n)
 
     def test_returns_all_instruments(self):
         df = self._macro_df()
@@ -1197,7 +1271,8 @@ class TestComputeRatesContext(unittest.TestCase):
     @patch("market_check._fetch", return_value=None)
     def test_fallback_when_no_data(self, _mock):
         result = market_check.compute_rates_context()
-        self.assertEqual(result["regime"], "Mixed")
+        self.assertEqual(result["regime"], "Unavailable")
+        self.assertFalse(result["available"])
         self.assertIsNone(result["nominal"]["change_5d"])
         self.assertIsNone(result["real_proxy"]["change_5d"])
         self.assertIsNone(result["breakeven_proxy"]["change_5d"])

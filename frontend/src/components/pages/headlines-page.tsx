@@ -4,35 +4,81 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  FlaskConical, Newspaper, Search, Loader2, EyeOff, RefreshCw, AlertTriangle, RotateCw, CalendarClock, Scale, TrendingUp,
+  FlaskConical, Newspaper, Search, Loader2, EyeOff, RefreshCw, AlertTriangle, RotateCw, CalendarClock, Scale, TrendingUp, ChevronDown,
 } from "lucide-react";
-import { api, type NewsCluster, type NewsResponse, type RefreshMeta, type MacroRelease, type PolicyItem, type NewsTrend } from "@/lib/api";
+import { api, type ClusterMacroSurprise, type NewsCluster, type NewsResponse, type RefreshMeta, type MacroRelease, type PolicyItem, type PolicyTiming, type PolicyTimingStatus, type NewsTrend } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
 
 const PAGE_SIZE = 30;
+const headlinesInfiniteKey = (limit: number) => ["news", "headlines", "infinite", limit] as const;
 
 /**
  * Pure pagination helper — extracted so the contract is unit-testable.
  *
- * Returns the offset for the next page, or `undefined` when all pages
- * are loaded.  Guards against:
- *   - `p.clusters` missing (malformed page) → counts as 0
- *   - `lastPage.total_count` missing → 0, terminates the query
- *   - pages array containing undefined entries
+ * The backend issues an opaque `next_cursor` string with each page; when
+ * the field is null/missing there are no more pages.  Undefined means
+ * "stop fetching" to `useInfiniteQuery`.  Guards against:
+ *   - `lastPage` being undefined (malformed/failed fetch) → terminate
+ *   - `allPages` being undefined / empty (early-mount race) → terminate
+ *   - empty-string cursor → terminate (treat as no more pages)
+ *
+ * The helper accepts the second `allPages` argument because TanStack Query
+ * passes it positionally; making it explicit (and guarding it) keeps any
+ * future maintainer who reaches for `pages.length` from re-introducing
+ * the crash this PR fixes.
  */
 export function _getNextPageParam(
   lastPage: NewsResponse | undefined,
-  allPages: Array<NewsResponse | undefined>,
-): number | undefined {
-  const loaded = allPages.reduce(
-    (n, p) => n + (p?.clusters?.length ?? 0),
-    0,
-  );
-  const total = lastPage?.total_count ?? 0;
-  if (total === 0 || loaded >= total) return undefined;
-  return loaded;
+  allPages?: Array<NewsResponse | undefined> | null,
+): string | undefined {
+  // When TanStack passes `allPages` it is contractually a non-empty
+  // array (it always contains at least the page we just received).  If
+  // a caller hands us something else (null, an object, an empty array
+  // from a re-mount race), terminate rather than crash on a future
+  // ``pages.length`` access.  Direct unit-test callers omit `allPages`
+  // entirely; in that case we fall through to the cursor check.
+  if (allPages !== undefined && (!Array.isArray(allPages) || allPages.length === 0)) {
+    return undefined;
+  }
+  const next = lastPage?.next_cursor;
+  if (next === null || next === undefined || next === "") return undefined;
+  return next;
+}
+
+/**
+ * Normalise a raw `/news` response into a defensive {@link NewsResponse}
+ * shape.  The backend contract is well-typed, but treating every
+ * downstream read as "the field is here and well-formed" has bitten us
+ * when:
+ *   - a degraded backend returns `clusters: undefined`
+ *   - a JSON parse anomaly drops `total_count` / `total_headlines`
+ *   - `next_cursor` arrives as an empty string instead of null
+ *
+ * The helper is total (never throws), shape-stable (always returns
+ * `clusters: []` not `undefined`), and idempotent — feeding a valid page
+ * back through it produces an equivalent page.  Used inside the
+ * `useInfiniteQuery` queryFn so every entry in `data.pages` carries the
+ * same minimal structure regardless of the wire payload.
+ */
+export function _normalizeNewsPage(raw: unknown): NewsResponse {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Partial<NewsResponse>;
+  const cursor = r.next_cursor;
+  return {
+    clusters: Array.isArray(r.clusters) ? r.clusters : [],
+    next_cursor:
+      typeof cursor === "string" && cursor.length > 0 ? cursor : null,
+    total_headlines: typeof r.total_headlines === "number" ? r.total_headlines : 0,
+    total_count:     typeof r.total_count     === "number" ? r.total_count     : 0,
+    feed_status:     Array.isArray(r.feed_status) ? r.feed_status : [],
+    refresh_meta:    r.refresh_meta,
+    macro_releases:  Array.isArray(r.macro_releases) ? r.macro_releases : [],
+    policy_items:    Array.isArray(r.policy_items)   ? r.policy_items   : [],
+    data_quality:    r.data_quality,
+    degraded_fields: Array.isArray(r.degraded_fields) ? r.degraded_fields : undefined,
+    _schema_version: r._schema_version,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +149,10 @@ function MacroCalendarStrip({ releases }: { releases: MacroRelease[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Policy tracker strip
+// Policy tracker — compact section with a top-N list and expandable overflow.
+// Renders one row per item: type · region · title · status.  Type controls a
+// muted accent stripe so tariff / sanction / rule / rate items remain
+// visually distinct without bucketing into separate sub-sections.
 // ---------------------------------------------------------------------------
 
 const _POLICY_TYPE_LABEL: Record<string, string> = {
@@ -114,90 +163,256 @@ const _POLICY_TYPE_LABEL: Record<string, string> = {
   rate_decision:   "Rate",
 };
 
-const _POLICY_TYPE_COLOR: Record<string, string> = {
+/** Per-type label tone — drives the small uppercase TYPE kicker on each
+ *  row.  Mirrors the extracted design package's editorial palette:
+ *  tariff & sanction share coral (restrictive), rate is teal (monetary),
+ *  EO is amber (watch), regulation is neutral. */
+const _POLICY_TYPE_LABEL_TONE: Record<string, string> = {
   tariff:          "text-[#ee7d77]",
   sanction:        "text-[#ee7d77]",
-  regulation:      "text-muted-foreground/60",
-  executive_order: "text-[#facc15]/80",
   rate_decision:   "text-[#93d1d3]",
+  executive_order: "text-[#facc15]/85",
+  regulation:      "text-on-surface-variant/75",
 };
 
-function _revisitLabel(days: number): string {
-  if (days > 1) return `revisit in ${days}d`;
-  if (days === 1) return "revisit tomorrow";
-  if (days === 0) return "revisit today";
-  return `revisit ${Math.abs(days)}d ago`;
+/** Per-type left-edge accent stripe — full-height vertical bar that
+ *  reads the policy type at a glance.  Same hue family as the type
+ *  label tone but at a slightly higher opacity so the stripe carries
+ *  even when the row is dense.  Mirrors the design's "muted accents"
+ *  brief: the bar is felt, not loud. */
+const _POLICY_TYPE_STRIPE: Record<string, string> = {
+  tariff:          "bg-[#ee7d77]/55",
+  sanction:        "bg-[#ee7d77]/55",
+  rate_decision:   "bg-[#93d1d3]/55",
+  executive_order: "bg-[#facc15]/45",
+  regulation:      "bg-on-surface-variant/30",
+};
+
+/** Status bucket — collapses the back-end status enum into the three
+ *  user-facing pill words (ACTIVE / REVIEW / EXPIRED).  ``revisit_due``,
+ *  ``pre_effective``, and ``announced`` all read as REVIEW because each
+ *  requires a deliberate read against the live tape; the timing hint on
+ *  the pill text differentiates their urgency. */
+type _PolicyBucket = "active" | "review" | "expired";
+
+const _POLICY_STATUS_BUCKET: Record<string, _PolicyBucket> = {
+  active:        "active",
+  revisit_due:   "review",
+  pre_effective: "review",
+  announced:     "review",
+  past:          "expired",
+};
+
+/** Compact pill tone per bucket — quiet by design.  ACTIVE is barely a
+ *  chip so a row of mostly-active policies doesn't read as repeated
+ *  noise; REVIEW carries the only saturated accent so the eye lands on
+ *  the action item; EXPIRED is a ghost outline. */
+const _POLICY_PILL_TONE: Record<_PolicyBucket, string> = {
+  active:  "bg-white/[0.04] text-on-surface-variant/80",
+  review:  "bg-[#ee7d77]/12 text-[#f4a8a4]",
+  expired: "text-on-surface-variant/45 ring-1 ring-inset ring-white/[0.05]",
+};
+
+/** Status priority — drives sort order and the right-side status pill tone.
+ *  revisit_due (urgent ask) ranks first, then live/imminent, then heads-up. */
+const _STATUS_PRIORITY: Record<PolicyItem["status"], number> = {
+  revisit_due:   0,
+  active:        1,
+  pre_effective: 2,
+  announced:     3,
+  past:          99,
+};
+
+const _DEFAULT_VISIBLE = 4;
+
+/** Pure helper — strip past items and sort by status priority then by
+ *  proximity (days_until ASC for non-revisit; days_until_revisit ASC for
+ *  revisit items).  Exported for unit tests. */
+export function _sortPolicyItems(items: PolicyItem[]): PolicyItem[] {
+  const live = items.filter((i) => i.status !== "past");
+  return live.slice().sort((a, b) => {
+    const pa = _STATUS_PRIORITY[a.status];
+    const pb = _STATUS_PRIORITY[b.status];
+    if (pa !== pb) return pa - pb;
+    const aProx = a.status === "revisit_due" ? a.days_until_revisit : a.days_until;
+    const bProx = b.status === "revisit_due" ? b.days_until_revisit : b.days_until;
+    return aProx - bProx;
+  });
 }
 
-function PolicyItemChip({ item }: { item: PolicyItem }) {
-  const isAnnounced  = item.status === "announced";
-  const isPreEff     = item.status === "pre_effective";
-  const isRevisitDue = item.status === "revisit_due";
+/** Pure visibility split — top-N visible always, the rest hidden behind
+ *  the expandable area.  When ``expanded`` is true the entire list is
+ *  visible.  Exported for unit tests. */
+export function _splitPolicyVisibility(
+  items: PolicyItem[],
+  expanded: boolean,
+  visibleCount: number = _DEFAULT_VISIBLE,
+): { visible: PolicyItem[]; hidden: PolicyItem[] } {
+  if (expanded) return { visible: items, hidden: [] };
+  return {
+    visible: items.slice(0, visibleCount),
+    hidden:  items.slice(visibleCount),
+  };
+}
 
+function _bucketLabelFor(item: PolicyItem): string {
+  // Map the back-end status to one of the three user-facing pill words
+  // (ACTIVE / REVIEW / EXPIRED).  Layers a short timing hint on REVIEW
+  // rows so the user can read urgency without inspecting the row body —
+  // "Review · 2d" / "Review · today".  ACTIVE and EXPIRED are calm.
+  const bucket = _POLICY_STATUS_BUCKET[item.status] ?? "active";
+  if (bucket === "active")  return "Active";
+  if (bucket === "expired") return "Expired";
+  // bucket === "review"
+  const d = item.status === "revisit_due"
+    ? item.days_until_revisit
+    : item.days_until;
+  if (d <= 0) return "Review · today";
+  if (d === 1) return "Review · 1d";
+  return `Review · ${d}d`;
+}
+
+// Card chrome class — matches design/extracted/styles.css ``.card``:
+// section background (#13131a), 8px radius, 18px 20px padding.
+const _POLICY_CARD = "rounded-lg bg-surface-container-low px-5 py-4";
+
+// Card-title class — matches design ``.card .card-title``: Manrope 600,
+// 12.5px, ink-2, 0.08em letter-spacing, UPPERCASE, 14px bottom margin.
+const _POLICY_CARD_TITLE =
+  "font-headline text-[12.5px] font-semibold uppercase tracking-[0.08em] text-on-surface-variant";
+
+// Inter-row separator — matches design ``--line``: rgba(255,255,255,0.055).
+const _POLICY_ROW_SEP = "border-white/[0.055]";
+
+function PolicyItemRow({ item, isLast }: { item: PolicyItem; isLast: boolean }) {
   const typeLabel = _POLICY_TYPE_LABEL[item.policy_type] ?? item.policy_type;
-  const typeColor = _POLICY_TYPE_COLOR[item.policy_type] ?? "text-muted-foreground/60";
-
-  const timingLabel = (isAnnounced || isPreEff)
-    ? item.days_until === 1 ? "Tomorrow"
-      : item.days_until === 0 ? "Today"
-      : `in ${item.days_until}d`
-    : _revisitLabel(item.days_until_revisit);
+  const typeTone = _POLICY_TYPE_LABEL_TONE[item.policy_type] ?? "text-on-surface-variant/75";
+  const stripeTone = _POLICY_TYPE_STRIPE[item.policy_type] ?? "bg-on-surface-variant/30";
+  const bucket = _POLICY_STATUS_BUCKET[item.status] ?? "active";
+  const pillTone = _POLICY_PILL_TONE[bucket];
 
   return (
+    // Compact policy row — full-width, two-line layout:
+    //   left: type-tinted vertical accent stripe (felt, not loud)
+    //   centre: TYPE · REGION kicker + truncated short title
+    //   right: compact, quiet status pill (ACTIVE / REVIEW / EXPIRED)
+    // No hover-only tooltip drives the read; the visible kicker, title,
+    // and status pill carry the whole primary meaning.
     <div
-      title={item.description}
       className={cn(
-        "flex items-center gap-2 rounded px-2.5 py-1.5 shrink-0 border",
-        isRevisitDue ? "bg-[#242533] border-[#ee7d77]/25"
-          : isPreEff ? "bg-[#242533] border-[#facc15]/25"
-          : isAnnounced ? "bg-[#13131a] border-border/15 opacity-75"
-          : "bg-[#13131a] border-border/20 opacity-65",
+        "relative flex w-full items-center gap-3 py-2.5 pl-3 pr-1",
+        !isLast && cn("border-b", _POLICY_ROW_SEP),
       )}
     >
+      {/* Left accent stripe — full row height; carries the policy type. */}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-r-sm",
+          stripeTone,
+        )}
+      />
+
+      {/* Body — TYPE · REGION kicker, then short title */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "text-[11px] font-semibold uppercase tracking-[0.1em]",
+            typeTone,
+          )}>
+            {typeLabel}
+          </span>
+          <span className="text-on-surface-variant/30">·</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.04em] text-on-surface-variant/55">
+            {item.jurisdiction}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-[12.5px] leading-snug text-on-surface">
+          {item.name}
+        </p>
+      </div>
+
+      {/* Status pill — design ``.pill``: 2px 9px padding, fully rounded,
+          11px text, weight 500, nowrap.  Quiet by tone (ACTIVE = barely
+          a chip, REVIEW = single saturated accent, EXPIRED = ghost). */}
       <span className={cn(
-        "h-1.5 w-1.5 rounded-full shrink-0",
-        isRevisitDue ? "bg-[#ee7d77]"
-          : isPreEff  ? "bg-[#facc15]"
-          : isAnnounced ? "bg-[#93d1d3]/30"
-          : "bg-muted-foreground/25",
-      )} />
-      <span className={cn("text-[9px] font-bold uppercase tracking-wider shrink-0", typeColor)}>
-        {typeLabel}
-      </span>
-      <span className="text-[9px] font-bold text-muted-foreground/45 shrink-0 uppercase tracking-wide">
-        {item.jurisdiction}
-      </span>
-      <span className="text-[11px] font-semibold text-foreground/80 max-w-[160px] truncate">
-        {item.name}
-      </span>
-      <span className={cn(
-        "text-[10px] font-num shrink-0 tabular-nums",
-        isRevisitDue ? "text-[#ee7d77]/80"
-          : isPreEff  ? "text-[#facc15]/80"
-          : "text-muted-foreground/40",
+        "shrink-0 inline-flex items-center rounded-full px-2.5 py-[2px]",
+        "text-[11px] font-medium uppercase tracking-[0.08em] whitespace-nowrap",
+        pillTone,
       )}>
-        {timingLabel}
+        {_bucketLabelFor(item)}
       </span>
     </div>
   );
 }
 
 function PolicyTrackerStrip({ items }: { items: PolicyItem[] }) {
-  const visible = items.filter((i) => i.status !== "past");
-  if (visible.length === 0) return null;
+  const sorted = _sortPolicyItems(items);
+  const [expanded, setExpanded] = useState(false);
+  if (sorted.length === 0) return null;
+
+  const { visible, hidden } = _splitPolicyVisibility(sorted, expanded);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 uppercase tracking-widest">
-        <Scale className="h-3 w-3" />
-        <span>Policy Tracker</span>
+    // Card wrapper from design/extracted/screens/market.jsx — same chrome
+    // the design uses for the editorial Highlights list, repurposed here
+    // for the Policy Tracker.  Trending Themes and other sections sit
+    // visually separate below this card.
+    <section
+      data-testid="policy-tracker"
+      className={_POLICY_CARD}
+    >
+      <div className="mb-3.5 flex items-baseline gap-2">
+        <Scale className="h-3 w-3 text-on-surface-variant/55 self-center" />
+        <h3 className={_POLICY_CARD_TITLE}>
+          POLICY TRACKER
+        </h3>
+        <span className="ml-auto font-mono text-[11px] tabular-nums text-on-surface-variant/45">
+          {sorted.length} active
+        </span>
       </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-        {visible.map((item) => (
-          <PolicyItemChip key={`${item.policy_type}-${item.effective_date}-${item.name}`} item={item} />
-        ))}
+
+      {/* highlights-list — design ``.highlights-list`` is a flex column
+          with 2px gap; the per-row 1px ghost-border supplies the visual
+          separation, not the gap. */}
+      <div className="flex flex-col">
+        {visible.map((item, idx) => {
+          const isLast = idx === visible.length - 1 && hidden.length === 0;
+          return (
+            <PolicyItemRow
+              key={`${item.policy_type}-${item.effective_date}-${item.name}`}
+              item={item}
+              isLast={isLast}
+            />
+          );
+        })}
       </div>
-    </div>
+
+      {hidden.length > 0 && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-2 flex w-full items-center justify-between rounded-md bg-white/[0.018] px-3 py-2 text-[11px] font-medium text-on-surface-variant/70 transition-colors hover:bg-white/[0.03] hover:text-on-surface"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <ChevronDown className="h-3 w-3" />
+            View all policies
+          </span>
+          <span className="font-mono tabular-nums text-on-surface-variant/55">+{hidden.length}</span>
+        </button>
+      )}
+
+      {expanded && sorted.length > _DEFAULT_VISIBLE && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="mt-2 flex w-full items-center gap-1.5 rounded-md bg-white/[0.018] px-3 py-2 text-[11px] font-medium text-on-surface-variant/70 transition-colors hover:bg-white/[0.03] hover:text-on-surface"
+        >
+          <ChevronDown className="h-3 w-3 rotate-180" />
+          Collapse
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -250,6 +465,163 @@ function TrendingThemesStrip({
 }
 
 // ---------------------------------------------------------------------------
+// Cluster-level macro surprise badge
+// ---------------------------------------------------------------------------
+
+const _MACRO_SURPRISE_LABEL: Record<string, string> = {
+  beat:    "Beat",
+  miss:    "Miss",
+  in_line: "In line",
+  unknown: "Print",
+};
+
+const _MACRO_SURPRISE_COLOR: Record<string, string> = {
+  beat:    "border-[#93d1d3]/35 bg-[#93d1d3]/10 text-[#93d1d3]",
+  miss:    "border-[#ee7d77]/35 bg-[#ee7d77]/10 text-[#ee7d77]",
+  in_line: "border-border/40 bg-secondary/40 text-foreground/65",
+  unknown: "border-border/40 bg-secondary/40 text-muted-foreground",
+};
+
+function _fmtNum(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1000) return value.toLocaleString();
+  if (Number.isInteger(value)) return value.toString();
+  return value.toFixed(2);
+}
+
+// ---------------------------------------------------------------------------
+// Per-row policy timing strip
+// ---------------------------------------------------------------------------
+
+const _POLICY_TIMING_LABEL: Record<PolicyTimingStatus, string> = {
+  announced:    "Announced",
+  effective:    "Effective",
+  under_review: "Under Review",
+  expired:      "Expired",
+};
+
+// Announced vs effective must read as visually distinct states — teal for
+// future-dated policy (anticipation), coral for in-force (material impact
+// priced in), muted yellow for active review, dimmed neutral for expired.
+const _POLICY_TIMING_STYLE: Record<PolicyTimingStatus, {
+  border: string; bg: string; text: string; dot: string;
+}> = {
+  announced: {
+    border: "border-[#93d1d3]/35",
+    bg:     "bg-[#93d1d3]/10",
+    text:   "text-[#93d1d3]",
+    dot:    "bg-[#93d1d3]",
+  },
+  effective: {
+    border: "border-[#ee7d77]/35",
+    bg:     "bg-[#ee7d77]/10",
+    text:   "text-[#ee7d77]",
+    dot:    "bg-[#ee7d77]",
+  },
+  under_review: {
+    border: "border-[#facc15]/30",
+    bg:     "bg-[#facc15]/8",
+    text:   "text-[#facc15]/85",
+    dot:    "bg-[#facc15]/80",
+  },
+  expired: {
+    border: "border-border/40",
+    bg:     "bg-secondary/40",
+    text:   "text-muted-foreground/55",
+    dot:    "bg-muted-foreground/40",
+  },
+};
+
+/**
+ * Compact per-row policy-timing strip.  Rendered ONLY when the cluster
+ * carries a ``policy_timing`` block (deterministic backend match); an
+ * unmatched headline leaves this slot empty so the row shape stays
+ * identical to before.  Announced vs effective carry different accent
+ * colours so the two states read as visually distinct at a glance.
+ */
+export function PolicyTimingStrip({ block }: { block: PolicyTiming }) {
+  const style = _POLICY_TIMING_STYLE[block.status]
+    ?? _POLICY_TIMING_STYLE.announced;
+  const label = _POLICY_TIMING_LABEL[block.status] ?? block.status;
+
+  // Emphasise the key date for the status: announced → when it kicks
+  // in; effective / under_review → when the review lands; expired →
+  // when the review closed.
+  const keyDateLabel =
+    block.status === "announced"   ? `effective ${block.effective_date}`
+    : block.status === "effective" ? `review ${block.review_date}`
+    : block.status === "under_review" ? `review ${block.review_date}`
+    : `review ${block.review_date}`;
+
+  const tooltip = [
+    `announced ${block.announced_date}`,
+    `effective ${block.effective_date}`,
+    `review ${block.review_date}`,
+    `source ${block.source}`,
+  ].join(" · ");
+
+  return (
+    <span
+      title={tooltip}
+      className={cn(
+        "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2 py-[2px]",
+        "text-[9px] font-bold uppercase tracking-wider",
+        style.border, style.bg, style.text,
+      )}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", style.dot)} />
+      <span>{label}</span>
+      <span className="font-num tabular-nums normal-case font-medium opacity-75">
+        {keyDateLabel}
+      </span>
+      <span className="normal-case font-medium opacity-60">
+        · {block.source}
+      </span>
+    </span>
+  );
+}
+
+
+export function MacroSurpriseBadge({ block }: { block: ClusterMacroSurprise }) {
+  const label = block.surprise_label ?? "unknown";
+  const text = _MACRO_SURPRISE_LABEL[label] ?? "Print";
+  const color = _MACRO_SURPRISE_COLOR[label] ?? _MACRO_SURPRISE_COLOR.unknown;
+  const priorDisplay =
+    block.revised_prior !== null && block.revised_prior !== undefined
+      ? `${_fmtNum(block.prior)} → ${_fmtNum(block.revised_prior)}`
+      : _fmtNum(block.prior);
+
+  const tooltip = [
+    `actual ${_fmtNum(block.actual)}`,
+    `consensus ${_fmtNum(block.consensus)}`,
+    `prior ${priorDisplay}`,
+    block.source ? `source ${block.source}` : "",
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <span
+      title={tooltip}
+      className={cn(
+        "shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-[2px] text-[9px] font-bold uppercase tracking-wider",
+        color,
+      )}
+    >
+      <span>{text}</span>
+      <span className="font-num tabular-nums normal-case font-medium opacity-80">
+        {_fmtNum(block.actual)} / {_fmtNum(block.consensus)}
+      </span>
+      {block.revised_prior !== null && block.revised_prior !== undefined && (
+        <span className="font-num tabular-nums normal-case font-medium opacity-65">
+          (rev {_fmtNum(block.revised_prior)})
+        </span>
+      )}
+    </span>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
 // Headline row
 // ---------------------------------------------------------------------------
 
@@ -297,6 +669,8 @@ function HeadlineRow({
       <span className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-foreground line-clamp-2">
         {c.headline}
       </span>
+      {c.policy_timing && <PolicyTimingStrip block={c.policy_timing} />}
+      {c.macro_surprise && <MacroSurpriseBadge block={c.macro_surprise} />}
       {failed && (
         <span className="shrink-0 flex items-center gap-1 text-[9px] font-bold text-error-dim/70">
           <AlertTriangle className="h-3 w-3" />
@@ -429,10 +803,18 @@ export function HeadlinesPage({ onAnalyze, failedHeadlines }: HeadlinesPageProps
   const trends = trendsData ?? [];
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
-    queryKey: qk.newsPaginated(PAGE_SIZE),
-    queryFn: ({ pageParam }: { pageParam: number }) => api.news(PAGE_SIZE, pageParam),
+    queryKey: headlinesInfiniteKey(PAGE_SIZE),
+    // Always resolve to a normalised NewsResponse shape — even if the
+    // backend returns a partial / degraded payload — so downstream
+    // ``data.pages`` reads can rely on `clusters` / `total_count` /
+    // `next_cursor` being present.  Network/HTTP errors still propagate
+    // (api.news throws an ApiError) and surface via `isError`.
+    queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
+      const raw = await api.news(PAGE_SIZE, pageParam);
+      return _normalizeNewsPage(raw);
+    },
     getNextPageParam: _getNextPageParam,
-    initialPageParam: 0,
+    initialPageParam: undefined as string | undefined,
     staleTime: 300_000,
   });
 
@@ -448,16 +830,23 @@ export function HeadlinesPage({ onAnalyze, failedHeadlines }: HeadlinesPageProps
     return () => obs.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Guard: p.clusters may be undefined if a page came back malformed.
-  // flatMap preserves undefined entries which then crash c.headline access.
-  const allClusters = data?.pages.flatMap((p) => p?.clusters ?? []) ?? [];
-  const totalCount = data?.pages[0]?.total_count ?? 0;
+  // Defensive page-array unwrap.  `data` can be undefined (initial mount
+  // before the first fetch resolves), `data.pages` is contractually a
+  // TPage[] in TanStack v5 but we still belt-and-brace in case a stale
+  // cache slot returns something else, and each page is normalised by
+  // ``_normalizeNewsPage`` so per-cluster reads never see undefined.
+  const pages: NewsResponse[] = Array.isArray(data?.pages)
+    ? data.pages.map((page) => _normalizeNewsPage(page))
+    : [];
+  const firstPage: NewsResponse | undefined = pages[0];
+  const allClusters: NewsCluster[] = pages.flatMap((p) => p?.clusters ?? []);
+  const totalCount = firstPage?.total_count ?? 0;
   // Effective refresh metadata: prefer the manual-refresh result, fall back
   // to the initial page load's refresh_meta so the status shows on cold start.
-  const effectiveMeta = lastMeta ?? data?.pages[0]?.refresh_meta ?? null;
+  const effectiveMeta = lastMeta ?? firstPage?.refresh_meta ?? null;
   // Macro releases come from the first page (static calendar data, same on every page)
-  const macroReleases = data?.pages[0]?.macro_releases ?? [];
-  const policyItems   = data?.pages[0]?.policy_items   ?? [];
+  const macroReleases = firstPage?.macro_releases ?? [];
+  const policyItems   = firstPage?.policy_items   ?? [];
 
   // Auto-refresh once on page load when news data is stale or degraded.
   const autoRefreshedRef = useRef(false);
@@ -552,10 +941,33 @@ export function HeadlinesPage({ onAnalyze, failedHeadlines }: HeadlinesPageProps
 
       {/* Error fallback — query failed and no cached data */}
       {isError && !isLoading && allClusters.length === 0 && (
-        <div className="py-8 text-center">
-          <p className="text-sm text-muted-foreground">Unable to load headlines.</p>
-          <p className="text-xs text-muted-foreground/50 mt-1">
+        <div className="rounded-lg bg-card px-4 py-8 text-center">
+          <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-destructive/70" />
+          <p className="text-[13px] font-medium text-on-surface">Unable to load headlines.</p>
+          <p className="mt-1 text-[11px] text-on-surface-variant/70">
             Check that the backend is running, then refresh.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="mt-3 h-7 px-3 text-[11px]"
+          >
+            <RotateCw className={cn("mr-1 h-3 w-3", refreshing && "animate-spin")} />
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Empty fallback — successful load but no clusters returned. Keeps
+          the page rendering a stable surface instead of an empty grid. */}
+      {!isLoading && !isError && allClusters.length === 0 && (
+        <div className="rounded-lg bg-card px-4 py-8 text-center">
+          <Newspaper className="mx-auto mb-2 h-5 w-5 text-on-surface-variant/45" />
+          <p className="text-[13px] font-medium text-on-surface">No headlines available.</p>
+          <p className="mt-1 text-[11px] text-on-surface-variant/70">
+            The feed returned no clusters — try refreshing in a moment.
           </p>
         </div>
       )}

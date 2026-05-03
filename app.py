@@ -16,7 +16,7 @@ from analyze_event import analyze_event, is_mock
 from market_check import market_check as run_market_check, followup_check
 from db import (init_db, save_event, load_recent_events,
                 find_related_events, update_review)
-from news_sources import fetch_all, cluster_headlines, source_tier
+from news_sources import fetch_all, cluster_headlines, source_tier, normalize_headline
 
 # ---------------------------------------------------------------------------
 # CSS — editorial palette, no trader-terminal colours
@@ -563,7 +563,7 @@ else:
 
         # Inline analysis
         if is_active:
-            headline = cluster["headline"].strip()[:500]
+            headline = normalize_headline(cluster["headline"])[:500]
             cached = st.session_state.active_result
             cached_date = cached["event_date"] if cached else None
             current_date = event_date_input.strftime("%Y-%m-%d") if event_date_input else None

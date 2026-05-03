@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 from datetime import datetime, timedelta
+from typing import Any
 
 DB_FILE = "events.db"
 
@@ -104,15 +105,109 @@ def init_db() -> None:
             # Computed in routes/analyze.py after market_check; persisted so
             # the frozen-archive response path can surface the original reading.
             "ALTER TABLE events ADD COLUMN narrative_divergence TEXT DEFAULT '{}'",
+            # Credit regime — HY/IG/SHY classification (default-risk vs duration
+            # widening, risk-on/off, decoupled).  Computed alongside the other
+            # overlays; persisted so the frozen-archive path serves the reading
+            # captured at analysis time rather than today's tape.
+            "ALTER TABLE events ADD COLUMN credit_regime TEXT DEFAULT '{}'",
+            # Credit transmission — funding-stress verdict, equity-vs-credit
+            # separation, sector exposures derived from credit_regime + stress
+            # + rates_context at analysis time.
+            "ALTER TABLE events ADD COLUMN credit_transmission TEXT DEFAULT '{}'",
+            # Mechanism-depth fields — structured transmission path (list of hop
+            # dicts), substitution barriers / bottlenecks, counterforces /
+            # blockers, and the adversarial steel-manned counter-thesis.
+            # All four are LLM-core outputs produced by analyze_event.
+            "ALTER TABLE events ADD COLUMN transmission_path TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN substitution_barriers TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN counterforces TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN adversarial_challenge TEXT DEFAULT ''",
+            # Horizon-aware checkpoints — 1d / 5d / 20d expected / confirms_if /
+            # falsifies_if entries + timing_profile.  LLM-core output, persisted
+            # so cache hits surface the exact checkpoints the thesis was saved
+            # under rather than regenerating them against today's tape.
+            "ALTER TABLE events ADD COLUMN horizon_checkpoints TEXT DEFAULT '{}'",
+            # Mechanism family + expected channel packs.  LLM commits to a
+            # single archetype (tariff, sanction, bank_stress, ...) plus the
+            # first / second order channel lists; a keyword-based fallback
+            # fills the family when the LLM output is thin.
+            "ALTER TABLE events ADD COLUMN mechanism_family TEXT DEFAULT 'none'",
+            "ALTER TABLE events ADD COLUMN expected_first_order_channels TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN expected_second_order_channels TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN regime_conditioned_caveat TEXT DEFAULT ''",
+            # Optional pointer from a news event to the macro release it was
+            # triggered by / clustered around (e.g. a Fed decision or CPI
+            # print).  NULL on events that aren't macro-tagged.  See
+            # ``macro_surprises.py`` for the release-side table.
+            "ALTER TABLE events ADD COLUMN macro_release_id INTEGER DEFAULT NULL",
+            # Institutional research fields — ranked asset buckets and
+            # flat falsifier / proof-set lists.  All five are JSON-encoded
+            # list columns; _EVENT_LIST_FIELDS below walks them so
+            # ``load_recent_events`` decodes them to lists (not strings).
+            # Non-destructive: legacy rows default to '[]' so
+            # ``analyze_event.build_analysis_dict`` fills them from
+            # ``_LLM_CORE_DEFAULTS`` on read.
+            "ALTER TABLE events ADD COLUMN primary_assets TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN secondary_assets TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN hedge_or_signal_assets TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN key_falsifiers TEXT DEFAULT '[]'",
+            "ALTER TABLE events ADD COLUMN minimum_proof_set TEXT DEFAULT '[]'",
+            # competing_thesis — head-to-head rival-read block
+            # ({primary_thesis, alternative_thesis, discriminator, ...}).
+            # JSON-encoded dict column; _EVENT_DICT_FIELDS below walks
+            # it so _decode_event_row returns a dict, not a raw string.
+            "ALTER TABLE events ADD COLUMN competing_thesis TEXT DEFAULT '{}'",
+            # Derived proof / falsifier verdicts.  Computed by
+            # ``proof_evaluator`` at save / refresh / revisit time from
+            # already-observed evidence (market_tickers + revisit).
+            # Legacy rows read back as stable empty dicts via the
+            # ``_EVENT_DICT_FIELDS`` decoder below.
+            "ALTER TABLE events ADD COLUMN proof_status TEXT DEFAULT '{}'",
+            "ALTER TABLE events ADD COLUMN falsifier_status TEXT DEFAULT '{}'",
+            # Per-event macro release context — attached when an event's
+            # headline maps to a known macro release (CPI / PPI / NFP /
+            # Unemployment / PCE within the release window).  JSON-encoded
+            # dict carrying ``release_key / release_time / actual / prior /
+            # revised_prior / consensus / surprise_label / source``.
+            # Old rows default to ``{}`` and are coerced to the canonical
+            # empty-shape at the HTTP boundary.  See
+            # ``macro_surprise.build_event_macro_release_context``.
+            "ALTER TABLE events ADD COLUMN macro_release_context TEXT DEFAULT '{}'",
+            # Per-event policy timing context — attached when an event's
+            # headline matches a tracked regulatory / trade / rate policy.
+            # JSON-encoded dict carrying ``policy_key / announced_date /
+            # effective_date / review_date / status / source``.  Mirrors
+            # the macro_release_context storage pattern: old rows default
+            # to ``{}`` and are coerced to the canonical empty shape at
+            # the HTTP boundary.  See
+            # ``policy_timing.build_event_policy_timing_context``.
+            "ALTER TABLE events ADD COLUMN policy_timing_context TEXT DEFAULT '{}'",
+            # Per-event country vulnerability context — attached when an
+            # event's text resolves to a profiled country in
+            # ``country_backdrop.COUNTRY_BACKDROP_FIXTURE``.  JSON-encoded
+            # dict carrying ``country / external_balance_risk /
+            # import_shock_risk / commodity_dependence /
+            # overall_vulnerability / rationale / stale``.  Same storage
+            # pattern as the two blocks above: empty dict for unmatched
+            # rows, coerced at the HTTP boundary.  See
+            # ``country_backdrop.build_event_country_vulnerability_context``.
+            "ALTER TABLE events ADD COLUMN country_vulnerability_context TEXT DEFAULT '{}'",
         ]
         for sql in _migrations:
             try:
                 conn.execute(sql)
             except sqlite3.OperationalError as e:
+                # Only "duplicate column" is expected — every other
+                # ``OperationalError`` (locked DB, malformed SQL, missing
+                # table, disk-full, etc.) means the schema upgrade did
+                # NOT complete and the runtime would later corrupt or
+                # crash on a column it expected to exist.  Fail loudly
+                # so the operator sees the problem at startup rather
+                # than as a confusing read-time error.
                 if "duplicate column" in str(e).lower():
-                    pass  # expected — column already exists
-                else:
-                    print(f"[db] Migration warning: {e} — SQL: {sql}")
+                    continue
+                print(f"[db] Migration FAILED: {e} — SQL: {sql}")
+                raise
 
         # Separate cache table for news payloads — not versioned with events.
         conn.execute("""
@@ -212,6 +307,141 @@ def init_db() -> None:
             ON news_headline_assignments (cluster_id)
         """)
 
+        # Headline registry — one row per ingested (source, title_key).
+        # Tracks the lifecycle of every ingested headline independently
+        # of the cluster store and the events table.  See
+        # docs/superpowers/specs/2026-05-03-headline-registry-design.md.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS headline_registry (
+                source           TEXT NOT NULL,
+                title_key        TEXT NOT NULL,
+                cluster_id       INTEGER,
+                event_id         INTEGER,
+                state            TEXT NOT NULL DEFAULT 'seen',
+                last_skip_reason TEXT,
+                impact_level     TEXT,
+                first_seen_at    TEXT NOT NULL,
+                last_seen_at     TEXT NOT NULL,
+                analyzed_at      TEXT,
+                expired_at       TEXT,
+                PRIMARY KEY (source, title_key)
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_headline_registry_state
+            ON headline_registry (state)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_headline_registry_analyzed_at
+            ON headline_registry (analyzed_at)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_headline_registry_cluster
+            ON headline_registry (cluster_id)
+        """)
+
+        # Saved study definitions — persistent, deterministic research
+        # configurations (cohort comparison, correlation study, scenario
+        # pack research, cascade view).  Stores only inputs/filters, never
+        # snapshots of computed output; callers re-execute the config on
+        # load to produce fresh results.  UNIQUE(study_type, name) means
+        # a user must pass overwrite=True to reuse a name.  See
+        # saved_studies.py.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS saved_studies (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                study_type  TEXT NOT NULL,
+                name        TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                config_json TEXT NOT NULL,
+                created_at  TEXT NOT NULL,
+                updated_at  TEXT NOT NULL,
+                UNIQUE(study_type, name)
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_saved_studies_type
+            ON saved_studies (study_type)
+        """)
+
+        # Persistent macro releases — one row per scheduled release (CPI,
+        # NFP, FOMC, ECB, ...).  Stores the consensus ``expected`` value,
+        # the actual ``realized`` value once published, the derived
+        # ``surprise`` = realized − expected, and normalised
+        # direction/magnitude fields computed at insert time against the
+        # historical distribution of prior surprises for the same series.
+        # See ``macro_surprises.py`` for semantics.
+        #
+        # Natural dedup key is ``(series, release_time)`` — the same
+        # series cannot have two different prints at the same timestamp.
+        # ``release_id`` is a convenience string the ingestion side may
+        # generate for stable external references but is not the primary
+        # dedup lever.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS macro_releases (
+                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                release_id         TEXT,
+                series             TEXT NOT NULL,
+                category           TEXT NOT NULL,
+                country            TEXT NOT NULL DEFAULT '',
+                release_time       TEXT NOT NULL,
+                expected           REAL,
+                realized           REAL,
+                unit               TEXT NOT NULL DEFAULT '',
+                surprise           REAL,
+                surprise_zscore    REAL,
+                surprise_direction TEXT,
+                surprise_magnitude TEXT,
+                prior_sample_size  INTEGER NOT NULL DEFAULT 0,
+                notes              TEXT NOT NULL DEFAULT '',
+                created_at         TEXT NOT NULL,
+                updated_at         TEXT NOT NULL,
+                UNIQUE(series, release_time)
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_macro_releases_series_time
+            ON macro_releases (series, release_time)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_macro_releases_country_time
+            ON macro_releases (country, release_time)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_macro_releases_release_id
+            ON macro_releases (release_id)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_events_macro_release
+            ON events (macro_release_id)
+        """)
+
+        # Official release facts cache.  Keyed by ``release_key`` —
+        # a synthetic string like ``"CPI:2026-04-10"`` that ties a
+        # ``macro_calendar`` entry (name + date) to the official
+        # values published by BLS / BEA / etc.  Separate from
+        # ``macro_releases`` (which carries surprise z-scores against
+        # series like ``us_cpi_yoy``) because the calendar surfaces
+        # display names without the unit suffix and feeds need a
+        # lightweight write target that doesn't recompute history.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS macro_release_facts (
+                release_key   TEXT PRIMARY KEY,
+                release_time  TEXT NOT NULL,
+                actual        REAL,
+                prior         REAL,
+                revised_prior REAL,
+                consensus     REAL,
+                source        TEXT NOT NULL DEFAULT '',
+                created_at    TEXT NOT NULL,
+                updated_at    TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_macro_release_facts_time
+            ON macro_release_facts (release_time)
+        """)
+
     _db_ready = True
 
 
@@ -306,6 +536,30 @@ def _is_duplicate(conn: sqlite3.Connection, headline: str,
     return row is not None
 
 
+def _compute_proof_block(event: dict) -> dict:
+    """Late-import wrapper for ``proof_evaluator.evaluate_proof_status``.
+
+    Kept local so ``db`` doesn't import ``proof_evaluator`` at module
+    load (which would pull ``asset_selection`` → ``validation_outcome``
+    in before the DB is ready, and also risks a bootstrap loop when
+    other modules import ``db``).
+    """
+    try:
+        from proof_evaluator import evaluate_proof_status
+        return evaluate_proof_status(event)
+    except Exception:
+        return {}
+
+
+def _compute_falsifier_block(event: dict) -> dict:
+    """Late-import wrapper for ``proof_evaluator.evaluate_falsifier_status``."""
+    try:
+        from proof_evaluator import evaluate_falsifier_status
+        return evaluate_falsifier_status(event)
+    except Exception:
+        return {}
+
+
 def save_event(event: dict) -> None:
     """Insert one event record into the database.
 
@@ -368,11 +622,33 @@ def save_event(event: dict) -> None:
                     regime_snapshot, last_market_check_at,
                     real_yield_context, policy_constraint, shock_decomposition,
                     reaction_function_divergence, surprise_vs_anticipation,
-                    terms_of_trade, reserve_stress, narrative_divergence
+                    terms_of_trade, reserve_stress, narrative_divergence,
+                    credit_regime, credit_transmission,
+                    transmission_path, substitution_barriers, counterforces,
+                    adversarial_challenge, horizon_checkpoints,
+                    mechanism_family, expected_first_order_channels,
+                    expected_second_order_channels, regime_conditioned_caveat,
+                    primary_assets, secondary_assets, hedge_or_signal_assets,
+                    key_falsifiers, minimum_proof_set,
+                    competing_thesis,
+                    proof_status, falsifier_status,
+                    macro_release_context,
+                    policy_timing_context,
+                    country_vulnerability_context
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?,
+                    ?, ?,
+                    ?,
+                    ?,
+                    ?
                 )
             """, (
                 ts_value,
@@ -406,6 +682,49 @@ def save_event(event: dict) -> None:
                 json.dumps(event.get("terms_of_trade", {})),
                 json.dumps(event.get("reserve_stress", {})),
                 json.dumps(event.get("narrative_divergence", {})),
+                json.dumps(event.get("credit_regime", {})),
+                json.dumps(event.get("credit_transmission", {})),
+                json.dumps(event.get("transmission_path", [])),
+                json.dumps(event.get("substitution_barriers", [])),
+                json.dumps(event.get("counterforces", [])),
+                event.get("adversarial_challenge", ""),
+                json.dumps(event.get("horizon_checkpoints", {})),
+                event.get("mechanism_family", "none"),
+                json.dumps(event.get("expected_first_order_channels", [])),
+                json.dumps(event.get("expected_second_order_channels", [])),
+                event.get("regime_conditioned_caveat", ""),
+                # Institutional research fields — stored as JSON lists.
+                json.dumps(event.get("primary_assets", [])),
+                json.dumps(event.get("secondary_assets", [])),
+                json.dumps(event.get("hedge_or_signal_assets", [])),
+                json.dumps(event.get("key_falsifiers", [])),
+                json.dumps(event.get("minimum_proof_set", [])),
+                # competing_thesis — dict or {} when LLM omits it.
+                json.dumps(event.get("competing_thesis", {})),
+                # Derived proof / falsifier verdicts — evaluated from
+                # the same ticker evidence the validation layer uses.
+                # Late import avoids a db → proof_evaluator →
+                # validation_outcome → db bootstrap loop.
+                json.dumps(_compute_proof_block(event)),
+                json.dumps(_compute_falsifier_block(event)),
+                # Macro release context — caller is expected to have
+                # already built the block (analysis pipeline calls
+                # ``macro_surprise.build_event_macro_release_context``).
+                # Events that don't map to any release land as ``{}``
+                # and are coerced at the HTTP boundary.
+                json.dumps(event.get("macro_release_context", {})),
+                # Policy timing context — same pattern as
+                # macro_release_context: caller pre-builds via
+                # ``policy_timing.build_event_policy_timing_context``,
+                # empty dict stored for unmatched headlines, coerced
+                # at the HTTP boundary.
+                json.dumps(event.get("policy_timing_context", {})),
+                # Country vulnerability context — same pattern again:
+                # caller pre-builds via
+                # ``country_backdrop.build_event_country_vulnerability_context``;
+                # empty dict for events that don't mention any
+                # profiled country.
+                json.dumps(event.get("country_vulnerability_context", {})),
             ))
             conn.execute("COMMIT")
         except Exception:
@@ -448,13 +767,45 @@ def update_event_market_refresh(
     if not _db_ready:
         return False
     with sqlite3.connect(DB_FILE) as conn:
+        # Pull the proof-structure fields so we can recompute the
+        # derived proof / falsifier verdicts against the refreshed
+        # tickers.  No new fetches — just re-running the classifier on
+        # whatever we're about to persist.
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute(
+            "SELECT minimum_proof_set, key_falsifiers "
+            "FROM events WHERE id = ?",
+            (event_id,),
+        ).fetchone()
+        if existing is None:
+            return False
+        try:
+            mps = json.loads(existing["minimum_proof_set"] or "[]")
+        except (json.JSONDecodeError, TypeError):
+            mps = []
+        try:
+            kfs = json.loads(existing["key_falsifiers"] or "[]")
+        except (json.JSONDecodeError, TypeError):
+            kfs = []
+        refreshed_event = {
+            "market_tickers":     market_tickers or [],
+            "minimum_proof_set":  mps,
+            "key_falsifiers":     kfs,
+        }
+        proof_block = _compute_proof_block(refreshed_event)
+        falsifier_block = _compute_falsifier_block(refreshed_event)
+
         cur = conn.execute(
             "UPDATE events SET market_tickers = ?, market_note = ?, "
-            "last_market_check_at = ? WHERE id = ?",
+            "last_market_check_at = ?, "
+            "proof_status = ?, falsifier_status = ? "
+            "WHERE id = ?",
             (
                 json.dumps(market_tickers or []),
                 market_note or "",
                 last_market_check_at,
+                json.dumps(proof_block),
+                json.dumps(falsifier_block),
                 event_id,
             ),
         )
@@ -470,8 +821,141 @@ def update_event_market_refresh(
             # succeeded, and the movers cache will recover on the next
             # TTL expiry even if we can't drop the row now.
             pass
+        # Bust the today-movers in-memory TTL cache too.  An in-place
+        # refresh stamps ``last_market_check_at = now`` so the row is
+        # newly eligible for /movers/today (see the today-window match
+        # rule); without invalidating the in-memory cache the surface
+        # would lag the eligibility change by up to 5 minutes.
+        try:
+            import api as _api
+            _api._TODAYS_MOVERS_CACHE["data"] = None
+        except Exception:
+            pass
 
     return updated
+
+
+def update_event_overlays(
+    event_id: int, overlays: dict[str, Any],
+) -> bool:
+    """Overwrite JSON-serialized overlay blocks on an existing event row.
+
+    Unlike :func:`save_event` / :func:`update_event_market_refresh`, this
+    writer ONLY touches the macro-overlay columns.  The thesis text
+    (``what_changed``, ``mechanism_summary``, ``beneficiaries``, …),
+    ``market_tickers``, review labels (``rating``, ``notes``, ``low_signal``),
+    and the ``last_market_check_at`` stamp all stay exactly as they were
+    — this is the overlay-only refresh path for frozen events, so
+    historical ground-truth must not be overwritten.
+
+    ``overlays`` keys are intersected with ``PERSISTED_OVERLAY_FIELDS``;
+    unknown keys are silently dropped so callers can hand in a partial
+    dict without guarding against schema drift.  Each value is JSON-
+    serialized (``None`` / non-dict becomes ``{}``).
+
+    Returns True when the UPDATE touched an existing row.
+    """
+    if not _db_ready or not overlays:
+        return False
+    from analyze_event import PERSISTED_OVERLAY_FIELDS
+    allowed = set(PERSISTED_OVERLAY_FIELDS)
+    writes = [(k, overlays[k]) for k in overlays if k in allowed]
+    if not writes:
+        return False
+
+    set_clauses = ", ".join(f"{k} = ?" for (k, _) in writes)
+    params: list[Any] = [
+        json.dumps(v if isinstance(v, (dict, list)) else {})
+        for (_, v) in writes
+    ]
+    params.append(event_id)
+    with sqlite3.connect(DB_FILE) as conn:
+        cur = conn.execute(
+            f"UPDATE events SET {set_clauses} WHERE id = ?",
+            params,
+        )
+        return cur.rowcount > 0
+
+
+def update_event_country_vulnerability_context(
+    event_id: int, block: dict | None,
+) -> bool:
+    """Rewrite the ``country_vulnerability_context`` column on one row.
+
+    Same contract as ``update_event_macro_release_context`` /
+    ``update_event_policy_timing_context``: ``{}`` clears the block
+    (coerced to the canonical empty shape at the HTTP boundary);
+    a populated dict rewrites in place.  Returns True when the row
+    existed.
+    """
+    if not _db_ready:
+        return False
+    if block is None:
+        block = {}
+    if not isinstance(block, dict):
+        raise ValueError("country_vulnerability_context must be a dict")
+    payload = json.dumps(block)
+    with sqlite3.connect(DB_FILE) as conn:
+        cur = conn.execute(
+            "UPDATE events SET country_vulnerability_context = ? WHERE id = ?",
+            (payload, event_id),
+        )
+        return cur.rowcount > 0
+
+
+def update_event_policy_timing_context(
+    event_id: int, block: dict | None,
+) -> bool:
+    """Rewrite the ``policy_timing_context`` column on one event row.
+
+    Called by the refresh-market / refresh-overlays / revisit paths
+    after they re-derive the policy match.  Passing ``{}`` clears the
+    block (canonical "no match" state); the HTTP boundary coerces it
+    back into the stable empty-shape dict for consumers.
+
+    Returns True when the UPDATE touched an existing row.
+    """
+    if not _db_ready:
+        return False
+    if block is None:
+        block = {}
+    if not isinstance(block, dict):
+        raise ValueError("policy_timing_context must be a dict")
+    payload = json.dumps(block)
+    with sqlite3.connect(DB_FILE) as conn:
+        cur = conn.execute(
+            "UPDATE events SET policy_timing_context = ? WHERE id = ?",
+            (payload, event_id),
+        )
+        return cur.rowcount > 0
+
+
+def update_event_macro_release_context(
+    event_id: int, block: dict | None,
+) -> bool:
+    """Rewrite the ``macro_release_context`` column on one event row.
+
+    Called by the refresh-market / refresh-overlays / revisit paths
+    after they re-query stored release facts.  Passing an empty dict
+    (``{}``) clears the block, which is the canonical "no mapping"
+    storage state — the HTTP boundary coerces it back into the stable
+    empty-shape dict for consumers.
+
+    Returns True when the UPDATE touched an existing row.
+    """
+    if not _db_ready:
+        return False
+    if block is None:
+        block = {}
+    if not isinstance(block, dict):
+        raise ValueError("macro_release_context must be a dict")
+    payload = json.dumps(block)
+    with sqlite3.connect(DB_FILE) as conn:
+        cur = conn.execute(
+            "UPDATE events SET macro_release_context = ? WHERE id = ?",
+            (payload, event_id),
+        )
+        return cur.rowcount > 0
 
 
 def append_revisit_snapshot(event_id: int, snapshot: dict) -> bool:
@@ -500,7 +984,9 @@ def append_revisit_snapshot(event_id: int, snapshot: dict) -> bool:
         try:
             conn.row_factory = sqlite3.Row
             row = conn.execute(
-                "SELECT revisit_snapshots FROM events WHERE id = ?",
+                "SELECT revisit_snapshots, market_tickers, "
+                "       minimum_proof_set, key_falsifiers "
+                "FROM events WHERE id = ?",
                 (event_id,),
             ).fetchone()
             if row is None:
@@ -516,9 +1002,41 @@ def append_revisit_snapshot(event_id: int, snapshot: dict) -> bool:
             existing = [s for s in existing if s.get("day") != day]
             existing.append(snapshot)
             existing.sort(key=lambda s: s.get("day", 0))
+
+            # Re-evaluate proof / falsifier verdicts so the stored
+            # status reflects the newly-appended revisit row.  Uses
+            # only what we already have in hand — no new fetches.
+            try:
+                mps = json.loads(row["minimum_proof_set"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                mps = []
+            try:
+                kfs = json.loads(row["key_falsifiers"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                kfs = []
+            try:
+                tickers = json.loads(row["market_tickers"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                tickers = []
+            refreshed_event = {
+                "market_tickers":     tickers,
+                "minimum_proof_set":  mps,
+                "key_falsifiers":     kfs,
+                "revisit_snapshots":  existing,
+            }
+            proof_block     = _compute_proof_block(refreshed_event)
+            falsifier_block = _compute_falsifier_block(refreshed_event)
+
             conn.execute(
-                "UPDATE events SET revisit_snapshots = ? WHERE id = ?",
-                (json.dumps(existing), event_id),
+                "UPDATE events SET revisit_snapshots = ?, "
+                "proof_status = ?, falsifier_status = ? "
+                "WHERE id = ?",
+                (
+                    json.dumps(existing),
+                    json.dumps(proof_block),
+                    json.dumps(falsifier_block),
+                    event_id,
+                ),
             )
             conn.execute("COMMIT")
         except Exception:
@@ -850,6 +1368,100 @@ def get_confidence_calibration_stats(min_events: int = 3) -> dict:
     return result
 
 
+def collect_calibration_samples() -> list[dict]:
+    """One normalised sample row per event with a usable directional outcome.
+
+    Shape::
+
+        {
+          "confidence":       "low" | "medium" | "high",
+          "family":           <mechanism_family id or "none">,
+          "compound_regime":  <regime_snapshot.compound.label or "none">,
+          "validated":        bool,
+        }
+
+    ``validated`` mirrors the same ``has_sup`` signal that
+    :func:`get_confidence_calibration_stats` already uses — a
+    revisit-snapshot-preferred, market-tickers-fallback read of whether
+    at least one ticker's direction_tag supports the thesis.  Events
+    with no usable directional outcome are EXCLUDED so the caller's
+    bucket counts aren't diluted by no-op rows.
+
+    Intended for the cascading-fallback lookup in
+    :mod:`confidence_calibration`.  Kept here (instead of in the
+    calibration module) because sample collection is a DB read; the
+    interpretation layer on top of these samples is pure.
+    """
+    if not _db_ready:
+        return []
+
+    with sqlite3.connect(DB_FILE) as conn:
+        # ``regime_snapshot`` and ``mechanism_family`` are both optional
+        # on legacy rows.  Try the full query first; fall back when the
+        # columns aren't present yet on a just-migrated archive.
+        try:
+            rows = conn.execute(
+                "SELECT confidence, market_tickers, revisit_snapshots, "
+                "mechanism_family, regime_snapshot FROM events "
+                "WHERE confidence IN ('low', 'medium', 'high')"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            rows = conn.execute(
+                "SELECT confidence, market_tickers, revisit_snapshots "
+                "FROM events "
+                "WHERE confidence IN ('low', 'medium', 'high')"
+            ).fetchall()
+            rows = [(r[0], r[1], r[2], None, None) for r in rows]
+
+    samples: list[dict] = []
+    for row in rows:
+        conf = row[0] or "low"
+        raw_tickers = row[1]
+        raw_revisit = row[2]
+        raw_family = row[3] if len(row) > 3 else None
+        raw_regime = row[4] if len(row) > 4 else None
+
+        try:
+            revisit_snaps = json.loads(raw_revisit or "[]")
+        except (json.JSONDecodeError, TypeError):
+            revisit_snaps = []
+
+        best = _best_revisit_snapshot(revisit_snaps)
+        if best is not None:
+            has_sup, _has_con, _sup_cnt, dir_cnt = _score_directions(best)
+        else:
+            try:
+                tickers = json.loads(raw_tickers or "[]")
+            except (json.JSONDecodeError, TypeError):
+                tickers = []
+            has_sup, _has_con, _sup_cnt, dir_cnt = _score_directions(tickers)
+
+        if dir_cnt == 0:
+            continue  # no usable outcome for this event
+
+        family = (raw_family or "none").strip() or "none"
+
+        compound_regime = "none"
+        try:
+            regime = json.loads(raw_regime or "null")
+        except (json.JSONDecodeError, TypeError):
+            regime = None
+        if isinstance(regime, dict):
+            compound = regime.get("compound") or {}
+            label = compound.get("label") if isinstance(compound, dict) else None
+            if isinstance(label, str) and label:
+                compound_regime = label
+
+        samples.append({
+            "confidence":      conf,
+            "family":          family,
+            "compound_regime": compound_regime,
+            "validated":       bool(has_sup),
+        })
+
+    return samples
+
+
 # ---------------------------------------------------------------------------
 # Timeline: link related saved events
 # ---------------------------------------------------------------------------
@@ -1116,6 +1728,7 @@ def find_historical_analogs(
     exclude_headline: str = "",
     limit: int = 3,
     current_regime_vector: dict | None = None,
+    current_event_mechanism: dict | None = None,
 ) -> list[dict]:
     """Find past events similar to the current analysis.
 
@@ -1151,12 +1764,34 @@ def find_historical_analogs(
 
     with sqlite3.connect(DB_FILE) as conn:
         conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT headline, event_date, stage, persistence, confidence, "
-            "       market_tickers, mechanism_summary, low_signal, "
-            "       regime_snapshot "
-            "FROM events ORDER BY id DESC LIMIT 500"
-        ).fetchall()
+        # mechanism_family is carried forward so the analog explainer can
+        # compare families directly; older rows default to 'none'.
+        try:
+            rows = conn.execute(
+                "SELECT headline, event_date, stage, persistence, confidence, "
+                "       market_tickers, mechanism_summary, low_signal, "
+                "       regime_snapshot, mechanism_family, "
+                "       transmission_path, expected_first_order_channels "
+                "FROM events ORDER BY id DESC LIMIT 500"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # Older DBs may lack transmission_path or mechanism_family;
+            # fall back to the minimal column set and let the signature
+            # composer tag those rows as thin.
+            try:
+                rows = conn.execute(
+                    "SELECT headline, event_date, stage, persistence, confidence, "
+                    "       market_tickers, mechanism_summary, low_signal, "
+                    "       regime_snapshot, mechanism_family "
+                    "FROM events ORDER BY id DESC LIMIT 500"
+                ).fetchall()
+            except sqlite3.OperationalError:
+                rows = conn.execute(
+                    "SELECT headline, event_date, stage, persistence, confidence, "
+                    "       market_tickers, mechanism_summary, low_signal, "
+                    "       regime_snapshot "
+                    "FROM events ORDER BY id DESC LIMIT 500"
+                ).fetchall()
 
     target_hl_words = _headline_words(headline)
     target_words = set(target_hl_words)
@@ -1167,6 +1802,23 @@ def find_historical_analogs(
 
     # Lower threshold than find_related_events — we want more candidates
     _ANALOG_THRESHOLD = 0.15
+
+    # Transmission-signature boost: when the caller passes the current
+    # event's mechanism metadata, candidates sharing the same
+    # transmission path signature get a deterministic bump.  Keeps
+    # topic match as the base signal but lets "same mechanism, different
+    # headline wording" analogs rise above pure keyword neighbours.
+    _TRANSMISSION_BOOST_SAME_CHAIN = 0.10
+    _TRANSMISSION_BOOST_SAME_FAMILY_CHANNELS = 0.06
+    _TRANSMISSION_BOOST_SAME_FAMILY = 0.03
+
+    current_sig = None
+    if isinstance(current_event_mechanism, dict):
+        try:
+            from transmission_cluster import transmission_signature as _tsig
+            current_sig = _tsig(current_event_mechanism)
+        except Exception:
+            current_sig = None
 
     scored: list[tuple[float, dict]] = []
     for row in rows:
@@ -1241,7 +1893,59 @@ def find_historical_analogs(
         if not isinstance(row_regime, dict):
             row_regime = {}
 
-        scored.append((sim, {
+        # mechanism_family may be absent on legacy rows (pre-column or pre-
+        # stamp); default to 'none' so the explainer renders a "family
+        # unavailable" dimension cleanly.
+        try:
+            row_family = row["mechanism_family"] or "none"
+        except (IndexError, KeyError):
+            row_family = "none"
+
+        # Decode transmission metadata when the row carries it so the
+        # transmission signature can be computed for the boost.  Older
+        # rows that were SELECTed without these columns silently fall
+        # through as empty lists → "thin" signature → no boost.
+        row_tpath: list = []
+        row_efoc: list = []
+        try:
+            row_tpath = json.loads(row["transmission_path"] or "[]")
+        except (TypeError, ValueError, json.JSONDecodeError, IndexError, KeyError):
+            row_tpath = []
+        try:
+            row_efoc = json.loads(row["expected_first_order_channels"] or "[]")
+        except (TypeError, ValueError, json.JSONDecodeError, IndexError, KeyError):
+            row_efoc = []
+
+        transmission_match = None
+        if current_sig is not None:
+            try:
+                from transmission_cluster import (
+                    transmission_signature as _tsig,
+                    transmission_similarity as _tsim,
+                )
+                row_sig = _tsig({
+                    "mechanism_family": row_family,
+                    "transmission_path": row_tpath,
+                    "expected_first_order_channels": row_efoc,
+                })
+                score = _tsim(current_sig, row_sig)
+                # Boost buckets mirror the signature kind so the bump
+                # reflects how much the two events actually share:
+                # same structured chain >> same family+channels >> same family.
+                if row_sig["kind"] == current_sig["kind"] and score >= 0.60:
+                    if row_sig["kind"] == "transmission_path":
+                        sim += _TRANSMISSION_BOOST_SAME_CHAIN
+                        transmission_match = "same_chain"
+                    elif row_sig["kind"] == "family_channels":
+                        sim += _TRANSMISSION_BOOST_SAME_FAMILY_CHANNELS
+                        transmission_match = "same_family_channels"
+                    elif row_sig["kind"] == "family_only":
+                        sim += _TRANSMISSION_BOOST_SAME_FAMILY
+                        transmission_match = "same_family"
+            except Exception:
+                transmission_match = None
+
+        analog_entry = {
             "headline": row_hl,
             "event_date": row["event_date"],
             "stage": row["stage"],
@@ -1253,7 +1957,14 @@ def find_historical_analogs(
             "similarity": round(sim, 3),
             "match_reason": match_reason,
             "regime_snapshot": row_regime if row_regime else None,
-        }))
+            "mechanism_family": row_family,
+        }
+        if transmission_match:
+            analog_entry["transmission_match"] = transmission_match
+            analog_entry["match_reason"] = (
+                match_reason + " · " + transmission_match
+            )
+        scored.append((sim, analog_entry))
 
     # Sort by relevance desc, then recency desc as tiebreaker
     # Use stable two-pass: first by date desc, then by score desc
@@ -1293,20 +2004,77 @@ def find_historical_analogs(
 # load_event_by_id, find_cached_analysis) decodes the exact same set
 # of fields — no more per-call ad-hoc json.loads calls that silently
 # diverge when a new column is added.
+from analyze_event import PERSISTED_OVERLAY_FIELDS as _POF
+
 _EVENT_LIST_FIELDS: tuple[str, ...] = (
     "beneficiaries", "losers", "assets_to_watch",
     "market_tickers", "transmission_chain",
+    "transmission_path", "substitution_barriers", "counterforces",
+    "expected_first_order_channels", "expected_second_order_channels",
     "revisit_snapshots",
+    # Institutional research fields — all five are JSON-encoded list
+    # columns; decode on read so callers see lists, not strings.
+    "primary_assets", "secondary_assets", "hedge_or_signal_assets",
+    "key_falsifiers", "minimum_proof_set",
 )
-_EVENT_DICT_FIELDS: tuple[str, ...] = (
-    "if_persists", "currency_channel", "policy_sensitivity",
-    "inventory_context", "regime_snapshot",
-    # Macro overlays persisted so the frozen cached-response path can
-    # reuse them without re-running live-macro computations.
-    "real_yield_context", "policy_constraint", "shock_decomposition",
-    "reaction_function_divergence", "surprise_vs_anticipation",
-    "terms_of_trade", "reserve_stress",
-)
+# LLM-core dict fields + every persisted overlay.  Derived from the analyze_event
+# registry so a new overlay added there is automatically JSON-decoded on readback;
+# prevents the bug class where a saved overlay silently leaks through as a raw
+# JSON string (and `or {}` doesn't fire because non-empty strings are truthy).
+_EVENT_DICT_FIELDS: tuple[str, ...] = tuple(dict.fromkeys((
+    "if_persists", "currency_channel", "horizon_checkpoints",
+    # Institutional proof-structure dict fields (complement to the five
+    # list-shaped proof-structure columns registered above).
+    "competing_thesis",
+    # Derived verdicts computed by ``proof_evaluator`` — stored as
+    # dicts so ``_decode_event_row`` yields the block shape consumers
+    # expect (never a raw JSON string).
+    "proof_status", "falsifier_status",
+    # Per-event macro release context — decoded so /events/{id}
+    # consumers see the block dict, not a raw JSON string.
+    "macro_release_context",
+    # Per-event policy timing context — same contract.
+    "policy_timing_context",
+    # Per-event country vulnerability context — same contract.
+    "country_vulnerability_context",
+    *_POF,
+)))
+
+
+def _coerce_status_block(value: Any) -> dict:
+    """Coerce a decoded proof_status / falsifier_status value into a
+    stable dict shape.
+
+    Defensive contract for the read path:
+
+    * Any non-dict shape (``None``, string, list, scalar) collapses
+      to ``{}`` — the canonical "never evaluated" marker.  Saving an
+      uncorrupted block always produces a dict, so a non-dict here
+      means the column was hand-edited, mid-migration, or otherwise
+      tampered with; consumers iterating the block must not crash on
+      that bit-rot.
+    * An empty ``{}`` is preserved as-is — distinct from "evaluated
+      with zero items" because rows from before the per-item contract
+      stored ``{}`` to mean "not yet evaluated."
+    * A non-empty dict whose ``items`` key is missing OR is not a list
+      gets ``items`` set to ``[]``.  Consumers of ``GET /events/{id}``
+      iterate the field unconditionally; coercion here is the single
+      read-side guarantee that ``items`` is always iterable.
+
+    Other keys on the dict (verdict, score, etc.) pass through
+    untouched so a valid round-trip is not mutated.  Pure read; never
+    raises.
+    """
+    if not isinstance(value, dict):
+        return {}
+    if not value:
+        return {}
+    items = value.get("items")
+    if isinstance(items, list):
+        return value
+    out = dict(value)
+    out["items"] = []
+    return out
 
 
 def _decode_event_row(row: sqlite3.Row) -> dict:
@@ -1331,6 +2099,15 @@ def _decode_event_row(row: sqlite3.Row) -> dict:
             event[field] = json.loads(raw) if raw else {}
         except (json.JSONDecodeError, TypeError):
             event[field] = {}
+
+    # Defensive coercion for the proof_status / falsifier_status
+    # blocks.  The dict-fields decode above catches invalid JSON, but
+    # a successfully-decoded value can still be the wrong shape
+    # (``null`` → None, scalar string, raw list).  ``_coerce_status_block``
+    # collapses those to the empty-dict signal and ensures non-empty
+    # blocks always carry a list-typed ``items``.
+    for field in ("proof_status", "falsifier_status"):
+        event[field] = _coerce_status_block(event.get(field))
     return event
 
 
@@ -1370,6 +2147,31 @@ def load_events_since(since_ts: str) -> list[dict]:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT * FROM events WHERE timestamp >= ? ORDER BY id DESC",
+            (since_ts,),
+        ).fetchall()
+
+    return [_decode_event_row(row) for row in rows]
+
+
+def load_events_market_checked_since(since_ts: str) -> list[dict]:
+    """Return events whose ``last_market_check_at >= since_ts``, newest id first.
+
+    Companion to :func:`load_events_since`.  Backfill / refresh paths
+    update ``last_market_check_at`` without touching ``timestamp``, so
+    the today-mover surface needs this anchor to surface a recently
+    market-checked older event alongside freshly-saved ones.  NULL
+    ``last_market_check_at`` rows are filtered out by SQLite's three-
+    valued comparison semantics.
+    """
+    if not _db_ready:
+        return []
+
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT * FROM events "
+            "WHERE last_market_check_at >= ? "
+            "ORDER BY id DESC",
             (since_ts,),
         ).fetchall()
 
@@ -1469,13 +2271,34 @@ def find_cached_analysis(
     event_date: str | None = None,
     model: str | None = None,
     max_age_seconds: int = 86400,
+    *,
+    event_id: int | None = None,
 ) -> dict | None:
-    """Return the most recent saved event matching headline + date + model.
+    """Return the most recent saved event matching the cache key.
 
-    event_date: when provided, only matches events with the same anchor date.
-    model: when provided, only matches events analyzed with this model.
-    max_age_seconds: rows older than this are treated as stale (default 24 h).
-    Returns a dict with the saved fields, or None if no match or stale.
+    Routing precedence — when ``event_id`` is provided, lookup is by
+    primary key only (still TTL- and mock-guarded); ``headline`` /
+    ``event_date`` / ``model`` are ignored and the headline fallback
+    does NOT fire.  This avoids the near-duplicate collision where two
+    different events share a headline within the 24h window.  When
+    ``event_id`` is absent, behaviour is the legacy headline + date +
+    model match.
+
+    Args:
+      headline: required positional for backward compatibility; ignored
+        when ``event_id`` is provided.
+      event_date: when provided (and ``event_id`` is not), only matches
+        events with the same anchor date.
+      model: when provided (and ``event_id`` is not), only matches
+        events analyzed with this model.
+      max_age_seconds: rows older than this are treated as stale
+        (default 24 h).  Applies to both lookup paths.
+      event_id: when provided, exact-id lookup takes precedence over
+        the headline path; a miss returns ``None`` rather than serving
+        a colliding row.
+
+    Returns:
+      A dict with the saved fields, or ``None`` if no match or stale.
     """
     if not _db_ready:
         return None
@@ -1483,6 +2306,27 @@ def find_cached_analysis(
     cutoff = (
         datetime.now() - timedelta(seconds=max_age_seconds)
     ).isoformat(timespec="seconds")
+
+    # Mock guard — applies to both lookup paths.  Legacy rows
+    # persisted before the mock-guard was added carry
+    # what_changed = "[mock: <reason>]".
+    mock_guard = "what_changed NOT LIKE '%[mock:%'"
+
+    if event_id is not None:
+        # Exact-id route — bypass headline / date / model entirely so a
+        # near-duplicate sharing the same headline within the TTL
+        # window cannot be served instead of the requested row.
+        sql = (
+            "SELECT * FROM events "
+            f"WHERE id = ? AND timestamp >= ? AND {mock_guard} "
+            "LIMIT 1"
+        )
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(sql, [event_id, cutoff]).fetchone()
+        if row is None:
+            return None
+        return _decode_event_row(row)
 
     # Build WHERE clause dynamically based on which keys are provided.
     conditions = ["headline = ?", "timestamp >= ?"]
@@ -1499,11 +2343,7 @@ def find_cached_analysis(
         params.append(model)
     # When model is None we match any model — backward compat for old rows.
 
-    # Exclude mock/fallback rows — they contain placeholder text, not
-    # real analysis, and must never be served as cache hits.  Legacy
-    # rows persisted before the mock-guard was added carry
-    # what_changed = "[mock: <reason>]".
-    conditions.append("what_changed NOT LIKE '%[mock:%'")
+    conditions.append(mock_guard)
 
     sql = f"SELECT * FROM events WHERE {' AND '.join(conditions)} ORDER BY id DESC LIMIT 1"
 
@@ -1879,6 +2719,241 @@ def upsert_news_headline_assignments(
             "VALUES (?, ?, ?, ?)",
             [(s, k, int(cid), assigned_at) for (s, k, cid) in assignments],
         )
+
+
+# ---------------------------------------------------------------------------
+# Headline registry helpers
+# ---------------------------------------------------------------------------
+
+# Forward-only lifecycle. Index = "advancement rank"; advance_state never
+# regresses (a higher-rank state already on the row wins).
+_REGISTRY_LIFECYCLE = (
+    "seen", "eligible", "analyzed", "market_checked", "surfaced",
+    "expired_low_impact",
+)
+_REGISTRY_RANK = {s: i for i, s in enumerate(_REGISTRY_LIFECYCLE)}
+
+
+def upsert_headline_registry_seen(
+    rows: list[tuple[str, str, int | None]],
+    now_iso: str,
+) -> None:
+    """UPSERT one registry row per ``(source, title_key, cluster_id)``.
+
+    On conflict, only ``cluster_id`` and ``last_seen_at`` are updated;
+    ``state``, ``event_id``, ``analyzed_at``, ``impact_level``, and
+    ``expired_at`` are preserved so re-ingesting an analyzed headline
+    cannot regress its lifecycle.
+    """
+    if not _db_ready or not rows:
+        return
+    payload = [
+        (src, key, cluster_id, now_iso, now_iso)
+        for (src, key, cluster_id) in rows
+    ]
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.executemany(
+            "INSERT INTO headline_registry "
+            "(source, title_key, cluster_id, state, "
+            " first_seen_at, last_seen_at) "
+            "VALUES (?, ?, ?, 'seen', ?, ?) "
+            "ON CONFLICT(source, title_key) DO UPDATE SET "
+            "  cluster_id   = excluded.cluster_id, "
+            "  last_seen_at = excluded.last_seen_at",
+            payload,
+        )
+
+
+def update_registry_state(
+    *,
+    title_key: str,
+    new_state: str | None = None,
+    event_id: int | None = None,
+    impact_level: str | None = None,
+    analyzed_at: str | None = None,
+    expired_at: str | None = None,
+    last_skip_reason: str | None = None,
+) -> None:
+    """Forward-only state advance for every registry row matching ``title_key``.
+
+    Issued as a single atomic UPDATE so concurrent callers cannot
+    interleave a SELECT/UPDATE race that would let a lower-rank state
+    clobber a higher-rank advance.  The forward-only invariant lives
+    inline in a CASE expression: state advances only when the row's
+    current state is one of the strictly-lower-rank lifecycle members.
+
+    ``last_skip_reason`` is overwritten on every call (most-recent-skip
+    semantics).  Other fields are written unconditionally when provided
+    (matches the prior behavior; idempotency for transition-tied fields
+    like ``expired_at`` is enforced by the wrappers in
+    ``headline_registry.py``).
+    """
+    if not _db_ready or not title_key:
+        return
+
+    sets: list[str] = []
+    params: list[object] = []
+
+    if new_state and new_state in _REGISTRY_RANK:
+        new_rank = _REGISTRY_RANK[new_state]
+        lower_states = [
+            s for s, r in _REGISTRY_RANK.items() if r < new_rank
+        ]
+        if lower_states:
+            placeholders = ",".join("?" * len(lower_states))
+            sets.append(
+                f"state = CASE WHEN state IN ({placeholders}) "
+                f"THEN ? ELSE state END"
+            )
+            params.extend(lower_states)
+            params.append(new_state)
+    if event_id is not None:
+        sets.append("event_id = ?")
+        params.append(int(event_id))
+    if impact_level is not None:
+        sets.append("impact_level = ?")
+        params.append(impact_level)
+    if analyzed_at is not None:
+        sets.append("analyzed_at = ?")
+        params.append(analyzed_at)
+    if expired_at is not None:
+        sets.append("expired_at = ?")
+        params.append(expired_at)
+    if last_skip_reason is not None:
+        sets.append("last_skip_reason = ?")
+        params.append(last_skip_reason)
+
+    if not sets:
+        return
+
+    params.append(title_key)
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute(
+            f"UPDATE headline_registry SET {', '.join(sets)} "
+            f"WHERE title_key = ?",
+            params,
+        )
+
+
+def load_registry_state_counts() -> dict[str, int]:
+    """Return ``{state: count}`` for every distinct ``state`` value."""
+    if not _db_ready:
+        return {}
+    with sqlite3.connect(DB_FILE) as conn:
+        rows = conn.execute(
+            "SELECT state, COUNT(*) FROM headline_registry GROUP BY state"
+        ).fetchall()
+    return {state: int(count) for state, count in rows}
+
+
+def load_registry_skip_reason_counts() -> dict[str, int]:
+    """Return ``{last_skip_reason: count}`` for non-null reasons only."""
+    if not _db_ready:
+        return {}
+    with sqlite3.connect(DB_FILE) as conn:
+        rows = conn.execute(
+            "SELECT last_skip_reason, COUNT(*) FROM headline_registry "
+            "WHERE last_skip_reason IS NOT NULL "
+            "GROUP BY last_skip_reason"
+        ).fetchall()
+    return {reason: int(count) for reason, count in rows}
+
+
+def load_registry_last_analyzed_at() -> str | None:
+    if not _db_ready:
+        return None
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT MAX(analyzed_at) FROM headline_registry"
+        ).fetchone()
+    return row[0] if row and row[0] else None
+
+
+def load_registry_expired_count_since(since_iso: str) -> int:
+    if not _db_ready:
+        return 0
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM headline_registry "
+            "WHERE state = 'expired_low_impact' AND expired_at >= ?",
+            (since_iso,),
+        ).fetchone()
+    return int(row[0] or 0)
+
+
+def load_registry_analyzed_at_for_keys(
+    title_keys: list[str],
+) -> dict[str, str]:
+    """Return ``{title_key: max(analyzed_at)}`` for the given keys.
+
+    Used by ``headline_registry.filter_expired_low_impact`` to bulk-load
+    analyzed_at for a page of events.  Same title_key from multiple
+    sources collapses via MAX so the most recent analysis wins.
+    """
+    if not _db_ready or not title_keys:
+        return {}
+    placeholders = ",".join("?" * len(title_keys))
+    with sqlite3.connect(DB_FILE) as conn:
+        rows = conn.execute(
+            f"SELECT title_key, MAX(analyzed_at) "
+            f"FROM headline_registry "
+            f"WHERE title_key IN ({placeholders}) "
+            f"  AND analyzed_at IS NOT NULL "
+            f"GROUP BY title_key",
+            title_keys,
+        ).fetchall()
+    return {tk: at for tk, at in rows if at}
+
+
+def load_eligible_unanalyzed_candidates(
+    *, limit: int = 50,
+) -> list[dict]:
+    """Major headlines ingested but not yet analyzed.
+
+    Joins ``headline_registry`` to ``news_clusters`` so we can rank by
+    the cluster's ``source_count`` (number of publishers) — that's how
+    the backfill route already prioritises clusters.  Returns the top
+    ``limit`` rows in source_count-then-recency order.
+    """
+    if not _db_ready:
+        return []
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT hr.cluster_id, "
+            "       MIN(hr.first_seen_at) AS first_seen_at, "
+            "       MAX(hr.last_seen_at)  AS last_seen_at, "
+            "       hr.last_skip_reason, "
+            "       hr.state, "
+            "       nc.headline, "
+            "       nc.payload_json "
+            "FROM headline_registry hr "
+            "JOIN news_clusters nc ON nc.id = hr.cluster_id "
+            "WHERE hr.state IN ('seen', 'eligible') "
+            "  AND hr.event_id IS NULL "
+            "GROUP BY hr.cluster_id "
+            "ORDER BY json_extract(nc.payload_json, '$.source_count') DESC, "
+            "         MAX(hr.last_seen_at) DESC "
+            "LIMIT ?",
+            (int(limit),),
+        ).fetchall()
+    out: list[dict] = []
+    for r in rows:
+        try:
+            payload = json.loads(r["payload_json"] or "{}")
+        except (TypeError, ValueError):
+            payload = {}
+        out.append({
+            "headline":         r["headline"] or "",
+            "cluster_id":       r["cluster_id"],
+            "source_count":     int(payload.get("source_count") or 0),
+            "has_asset_terms":  bool(payload.get("has_asset_terms", False)),
+            "first_seen_at":    r["first_seen_at"],
+            "last_seen_at":     r["last_seen_at"],
+            "last_skip_reason": r["last_skip_reason"],
+            "state":            r["state"],
+        })
+    return out
 
 
 def clear_news_cluster_store() -> None:

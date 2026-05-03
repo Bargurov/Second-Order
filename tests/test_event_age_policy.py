@@ -259,7 +259,7 @@ class TestPolicyMarketCheckIntegration(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
-def _mock_analyze(headline, stage, persistence, event_context=""):
+def _mock_analyze(inp):
     return {
         "what_changed": "Stub what-changed.",
         "mechanism_summary": "Stub mechanism summary for unit tests.",

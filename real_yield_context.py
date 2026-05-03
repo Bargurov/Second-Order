@@ -90,11 +90,44 @@ _RATE_DOWN_KW: tuple[str, ...] = (
 )
 
 
+# Words that imply a real-economy supply shock (commodity / shipping / input
+# disruption without a clear inflation or policy framing).  Fires for events
+# like "Houthi strikes disrupt Red Sea shipping" where the policy keywords
+# are silent but the cross-asset probe should expect commodity-led action.
+_SUPPLY_SHOCK_KW: tuple[str, ...] = (
+    "red sea", "suez", "strait of hormuz", "shipping disruption",
+    "freight rate spike", "tanker", "blockade", "pipeline attack",
+    "pipeline shut", "refinery fire", "export halt", "export suspension",
+    "port closure", "mine closure", "smelter", "rare earth restriction",
+)
+
+# Words that imply flight to quality — crisis/war/market stress where
+# investors bid defensives (gold, bonds, dollar) irrespective of inflation.
+_FLIGHT_TO_QUALITY_KW: tuple[str, ...] = (
+    "war", "invasion", "military strike", "missile strike", "bombing",
+    "nuclear", "coup", "sovereign crisis", "default risk",
+    "banking crisis", "contagion", "liquidity crunch", "panic",
+    "evacuation", "state of emergency",
+)
+
+# Words that imply a reflation impulse — stimulus, fiscal expansion,
+# rate cuts arriving with growth support.
+_REFLATION_KW: tuple[str, ...] = (
+    "stimulus package", "fiscal package", "infrastructure bill",
+    "spending plan", "tax cut", "subsidy program", "reshoring incentive",
+    "industrial policy", "growth package", "reopening",
+    "capex boom", "investment surge",
+)
+
+
 THESIS_LABELS = (
     "inflationary",
     "disinflationary",
     "rate_pressure_up",
     "rate_pressure_down",
+    "supply_shock",
+    "flight_to_quality",
+    "reflation",
     "none",
 )
 
@@ -144,6 +177,23 @@ def classify_thesis(headline: str, mechanism_text: str = "") -> dict:
             return {"thesis": "rate_pressure_up", "evidence": rate_up_hits}
         return {"thesis": "rate_pressure_down", "evidence": rate_down_hits}
 
+    # Policy/inflation axes are silent — fall back to mechanism-type classifiers
+    # so geopolitical / crisis / reflation events still get a thesis the
+    # cross-asset confirmation matrix can probe against.
+    supply_hits = [kw for kw in _SUPPLY_SHOCK_KW if kw in text]
+    crisis_hits = [kw for kw in _FLIGHT_TO_QUALITY_KW if kw in text]
+    reflation_hits = [kw for kw in _REFLATION_KW if kw in text]
+
+    # Priority: flight_to_quality > supply_shock > reflation.  Crisis events
+    # override supply framing because the cross-asset read is very different
+    # (gold / dollar / bonds bid, not just commodity-led).
+    if crisis_hits:
+        return {"thesis": "flight_to_quality", "evidence": crisis_hits}
+    if supply_hits:
+        return {"thesis": "supply_shock", "evidence": supply_hits}
+    if reflation_hits:
+        return {"thesis": "reflation", "evidence": reflation_hits}
+
     return {"thesis": "none", "evidence": []}
 
 
@@ -190,23 +240,23 @@ def _alignment_for(thesis: str, regime: Optional[str], breakeven_5d: Optional[fl
         # Confirm: breakevens widening OR regime is "Inflation pressure".
         if regime == "Inflation pressure":
             return "confirm"
-        if breakeven_5d is not None and breakeven_5d > 0.2:
+        if breakeven_5d is not None and breakeven_5d > 0.10:
             return "confirm"
         # Tension: real-rate tightening or growth scare with no breakeven lift.
         if regime in ("Real-rate tightening", "Risk-off / growth scare"):
             return "tension"
-        if breakeven_5d is not None and breakeven_5d < -0.2:
+        if breakeven_5d is not None and breakeven_5d < -0.10:
             return "tension"
         return "neutral"
 
     if thesis == "disinflationary":
         if regime in ("Real-rate tightening", "Risk-off / growth scare"):
             return "confirm"
-        if breakeven_5d is not None and breakeven_5d < -0.2:
+        if breakeven_5d is not None and breakeven_5d < -0.10:
             return "confirm"
         if regime == "Inflation pressure":
             return "tension"
-        if breakeven_5d is not None and breakeven_5d > 0.2:
+        if breakeven_5d is not None and breakeven_5d > 0.10:
             return "tension"
         return "neutral"
 
@@ -250,11 +300,11 @@ def _explain(thesis: str, alignment: str, regime: Optional[str],
              breakeven_5d: Optional[float], real_5d: Optional[float]) -> str:
     """Return one short institutional sentence describing the result."""
     be_text = (
-        f"breakevens {breakeven_5d:+.2f}% / 5d"
+        f"breakevens {breakeven_5d:+.2f} pp / 5d"
         if breakeven_5d is not None else "breakeven proxy unavailable"
     )
     real_text = (
-        f"real-yield proxy {real_5d:+.2f}% / 5d"
+        f"TIP {real_5d:+.2f}% / 5d"
         if real_5d is not None else "real-yield proxy unavailable"
     )
     regime_text = regime or "regime unclear"
@@ -356,3 +406,45 @@ def build_real_yield_context(
         "available": True,
         "stale": False,
     }
+
+
+# ---------------------------------------------------------------------------
+# Frozen-archive sanitizer
+# ---------------------------------------------------------------------------
+
+# Caps mirror shock_decomposition._CHANNEL_MOVE_CAPS so both paths reject
+# the same corrupt-cache artifacts.
+_NOMINAL_CAP = 5.0    # ±500 bps in 5 days — never recorded
+_REAL_CAP = 20.0      # TIP ETF ±20% in 5 days — physically impossible
+_BREAKEVEN_CAP = 7.0  # derived proxy ceiling
+
+
+def sanitize_real_yield_context_block(block: dict) -> dict:
+    """Clamp absurd numeric fields in a persisted real_yield_context block.
+
+    Frozen-archive events saved before the unit / cache fix may carry
+    nominal_5d, real_proxy_5d, or breakeven_proxy_5d values computed from
+    corrupt price-cache rows.  This function caps them using the same
+    limits as shock_decomposition and returns a shallow copy.
+
+    Idempotent: safe to call on already-clean blocks.
+    """
+    if not block or not isinstance(block, dict):
+        return block or {}
+
+    block = dict(block)  # shallow copy — don't mutate the stored row
+
+    for key, cap in (
+        ("nominal_5d", _NOMINAL_CAP),
+        ("real_proxy_5d", _REAL_CAP),
+        ("breakeven_proxy_5d", _BREAKEVEN_CAP),
+    ):
+        val = block.get(key)
+        if val is not None:
+            try:
+                if abs(float(val)) > cap:
+                    block[key] = None
+            except (TypeError, ValueError):
+                block[key] = None
+
+    return block

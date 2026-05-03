@@ -63,6 +63,7 @@ export default {
         },
         /* ---- Stitch design-system tokens ---- */
         "error-container": "#7f2927",
+        "on-error-container": "#ff9993",
         "surface-container": "#191922",
         "on-surface": "#e6e3f7",
         "on-surface-variant": "#aba9bc",
@@ -71,18 +72,38 @@ export default {
         "surface-container-low": "#13131a",
         "surface-container-lowest": "#000000",
         "surface-variant": "#242533",
+        "surface-bright": "#2a2b3b",
         "outline-variant": "#474656",
         outline: "#757485",
         "primary-container": "#004f51",
+        "primary-dim": "#85c3c5",
+        "primary-fixed": "#afeef0",
+        "primary-fixed-dim": "#a1dfe1",
+        "on-primary": "#00484a",
+        "on-primary-container": "#9ddbdd",
+        "secondary-container": "#2d3c51",
+        "secondary-dim": "#8f9fb7",
+        "secondary-fixed": "#d3e4fe",
+        "secondary-fixed-dim": "#c5d6f0",
+        "on-secondary-container": "#b0c0da",
+        "tertiary": "#ffbfba",
+        "tertiary-dim": "#ed9f99",
+        "tertiary-container": "#fdaca7",
         "error-dim": "#bb5551",
         error: "#ee7d77",
-        "secondary-dim": "#8f9fb7",
         "surface-tint": "#93d1d3",
       },
       borderRadius: {
+        // shadcn-aligned semantic radii — drive everything off --radius.
         lg: "var(--radius)",
         md: "calc(var(--radius) - 1px)",
         sm: "calc(var(--radius) - 2px)",
+        // Stitch / DESIGN.md cap card radius at 0.5rem (8px); override
+        // Tailwind's built-in larger radii so existing rounded-xl /
+        // rounded-2xl class users land at the institutional ceiling
+        // instead of the consumer-grade 12-16px default.
+        xl: "0.5rem",
+        "2xl": "0.5rem",
       },
     },
   },

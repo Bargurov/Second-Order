@@ -47,6 +47,9 @@ from __future__ import annotations
 from typing import Optional
 
 from real_yield_context import classify_thesis
+from shock_decomposition import compute_shock_decomposition
+from cross_asset_confirmation import compute_cross_asset_confirmation
+from cross_asset_coherence import compute_cross_asset_coherence
 
 
 # ---------------------------------------------------------------------------
@@ -214,99 +217,156 @@ def _implied_direction(headline: str, mechanism_text: str) -> tuple[str, str]:
 # Market-priced direction
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Mechanism-specific reaction reads
+# ---------------------------------------------------------------------------
+# Replace the old bulk hawk/dove point accumulator with per-channel reads.
+# Each channel's observed move is checked against a hawkish-expectation map;
+# aligned moves add to hawk_score, opposing moves add to dove_score, silent
+# (below z-floor) channels contribute nothing.  The priced direction is
+# then whichever score clearly leads — not a raw point count.
+
+# Direction convention matches shock_decomposition._CHANNEL_UNITS.
+# Only channels with a clean one-sided hawkish read are included; breakeven
+# and commodity are deliberately excluded because they cut both ways across
+# policy vs supply-shock mechanisms.
+_HAWKISH_EXPECT: dict[str, str] = {
+    "nominal_yield": "up",     # 10Y pp rising is hawkish pricing
+    "real_yield":    "down",   # TIP falling = real yields up = restrictive
+    "fx":            "up",     # DXY strength = hawkish US
+    "credit":        "up",     # widening = tighter financial conditions
+}
+
+# Z-score floor a channel must clear to be counted at all.
+_CHANNEL_Z_FLOOR: float = 0.8
+
+# Score separation needed to declare a direction.  Matches the old "> 1"
+# rule in points but now applied to z-weighted magnitudes.
+_DIRECTION_MARGIN: float = 0.8
+
+
+def _channel_reads(channels: dict[str, dict]) -> tuple[list[dict], float, float]:
+    """Derive mechanism-specific reads from the shock-decomposition channels.
+
+    Returns (reads, hawk_score, dove_score).  Each entry in ``reads`` is:
+      {channel, label, expected_for_hawkish, observed_dir, z, verdict,
+       contribution}
+    where ``verdict`` is one of "hawkish" / "dovish" / "silent".
+    """
+    reads: list[dict] = []
+    hawk = 0.0
+    dove = 0.0
+    for cid, expected in _HAWKISH_EXPECT.items():
+        ch = channels.get(cid) or {}
+        if not isinstance(ch, dict):
+            continue
+        z = float(ch.get("z") or 0.0)
+        move = ch.get("move_5d")
+        observed_dir = "unavailable"
+        if ch.get("available") and move is not None:
+            if move > 0:
+                observed_dir = "up"
+            elif move < 0:
+                observed_dir = "down"
+            else:
+                observed_dir = "flat"
+
+        contribution = 0.0
+        verdict = "silent"
+        if (
+            observed_dir in ("up", "down")
+            and z >= _CHANNEL_Z_FLOOR
+        ):
+            if observed_dir == expected:
+                verdict = "hawkish"
+                contribution = z
+                hawk += z
+            else:
+                verdict = "dovish"
+                contribution = z
+                dove += z
+
+        reads.append({
+            "channel":      cid,
+            "label":        ch.get("label", cid),
+            "expected_for_hawkish": expected,
+            "observed":     move,
+            "unit":         ch.get("unit", ""),
+            "z":            round(z, 2),
+            "observed_dir": observed_dir,
+            "verdict":      verdict,
+            "contribution": round(contribution, 2),
+        })
+    return reads, round(hawk, 2), round(dove, 2)
+
+
 def _priced_direction(
+    shock_channels: dict[str, dict],
     rates_context: Optional[dict],
     stress_regime: Optional[dict],
-    snapshots: Optional[list[dict]],
-) -> tuple[str, str, int]:
+) -> tuple[str, str, float, list[dict]]:
     """Score what markets appear to be pricing right now.
 
-    Returns (direction, basis_text, confidence_points).
+    Returns (direction, basis_text, lead_score, channel_reads).  The
+    direction is derived from mechanism-specific reads over the six
+    shock-decomposition channels, augmented by two small regime-level
+    signals (rates regime label, stress safe-haven bid) that encode
+    information not fully captured by 5d channel moves.
 
     Sign convention: TIP ETF moves INVERSELY with real yields.
-      real_5d < 0  => TIP fell  => real yields ROSE   (hawkish pricing)
-      real_5d > 0  => TIP rose  => real yields FELL   (dovish pricing)
     """
-    hawk = 0
-    dove = 0
+    reads, hawk, dove = _channel_reads(shock_channels or {})
+
     bits: list[str] = []
+    for r in reads:
+        if r["verdict"] == "silent":
+            continue
+        move = r["observed"]
+        if move is None:
+            continue
+        bits.append(
+            f"{r['label']} {move:+.2f}{r['unit']}/5d ({r['z']:.1f}σ)"
+        )
 
-    rc = rates_context or {}
-    nom_5d = _f((rc.get("nominal") or {}).get("change_5d"))
-    real_5d = _f((rc.get("real_proxy") or {}).get("change_5d"))
-    be_5d = _f((rc.get("breakeven_proxy") or {}).get("change_5d"))
-    regime = rc.get("regime")
-
-    # --- Nominal 10Y ----------------------------------------------------
-    if nom_5d is not None:
-        if nom_5d > 0.3:
-            hawk += 2
-            bits.append(f"10Y +{nom_5d:.2f}/5d")
-        elif nom_5d < -0.3:
-            dove += 2
-            bits.append(f"10Y {nom_5d:.2f}/5d")
-
-    # --- Real yields (via TIP) -----------------------------------------
-    if real_5d is not None:
-        if real_5d < -0.4:
-            hawk += 2
-            bits.append(f"real yields rising (TIP {real_5d:.2f}/5d)")
-        elif real_5d > 0.4:
-            dove += 2
-            bits.append(f"real yields falling (TIP +{real_5d:.2f}/5d)")
-
-    # --- Breakevens as a hint ------------------------------------------
-    if be_5d is not None:
-        if be_5d < -0.3:
-            # Breakevens collapsing is consistent with dovish/disinflation.
-            dove += 1
-        elif be_5d > 0.3:
-            # Widening breakevens = inflation pricing, tilts hawkish.
-            hawk += 1
-
-    # --- Rates regime label --------------------------------------------
+    # Rates regime label adds a small nudge — it encodes multi-day
+    # context (regime persistence) that 5d moves alone don't capture.
+    regime = (rates_context or {}).get("regime")
     if regime == "Real-rate tightening":
-        hawk += 1
-    elif regime == "Risk-off / growth scare":
-        dove += 2
-        bits.append("regime: risk-off / growth scare")
+        hawk += 0.5
     elif regime == "Inflation pressure":
-        hawk += 1
+        hawk += 0.5
+    elif regime == "Risk-off / growth scare":
+        dove += 1.0
+        bits.append("regime: risk-off / growth scare")
 
-    # --- Stress signals -------------------------------------------------
+    # Stress safe-haven bid adds to dovish pricing (bonds bid, risk off).
     signals = (stress_regime or {}).get("signals") or {}
     if signals.get("safe_haven_bid"):
-        dove += 1
+        dove += 0.5
         bits.append("safe-haven bid")
-    if signals.get("credit_widening"):
-        # Credit widening usually forces the market to start pricing cuts.
-        dove += 1
-        bits.append("credit widening")
 
-    # --- Snapshot overlays ---------------------------------------------
-    es_5d = _snap_change_5d(snapshots, "ES")
-    if es_5d is not None and es_5d < -2.0:
-        dove += 1
-        bits.append(f"S&P {es_5d:+.1f}/5d")
-
-    dxy_5d = _snap_change_5d(snapshots, "DXY")
-    if dxy_5d is not None:
-        if dxy_5d > 1.0:
-            # Dollar strength usually reflects hawkish US repricing.
-            hawk += 1
-            bits.append(f"DXY +{dxy_5d:.1f}/5d")
-        elif dxy_5d < -1.0:
-            dove += 1
-            bits.append(f"DXY {dxy_5d:.1f}/5d")
-
-    # --- Decide ---------------------------------------------------------
     if hawk == 0 and dove == 0:
-        return "neutral", "no clear directional pricing", 0
-    if hawk > dove + 1:
-        return "hawkish", "; ".join(bits) if bits else "hawkish bias", hawk
-    if dove > hawk + 1:
-        return "dovish", "; ".join(bits) if bits else "dovish bias", dove
-    return "neutral", ("mixed pricing signals: " + "; ".join(bits)) if bits else "mixed pricing signals", max(hawk, dove)
+        return "neutral", "no clear directional pricing", 0.0, reads
+    if hawk - dove > _DIRECTION_MARGIN:
+        return (
+            "hawkish",
+            "; ".join(bits) if bits else "hawkish bias",
+            round(hawk, 2),
+            reads,
+        )
+    if dove - hawk > _DIRECTION_MARGIN:
+        return (
+            "dovish",
+            "; ".join(bits) if bits else "dovish bias",
+            round(dove, 2),
+            reads,
+        )
+    return (
+        "neutral",
+        ("mixed pricing signals: " + "; ".join(bits)) if bits else "mixed pricing signals",
+        round(max(hawk, dove), 2),
+        reads,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -366,8 +426,37 @@ def compute_reaction_function_divergence(
         ``implied="neutral"``.
     """
     implied, implied_basis = _implied_direction(headline, mechanism_text)
-    priced, priced_basis, priced_pts = _priced_direction(
-        rates_context, stress_regime, snapshots,
+
+    # Build the shock-decomposition channels once so priced_direction and the
+    # cross-asset confirmation matrix share a single view of the tape.
+    shock_block = compute_shock_decomposition(rates_context, stress_regime, snapshots)
+    shock_channels = (shock_block or {}).get("channels") or {}
+    rates_pack = (shock_block or {}).get("rates_pack") or {}
+
+    priced, priced_basis, priced_lead, mechanism_reads = _priced_direction(
+        shock_channels, rates_context, stress_regime,
+    )
+
+    # Confirmation matrix — uses the event's own thesis (not hawk/dove) so
+    # confirms and disconfirms are scored against the mechanism the event
+    # actually implies, not a generic hawkish probe.
+    thesis_info = classify_thesis(headline, mechanism_text)
+    confirmation_matrix = compute_cross_asset_confirmation(
+        thesis_info.get("thesis", "none"),
+        shock_channels,
+        rates_pack=rates_pack,
+    )
+
+    # Cross-asset coherence matrix — broader, macro-tape read across 6
+    # grouped channels (rates, fx, commodities, vol, credit, equities)
+    # with a coherence score and explicit thesis_rejection / tension
+    # flags.  Reads straight from the tape; does not depend on the
+    # shock_decomposition internal channel set.
+    coherence_matrix = compute_cross_asset_coherence(
+        thesis_info.get("thesis", "none"),
+        rates_context=rates_context,
+        stress_regime=stress_regime,
+        snapshots=snapshots,
     )
 
     rates_ok = _rates_usable(rates_context)
@@ -382,13 +471,22 @@ def compute_reaction_function_divergence(
     if not macro_ok:
         priced = "neutral"
         priced_basis = "macro inputs unavailable"
-        priced_pts = 0
+        priced_lead = 0.0
 
     divergence = _classify_divergence(implied, priced)
     rationale = _rationale(implied, priced, divergence, implied_basis, priced_basis)
     macro_read = _MACRO_READ.get(
         (implied, priced),
         "Reaction-function direction is ambiguous given current inputs.",
+    )
+    sources = _build_reaction_evidence_sources(
+        implied=implied,
+        priced=priced,
+        mechanism_reads=mechanism_reads,
+        rates_context=rates_context,
+        stress_regime=stress_regime,
+        rates_ok=rates_ok,
+        stress_ok=stress_ok,
     )
 
     return {
@@ -403,6 +501,131 @@ def compute_reaction_function_divergence(
         "rationale":        rationale,
         "macro_read":       macro_read,
         "key_markets":      list(_KEY_MARKETS.get(divergence, [])),
+        "mechanism_reads":  mechanism_reads,
+        "confirmation_matrix": confirmation_matrix,
+        "coherence_matrix": coherence_matrix,
+        "priced_lead":      priced_lead,
+        "evidence_sources": sources,
         "available":        macro_ok,
         "stale":            not (rates_ok and stress_ok),
     }
+
+
+# ---------------------------------------------------------------------------
+# Evidence-source traceability
+# ---------------------------------------------------------------------------
+
+def _build_reaction_evidence_sources(
+    *,
+    implied: str,
+    priced: str,
+    mechanism_reads: list[dict],
+    rates_context: Optional[dict],
+    stress_regime: Optional[dict],
+    rates_ok: bool,
+    stress_ok: bool,
+) -> list[dict]:
+    """Trace the implied / priced direction back to the fields and
+    channels that drove the read.  Pure read — uses only the inputs the
+    composer has already consumed.
+    """
+    try:
+        from evidence_sources import make_source
+    except Exception:
+        return []
+
+    out: list[dict] = []
+
+    # Implied side — the thesis classifier output.  The classifier is a
+    # token-driven heuristic, so we tag the source with that limitation
+    # so a reader knows the implied direction is text-derived, not
+    # structurally proven.
+    if implied != "neutral":
+        src = make_source(
+            source_type="thesis_classifier",
+            field_used="real_yield_context.classify_thesis",
+            supports_or_contradicts="supports",
+            limitation="thesis token-classifier — text heuristic, not structural",
+        )
+        if src:
+            out.append(src)
+
+    # Priced side — one source per channel read that actually fired.
+    # Direction is "supports" when the channel verdict aligns with the
+    # implied direction, "contradicts" when opposite, "neutral" if the
+    # implied side itself was neutral.
+    for r in mechanism_reads or []:
+        verdict = r.get("verdict")
+        if verdict not in ("hawkish", "dovish"):
+            continue
+        z = float(r.get("z") or 0.0)
+        if implied == "neutral":
+            direction = "neutral"
+        else:
+            direction = "supports" if verdict == implied else "contradicts"
+        if z < 1.5:
+            limitation = f"low z-score ({z:.1f}σ); 5d horizon only"
+        else:
+            limitation = "5d horizon only"
+        src = make_source(
+            source_type="market_channel",
+            field_used=f"reaction_function.mechanism_reads.{r.get('channel')}",
+            supports_or_contradicts=direction,
+            limitation=limitation,
+        )
+        if src:
+            out.append(src)
+
+    # Regime label nudge — captures the multi-day context the 5d moves
+    # alone don't carry.  Always tagged with a regime-label limitation
+    # so the desk knows it's a slot read, not a structural confirmation.
+    regime = (rates_context or {}).get("regime")
+    if isinstance(regime, str) and regime:
+        if regime in ("Real-rate tightening", "Inflation pressure"):
+            direction = "supports" if implied == "hawkish" else (
+                "contradicts" if implied == "dovish" else "neutral"
+            )
+        elif regime == "Risk-off / growth scare":
+            direction = "supports" if implied == "dovish" else (
+                "contradicts" if implied == "hawkish" else "neutral"
+            )
+        else:
+            direction = "neutral"
+        src = make_source(
+            source_type="regime_signal",
+            field_used=f"rates_context.regime={regime}",
+            supports_or_contradicts=direction,
+            limitation="regime label only — not a tape confirmation",
+        )
+        if src:
+            out.append(src)
+
+    if (stress_regime or {}).get("signals", {}).get("safe_haven_bid"):
+        direction = "supports" if implied == "dovish" else (
+            "contradicts" if implied == "hawkish" else "neutral"
+        )
+        src = make_source(
+            source_type="regime_signal",
+            field_used="stress_regime.signals.safe_haven_bid",
+            supports_or_contradicts=direction,
+            limitation="binary signal — does not size the move",
+        )
+        if src:
+            out.append(src)
+
+    if not (rates_ok and stress_ok):
+        missing = []
+        if not rates_ok:
+            missing.append("rates_context")
+        if not stress_ok:
+            missing.append("stress_regime")
+        src = make_source(
+            source_type="market_channel",
+            field_used="reaction_function.macro_inputs",
+            supports_or_contradicts="neutral",
+            limitation=f"macro inputs unavailable: {', '.join(missing)}",
+        )
+        if src:
+            out.append(src)
+
+    return out

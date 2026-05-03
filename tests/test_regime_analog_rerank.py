@@ -94,14 +94,25 @@ def _snap(market: str, change_5d: float, value: float = 100.0) -> dict:
 
 
 def _vec(infl="neutral", pol="neutral", fx="neutral", gs="neutral",
+         *, credit="neutral", curve_shape="neutral", inflation_path="neutral",
          available=True, stale=False) -> dict:
+    """Builder with neutral defaults for every axis in REGIME_AXES.
+
+    The positional args are the original four so legacy fixtures keep
+    working; the breadth-expansion axes are keyword-only with neutral
+    defaults so callers only opt in to them when they actually exercise
+    credit / curve_shape / inflation_path behaviour.
+    """
     return {
-        "inflation":     infl,
-        "policy_stance": pol,
-        "fx":            fx,
-        "growth_stress": gs,
-        "available":     available,
-        "stale":         stale,
+        "inflation":      infl,
+        "policy_stance":  pol,
+        "fx":             fx,
+        "growth_stress":  gs,
+        "credit":         credit,
+        "curve_shape":    curve_shape,
+        "inflation_path": inflation_path,
+        "available":      available,
+        "stale":           stale,
     }
 
 
@@ -178,14 +189,25 @@ class TestRegimeDistance(unittest.TestCase):
         self.assertEqual(regime_distance(a, a), 1.0)
 
     def test_no_overlap_is_zero(self):
-        a = _vec("hot", "hawkish", "dollar_strong", "calm")
-        b = _vec("cool", "dovish", "dollar_weak", "stressed")
+        a = _vec("hot", "hawkish", "dollar_strong", "calm",
+                 credit="risk_on", curve_shape="front_loaded",
+                 inflation_path="hawkish_constraint")
+        b = _vec("cool", "dovish", "dollar_weak", "stressed",
+                 credit="risk_off", curve_shape="term_premium",
+                 inflation_path="dovish_space")
+        # All 7 axes disagree — perfect mirror.
         self.assertEqual(regime_distance(a, b), 0.0)
 
     def test_partial_overlap(self):
-        a = _vec("hot", "hawkish", "dollar_strong", "calm")
-        b = _vec("hot", "hawkish", "dollar_weak", "stressed")  # 2 of 4 match
-        self.assertEqual(regime_distance(a, b), 0.5)
+        a = _vec("hot", "hawkish", "dollar_strong", "calm",
+                 credit="risk_on", curve_shape="front_loaded",
+                 inflation_path="hawkish_constraint")
+        # 4 of 7 axes match (inflation, policy_stance, credit, curve_shape);
+        # the remaining 3 (fx, growth_stress, inflation_path) disagree.
+        b = _vec("hot", "hawkish", "dollar_weak", "stressed",
+                 credit="risk_on", curve_shape="front_loaded",
+                 inflation_path="dovish_space")
+        self.assertAlmostEqual(regime_distance(a, b), 4 / 7)
 
     def test_unavailable_returns_none(self):
         a = _vec("hot", "hawkish", "dollar_strong", "calm")

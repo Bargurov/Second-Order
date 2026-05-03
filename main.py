@@ -73,6 +73,21 @@ def main() -> None:
     print(f"Watch (↓):    {', '.join(analysis['loser_tickers'])}")
     print(f"Confidence:   {analysis['confidence']}")
 
+    # Ranked institutional exposures — short CLI render so the operator
+    # sees the top entries at a glance.  Full structured dicts land in
+    # the DB via the save step below.
+    prim = analysis.get("primary_assets") or []
+    if prim:
+        top = ", ".join(f"{e['symbol']}({e['rank']})" for e in prim[:3])
+        print(f"Primary:      {top}")
+    hedge = analysis.get("hedge_or_signal_assets") or []
+    if hedge:
+        top = ", ".join(e["symbol"] for e in hedge[:3])
+        print(f"Hedge/Signal: {top}")
+    fals = analysis.get("key_falsifiers") or []
+    if fals:
+        print(f"Falsifiers:   {len(fals)} — first: {fals[0][:80]}")
+
     # Step 3: market check
     market = run_market_check(analysis["beneficiary_tickers"], analysis["loser_tickers"], event_date=event_date)
     print(f"\nMarket:   {market['note']}")
@@ -102,6 +117,16 @@ def main() -> None:
         "market_tickers":     market["tickers"],
         "event_date":         event_date,
         "notes":              notes,
+        # Institutional research fields — optional; analyze_event's
+        # sanitizers guarantee every key is a list (never None), so the
+        # dict.get fallbacks below stay safe even on legacy analyses.
+        "mechanism_family":         analysis.get("mechanism_family", "none"),
+        "transmission_chain":       analysis.get("transmission_chain", []),
+        "primary_assets":           analysis.get("primary_assets", []),
+        "secondary_assets":         analysis.get("secondary_assets", []),
+        "hedge_or_signal_assets":   analysis.get("hedge_or_signal_assets", []),
+        "key_falsifiers":           analysis.get("key_falsifiers", []),
+        "minimum_proof_set":        analysis.get("minimum_proof_set", []),
     }
     try:
         save_event(event)

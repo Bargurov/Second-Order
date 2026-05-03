@@ -296,10 +296,11 @@ class TestDeMinimisCalibration(unittest.TestCase):
 
     def test_jblu_edge_case(self):
         """JBLU +0.22% / -0.88%: one leg below de minimis.
-        The larger leg (-0.88%) is above threshold, so this should still
-        classify as Reversed (opposite signs, meaningful 20d move)."""
+        The 5d leg (+0.22%) is below the 0.3% noise floor, so the pair
+        falls through to magnitude logic and classifies as Fading (the
+        dominant 20d move has not reversed; the tiny 5d move is noise)."""
         result = market_check.classify_decay(+0.22, -0.88)
-        self.assertEqual(result["label"], "Reversed")
+        self.assertEqual(result["label"], "Fading")
 
 
 if __name__ == "__main__":

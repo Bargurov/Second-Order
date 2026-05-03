@@ -23,7 +23,7 @@
     --border: 220 16% 84%;
     --input: 220 16% 84%;
     --ring: 222 42% 18%;
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 220 24% 98%;
     --sidebar-foreground: 220 14% 22%;
@@ -33,36 +33,40 @@
     --sidebar-accent-foreground: 222 34% 14%;
     --sidebar-border: 220 18% 88%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Card radius cap — DESIGN.md "no rounded corners larger than 0.5rem".
+       Both light and dark themes share the institutional ceiling so
+       shadcn-derived radii (rounded-lg / rounded-md / rounded-sm) land
+       at 8px / 7px / 6px respectively. */
   }
 
   .dark {
-    --background: 248 25% 6%;       /* #0e0e13 */
-    --foreground: 249 50% 93%;      /* #e6e3f7 */
-    --card: 240 23% 12%;            /* #191922 — surface container */
-    --card-foreground: 249 50% 93%;
-    --popover: 240 23% 12%;
-    --popover-foreground: 249 50% 93%;
-    --primary: 181 38% 70%;         /* #93d1d3 — teal */
-    --primary-foreground: 248 25% 6%;
-    --secondary: 240 16% 9%;        /* #13131a — surface-container-low */
-    --secondary-foreground: 249 50% 93%;
+    --background: 240 20% 5%;       /* #0a0a0f — design package --bg */
+    --foreground: 225 23% 90%;      /* #dcdee5 — design --ink-1 */
+    --card: 240 16% 9%;             /* #13131a — design --section */
+    --card-foreground: 225 23% 90%;
+    --popover: 237 14% 18%;         /* #242533 — design --raised */
+    --popover-foreground: 225 23% 90%;
+    --primary: 181 38% 70%;         /* #93d1d3 — design --teal */
+    --primary-foreground: 240 20% 5%;
+    --secondary: 240 16% 9%;        /* #13131a — design --section */
+    --secondary-foreground: 225 23% 90%;
     --muted: 240 16% 9%;
-    --muted-foreground: 245 12% 70%; /* #aba9bc */
-    --accent: 237 16% 17%;          /* #242533 — surface-container-highest */
-    --accent-foreground: 249 50% 93%;
-    --destructive: 3 77% 70%;       /* #ee7d77 */
+    --muted-foreground: 230 9% 69%; /* #a8aab6 — design --ink-2 */
+    --accent: 237 14% 18%;          /* #242533 — design --raised */
+    --accent-foreground: 225 23% 90%;
+    --destructive: 3 77% 70%;       /* #ee7d77 — design --coral */
     --destructive-foreground: 0 0% 98%;
-    --border: 237 16% 17%;          /* #242533 */
-    --input: 237 16% 17%;
+    --border: 234 11% 17%;          /* tonal hairline — sits ~5% over --bg */
+    --input: 237 14% 18%;
     --ring: 181 38% 70%;
 
-    --sidebar-background: 248 25% 6%;
-    --sidebar-foreground: 249 50% 86%;
+    --sidebar-background: 240 20% 5%;
+    --sidebar-foreground: 225 23% 90%;
     --sidebar-primary: 181 38% 70%;
-    --sidebar-primary-foreground: 248 25% 6%;
+    --sidebar-primary-foreground: 240 20% 5%;
     --sidebar-accent: 240 16% 9%;
-    --sidebar-accent-foreground: 249 50% 93%;
-    --sidebar-border: 237 16% 17%;
+    --sidebar-accent-foreground: 225 23% 90%;
+    --sidebar-border: 234 11% 17%;
     --sidebar-ring: 181 38% 70%;
   }
 }
@@ -158,11 +162,21 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* Full-size section label — used above card titles / page section headers */
   .section-kicker {
     color: hsl(var(--foreground) / 0.72);
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  /* Compact sub-section label — used inside cards, strip headers, regime labels */
+  .nav-kicker {
+    color: hsl(var(--foreground) / 0.38);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 

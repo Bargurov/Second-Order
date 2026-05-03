@@ -63,6 +63,74 @@ export function TransmissionChain({ steps }: { steps: string[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Circular chain — horizontal nodes connected by a faint line.
+// Same data contract as TransmissionChain (string[] steps).  Use on the
+// Event Detail surface where the chain is visually primary; the vertical
+// ladder still serves callers that need a dense, narrow column.
+// ---------------------------------------------------------------------------
+
+export function TransmissionChainCircular({ steps }: { steps: string[] }) {
+  if (!steps || steps.length === 0) return null;
+
+  return (
+    <div className="relative">
+      {/* Connector line — sits behind the nodes, pinned to node center */}
+      <div
+        aria-hidden
+        className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-outline-variant/40 to-transparent"
+        style={{ top: "2.5rem" }}
+      />
+
+      <div className="relative flex justify-between items-start gap-3">
+        {steps.map((step, i) => {
+          const accent = isAccentStep(i, steps.length);
+          const label = getStepLabel(i, steps.length);
+          return (
+            <div
+              key={i}
+              className="flex flex-col items-center gap-3 z-10 flex-1 min-w-0"
+            >
+              <div
+                className={cn(
+                  "w-20 h-20 rounded-full bg-surface-container-highest flex items-center justify-center",
+                  // 4px ring of the parent surface to "cut" the connector
+                  "ring-4 ring-surface-container-low",
+                  accent
+                    ? "shadow-[0_0_0_1px_rgba(147,209,211,0.4)]"
+                    : "shadow-[0_0_0_1px_rgba(71,70,86,0.5)]",
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-[11px] font-bold uppercase tracking-[0.18em]",
+                    accent ? "text-primary" : "text-on-surface-variant/70",
+                  )}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+              </div>
+              <div className="text-center max-w-[160px]">
+                <p
+                  className={cn(
+                    "text-[11px] font-bold uppercase tracking-[0.18em] mb-1",
+                    accent ? "text-primary" : "text-on-surface-variant/55",
+                  )}
+                >
+                  {label}
+                </p>
+                <p className="text-[12px] text-on-surface leading-snug">
+                  {step}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Compact chain — horizontal for Market Mover cards (unchanged)
 // ---------------------------------------------------------------------------
 

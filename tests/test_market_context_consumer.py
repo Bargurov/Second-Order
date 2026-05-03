@@ -53,6 +53,10 @@ CONTEXT_REQUIRED_KEYS = {
     "stress", "rates", "regime_vector",
     "highlights", "highlights_meta",
     "uncertainty_concentration",
+    # Deeper macro-engine blocks — each carries its own ``available`` flag
+    # so partial availability doesn't require a separate contract.
+    "credit_regime", "funding_stress_mode",
+    "sector_rotation", "finance_playbook",
 }
 
 # Frontend reads these from snapshots_meta to size the partial availability footer.
@@ -241,14 +245,21 @@ class TestPartialAvailability(_Base):
         self.assertFalse(data["stress"]["available"])
         self.assertEqual(data["highlights"], [])
 
-    def test_snapshots_warm_store_empty_other_sections_still_work(self):
-        """When the background refresh hasn't run, snapshots is [] but stress
-        and highlights still come back.  This is the expected state in dev
-        when MARKET_SNAPSHOTS_ENABLED is unset."""
+    def test_market_context_auto_warms_cold_store(self):
+        """When the SnapshotStore is empty at request time,
+        /market-context triggers one synchronous refresh so the user
+        does not have to call /snapshots first to populate the strip.
+        ``market_check._fetch`` is patched to a healthy frame, so the
+        auto-refresh succeeds and every snapshot returns warmed."""
         with patch("market_check._fetch", return_value=_good_df()):
             data = self.client.get("/market-context").json()
-        self.assertEqual(data["snapshots"], [])
-        self.assertEqual(data["snapshots_meta"]["total"], 0)
+        self.assertEqual(len(data["snapshots"]), 8)
+        self.assertEqual(data["snapshots_meta"]["total"], 8)
+        self.assertEqual(data["snapshots_meta"]["fresh"], 8)
+        self.assertEqual(data["snapshots_meta"]["unavailable"], 0)
+        for snap in data["snapshots"]:
+            self.assertIsNone(snap["error"])
+            self.assertIsNotNone(snap["value"])
         # Other sections still populated
         self.assertIn("regime", data["stress"])
         self.assertIsInstance(data["highlights"], list)

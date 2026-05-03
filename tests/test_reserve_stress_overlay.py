@@ -470,7 +470,7 @@ class TestAnalyzeWiring(unittest.TestCase):
         cls.api = api
         cls.client = TestClient(api.app)
 
-    def _fake_analyze_event(self, headline, stage, persistence, event_context="", model=None):
+    def _fake_analyze_event(self, inp):
         return {
             "what_changed": "OPEC announced a 2 mbpd production cut.",
             "mechanism_summary": "Supply shock raises crude price; input and shipping costs transmit to importers.",

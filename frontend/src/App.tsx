@@ -3,11 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar, type Page } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { MarketOverview } from "@/components/pages/market-overview";
 import { HeadlinesPage } from "@/components/pages/headlines-page";
 import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
 import { Backtest } from "@/components/pages/backtest";
+import { PortfolioPage } from "@/components/pages/portfolio-page";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,12 +35,33 @@ function useAutoCollapse() {
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>("overview");
+  // Default home page is Market Context — the macro / uncertainty /
+  // headlines stack the sidebar leads Workspace with.  ``overview`` is
+  // a legacy alias that still resolves to the same surface.
+  const [page, setPage] = useState<Page>("market");
   const [collapsed, setCollapsed] = useAutoCollapse();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingHeadline, setPendingHeadline] = useState<string | undefined>();
   const [pendingContext, setPendingContext] = useState<string | undefined>();
   const [pendingEventId, setPendingEventId] = useState<number | undefined>();
+  const [failedHeadlines, setFailedHeadlines] = useState<Set<string>>(new Set());
+
+  const handleAnalysisFailed = useCallback((headline: string) => {
+    setFailedHeadlines((prev) => {
+      const next = new Set(prev);
+      next.add(headline);
+      return next;
+    });
+  }, []);
+
+  const handleAnalysisSucceeded = useCallback((headline: string) => {
+    setFailedHeadlines((prev) => {
+      if (!prev.has(headline)) return prev;
+      const next = new Set(prev);
+      next.delete(headline);
+      return next;
+    });
+  }, []);
 
   const analyzeHeadline = useCallback(
     (headline: string, opts?: { eventId?: number; context?: string }) => {
@@ -101,11 +124,18 @@ export default function App() {
                 }}
               />
             </div>
-            <main className="relative flex-1 px-3 pb-3 pt-3 md:px-5 md:pb-5 md:pt-4">
+            <main className="relative flex-1 px-3 pb-16 pt-3 md:px-5 md:pb-5 md:pt-4">
               <div className="page-enter w-full" key={page}>
-                {page === "overview" && <MarketOverview onAnalyze={analyzeHeadline} />}
+                {/* Market Context — the macro/uncertainty/headlines surface,
+                    reached explicitly via the ``market`` route.  ``overview``
+                    is a back-compat alias so older deep links and any
+                    setPage("overview") callers still resolve to the same
+                    page; preserve until callers migrate. */}
+                {(page === "market" || page === "overview") && (
+                  <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
+                )}
                 {page === "headlines" && (
-                  <HeadlinesPage onAnalyze={analyzeHeadline} />
+                  <HeadlinesPage onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
                 )}
                 {page === "analyze" && (
                   <AnalysisView
@@ -117,14 +147,19 @@ export default function App() {
                       setPendingContext(undefined);
                       setPendingEventId(undefined);
                     }}
-                    onBack={() => setPage("overview")}
+                    // Back navigates to the default workspace landing.
+                    onBack={() => setPage("market")}
+                    onAnalysisFailed={handleAnalysisFailed}
+                    onAnalysisSucceeded={handleAnalysisSucceeded}
                   />
                 )}
                 {page === "events" && <RecentEvents />}
                 {page === "backtest" && <Backtest />}
+                {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
               </div>
             </main>
           </div>
+          <BottomNav current={page} onNavigate={navigate} />
         </div>
       </TooltipProvider>
     </QueryClientProvider>

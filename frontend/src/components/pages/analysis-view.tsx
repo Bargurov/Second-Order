@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
 import { MarketBackdropStrip } from "@/components/ui/market-backdrop-strip";
 import { TickerDetailPanel } from "@/components/ui/ticker-detail-panel";
-import { TransmissionChain } from "@/components/ui/transmission-chain";
+import { TransmissionChainCircular } from "@/components/ui/transmission-chain";
 import { IfPersistsSection } from "@/components/ui/if-persists";
 import {
   Loader2,
@@ -27,12 +27,13 @@ import {
   Clock,
   MessageSquare,
 } from "lucide-react";
-import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type RevisitSnapshot, type ConfidenceCalibration } from "@/lib/api";
+import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type AnalogMatchDimension, type RevisitSnapshot, type ConfidenceCalibration, type CrossAssetConfirmation, type CreditTransmission, type HorizonCheckpoints, type HorizonCheckpoint, type SectorPassthrough, type SectorPassthroughEntry, type MechanismFamily, type ExpectedChannel, type Counterforce, type SubstitutionBarrier, type EventMacroReleaseContext, type EventPolicyTimingContext, type EventCountryVulnerabilityContext, type PolicyTimingStatus, type VulnerabilityTier, type CommodityTier } from "@/lib/api";
 import { deriveAllHorizons, deriveTrajectory, type HorizonSummary, type ThesisTrajectory } from "@/lib/revisit-derivation";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
 import { formatMemo, formatBlurb, formatMemoMarkdown } from "@/lib/format-memo";
 import { EvidenceQualityStrip } from "@/components/ui/evidence-quality-strip";
+import { EnginePhaseSummary } from "@/components/ui/engine-phase-summary";
 import { MarketValidationStatus } from "@/components/ui/market-validation-status";
 import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
@@ -79,9 +80,24 @@ const CONFIDENCE: Record<Confidence, {
 };
 
 // Shared card class for big section cards (bg-surface-container-low)
-const SECTION_CARD = "bg-surface-container-low rounded-xl shadow-[inset_0_0_0_1px_rgba(71,70,86,0.35),0_4px_12px_rgba(0,0,0,0.2)]";
+const SECTION_CARD = "bg-surface-container-low rounded-lg";
 // Inner card (bg-surface-container-highest)
-const INNER_CARD = "bg-surface-container-highest rounded-lg";
+const INNER_CARD = "bg-surface-container-highest rounded-md";
+
+// Quiet section lead — "01 · Title" used to anchor the new hierarchy.
+function SectionLead({ num, title, sub }: { num: string; title: string; sub?: string }) {
+  return (
+    <div className="mb-3 flex items-baseline gap-3">
+      <span className="font-mono text-[11px] tabular-nums text-on-surface-variant/45">{num}</span>
+      <h3 className="font-headline text-[14px] font-semibold tracking-[-0.005em] text-on-surface">
+        {title}
+      </h3>
+      {sub && (
+        <span className="text-[11px] text-on-surface-variant/55">{sub}</span>
+      )}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Small helpers
@@ -155,6 +171,362 @@ function MacroBackdropBlock({ analysis }: { analysis: AnalysisDetail }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// Macro Release Context — compact additive strip when the event maps to a
+// known macro release (CPI / PPI / NFP / Unemployment / PCE).  Mirrors the
+// headline-surface badge vocabulary so the same release reads consistently
+// across both pages.  Returns null when the block is empty — no placeholder
+// chrome for unmapped events.
+// ---------------------------------------------------------------------------
+
+const _MACRO_LABEL_TEXT: Record<string, string> = {
+  beat:    "Beat",
+  miss:    "Miss",
+  in_line: "In line",
+  unknown: "Print",
+};
+
+const _MACRO_LABEL_COLOR: Record<string, string> = {
+  beat:    "text-[#93d1d3]",
+  miss:    "text-[#ee7d77]",
+  in_line: "text-on-surface-variant/65",
+  unknown: "text-on-surface-variant/60",
+};
+
+function _fmtMacroNum(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1000) return value.toLocaleString();
+  if (Number.isInteger(value)) return value.toString();
+  return value.toFixed(2);
+}
+
+export function MacroReleaseContextBlock({ data }: { data: EventMacroReleaseContext }) {
+  if (!data?.release_key) return null;
+
+  const label = data.surprise_label ?? "unknown";
+  const labelText = _MACRO_LABEL_TEXT[label] ?? "Print";
+  const labelColor = _MACRO_LABEL_COLOR[label] ?? _MACRO_LABEL_COLOR.unknown;
+
+  const hasRevision =
+    data.revised_prior !== null && data.revised_prior !== undefined
+    && data.revised_prior !== data.prior;
+
+  const cells: { key: string; label: string; value: string; cls?: string }[] = [
+    { key: "actual",    label: "Actual",    value: _fmtMacroNum(data.actual),    cls: "text-foreground" },
+    { key: "consensus", label: "Consensus", value: _fmtMacroNum(data.consensus) },
+    { key: "prior",     label: "Prior",     value: _fmtMacroNum(data.prior) },
+  ];
+
+  return (
+    <section className={cn(SECTION_CARD, "px-6 py-3")}>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {/* Left: release key + timestamp + source (secondary metadata) */}
+        <div className="flex flex-col gap-0.5 min-w-[140px]">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+            Macro Release
+          </span>
+          <span className="text-[12px] font-semibold tabular-nums text-foreground/85 leading-snug">
+            {data.release_key}
+          </span>
+          {(data.release_time || data.source) && (
+            <span className="text-[10px] text-on-surface-variant/55 tabular-nums">
+              {data.release_time ? data.release_time.slice(0, 16).replace("T", " ") : ""}
+              {data.release_time && data.source ? " · " : ""}
+              {data.source}
+            </span>
+          )}
+        </div>
+
+        {/* Middle: surprise label — primary read, prominent */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+            Surprise
+          </span>
+          <span className={cn("text-[14px] font-bold tracking-tight", labelColor)}>
+            {labelText}
+          </span>
+        </div>
+
+        {/* Right: numbers — tabular, dense */}
+        <div className="flex items-center gap-3 ml-auto">
+          {cells.map((cell) => (
+            <div key={cell.key} className="flex flex-col gap-0.5 min-w-[60px]">
+              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+                {cell.label}
+              </span>
+              <span className={cn("text-[12px] font-num tabular-nums font-medium leading-snug",
+                cell.cls ?? "text-foreground/75")}>
+                {cell.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Revision line — visible but quiet, below the main read */}
+      {hasRevision && (
+        <div className="mt-2 pt-2 border-t border-border/15 flex items-center gap-2 text-[10px] text-on-surface-variant/60">
+          <span className="uppercase tracking-[0.15em] font-bold text-on-surface-variant/40">Revision</span>
+          <span className="tabular-nums">
+            Prior {_fmtMacroNum(data.prior)} → {_fmtMacroNum(data.revised_prior)}
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// Policy Timing Context — compact secondary strip when the event maps to
+// a tracked policy (tariff / sanction / rate decision / regulation).
+// Mirrors the headline-surface strip vocabulary (announced / effective /
+// under_review / expired) so the same policy reads consistently across
+// both pages.  Renders nothing when policy_key is null — no placeholder.
+// ---------------------------------------------------------------------------
+
+const _POLICY_STATUS_LABEL: Record<PolicyTimingStatus, string> = {
+  announced:    "Announced",
+  effective:    "Effective",
+  under_review: "Under Review",
+  expired:      "Expired",
+};
+
+// Colour discipline — matches the headlines-page PolicyTimingStrip so
+// the same status reads identically on both surfaces.
+const _POLICY_STATUS_STYLE: Record<PolicyTimingStatus, {
+  border: string; bg: string; text: string; dot: string;
+}> = {
+  announced: {
+    border: "border-[#93d1d3]/35",
+    bg:     "bg-[#93d1d3]/10",
+    text:   "text-[#93d1d3]",
+    dot:    "bg-[#93d1d3]",
+  },
+  effective: {
+    border: "border-[#ee7d77]/35",
+    bg:     "bg-[#ee7d77]/10",
+    text:   "text-[#ee7d77]",
+    dot:    "bg-[#ee7d77]",
+  },
+  under_review: {
+    border: "border-[#facc15]/30",
+    bg:     "bg-[#facc15]/8",
+    text:   "text-[#facc15]/85",
+    dot:    "bg-[#facc15]/80",
+  },
+  expired: {
+    border: "border-border/40",
+    bg:     "bg-secondary/40",
+    text:   "text-on-surface-variant/55",
+    dot:    "bg-on-surface-variant/40",
+  },
+};
+
+export function PolicyTimingContextBlock({
+  data,
+}: {
+  data: EventPolicyTimingContext;
+}) {
+  // Canonical empty shape: policy_key === null.  Render nothing so the
+  // page stays calm on unmapped events — no placeholder chrome.
+  if (!data?.policy_key) return null;
+
+  const status = (data.status ?? "announced") as PolicyTimingStatus;
+  const style = _POLICY_STATUS_STYLE[status] ?? _POLICY_STATUS_STYLE.announced;
+  const label = _POLICY_STATUS_LABEL[status] ?? status;
+
+  const dateCells: { key: string; label: string; value: string }[] = [
+    { key: "announced", label: "Announced", value: data.announced_date ?? "—" },
+    { key: "effective", label: "Effective", value: data.effective_date ?? "—" },
+    { key: "review",    label: "Review",    value: data.review_date    ?? "—" },
+  ];
+
+  return (
+    <section className={cn(SECTION_CARD, "px-6 py-3")}>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {/* Left: kicker + policy key + source — secondary metadata */}
+        <div className="flex flex-col gap-0.5 min-w-[160px]">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+            Policy Timing
+          </span>
+          <span className="text-[12px] font-semibold text-foreground/85 leading-snug font-num tabular-nums break-all">
+            {data.policy_key}
+          </span>
+          {data.source && (
+            <span className="text-[10px] text-on-surface-variant/55">
+              {data.source}
+            </span>
+          )}
+        </div>
+
+        {/* Middle: status pill — the primary at-a-glance read */}
+        <div className="flex items-center">
+          <span className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-2 py-[2px]",
+            "text-[9px] font-bold uppercase tracking-wider",
+            style.border, style.bg, style.text,
+          )}>
+            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", style.dot)} />
+            <span>{label}</span>
+          </span>
+        </div>
+
+        {/* Right: three dates — tabular, dense */}
+        <div className="flex items-center gap-3 ml-auto">
+          {dateCells.map((cell) => (
+            <div key={cell.key} className="flex flex-col gap-0.5 min-w-[76px]">
+              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+                {cell.label}
+              </span>
+              <span className="text-[11px] font-num tabular-nums font-medium text-foreground/75 leading-snug">
+                {cell.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// Country Vulnerability Context — compact secondary strip when the event
+// resolves to a country profiled in the backend country_backdrop
+// fixture.  Renders nothing when country is null — unprofiled events
+// keep the page byte-stable.
+// ---------------------------------------------------------------------------
+
+const _VULN_TIER_LABEL: Record<VulnerabilityTier, string> = {
+  resilient:  "Resilient",
+  moderate:   "Moderate",
+  vulnerable: "Vulnerable",
+  fragile:    "Fragile",
+};
+
+const _VULN_TIER_TEXT: Record<VulnerabilityTier, string> = {
+  resilient:  "text-[#93d1d3]",
+  moderate:   "text-on-surface-variant/75",
+  vulnerable: "text-[#facc15]/85",
+  fragile:    "text-[#ee7d77]",
+};
+
+const _COMMODITY_TIER_LABEL: Record<CommodityTier, string> = {
+  low:      "Low",
+  moderate: "Moderate",
+  high:     "High",
+  dominant: "Dominant",
+};
+
+const _COMMODITY_TIER_TEXT: Record<CommodityTier, string> = {
+  low:      "text-on-surface-variant/55",
+  moderate: "text-on-surface-variant/75",
+  high:     "text-foreground/80",
+  dominant: "text-[#93d1d3]",
+};
+
+export function CountryVulnerabilityContextBlock({
+  data,
+}: {
+  data: EventCountryVulnerabilityContext;
+}) {
+  // Canonical empty shape: country === null.  Render nothing so the
+  // page stays calm on events that don't resolve to a profiled country.
+  if (!data?.country) return null;
+
+  const overall = data.overall_vulnerability;
+  const overallLabel = overall
+    ? (_VULN_TIER_LABEL[overall] ?? overall)
+    : "—";
+  const overallColor = overall
+    ? (_VULN_TIER_TEXT[overall] ?? "text-foreground/80")
+    : "text-on-surface-variant/55";
+
+  const tierCells: {
+    key: string; label: string; value: string; cls: string;
+  }[] = [
+    {
+      key:   "external",
+      label: "External Balance",
+      value: data.external_balance_risk
+        ? (_VULN_TIER_LABEL[data.external_balance_risk] ?? data.external_balance_risk)
+        : "—",
+      cls:   data.external_balance_risk
+        ? (_VULN_TIER_TEXT[data.external_balance_risk] ?? "text-foreground/80")
+        : "text-on-surface-variant/55",
+    },
+    {
+      key:   "import",
+      label: "Import Shock",
+      value: data.import_shock_risk
+        ? (_VULN_TIER_LABEL[data.import_shock_risk] ?? data.import_shock_risk)
+        : "—",
+      cls:   data.import_shock_risk
+        ? (_VULN_TIER_TEXT[data.import_shock_risk] ?? "text-foreground/80")
+        : "text-on-surface-variant/55",
+    },
+    {
+      key:   "commodity",
+      label: "Commodity Dep.",
+      value: data.commodity_dependence
+        ? (_COMMODITY_TIER_LABEL[data.commodity_dependence] ?? data.commodity_dependence)
+        : "—",
+      cls:   data.commodity_dependence
+        ? (_COMMODITY_TIER_TEXT[data.commodity_dependence] ?? "text-foreground/80")
+        : "text-on-surface-variant/55",
+    },
+  ];
+
+  return (
+    <section className={cn(SECTION_CARD, "px-6 py-3")}>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {/* Left: kicker + country + overall vulnerability — primary read */}
+        <div className="flex flex-col gap-0.5 min-w-[140px]">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+            Country Vulnerability
+          </span>
+          <span className="text-[12px] font-semibold text-foreground/85 leading-snug">
+            {data.country}
+          </span>
+          <span className={cn("text-[11px] font-medium leading-snug", overallColor)}>
+            Overall: {overallLabel}
+          </span>
+        </div>
+
+        {/* Right: three risk cells — tabular, dense */}
+        <div className="flex items-center gap-3 ml-auto">
+          {tierCells.map((cell) => (
+            <div key={cell.key} className="flex flex-col gap-0.5 min-w-[100px]">
+              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/35">
+                {cell.label}
+              </span>
+              <span className={cn(
+                "text-[11px] font-medium leading-snug",
+                cell.cls,
+              )}>
+                {cell.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Rationale line — quiet, below the main read */}
+      {data.rationale && data.rationale.trim().length > 0 && (
+        <div className="mt-2 pt-2 border-t border-border/15 text-[10px] text-on-surface-variant/60 leading-snug">
+          <span className="uppercase tracking-[0.15em] font-bold text-on-surface-variant/40 mr-2">
+            Rationale
+          </span>
+          <span>{data.rationale}</span>
+        </div>
+      )}
     </section>
   );
 }
@@ -642,19 +1014,19 @@ function ShockDecompositionBlock({ data }: { data: ShockDecomposition }) {
                   isPrimary ? "bg-primary/10" : "bg-surface-container-highest",
                 )}
               >
-                <div className="text-[8px] uppercase tracking-widest text-on-surface-variant/50">
+                <div className="text-[10px] font-medium text-on-surface-variant/60">
                   {c.short}
                 </div>
                 <div
                   className={cn(
-                    "text-[11px] font-num font-bold mt-0.5",
+                    "text-[12px] font-num font-bold mt-0.5",
                     ch?.available ? "text-on-surface" : "text-on-surface-variant/30",
                   )}
                 >
                   {ch?.available ? fmt(ch.move_5d) : "—"}
                 </div>
                 {ch?.available && (
-                  <div className="text-[8px] text-on-surface-variant/50 font-num">
+                  <div className="text-[10px] text-on-surface-variant/60 font-num">
                     {ch.z.toFixed(1)}σ
                   </div>
                 )}
@@ -1496,20 +1868,40 @@ function AnalogCard({ analog, rank }: { analog: HistoricalAnalog; rank: number }
         </div>
       </div>
 
-      {/* Classification badges */}
-      <div className="flex items-center gap-1.5 mb-3">
-        <span className="text-[8px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant/60 font-bold uppercase tracking-widest">
+      {/* Classification badges + match-dimension pills */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant/75 font-medium">
           {analog.stage}
         </span>
-        <span className="text-[8px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant/60 font-bold uppercase tracking-widest">
+        <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant/75 font-medium">
           {analog.persistence}
         </span>
+        {analog.match_dimensions && analog.match_dimensions.length > 0 && (
+          <>
+            <span className="w-px h-2 bg-outline-variant/25 mx-0.5" />
+            {analog.match_dimensions.map((d) => (
+              <MatchDimensionPill key={d.dimension} dim={d} />
+            ))}
+          </>
+        )}
       </div>
+
+      {/* Topic-vs-regime mismatch banner — fires when the past case rhymes
+          on topic but diverges on macro setup.  Keeps it compact: one line,
+          muted coral tint, no icon (the pill strip above already signals
+          the dimensions that diverged). */}
+      {analog.topic_vs_regime_mismatch && analog.mismatch_note && (
+        <div className="mb-3 px-2 py-1.5 rounded bg-[#c07070]/10 border-l-2 border-[#c07070]/50">
+          <p className="text-[10px] text-[#c07070] leading-snug">
+            {analog.mismatch_note}
+          </p>
+        </div>
+      )}
 
       {/* Follow-through metrics — 3-column comparison grid */}
       <div className="grid grid-cols-3 gap-x-3 py-3 border-t border-b border-outline-variant/10 mb-3">
         <div>
-          <span className="text-[8px] text-on-surface-variant/40 uppercase tracking-widest block mb-1">5d return</span>
+          <span className="text-[10px] text-on-surface-variant/55 font-medium block mb-1">5d return</span>
           {analog.return_5d != null ? (
             <span className={cn(
               "text-[14px] font-bold font-num leading-none",
@@ -1522,7 +1914,7 @@ function AnalogCard({ analog, rank }: { analog: HistoricalAnalog; rank: number }
           )}
         </div>
         <div>
-          <span className="text-[8px] text-on-surface-variant/40 uppercase tracking-widest block mb-1">20d return</span>
+          <span className="text-[10px] text-on-surface-variant/55 font-medium block mb-1">20d return</span>
           {analog.return_20d != null ? (
             <span className={cn(
               "text-[14px] font-bold font-num leading-none",
@@ -1535,9 +1927,9 @@ function AnalogCard({ analog, rank }: { analog: HistoricalAnalog; rank: number }
           )}
         </div>
         <div>
-          <span className="text-[8px] text-on-surface-variant/40 uppercase tracking-widest block mb-1">Pattern</span>
+          <span className="text-[10px] text-on-surface-variant/55 font-medium block mb-1">Pattern</span>
           <span className={cn(
-            "inline-block text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded leading-none",
+            "inline-block text-[10px] font-medium px-2 py-0.5 rounded leading-none",
             decay.bg, decay.color,
           )}>
             {decay.label}
@@ -1545,13 +1937,742 @@ function AnalogCard({ analog, rank }: { analog: HistoricalAnalog; rank: number }
         </div>
       </div>
 
-      {/* Match reason */}
-      {analog.match_reason && (
-        <p className="text-[10px] text-on-surface-variant/40 leading-relaxed mt-auto">
-          {analog.match_reason}
+      {/* Explainer — finance-useful "why this analog rhymes (or doesn't)".
+          Prefers the structured explainer from analog_explainer.py; falls
+          back to the legacy match_reason string for rows that pre-date the
+          explainer enrichment. */}
+      {(analog.explainer || analog.match_reason) && (
+        <p className="text-[10px] text-on-surface-variant/55 leading-relaxed mt-auto">
+          {analog.explainer ?? analog.match_reason}
         </p>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Thesis Scorecard — compact 4-cell composite of the shipped engine reads:
+//   cross-asset confirmation · timing profile · funding stress · policy room
+// Placed high on the page so the user gets the at-a-glance "how does this
+// setup look" before drilling into the detail blocks.
+// ---------------------------------------------------------------------------
+
+type ScoreTone = "primary" | "error" | "neutral";
+
+const _TONE_DOT: Record<ScoreTone, string> = {
+  primary: "bg-[#6ec6a5]",
+  error:   "bg-[#c07070]",
+  neutral: "bg-[#a89f91]",
+};
+const _TONE_TEXT: Record<ScoreTone, string> = {
+  primary: "text-[#6ec6a5]",
+  error:   "text-[#c07070]",
+  neutral: "text-on-surface",
+};
+
+function _crossAssetScoreCell(cx?: CrossAssetConfirmation | null): {
+  value: string; sub: string; tone: ScoreTone;
+} {
+  if (!cx || !cx.available) {
+    return { value: "—", sub: "not scored", tone: "neutral" };
+  }
+  const v = cx.verdict ?? "silent";
+  const tone: ScoreTone =
+    v === "strong_confirm" || v === "weak_confirm" ? "primary" :
+    v === "strong_disconfirm" || v === "weak_disconfirm" ? "error" :
+    "neutral";
+  const value =
+    v === "strong_confirm"    ? "Strong confirm" :
+    v === "weak_confirm"      ? "Confirm" :
+    v === "mixed"             ? "Mixed" :
+    v === "weak_disconfirm"   ? "Disconfirm" :
+    v === "strong_disconfirm" ? "Strong disconfirm" :
+    "Silent";
+  const sub = `${(cx.confirm_score ?? 0).toFixed(1)} confirm · ${(cx.disconfirm_score ?? 0).toFixed(1)} disconfirm`;
+  return { value, sub, tone };
+}
+
+function _timingProfileCell(hc?: HorizonCheckpoints | null): {
+  value: string; sub: string; tone: ScoreTone;
+} {
+  if (!hc || !hc.timing_profile || hc.timing_profile === "unknown") {
+    return { value: "Unknown", sub: "no timing read", tone: "neutral" };
+  }
+  const p = hc.timing_profile;
+  const value =
+    p === "fast_shock"           ? "Fast shock" :
+    p === "delayed_pass_through" ? "Delayed passthrough" :
+    p === "slow_grind"           ? "Slow grind" :
+    "Unknown";
+  const sub =
+    p === "fast_shock"           ? "reaction priced in <1d" :
+    p === "delayed_pass_through" ? "5d–20d follow-through" :
+    p === "slow_grind"           ? "20d+ structural" :
+    "";
+  return { value, sub, tone: "neutral" };
+}
+
+function _fundingStressCell(ct?: CreditTransmission | null): {
+  value: string; sub: string; tone: ScoreTone;
+} {
+  if (!ct || !ct.available) {
+    return { value: "—", sub: "credit inputs unavailable", tone: "neutral" };
+  }
+  const f = ct.funding_stress;
+  const tone: ScoreTone =
+    f === "acute" || f === "elevated" ? "error" :
+    f === "insulated"                 ? "primary" :
+    "neutral";
+  const value =
+    f === "acute"      ? "Acute" :
+    f === "elevated"   ? "Elevated" :
+    f === "contained"  ? "Contained" :
+    f === "insulated"  ? "Insulated" :
+    "Unknown";
+  const evc = ct.equity_vs_credit;
+  const sub =
+    evc === "synchronized_stress"       ? "equity + credit stress" :
+    evc === "credit_only_deterioration" ? "credit-only deterioration" :
+    evc === "equity_only_riskoff"       ? "equity-only risk-off" :
+    evc === "synchronized_calm"         ? "equity + credit calm" :
+    "";
+  return { value, sub, tone };
+}
+
+function _policyRoomCell(pc?: PolicyConstraint | null): {
+  value: string; sub: string; tone: ScoreTone;
+} {
+  if (!pc || !pc.policy_room || pc.policy_room === "unknown") {
+    return { value: "Unknown", sub: "no macro read", tone: "neutral" };
+  }
+  const r = pc.policy_room;
+  const tone: ScoreTone =
+    r === "boxed_in" || r === "constrained" ? "error" :
+    r === "free_to_respond" || r === "ample" ? "primary" :
+    "neutral";
+  const value =
+    r === "free_to_respond" ? "Free to respond" :
+    r === "ample"           ? "Ample room" :
+    r === "limited"         ? "Limited room" :
+    r === "constrained"     ? "Constrained" :
+    r === "boxed_in"        ? "Boxed in" :
+    r === "mixed"           ? "Mixed mandate" :
+    "Unknown";
+  const sub = pc.binding_label
+    ? `binding: ${pc.binding_label.toLowerCase()}`
+    : "";
+  return { value, sub, tone };
+}
+
+function ThesisScorecard({ analysis }: { analysis: AnalysisDetail }) {
+  const cross = analysis.cross_asset_confirmation;
+  const hc    = analysis.horizon_checkpoints;
+  const ct    = analysis.credit_transmission;
+  const pc    = analysis.policy_constraint;
+
+  // Skip the whole card if every engine output is empty — avoids an
+  // empty-row on low-signal responses.
+  const anyAvailable =
+    (cross && cross.available) ||
+    (hc && hc.timing_profile && hc.timing_profile !== "unknown") ||
+    (ct && ct.available) ||
+    (pc && pc.policy_room && pc.policy_room !== "unknown");
+  if (!anyAvailable) return null;
+
+  const cells = [
+    { kicker: "Cross-asset",  ..._crossAssetScoreCell(cross) },
+    { kicker: "Timing",       ..._timingProfileCell(hc) },
+    { kicker: "Funding",      ..._fundingStressCell(ct) },
+    { kicker: "Policy room",  ..._policyRoomCell(pc) },
+  ];
+
+  return (
+    <section className={cn(SECTION_CARD, "px-5 py-4")}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="section-kicker">Thesis Scorecard</p>
+        <span className="text-[9px] text-on-surface-variant/35 uppercase tracking-[0.2em]">
+          at analysis time
+        </span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        {cells.map((c) => (
+          <div key={c.kicker} className={cn(INNER_CARD, "p-3")}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className={cn("w-1.5 h-1.5 rounded-full", _TONE_DOT[c.tone])} />
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-on-surface-variant/50">
+                {c.kicker}
+              </span>
+            </div>
+            <div className={cn("text-[13px] font-headline font-semibold leading-tight", _TONE_TEXT[c.tone])}>
+              {c.value}
+            </div>
+            {c.sub && (
+              <p className="text-[10px] text-on-surface-variant/45 mt-1 leading-snug">
+                {c.sub}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sector Rotation Impact Map — renders sector_passthrough.
+// Direct-hit sectors as lead pills; each downstream candidate as a compact
+// row with lag pill, intensity dots, sign arrow, example tickers.  The
+// distinction between direct (1-5d) and downstream (5-20d) validation
+// windows shows up in the block header.
+// ---------------------------------------------------------------------------
+
+const _LAG_LABEL: Record<string, string> = {
+  immediate: "Now", days: "Days", weeks: "Weeks", quarters: "Quarters",
+};
+
+const _INTENSITY_DOTS: Record<string, number> = { low: 1, medium: 2, high: 3 };
+
+function _signGlyph(sign: SectorPassthroughEntry["sign"]): { g: string; cls: string } {
+  if (sign === "reinforcing") return { g: "↑", cls: "text-[#6ec6a5]" };
+  if (sign === "inverse")     return { g: "↓", cls: "text-[#c07070]" };
+  return { g: "⇅", cls: "text-on-surface-variant/60" };
+}
+
+function _timingProfileLabel(p?: SectorPassthrough["timing_profile"]): string {
+  if (p === "fast_cascade")  return "Fast cascade";
+  if (p === "slow_cascade")  return "Slow cascade";
+  if (p === "mixed")         return "Mixed cascade";
+  if (p === "no_downstream") return "No cascade mapped";
+  return "—";
+}
+
+// ---------------------------------------------------------------------------
+// Finance Playbook — mechanism family + first/second-order channel packs +
+// regime-conditioned caveat.  The "what does a macro desk do with this"
+// header strip that sits right under the Thesis Scorecard.
+// ---------------------------------------------------------------------------
+
+const _FAMILY_LABEL: Record<MechanismFamily, string> = {
+  tariff:                  "Tariff",
+  sanction:                "Sanction",
+  supply_shock:            "Supply shock",
+  ceasefire_deescalation:  "Ceasefire / de-escalation",
+  policy_surprise:         "Policy surprise",
+  fiscal_issuance:         "Fiscal / issuance",
+  labor_inflation:         "Labor / inflation print",
+  bank_stress:             "Bank / funding stress",
+  commodity_squeeze:       "Commodity squeeze",
+  supply_normalization:    "Supply normalization",
+  none:                    "No family matched",
+};
+
+const _CHANNEL_LABEL: Record<ExpectedChannel, string> = {
+  rates:       "Rates",
+  fx:          "FX",
+  commodities: "Commodities",
+  vol:         "Vol",
+  credit:      "Credit",
+  equities:    "Equities",
+};
+
+const _CHANNEL_GLYPH: Record<ExpectedChannel, string> = {
+  rates:       "◧",
+  fx:          "$",
+  commodities: "●",
+  vol:         "△",
+  credit:      "⊖",
+  equities:    "▣",
+};
+
+function ChannelChip({
+  channel, tier,
+}: { channel: ExpectedChannel; tier: "first" | "second" }) {
+  const tierClass = tier === "first"
+    ? "bg-primary-container/30 text-primary"
+    : "bg-surface-container text-on-surface-variant/80";
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider leading-none",
+      tierClass,
+    )}>
+      <span className="font-mono text-[9px] opacity-75">{_CHANNEL_GLYPH[channel]}</span>
+      {_CHANNEL_LABEL[channel]}
+    </span>
+  );
+}
+
+function FinancePlaybookBlock({ analysis }: { analysis: AnalysisDetail }) {
+  const fam = analysis.mechanism_family;
+  const first = analysis.expected_first_order_channels ?? [];
+  const second = analysis.expected_second_order_channels ?? [];
+  const caveat = (analysis.regime_conditioned_caveat ?? "").trim();
+
+  // Card hides entirely when the family is missing/none AND both channel
+  // packs are empty — no value in an empty playbook strip on thin events.
+  const hasFamily = fam && fam !== "none";
+  const hasChannels = first.length > 0 || second.length > 0;
+  if (!hasFamily && !hasChannels) return null;
+
+  const familyLabel = fam ? (_FAMILY_LABEL[fam] ?? fam) : "Unclassified";
+  const noCaveat = !caveat || /no regime-conditioned caveat/i.test(caveat);
+
+  return (
+    <section className={cn(SECTION_CARD, "px-5 py-4")}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="section-kicker">Finance Playbook</p>
+        <span className="text-[9px] text-on-surface-variant/35 uppercase tracking-[0.2em]">
+          canonical desk read
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-x-5 gap-y-3 items-start">
+        {/* Left: mechanism family + archetype line */}
+        <div className={cn(INNER_CARD, "px-4 py-3 min-w-[180px]")}>
+          <span className="nav-kicker block mb-1.5">Archetype</span>
+          <div className={cn(
+            "text-[14px] font-headline font-semibold leading-tight",
+            hasFamily ? "text-on-surface" : "text-on-surface-variant/50",
+          )}>
+            {familyLabel}
+          </div>
+        </div>
+
+        {/* Right: channel packs */}
+        <div className="flex flex-col gap-2.5 justify-center min-w-0">
+          {first.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-on-surface-variant/50 mr-1 shrink-0">
+                First order
+              </span>
+              {first.map((c) => <ChannelChip key={c} channel={c} tier="first" />)}
+            </div>
+          )}
+          {second.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-on-surface-variant/50 mr-1 shrink-0">
+                Cascade
+              </span>
+              {second.map((c) => <ChannelChip key={c} channel={c} tier="second" />)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Regime-conditioned caveat — the "how today's backdrop bends this
+          playbook" line.  Only rendered when the LLM committed to a real
+          caveat (the placeholder sentence is suppressed). */}
+      {!noCaveat && (
+        <div className="mt-3 pt-3 border-t border-outline-variant/10">
+          <div className="flex items-start gap-2">
+            <span className="w-1 h-3 bg-primary/50 rounded-full shrink-0 mt-[3px]" />
+            <div className="min-w-0">
+              <span className="nav-kicker block mb-1">Regime-conditioned caveat</span>
+              <p className="text-[11px] text-on-surface/80 leading-relaxed italic">
+                {caveat}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Base Case / Key Risk / What Would Change The Read — the three-column
+// "macro note" summary that compresses mechanism + counterforces +
+// adversarial_challenge into a decision-useful header.
+// ---------------------------------------------------------------------------
+
+const _LIKELIHOOD_DOT: Record<string, string> = {
+  high:   "bg-[#c07070]",
+  medium: "bg-[#a89f91]",
+  low:    "bg-outline-variant/30",
+};
+const _SEVERITY_DOT: Record<string, string> = {
+  high:   "bg-[#c07070]",
+  medium: "bg-[#a89f91]",
+  low:    "bg-outline-variant/30",
+};
+
+function _leadSentence(text: string): string {
+  if (!text) return "";
+  const match = text.match(/[^.!?]+[.!?]/);
+  return (match ? match[0] : text).trim();
+}
+
+function BaseCaseRiskBlock({ analysis }: { analysis: AnalysisDetail }) {
+  const base = _leadSentence(analysis.mechanism_summary || analysis.what_changed || "");
+  const counterforces = (analysis.counterforces ?? []).slice(0, 3);
+  const barriers = (analysis.substitution_barriers ?? []).slice(0, 2);
+  const adversarial = (analysis.adversarial_challenge ?? "").trim();
+  const hasAdversarial = adversarial && !/^no credible challenge/i.test(adversarial);
+
+  // Hide the block if every column is empty — the Analysis page already
+  // carries what_changed / mechanism_summary in a separate section above.
+  if (!base && counterforces.length === 0 && barriers.length === 0 && !hasAdversarial) {
+    return null;
+  }
+
+  return (
+    <section className={cn(SECTION_CARD, "p-6")}>
+      <div className="flex items-center justify-between mb-4">
+        <p className="section-kicker">Macro Note</p>
+        <span className="text-[9px] text-on-surface-variant/35 uppercase tracking-[0.2em]">
+          base · risk · falsifier
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Base case */}
+        <div className={cn(INNER_CARD, "p-4 border-l-2 border-[#6ec6a5]/60")}>
+          <span className="nav-kicker text-[#6ec6a5]/90 block mb-2">Base case</span>
+          <p className="text-[11.5px] text-on-surface leading-relaxed">
+            {base || <span className="text-on-surface-variant/40 italic">No first-order read.</span>}
+          </p>
+        </div>
+
+        {/* Key risk — counterforces (primary) + substitution barriers (secondary) */}
+        <div className={cn(INNER_CARD, "p-4 border-l-2 border-[#c07070]/60")}>
+          <span className="nav-kicker text-[#c07070]/90 block mb-2">Key risk</span>
+          {counterforces.length > 0 ? (
+            <ul className="space-y-2">
+              {counterforces.map((c: Counterforce, i: number) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full shrink-0 mt-[5px]",
+                      _LIKELIHOOD_DOT[c.likelihood] ?? _LIKELIHOOD_DOT.medium,
+                    )}
+                    title={`likelihood: ${c.likelihood}`}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-on-surface leading-snug">
+                      {c.force}
+                    </p>
+                    {c.actor && (
+                      <span className="text-[9px] text-on-surface-variant/45 block mt-0.5 uppercase tracking-widest">
+                        {c.actor}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[11px] text-on-surface-variant/40 italic">
+              No structured counterforces.
+            </p>
+          )}
+          {barriers.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-outline-variant/10">
+              <span className="nav-kicker block mb-1.5">Substitution barriers</span>
+              <ul className="space-y-1">
+                {barriers.map((b: SubstitutionBarrier, i: number) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span
+                      className={cn(
+                        "w-1 h-1 rounded-full shrink-0 mt-[6px]",
+                        _SEVERITY_DOT[b.severity] ?? _SEVERITY_DOT.medium,
+                      )}
+                      title={`severity: ${b.severity}`}
+                    />
+                    <p className="text-[10.5px] text-on-surface-variant/80 leading-snug">
+                      {b.barrier}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* What would change the read — adversarial_challenge */}
+        <div className={cn(INNER_CARD, "p-4 border-l-2 border-[#a89f91]/60")}>
+          <span className="nav-kicker text-[#a89f91]/90 block mb-2">
+            What would change the read
+          </span>
+          {hasAdversarial ? (
+            <p className="text-[11.5px] text-on-surface leading-relaxed">
+              {adversarial}
+            </p>
+          ) : (
+            <p className="text-[11px] text-on-surface-variant/40 italic">
+              No credible counter-thesis identified — mechanism is direct.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Horizon Checkpoints — 1d / 5d / 20d × expected / confirms_if / falsifies_if.
+// The headline decision-useful block: what should happen next, and what
+// would prove the thesis wrong at each horizon.
+// ---------------------------------------------------------------------------
+
+const _TIMING_PROFILE_LABEL: Record<string, { label: string; sub: string; tone: ScoreTone }> = {
+  fast_shock:           { label: "Fast shock",           sub: "reaction priced in <1d",   tone: "neutral" },
+  delayed_pass_through: { label: "Delayed passthrough",  sub: "5d–20d follow-through",    tone: "neutral" },
+  slow_grind:           { label: "Slow grind",           sub: "20d+ structural",          tone: "neutral" },
+  unknown:              { label: "Unknown",              sub: "no timing committed",      tone: "neutral" },
+};
+
+function _bulletColumn(
+  kicker: string,
+  tone: "confirm" | "expected" | "falsify",
+  items: string[],
+): JSX.Element {
+  const toneClass =
+    tone === "confirm"  ? "text-[#6ec6a5]" :
+    tone === "falsify"  ? "text-[#c07070]" :
+    "text-on-surface-variant/70";
+  const dotClass =
+    tone === "confirm"  ? "bg-[#6ec6a5]" :
+    tone === "falsify"  ? "bg-[#c07070]" :
+    "bg-outline-variant/35";
+  return (
+    <div>
+      <span className={cn("nav-kicker block mb-1.5", toneClass)}>{kicker}</span>
+      {items.length === 0 ? (
+        <p className="text-[10.5px] text-on-surface-variant/35 italic">— no entry —</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map((t, i) => (
+            <li key={i} className="flex items-start gap-1.5">
+              <span className={cn("w-1 h-1 rounded-full shrink-0 mt-[6px]", dotClass)} />
+              <span className="text-[10.5px] text-on-surface/90 leading-snug">{t}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function HorizonRow({ h }: { h: HorizonCheckpoint }) {
+  const isEmpty =
+    h.expected.length === 0 &&
+    h.confirms_if.length === 0 &&
+    h.falsifies_if.length === 0;
+  return (
+    <div className={cn(
+      INNER_CARD, "p-4 grid grid-cols-1 md:grid-cols-[48px_1fr_1fr_1fr] gap-4",
+      isEmpty && "opacity-40",
+    )}>
+      {/* Horizon stamp */}
+      <div className="flex md:flex-col md:items-start items-center gap-2 md:gap-0.5 md:border-r border-outline-variant/10 md:pr-4">
+        <span className="text-[22px] font-headline font-extrabold text-on-surface leading-none tabular-nums">
+          {h.horizon}
+        </span>
+        <span className="text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/45 font-bold">
+          horizon
+        </span>
+      </div>
+      {_bulletColumn("Expected", "expected", h.expected)}
+      {_bulletColumn("Confirms if", "confirm", h.confirms_if)}
+      {_bulletColumn("Falsifies if", "falsify", h.falsifies_if)}
+    </div>
+  );
+}
+
+function HorizonCheckpointsBlock({ data }: { data: HorizonCheckpoints }) {
+  if (!data || !data.horizons || data.horizons.length === 0) return null;
+  // Suppress the block entirely when every horizon is empty on all three
+  // axes AND the timing profile is unknown — nothing finance-real to show.
+  const anyEntry = data.horizons.some(
+    (h) => h.expected.length + h.confirms_if.length + h.falsifies_if.length > 0,
+  );
+  const timingUsable = data.timing_profile && data.timing_profile !== "unknown";
+  if (!anyEntry && !timingUsable) return null;
+
+  const profile =
+    _TIMING_PROFILE_LABEL[data.timing_profile]
+    ?? _TIMING_PROFILE_LABEL.unknown!;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-6")}>
+      <div className="flex items-start justify-between mb-4 gap-4">
+        <div className="flex items-center gap-2">
+          <span className="w-1 h-3 bg-primary rounded-full shrink-0" />
+          <div>
+            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+              Horizon Checkpoints
+            </h4>
+            <p className="text-[10px] text-on-surface-variant/40 mt-0.5">
+              what should happen next · what would prove this wrong
+            </p>
+          </div>
+        </div>
+        {/* Timing profile pill */}
+        <div className="flex items-center gap-2 shrink-0 mt-0.5">
+          <div className={cn("px-2.5 py-1 rounded-full", INNER_CARD)}>
+            <div className="flex items-center gap-1.5">
+              <span className={cn("w-1.5 h-1.5 rounded-full", _TONE_DOT[profile.tone])} />
+              <span className="text-[10px] font-bold text-on-surface uppercase tracking-widest leading-none">
+                {profile.label}
+              </span>
+            </div>
+            <span className="text-[9px] text-on-surface-variant/45 leading-none block mt-1">
+              {profile.sub}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        {data.horizons.map((h) => (
+          <HorizonRow key={h.horizon} h={h} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SectorPassthroughBlock({ data }: { data: SectorPassthrough }) {
+  if (!data || !data.available) return null;
+  const direct = data.direct_sectors_label ?? [];
+  const down = data.downstream ?? [];
+
+  return (
+    <section className={cn(SECTION_CARD, "p-6")}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="w-1 h-3 bg-primary rounded-full shrink-0" />
+          <div>
+            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+              Sector Rotation Impact
+            </h4>
+            <p className="text-[10px] text-on-surface-variant/40 mt-0.5">
+              {_timingProfileLabel(data.timing_profile)} · direct {data.direct_validation_window} ·
+              {" "}downstream {data.downstream_validation_window}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Direct hit row */}
+      {direct.length > 0 && (
+        <div className="mb-4">
+          <span className="nav-kicker block mb-2">Direct hit</span>
+          <div className="flex flex-wrap gap-1.5">
+            {direct.map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-container/30 text-[10px] font-bold text-primary tracking-wide"
+              >
+                <span className="w-1 h-1 rounded-full bg-primary" />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Downstream grid */}
+      {down.length > 0 ? (
+        <div>
+          <span className="nav-kicker block mb-2">Downstream</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {down.map((entry, i) => {
+              const sg = _signGlyph(entry.sign);
+              const dots = _INTENSITY_DOTS[entry.intensity] ?? 1;
+              return (
+                <div
+                  key={`${entry.source}-${entry.target}-${i}`}
+                  className={cn(INNER_CARD, "p-3")}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={cn("text-[14px] leading-none shrink-0", sg.cls)}>
+                        {sg.g}
+                      </span>
+                      <span className="text-[11px] font-semibold text-on-surface truncate">
+                        {entry.target_label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="flex items-center gap-0.5">
+                        {[0, 1, 2].map((n) => (
+                          <span
+                            key={n}
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              n < dots ? _TONE_DOT[entry.sign === "reinforcing" ? "primary" : entry.sign === "inverse" ? "error" : "neutral"] : "bg-outline-variant/20",
+                            )}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant/60">
+                        {_LAG_LABEL[entry.lag] ?? entry.lag}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-on-surface-variant/55 leading-snug mb-1.5">
+                    {entry.mechanism}
+                  </p>
+                  {entry.example_proxies && entry.example_proxies.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {entry.example_proxies.slice(0, 5).map((p) => (
+                        <span
+                          key={p}
+                          className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-surface-container/60 text-on-surface-variant/75"
+                        >
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <p className="text-[10px] text-on-surface-variant/40 italic">
+          No structured downstream cascade mapped for this direct-hit set.
+        </p>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Analog match-dimension pill — renders one entry from match_dimensions.
+// ---------------------------------------------------------------------------
+
+const _DIM_STATUS: Record<AnalogMatchDimension["status"], {
+  dot: string; text: string; bg: string; glyph: string;
+}> = {
+  match:    { dot: "bg-[#6ec6a5]", text: "text-[#6ec6a5]", bg: "bg-[#6ec6a5]/10", glyph: "✓" },
+  partial:  { dot: "bg-[#a89f91]", text: "text-[#a89f91]", bg: "bg-[#a89f91]/10", glyph: "≈" },
+  mismatch: { dot: "bg-[#c07070]", text: "text-[#c07070]", bg: "bg-[#c07070]/10", glyph: "✗" },
+  unknown:  { dot: "bg-outline-variant/30", text: "text-on-surface-variant/40", bg: "bg-surface-container/40", glyph: "·" },
+};
+
+const _DIM_SHORT_LABEL: Record<string, string> = {
+  mechanism_family: "Family",
+  regime:           "Regime",
+  inflation_rates:  "Rates",
+  credit:           "Credit",
+};
+
+function MatchDimensionPill({ dim }: { dim: AnalogMatchDimension }) {
+  const style = _DIM_STATUS[dim.status];
+  const short = _DIM_SHORT_LABEL[dim.dimension] ?? dim.label;
+  return (
+    <span
+      title={dim.note}
+      className={cn(
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest leading-none",
+        style.bg, style.text,
+      )}
+    >
+      <span className={cn("leading-none", style.text)}>{style.glyph}</span>
+      {short}
+    </span>
   );
 }
 
@@ -2181,30 +3302,46 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
       {result && (
         <div className="space-y-8">
 
-          {/* Market backdrop — compact secondary block fed from /market-context */}
-          <section className={cn(SECTION_CARD, "px-6 py-3")}>
-            <MarketBackdropStrip />
-          </section>
-
-          {/* Macro backdrop — regime/rates snapshot that informed the thesis */}
-          {result.analysis && (
-            <MacroBackdropBlock analysis={result.analysis} />
-          )}
-
-          {/* ── STATE A: Strong signal ── */}
+          {/* ── STATE A: Strong signal — primary thesis stack ──
+              Hierarchy: why surfaced → thesis / proof / falsifier →
+              transmission → assets → engine reference (collapsible).
+              Macro context anchors WHY (regime forced this onto the
+              radar); thesis/proof/falsifier are visually primary;
+              transmission and assets follow; secondary analytical
+              blocks trail before the collapsible Engine Reference. */}
           {result.analysis && !isLowSignal && (
             <div className="space-y-8">
-              {/* Transmission chain — big section card */}
-              {result.analysis.transmission_chain && result.analysis.transmission_chain.length > 0 && (
-                <section className={cn(SECTION_CARD, "px-5 py-4")}>
-                  <p className="section-kicker mb-4">Transmission Path</p>
-                  <TransmissionChain steps={result.analysis.transmission_chain} />
-                </section>
-              )}
+              {/* ============================================================
+                  WHY SURFACED — macro context that frames why this matters now
+                  ============================================================ */}
+              <div className="space-y-4">
+                <SectionLead num="01" title="Why surfaced" sub="Regime + release context that frames this read" />
 
-              {/* Two-column: What Changed + Mechanism | Beneficiaries + Losers */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left — big section card, inner text */}
+                <section className={cn(SECTION_CARD, "px-5 py-3")}>
+                  <MarketBackdropStrip />
+                </section>
+
+                <MacroBackdropBlock analysis={result.analysis} />
+
+                {result.analysis.macro_release_context && (
+                  <MacroReleaseContextBlock data={result.analysis.macro_release_context} />
+                )}
+
+                {result.analysis.policy_timing_context && (
+                  <PolicyTimingContextBlock data={result.analysis.policy_timing_context} />
+                )}
+
+                {result.analysis.country_vulnerability_context && (
+                  <CountryVulnerabilityContextBlock data={result.analysis.country_vulnerability_context} />
+                )}
+              </div>
+
+              {/* ============================================================
+                  THESIS — what changed + mechanism (lifted to primary)
+                  ============================================================ */}
+              <div className="space-y-4">
+                <SectionLead num="02" title="Thesis" sub="What changed and how it transmits" />
+
                 <div className={cn(SECTION_CARD, "p-6 space-y-5")}>
                   <div>
                     <SectionLabel>What Changed</SectionLabel>
@@ -2212,23 +3349,71 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                       {result.analysis.what_changed.split(/[.!]\s+/).filter(Boolean).map((s, i) => (
                         <li key={i} className="flex items-start gap-2.5">
                           <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                          <p className="text-[12px] text-on-surface leading-relaxed">{s.trim().replace(/\.$/, "")}.</p>
+                          <p className="text-[13px] text-on-surface leading-relaxed">{s.trim().replace(/\.$/, "")}.</p>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="pt-5 border-t border-outline-variant/10">
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-2.5">Mechanism Summary</h4>
-                    <p className="text-[12px] text-on-surface-variant/80 leading-relaxed italic whitespace-pre-line">
+                  <div className="pt-5 border-t border-border/30">
+                    <h4 className="text-[11px] font-semibold text-on-surface-variant mb-2">Mechanism Summary</h4>
+                    <p className="text-[13px] text-on-surface-variant/85 leading-relaxed whitespace-pre-line">
                       {result.analysis.mechanism_summary}
                     </p>
                   </div>
                 </div>
 
-                {/* Right — big section card, inner cards (#242533) */}
-                <div className={cn(SECTION_CARD, "p-6 space-y-5")}>
+                {/* Mechanism family playbook + regime-conditioned caveat */}
+                <FinancePlaybookBlock analysis={result.analysis} />
+
+                {/* Base case + key risk + adversarial challenge */}
+                <BaseCaseRiskBlock analysis={result.analysis} />
+              </div>
+
+              {/* ============================================================
+                  PROOF & FALSIFIERS — pre-committed tests, visually primary
+                  ============================================================ */}
+              <div className="space-y-4">
+                <SectionLead num="03" title="Proof & falsifiers" sub="Pre-committed tests — the thesis is only as good as these" />
+
+                <ThesisScorecard analysis={result.analysis} />
+
+                {result.analysis.horizon_checkpoints && (
+                  <HorizonCheckpointsBlock data={result.analysis.horizon_checkpoints} />
+                )}
+
+                {result.analysis.if_persists && (
+                  <section className={cn(SECTION_CARD, "p-6")}>
+                    <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4">
+                      If This Persists — Second-Order Effects
+                    </h4>
+                    <IfPersistsSection data={result.analysis.if_persists} />
+                  </section>
+                )}
+              </div>
+
+              {/* ============================================================
+                  TRANSMISSION — how the thesis transmits, step-by-step
+                  ============================================================ */}
+              {result.analysis.transmission_chain && result.analysis.transmission_chain.length > 0 && (
+                <div className="space-y-4">
+                  <SectionLead num="04" title="Transmission" sub="Step-by-step path from event to price" />
+                  <section className={cn(SECTION_CARD, "px-6 py-8 relative overflow-hidden")}>
+                    <div aria-hidden className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+                    <TransmissionChainCircular steps={result.analysis.transmission_chain} />
+                  </section>
+                </div>
+              )}
+
+              {/* ============================================================
+                  ASSETS — projected beneficiaries / losers
+                  Market validation card sits immediately below this block.
+                  ============================================================ */}
+              <div className="space-y-4">
+                <SectionLead num="05" title="Assets" sub="Where the thesis should and shouldn't show up" />
+
+                <div className={cn(SECTION_CARD, "p-6 grid grid-cols-1 md:grid-cols-2 gap-6")}>
                   <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-3">Core Beneficiaries</h4>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary mb-3">Beneficiaries</h4>
                     {result.analysis.beneficiaries.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2.5">
                         {result.analysis.beneficiaries.map((b) => (
@@ -2241,11 +3426,11 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-on-surface-variant/50">None identified.</p>
+                      <p className="text-[11px] text-on-surface-variant/55">None identified.</p>
                     )}
                   </div>
                   <div>
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-3">Projected Losers</h4>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-error-dim mb-3">Losers</h4>
                     {result.analysis.losers.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2.5">
                         {result.analysis.losers.map((l) => (
@@ -2258,11 +3443,101 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-on-surface-variant/50">None identified.</p>
+                      <p className="text-[11px] text-on-surface-variant/55">None identified.</p>
                     )}
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── STATE B: Low signal ── */}
+          {result.analysis && isLowSignal && (
+            <div className="space-y-6">
+              <div className={cn(SECTION_CARD, "p-6")}>
+                <SectionLabel>What Changed</SectionLabel>
+                <p className="text-[13px] text-on-surface leading-relaxed">{result.analysis.what_changed}</p>
+              </div>
+
+              <div className={cn(SECTION_CARD, "px-5 py-4 flex items-center gap-3")}>
+                <div className="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
+                  <AlertTriangle className="h-3.5 w-3.5 text-on-surface-variant/40" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-on-surface-variant/80">Insufficient signal</p>
+                  <p className="text-[11px] text-on-surface-variant/60 mt-0.5">
+                    No clear mechanism, beneficiaries, or losers identified for this event.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── ANALYSIS SKELETON (waiting) ── */}
+          {!result.analysis && <AnalysisSkeleton />}
+
+          {/* ── TICKER EVIDENCE — market validation ── */}
+          {!result.market ? (
+            <div className="space-y-3">
+              <Skeleton className="h-3 w-48 bg-surface-container-highest" />
+              <div className="grid grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((k) => <Skeleton key={k} className="h-28 rounded-xl bg-surface-container-low" />)}
+              </div>
+            </div>
+          ) : (
+            <section className={cn(SECTION_CARD, "p-6")}>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="section-kicker mb-1.5">Market Validation</p>
+                  <div className="flex items-center gap-2.5">
+                    <h3
+                      className="text-[13px] font-semibold leading-none tracking-[-0.01em] text-on-surface"
+                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                    >
+                      Real-Time Confirmation
+                    </h3>
+                    <MarketValidationStatus market={result.market} freshness={result.freshness} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {!!pendingEventIdRef.current && (
+                    <button
+                      onClick={refreshMarket}
+                      disabled={marketRefreshing}
+                      className="flex items-center gap-1.5 text-[11px] text-primary/70 hover:text-primary transition-colors disabled:opacity-40"
+                    >
+                      <RefreshCw className={cn("w-3 h-3", marketRefreshing && "animate-spin")} />
+                      {marketRefreshing ? "Refreshing…" : "Re-run"}
+                    </button>
+                  )}
+                  <span className="text-[11px] text-on-surface-variant/55 tabular-nums">
+                    {result.market.tickers.length} ticker{result.market.tickers.length !== 1 && "s"}
+                    {result.analysis?.assets_to_watch.length ? <> · {result.analysis.assets_to_watch.join(", ")}</> : null}
+                  </span>
+                </div>
+              </div>
+              {(() => {
+                const _dn = deriveDegradedNotice(result.market, result.analysis);
+                return _dn ? (
+                  <DegradedBanner
+                    title={_dn.label}
+                    detail={_dn.detail ?? undefined}
+                    severity={_dn.severity}
+                    className="mb-3"
+                  />
+                ) : null;
+              })()}
+              <MarketSection tickers={result.market.tickers} eventDate={result.event_date ?? undefined} analysis={result.analysis ?? undefined} />
+            </section>
+          )}
+
+          {/* ── More analysis ── secondary specialist blocks
+              (currency, real yield, shock decomposition, sector
+              passthrough, etc.).  Engine reference trails this
+              cluster as a collapsible disclosure. */}
+          {result.analysis && !isLowSignal && (
+            <div className="space-y-8">
+              <SectionLead num="06" title="More analysis" sub="Specialist transmission and context blocks" />
 
               {/* Currency Transmission */}
               {result.analysis.currency_channel && result.analysis.currency_channel.pair && (
@@ -2314,19 +3589,15 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                 <TermsOfTradeBlock data={result.analysis.terms_of_trade} />
               )}
 
+              {/* Sector Rotation Impact — direct-hit sectors + downstream
+                  cascade.  Sits alongside the other second-order blocks. */}
+              {result.analysis.sector_passthrough && result.analysis.sector_passthrough.available && (
+                <SectorPassthroughBlock data={result.analysis.sector_passthrough} />
+              )}
+
               {/* Current Account + FX Reserve Stress */}
               {result.analysis.reserve_stress && result.analysis.reserve_stress.dominant_channel && (
                 <ReserveStressBlock data={result.analysis.reserve_stress} />
-              )}
-
-              {/* If This Persists — big section card */}
-              {result.analysis.if_persists && (
-                <section className={cn(SECTION_CARD, "p-6")}>
-                  <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4">
-                    If This Persists: Second Order Effects
-                  </h4>
-                  <IfPersistsSection data={result.analysis.if_persists} />
-                </section>
               )}
 
               {/* Historical Analogs */}
@@ -2339,87 +3610,19 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             </div>
           )}
 
-          {/* ── STATE B: Low signal ── */}
-          {result.analysis && isLowSignal && (
-            <div className="space-y-6">
-              <div className={cn(SECTION_CARD, "p-6")}>
-                <SectionLabel>What Changed</SectionLabel>
-                <p className="text-[12px] text-on-surface leading-relaxed">{result.analysis.what_changed}</p>
-              </div>
-
-              <div className={cn(SECTION_CARD, "px-5 py-4 flex items-center gap-3")}>
-                <div className="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
-                  <AlertTriangle className="h-3.5 w-3.5 text-on-surface-variant/40" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-on-surface-variant/70">Insufficient signal</p>
-                  <p className="text-[10px] text-on-surface-variant/50 mt-0.5">
-                    No clear mechanism, beneficiaries, or losers identified for this event.
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* ── ENGINE QUALITY / REFERENCE ──
+              Frozen engine-phase fields (quality_tier, mechanism_subtype,
+              actionability/counterfactual checks, thesis_timing,
+              critical_breakpoints, evidence_sources, confidence + validation
+              rationales).  Rendered as a secondary disclosure section so
+              the thesis content stays visually primary.  Available on both
+              strong-signal and low-signal branches; the wrapper renders
+              nothing when every group is empty. */}
+          {result.analysis && (
+            <EnginePhaseSummary analysis={result.analysis} />
           )}
 
-          {/* ── ANALYSIS SKELETON (waiting) ── */}
-          {!result.analysis && <AnalysisSkeleton />}
-
-          {/* ── MARKET VALIDATION — big section card, ticker cards as inner (#242533) ── */}
-          {!result.market ? (
-            <div className="space-y-3">
-              <Skeleton className="h-3 w-48 bg-surface-container-highest" />
-              <div className="grid grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((k) => <Skeleton key={k} className="h-28 rounded-xl bg-surface-container-low" />)}
-              </div>
-            </div>
-          ) : (
-            <section className={cn(SECTION_CARD, "p-6")}>
-              <div className="flex items-start justify-between mb-5">
-                <div>
-                  <p className="section-kicker mb-1.5">Market Validation</p>
-                  <div className="flex items-center gap-2.5">
-                    <h3
-                      className="text-[13px] font-semibold leading-none tracking-[-0.01em] text-on-surface"
-                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                    >
-                      Real-Time Confirmation
-                    </h3>
-                    <MarketValidationStatus market={result.market} freshness={result.freshness} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {!!pendingEventIdRef.current && (
-                    <button
-                      onClick={refreshMarket}
-                      disabled={marketRefreshing}
-                      className="flex items-center gap-1.5 text-[10px] text-primary/60 hover:text-primary transition-colors disabled:opacity-40"
-                    >
-                      <RefreshCw className={cn("w-3 h-3", marketRefreshing && "animate-spin")} />
-                      {marketRefreshing ? "Refreshing…" : "Re-run"}
-                    </button>
-                  )}
-                  <span className="text-[10px] text-on-surface-variant/40 tabular-nums">
-                    {result.market.tickers.length} ticker{result.market.tickers.length !== 1 && "s"}
-                    {result.analysis?.assets_to_watch.length ? <> · {result.analysis.assets_to_watch.join(", ")}</> : null}
-                  </span>
-                </div>
-              </div>
-              {(() => {
-                const _dn = deriveDegradedNotice(result.market, result.analysis);
-                return _dn ? (
-                  <DegradedBanner
-                    title={_dn.label}
-                    detail={_dn.detail ?? undefined}
-                    severity={_dn.severity}
-                    className="mb-3"
-                  />
-                ) : null;
-              })()}
-              <MarketSection tickers={result.market.tickers} eventDate={result.event_date ?? undefined} analysis={result.analysis ?? undefined} />
-            </section>
-          )}
-
-          {/* ── REVISIT TIMELINE — own section card, below market validation ── */}
+          {/* ── REVISIT TIMELINE — own section card, at the bottom ── */}
           {result.market && !!pendingEventIdRef.current && (
             <section className={cn(SECTION_CARD, "p-6")}>
               <RevisitTimeline eventId={pendingEventIdRef.current} snapshots={[]} />

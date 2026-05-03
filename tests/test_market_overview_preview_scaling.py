@@ -250,8 +250,14 @@ class TestMoverEndpointsRejectAbsurdReturns(unittest.TestCase):
     _SANITY_R5 = market_check._RETURN_SANITY_R5_PCT
     _SANITY_R20 = market_check._RETURN_SANITY_R20_PCT
 
-    def _assert_no_absurd_returns(self, body: list[dict]) -> None:
-        for mover in body:
+    @staticmethod
+    def _items(body):
+        if isinstance(body, dict) and "items" in body:
+            return body["items"]
+        return body
+
+    def _assert_no_absurd_returns(self, body) -> None:
+        for mover in self._items(body):
             for t in mover.get("tickers", []):
                 r1 = t.get("return_1d")
                 r5 = t.get("return_5d")
@@ -281,7 +287,7 @@ class TestMoverEndpointsRejectAbsurdReturns(unittest.TestCase):
         # The corrupt XLE row should be scrubbed away — XOM (the
         # sane companion that exceeds the 1.5% threshold) should be
         # what carries the card.
-        for mover in body:
+        for mover in self._items(body):
             if mover["headline"] == "OPEC corrupt XLE event":
                 xle_row = next(
                     (t for t in mover["tickers"] if t["symbol"] == "XLE"),
@@ -313,7 +319,7 @@ class TestMoverEndpointsRejectAbsurdReturns(unittest.TestCase):
         flow through with their original values intact."""
         self._seed_corrupt_xle_event(headline="Sane companion test event")
         body = self.client.get("/movers/persistent").json()
-        for mover in body:
+        for mover in self._items(body):
             if mover["headline"] != "Sane companion test event":
                 continue
             xom_row = next((t for t in mover["tickers"] if t["symbol"] == "XOM"), None)
@@ -350,20 +356,39 @@ class TestMarketOverviewFrontendNoSparkline(unittest.TestCase):
         )
 
     def test_persistent_card_still_renders_symbol_and_return(self):
-        """The cleanup removed the chart but kept symbol + value chips."""
-        path = os.path.join(
+        """The cleanup removed the chart but kept symbol + value chips.
+
+        The persistent-mover card rendering moved out of
+        ``market-overview.tsx`` and into the dedicated
+        ``mover-cards.tsx`` component (``PersistentMoverRow``); the
+        page-level file now imports the row instead of rendering it
+        inline.  Inspect the row component directly so this regression
+        guard survives the refactor.  The lead-ticker shape replaces
+        the raw ``{t.symbol}`` / ``{pct(t.return_5d)}`` references with
+        ``lead`` + ``pct(r5)`` — same chips, different binding.
+        """
+        page_path = os.path.join(
             os.path.dirname(__file__), "..", "frontend", "src",
             "components", "pages", "market-overview.tsx",
         )
-        with open(path, "r", encoding="utf-8") as f:
-            src = f.read()
-        # Symbol render
-        self.assertIn("{t.symbol}", src)
-        # Return value render via the pct() helper
-        self.assertIn("{pct(t.return_5d)}", src)
-        # Anchor / as-of footer still present
-        self.assertIn("Anchor", src)
-        self.assertIn("As of", src)
+        with open(page_path, "r", encoding="utf-8") as f:
+            page_src = f.read()
+        # Page still wires PersistentMoverRow into the persistent grid.
+        self.assertIn("PersistentMoverRow", page_src)
+
+        row_path = os.path.join(
+            os.path.dirname(__file__), "..", "frontend", "src",
+            "components", "ui", "mover-cards.tsx",
+        )
+        with open(row_path, "r", encoding="utf-8") as f:
+            row_src = f.read()
+        # Symbol render (lead-ticker shape).
+        self.assertIn("lead.symbol", row_src)
+        # Return value render via the pct() helper.
+        self.assertIn("pct(r5)", row_src)
+        # The 5d / 20d label scaffolding the chips sit inside.
+        self.assertIn("5d", row_src)
+        self.assertIn("20d", row_src)
 
 
 if __name__ == "__main__":

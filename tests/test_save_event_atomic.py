@@ -366,7 +366,7 @@ class TestMoversEndpointsRefreshedImmediately(unittest.TestCase):
         """Seed → read movers (populates cache) → update_event_market_refresh
         with a different return_5d → read movers → new number visible."""
         # Seed a weekly-range event.
-        headline = f"Weekly refresh target {uuid.uuid4().hex[:6]}"
+        headline = f"OPEC cuts output target {uuid.uuid4().hex[:6]}"
         recent_ts = (datetime.now() - timedelta(days=1)).isoformat(timespec="seconds")
         event = _base_event(headline, return_5d=3.0)
         event["timestamp"] = recent_ts
@@ -377,9 +377,10 @@ class TestMoversEndpointsRefreshedImmediately(unittest.TestCase):
         r1 = self.client.get("/movers/weekly")
         self.assertEqual(r1.status_code, 200)
         body1 = r1.json()
-        self.assertEqual(len(body1), 1)
-        self.assertEqual(body1[0]["headline"], headline)
-        self.assertEqual(body1[0]["tickers"][0]["return_5d"], 3.0)
+        items1 = body1["items"] if isinstance(body1, dict) else body1
+        self.assertEqual(len(items1), 1)
+        self.assertEqual(items1[0]["headline"], headline)
+        self.assertEqual(items1[0]["tickers"][0]["return_5d"], 3.0)
         self.assertIsNotNone(db.load_movers_cache("weekly"),
                               "movers cache should be populated after first read")
 
@@ -402,32 +403,42 @@ class TestMoversEndpointsRefreshedImmediately(unittest.TestCase):
         r2 = self.client.get("/movers/weekly")
         self.assertEqual(r2.status_code, 200)
         body2 = r2.json()
-        self.assertEqual(len(body2), 1)
-        self.assertEqual(body2[0]["tickers"][0]["return_5d"], 9.9)
+        items2 = body2["items"] if isinstance(body2, dict) else body2
+        self.assertEqual(len(items2), 1)
+        self.assertEqual(items2[0]["tickers"][0]["return_5d"], 9.9)
 
     def test_movers_persistent_reflects_refreshed_data(self):
-        """Same contract on the persistent slice — invalidation is global."""
-        # Seed a >7d-old event so it qualifies for the strict persistent branch.
-        headline = f"Persistent refresh target {uuid.uuid4().hex[:6]}"
+        """Same invalidation contract on the persistent slice — the
+        persisted movers_cache row is dropped when an event is refreshed,
+        so the next read picks up the new ticker numbers without waiting
+        for the 60-minute TTL.
+
+        Asserted on the cache row directly rather than on
+        /movers/persistent because the surface now enforces a
+        high-conviction gate (``conviction.conviction_class ==
+        "conviction"`` + supportive weighted_evidence + confirming /
+        partial thesis_state) that this synthetic single-ticker fixture
+        is not engineered to clear.  Invalidation is what this test
+        exists to lock down.
+        """
+        headline = f"EU sanctions refresh target {uuid.uuid4().hex[:6]}"
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
         event = _base_event(
             headline, event_date=(datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d"),
             return_5d=4.0,
         )
         event["timestamp"] = old_ts
-        # return_20d tuned for an "Accelerating" classification so the
-        # strict persistent branch picks it up.
         event["market_tickers"][0]["return_20d"] = 5.0
         db.save_event(event)
         eid = db.load_recent_events(1)[0]["id"]
 
         r1 = self.client.get("/movers/persistent")
         self.assertEqual(r1.status_code, 200)
-        body1 = r1.json()
-        self.assertTrue(any(m["headline"] == headline for m in body1))
-        self.assertIsNotNone(db.load_movers_cache("persistent"))
+        self.assertIsNotNone(
+            db.load_movers_cache("persistent"),
+            "persistent cache should be populated after first read",
+        )
 
-        # Update with much bigger numbers.
         db.update_event_market_refresh(
             eid,
             [{"symbol": "AAPL", "role": "beneficiary",
@@ -436,13 +447,14 @@ class TestMoversEndpointsRefreshedImmediately(unittest.TestCase):
             "refreshed",
             datetime.now().isoformat(timespec="seconds"),
         )
-        self.assertIsNone(db.load_movers_cache("persistent"))
+        self.assertIsNone(
+            db.load_movers_cache("persistent"),
+            "update_event_market_refresh must invalidate the persistent cache",
+        )
 
         r2 = self.client.get("/movers/persistent")
-        body2 = r2.json()
-        row = next((m for m in body2 if m["headline"] == headline), None)
-        self.assertIsNotNone(row)
-        self.assertEqual(row["tickers"][0]["return_5d"], 12.0)
+        self.assertEqual(r2.status_code, 200)
+        self.assertIsNotNone(db.load_movers_cache("persistent"))
 
 
 if __name__ == "__main__":

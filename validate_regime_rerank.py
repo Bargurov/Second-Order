@@ -51,23 +51,35 @@ from regime_vector import (
 # ---------------------------------------------------------------------------
 
 _CURRENT = {
-    "inflation":     "hot",
-    "policy_stance": "hawkish",
-    "fx":            "dollar_strong",
-    "growth_stress": "calm",
-    "available":     True,
-    "stale":         False,
+    "inflation":      "hot",
+    "policy_stance":  "hawkish",
+    "fx":             "dollar_strong",
+    "growth_stress":  "calm",
+    # Breadth-expansion axes — match the new keys in regime_vector.REGIME_AXES.
+    "credit":         "risk_off",
+    "curve_shape":    "front_loaded",
+    "inflation_path": "hawkish_constraint",
+    "available":      True,
+    "stale":          False,
 }
 
 
-def _vec(infl: str, pol: str, fx: str, gs: str) -> dict:
+def _vec(
+    infl: str, pol: str, fx: str, gs: str,
+    credit: str = "neutral",
+    curve_shape: str = "neutral",
+    inflation_path: str = "neutral",
+) -> dict:
     return {
-        "inflation":     infl,
-        "policy_stance": pol,
-        "fx":            fx,
-        "growth_stress": gs,
-        "available":     True,
-        "stale":         False,
+        "inflation":      infl,
+        "policy_stance":  pol,
+        "fx":             fx,
+        "growth_stress":  gs,
+        "credit":         credit,
+        "curve_shape":    curve_shape,
+        "inflation_path": inflation_path,
+        "available":      True,
+        "stale":          False,
     }
 
 
@@ -79,17 +91,23 @@ def _build_fixtures() -> list[dict]:
     """
     return [
         # Property 1: same topic similarity, different regime — should
-        # be DEMOTED below same_topic_same_regime.
+        # be DEMOTED below same_topic_same_regime.  Both historical
+        # snapshots carry the breadth-expansion axes so the validator
+        # probes the wider 7-axis space, not just the original 4.
         {
             "id":               "p1_diff_regime",
             "similarity":       0.45,
-            "regime_snapshot":  _vec("cool", "dovish", "dollar_weak", "stressed"),
+            "regime_snapshot":  _vec("cool", "dovish", "dollar_weak", "stressed",
+                                     credit="risk_on", curve_shape="term_premium",
+                                     inflation_path="dovish_space"),
             "match_reason":     "shared: opec",
         },
         {
             "id":               "p1_same_regime",
             "similarity":       0.45,
-            "regime_snapshot":  _vec("hot", "hawkish", "dollar_strong", "calm"),
+            "regime_snapshot":  _vec("hot", "hawkish", "dollar_strong", "calm",
+                                     credit="risk_off", curve_shape="front_loaded",
+                                     inflation_path="hawkish_constraint"),
             "match_reason":     "shared: opec",
         },
         # Property 2: lower topic similarity but matching regime should
@@ -99,13 +117,17 @@ def _build_fixtures() -> list[dict]:
         {
             "id":               "p2_low_topic_good_regime",
             "similarity":       0.20,
-            "regime_snapshot":  _vec("hot", "hawkish", "dollar_strong", "calm"),
+            "regime_snapshot":  _vec("hot", "hawkish", "dollar_strong", "calm",
+                                     credit="risk_off", curve_shape="front_loaded",
+                                     inflation_path="hawkish_constraint"),
             "match_reason":     "shared: tariff",
         },
         {
             "id":               "p2_high_topic_bad_regime",
             "similarity":       0.40,
-            "regime_snapshot":  _vec("cool", "dovish", "dollar_weak", "stressed"),
+            "regime_snapshot":  _vec("cool", "dovish", "dollar_weak", "stressed",
+                                     credit="risk_on", curve_shape="term_premium",
+                                     inflation_path="dovish_space"),
             "match_reason":     "shared: tariff, supply",
         },
     ]
@@ -121,12 +143,15 @@ def _stale_input() -> list[dict]:
 
 
 _STALE_VECTOR = {
-    "inflation":     "neutral",
-    "policy_stance": "neutral",
-    "fx":            "neutral",
-    "growth_stress": "neutral",
-    "available":     False,
-    "stale":         True,
+    "inflation":      "neutral",
+    "policy_stance":  "neutral",
+    "fx":             "neutral",
+    "growth_stress":  "neutral",
+    "credit":         "neutral",
+    "curve_shape":    "neutral",
+    "inflation_path": "neutral",
+    "available":      False,
+    "stale":          True,
 }
 
 

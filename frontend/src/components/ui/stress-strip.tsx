@@ -246,12 +246,40 @@ interface UncertaintySectionProps {
   /** When provided (parent-driven), this stress regime is rendered directly
    *  and no internal fetch is made.  When omitted (standalone usage), the
    *  component falls back to its own /stress query for backward compat. */
-  stress?: StressRegime | null;
+  stress?: (StressRegime & { available?: boolean }) | null;
   isLoading?: boolean;
   /** News-derived sector uncertainty concentration from /market-context.
    *  When uncertainty_scope is "sector", the section leads with sector chips
    *  and the 5-signal grid becomes a secondary baseline. */
   uncertaintyConcentration?: NewsUncertaintyConcentration | null;
+}
+
+function UnavailableStressSection({ degraded }: { degraded?: boolean }) {
+  return (
+    <section className="mb-6">
+      <div className="bg-surface-container-low rounded-lg p-4">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="lg:w-1/4 shrink-0 space-y-2">
+            <p className="section-kicker">
+              Stress <span className="font-normal normal-case tracking-normal text-muted-foreground/55">· plumbing &amp; vol</span>
+            </p>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-surface-container-highest">
+              <AlertTriangle className="h-3 w-3 text-on-surface-variant/45" />
+              <span className="font-bold text-[11px] tracking-[0.16em] uppercase text-on-surface-variant/65">
+                {degraded ? "Degraded" : "Unavailable"}
+              </span>
+            </div>
+            <p className="text-on-surface-variant/70 text-[12px] leading-relaxed">
+              Stress signals are unavailable for this market snapshot.
+            </p>
+          </div>
+          <div className="flex-1 rounded-lg bg-white/[0.02] px-4 py-6 text-[12px] text-on-surface-variant/65">
+            No live stress values are available.
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function UncertaintySection({ stress, isLoading: parentLoading, uncertaintyConcentration }: UncertaintySectionProps = {}) {
@@ -264,22 +292,23 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
     enabled,
   });
 
-  const data = enabled ? fetched : (stress ?? undefined);
+  const data: (StressRegime & { available?: boolean }) | undefined =
+    enabled ? fetched : (stress ?? undefined);
   const isLoading = enabled ? fetchedLoading : (parentLoading ?? false);
 
   if (isLoading) {
     return (
-      <section className="mt-4 mb-8">
-        <div className="bg-surface-container-low rounded-xl p-6 shadow-2xl border border-outline-variant/20">
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
-            <div className="lg:w-1/4 shrink-0 space-y-3">
-              <Skeleton className="h-6 w-24 bg-surface-container-highest" />
-              <Skeleton className="h-10 w-48 bg-surface-container-highest" />
-              <Skeleton className="h-12 w-full bg-surface-container-highest" />
+      <section className="mb-6">
+        <div className="bg-surface-container-low rounded-lg p-4">
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="lg:w-1/4 shrink-0 space-y-2">
+              <Skeleton className="h-4 w-20 bg-surface-container-highest" />
+              <Skeleton className="h-5 w-40 bg-surface-container-highest" />
+              <Skeleton className="h-10 w-full bg-surface-container-highest" />
             </div>
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden">
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/15 rounded-md overflow-hidden">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-32 bg-surface-container-highest" />
+                <Skeleton key={i} className="h-24 bg-surface-container-highest" />
               ))}
             </div>
           </div>
@@ -288,12 +317,19 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
     );
   }
 
-  if (!data) return null;
+  if (!data || data.available === false) {
+    return <UnavailableStressSection degraded={data?.available === false} />;
+  }
 
   const rc = regimeColor(data.regime);
   const detail = data.detail ?? {};
   const detailKeys = ["volatility", "term_structure", "credit", "safe_haven", "breadth"] as const;
   const sectionDegraded = deriveStressDegraded(data);
+  const presentDetailKeys = detailKeys.filter((k) => detail[k]);
+
+  if (presentDetailKeys.length === 0) {
+    return <UnavailableStressSection degraded />;
+  }
 
   // Short label for regime
   const regimeLabel = data.regime.toUpperCase();
@@ -303,51 +339,51 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
     (uncertaintyConcentration.sector_uncertainty?.length ?? 0) > 0;
 
   return (
-    <section className="mt-4 mb-8">
-      <div className="bg-surface-container-low rounded-xl p-6 shadow-2xl border border-outline-variant/20 relative overflow-hidden">
-        {/* Carbon fibre texture */}
-        <div className="absolute inset-0 opacity-5 pointer-events-none carbon-texture" />
-
-        <div className="flex flex-col gap-6 relative z-10">
-          {/* Top row: left badge + right content */}
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* Left Badge */}
-            <div className="lg:w-1/4 shrink-0">
+    // Compact stress card per the approved design package — no hero
+    // typography, no drop shadow, no 1px section border.  Tonal
+    // layering on a surface-container-low base; the regime pill stays
+    // as the only colour accent so the eye still finds it instantly.
+    <section className="mb-6">
+      <div className="bg-surface-container-low rounded-lg p-4">
+        <div className="flex flex-col gap-4">
+          {/* Top row: left card-title + regime pill | right indicator grid */}
+          <div className="flex flex-col lg:flex-row gap-6 items-start">
+            <div className="lg:w-1/4 shrink-0 space-y-2">
+              <p className="section-kicker">
+                Stress <span className="font-normal normal-case tracking-normal text-muted-foreground/55">· plumbing &amp; vol</span>
+              </p>
               {isSectorLed ? (
                 <div className={cn(
-                  "inline-flex items-center gap-2 px-3 py-1 rounded-full border",
-                  rc.badge, rc.badgeBorder,
+                  "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full",
+                  rc.badge,
                 )}>
-                  <span className="relative flex h-2.5 w-2.5">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
-                    <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", rc.dot)} />
+                    <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", rc.dot)} />
                   </span>
-                  <span className={cn("font-bold text-xs tracking-widest uppercase", rc.text)}>
+                  <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", rc.text)}>
                     {uncertaintyConcentration!.lead_sector ?? "Sector"} · Concentration
                   </span>
                 </div>
               ) : (
                 <div className={cn(
-                  "inline-flex items-center gap-2 px-3 py-1 rounded-full border",
-                  rc.badge, rc.badgeBorder,
+                  "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full",
+                  rc.badge,
                 )}>
-                  <span className="relative flex h-2.5 w-2.5">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
-                    <span className={cn("relative inline-flex rounded-full h-2.5 w-2.5", rc.dot)} />
+                    <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", rc.dot)} />
                   </span>
-                  <span className={cn("font-bold text-xs tracking-widest uppercase", rc.text)}>{regimeLabel}</span>
+                  <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", rc.text)}>{regimeLabel}</span>
                 </div>
               )}
-              <h2 className="text-3xl font-headline font-extrabold mt-4 tracking-tighter leading-tight text-white">
-                Uncertainty &amp; Market Instability
-              </h2>
               {data.summary && (
-                <p className="text-on-surface-variant text-sm mt-3 leading-relaxed">{data.summary}</p>
+                <p className="text-on-surface-variant/85 text-[12px] leading-relaxed">{data.summary}</p>
               )}
               {sectionDegraded && (
-                <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex items-center gap-1.5">
                   <AlertTriangle className="h-3 w-3 text-error-dim/60 shrink-0" />
-                  <span className="text-[10px] text-error-dim/60">{sectionDegraded}</span>
+                  <span className="text-[11px] text-error-dim/65">{sectionDegraded}</span>
                 </div>
               )}
             </div>
@@ -364,9 +400,8 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
                     Baseline
                   </span>
                   <div className="mt-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden opacity-50">
-                    {detailKeys.map((k) => {
-                      const d = detail[k];
-                      if (!d) return null;
+                    {presentDetailKeys.map((k) => {
+                      const d = detail[k]!;
                       return <IndicatorCard key={k} detail={d} />;
                     })}
                   </div>
@@ -374,9 +409,8 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
               </div>
             ) : (
               <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-outline-variant/20 rounded-lg overflow-hidden">
-                {detailKeys.map((k) => {
-                  const d = detail[k];
-                  if (!d) return null;
+                {presentDetailKeys.map((k) => {
+                  const d = detail[k]!;
                   return <IndicatorCard key={k} detail={d} />;
                 })}
               </div>

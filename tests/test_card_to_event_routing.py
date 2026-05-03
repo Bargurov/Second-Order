@@ -303,5 +303,208 @@ class TestApiRoutingLogic(_IsolatedDbTestCase):
         self.assertEqual(result_b["what_changed"], "OPEC cut Mar")
 
 
+# ---------------------------------------------------------------------------
+# Test: event_id threaded into find_cached_analysis
+# ---------------------------------------------------------------------------
+# Covers the cache-collision fix: when two events share a headline within
+# the 24h TTL window, ``find_cached_analysis(headline, event_id=X)`` must
+# return the row whose primary key matches X — not the most recent
+# headline match.  Headline + date fallback only fires when ``event_id``
+# is absent.
+
+class TestFindCachedAnalysisEventIdRouting(_IsolatedDbTestCase):
+
+    def _save_two_same_headline_events(
+        self,
+        headline: str = "OPEC extends output cuts by 500k bpd",
+        event_date: str = "2025-01-10",
+    ) -> tuple[int, int]:
+        """Save two events with identical headline + date but distinct
+        ``what_changed`` payloads.  ``save_event`` dedupes within a 10
+        minute window, so the first row is backdated past that window
+        (still within the 24h TTL) before the second row is inserted.
+        Returns ``(id_first, id_second)``."""
+        save_event(_minimal_event(
+            headline, event_date=event_date, what_changed="version A",
+        ))
+        backdated = (
+            datetime.now() - timedelta(minutes=30)
+        ).isoformat(timespec="seconds")
+        with sqlite3.connect(db_module.DB_FILE) as conn:
+            conn.execute("UPDATE events SET timestamp = ?", (backdated,))
+        save_event(_minimal_event(
+            headline, event_date=event_date, what_changed="version B",
+        ))
+        with sqlite3.connect(db_module.DB_FILE) as conn:
+            rows = conn.execute(
+                "SELECT id FROM events ORDER BY id",
+            ).fetchall()
+        return rows[0][0], rows[1][0]
+
+    def test_event_id_routes_to_first_row(self):
+        id_a, id_b = self._save_two_same_headline_events()
+        result = find_cached_analysis(
+            "OPEC extends output cuts by 500k bpd",
+            event_date="2025-01-10",
+            event_id=id_a,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["what_changed"], "version A")
+
+    def test_event_id_routes_to_second_row(self):
+        id_a, id_b = self._save_two_same_headline_events()
+        result = find_cached_analysis(
+            "OPEC extends output cuts by 500k bpd",
+            event_date="2025-01-10",
+            event_id=id_b,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["what_changed"], "version B")
+
+    def test_event_id_wins_over_headline_most_recent(self):
+        """Headline-only path returns the most recent row (id_b);
+        event_id=id_a must override that and return version A."""
+        id_a, id_b = self._save_two_same_headline_events()
+        # Sanity: headline path returns the latest row.
+        latest = find_cached_analysis(
+            "OPEC extends output cuts by 500k bpd",
+            event_date="2025-01-10",
+        )
+        self.assertEqual(latest["what_changed"], "version B")
+        # Threaded event_id wins.
+        targeted = find_cached_analysis(
+            "OPEC extends output cuts by 500k bpd",
+            event_date="2025-01-10",
+            event_id=id_a,
+        )
+        self.assertEqual(targeted["what_changed"], "version A")
+
+    def test_event_id_ignores_headline_mismatch(self):
+        """When event_id is given the headline arg is ignored — passing
+        a wrong / empty headline still returns the row at the id."""
+        id_a, _ = self._save_two_same_headline_events()
+        result = find_cached_analysis(
+            "completely different headline",
+            event_date="2099-12-31",
+            event_id=id_a,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["what_changed"], "version A")
+
+    def test_missing_event_id_returns_none_no_fallback(self):
+        """A non-existent event_id must NOT fall back to headline match —
+        otherwise a colliding near-duplicate could be served."""
+        self._save_two_same_headline_events()
+        result = find_cached_analysis(
+            "OPEC extends output cuts by 500k bpd",
+            event_date="2025-01-10",
+            event_id=999_999,
+        )
+        self.assertIsNone(result)
+
+    def test_event_id_respects_ttl(self):
+        """Stale rows must not be served by the id path either."""
+        id_a, _ = self._save_two_same_headline_events()
+        old_ts = (datetime.now() - timedelta(hours=48)).isoformat(timespec="seconds")
+        with sqlite3.connect(db_module.DB_FILE) as conn:
+            conn.execute("UPDATE events SET timestamp = ? WHERE id = ?",
+                         (old_ts, id_a))
+        result = find_cached_analysis(
+            "OPEC extends output cuts by 500k bpd",
+            event_date="2025-01-10",
+            event_id=id_a,
+        )
+        self.assertIsNone(result)
+
+    def test_event_id_respects_mock_guard(self):
+        """Mock rows must not be served by the id path either."""
+        save_event(_minimal_event(
+            "Mocked headline",
+            event_date="2025-01-10",
+            what_changed="[mock: provider error]",
+        ))
+        with sqlite3.connect(db_module.DB_FILE) as conn:
+            row_id = conn.execute(
+                "SELECT id FROM events ORDER BY id DESC LIMIT 1",
+            ).fetchone()[0]
+        result = find_cached_analysis(
+            "Mocked headline",
+            event_date="2025-01-10",
+            event_id=row_id,
+        )
+        self.assertIsNone(result)
+
+    def test_event_id_absent_uses_headline_path(self):
+        """Backward compat: existing callers without event_id keep the
+        headline + date + 24h behaviour."""
+        save_event(_minimal_event(
+            "Fed signals June pause",
+            event_date="2025-05-01",
+            what_changed="May FOMC",
+        ))
+        result = find_cached_analysis(
+            "Fed signals June pause", event_date="2025-05-01",
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["what_changed"], "May FOMC")
+
+
+# ---------------------------------------------------------------------------
+# Test: route-level fallback gating — event_id miss must NOT fall through
+# to the headline cache lookup (otherwise a colliding row can be served)
+# ---------------------------------------------------------------------------
+
+class TestRouteLevelEventIdFallback(_IsolatedDbTestCase):
+    """
+    Validates the routes/analyze.py decision: when a request carries
+    event_id and load_event_by_id misses, the route must skip the
+    find_cached_analysis(headline) call so a near-duplicate within
+    the TTL window is not served.
+    """
+
+    def _route_lookup(self, *, headline: str, event_id, event_date) -> dict | None:
+        """Replicate the gated lookup in routes/analyze.py."""
+        if event_id is not None:
+            by_id = load_event_by_id(event_id)
+            if by_id is not None:
+                return by_id
+            return None  # No headline fallback — re-analyze upstream.
+        return find_cached_analysis(headline, event_date=event_date)
+
+    def test_event_id_miss_does_not_serve_colliding_headline_row(self):
+        """A saved row with the same headline must NOT be returned when
+        the request carries a non-existent event_id."""
+        save_event(_minimal_event(
+            "Fed signals June pause",
+            event_date="2025-05-01",
+            what_changed="cached version",
+        ))
+        # Client sends a fresh event_id that hasn't been saved yet.
+        result = self._route_lookup(
+            headline="Fed signals June pause",
+            event_id=999_999,
+            event_date="2025-05-01",
+        )
+        self.assertIsNone(
+            result,
+            "Route must not fall back to the colliding headline match "
+            "when an explicit event_id was provided",
+        )
+
+    def test_no_event_id_still_uses_headline_path(self):
+        save_event(_minimal_event(
+            "Fed signals June pause",
+            event_date="2025-05-01",
+            what_changed="cached version",
+        ))
+        result = self._route_lookup(
+            headline="Fed signals June pause",
+            event_id=None,
+            event_date="2025-05-01",
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["what_changed"], "cached version")
+
+
 if __name__ == "__main__":
     unittest.main()

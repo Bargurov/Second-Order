@@ -118,13 +118,20 @@ def _can_merge(headline_a: str, headline_b: str) -> bool:
 
     Applies the same gate used by ``news_sources.cluster_headlines``:
     cosine similarity ≥ threshold AND no clear polarity conflict.
+    Also allows a mechanism-aided lower floor when both headlines share a
+    recognized action type (mirrors the elif branch in cluster_headlines).
     """
     cos, pa, pb = _similarity(headline_a, headline_b)
-    if cos < _MERGE_COSINE_THRESHOLD:
-        return False
     if pa != 0 and pb != 0 and pa != pb:
         return False
-    return True
+    if cos >= _MERGE_COSINE_THRESHOLD:
+        return True
+    from news_clustering import _extract_mechanism, _mechanism_match, _MECH_COSINE_FLOOR
+    if cos >= _MECH_COSINE_FLOOR and _mechanism_match(
+        _extract_mechanism(headline_a), _extract_mechanism(headline_b)
+    ):
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -213,11 +220,17 @@ def refresh_clusters(
     insert_cluster_fn: Optional[Callable[..., Optional[int]]] = None,
     update_cluster_fn: Optional[Callable[..., bool]] = None,
     upsert_assignments_fn: Optional[Callable[[list, str], None]] = None,
+    upsert_registry_fn: Optional[Callable[[list, str], None]] = None,
+    meta: Optional[dict] = None,
 ) -> list[dict]:
     """Incremental clustering for the /news refresh path.
 
     Returns the list of live clusters (newest-first, multi-source-first)
     ready for direct attachment to the /news response payload.
+
+    When ``meta`` is a dict, it is populated with refresh status counts:
+        known, new, merged, created, reused, source (describes how clusters
+        were produced: "incremental", "stored", "stored_fallback", "empty").
 
     All DB accessors are injectable so tests can run this without a
     real SQLite file.  The defaults resolve to ``db.*`` helpers on
@@ -245,6 +258,9 @@ def refresh_clusters(
     if upsert_assignments_fn is None:
         from db import upsert_news_headline_assignments
         upsert_assignments_fn = upsert_news_headline_assignments
+    if upsert_registry_fn is None:
+        from db import upsert_headline_registry_seen
+        upsert_registry_fn = upsert_headline_registry_seen
 
     recency_cutoff_iso = (
         now_dt - timedelta(hours=recency_hours)
@@ -259,9 +275,32 @@ def refresh_clusters(
 
     now_iso = now_dt.replace(microsecond=0).isoformat()
 
+    def _set_meta(**kw: object) -> None:
+        if meta is not None:
+            meta.update(known=len(known), new=len(new), **kw)
+
     if not new:
-        # No new headlines — nothing to do.  Just return the active set.
-        return _sort_output([c["payload"] for c in active_clusters])
+        # No new headlines — nothing to recluster.
+        if active_clusters:
+            _set_meta(merged=0, created=0, reused=len(active_clusters), source="stored")
+            return _sort_output([c["payload"] for c in active_clusters])
+        # All records are known but their clusters fell outside the recency
+        # window.  Reload those specific clusters so the response isn't
+        # empty when the caller's feed still contains valid headlines.
+        if known:
+            needed_ids = {
+                assignments[_record_key(r)]
+                for r in known
+                if _record_key(r) in assignments
+            }
+            if needed_ids:
+                all_clusters = load_clusters_fn(None) or []
+                matched = [c for c in all_clusters if c["id"] in needed_ids]
+                if matched:
+                    _set_meta(merged=0, created=0, reused=len(matched), source="stored_fallback")
+                    return _sort_output([c["payload"] for c in matched])
+        _set_meta(merged=0, created=0, reused=0, source="empty")
+        return []
 
     # 3. Cluster the new records among themselves via the real clusterer.
     try:
@@ -273,6 +312,7 @@ def refresh_clusters(
         )
         # Degrade: return the existing active set unchanged so /news
         # never crashes on a transient clusterer bug.
+        _set_meta(merged=0, created=0, reused=len(active_clusters), source="stored")
         return _sort_output([c["payload"] for c in active_clusters])
 
     # Build an index of new-batch clusters by their representative
@@ -356,7 +396,16 @@ def refresh_clusters(
 
     if pending_assignments:
         upsert_assignments_fn(pending_assignments, now_iso)
+        try:
+            upsert_registry_fn(pending_assignments, now_iso)
+        except Exception:
+            _log.warning(
+                "news_cluster_store: registry upsert failed", exc_info=True,
+            )
 
+    _set_meta(merged=len(touched_ids), created=len(created_ids),
+              reused=len(active_clusters) - len(touched_ids) - len(created_ids),
+              source="incremental")
     return _sort_output([c["payload"] for c in active_clusters])
 
 
@@ -425,21 +474,26 @@ def _find_merge_target(
     best_id: Optional[int] = None
     best_cos: float = -1.0
     from news_sources import _build_tfidf_vectors, _cosine_sim, _tokenize, _headline_polarity
+    from news_clustering import _extract_mechanism, _mechanism_match, _MECH_COSINE_FLOOR
+    pa = _headline_polarity(_tokenize(new_headline))
+    ma = _extract_mechanism(new_headline)
     for c in active_clusters:
         existing_headline = c.get("headline", "") or ""
         if not existing_headline:
             continue
         vecs, _ = _build_tfidf_vectors([new_headline, existing_headline])
         cos = _cosine_sim(vecs[0], vecs[1])
-        if cos < _MERGE_COSINE_THRESHOLD:
-            continue
-        pa = _headline_polarity(_tokenize(new_headline))
         pb = _headline_polarity(_tokenize(existing_headline))
         if pa != 0 and pb != 0 and pa != pb:
             continue
-        if cos > best_cos:
-            best_cos = cos
-            best_id = c["id"]
+        if cos >= _MERGE_COSINE_THRESHOLD:
+            if cos > best_cos:
+                best_cos = cos
+                best_id = c["id"]
+        elif cos >= _MECH_COSINE_FLOOR and _mechanism_match(ma, _extract_mechanism(existing_headline)):
+            if cos > best_cos:
+                best_cos = cos
+                best_id = c["id"]
     return best_id
 
 

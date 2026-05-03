@@ -98,6 +98,47 @@ _table_lock = threading.Lock()
 _table_ready = False
 
 
+def _purge_corrupt_rows() -> int:
+    """Delete stub/corrupt rows from the price cache and return the count removed.
+
+    Corrupt fingerprint: integer close < 10 **and** volume == 1 000 000.
+    This is the signature of _make_df test fixtures that were once written
+    into production cache rows by an earlier bug.
+
+    The operation is idempotent — running it when there are no matching rows
+    is a no-op that returns 0.  It is safe to call at any point during the
+    session, not only at startup, so newly-injected corrupt rows are not
+    left sitting in the cache until the next process restart.
+
+    Clears the in-memory market_check cache when any rows are removed so
+    callers get fresh data on their next fetch.
+    """
+    if not _ensure_table():
+        return 0
+    try:
+        with sqlite3.connect(_db.DB_FILE) as conn:
+            deleted = conn.execute(
+                "DELETE FROM price_cache "
+                "WHERE close IS NOT NULL AND close < 10.0 "
+                "AND volume = 1000000.0 "
+                "AND CAST(close AS INTEGER) = close"
+            ).rowcount
+        if deleted:
+            _log.info(
+                "price_cache: purged %d corrupt rows "
+                "(test-fixture fingerprint)", deleted,
+            )
+            try:
+                from market_check import _cache_clear
+                _cache_clear()
+            except ImportError:
+                pass
+        return deleted
+    except sqlite3.Error as e:
+        _log.warning("price_cache._purge_corrupt_rows: %s", e)
+        return 0
+
+
 def _ensure_table() -> bool:
     """Make sure the ``price_cache`` table exists.
 
@@ -132,6 +173,10 @@ def _ensure_table() -> bool:
                     ON price_cache (ticker, auto_adjust, date)
                 """)
             _table_ready = True
+            # Run the corrupt-row purge now that the table is confirmed
+            # ready.  _purge_corrupt_rows() calls _ensure_table() itself,
+            # which will fast-path (True) since we just set _table_ready.
+            _purge_corrupt_rows()
             return True
         except sqlite3.Error as e:
             _log.warning("price_cache: could not ensure table: %s", e)
@@ -354,6 +399,13 @@ def _write_rows(ticker: str, df: pd.DataFrame, auto_adjust: bool) -> None:
             vol_f = None if volume is None or pd.isna(volume) else float(volume)
         except (TypeError, ValueError):
             vol_f = None
+        # Reject obviously corrupt close values — sequential integers
+        # with uniform volume are a test-fixture fingerprint.
+        if (close_f is not None and close_f < 10.0
+                and vol_f == 1_000_000.0
+                and close_f == int(close_f)):
+            _log.debug("price_cache: rejected suspect row %s %s close=%.1f", key, date_str, close_f)
+            continue
         rows.append((key, date_str, close_f, vol_f, flag, fetched_at))
 
     if not rows:

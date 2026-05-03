@@ -514,6 +514,34 @@ def compute_terms_of_trade(
         return {}
 
     exposures = _build_exposures(channel, crude_5d, dxy_5d)
+
+    # Enrich each exposure with per-country FX + commodity passthrough
+    # based on the cross-rate FX pack (additive; safe when stress_regime
+    # lacks the pack, exposures keep their previous shape plus a null
+    # passthrough entry).
+    try:
+        from cross_rate_fx import compute_cross_rate_fx
+        from country_fx_passthrough import enrich_country_exposures
+        gold_5d = _snap_change_5d(snapshots, "GC")
+        fx_pack = compute_cross_rate_fx(stress_regime=stress_regime)
+        exposures = enrich_country_exposures(
+            exposures, fx_pack=fx_pack, crude_5d=crude_5d, gold_5d=gold_5d,
+        )
+    except Exception:
+        # Enrichment is strictly additive; any failure keeps the original
+        # exposures list intact.
+        pass
+
+    # Attach the country-vulnerability backdrop block to every exposure
+    # whose country resolves in the local fixture.  Strictly additive:
+    # entries without a profile pass through byte-identically so the
+    # response shape stays stable for unprofiled countries.
+    try:
+        from country_backdrop import attach_country_backdrop
+        exposures = attach_country_backdrop(exposures)
+    except Exception:
+        pass
+
     winners = _dedupe_ranked([e["country"] for e in exposures if e["role"] == "winner"])
     losers = _dedupe_ranked([e["country"] for e in exposures if e["role"] == "loser"])
 

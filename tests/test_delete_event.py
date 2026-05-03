@@ -169,27 +169,34 @@ class TestCacheInvalidationAfterDelete(_DeleteBase):
         ids = [e["id"] for e in items]
         self.assertNotIn(eid, ids)
 
+    @staticmethod
+    def _mover_items(body):
+        """Unwrap the ``{items, meta}`` envelope mover surfaces emit."""
+        if isinstance(body, dict) and "items" in body:
+            return body["items"]
+        return body
+
     def test_market_movers_excludes_deleted(self):
         eid = _seed_event("Oil shock market-movers delete test", days_old=1)
         # Confirm it appears before delete
-        before = client.get("/market-movers").json()
+        before = self._mover_items(client.get("/market-movers").json())
         headlines_before = [m["headline"] for m in before]
         self.assertIn("Oil shock market-movers delete test", headlines_before)
 
         client.delete(f"/events/{eid}")
         # Cache must be cleared — re-fetch should rebuild from DB
-        after = client.get("/market-movers").json()
+        after = self._mover_items(client.get("/market-movers").json())
         headlines_after = [m["headline"] for m in after]
         self.assertNotIn("Oil shock market-movers delete test", headlines_after)
 
     def test_movers_today_excludes_deleted(self):
         eid = _seed_event("Oil shock movers-today delete test", days_old=0)
-        before = client.get("/movers/today").json()
+        before = self._mover_items(client.get("/movers/today").json())
         headlines_before = [m["headline"] for m in before]
         self.assertIn("Oil shock movers-today delete test", headlines_before)
 
         client.delete(f"/events/{eid}")
-        after = client.get("/movers/today").json()
+        after = self._mover_items(client.get("/movers/today").json())
         headlines_after = [m["headline"] for m in after]
         self.assertNotIn("Oil shock movers-today delete test", headlines_after)
 

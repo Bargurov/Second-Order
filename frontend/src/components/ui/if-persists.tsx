@@ -1,5 +1,5 @@
 import type { IfPersists } from "@/lib/api";
-import { TrendingUp, TrendingDown, Clock, Zap } from "lucide-react";
+import { TrendingDown, Clock, Zap } from "lucide-react";
 
 /** True when the if_persists object has at least one usable field. */
 export function hasIfPersistsContent(data: IfPersists | undefined | null): boolean {

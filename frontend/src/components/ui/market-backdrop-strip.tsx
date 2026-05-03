@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, type MarketSnapshot } from "@/lib/api";
+import { api, type MarketContext, type MarketSnapshot } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +58,64 @@ function regimeChipClass(regime: string): string {
   return "bg-surface-container text-on-surface-variant border-outline-variant/30";
 }
 
+function providerIssueLabel(snap: MarketSnapshot | undefined, market: string): string {
+  if (!snap) return `${market}: missing`;
+  if (snap.error) return `${market}: ${snap.error.replace(/_/g, " ")}`;
+  if (snap.value == null) return `${market}: missing`;
+  if (snap.stale) return `${market}: stale`;
+  return `${market}: ok`;
+}
+
+function BackdropUnavailable({
+  ctx,
+  isError,
+}: {
+  ctx?: MarketContext;
+  isError?: boolean;
+}) {
+  const byMarket: Record<string, MarketSnapshot> = {};
+  for (const s of ctx?.snapshots ?? []) byMarket[s.market] = s;
+  const detail = ctx
+    ? BACKDROP_MARKETS.map((m) => providerIssueLabel(byMarket[m], m))
+    : [];
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/60">
+          Market Backdrop
+        </span>
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-widest bg-error-container/10 text-error-dim/80 border-error-dim/25">
+          {isError ? "Degraded" : "Unavailable"}
+        </span>
+        <div className="flex items-center gap-3 flex-wrap">
+          {BACKDROP_MARKETS.map((market, i) => (
+            <div key={market} className="flex items-center gap-1.5">
+              {i > 0 && <span className="w-px h-3 bg-outline-variant/15" />}
+              <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
+                {market}
+              </span>
+              <span className="text-[11px] font-num font-bold tabular-nums text-on-surface-variant/30">
+                —
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <p className="text-[10px] text-on-surface-variant/60 leading-tight">
+          Provider data unavailable; market-backdrop metrics are withheld.
+        </p>
+        {detail.length > 0 && (
+          <span className="text-[8px] text-on-surface-variant/35 font-bold uppercase tracking-widest shrink-0">
+            {detail.join(" · ")}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function MarketBackdropStrip() {
   const { data: ctx, isLoading, isError } = useQuery({
     queryKey: qk.marketContext(),
@@ -77,12 +135,12 @@ export function MarketBackdropStrip() {
     );
   }
 
-  // Hide entirely on error or empty context — analysis page already has
-  // strong primary content; the backdrop is best omitted than rendered blank.
-  if (isError || !ctx) return null;
+  if (isError || !ctx) return <BackdropUnavailable isError={isError} />;
 
   const snapshots = ctx.snapshots ?? [];
   const stress = ctx.stress;
+  const rates = ctx.rates;
+  const regimeVec = ctx.regime_vector;
   const highlights = ctx.highlights ?? [];
   const meta = ctx.snapshots_meta;
 
@@ -100,10 +158,19 @@ export function MarketBackdropStrip() {
     stress.available !== false &&
     stress.regime &&
     stress.regime !== "Unknown";
+  const ratesRegime =
+    rates &&
+    rates.available !== false &&
+    rates.regime &&
+    rates.regime !== "Unknown" &&
+    rates.regime !== "Mixed"
+      ? rates.regime
+      : null;
+  const activeRegimeVec = regimeVec?.available ? regimeVec : null;
   const topHighlight = highlights[0];
 
-  if (usableSnaps.length === 0 && !hasRegime && !topHighlight) {
-    return null;
+  if (usableSnaps.length === 0 && !hasRegime && !ratesRegime && !activeRegimeVec && !topHighlight) {
+    return <BackdropUnavailable ctx={ctx} />;
   }
 
   const staleCount = meta?.stale ?? 0;
@@ -129,64 +196,82 @@ export function MarketBackdropStrip() {
           </span>
         )}
 
-        {usableSnaps.length > 0 && (
-          <div className="flex items-center gap-3 flex-wrap">
-            {BACKDROP_MARKETS.map((market, i) => {
-              const snap = byMarket[market];
-              const unavailable = !snap || snap.value == null || snap.error != null;
-              const stale = snap?.stale ?? false;
-              const change = snap?.change_5d ?? null;
+        {ratesRegime && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-widest bg-surface-container text-on-surface-variant border-outline-variant/30">
+            {ratesRegime}
+          </span>
+        )}
 
-              return (
-                <div
-                  key={market}
-                  className="flex items-center gap-1.5"
-                >
-                  {i > 0 && (
-                    <span className="w-px h-3 bg-outline-variant/15" />
-                  )}
-                  <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
-                    {market}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[11px] font-num font-bold tabular-nums",
-                      unavailable
-                        ? "text-on-surface-variant/30"
-                        : stale
-                        ? "text-on-surface/60"
-                        : "text-on-surface",
-                    )}
-                  >
-                    {fmtVal(snap?.value ?? null, snap?.unit ?? "")}
-                  </span>
-                  {!unavailable && change != null && (
-                    <span
-                      className={cn(
-                        "text-[9px] font-num font-bold tabular-nums",
-                        change > 0
-                          ? "text-primary"
-                          : change < 0
-                          ? "text-error-dim"
-                          : "text-on-surface-variant",
-                      )}
-                    >
-                      {fmtChg(change)}
-                    </span>
-                  )}
-                  {stale && !unavailable && (
-                    <span
-                      title={`Last refreshed ${snap?.fetched_at ?? "unknown"}`}
-                      className="text-[8px] uppercase tracking-widest text-on-surface-variant/35 font-bold"
-                    >
-                      stale
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+        {activeRegimeVec && (
+          <div className="flex items-center gap-1.5">
+            {([
+              ["inflation", activeRegimeVec.inflation],
+              ["policy", activeRegimeVec.policy_stance],
+              ["fx", activeRegimeVec.fx],
+            ] as const).filter(([, v]) => v && v !== "neutral").map(([k, v]) => (
+              <span key={k} className="text-[8px] font-bold uppercase tracking-wider text-on-surface-variant/40 bg-surface-container-highest px-1.5 py-0.5 rounded">
+                {v.replace(/_/g, " ")}
+              </span>
+            ))}
           </div>
         )}
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {BACKDROP_MARKETS.map((market, i) => {
+            const snap = byMarket[market];
+            const unavailable = !snap || snap.value == null || snap.error != null;
+            const stale = snap?.stale ?? false;
+            const change = snap?.change_5d ?? null;
+
+            return (
+              <div
+                key={market}
+                className="flex items-center gap-1.5"
+              >
+                {i > 0 && (
+                  <span className="w-px h-3 bg-outline-variant/15" />
+                )}
+                <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/50 font-bold">
+                  {market}
+                </span>
+                <span
+                  className={cn(
+                    "text-[11px] font-num font-bold tabular-nums",
+                    unavailable
+                      ? "text-on-surface-variant/30"
+                      : stale
+                      ? "text-on-surface/60"
+                      : "text-on-surface",
+                  )}
+                >
+                  {fmtVal(snap?.value ?? null, snap?.unit ?? "")}
+                </span>
+                {!unavailable && change != null && (
+                  <span
+                    className={cn(
+                      "text-[9px] font-num font-bold tabular-nums",
+                      change > 0
+                        ? "text-primary"
+                        : change < 0
+                        ? "text-error-dim"
+                        : "text-on-surface-variant",
+                    )}
+                  >
+                    {fmtChg(change)}
+                  </span>
+                )}
+                {stale && !unavailable && (
+                  <span
+                    title={`Last refreshed ${snap?.fetched_at ?? "unknown"}`}
+                    className="text-[8px] uppercase tracking-widest text-on-surface-variant/35 font-bold"
+                  >
+                    stale
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Second row: top mover + quiet freshness footer */}

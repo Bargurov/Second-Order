@@ -24,12 +24,13 @@ import tempfile
 import unittest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import db
 import movers_cache
+from mover_card_normalizer import is_high_conviction_persistent
 
 
 # ---------------------------------------------------------------------------
@@ -76,11 +77,25 @@ def _event(
     }
 
 
+_RELEVANT_HEADLINES = [
+    "OPEC cuts output by 500k bpd",
+    "US tariff on steel imports takes effect",
+    "EU sanctions expand to Russian energy sector",
+    "China retaliatory tariffs on US agriculture",
+    "NATO allies increase defense spending",
+    "Natural gas supply disruption in Europe",
+    "Federal Reserve signals rate cut",
+    "Oil embargo tightens on Iran exports",
+    "Semiconductor export controls extended",
+    "LNG terminal explosion halts shipments",
+]
+
+
 def _seed_events(count: int, days_ago: int = 2) -> list[dict]:
     return [
         _event(
             event_id=i,
-            headline=f"Seed event {i}",
+            headline=_RELEVANT_HEADLINES[i % len(_RELEVANT_HEADLINES)],
             days_ago=days_ago,
             return_5d=float(i + 2),
         )
@@ -136,41 +151,56 @@ class TestComputeSlice(unittest.TestCase):
 
     def test_weekly_filters_by_7_day_window(self):
         events = [
-            _event(event_id=1, headline="Recent", days_ago=2, return_5d=3.0),
-            _event(event_id=2, headline="Old", days_ago=14, return_5d=9.0),
+            _event(event_id=1, headline="OPEC cuts output by 500k bpd", days_ago=2, return_5d=3.0),
+            _event(event_id=2, headline="US tariff on steel imports takes effect", days_ago=14, return_5d=9.0),
         ]
         out = self._compute("weekly", events)
-        self.assertEqual([e["headline"] for e in out], ["Recent"])
+        self.assertEqual([e["headline"] for e in out], ["OPEC cuts output by 500k bpd"])
+
+    def test_weekly_honors_active_mover_window_hint(self):
+        event = _event(
+            event_id=2,
+            headline="US tariff on steel imports takes effect",
+            days_ago=14,
+            return_5d=9.0,
+        )
+        event["active_mover_windows"] = ["weekly"]
+        out = self._compute("weekly", [event])
+        self.assertEqual(
+            [e["headline"] for e in out],
+            ["US tariff on steel imports takes effect"],
+        )
 
     def test_weekly_sorts_by_impact_descending(self):
         events = [
-            _event(event_id=1, headline="Small", days_ago=1, return_5d=1.5),
-            _event(event_id=2, headline="Big",   days_ago=1, return_5d=8.0),
-            _event(event_id=3, headline="Mid",   days_ago=1, return_5d=4.0),
+            _event(event_id=1, headline="EU sanctions on Russian oil", days_ago=1, return_5d=1.5),
+            _event(event_id=2, headline="OPEC cuts output by 500k bpd",   days_ago=1, return_5d=8.0),
+            _event(event_id=3, headline="China tariffs on US agriculture",   days_ago=1, return_5d=4.0),
         ]
         out = self._compute("weekly", events)
         self.assertEqual(
-            [e["headline"] for e in out], ["Big", "Mid", "Small"],
+            [e["headline"] for e in out],
+            ["OPEC cuts output by 500k bpd", "China tariffs on US agriculture", "EU sanctions on Russian oil"],
         )
 
     def test_yearly_filters_by_365_day_window(self):
         events = [
-            _event(event_id=1, headline="This year", days_ago=100, return_5d=3.0),
-            _event(event_id=2, headline="Ancient",   days_ago=400, return_5d=9.0),
+            _event(event_id=1, headline="NATO defense spending increase", days_ago=100, return_5d=3.0),
+            _event(event_id=2, headline="Oil embargo on Iran exports",   days_ago=400, return_5d=9.0),
         ]
         out = self._compute("yearly", events)
-        self.assertEqual([e["headline"] for e in out], ["This year"])
+        self.assertEqual([e["headline"] for e in out], ["NATO defense spending increase"])
 
     def test_weekly_deduplicates_by_headline(self):
         events = [
-            _event(event_id=1, headline="Dup", days_ago=1, return_5d=5.0),
-            _event(event_id=2, headline="Dup", days_ago=1, return_5d=3.0),
+            _event(event_id=1, headline="OPEC cuts output by 500k bpd", days_ago=1, return_5d=5.0),
+            _event(event_id=2, headline="OPEC cuts output by 500k bpd", days_ago=1, return_5d=3.0),
         ]
         out = self._compute("weekly", events)
         self.assertEqual(len(out), 1)
 
     def test_weekly_skips_events_without_return(self):
-        ev = _event(event_id=1, headline="No return", days_ago=1, return_5d=0.0)
+        ev = _event(event_id=1, headline="EU sanctions on Russian energy", days_ago=1, return_5d=0.0)
         # Null out the return so the ticker no longer qualifies
         ev["market_tickers"][0]["return_5d"] = None
         out = self._compute("weekly", [ev])
@@ -178,25 +208,44 @@ class TestComputeSlice(unittest.TestCase):
 
     def test_persistent_strict_returns_old_movers(self):
         events = [
-            _event(event_id=1, headline="Old mover", days_ago=14, return_5d=4.0),
+            _event(event_id=1, headline="Oil embargo tightens on Iran exports", days_ago=14, return_5d=4.0),
         ]
         out = self._compute("persistent", events)
         self.assertEqual(len(out), 1)
-        self.assertEqual(out[0]["headline"], "Old mover")
+        self.assertEqual(out[0]["headline"], "Oil embargo tightens on Iran exports")
         self.assertIn("days_since_event", out[0])
 
     def test_persistent_fallback_when_strict_empty(self):
         """If no events are >7d old, fallback returns any mover."""
         events = [
-            _event(event_id=1, headline="Recent only", days_ago=1, return_5d=4.0),
+            _event(event_id=1, headline="OPEC cuts output by 500k bpd", days_ago=1, return_5d=4.0),
         ]
         out = self._compute("persistent", events)
         self.assertEqual(len(out), 1)
-        self.assertEqual(out[0]["headline"], "Recent only")
+        self.assertEqual(out[0]["headline"], "OPEC cuts output by 500k bpd")
 
     def test_unknown_slice_raises(self):
         with self.assertRaises(ValueError):
             self._compute("does-not-exist", [])
+
+
+class TestPersistentHighImpactEligibility(unittest.TestCase):
+    """Route-level Still Moving Markets gate rejects non-high convictions."""
+
+    def test_medium_impact_conviction_does_not_qualify(self):
+        card = {
+            "event_id": 1,
+            "headline": "Clean but not large enough follow-through",
+            "thesis_state": "confirming",
+            "stale_signal": "fresh",
+            "weighted_evidence": {"evidence_label": "supportive"},
+            "conviction": {
+                "conviction_class": "conviction",
+                "impact_level": "medium",
+            },
+            "tickers": [{"symbol": "AAA", "return_5d": 1.0}],
+        }
+        self.assertFalse(is_high_conviction_persistent(card))
 
 
 # ---------------------------------------------------------------------------
@@ -226,13 +275,14 @@ class TestGetSlice(unittest.TestCase):
         def _load_cache(slice_name):
             return self._cache_store.get(slice_name)
 
-        def _save_cache(slice_name, payload, built_at, count, max_id):
+        def _save_cache(slice_name, payload, built_at, count, max_id, *, compute_version=0):
             self.save_calls += 1
             self._cache_store[slice_name] = {
                 "payload": payload,
                 "built_at": built_at,
                 "event_count": count,
                 "max_event_id": max_id,
+                "compute_version": compute_version,
             }
 
         self._load_cache_fn = _load_cache
@@ -450,14 +500,14 @@ class TestDbMoversCache(unittest.TestCase):
         """Full wiring: get_slice computes, persists, then serves warm from SQLite."""
         # Seed two events so compute_slice has something to return.
         db.save_event({
-            "headline": "Weekly event A", "stage": "realized",
+            "headline": "OPEC cuts output by 500k bpd", "stage": "realized",
             "persistence": "medium", "event_date": "2026-04-07",
             "market_tickers": [{"symbol": "GLD", "role": "beneficiary",
                                  "return_5d": 2.5,
                                  "direction_tag": "supports \u2191"}],
         })
         db.save_event({
-            "headline": "Weekly event B", "stage": "realized",
+            "headline": "EU sanctions on Russian energy sector", "stage": "realized",
             "persistence": "medium", "event_date": "2026-04-07",
             "market_tickers": [{"symbol": "XLE", "role": "beneficiary",
                                  "return_5d": 5.5,
@@ -506,7 +556,7 @@ class TestDbMoversCache(unittest.TestCase):
             compute_fn=_compute,
         )
         self.assertEqual(len(out1), 2)
-        self.assertEqual(out1[0]["headline"], "Weekly event B")  # larger impact
+        self.assertEqual(out1[0]["headline"], "EU sanctions on Russian energy sector")  # larger impact
         first_build_calls = build_calls["n"]
         self.assertGreater(first_build_calls, 0)
 
@@ -549,8 +599,22 @@ class TestEndpointContract(unittest.TestCase):
         # Clear any in-memory today cache so we bootstrap cleanly.
         self.api._TODAYS_MOVERS_CACHE["data"] = None
         self.api._TODAYS_MOVERS_CACHE["ts"] = 0.0
+        self.api._news_cache["data"] = None
+        self.api._news_cache["ts"] = 0.0
+        self._orig_backfill_provider = os.environ.get("BACKFILL_PROVIDER")
+        self._orig_backfill_budget = os.environ.get("MAX_BACKFILL_LLM_CALLS")
+        os.environ["BACKFILL_PROVIDER"] = "anthropic"
+        os.environ["MAX_BACKFILL_LLM_CALLS"] = "20"
 
     def tearDown(self):
+        if self._orig_backfill_provider is None:
+            os.environ.pop("BACKFILL_PROVIDER", None)
+        else:
+            os.environ["BACKFILL_PROVIDER"] = self._orig_backfill_provider
+        if self._orig_backfill_budget is None:
+            os.environ.pop("MAX_BACKFILL_LLM_CALLS", None)
+        else:
+            os.environ["MAX_BACKFILL_LLM_CALLS"] = self._orig_backfill_budget
         db.DB_FILE = self._orig
         if os.path.exists(self._tmp):
             try:
@@ -581,50 +645,586 @@ class TestEndpointContract(unittest.TestCase):
             ev["timestamp"] = timestamp
         db.save_event(ev)
 
-    def _assert_mover_shape(self, rows: list[dict]):
-        self.assertIsInstance(rows, list)
-        for row in rows:
+    def _seed_news_cache(
+        self,
+        *,
+        clusters: int = 1,
+        total_headlines: int = 4,
+        headlines: list[str] | None = None,
+    ):
+        if headlines is not None:
+            clusters = len(headlines)
+        self.api._news_cache["data"] = {
+            "clusters": [
+                {
+                    "id": i + 1,
+                    "headline": (
+                        headlines[i] if headlines is not None
+                        else f"OPEC supply headline {i}"
+                    ),
+                    "source_count": 2,
+                    "published_at": datetime.now().isoformat(timespec="seconds"),
+                }
+                for i in range(clusters)
+            ],
+            "total_headlines": total_headlines,
+            "feed_status": [{"name": "test", "ok": True}],
+            "refresh_meta": {
+                "status": "ok",
+                "freshness": "fresh",
+                "last_successful_refresh": datetime.now().isoformat(timespec="seconds"),
+            },
+            "_schema_version": self.api._NEWS_CACHE_VERSION,
+        }
+        self.api._news_cache["ts"] = 999999999.0
+
+    @staticmethod
+    def _items(body):
+        """Unwrap the ``{items, meta}`` envelope mover surfaces now emit."""
+        if isinstance(body, dict) and "items" in body:
+            return body["items"]
+        return body
+
+    def _assert_mover_shape(self, rows):
+        items = self._items(rows)
+        self.assertIsInstance(items, list)
+        for row in items:
             missing = self._REQUIRED_KEYS - set(row.keys())
             self.assertFalse(missing, f"Missing keys: {missing}")
 
     def test_weekly_output_contract(self):
-        self._seed("Contract weekly A", 3.0)
-        self._seed("Contract weekly B", 5.0)
+        self._seed("OPEC cuts output by 500k bpd", 3.0)
+        self._seed("EU sanctions on Russian energy sector", 5.0)
         r = self.client.get("/movers/weekly")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self._assert_mover_shape(body)
+        items = self._items(body)
         # Ranking stability: higher impact sorts first.
-        self.assertEqual(body[0]["headline"], "Contract weekly B")
+        self.assertEqual(items[0]["headline"], "EU sanctions on Russian energy sector")
+
+    def test_today_empty_candidate_reports_rejection_diagnostics(self):
+        self._seed_news_cache()
+        db.save_event({
+            "headline": "OPEC cuts output by 500k bpd",
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": datetime.now().strftime("%Y-%m-%d"),
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "market_tickers": [],
+            "mechanism_summary": "Oil supply channel.",
+        })
+        self.api._TODAYS_MOVERS_CACHE["data"] = None
+        self.api._TODAYS_MOVERS_CACHE["ts"] = 0.0
+
+        r = self.client.get("/movers/today?include_meta=true")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(self._items(body), [])
+        diagnostics = body["meta"].get("diagnostics")
+        self.assertIsInstance(diagnostics, dict)
+        self.assertGreaterEqual(
+            diagnostics.get("rejections", {}).get("no_market_tickers", 0),
+            1,
+        )
+        self.assertEqual(
+            diagnostics.get("headline_coverage", {}).get("status"),
+            "analyzed_events_missing_market_tickers",
+        )
+        self.assertEqual(
+            diagnostics.get("headline_coverage", {})
+            .get("analysis_path", {})
+            .get("analyze_endpoint"),
+            "POST /analyze",
+        )
+
+    def test_today_empty_with_fresh_headlines_reports_unanalyzed_gap(self):
+        self._seed_news_cache(clusters=2, total_headlines=5)
+
+        r = self.client.get("/movers/today?include_meta=true")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(self._items(body), [])
+        diagnostics = body["meta"].get("diagnostics")
+        self.assertIsInstance(diagnostics, dict)
+        coverage = diagnostics.get("headline_coverage") or {}
+        self.assertEqual(
+            coverage.get("status"),
+            "fresh_headlines_without_analyzed_market_events",
+        )
+        self.assertEqual(coverage.get("clusters_cached"), 2)
+        self.assertIn("POST /analyze", coverage.get("analysis_path", {}).values())
+
+    def test_backfill_recent_degrades_when_llm_unavailable(self):
+        self._seed_news_cache(
+            headlines=["OPEC cuts output by 500k bpd"],
+            total_headlines=1,
+        )
+
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}):
+            with patch("api.analyze_event") as analyze_mock:
+                r = self.client.post(
+                    "/movers/backfill-recent?limit=1&scan_limit=1&dry_run=false&max_llm_calls=1",
+                )
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["status"], "degraded")
+        diagnostics = body["diagnostics"]
+        self.assertEqual(diagnostics["headlines_scanned"], 1)
+        self.assertEqual(diagnostics["analyzed"], 0)
+        self.assertEqual(diagnostics["skipped"].get("llm_unavailable"), 1)
+        analyze_mock.assert_not_called()
+
+    def test_backfill_recent_refreshes_saved_event_from_asset_hints_without_llm(self):
+        headline = "OPEC cuts output by 500k bpd"
+        event_date = datetime.now().strftime("%Y-%m-%d")
+        self._seed_news_cache(headlines=[headline], total_headlines=1)
+        db.save_event({
+            "headline": headline,
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": event_date,
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "assets_to_watch": ["GLD"],
+            "beneficiaries": ["GLD"],
+            "losers": [],
+            "market_tickers": [],
+            "mechanism_summary": "Oil supply channel.",
+            "confidence": "high",
+        })
+        market_payload = {
+            "note": "mock market check",
+            "tickers": [
+                {
+                    "symbol": "GLD",
+                    "role": "beneficiary",
+                    "return_5d": 3.4,
+                    "return_20d": 4.1,
+                    "direction_tag": "supports",
+                },
+            ],
+        }
+
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}):
+            with patch("api.market_check", return_value=market_payload) as market_mock:
+                with patch("api.analyze_event") as analyze_mock:
+                    r = self.client.post(
+                        "/movers/backfill-recent?limit=1&scan_limit=1&dry_run=false&max_llm_calls=1",
+                    )
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["status"], "ok")
+        diagnostics = body["diagnostics"]
+        self.assertEqual(diagnostics["analyzed"], 0)
+        self.assertEqual(diagnostics["market_checked"], 1)
+        self.assertEqual(diagnostics["persisted"], 1)
+        self.assertEqual(diagnostics["with_tickers"], 1)
+        self.assertEqual(diagnostics["with_returns"], 1)
+        market_mock.assert_called_once()
+        analyze_mock.assert_not_called()
+        saved = db.find_cached_analysis(headline, event_date=event_date)
+        self.assertTrue(saved["market_tickers"])
+        self.assertEqual(saved["market_tickers"][0]["return_5d"], 3.4)
+
+    def test_backfill_recent_analyzes_fresh_headline_and_persists_market_move(self):
+        headline = "OPEC cuts output by 500k bpd"
+        self._seed_news_cache(headlines=[headline], total_headlines=1)
+        analysis = {
+            "what_changed": "OPEC cut output.",
+            "mechanism_summary": "Lower supply supports oil-linked assets.",
+            "beneficiaries": ["Energy producers"],
+            "losers": ["Oil consumers"],
+            "beneficiary_tickers": ["GLD"],
+            "loser_tickers": ["USO"],
+            "assets_to_watch": ["GLD", "USO"],
+            "confidence": "high",
+            "transmission_chain": ["Supply falls", "prices rise"],
+            "if_persists": {},
+            "currency_channel": {},
+        }
+        market_payload = {
+            "note": "mock market check",
+            "tickers": [
+                {
+                    "symbol": "GLD",
+                    "role": "beneficiary",
+                    "return_5d": 2.2,
+                    "return_20d": 3.3,
+                    "direction_tag": "supports",
+                },
+            ],
+        }
+
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            with patch("api.analyze_event", return_value=analysis) as analyze_mock:
+                with patch("api.market_check", return_value=market_payload):
+                    with patch("api.build_macro_context_for_prompt", return_value=""):
+                        with patch("routes.analyze._run_pre_market_overlays", return_value=({}, {})):
+                            with patch("routes.analyze._run_post_market_overlays", return_value=None):
+                                with patch(
+                                    "routes.analyze._enrich_macro_context_with_country",
+                                    side_effect=lambda ctx, _headline: ctx,
+                                ):
+                                    r = self.client.post(
+                                        "/movers/backfill-recent?limit=1&scan_limit=1&dry_run=false&max_llm_calls=1",
+                                    )
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["status"], "ok")
+        diagnostics = body["diagnostics"]
+        self.assertEqual(diagnostics["analyzed"], 1)
+        self.assertEqual(diagnostics["market_checked"], 1)
+        self.assertEqual(diagnostics["persisted"], 1)
+        self.assertEqual(diagnostics["with_returns"], 1)
+        analyze_mock.assert_called_once()
+        saved = db.find_cached_analysis(
+            headline,
+            event_date=datetime.now().strftime("%Y-%m-%d"),
+        )
+        self.assertIsNotNone(saved)
+        self.assertEqual(saved["market_tickers"][0]["return_5d"], 2.2)
+
+    def test_today_empty_filter_rejections_report_filter_status(self):
+        self._seed_news_cache()
+        db.save_event({
+            "headline": "OPEC cuts output by 500k bpd",
+            "stage": "realized",
+            "persistence": "medium",
+            "event_date": datetime.now().strftime("%Y-%m-%d"),
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+            "market_tickers": [
+                {"symbol": "GLD", "role": "beneficiary",
+                 "return_5d": 2.0, "return_20d": 3.0,
+                 "direction_tag": "supports \u2191"},
+            ],
+            "mechanism_summary": "Oil supply channel.",
+            "low_signal": 1,
+        })
+        self.api._TODAYS_MOVERS_CACHE["data"] = None
+        self.api._TODAYS_MOVERS_CACHE["ts"] = 0.0
+
+        r = self.client.get("/movers/today?include_meta=true")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(self._items(body), [])
+        diagnostics = body["meta"].get("diagnostics")
+        self.assertIsInstance(diagnostics, dict)
+        self.assertGreaterEqual(
+            diagnostics.get("rejections", {}).get("low_signal", 0),
+            1,
+        )
+        self.assertEqual(
+            diagnostics.get("headline_coverage", {}).get("status"),
+            "filters_rejected_market_checked_candidates",
+        )
 
     def test_yearly_output_contract(self):
-        self._seed("Contract yearly A", 4.0)
+        self._seed("China tariffs on US agriculture", 4.0)
         r = self.client.get("/movers/yearly")
         self.assertEqual(r.status_code, 200)
         self._assert_mover_shape(r.json())
 
     def test_persistent_output_contract_includes_days_since_event(self):
         old_ts = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
-        self._seed("Contract persistent", 5.0, timestamp=old_ts, return_20d=6.0)
+        self._seed("Oil embargo tightens on Iran exports", 5.0, timestamp=old_ts, return_20d=6.0)
         r = self.client.get("/movers/persistent")
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self._assert_mover_shape(body)
-        for row in body:
+        for row in self._items(body):
             self.assertIn("days_since_event", row)
 
     def test_new_event_invalidates_cache_via_fingerprint(self):
         """Saving a new event inside the TTL window still shows up."""
-        self._seed("Initial", 3.0)
+        self._seed("US tariff on steel imports takes effect", 3.0)
         r1 = self.client.get("/movers/weekly")
-        self.assertEqual(len(r1.json()), 1)
+        self.assertEqual(len(self._items(r1.json())), 1)
 
         # New save → fingerprint changes → cache is recomputed on next read.
-        self._seed("Follow-up", 4.0)
+        self._seed("NATO allies increase defense spending", 4.0)
         r2 = self.client.get("/movers/weekly")
-        headlines = {m["headline"] for m in r2.json()}
-        self.assertIn("Initial", headlines)
-        self.assertIn("Follow-up", headlines)
+        headlines = {m["headline"] for m in self._items(r2.json())}
+        self.assertIn("US tariff on steel imports takes effect", headlines)
+        self.assertIn("NATO allies increase defense spending", headlines)
+
+
+# ---------------------------------------------------------------------------
+# 5. _LegacyMoverCacheShim — clear() must invalidate the persisted cache
+# ---------------------------------------------------------------------------
+
+
+class TestLegacyClearInvalidates(unittest.TestCase):
+    """The .clear() path on _LegacyMoverCacheShim must call
+    movers_cache.invalidate(), not just empty the in-memory dict.
+
+    Two invariant groups:
+      1) clear() calls invalidate on the correct slice
+      2) Normal __setitem__ path unchanged
+    """
+
+    def setUp(self):
+        import api as _api_mod
+        self._api = _api_mod
+
+    # --- 1) clear() invalidates the underlying cache ---
+
+    def test_clear_calls_invalidate_weekly(self):
+        """.clear() on the weekly shim must call movers_cache.invalidate."""
+        calls: list[str | None] = []
+        orig = movers_cache.invalidate
+
+        def _spy(slice_name=None):
+            calls.append(slice_name)
+
+        movers_cache.invalidate = _spy
+        try:
+            self._api._WEEKLY_MOVERS_CACHE.clear()
+            self.assertIn("weekly", calls,
+                          "clear() did not call invalidate('weekly')")
+        finally:
+            movers_cache.invalidate = orig
+
+    def test_clear_calls_invalidate_yearly(self):
+        """.clear() on the yearly shim must call movers_cache.invalidate."""
+        calls: list[str | None] = []
+        orig = movers_cache.invalidate
+
+        def _spy(slice_name=None):
+            calls.append(slice_name)
+
+        movers_cache.invalidate = _spy
+        try:
+            self._api._YEARLY_MOVERS_CACHE.clear()
+            self.assertIn("yearly", calls)
+        finally:
+            movers_cache.invalidate = orig
+
+    def test_clear_calls_invalidate_persistent(self):
+        """.clear() on the persistent shim must call movers_cache.invalidate."""
+        calls: list[str | None] = []
+        orig = movers_cache.invalidate
+
+        def _spy(slice_name=None):
+            calls.append(slice_name)
+
+        movers_cache.invalidate = _spy
+        try:
+            self._api._PERSISTENT_MOVERS_CACHE.clear()
+            self.assertIn("persistent", calls)
+        finally:
+            movers_cache.invalidate = orig
+
+    def test_clear_empties_in_memory_dict(self):
+        """After .clear() the dict has no keys (standard dict.clear semantics)."""
+        shim = self._api._WEEKLY_MOVERS_CACHE
+        orig = movers_cache.invalidate
+        movers_cache.invalidate = lambda *a, **kw: None
+        try:
+            shim.clear()
+            self.assertEqual(len(shim), 0)
+        finally:
+            movers_cache.invalidate = orig
+
+    def test_clear_invalidate_exception_does_not_propagate(self):
+        """An exception inside invalidate() must not bubble out of .clear()."""
+        orig = movers_cache.invalidate
+
+        def _raise(slice_name=None):
+            raise RuntimeError("db unavailable")
+
+        movers_cache.invalidate = _raise
+        try:
+            self._api._WEEKLY_MOVERS_CACHE.clear()  # must not raise
+        finally:
+            movers_cache.invalidate = orig
+
+    # --- 2) Normal __setitem__ path unchanged ---
+
+    def test_setitem_data_none_still_calls_invalidate(self):
+        """Existing ['data'] = None path still calls invalidate."""
+        calls: list[str | None] = []
+        orig = movers_cache.invalidate
+
+        def _spy(slice_name=None):
+            calls.append(slice_name)
+
+        movers_cache.invalidate = _spy
+        try:
+            self._api._WEEKLY_MOVERS_CACHE["data"] = None
+            self.assertIn("weekly", calls)
+        finally:
+            movers_cache.invalidate = orig
+
+    def test_setitem_data_non_none_does_not_invalidate(self):
+        """Setting 'data' to a non-None value must NOT call invalidate."""
+        calls: list[str | None] = []
+        orig = movers_cache.invalidate
+
+        def _spy(slice_name=None):
+            calls.append(slice_name)
+
+        movers_cache.invalidate = _spy
+        try:
+            self._api._WEEKLY_MOVERS_CACHE["data"] = [{"headline": "test"}]
+            self.assertEqual(calls, [],
+                             "invalidate() must not fire when data is set to a value")
+        finally:
+            movers_cache.invalidate = orig
+
+    def test_setitem_other_key_does_not_invalidate(self):
+        """Setting keys other than 'data' must NOT call invalidate."""
+        calls: list[str | None] = []
+        orig = movers_cache.invalidate
+
+        def _spy(slice_name=None):
+            calls.append(slice_name)
+
+        movers_cache.invalidate = _spy
+        try:
+            self._api._WEEKLY_MOVERS_CACHE["ts"] = 0.0
+            self.assertEqual(calls, [])
+        finally:
+            movers_cache.invalidate = orig
+
+
+# ---------------------------------------------------------------------------
+# diagnose_time_slice — return_1d visibility
+#
+# The today-window surface (``api.movers_today``) accepts ``return_1d``
+# as a fallback when ``return_5d`` is None.  The diagnostic must mirror
+# that contract so an operator inspecting ``include_meta=true`` can see
+# whether return_1d events exist and whether they qualify — instead of
+# the prior surface that only counted return_5d and bucketed return_1d-
+# only events under ``no_return_5d``.
+# ---------------------------------------------------------------------------
+
+
+def _today_event(*, event_id: int, headline: str, tickers: list[dict]) -> dict:
+    now = _now()
+    ts = (now - timedelta(hours=2)).isoformat(timespec="seconds")
+    return {
+        "id": event_id,
+        "headline": headline,
+        "stage": "realized",
+        "persistence": "medium",
+        "event_date": now.strftime("%Y-%m-%d"),
+        "timestamp": ts,
+        "mechanism_summary": "stub",
+        "market_tickers": tickers,
+        "transmission_chain": [],
+        "if_persists": {},
+    }
+
+
+class TestDiagnoseTimeSliceReturn1d(unittest.TestCase):
+
+    def test_today_window_counts_return_1d_and_marks_eligible(self):
+        ev = _today_event(
+            event_id=1,
+            headline=_RELEVANT_HEADLINES[0],
+            tickers=[{
+                "symbol": "XOM", "role": "beneficiary",
+                "return_5d": None, "return_1d": 2.7,
+                "direction_tag": "supports ↑",
+            }],
+        )
+        diag = movers_cache.diagnose_time_slice(
+            "today", [ev], now=_now(), filter_low_signal=True,
+        )
+        # Return_1d-specific counters surface the data on the wire.
+        self.assertEqual(diag["window_events_with_raw_return_5d"], 0)
+        self.assertEqual(diag["window_events_with_raw_return_1d"], 1)
+        self.assertEqual(diag["window_events_with_raw_usable_return"], 1)
+        self.assertEqual(diag["events_with_return_5d"], 0)
+        self.assertEqual(diag["events_with_return_1d"], 1)
+        self.assertEqual(diag["events_with_usable_return"], 1)
+        # And the today-window eligibility gate accepts return_1d, so
+        # the event reads as eligible (matches the live surface).
+        self.assertEqual(diag["eligible_events"], 1)
+        self.assertNotIn("no_return_5d", diag["rejections"])
+        self.assertNotIn("no_usable_return", diag["rejections"])
+
+    def test_today_window_rejects_when_neither_return_present(self):
+        ev = _today_event(
+            event_id=1,
+            headline=_RELEVANT_HEADLINES[0],
+            tickers=[{
+                "symbol": "XOM", "role": "beneficiary",
+                "return_5d": None, "return_1d": None,
+                "direction_tag": "supports ↑",
+            }],
+        )
+        diag = movers_cache.diagnose_time_slice(
+            "today", [ev], now=_now(), filter_low_signal=True,
+        )
+        self.assertEqual(diag["events_with_usable_return"], 0)
+        self.assertEqual(diag["eligible_events"], 0)
+        # The today-window rejection bucket is the honest "no_usable_return"
+        # rather than the misleading "no_return_5d".
+        self.assertEqual(diag["rejections"].get("no_usable_return"), 1)
+        self.assertNotIn("no_return_5d", diag["rejections"])
+
+    def test_weekly_window_keeps_return_5d_strict(self):
+        # Weekly slice's surface (``movers_cache.compute_slice`` →
+        # ``_compute_weekly_slice``) gates strictly on return_5d.  The
+        # diagnostic must NOT loosen that rule for non-today slices.
+        ev = _event(
+            event_id=1,
+            headline=_RELEVANT_HEADLINES[0],
+            days_ago=3,
+            return_5d=2.0,
+        )
+        # Strip return_5d, leave return_1d only.
+        ev["market_tickers"] = [
+            {"symbol": "GLD", "role": "beneficiary",
+             "return_5d": None, "return_1d": 1.5,
+             "direction_tag": "supports ↑"},
+        ]
+        diag = movers_cache.diagnose_time_slice(
+            "weekly", [ev], now=_now(), filter_low_signal=True,
+        )
+        # New return_1d counters still populate so operators can see
+        # what's there, but eligibility stays strict on return_5d.
+        self.assertEqual(diag["window_events_with_raw_return_1d"], 1)
+        self.assertEqual(diag["events_with_return_1d"], 1)
+        self.assertEqual(diag["eligible_events"], 0)
+        self.assertEqual(diag["rejections"].get("no_return_5d"), 1)
+        self.assertNotIn("no_usable_return", diag["rejections"])
+
+    def test_today_window_diag_summary_matches_live_surface(self):
+        # Two events, one with return_1d-only (would surface live) and one
+        # with neither (would not).  Diagnostic must report eligible=1
+        # with no false "no_return_5d" attribution against the first.
+        ev_usable = _today_event(
+            event_id=1,
+            headline=_RELEVANT_HEADLINES[0],
+            tickers=[{
+                "symbol": "XOM", "role": "beneficiary",
+                "return_5d": None, "return_1d": 2.0,
+                "direction_tag": "supports ↑",
+            }],
+        )
+        ev_blank = _today_event(
+            event_id=2,
+            headline=_RELEVANT_HEADLINES[1],
+            tickers=[{
+                "symbol": "TLT", "role": "beneficiary",
+                "return_5d": None, "return_1d": None,
+                "direction_tag": "supports ↑",
+            }],
+        )
+        diag = movers_cache.diagnose_time_slice(
+            "today", [ev_usable, ev_blank], now=_now(),
+            filter_low_signal=True,
+        )
+        self.assertEqual(diag["window_events"], 2)
+        self.assertEqual(diag["events_with_return_1d"], 1)
+        self.assertEqual(diag["events_with_usable_return"], 1)
+        self.assertEqual(diag["eligible_events"], 1)
+        self.assertEqual(diag["rejections"].get("no_usable_return"), 1)
 
 
 if __name__ == "__main__":

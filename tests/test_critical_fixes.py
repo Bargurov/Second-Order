@@ -200,7 +200,7 @@ class TestHeadlineWordsPunctuation(unittest.TestCase):
 
     def test_trailing_comma(self):
         words = db._headline_words("tariffs, steel, sanctions")
-        self.assertIn("tariffs", words)
+        self.assertIn("tariff", words)       # normalized: tariffs → tariff
         self.assertNotIn("tariffs,", words)
         self.assertIn("steel", words)
         self.assertNotIn("steel,", words)
@@ -210,10 +210,11 @@ class TestHeadlineWordsPunctuation(unittest.TestCase):
         self.assertIn("rally", words)
         self.assertNotIn("rally.", words)
 
-    def test_possessive_kept(self):
-        # "opec's" is a valid token — internal apostrophe preserved
+    def test_possessive_stripped(self):
+        # Possessive 's is now stripped so "OPEC's" matches "OPEC"
         words = db._headline_words("OPEC's production cut")
-        self.assertIn("opec's", words)
+        self.assertIn("opec", words)
+        self.assertNotIn("opec's", words)
 
     def test_hyphenated_word_kept(self):
         words = db._headline_words("multi-year trade deal")
@@ -221,7 +222,7 @@ class TestHeadlineWordsPunctuation(unittest.TestCase):
 
     def test_quoted_word(self):
         words = db._headline_words('"sanctions" imposed')
-        self.assertIn("sanctions", words)
+        self.assertIn("sanction", words)     # normalized: sanctions → sanction
         self.assertNotIn('"sanctions"', words)
 
     def test_stop_words_still_removed(self):

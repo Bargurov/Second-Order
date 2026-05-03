@@ -94,7 +94,16 @@ def _stub_market(beneficiary_tickers, loser_tickers, event_date=None):
 
 
 _STUB_CLUSTERS = [
-    {"headline": f"Headline {i}", "sources": [{"name": "Reuters"}], "source_count": 1}
+    {
+        "id": 100 + i,
+        "headline": f"Headline {i}",
+        "sources": [{"name": "Reuters"}],
+        "source_count": 1,
+        # Distinct published_at so the cursor has a deterministic order to
+        # walk; newest first — later index means older, matching the
+        # canonical descending sort on published_at.
+        "published_at": f"2026-04-{15 - i:02d}T12:00:00+00:00",
+    }
     for i in range(15)
 ]
 
@@ -233,11 +242,15 @@ class TestNewsRefresh(SmokeTestBase):
     def test_cooldown_returns_recent_status(self):
         """Second refresh within cooldown window returns status='recent'."""
         import api as _api_mod
+        original_cooldown = _api_mod._REFRESH_COOLDOWN_SECONDS
         _api_mod._REFRESH_COOLDOWN_SECONDS = 3600  # force cooldown active
-        self.client.post("/news/refresh")  # prime
-        r2 = self.client.post("/news/refresh")
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r2.json()["refresh_meta"]["status"], "recent")
+        try:
+            self.client.post("/news/refresh")  # prime
+            r2 = self.client.post("/news/refresh")
+            self.assertEqual(r2.status_code, 200)
+            self.assertEqual(r2.json()["refresh_meta"]["status"], "recent")
+        finally:
+            _api_mod._REFRESH_COOLDOWN_SECONDS = original_cooldown
 
 
 # ---------------------------------------------------------------------------
@@ -398,35 +411,38 @@ class TestNewsPagination(SmokeTestBase):
 
     def test_news_limit_slices_correctly(self):
         self._prime_news()
-        body = self.get_ok("/news", limit=5, offset=0)
+        body = self.get_ok("/news", limit=5)
         self.assertEqual(len(body["clusters"]), 5)
         self.assertEqual(body["total_count"], 15)
+        self.assertIsInstance(body["next_cursor"], str)
 
-    def test_news_offset_advances_page(self):
+    def test_news_cursor_advances_page(self):
         self._prime_news()
-        b0 = self.get_ok("/news", limit=5, offset=0)
-        b1 = self.get_ok("/news", limit=5, offset=5)
+        b0 = self.get_ok("/news", limit=5)
+        cursor = b0["next_cursor"]
+        self.assertTrue(cursor)
+        b1 = self.get_ok("/news", limit=5, cursor=cursor)
         # No overlap between first and second page
         headlines_0 = {c["headline"] for c in b0["clusters"]}
         headlines_1 = {c["headline"] for c in b1["clusters"]}
         self.assertEqual(headlines_0 & headlines_1, set())
 
-    def test_news_offset_beyond_end_returns_empty_clusters(self):
+    def test_news_last_page_emits_null_cursor(self):
         self._prime_news()
-        body = self.get_ok("/news", limit=5, offset=100)
-        self.assertEqual(body["clusters"], [])
+        body = self.get_ok("/news", limit=100)
+        self.assertIsNone(body["next_cursor"])
 
     def test_news_total_count_stable_across_pages(self):
         """total_count must be the same regardless of pagination params."""
         self._prime_news()
-        b1 = self.get_ok("/news", limit=5, offset=0)
-        b2 = self.get_ok("/news", limit=10, offset=5)
+        b1 = self.get_ok("/news", limit=5)
+        b2 = self.get_ok("/news", limit=10, cursor=b1["next_cursor"])
         self.assertEqual(b1["total_count"], b2["total_count"])
 
     def test_news_has_required_meta_keys(self):
         self._prime_news()
         body = self.get_ok("/news")
-        for key in ("clusters", "total_count", "total_headlines", "feed_status", "refresh_meta"):
+        for key in ("clusters", "total_count", "total_headlines", "feed_status", "refresh_meta", "next_cursor"):
             self.assertIn(key, body, f"Missing /news key: {key}")
 
 

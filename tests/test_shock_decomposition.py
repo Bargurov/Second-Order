@@ -336,7 +336,7 @@ class TestAnalyzeWiring(unittest.TestCase):
         self.api = api
         self.client = TestClient(api.app)
 
-    def _fake_analyze_event(self, headline, stage, persistence, event_context="", model=None):
+    def _fake_analyze_event(self, inp):
         return {
             "what_changed": "Macro shock test event.",
             "mechanism_summary": "Generic mechanism for wiring test.",

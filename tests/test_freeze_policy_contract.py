@@ -45,7 +45,7 @@ import event_age_policy as eap
 # ---------------------------------------------------------------------------
 
 
-def _mock_analyze(headline, stage, persistence, event_context=""):
+def _mock_analyze(inp):
     return {
         "what_changed": "Stub change text.",
         "mechanism_summary": "Stub mechanism for contract tests.",

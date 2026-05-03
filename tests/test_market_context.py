@@ -355,15 +355,22 @@ class TestEndpointFullData(MarketContextEndpointBase):
 
 class TestEndpointPartialAvailability(MarketContextEndpointBase):
 
-    def test_no_snapshots_warm_returns_empty_section(self):
-        """When the warm store is empty, snapshots come back empty but
-        the rest of the context should still populate."""
+    def test_cold_store_auto_warms_on_market_context(self):
+        """When the warm store is empty, /market-context auto-warms with
+        one synchronous refresh so the user does not need to call
+        /snapshots first.  ``market_check._fetch`` is patched to a
+        healthy frame, so every snapshot returns warmed."""
         with patch("market_check._fetch", return_value=_good_df()):
             response = self.client.get("/market-context")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["snapshots"], [])
-        self.assertEqual(data["snapshots_meta"]["total"], 0)
+        self.assertEqual(len(data["snapshots"]), 8)
+        self.assertEqual(data["snapshots_meta"]["total"], 8)
+        self.assertEqual(data["snapshots_meta"]["fresh"], 8)
+        self.assertEqual(data["snapshots_meta"]["unavailable"], 0)
+        for snap in data["snapshots"]:
+            self.assertIsNone(snap["error"])
+            self.assertIsNotNone(snap["value"])
         # Stress should still compute since it goes through _fetch
         self.assertIn("regime", data["stress"])
 

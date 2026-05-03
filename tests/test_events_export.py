@@ -266,7 +266,13 @@ class TestEmptyExport(_ExportBase):
 
     def test_json_export_empty_archive(self):
         payload = build_json_export(load_events_for_export())
-        self.assertEqual(payload, {"count": 0, "events": []})
+        # Envelope carries events + the track_record_breakdown block.
+        self.assertEqual(payload["count"], 0)
+        self.assertEqual(payload["events"], [])
+        self.assertIn("track_record_breakdown", payload)
+        breakdown = payload["track_record_breakdown"]
+        self.assertEqual(breakdown["schema"], "track_record_breakdown.v1")
+        self.assertEqual(breakdown["summary"]["total_events"], 0)
 
     def test_csv_export_empty_archive_has_header_only(self):
         text = build_csv_export(load_events_for_export())
@@ -323,7 +329,15 @@ class TestExportEndpoint(_ExportBase):
     def test_endpoint_empty_archive_json(self):
         r = self.client.get("/events/export")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), {"count": 0, "events": []})
+        body = r.json()
+        # Envelope carries events + the track_record_breakdown block.
+        self.assertEqual(body["count"], 0)
+        self.assertEqual(body["events"], [])
+        self.assertIn("track_record_breakdown", body)
+        self.assertEqual(
+            body["track_record_breakdown"]["schema"],
+            "track_record_breakdown.v1",
+        )
 
     def test_endpoint_empty_archive_csv(self):
         r = self.client.get("/events/export?format=csv")

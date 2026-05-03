@@ -115,7 +115,10 @@ class TestInflationBound(unittest.TestCase):
             snapshots=[_snap("GC", 2.5), _snap("CL", 4.0)],
         )
         self.assertEqual(result["binding"], "inflation")
-        self.assertIn(result["policy_room"], ("ample", "limited"))
+        # "free_to_respond" joins ("ample", "limited") as a valid clean-signal
+        # result after the policy-room taxonomy was widened.  All three say:
+        # clear binding, no conflicting mandate fighting for the same lever.
+        self.assertIn(result["policy_room"], ("free_to_respond", "ample", "limited"))
         self.assertEqual(result["secondary"], [])
 
 
@@ -174,7 +177,11 @@ class TestMixedConstraints(unittest.TestCase):
         # usually wins, but growth must show up as a strong secondary and
         # policy_room should signal conflict.
         self.assertIn(result["binding"], ("inflation", "growth"))
-        self.assertIn(result["policy_room"], ("constrained", "mixed"))
+        # "boxed_in" joins the set — it's the strict case of two conflicting
+        # mandates both clearing severity, which is exactly what this fixture
+        # sets up.  The broader assertion is "policy_room signals conflict",
+        # which all three labels carry.
+        self.assertIn(result["policy_room"], ("constrained", "mixed", "boxed_in"))
         # Secondary list must be populated — this is the whole point of
         # the conflict surface.
         self.assertTrue(result["secondary"])
@@ -197,7 +204,10 @@ class TestMixedConstraints(unittest.TestCase):
             ),
             snapshots=[_snap("GC", 2.8)],
         )
-        self.assertIn(result["policy_room"], ("constrained", "mixed"))
+        # "boxed_in" is the strict pairing when inflation AND
+        # financial_stability both clear the severity floor, which this
+        # fixture intentionally sets up.
+        self.assertIn(result["policy_room"], ("constrained", "mixed", "boxed_in"))
         # Both inflation and financial_stability must score meaningfully.
         self.assertGreaterEqual(result["signals"]["inflation"], 3.0)
         self.assertGreaterEqual(result["signals"]["financial_stability"], 3.0)
@@ -352,7 +362,7 @@ class TestAnalyzeWiring(unittest.TestCase):
         self.api = api
         self.client = TestClient(api.app)
 
-    def _fake_analyze_event(self, headline, stage, persistence, event_context="", model=None):
+    def _fake_analyze_event(self, inp):
         return {
             "what_changed": "OPEC announced a 2 mbpd production cut.",
             "mechanism_summary": (

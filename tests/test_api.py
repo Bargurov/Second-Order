@@ -5,7 +5,10 @@ Patches LLM and market calls to avoid external dependencies.
 """
 
 import os
+import gc
+import shutil
 import sys
+import time
 import unittest
 import uuid
 from datetime import datetime, timedelta
@@ -75,6 +78,20 @@ _PATCHES = [
 ]
 
 
+def _remove_temp_dir(path: str) -> None:
+    last_error = None
+    for _ in range(5):
+        gc.collect()
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError as exc:
+            last_error = exc
+            time.sleep(0.05)
+    if last_error is not None:
+        raise last_error
+
+
 class APITestCase(unittest.TestCase):
     """Base that swaps DB_FILE to a temp file and patches external calls."""
 
@@ -94,10 +111,12 @@ class APITestCase(unittest.TestCase):
 
     def setUp(self):
         self._orig = db.DB_FILE
-        self._tmp = os.path.join(
+        self._tmp_dir = os.path.join(
             os.path.dirname(__file__),
-            f"test_api_{uuid.uuid4().hex}.db",
+            f"test_api_{uuid.uuid4().hex}",
         )
+        os.makedirs(self._tmp_dir)
+        self._tmp = os.path.join(self._tmp_dir, "events.db")
         db.DB_FILE = self._tmp
         db.init_db()
         # Clear the /news TTL cache so each test gets a fresh call.
@@ -109,10 +128,7 @@ class APITestCase(unittest.TestCase):
 
     def tearDown(self):
         db.DB_FILE = self._orig
-        try:
-            os.remove(self._tmp)
-        except (OSError, PermissionError):
-            pass
+        _remove_temp_dir(self._tmp_dir)
 
 
 class TestHealth(APITestCase):
@@ -500,6 +516,46 @@ class TestReview(APITestCase):
     def test_patch_nonexistent_event(self):
         r = self.client.patch("/events/99999/review", json={"rating": "poor"})
         self.assertEqual(r.status_code, 404)
+
+    def test_patch_rejects_unknown_field(self):
+        """Extra fields must be rejected at the boundary, not silently dropped."""
+        eid = self._seed()
+        r = self.client.patch(f"/events/{eid}/review",
+                              json={"rating": "good", "admin": True})
+        self.assertEqual(r.status_code, 422)
+
+    def test_patch_rejects_bad_rating(self):
+        eid = self._seed()
+        r = self.client.patch(f"/events/{eid}/review", json={"rating": "excellent"})
+        self.assertEqual(r.status_code, 422)
+
+    def test_patch_rejects_oversized_notes(self):
+        """notes is capped at 5000 chars to prevent payload-size abuse."""
+        eid = self._seed()
+        r = self.client.patch(f"/events/{eid}/review",
+                              json={"notes": "x" * 5001})
+        self.assertEqual(r.status_code, 422)
+
+    def test_patch_rejects_zero_event_id(self):
+        """Path event_id must be >= 1; 0 and negative are rejected up front."""
+        r = self.client.patch("/events/0/review", json={"rating": "good"})
+        self.assertEqual(r.status_code, 422)
+
+
+class TestNewsRefreshValidation(APITestCase):
+    """POST /news/refresh rejects malformed body at the API boundary."""
+
+    def test_refresh_accepts_no_body(self):
+        r = self.client.post("/news/refresh")
+        self.assertEqual(r.status_code, 200)
+
+    def test_refresh_accepts_empty_body(self):
+        r = self.client.post("/news/refresh", json={})
+        self.assertEqual(r.status_code, 200)
+
+    def test_refresh_rejects_unknown_field(self):
+        r = self.client.post("/news/refresh", json={"force": True})
+        self.assertEqual(r.status_code, 422)
 
 
 class TestBacktest(APITestCase):
@@ -1234,7 +1290,31 @@ class TestMoversToday(APITestCase):
 
 
 class TestMoversPersistent(APITestCase):
-    """Tests for GET /movers/persistent — events older than 7 days with active decay."""
+    """Tests for GET /movers/persistent — events older than 7 days with active decay.
+
+    Pre-dates the high-conviction gate added on top of the persistent
+    surface (``mover_card_normalizer.is_high_conviction_persistent``).
+    These tests cover the routing / sorting / window filtering logic
+    of the slice itself, not the gate.  The gate has its own dedicated
+    coverage (test_mover_quality_gate.py +
+    test_market_context_contract.py).  Bypassing the gate here keeps
+    these tests focused on what they're actually testing.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from unittest.mock import patch as _patch
+        cls._gate_patch = _patch(
+            "routes.movers.is_high_conviction_persistent",
+            return_value=True,
+        )
+        cls._gate_patch.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._gate_patch.stop()
+        super().tearDownClass()
 
     def setUp(self):
         super().setUp()
@@ -1249,6 +1329,16 @@ class TestMoversPersistent(APITestCase):
             "stage": "realized",
             "persistence": "structural",
             "event_date": "2025-01-15",
+            # Concrete mechanism text + a recent market-check stamp so
+            # the /movers/persistent eligibility gate (no stale/legacy,
+            # no low-info, no falsified) doesn't drop these synthetic
+            # rows.
+            "mechanism_summary":
+                "Saudi Aramco cuts crude liftings, tightening Gulf Coast "
+                "refinery feedstock and widening the heavy-sour discount.",
+            "confidence": "medium",
+            "last_market_check_at":
+                (datetime.now() - timedelta(hours=1)).isoformat(timespec="seconds"),
             "market_tickers": [
                 {"symbol": "GLD", "role": "beneficiary", "return_5d": return_5d,
                  "return_20d": return_20d, "direction_tag": "supports \u2191"},
@@ -1312,10 +1402,18 @@ class TestMoversPersistent(APITestCase):
         """Oldest persistent shock sorts first."""
         ts_20d = (datetime.now() - timedelta(days=20)).isoformat(timespec="seconds")
         ts_10d = (datetime.now() - timedelta(days=10)).isoformat(timespec="seconds")
+        fresh_check = (datetime.now() - timedelta(hours=1)).isoformat(timespec="seconds")
+        concrete_mech = (
+            "Saudi Aramco cuts crude liftings, tightening Gulf Coast "
+            "refinery feedstock and widening the heavy-sour discount."
+        )
         ev_old = {
             "headline": "Oil embargo tightens on Iran exports", "stage": "realized", "persistence": "structural",
             "event_date": (datetime.now() - timedelta(days=20)).strftime("%Y-%m-%d"),
             "timestamp": ts_20d,
+            "mechanism_summary": concrete_mech,
+            "confidence": "medium",
+            "last_market_check_at": fresh_check,
             "market_tickers": [{"symbol": "GLD", "role": "beneficiary", "return_5d": 3.0,
                                 "return_20d": 4.0, "direction_tag": "supports \u2191"}],
         }
@@ -1323,6 +1421,9 @@ class TestMoversPersistent(APITestCase):
             "headline": "Semiconductor export controls extended", "stage": "realized", "persistence": "structural",
             "event_date": (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d"),
             "timestamp": ts_10d,
+            "mechanism_summary": concrete_mech,
+            "confidence": "medium",
+            "last_market_check_at": fresh_check,
             "market_tickers": [{"symbol": "XLE", "role": "beneficiary", "return_5d": 4.0,
                                 "return_20d": 5.0, "direction_tag": "supports \u2191"}],
         }
@@ -1474,6 +1575,15 @@ class TestMoversYearly(APITestCase):
             "stage": "realized",
             "persistence": "medium",
             "event_date": "2025-03-01",
+            # Mechanism text + fresh market-check stamp so the
+            # persistent-UI shape that /movers/yearly renders into
+            # doesn't trip the low-info / stale eligibility gate.
+            "mechanism_summary":
+                "Beijing raises tariffs on US grain imports, tightening "
+                "domestic food supply and pushing feed-cost passthrough.",
+            "confidence": "medium",
+            "last_market_check_at":
+                (datetime.now() - timedelta(hours=1)).isoformat(timespec="seconds"),
             "market_tickers": [
                 {"symbol": "GLD", "role": "beneficiary", "return_5d": return_5d,
                  "direction_tag": "supports \u2191"},
@@ -1505,7 +1615,7 @@ class TestMoversYearly(APITestCase):
 
 
 class TestNewsPagination(APITestCase):
-    """Tests for paginated GET /news."""
+    """Tests for cursor-paginated GET /news."""
 
     def test_returns_total_count(self):
         r = self.client.get("/news")
@@ -1514,30 +1624,43 @@ class TestNewsPagination(APITestCase):
         self.assertIn("total_count", body)
         self.assertIsInstance(body["total_count"], int)
 
-    def test_limit_offset_pagination(self):
-        r1 = self.client.get("/news?limit=1&offset=0")
-        self.assertEqual(r1.status_code, 200)
-        body1 = r1.json()
-        self.assertLessEqual(len(body1["clusters"]), 1)
-
-    def test_offset_past_end_returns_empty(self):
-        r = self.client.get("/news?limit=10&offset=99999")
+    def test_limit_emits_next_cursor_when_more_pages_exist(self):
+        r = self.client.get("/news?limit=1")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["clusters"], [])
+        body = r.json()
+        self.assertLessEqual(len(body["clusters"]), 1)
+        # If the cache has more than 1 cluster we must get a cursor.
+        if body["total_count"] > 1:
+            self.assertIsInstance(body["next_cursor"], str)
+            self.assertTrue(body["next_cursor"])
+
+    def test_malformed_cursor_returns_422(self):
+        r = self.client.get("/news?limit=10&cursor=%%%not-base64%%%")
+        self.assertEqual(r.status_code, 422)
 
     def test_zero_limit_returns_all(self):
-        """Default limit=0 returns all clusters for backward compatibility."""
+        """limit=0 returns all clusters and emits no next_cursor."""
         r = self.client.get("/news")
         body = r.json()
         self.assertEqual(len(body["clusters"]), body["total_count"])
+        self.assertIsNone(body.get("next_cursor"))
+
+    def test_last_page_has_null_cursor(self):
+        """A page that exhausts the list must not advertise a next cursor."""
+        r = self.client.get("/news")
+        total = r.json()["total_count"]
+        # Ask for everything; next_cursor must be null/None.
+        r2 = self.client.get(f"/news?limit={max(total, 1)}")
+        self.assertIsNone(r2.json().get("next_cursor"))
 
     def test_backward_compatible_shape(self):
-        """Response still has clusters, total_headlines, feed_status."""
+        """Response still has clusters, total_headlines, feed_status, plus next_cursor."""
         r = self.client.get("/news")
         body = r.json()
         self.assertIn("clusters", body)
         self.assertIn("total_headlines", body)
         self.assertIn("feed_status", body)
+        self.assertIn("next_cursor", body)
 
 
 class TestTickerEndpoints(APITestCase):

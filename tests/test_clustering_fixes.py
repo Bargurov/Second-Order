@@ -28,6 +28,12 @@ from news_sources import (
     _CLUSTER_THRESHOLD,
     cluster_headlines,
 )
+from news_clustering import (
+    _tfidf_tokens,
+    _MECH_COSINE_FLOOR,
+    _mechanism_match,
+    _extract_mechanism,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -41,7 +47,7 @@ class TestDomainStopwords(unittest.TestCase):
         words = db._headline_words("Stock market crashes after tariff announcement")
         self.assertNotIn("market", words)
         self.assertNotIn("stock", words)
-        self.assertIn("crashes", words)
+        self.assertIn("crash", words)       # normalized: crashes → crash
         self.assertIn("tariff", words)
 
     def test_prices_removed(self):
@@ -54,14 +60,14 @@ class TestDomainStopwords(unittest.TestCase):
         words = db._headline_words("Global economy shows signs of slowdown")
         self.assertNotIn("global", words)
         self.assertNotIn("economy", words)
-        self.assertIn("signs", words)
+        self.assertIn("sign", words)        # normalized: signs → sign
         self.assertIn("slowdown", words)
 
     def test_billion_removed(self):
         words = db._headline_words("Company raises 5 billion in IPO")
         self.assertNotIn("billion", words)
         self.assertIn("company", words)
-        self.assertIn("raises", words)
+        self.assertIn("raise", words)       # normalized: raises → raise
 
     def test_news_sources_matches_db(self):
         """Both modules should remove the same domain stopwords."""
@@ -96,10 +102,10 @@ class TestClusteringPunctuationNormalization(unittest.TestCase):
 
     def test_tokenize_strips_punctuation(self):
         tokens = _tokenize('"Tariffs," imposed — China retaliates.')
-        self.assertIn("tariffs", tokens)
+        self.assertIn("tariff", tokens)      # normalized: tariffs → tariff
         self.assertNotIn('"tariffs,"', tokens)
         self.assertIn("china", tokens)
-        self.assertIn("retaliates", tokens)
+        self.assertIn("retaliate", tokens)   # normalized: retaliates → retaliate
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +340,127 @@ class TestEmpiricalCalibration(unittest.TestCase):
             "OPEC agrees to cut oil production",
             "OPEC members agree to reduce oil output",
         ))
+
+
+# ---------------------------------------------------------------------------
+# 8. Synonym expansion in TF-IDF
+# ---------------------------------------------------------------------------
+
+class TestMechanismSynonymExpansion(unittest.TestCase):
+    """_tfidf_tokens() must map financial synonyms so TF-IDF cosine rises."""
+
+    def test_duty_maps_to_tariff(self):
+        tokens = _tfidf_tokens("EU imposes new duties on US goods")
+        self.assertIn("tariff", tokens)
+        self.assertNotIn("duty", tokens)
+
+    def test_levy_maps_to_tariff(self):
+        tokens = _tfidf_tokens("US levies tariffs on Chinese imports")
+        self.assertIn("tariff", tokens)
+
+    def test_output_maps_to_production(self):
+        tokens = _tfidf_tokens("OPEC agrees to cut output")
+        self.assertIn("production", tokens)
+        self.assertNotIn("output", tokens)
+
+    def test_crude_maps_to_oil(self):
+        tokens = _tfidf_tokens("Crude prices rise on supply fears")
+        self.assertIn("oil", tokens)
+        self.assertNotIn("crude", tokens)
+
+    def test_synonym_boosts_cosine_duties_vs_tariffs(self):
+        """'duties' and 'tariffs' should have higher cosine after synonym expansion."""
+        import math
+
+        a = "EU imposes new duties on US goods"
+        b = "US tariffs trigger EU retaliation"
+
+        def _make_vecs(token_fn, titles):
+            n = len(titles)
+            tl = [token_fn(t) for t in titles]
+            df: dict = {}
+            for toks in tl:
+                for w in set(toks):
+                    df[w] = df.get(w, 0) + 1
+            idf = {w: math.log((n + 1) / (c + 1)) + 1.0 for w, c in df.items()}
+            vecs = []
+            for toks in tl:
+                tf: dict = {}
+                for w in toks:
+                    tf[w] = tf.get(w, 0) + 1
+                vecs.append({w: tf[w] * idf.get(w, 1.0) for w in tf})
+            return vecs
+
+        vecs_raw = _make_vecs(_tokenize, [a, b])
+        vecs_exp = _make_vecs(_tfidf_tokens, [a, b])
+        cos_raw = _cosine_sim(vecs_raw[0], vecs_raw[1])
+        cos_exp = _cosine_sim(vecs_exp[0], vecs_exp[1])
+        self.assertGreater(cos_exp, cos_raw,
+                           f"Synonym expansion should raise cosine: {cos_raw:.3f} → {cos_exp:.3f}")
+
+    def test_tokenize_unchanged_by_synonyms(self):
+        """_tokenize must remain stable — synonym map must NOT affect it."""
+        tokens = _tokenize("EU imposes new duties on US goods")
+        # _tokenize gives stemmed "duty", not the synonym-expanded "tariff"
+        self.assertNotIn("tariff", tokens)
+
+
+# ---------------------------------------------------------------------------
+# 9. Mechanism-aided merge floor
+# ---------------------------------------------------------------------------
+
+class TestMechanismAidedMerging(unittest.TestCase):
+    """Mechanism floor path: headlines sharing a recognized action type should
+    merge even when cosine falls below _CLUSTER_THRESHOLD."""
+
+    def _would_merge(self, a: str, b: str) -> bool:
+        """Simulate the full cluster_headlines merge decision for a pair."""
+        vecs, _ = _build_tfidf_vectors([a, b])
+        cos = _cosine_sim(vecs[0], vecs[1])
+        pa = _headline_polarity(_tokenize(a))
+        pb = _headline_polarity(_tokenize(b))
+        # Polarity block applies regardless of cosine path
+        if pa != 0 and pb != 0 and pa != pb:
+            return False
+        if cos >= _CLUSTER_THRESHOLD:
+            return True
+        if cos >= _MECH_COSINE_FLOOR:
+            ma = _extract_mechanism(a)
+            mb = _extract_mechanism(b)
+            return _mechanism_match(ma, mb)
+        return False
+
+    def test_rate_hike_paraphrase_merges(self):
+        """'rate hike' ↔ 'raises interest rates' — same mechanism, floor range cosine."""
+        ok = self._would_merge(
+            "Federal Reserve implements rate hike",
+            "ECB raises interest rates",
+        )
+        self.assertTrue(ok, "Monetary policy paraphrase should merge via mechanism floor")
+
+    def test_mechanism_match_same_action(self):
+        """Two monetary-policy headlines should both extract 'monetary policy'."""
+        ma = _extract_mechanism("Federal Reserve implements rate hike")
+        mb = _extract_mechanism("ECB raises interest rates")
+        self.assertEqual(ma[0], mb[0], f"Both should detect same action: {ma[0]!r} vs {mb[0]!r}")
+
+    def test_mechanism_unknown_blocks_floor(self):
+        """If either mechanism is unknown, floor path must not fire."""
+        ok = _mechanism_match(("unknown", "oil"), ("monetary policy", "unknown"))
+        self.assertFalse(ok, "unknown action should block mechanism floor")
+
+    def test_opposite_polarity_blocks_merge(self):
+        """Polarity conflict must block merge even when cosine is high."""
+        ok = self._would_merge(
+            "Oil prices surge after OPEC cut",
+            "Oil prices tumble after OPEC cut",
+        )
+        self.assertFalse(ok, "Opposite polarity must block merge")
+
+    def test_tariff_related_pair_matches(self):
+        """'tariffs' and 'trade policy' are a known related pair."""
+        ok = _mechanism_match(("tariffs", "unknown"), ("trade policy", "unknown"))
+        self.assertTrue(ok, "tariffs/trade-policy related pair should match")
 
 
 if __name__ == "__main__":

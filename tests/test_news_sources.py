@@ -306,7 +306,7 @@ class TestLoadRss(unittest.TestCase):
         self.assertEqual(socket.getdefaulttimeout(), original_timeout)
 
     def test_default_feeds_list_count(self):
-        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 27)
+        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 35)
 
     def test_guardian_is_in_default_feeds(self):
         names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
@@ -372,6 +372,15 @@ class TestLoadRss(unittest.TestCase):
                 "site:asia.nikkei.com",  # Nikkei Asia via Google News
                 "site:scmp.com",      # SCMP via Google News
                 "defensenews.com",    # Defense News direct RSS
+                "mining.com/feed",    # Mining.com direct RSS
+                "baltic+dry",         # Freight & Shipping Google News
+                "rssfeedstopstories", # Economic Times direct RSS
+                "site:reuters.com",   # LatAm Economy via Reuters/Google News (already present)
+                "african+development+bank",  # Africa Economy Google News
+                "sub-saharan",        # Africa Economy Google News
+                "imf.org",            # IMF News direct RSS
+                "site:worldbank.org", # World Bank via Google News
+                "export+controls",    # Semiconductor Trade Google News
             ])
             self.assertTrue(
                 has_section,
@@ -570,7 +579,7 @@ class TestHeadlineWords(unittest.TestCase):
         self.assertNotIn("the", words)
         self.assertNotIn("on", words)
         self.assertIn("us", words)
-        self.assertIn("tariffs", words)
+        self.assertIn("tariff", words)       # normalized: tariffs → tariff
         self.assertIn("china", words)
 
     def test_empty_string(self):
@@ -670,6 +679,91 @@ class TestStripAttribution(unittest.TestCase):
         self.assertEqual(
             news_sources._strip_attribution("Oil prices fall — Reuters"),
             "Oil prices fall",
+        )
+
+
+class TestNormalizeHeadline(unittest.TestCase):
+    """normalize_headline strips leading source prefixes and trailing attributions."""
+
+    def test_strips_leading_ap_news(self):
+        self.assertEqual(
+            news_sources.normalize_headline("AP News: OPEC members discuss extending output cuts"),
+            "OPEC members discuss extending output cuts",
+        )
+
+    def test_strips_leading_reuters(self):
+        self.assertEqual(
+            news_sources.normalize_headline("Reuters: EU imposes new sanctions on Russia"),
+            "EU imposes new sanctions on Russia",
+        )
+
+    def test_strips_leading_bloomberg(self):
+        self.assertEqual(
+            news_sources.normalize_headline("Bloomberg: Oil prices surge on supply fears"),
+            "Oil prices surge on supply fears",
+        )
+
+    def test_strips_leading_cnn(self):
+        self.assertEqual(
+            news_sources.normalize_headline("CNN: Fed holds rates steady amid inflation"),
+            "Fed holds rates steady amid inflation",
+        )
+
+    def test_strips_trailing_attribution(self):
+        self.assertEqual(
+            news_sources.normalize_headline("OPEC cuts output - Reuters"),
+            "OPEC cuts output",
+        )
+
+    def test_strips_both_leading_and_trailing(self):
+        self.assertEqual(
+            news_sources.normalize_headline("AP News: OPEC cuts output - Reuters"),
+            "OPEC cuts output",
+        )
+
+    def test_clean_headline_is_noop(self):
+        clean = "OPEC members discuss extending output cuts through next quarter"
+        self.assertEqual(news_sources.normalize_headline(clean), clean)
+
+    def test_case_insensitive(self):
+        self.assertEqual(
+            news_sources.normalize_headline("ap news: OPEC cuts production"),
+            "OPEC cuts production",
+        )
+
+    def test_no_false_positive_without_separator(self):
+        """Source name without colon/dash must NOT be stripped."""
+        hl = "Bloomberg analyst says oil will rise to 100"
+        self.assertEqual(news_sources.normalize_headline(hl), hl)
+
+    def test_dash_separator(self):
+        self.assertEqual(
+            news_sources.normalize_headline("CNN - Breaking news on trade talks"),
+            "Breaking news on trade talks",
+        )
+
+    def test_em_dash_separator(self):
+        self.assertEqual(
+            news_sources.normalize_headline("Reuters — Oil output falls sharply"),
+            "Oil output falls sharply",
+        )
+
+    def test_whitespace_handling(self):
+        self.assertEqual(
+            news_sources.normalize_headline("  Reuters:  Oil prices surge  "),
+            "Oil prices surge",
+        )
+
+    def test_bbc_world_prefix(self):
+        self.assertEqual(
+            news_sources.normalize_headline("BBC World: Global markets tumble"),
+            "Global markets tumble",
+        )
+
+    def test_financial_times_prefix(self):
+        self.assertEqual(
+            news_sources.normalize_headline("Financial Times: Bank of England raises rates"),
+            "Bank of England raises rates",
         )
 
 

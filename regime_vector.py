@@ -20,12 +20,19 @@ This module:
 Vector shape
 ------------
     {
-      "inflation":     "hot" | "cool" | "neutral",
-      "policy_stance": "hawkish" | "dovish" | "neutral",
-      "fx":            "dollar_strong" | "dollar_weak" | "neutral",
-      "growth_stress": "calm" | "watch" | "stressed" | "neutral",
-      "available":     bool,
-      "stale":         bool,
+      "inflation":       "hot" | "cool" | "neutral",
+      "policy_stance":   "hawkish" | "dovish" | "neutral",
+      "fx":              "dollar_strong" | "dollar_weak" | "neutral",
+      "growth_stress":   "calm" | "watch" | "stressed" | "neutral",
+      # Axes added in the breadth expansion — derived from the richer
+      # finance-engine work (credit_regime.py, breakeven_curve.py).  When
+      # their inputs aren't available the axes degrade to "neutral", which
+      # the re-ranker treats as a soft signal rather than a mismatch.
+      "credit":          "risk_on" | "risk_off" | "duration_stress" | "neutral",
+      "curve_shape":     "front_loaded" | "term_premium" | "parallel" | "neutral",
+      "inflation_path":  "hawkish_constraint" | "dovish_space" | "neutral",
+      "available":       bool,
+      "stale":           bool,
     }
 
 Design notes
@@ -39,6 +46,11 @@ Design notes
   topic-only ordering survives stale macro context.
 - Historical analogs that lack a stored regime snapshot fall back to a
   neutral 0.5 baseline so old rows are not unfairly penalised.
+- ``credit``, ``curve_shape``, and ``inflation_path`` are additive — an
+  older row persisted before they were introduced will carry
+  ``"neutral"`` on each (via the graceful-degradation path) and so match
+  at the per-axis ``None-vs-neutral`` threshold instead of being
+  penalised outright.
 - Weights below were validated empirically — see
   ``validate_regime_rerank.py``.  They are tunable but the validation
   script must continue to pass when they change.
@@ -55,6 +67,10 @@ from typing import Optional
 
 REGIME_AXES: tuple[str, ...] = (
     "inflation", "policy_stance", "fx", "growth_stress",
+    # Breadth expansion: each axis fed by an existing composer output
+    # (credit_regime.classify_credit_regime + rates_context.breakeven_curve)
+    # so no additional provider call is needed in the caller.
+    "credit", "curve_shape", "inflation_path",
 )
 
 # Final weights — picked by validate_regime_rerank.py.  Topic stays the
@@ -76,18 +92,24 @@ NEUTRAL_REGIME_MATCH: float = 0.5
 # match-reason text.  Mismatches that aren't true opposites just read
 # as "different".
 _AXIS_OPPOSITES: dict[str, frozenset[str]] = {
-    "inflation":     frozenset({"hot", "cool"}),
-    "policy_stance": frozenset({"hawkish", "dovish"}),
-    "fx":            frozenset({"dollar_strong", "dollar_weak"}),
-    "growth_stress": frozenset({"calm", "stressed"}),
+    "inflation":      frozenset({"hot", "cool"}),
+    "policy_stance":  frozenset({"hawkish", "dovish"}),
+    "fx":             frozenset({"dollar_strong", "dollar_weak"}),
+    "growth_stress":  frozenset({"calm", "stressed"}),
+    "credit":         frozenset({"risk_on", "risk_off"}),
+    "curve_shape":    frozenset({"front_loaded", "term_premium"}),
+    "inflation_path": frozenset({"hawkish_constraint", "dovish_space"}),
 }
 
 # Display labels for the match-reason string.
 _AXIS_DISPLAY: dict[str, str] = {
-    "inflation":     "inflation",
-    "policy_stance": "policy stance",
-    "fx":            "dollar",
-    "growth_stress": "growth/stress",
+    "inflation":      "inflation",
+    "policy_stance":  "policy stance",
+    "fx":             "dollar",
+    "growth_stress":  "growth/stress",
+    "credit":         "credit",
+    "curve_shape":    "curve shape",
+    "inflation_path": "inflation path",
 }
 
 
@@ -235,6 +257,74 @@ def _growth_stress_axis(stress_regime: Optional[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Breadth-expansion axes — derived from existing composer outputs.
+# ---------------------------------------------------------------------------
+
+def _credit_axis(credit_regime: Optional[dict]) -> str:
+    """Collapse credit_regime.regime into a binary-leaning analog axis.
+
+    ``credit_regime.classify_credit_regime`` emits nine fine-grained labels;
+    the re-ranker only needs the directional lean.  ``duration_stress`` is
+    kept as a distinct value because it carries a different transmission
+    story from default-risk widening — a rates-led sell-off vs a credit
+    event.
+    """
+    if not credit_regime or not isinstance(credit_regime, dict):
+        return "neutral"
+    regime = (credit_regime.get("regime") or "").strip().lower()
+    if regime in ("risk_on", "default_risk_tightening", "duration_tightening"):
+        return "risk_on"
+    if regime in ("risk_off", "default_risk_widening"):
+        return "risk_off"
+    if regime == "duration_widening":
+        return "duration_stress"
+    return "neutral"
+
+
+def _curve_shape_axis(rates_context: Optional[dict]) -> str:
+    """Read the breakeven-curve shape surfaced by rates_context.
+
+    ``parallel_up`` / ``parallel_down`` / ``twist`` all collapse to
+    ``parallel`` — the re-ranker only cares whether the curve is
+    expressing a FRONT-LOADED or TERM-PREMIUM lean vs a broad shift.
+    """
+    if not rates_context or not isinstance(rates_context, dict):
+        return "neutral"
+    curve = rates_context.get("breakeven_curve") or {}
+    if not curve.get("available"):
+        return "neutral"
+    shape = (curve.get("shape") or "").strip().lower()
+    if shape == "front_loaded":
+        return "front_loaded"
+    if shape == "term_premium_like":
+        return "term_premium"
+    if shape in ("parallel_up", "parallel_down", "twist"):
+        return "parallel"
+    return "neutral"
+
+
+def _inflation_path_axis(rates_context: Optional[dict]) -> str:
+    """Read the breakeven-curve policy-space interpretation.
+
+    ``behind_the_curve`` joins ``narrow_hawkish`` as *hawkish_constraint*
+    because both say the Fed has less room to ease than headline rates
+    suggest.  ``look_through`` joins ``ease_room`` for the opposite
+    reason.
+    """
+    if not rates_context or not isinstance(rates_context, dict):
+        return "neutral"
+    curve = rates_context.get("breakeven_curve") or {}
+    if not curve.get("available"):
+        return "neutral"
+    space = (curve.get("policy_space") or "").strip().lower()
+    if space in ("narrow_hawkish", "behind_the_curve"):
+        return "hawkish_constraint"
+    if space in ("ease_room", "look_through"):
+        return "dovish_space"
+    return "neutral"
+
+
+# ---------------------------------------------------------------------------
 # Public composer
 # ---------------------------------------------------------------------------
 
@@ -242,33 +332,57 @@ def build_regime_vector(
     rates_context: Optional[dict],
     stress_regime: Optional[dict],
     snapshots: Optional[list[dict]] = None,
+    *,
+    credit_regime: Optional[dict] = None,
 ) -> dict:
     """Build the compact regime vector from pre-fetched macro inputs.
 
     Returns a vector with ``available=False`` and ``stale=True`` when
     neither rates nor stress is usable; the rerank layer treats that as
     "no current regime, fall through to topic-only ranking".
+
+    ``credit_regime`` is the output of
+    ``credit_regime.classify_credit_regime(...)``.  Keyword-only so
+    existing callers (``build_regime_vector(rates, stress, snapshots)``)
+    continue to work; callers that haven't been wired to pass it simply
+    get ``credit="neutral"`` on the new axis.
+
+    The curve-shape and inflation-path axes read ``rates_context
+    ["breakeven_curve"]`` — already populated by ``compute_rates_context``
+    — so no extra composer call is required from the caller.
     """
     rates_ok = _rates_usable(rates_context)
     stress_ok = _stress_usable(stress_regime)
 
+    # Neutral stub used both for the fully-unavailable path and as the
+    # default shape a partial build fills in.
+    neutral_vec: dict = {
+        "inflation":      "neutral",
+        "policy_stance":  "neutral",
+        "fx":             "neutral",
+        "growth_stress":  "neutral",
+        "credit":         "neutral",
+        "curve_shape":    "neutral",
+        "inflation_path": "neutral",
+    }
+
     if not rates_ok and not stress_ok:
         return {
-            "inflation":     "neutral",
-            "policy_stance": "neutral",
-            "fx":            "neutral",
-            "growth_stress": "neutral",
-            "available":     False,
-            "stale":         True,
+            **neutral_vec,
+            "available": False,
+            "stale":     True,
         }
 
     return {
-        "inflation":     _inflation_axis(rates_context) if rates_ok else "neutral",
-        "policy_stance": _policy_stance_axis(rates_context) if rates_ok else "neutral",
-        "fx":            _fx_axis(rates_context, stress_regime, snapshots),
-        "growth_stress": _growth_stress_axis(stress_regime) if stress_ok else "neutral",
-        "available":     True,
-        "stale":         not (rates_ok and stress_ok),
+        "inflation":      _inflation_axis(rates_context) if rates_ok else "neutral",
+        "policy_stance":  _policy_stance_axis(rates_context) if rates_ok else "neutral",
+        "fx":             _fx_axis(rates_context, stress_regime, snapshots),
+        "growth_stress":  _growth_stress_axis(stress_regime) if stress_ok else "neutral",
+        "credit":         _credit_axis(credit_regime),
+        "curve_shape":    _curve_shape_axis(rates_context) if rates_ok else "neutral",
+        "inflation_path": _inflation_path_axis(rates_context) if rates_ok else "neutral",
+        "available":      True,
+        "stale":          not (rates_ok and stress_ok),
     }
 
 

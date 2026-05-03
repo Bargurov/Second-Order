@@ -97,6 +97,32 @@ function SnapshotCell({ snap, market, isFirst }: CellProps) {
   );
 }
 
+function UnavailableSnapshotStrip({ isError }: { isError?: boolean }) {
+  return (
+    <section className="bg-surface-container-low rounded-lg p-5 mb-8">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant flex items-center gap-2">
+          <span className="w-1 h-3 bg-on-surface-variant/35 rounded-full" />
+          Liquid Benchmarks
+        </h3>
+        <span className="text-[9px] text-on-surface-variant/45 font-bold uppercase tracking-widest">
+          {isError ? "Degraded" : "Unavailable"}
+        </span>
+      </div>
+      <div className="flex items-center gap-6 flex-wrap">
+        {MARKET_ORDER.map((market, i) => (
+          <SnapshotCell
+            key={market}
+            snap={undefined}
+            market={market}
+            isFirst={i === 0}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 interface BenchmarkSnapshotsStripProps {
   /** When provided (parent-driven), these snapshots are rendered directly
    *  and no internal fetch is made.  When omitted (standalone usage), the
@@ -129,7 +155,7 @@ export function BenchmarkSnapshotsStrip({
 
   if (isLoading) {
     return (
-      <section className="bg-surface-container-low rounded-xl p-5 mb-8">
+      <section className="bg-surface-container-low rounded-lg p-5 mb-8">
         <div className="flex items-center gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton
@@ -142,10 +168,11 @@ export function BenchmarkSnapshotsStrip({
     );
   }
 
-  // Hide the section entirely if the endpoint is unreachable or returns nothing.
-  // This keeps Market Overview clean when the background thread is disabled.
+  // Keep Section A visible and truthful when provider data is unavailable.
+  // Missing benchmark data should read as Unavailable, not disappear or fall
+  // back to sample-looking numbers.
   if (isError || !data || data.length === 0) {
-    return null;
+    return <UnavailableSnapshotStrip isError={isError} />;
   }
 
   // Build a market → snapshot lookup so we can render in canonical order
@@ -160,10 +187,10 @@ export function BenchmarkSnapshotsStrip({
   const usableCount = data.filter(
     (s) => s.value != null && s.error == null,
   ).length;
-  if (usableCount === 0) return null;
+  if (usableCount === 0) return <UnavailableSnapshotStrip />;
 
   return (
-    <section className="bg-surface-container-low rounded-xl p-5 mb-8">
+    <section className="bg-surface-container-low rounded-lg p-5 mb-8">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant flex items-center gap-2">
           <span className="w-1 h-3 bg-primary rounded-full" />

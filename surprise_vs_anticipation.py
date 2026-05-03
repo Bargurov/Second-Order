@@ -72,6 +72,13 @@ REGIME_IDS: tuple[str, ...] = (
     "mixed",
 )
 
+# --- Empirical pre-event drift thresholds ------------------------------------
+# Drift is the thesis-aligned 5d return leading up to the event (% for equity
+# tickers).  Values below are equity-scale, validated in tests.
+_PRE_DRIFT_STRONG_PP: float = 2.0   # strong alignment: market already positioning
+_PRE_DRIFT_WEAK_PP:   float = 0.5   # weak but directional drift
+_PRE_DRIFT_FLAT_PP:   float = 0.3   # below this = flat tape (noise floor)
+
 _REGIME_LABEL: dict[str, str] = {
     "surprise_shock":           "Surprise Shock",
     "anticipated_confirmation": "Anticipated / Priced-In",
@@ -140,6 +147,60 @@ def _tickers_usable(tickers: Optional[list[dict]]) -> list[dict]:
     return out
 
 
+def _aligned_pre_drift(
+    tickers: list[dict],
+    pre_event_drift: Optional[dict],
+) -> Optional[float]:
+    """Aggregate pre-event drift across tickers, signed to the thesis direction.
+
+    ``pre_event_drift`` is ``{symbol_upper: 5d_drift_pct}`` (output of
+    compute_pre_event_drift).  We flip loser-role ticker drifts so a
+    positive aggregate always means "markets moved in the thesis direction
+    before the event".  Returns None when no ticker has usable drift data.
+    """
+    if not pre_event_drift or not isinstance(pre_event_drift, dict):
+        return None
+    aligned: list[float] = []
+    for t in tickers or []:
+        if not isinstance(t, dict):
+            continue
+        sym = (t.get("symbol") or "").upper()
+        if not sym:
+            continue
+        drift = pre_event_drift.get(sym)
+        if drift is None:
+            continue
+        sign = -1.0 if (t.get("role") or "").strip().lower() == "loser" else 1.0
+        aligned.append(sign * float(drift))
+    if not aligned:
+        return None
+    return sum(aligned) / len(aligned)
+
+
+def _already_priced_classification(pre_drift: Optional[float]) -> str:
+    """Map aggregated thesis-aligned pre-event drift to an empirical label.
+
+    Labels:
+      already_priced        — strong positive drift (market positioning pre-run)
+      partially_priced      — weak positive drift
+      reversal_on_catalyst  — strong negative drift (market was caught offside)
+      flat_tape             — no meaningful drift
+      unknown               — no drift data available
+    """
+    if pre_drift is None:
+        return "unknown"
+    if pre_drift >= _PRE_DRIFT_STRONG_PP:
+        return "already_priced"
+    if pre_drift >= _PRE_DRIFT_WEAK_PP:
+        return "partially_priced"
+    if pre_drift <= -_PRE_DRIFT_STRONG_PP:
+        return "reversal_on_catalyst"
+    if abs(pre_drift) < _PRE_DRIFT_FLAT_PP:
+        return "flat_tape"
+    # Mild opposite drift (-0.5 to -2pp) — no clean label, treat as weak reversal signal.
+    return "reversal_on_catalyst" if pre_drift <= -_PRE_DRIFT_WEAK_PP else "flat_tape"
+
+
 # ---------------------------------------------------------------------------
 # Core scorer
 # ---------------------------------------------------------------------------
@@ -148,10 +209,16 @@ def _score_regime(
     stage: str,
     tickers: list[dict],
     stress_regime: Optional[dict],
+    pre_event_drift: Optional[dict] = None,
 ) -> tuple[dict[str, int], dict]:
     """Accumulate regime points from each signal family.
 
     Returns (points, debug_signals).
+
+    ``pre_event_drift`` optionally refines the anticipated-vs-surprise
+    split empirically: strong thesis-aligned drift in the 5d leading up
+    to the event adds weight to ``anticipated_confirmation``; a strong
+    opposing drift adds to ``surprise_shock`` (market caught offside).
     """
     pts: dict[str, int] = {rid: 0 for rid in REGIME_IDS if rid != "mixed"}
     debug: dict = {
@@ -159,6 +226,8 @@ def _score_regime(
         "vix_change_5d": None,
         "stage": stage or "",
         "ticker_move_count": 0,
+        "pre_event_drift_pct": None,
+        "already_priced_read": "unknown",
     }
 
     # --- Intraday-share concentration across tickers ---------------------
@@ -222,6 +291,22 @@ def _score_regime(
         # No drama anywhere → whatever moved was already expected.
         pts["anticipated_confirmation"] += 1
 
+    # --- Pre-event drift (empirical "already priced") -------------------
+    pre_drift = _aligned_pre_drift(tickers, pre_event_drift)
+    already_priced = _already_priced_classification(pre_drift)
+    debug["pre_event_drift_pct"] = round(pre_drift, 2) if pre_drift is not None else None
+    debug["already_priced_read"] = already_priced
+
+    if already_priced == "already_priced":
+        # Strong thesis-aligned drift in the 5d pre-event window: markets
+        # were clearly positioning into the headline.
+        pts["anticipated_confirmation"] += 3
+    elif already_priced == "partially_priced":
+        pts["anticipated_confirmation"] += 1
+    elif already_priced == "reversal_on_catalyst":
+        # Tape was set up the OTHER way — event is genuinely informational.
+        pts["surprise_shock"] += 2
+
     return pts, debug
 
 
@@ -281,6 +366,21 @@ def _rationale(regime: str, debug: dict) -> str:
 
 def _priced_before(regime: str, debug: dict) -> str:
     stage = debug.get("stage") or ""
+    drift = debug.get("pre_event_drift_pct")
+    already_priced = debug.get("already_priced_read", "unknown")
+
+    # When we have empirical drift data, prefer it over the generic template —
+    # a concrete "+3.2% drifted into this over 5d" is more informative.
+    if drift is not None and already_priced != "unknown":
+        if already_priced == "already_priced":
+            return f"Thesis-aligned drift +{drift:.1f}% in the 5d pre-event window — market was positioning into this."
+        if already_priced == "partially_priced":
+            return f"Partial pre-event drift ({drift:+.1f}% over 5d) — some positioning, not full outcome."
+        if already_priced == "reversal_on_catalyst":
+            return f"Pre-event drift ran the OTHER way ({drift:+.1f}% over 5d) — tape was offside when the headline landed."
+        if already_priced == "flat_tape":
+            return f"Pre-event tape flat ({drift:+.1f}% over 5d) — nothing priced before the headline."
+
     if regime == "surprise_shock":
         if stage in ("anticipation", "normalization"):
             return "Some optionality priced, but not the full tail outcome."
@@ -313,6 +413,7 @@ def compute_surprise_vs_anticipation(
     stage: str,
     tickers: Optional[list[dict]] = None,
     stress_regime: Optional[dict] = None,
+    pre_event_drift: Optional[dict] = None,
 ) -> dict:
     """Classify an event as surprise / anticipated / uncertainty / mixed.
 
@@ -320,6 +421,13 @@ def compute_surprise_vs_anticipation(
     computed ``stage`` label, the ``tickers`` list from market_check
     (each with return_1d / return_5d / role), and the stress regime
     dict from compute_stress_regime.
+
+    ``pre_event_drift`` is an optional ``{symbol_upper: 5d_pct}`` dict
+    from ``market_check.compute_pre_event_drift`` — when supplied, the
+    scorer adds an empirical "already priced" read (thesis-aligned
+    drift in the 5d window ending at event_date) alongside the intraday
+    share / stage / stress signals.  Backward-compatible: omitting it
+    leaves behavior identical to the prior version.
 
     Returns ``{}`` when there is genuinely nothing to classify — no
     stage, no tickers, no stress regime.  Otherwise returns the block
@@ -337,7 +445,10 @@ def compute_surprise_vs_anticipation(
     if not has_stage and not has_stress and not has_ticks:
         return {}
 
-    pts, debug = _score_regime(stage or "", usable_tickers, stress_regime)
+    pts, debug = _score_regime(
+        stage or "", usable_tickers, stress_regime,
+        pre_event_drift=pre_event_drift,
+    )
     regime, _top = _decide_regime(pts)
 
     stale = not (has_stage and has_stress and has_ticks)
@@ -349,6 +460,8 @@ def compute_surprise_vs_anticipation(
         "priced_before":          _priced_before(regime, debug),
         "changed_on_realization": _changed_on_realization(regime, debug),
         "key_markets":            list(_KEY_MARKETS[regime]),
+        "already_priced":         debug.get("already_priced_read", "unknown"),
+        "pre_event_drift_pct":    debug.get("pre_event_drift_pct"),
         "available":              True,
         "stale":                  stale,
         "signals":                debug,
