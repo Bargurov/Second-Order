@@ -174,11 +174,15 @@ function _previewReasonLabel(reason?: string | null): string {
   return labels[reason] ?? reason.replace(/_/g, " ");
 }
 
+function _candidateReason(candidate: BackfillPreviewCandidate): string {
+  return candidate.skip_reason_label || _previewReasonLabel(candidate.skip_reason);
+}
+
 function _previewDecisionLabel(candidate: BackfillPreviewCandidate): string {
-  if (candidate.already_analyzed) return "Already checked";
-  if (candidate.would_call_llm) return "Would need analysis";
-  if (candidate.skip_reason) return "Not queued";
-  return "Ready for review";
+  if (candidate.already_analyzed) return "Already in archive";
+  if (candidate.would_call_llm) return "Ready for analysis";
+  if (candidate.skip_reason) return "Not selected";
+  return "Review candidate";
 }
 
 function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse }) {
@@ -200,14 +204,14 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
           Preview only — no Claude/API spend
         </span>
         <span className="ml-auto text-[11px] tabular-nums text-on-surface-variant/45">
-          {wouldCall} would need analysis
+          {wouldCall} ready for analysis
         </span>
       </summary>
 
       {candidates.length > 0 ? (
         <div className="mt-2.5 border-t border-white/[0.035] pt-2.5">
           <p className="mb-2 text-[11px] leading-snug text-on-surface-variant/55">
-            Headlines found by the zero-cost scan. They are not validated until analysis and market evidence broaden.
+            Headlines found by the zero-cost scan. They are not analyzed or validated until evidence broadens.
           </p>
           <ul className="space-y-1.5">
             {candidates.map((candidate) => (
@@ -225,8 +229,13 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
                   {_previewDecisionLabel(candidate)}
                 </span>
                 <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/45">
-                  Reason: {_previewReasonLabel(candidate.skip_reason)}
+                  {_candidateReason(candidate)}
                 </span>
+                {candidate.rank_explanation ? (
+                  <span className="basis-full pl-0 text-[10.5px] leading-snug text-on-surface-variant/45 sm:pl-1">
+                    {candidate.rank_explanation}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -1026,16 +1035,11 @@ function RegimeVectorCard({
   const rawRationale = (regimeVec.compound?.rationale ?? "")
     .replace(/`/g, "")
     .trim();
-  // When the compound classifier hasn't locked but the transition layer
-  // sees the vector mid-shift, prefer copy that names the shift over the
-  // generic "no rule matched" fallback — the user is told *why* there's
-  // no lock (signals moving) rather than just that none exists.
-  const isShiftingUnlocked = !isLocked && regimeVec.transition?.state === "shifting";
-  const compoundRationale = isShiftingUnlocked
-    ? "Signals are shifting, but not aligned enough to lock a compound regime."
-    : rawRationale === "No compound regime rule matched the vector"
-      ? "Signals are mixed: inflation/policy/credit do not combine into one strong regime."
-      : rawRationale;
+  // For the unlocked branch, keep the state muted while describing it
+  // as a mixed/shifting market read instead of a missing-data failure.
+  const compoundRationale = !isLocked
+    ? "Signals are mixed/shifting; no combined regime rule matched."
+    : rawRationale;
 
   return (
     <div className="rounded-lg bg-surface-container-low px-5 py-4">
@@ -1080,11 +1084,11 @@ function RegimeVectorCard({
             </div>
             <div className={cn(
               "font-headline tabular-nums text-on-surface",
-              isLocked ? "text-[18px] font-bold" : "text-[13px] font-semibold leading-tight",
+              isLocked ? "text-[18px] font-bold" : "max-w-[86px] text-[11.5px] font-semibold leading-tight",
             )}>
               {isLocked
                 ? (confPct == null ? "—" : `${confPct}%`)
-                : "No lock"}
+                : "No dominant regime pattern"}
             </div>
           </div>
         </div>

@@ -1121,6 +1121,13 @@ export interface SavedEvent {
   validation_status?: "validated" | "contradicted" | "unresolved";
 }
 
+export type ArchiveQuality =
+  | "pending"
+  | "degraded"
+  | "no_tickers"
+  | "market_checked"
+  | "clean";
+
 export interface EventsQuery {
   limit?:       number;
   offset?:      number;
@@ -1132,6 +1139,8 @@ export interface EventsQuery {
   date_from?:   string;
   date_to?:     string;
   validated?:   "validated" | "contradicted" | "unresolved";
+  quality?:     ArchiveQuality;
+  include_mock?: boolean;
 }
 
 export interface EventsPage {
@@ -1419,6 +1428,8 @@ export interface BackfillPreviewItem {
   source_count?: number | null;
   published_at?: string | null;
   skip_reason?: string | null;
+  skip_reason_label?: string | null;
+  rank_explanation?: string | null;
   already_analyzed: boolean;
   would_call_llm: boolean;
 }
@@ -2613,6 +2624,8 @@ export const api = {
     if (query.date_from)       params.set("date_from",   query.date_from);
     if (query.date_to)         params.set("date_to",     query.date_to);
     if (query.validated)       params.set("validated",   query.validated);
+    if (query.quality)         params.set("quality",     query.quality);
+    if (query.include_mock)    params.set("include_mock", "true");
     const qs = params.toString();
     return request<EventsPage>(`/events${qs ? `?${qs}` : ""}`);
   },

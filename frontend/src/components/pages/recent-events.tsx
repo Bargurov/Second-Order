@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
-import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage } from "@/lib/api";
+import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -81,6 +81,15 @@ const CONFIDENCE_META: Record<string, { icon: React.ElementType; color: string }
   medium: { icon: Shield,      color: "text-gray-400" },
   low:    { icon: ShieldAlert, color: "val-neg" },
 };
+
+const QUALITY_FILTERS: readonly { value: ArchiveQuality | null; label: string }[] = [
+  { value: null, label: "Default" },
+  { value: "pending", label: "Pending" },
+  { value: "degraded", label: "Degraded" },
+  { value: "no_tickers", label: "No tickers" },
+  { value: "market_checked", label: "Checked" },
+  { value: "clean", label: "Clean" },
+];
 
 function pct(v: number | null | undefined): string {
   if (v == null) return "\u2014";
@@ -1236,6 +1245,8 @@ export function RecentEvents() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [validationFilter, setValidationFilter] = useState<"validated" | "contradicted" | "unresolved" | null>(null);
+  const [qualityFilter, setQualityFilter] = useState<ArchiveQuality | null>(null);
+  const [includeMock, setIncludeMock] = useState(false);
   const [offset, setOffset] = useState(0);
   const [stageFilter, setStageFilter] = useState<string | null>(null);
   const [confFilter, setConfFilter] = useState<string | null>(null);
@@ -1267,7 +1278,7 @@ export function RecentEvents() {
   // Reset to page 0 whenever any filter changes.
   useEffect(() => {
     setOffset(0);
-  }, [debouncedSearch, stageFilter, confFilter, persistenceFilter, ratingFilter, dateFrom, dateTo, validationFilter]);
+  }, [debouncedSearch, stageFilter, confFilter, persistenceFilter, ratingFilter, dateFrom, dateTo, validationFilter, qualityFilter, includeMock]);
 
   const PAGE_SIZE = 25;
 
@@ -1282,7 +1293,22 @@ export function RecentEvents() {
     date_from:   dateFrom        || undefined,
     date_to:     dateTo          || undefined,
     validated:   validationFilter ?? undefined,
+    quality:     qualityFilter   ?? undefined,
+    include_mock: includeMock || undefined,
   };
+
+  const hasActiveFilters = Boolean(
+    search
+    || stageFilter
+    || confFilter
+    || persistenceFilter
+    || ratingFilter
+    || dateFrom
+    || dateTo
+    || validationFilter
+    || qualityFilter
+    || includeMock,
+  );
 
   const { data, isLoading: loading, error: queryError, refetch } = useQuery({
     queryKey: qk.events(query),
@@ -1557,8 +1583,8 @@ export function RecentEvents() {
         </div>
       )}
 
-      {/* Search + filters — shown when there are results OR when filters are active */}
-      {(total > 0 || search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo || validationFilter) && !loading && (
+      {/* Search + filters */}
+      {!loading && !error && (
         <div className="flex flex-col gap-2.5 rounded-lg bg-card px-3.5 py-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-on-surface-variant/55" />
@@ -1648,6 +1674,36 @@ export function RecentEvents() {
               </button>
             ))}
           </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55 mr-1">Quality</span>
+            {QUALITY_FILTERS.map(({ value, label }) => (
+              <button
+                key={value ?? "default"}
+                onClick={() => setQualityFilter(value)}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  qualityFilter === value
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
+                )}
+                title={value === null ? "Current archive default: excludes mock, demo, and degraded rows." : undefined}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              onClick={() => setIncludeMock((v) => !v)}
+              className={cn(
+                "ml-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                includeMock
+                  ? "bg-amber-500/[0.12] text-amber-500"
+                  : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
+              )}
+              title="Separate opt-in for mock and demo rows."
+            >
+              Include mock/demo
+            </button>
+          </div>
           {/* Sort + date range + active count */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55 mr-1">Sort</span>
@@ -1679,7 +1735,7 @@ export function RecentEvents() {
               onChange={(e) => setDateTo(e.target.value)}
               className="rounded-md bg-white/[0.03] px-2 py-1 text-[11px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/40"
             />
-            {(search || stageFilter || confFilter || persistenceFilter || ratingFilter || dateFrom || dateTo || validationFilter) && (
+            {hasActiveFilters && (
               <span className="ml-auto font-mono text-[10.5px] tabular-nums text-on-surface-variant/55">
                 {total} result{total !== 1 ? "s" : ""}
               </span>
@@ -1688,7 +1744,7 @@ export function RecentEvents() {
         </div>
       )}
 
-      {!loading && !error && total === 0 && !search && !stageFilter && !confFilter && !persistenceFilter && !ratingFilter && !dateFrom && !dateTo && !validationFilter && (
+      {!loading && !error && total === 0 && !hasActiveFilters && (
         <Card className="empty-surface flex flex-1 items-center justify-center bg-transparent">
           <CardContent className="flex max-w-md flex-col items-center gap-3 py-12 text-center text-muted-foreground">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border/50 bg-surface-container-highest">
@@ -1793,6 +1849,12 @@ export function RecentEvents() {
             </div>
           ))}
         </div>
+      )}
+
+      {total === 0 && hasActiveFilters && (
+        <p className="py-8 text-center text-[12px] text-muted-foreground/50">
+          No events match the current filters.
+        </p>
       )}
 
       {total > 0 && displayed.length === 0 && (
