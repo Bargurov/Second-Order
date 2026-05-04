@@ -220,3 +220,148 @@ def _last_skip_reason_for_title_key(title_key: str) -> str | None:
     except sqlite3.OperationalError:
         return None
     return row[0] if row and row[0] else None
+
+
+@router.get("/diagnostics/data-quality")
+def data_quality_summary():
+    """Compact zero-cost data-quality view.
+
+    Skeleton: composes already-existing read-only helpers into a
+    single small payload the operator can poll without paying for any
+    LLM, market_check, yfinance, or persistence work.  Each top-level
+    block carries an ``available`` flag so a partial failure (a helper
+    raising, a missing dependency) leaves the rest of the response
+    intact — consumers branch on ``available`` rather than on the
+    presence of the block.
+
+    Blocks:
+      * ``registry_counts``  — registry-lifecycle demo-readiness counts
+        plus the skip-reason histogram, sourced from ``compose_diagnostics``.
+      * ``archive_counts``   — total saved events + max event id.
+      * ``snapshot_freshness`` — ``{total, fresh, stale, unavailable}``
+        from the warm SnapshotStore (no refresh).
+      * ``candidate_queue_counts`` — same eligible / skipped / already-
+        analyzed / expired-low-impact counts the registry candidate-
+        queue endpoint emits, recomputed from the cached news payload
+        without any provider call.
+      * ``latest_analyzed_at`` — most recent registry ``analyzed_at``
+        timestamp, or None.
+    """
+    out: dict = {
+        "registry_counts":        {"available": False},
+        "archive_counts":         {"available": False},
+        "snapshot_freshness":     {"available": False},
+        "candidate_queue_counts": {"available": False},
+        "latest_analyzed_at":     None,
+    }
+
+    diag: dict = {}
+    try:
+        diag = compose_diagnostics(candidates_limit=1, recent_hours=24)
+    except Exception:
+        diag = {}
+    if diag:
+        out["registry_counts"] = {
+            "available":          True,
+            "counts":             diag.get("counts", {}),
+            "state_counts":       diag.get("state_counts", {}),
+            "skip_reason_counts": diag.get("skip_reason_counts", {}),
+            "last_surfaced_at":   diag.get("last_surfaced_at"),
+            "expired_count_24h":  diag.get("expired_count_24h", 0),
+        }
+        out["latest_analyzed_at"] = diag.get("last_analyzed_at")
+
+    try:
+        from db import get_events_fingerprint
+        count, max_id = get_events_fingerprint()
+        out["archive_counts"] = {
+            "available":   True,
+            "total":       int(count),
+            "max_id":      int(max_id),
+        }
+    except Exception:
+        pass
+
+    try:
+        from market_snapshots import get_all_snapshots
+        from market_context import _summarize_snapshots
+        snaps = get_all_snapshots() or []
+        # ``_summarize_snapshots`` accepts dict rows; coerce dataclass
+        # rows so the helper stays simple.
+        rows = []
+        for s in snaps:
+            if isinstance(s, dict):
+                rows.append(s)
+            elif hasattr(s, "to_dict"):
+                try:
+                    rows.append(s.to_dict())
+                except Exception:
+                    continue
+        meta = _summarize_snapshots(rows)
+        out["snapshot_freshness"] = {"available": True, **meta}
+    except Exception:
+        pass
+
+    try:
+        out["candidate_queue_counts"] = _candidate_queue_counts()
+    except Exception:
+        pass
+
+    return _api._sanitize_floats(out)
+
+
+def _candidate_queue_counts() -> dict:
+    """Mirror the counts ``GET /registry/candidate-queue`` emits without
+    re-fetching news.  Pure read of the in-memory news payload + the
+    registry; no LLM, no market_check, no provider call.  Returns
+    ``{"available": False}`` when the news cache or registry helpers
+    are unavailable so the partial-availability contract holds.
+    """
+    try:
+        from datetime import datetime, timedelta
+        from routes.movers import (
+            _cached_news_payload,
+            _cluster_headline,
+            _cluster_is_recent,
+            _hr_dedup_key,
+            _headline_is_market_relevant,
+            _registry_state_for_title_key,
+        )
+    except Exception:
+        return {"available": False}
+
+    payload, _source = _cached_news_payload()
+    raw_clusters = (payload or {}).get("clusters") or []
+    since_dt = datetime.now() - timedelta(hours=72)
+
+    counts = {
+        "eligible":           0,
+        "skipped":            0,
+        "already_analyzed":   0,
+        "expired_low_impact": 0,
+    }
+
+    for cluster in raw_clusters:
+        if not isinstance(cluster, dict):
+            continue
+        if not _cluster_is_recent(cluster, since=since_dt):
+            continue
+        headline = _cluster_headline(cluster)
+        if not headline:
+            continue
+        if cluster.get("low_signal"):
+            continue
+        if not _headline_is_market_relevant(headline):
+            continue
+
+        state, _eid = _registry_state_for_title_key(_hr_dedup_key(headline))
+        if state in ("analyzed", "market_checked", "surfaced"):
+            counts["already_analyzed"] += 1
+            counts["skipped"] += 1
+        elif state == "expired_low_impact":
+            counts["expired_low_impact"] += 1
+            counts["skipped"] += 1
+        else:
+            counts["eligible"] += 1
+
+    return {"available": True, **counts}
