@@ -4,6 +4,19 @@ Later-stage backlog only. Shipped work, active blockers, and immediate
 verification tasks do not belong here. Promote an item only when it has a clear
 product use case, owner, and validation path.
 
+## Checkpoint - 2026-05-04
+
+Completed phase: headline registry, low-impact expiry, archive mock filtering,
+paid-backfill guard, zero-cost backfill preview, and Section C live mover
+pipeline.
+
+Accepted limitations:
+
+- Weekly needs real 5d returns.
+- Persistent remains high-impact/supportive only.
+- Vite chunk-size warning is non-blocking.
+- Preview candidate UI needs later UX polish.
+
 ## Backlog Rules
 
 - Do not add completed Engine v1, backend productization, or frozen UI-slice work back into this file.
