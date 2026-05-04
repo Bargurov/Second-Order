@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, Scale, ChevronDown } from "lucide-react";
-import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
+import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryCandidateQueueResponse, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
@@ -31,6 +31,7 @@ function MoversChapter({
   weekly,
   persistent,
   registryDiagnostics,
+  candidateQueue,
   backfillPreview,
   todayLoading,
   weeklyLoading,
@@ -41,6 +42,7 @@ function MoversChapter({
   weekly: MarketMover[] | undefined;
   persistent: MarketMover[] | undefined;
   registryDiagnostics?: RegistryDiagnostics;
+  candidateQueue?: RegistryCandidateQueueResponse;
   backfillPreview?: BackfillPreviewResponse;
   todayLoading: boolean;
   weeklyLoading: boolean;
@@ -58,6 +60,7 @@ function MoversChapter({
     <section>
       <MoversChapterHead />
       <RegistryCandidatesNotice diagnostics={registryDiagnostics} />
+      <CandidateQueuePanel queue={candidateQueue} />
       <BackfillPreviewNotice preview={backfillPreview} />
 
       {/* TODAY */}
@@ -185,6 +188,88 @@ function _previewDecisionLabel(candidate: BackfillPreviewCandidate): string {
   return "Review candidate";
 }
 
+function CandidateQueuePanel({ queue }: { queue?: RegistryCandidateQueueResponse }) {
+  if (!queue) return null;
+
+  const items = (queue.items ?? [])
+    .filter((candidate) => candidate.headline?.trim())
+    .slice(0, 5);
+  const counts = queue.counts ?? {};
+  const source = queue.news_source ? `Source: ${queue.news_source}` : "Zero-cost registry queue";
+
+  return (
+    <details className="group mb-5 -mt-3 rounded-md bg-white/[0.016] px-3.5 py-2.5 ring-1 ring-white/[0.035]">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 marker:hidden">
+        <ChevronDown className="h-3.5 w-3.5 text-on-surface-variant/45 transition-transform group-open:rotate-180" />
+        <span className="text-[11px] font-semibold text-on-surface-variant/75">
+          Candidate Queue
+        </span>
+        <span className="rounded-full bg-white/[0.045] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/60">
+          Zero-cost scan
+        </span>
+        <span className="ml-auto text-[11px] tabular-nums text-on-surface-variant/45">
+          {counts.eligible ?? 0} eligible
+        </span>
+      </summary>
+
+      <div className="mt-2.5 border-t border-white/[0.035] pt-2.5">
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-medium text-primary/75">
+            Eligible {counts.eligible ?? 0}
+          </span>
+          <span className="rounded-full bg-white/[0.035] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/50">
+            Skipped {counts.skipped ?? 0}
+          </span>
+          <span className="rounded-full bg-white/[0.035] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/50">
+            Already analyzed {counts.already_analyzed ?? 0}
+          </span>
+          <span className="rounded-full bg-white/[0.035] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/50">
+            Expired low-impact {counts.expired_low_impact ?? 0}
+          </span>
+          <span className="ml-auto text-[10.5px] text-on-surface-variant/40">
+            {source}
+          </span>
+        </div>
+
+        {items.length > 0 ? (
+          <ul className="space-y-1.5">
+            {items.map((candidate) => (
+              <li
+                key={`${candidate.headline}-${candidate.published_at ?? ""}`}
+                className="flex flex-wrap items-center gap-1.5 text-[11px] leading-snug text-on-surface-variant/60"
+              >
+                <span className="min-w-0 flex-1 truncate">{candidate.headline}</span>
+                {candidate.source_count != null ? (
+                  <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] tabular-nums text-on-surface-variant/45">
+                    {candidate.source_count} src
+                  </span>
+                ) : null}
+                <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/50">
+                  {candidate.skip_reason_label || "Eligible for analysis"}
+                </span>
+                {candidate.registry_state ? (
+                  <span className="shrink-0 rounded-full bg-white/[0.025] px-2 py-0.5 text-[10.5px] text-on-surface-variant/38">
+                    {candidate.registry_state.replace(/_/g, " ")}
+                  </span>
+                ) : null}
+                {candidate.rank_explanation ? (
+                  <span className="basis-full pl-0 text-[10.5px] leading-snug text-on-surface-variant/45 sm:pl-1">
+                    {candidate.rank_explanation}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[11px] text-on-surface-variant/55">
+            No candidate headlines in the current queue.
+          </p>
+        )}
+      </div>
+    </details>
+  );
+}
+
 function _candidateKey(candidate: BackfillPreviewCandidate): string {
   return `${candidate.headline}-${candidate.published_at ?? ""}`;
 }
@@ -266,10 +351,6 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
           {wouldCall} ready for analysis
         </span>
       </summary>
-
-      <p className="mt-2 text-[10.5px] leading-snug text-on-surface-variant/45">
-        Candidate Queue coming next: eligible, skipped, and already-analyzed headlines in one view.
-      </p>
 
       {candidates.length > 0 ? (
         <div className="mt-2.5 border-t border-white/[0.035] pt-2.5">
@@ -2066,6 +2147,13 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
     refetchInterval: 300_000,
   });
 
+  const { data: candidateQueue } = useQuery({
+    queryKey: ["registry", "candidate-queue", 25, 72],
+    queryFn: () => api.registryCandidateQueue({ limit: 25, sinceHours: 72 }),
+    staleTime: 300_000,
+    refetchInterval: 300_000,
+  });
+
   const { data: backfillPreview } = useQuery({
     queryKey: qk.backfillPreview(5, 72),
     queryFn: () => api.backfillPreview({ limit: 5, sinceHours: 72 }),
@@ -2269,6 +2357,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         weekly={weekly}
         persistent={persistent}
         registryDiagnostics={registryDiagnostics}
+        candidateQueue={candidateQueue}
         backfillPreview={backfillPreview}
         todayLoading={ctxLoading}
         weeklyLoading={weeklyLoading}

@@ -1423,6 +1423,32 @@ export interface RegistryDiagnostics {
   eligible_unanalyzed_candidates: RegistryCandidate[];
 }
 
+export interface RegistryCandidateQueueItem {
+  headline: string;
+  source_count?: number | null;
+  published_at?: string | null;
+  registry_state?: string | null;
+  skip_reason_label?: string | null;
+  rank_score?: number | null;
+  rank_explanation?: string | null;
+}
+
+export interface RegistryCandidateQueueResponse {
+  items: RegistryCandidateQueueItem[];
+  counts: {
+    eligible?: number;
+    skipped?: number;
+    already_analyzed?: number;
+    expired_low_impact?: number;
+  };
+  filters?: {
+    limit?: number;
+    since_hours?: number;
+    include_low_signal?: boolean;
+  };
+  news_source?: string;
+}
+
 export interface BackfillPreviewItem {
   headline: string;
   source_count?: number | null;
@@ -2788,6 +2814,15 @@ export const api = {
 
   registryDiagnostics: () =>
     request<RegistryDiagnostics>("/registry/diagnostics"),
+
+  registryCandidateQueue: (opts: { limit?: number; sinceHours?: number } = {}) => {
+    const params = new URLSearchParams();
+    params.set("limit", String(opts.limit ?? 25));
+    params.set("since_hours", String(opts.sinceHours ?? 72));
+    return request<RegistryCandidateQueueResponse>(
+      `/registry/candidate-queue?${params.toString()}`,
+    );
+  },
 
   backfillPreview: (opts: { limit?: number; sinceHours?: number } = {}) => {
     const params = new URLSearchParams();
