@@ -112,7 +112,14 @@ For a fresh local run, keep `.env` minimal:
 LLM cost guard: never run repeated `/movers/backfill-recent` calls with
 `dry_run=false` without checking provider usage first. Backfill requests must
 include `max_llm_calls`, and the requested value must be less than or equal to
-`MAX_BACKFILL_LLM_CALLS`.
+`MAX_BACKFILL_LLM_CALLS`. Paid backfills with `dry_run=false` and
+`max_llm_calls > 1` also require `confirm_paid=true`.
+
+Use `GET /movers/backfill-preview` to inspect which recent headlines would be
+eligible before spending. It is a zero-cost preview: it does not call Claude,
+OpenAI, market checks, or persistence. Use `GET /registry/diagnostics` for
+zero-cost headline-registry state counts, skip reasons, recent expiry counts,
+and eligible unanalyzed candidates.
 
 ### 2. React Frontend
 
@@ -177,6 +184,7 @@ Copy `.env.example` to `.env` for local use and keep `.env` untracked. Real curr
 - `BACKFILL_MODEL`
 - `MAX_BACKFILL_LLM_CALLS`
 - `BACKFILL_DRY_RUN_DEFAULT`
+- `HEADLINE_REGISTRY_LOW_IMPACT_TTL_DAYS`
 - `CORS_ALLOWED_ORIGINS`
 - `TELEGRAM_BOT_TOKEN`
 - `SECOND_ORDER_API_URL`
@@ -197,8 +205,12 @@ If the selected provider key is missing, analysis falls back to mock output for
 local UI and testing flows. Mock analyses are not saved. `ANALYSIS_PROVIDER`
 accepts `anthropic` or `openai`; `/movers/backfill-recent` uses
 `BACKFILL_PROVIDER` and `BACKFILL_MODEL`, defaults to `dry_run=true`, and
-rejects requests that omit `max_llm_calls`. Keep `MAX_BACKFILL_LLM_CALLS` low
-(`1` in `.env.example`).
+rejects requests that omit `max_llm_calls`. Paid multi-call backfills
+(`dry_run=false` and `max_llm_calls > 1`) require `confirm_paid=true`. Keep
+`MAX_BACKFILL_LLM_CALLS` low (`1` in `.env.example`).
+`HEADLINE_REGISTRY_LOW_IMPACT_TTL_DAYS` controls how long analyzed low-impact
+headlines remain visible on active archive/mover listing surfaces before they
+are filtered as expired low-impact rows.
 
 ## Telegram Commands
 
