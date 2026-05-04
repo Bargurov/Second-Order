@@ -51,6 +51,8 @@ eval_output*.json
 # Generated test databases
 tests/test_events*.db
 tests/test_api*.db
+tests/test_events_*/
+tests/eval_tmp_*/
 tests/.fuse_hidden*
 *.tmp
 *.temp
@@ -61,6 +63,7 @@ tests/.fuse_hidden*
 .codex/
 
 # Frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
