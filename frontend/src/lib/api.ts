@@ -1457,6 +1457,30 @@ export interface BackfillPreviewResponse {
   analysis_model_key?: string;
 }
 
+export interface BackfillCandidateRequest {
+  headline: string;
+  sinceHours?: number;
+  forceReanalyze?: boolean;
+  includeLowSignal?: boolean;
+}
+
+export interface BackfillCandidateResponse {
+  headline: string;
+  status: string;
+  reason?: string | null;
+  analyzed: boolean;
+  persisted: boolean;
+  with_tickers: boolean;
+  with_returns: boolean;
+  ticker_count: number;
+  event_id?: number | null;
+  llm_calls: number;
+  llm_provider?: string | null;
+  analysis_model?: string | null;
+  analysis_model_key?: string | null;
+  outcome?: unknown;
+}
+
 export interface ChartPoint {
   date: string;
   close: number;
@@ -2770,6 +2794,19 @@ export const api = {
     params.set("limit", String(opts.limit ?? 5));
     params.set("since_hours", String(opts.sinceHours ?? 72));
     return request<BackfillPreviewResponse>(`/movers/backfill-preview?${params.toString()}`);
+  },
+
+  backfillCandidate: (opts: BackfillCandidateRequest) => {
+    const params = new URLSearchParams();
+    params.set("headline", opts.headline);
+    params.set("confirm_paid", "true");
+    params.set("since_hours", String(opts.sinceHours ?? 72));
+    params.set("force_reanalyze", String(opts.forceReanalyze ?? false));
+    params.set("include_low_signal", String(opts.includeLowSignal ?? false));
+    return request<BackfillCandidateResponse>(
+      `/movers/backfill-candidate?${params.toString()}`,
+      { method: "POST" },
+    );
   },
 
   marketMovers: () =>

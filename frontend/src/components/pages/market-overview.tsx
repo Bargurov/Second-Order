@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, Scale, ChevronDown } from "lucide-react";
-import { api, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
+import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
@@ -185,13 +185,72 @@ function _previewDecisionLabel(candidate: BackfillPreviewCandidate): string {
   return "Review candidate";
 }
 
+function _candidateKey(candidate: BackfillPreviewCandidate): string {
+  return `${candidate.headline}-${candidate.published_at ?? ""}`;
+}
+
+function _candidateResultText(result: BackfillCandidateResponse): string {
+  const status = result.analyzed
+    ? "Analyzed"
+    : result.status === "skipped"
+      ? "Skipped"
+      : result.status === "degraded"
+        ? "Degraded"
+        : result.status || "Completed";
+  const reason = result.reason ? ` · ${_previewReasonLabel(result.reason)}` : "";
+  const calls = ` · ${result.llm_calls} API call${result.llm_calls === 1 ? "" : "s"}`;
+  const event = result.event_id != null ? ` · event #${result.event_id}` : "";
+  return `${status}${reason}${calls}${event}`;
+}
+
+function _candidateResultTone(result: BackfillCandidateResponse): string {
+  if (result.analyzed) return "text-primary/80";
+  if (result.status === "skipped") return "text-on-surface-variant/55";
+  if (result.status === "degraded") return "text-error-dim/80";
+  return "text-on-surface-variant/65";
+}
+
 function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse }) {
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, BackfillCandidateResponse>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   if (!preview) return null;
 
   const candidates = (preview.items ?? [])
     .filter((candidate) => candidate.headline?.trim())
     .slice(0, 3);
   const wouldCall = preview.counts?.would_call_llm ?? candidates.filter((candidate) => candidate.would_call_llm).length;
+  const sinceHours = preview.filters?.since_hours ?? 72;
+  const forceReanalyze = preview.filters?.force_reanalyze ?? false;
+  const includeLowSignal = preview.filters?.include_low_signal ?? false;
+
+  const analyzeCandidate = async (candidate: BackfillPreviewCandidate) => {
+    const key = _candidateKey(candidate);
+    const confirmed = window.confirm(
+      "Analyze this one candidate now? This can spend one Claude/API call. The zero-cost preview itself will remain read-only.",
+    );
+    if (!confirmed) return;
+
+    setPendingKey(key);
+    setErrors((prev) => ({ ...prev, [key]: "" }));
+    try {
+      const result = await api.backfillCandidate({
+        headline: candidate.headline,
+        sinceHours,
+        forceReanalyze,
+        includeLowSignal,
+      });
+      setResults((prev) => ({ ...prev, [key]: result }));
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        [key]: err instanceof Error ? err.message : "Candidate analysis failed.",
+      }));
+    } finally {
+      setPendingKey((current) => (current === key ? null : current));
+    }
+  };
 
   return (
     <details className="group mb-5 -mt-3 rounded-md bg-white/[0.016] px-3.5 py-2.5 ring-1 ring-white/[0.035]">
@@ -212,32 +271,62 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
         <div className="mt-2.5 border-t border-white/[0.035] pt-2.5">
           <p className="mb-2 text-[11px] leading-snug text-on-surface-variant/55">
             Headlines found by the zero-cost scan. They are not analyzed or validated until evidence broadens.
+            Manual analysis is separate and asks before spending one Claude/API call for one headline.
           </p>
           <ul className="space-y-1.5">
-            {candidates.map((candidate) => (
-              <li
-                key={`${candidate.headline}-${candidate.published_at ?? ""}`}
-                className="flex flex-wrap items-center gap-1.5 text-[11px] leading-snug text-on-surface-variant/60"
-              >
-                <span className="min-w-0 flex-1 truncate">{candidate.headline}</span>
-                <span className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
-                  candidate.would_call_llm
-                    ? "bg-primary/10 text-primary/80"
-                    : "bg-white/[0.04] text-on-surface-variant/55",
-                )}>
-                  {_previewDecisionLabel(candidate)}
-                </span>
-                <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/45">
-                  {_candidateReason(candidate)}
-                </span>
-                {candidate.rank_explanation ? (
-                  <span className="basis-full pl-0 text-[10.5px] leading-snug text-on-surface-variant/45 sm:pl-1">
-                    {candidate.rank_explanation}
+            {candidates.map((candidate) => {
+              const key = _candidateKey(candidate);
+              const result = results[key];
+              const error = errors[key];
+              const isPending = pendingKey === key;
+              const isBusy = pendingKey !== null;
+
+              return (
+                <li
+                  key={key}
+                  className="flex flex-wrap items-center gap-1.5 text-[11px] leading-snug text-on-surface-variant/60"
+                >
+                  <span className="min-w-0 flex-1 truncate">{candidate.headline}</span>
+                  <span className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
+                    candidate.would_call_llm
+                      ? "bg-primary/10 text-primary/80"
+                      : "bg-white/[0.04] text-on-surface-variant/55",
+                  )}>
+                    {_previewDecisionLabel(candidate)}
                   </span>
-                ) : null}
-              </li>
-            ))}
+                  <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/45">
+                    {_candidateReason(candidate)}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => void analyzeCandidate(candidate)}
+                    className={cn(
+                      "shrink-0 rounded-full border border-primary/20 px-2 py-0.5 text-[10.5px] font-semibold text-primary/80 transition-colors hover:bg-primary/10",
+                      isBusy && "cursor-not-allowed opacity-45 hover:bg-transparent",
+                    )}
+                  >
+                    {isPending ? "Analyzing..." : "Analyze candidate"}
+                  </button>
+                  {candidate.rank_explanation ? (
+                    <span className="basis-full pl-0 text-[10.5px] leading-snug text-on-surface-variant/45 sm:pl-1">
+                      {candidate.rank_explanation}
+                    </span>
+                  ) : null}
+                  {result ? (
+                    <span className={cn("basis-full pl-0 text-[10.5px] leading-snug sm:pl-1", _candidateResultTone(result))}>
+                      {_candidateResultText(result)}
+                    </span>
+                  ) : null}
+                  {error ? (
+                    <span className="basis-full pl-0 text-[10.5px] leading-snug text-error-dim/80 sm:pl-1">
+                      {error}
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : (

@@ -776,5 +776,150 @@ class TestBackfillCandidateEndpoint(_PaidGuardTestBase):
         self.assertEqual(self._analyze_calls["count"], 1)
 
 
+class TestBackfillCandidateHTTPRoute(unittest.TestCase):
+    """HTTP-level guards for ``POST /movers/backfill-candidate``.
+
+    The direct-function tests in ``TestBackfillCandidateEndpoint`` pin
+    behaviour at the handler boundary; this class adds wire-shape
+    coverage through the FastAPI app so a Query / router mistake (a
+    non-required ``confirm_paid``, an unmocked dependency, etc.)
+    cannot silently bypass the guard.  Each test patches every spend
+    seam (``_fresh_analysis_market_event``, ``_refresh_existing_market_event``)
+    with raisers so a real LLM call would explode rather than silently
+    succeed.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from fastapi.testclient import TestClient
+        import api as _api
+        cls._api = _api
+        cls.client = TestClient(_api.app)
+
+    def setUp(self) -> None:
+        # Per-test temp DB so registry rows / cached events don't leak
+        # across cases.  Mirrors the pattern in ``_PaidGuardTestBase``
+        # but kept inline because this class doesn't need its
+        # ``_stub_route`` machinery — we patch via context managers.
+        fd, self._tmp = tempfile.mkstemp(suffix=".sqlite")
+        os.close(fd)
+        import db as _db
+        self._orig_db = _db.DB_FILE
+        _db.DB_FILE = self._tmp
+        _db._db_ready = False
+        _db.init_db()
+
+    def tearDown(self) -> None:
+        import db as _db
+        _db.DB_FILE = self._orig_db
+        _db._db_ready = False
+        try:
+            os.unlink(self._tmp)
+        except OSError:
+            pass
+
+    @staticmethod
+    def _ban(label: str):
+        def _raise(*_a, **_kw):
+            raise AssertionError(
+                f"backfill-candidate must not call {label} on this path",
+            )
+        return _raise
+
+    def test_missing_confirm_paid_returns_400(self) -> None:
+        """Default ``confirm_paid=false`` (when the query param is
+        omitted) must short-circuit with HTTP 400 before any work."""
+        from unittest.mock import patch
+        # Even with the spend seams banned, the handler must reject
+        # before reaching them — patching here proves the 400 path is
+        # genuinely cost-free.
+        with patch("routes.movers._fresh_analysis_market_event",
+                   self._ban("_fresh_analysis_market_event")), \
+             patch("routes.movers._refresh_existing_market_event",
+                   self._ban("_refresh_existing_market_event")):
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={"headline": "Fed cuts rates by 25bp"},
+            )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn(
+            "confirm_paid",
+            (r.json().get("detail", "") or "").lower(),
+        )
+
+    def test_confirm_paid_with_llm_unavailable_no_calls_no_persistence(self) -> None:
+        """``confirm_paid=true`` with the LLM unavailable returns the
+        documented ``degraded`` shape with ``llm_calls=0``, no
+        ``persisted=true`` flag, and zero spend-seam invocations."""
+        from unittest.mock import patch
+
+        def _fake_payload():
+            return ({
+                "clusters": [{
+                    "headline":     "OPEC slashes output 500k bpd",
+                    "source_count": 5,
+                    "published_at": "2026-05-03T08:00:00",
+                    "sources":      [{"name": "Reuters"}],
+                }],
+            }, "memory")
+
+        with patch("routes.movers._cached_news_payload", _fake_payload), \
+             patch("routes.movers._llm_available", lambda *_: False), \
+             patch("routes.movers._headline_is_market_relevant",
+                   lambda *_: True), \
+             patch("routes.movers._fresh_analysis_market_event",
+                   self._ban("_fresh_analysis_market_event")), \
+             patch("routes.movers._refresh_existing_market_event",
+                   self._ban("_refresh_existing_market_event")):
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={
+                    "headline":     "OPEC slashes output 500k bpd",
+                    "confirm_paid": "true",
+                },
+            )
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["status"], "degraded")
+        self.assertEqual(body["reason"], "llm_unavailable")
+        self.assertEqual(body["llm_calls"], 0)
+        self.assertFalse(body["persisted"])
+        self.assertFalse(body["analyzed"])
+        self.assertEqual(body["ticker_count"], 0)
+        self.assertIsNone(body["event_id"])
+
+    def test_candidate_not_found_returns_skipped_zero_calls(self) -> None:
+        """A headline absent from the cached news payload returns
+        ``status=skipped, reason=candidate_not_found`` with no spend-
+        seam calls.  Empty cluster list is the cleanest fixture for
+        the ``not_found`` branch."""
+        from unittest.mock import patch
+
+        def _empty_payload():
+            return ({"clusters": []}, "memory")
+
+        with patch("routes.movers._cached_news_payload", _empty_payload), \
+             patch("routes.movers._llm_available", lambda *_: True), \
+             patch("routes.movers._fresh_analysis_market_event",
+                   self._ban("_fresh_analysis_market_event")), \
+             patch("routes.movers._refresh_existing_market_event",
+                   self._ban("_refresh_existing_market_event")):
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={
+                    "headline":     "Headline that is not in the cache",
+                    "confirm_paid": "true",
+                },
+            )
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertEqual(body["status"], "skipped")
+        self.assertEqual(body["reason"], "candidate_not_found")
+        self.assertEqual(body["llm_calls"], 0)
+        self.assertFalse(body["persisted"])
+        self.assertFalse(body["analyzed"])
+        self.assertIsNone(body["event_id"])
+
+
 if __name__ == "__main__":
     unittest.main()

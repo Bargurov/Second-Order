@@ -233,6 +233,53 @@ with `dry_run=false` and an explicit `confirm_paid=true` is **[paid]**
 
 ---
 
+## 7b. Manual paid candidate analysis  *(NOT part of the no-paid smoke pass)*
+
+Endpoint: `POST /movers/backfill-candidate`  **[paid]**
+
+Spends exactly **one** LLM call by design — the route analyzes the
+single requested headline and writes the resulting event. It is the
+manual "promote one preview row" companion to `/movers/backfill-recent`.
+Skip this section entirely during a no-paid smoke pass; only run when
+you intentionally want to bring one specific headline into the archive.
+
+**Step 1 — preview first (zero-cost).** Always identify the headline
+and confirm it is `eligible / would_call_llm=true` via the preview
+before authorising spend:
+
+```powershell
+# [zero-cost] — pick a candidate from the preview output.
+curl "http://127.0.0.1:8000/movers/backfill-preview?limit=10" |
+  ConvertFrom-Json |
+  Select-Object -ExpandProperty items |
+  Where-Object { $_.skip_reason -eq $null -and $_.would_call_llm } |
+  Select-Object -First 5 headline, source_count, rank_score
+```
+
+**Step 2 — paid invocation (example only — do not run in casual demo).**
+The endpoint refuses the request unless `confirm_paid=true` is passed
+explicitly. Match the headline string exactly to a preview row.
+
+```powershell
+# [paid] — example only.  Spends one LLM call and writes one event.
+$headline = "Fed signals two rate cuts at next meeting"
+curl -Method POST "http://127.0.0.1:8000/movers/backfill-candidate" `
+  -Body @{ headline = $headline; confirm_paid = "true" } |
+  ConvertFrom-Json |
+  Select-Object status, reason, analyzed, persisted, event_id, llm_calls
+```
+
+Confirm (when intentionally run):
+
+- `llm_calls` is `0` or `1` — never higher (single-candidate guarantee).
+- `status` is `ok` (analyzed + persisted) or a documented `degraded` /
+  `skipped` reason — `confirm_paid_required` indicates the gate
+  rejected the call before any spend.
+- `event_id` is set on success and the row appears in `/events` on the
+  next read.
+
+---
+
 ## 8. Registry diagnostics  *(headline lifecycle health)*
 
 Endpoint: `GET /registry/diagnostics`  **[zero-cost]**
