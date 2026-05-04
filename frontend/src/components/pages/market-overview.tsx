@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, Scale, ChevronDown } from "lucide-react";
-import { api, type BackfillPreviewResponse, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
+import { api, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
@@ -236,6 +236,54 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
           No candidate headlines in the current zero-cost scan.
         </p>
       )}
+    </details>
+  );
+}
+
+function _contextExplanationText(value?: ContextExplanation["meaning"]): string {
+  if (!value) return "";
+  if (Array.isArray(value)) {
+    return value
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(" ");
+  }
+  return value.trim();
+}
+
+function ContextExplanationDisclosure({
+  explanation,
+  className,
+}: {
+  explanation?: ContextExplanation | null;
+  className?: string;
+}) {
+  const meaning = _contextExplanationText(explanation?.meaning);
+  const whatChangesIt = _contextExplanationText(explanation?.what_changes_it);
+  if (!meaning && !whatChangesIt) return null;
+
+  return (
+    <details className={cn("group rounded-md bg-white/[0.016] px-3 py-2 ring-1 ring-white/[0.035]", className)}>
+      <summary className="flex cursor-pointer list-none items-center gap-2 marker:hidden">
+        <ChevronDown className="h-3.5 w-3.5 text-on-surface-variant/45 transition-transform group-open:rotate-180" />
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/60">
+          How to read this
+        </span>
+      </summary>
+      <div className="mt-2 space-y-1.5 border-t border-white/[0.035] pt-2 text-[11px] leading-snug text-on-surface-variant/60">
+        {meaning && (
+          <p>
+            <span className="font-medium text-on-surface-variant/75">Meaning: </span>
+            {meaning}
+          </p>
+        )}
+        {whatChangesIt && (
+          <p>
+            <span className="font-medium text-on-surface-variant/75">What changes it: </span>
+            {whatChangesIt}
+          </p>
+        )}
+      </div>
     </details>
   );
 }
@@ -682,10 +730,12 @@ export function RegimeStrip({
   rates,
   regimeVec,
   isLoading,
+  explanation,
 }: {
   rates: (import("@/lib/api").RatesContext & { available?: boolean }) | null;
   regimeVec: import("@/lib/api").RegimeVector | null;
   isLoading: boolean;
+  explanation?: ContextExplanation | null;
 }) {
   if (isLoading) return null;
 
@@ -725,6 +775,7 @@ export function RegimeStrip({
           </span>
         ))}
       </div>
+      <ContextExplanationDisclosure explanation={explanation} className="mt-2 max-w-3xl" />
     </section>
   );
 }
@@ -922,6 +973,7 @@ function _regimeAxes(regimeVec: RegimeVector | null): RegimeAxis[] {
 
 function RegimeVectorCard({
   regimeVec,
+  explanation,
 }: {
   regimeVec:
     | (RegimeVector & {
@@ -929,6 +981,7 @@ function RegimeVectorCard({
         transition?: { state: string; rationale: string };
       })
     | null;
+  explanation?: ContextExplanation | null;
 }) {
   if (!regimeVec?.available) {
     return (
@@ -1055,6 +1108,7 @@ function RegimeVectorCard({
                 {compoundRationale}
               </div>
             )}
+            <ContextExplanationDisclosure explanation={explanation} className="mt-3 bg-white/[0.012]" />
           </div>
         </div>
       </div>
@@ -1184,8 +1238,10 @@ export function buildUncertaintyConcentrationView(
 
 function UncertaintyConcentrationCard({
   data,
+  explanation,
 }: {
   data: NewsUncertaintyConcentration | null;
+  explanation?: ContextExplanation | null;
 }) {
   const view = buildUncertaintyConcentrationView(data);
 
@@ -1226,6 +1282,7 @@ function UncertaintyConcentrationCard({
       <div className="mt-4 border-t border-outline-variant/15 pt-3 text-[11px] leading-relaxed text-on-surface-variant/60">
         {view.footer}
       </div>
+      <ContextExplanationDisclosure explanation={explanation} className="mt-3 bg-white/[0.012]" />
     </div>
   );
 }
@@ -1331,6 +1388,8 @@ function RegimeInterpretationSection({
   highlights,
   rotation,
   isLoading,
+  regimeVectorExplanation,
+  uncertaintyExplanation,
 }: {
   regimeVec:
     | (RegimeVector & {
@@ -1343,6 +1402,8 @@ function RegimeInterpretationSection({
   highlights: MarketMover[];
   rotation: SectorRotation | null;
   isLoading: boolean;
+  regimeVectorExplanation?: ContextExplanation | null;
+  uncertaintyExplanation?: ContextExplanation | null;
 }) {
   if (isLoading) {
     return (
@@ -1359,9 +1420,9 @@ function RegimeInterpretationSection({
   return (
     <section className="mb-8 space-y-5">
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr_1fr]">
-        <RegimeVectorCard regimeVec={regimeVec} />
+        <RegimeVectorCard regimeVec={regimeVec} explanation={regimeVectorExplanation} />
         <CreditRegimeCard credit={credit} />
-        <UncertaintyConcentrationCard data={uncertainty} />
+        <UncertaintyConcentrationCard data={uncertainty} explanation={uncertaintyExplanation} />
       </div>
       <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
         <HighlightsCard highlights={highlights} />
@@ -1933,6 +1994,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   const regimeVec = ctx?.regime_vector ?? null;
   const snapshots = ctx?.snapshots ?? null;
   const uncertaintyConcentration = ctx?.uncertainty_concentration ?? null;
+  const contextExplanations = ctx?.context_explanations ?? {};
   const todaysHighlights = ctx?.highlights ?? [];
 
   // Deeper engine blocks — surfaced by the /market-context enrichment.
@@ -2037,6 +2099,10 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
           package: the user opens on the snapshot read, not on a hero
           headline.  Warm-cached; hides cleanly when empty. */}
       <BenchmarkSnapshotsStrip snapshots={snapshots} isLoading={ctxLoading} />
+      <ContextExplanationDisclosure
+        explanation={contextExplanations.snapshots}
+        className="-mt-6 mb-6"
+      />
 
       {/* Stress card — compact regime panel + indicator grid.  No
           longer the page hero; sits below Snapshot as the "plumbing &
@@ -2045,6 +2111,10 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         stress={stress}
         isLoading={ctxLoading}
         uncertaintyConcentration={uncertaintyConcentration}
+      />
+      <ContextExplanationDisclosure
+        explanation={contextExplanations.stress}
+        className="-mt-4 mb-6"
       />
 
       {/* ─────────────── B · REGIME INTERPRETATION ─────────────── */}
@@ -2066,11 +2136,18 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         highlights={todaysHighlights}
         rotation={sectorRotation}
         isLoading={ctxLoading}
+        regimeVectorExplanation={contextExplanations.regime_vector}
+        uncertaintyExplanation={contextExplanations.uncertainty_concentration}
       />
 
       {/* Macro Regime — rates regime + regime-vector axes (inflation /
           policy / FX / growth-stress) condensed into a single chip row. */}
-      <RegimeStrip rates={rates} regimeVec={regimeVec} isLoading={ctxLoading} />
+      <RegimeStrip
+        rates={rates}
+        regimeVec={regimeVec}
+        isLoading={ctxLoading}
+        explanation={contextExplanations.rates}
+      />
 
       {/* Policy Context — active / pre-effective / revisit-due policy
           items (tariffs, sanctions, rate decisions). */}

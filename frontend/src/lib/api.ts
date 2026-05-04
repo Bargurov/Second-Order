@@ -1349,6 +1349,21 @@ export interface FinancePlaybook {
   sources_used: string[];
 }
 
+export type ContextExplanationText = string | string[] | null;
+
+export interface ContextExplanation {
+  meaning?: ContextExplanationText;
+  what_changes_it?: ContextExplanationText;
+}
+
+export interface MarketContextExplanations {
+  snapshots?: ContextExplanation;
+  stress?: ContextExplanation;
+  rates?: ContextExplanation;
+  regime_vector?: ContextExplanation;
+  uncertainty_concentration?: ContextExplanation;
+}
+
 export interface MarketContext {
   built_at: string;
   source: string;
@@ -1364,6 +1379,7 @@ export interface MarketContext {
   highlights: MarketMover[];
   highlights_meta: HighlightsMeta;
   uncertainty_concentration?: NewsUncertaintyConcentration;
+  context_explanations?: MarketContextExplanations;
   /** Deeper macro-engine blocks added to /market-context.  Each
    *  carries ``available`` so the frontend can skip the panel cleanly
    *  when the engine couldn't compute it from today's tape. */

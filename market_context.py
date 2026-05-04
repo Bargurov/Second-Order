@@ -76,6 +76,78 @@ def _summarize_snapshots(snapshots: list[dict]) -> dict:
     }
 
 
+def _compose_snapshot_freshness_note(
+    snapshots: list[dict], meta: dict,
+) -> Optional[str]:
+    """Operator-readable explanation of why snapshots are not all fresh.
+
+    Returns ``None`` when every snapshot is fresh — UI consumers branch
+    on presence to decide whether to render the strip's status footer.
+    Stale (cached but past TTL) and unavailable (no value, or provider
+    error) are explained separately in product-facing language; the
+    note never refers to internal terms like ``not_refreshed`` directly,
+    but it does distinguish "not refreshed yet" from a real provider
+    failure so the operator sees the truthful state.
+
+    Pure read; never refreshes, never touches the snapshot store.
+    """
+    total       = int(meta.get("total")       or 0)
+    fresh       = int(meta.get("fresh")       or 0)
+    stale       = int(meta.get("stale")       or 0)
+    unavailable = int(meta.get("unavailable") or 0)
+
+    if total == 0:
+        return "Benchmark snapshots are not available right now."
+    if fresh == total:
+        return None
+
+    # When every unavailable row is the placeholder, the store has not
+    # warmed yet — distinct from a real provider outage.
+    placeholders_only = unavailable > 0 and all(
+        (s.get("error") or "") == "not_refreshed"
+        for s in snapshots
+        if s.get("value") is None or s.get("error") is not None
+    )
+
+    parts: list[str] = []
+    if stale > 0:
+        if stale == total:
+            parts.append(
+                "All benchmark values are cached from the most recent "
+                "refresh and may lag the live tape."
+            )
+        else:
+            parts.append(
+                f"{stale} of {total} benchmark values are cached and "
+                f"may lag the live tape."
+            )
+    if unavailable > 0:
+        if placeholders_only:
+            if unavailable == total:
+                parts.append(
+                    "Benchmark snapshots have not been refreshed yet — "
+                    "live values will appear once the next refresh runs."
+                )
+            else:
+                parts.append(
+                    f"{unavailable} of {total} benchmarks have not been "
+                    f"refreshed yet."
+                )
+        else:
+            if unavailable == total:
+                parts.append(
+                    "All benchmarks failed to refresh from the data "
+                    "provider; values are unavailable."
+                )
+            else:
+                parts.append(
+                    f"{unavailable} of {total} benchmarks failed to "
+                    f"refresh from the data provider; their values are "
+                    f"unavailable."
+                )
+    return " ".join(parts) if parts else None
+
+
 def _normalize_stress(stress: Optional[dict]) -> dict:
     """Return a stress-regime dict, falling back to a degraded shape."""
     if stress is None or not isinstance(stress, dict):
@@ -130,6 +202,80 @@ def _normalize_uncertainty_concentration(uc: Optional[dict]) -> dict:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Product-facing explanations for the A/B card layout.  Static copy: each
+# entry says what the card means and what would change it.  No data,
+# no provider calls, no scoring — pure read so the composer stays trivially
+# testable and the backend can ship demo-ready text without coupling to
+# any runtime state.  Keep entries short (≤ ~25 words each); the UI lays
+# them out under each card title.
+# ---------------------------------------------------------------------------
+_CONTEXT_EXPLANATIONS: dict[str, dict[str, str]] = {
+    "snapshots": {
+        "meaning": (
+            "Live (or recently-cached) prices and 1d/5d changes for the "
+            "core liquid benchmarks — equities, bonds, FX, commodities."
+        ),
+        "what_changes_it": (
+            "A new market-data refresh that updates the underlying "
+            "values, or provider failures that push a row into "
+            "stale or unavailable state."
+        ),
+    },
+    "stress": {
+        "meaning": (
+            "Composite cross-asset stress regime — Calm / Watch / "
+            "Stressed — derived from VIX, MOVE, credit spreads, the "
+            "dollar, and safe-haven flows."
+        ),
+        "what_changes_it": (
+            "Sharp moves in volatility, credit, or safe-haven assets; "
+            "the regime can shift intraday as inputs reprice."
+        ),
+    },
+    "rates": {
+        "meaning": (
+            "Front-end and long-end rates picture: nominal yields, real "
+            "yields, breakeven inflation, and the implied policy stance."
+        ),
+        "what_changes_it": (
+            "Curve moves, central-bank communications, or inflation "
+            "prints that reprice real yields and breakevens."
+        ),
+    },
+    "regime_vector": {
+        "meaning": (
+            "Compact 4-axis regime read — growth, inflation, policy, "
+            "liquidity — for the current macro backdrop."
+        ),
+        "what_changes_it": (
+            "New data on growth (PMI / GDP), inflation (CPI / PCE), "
+            "policy (rate decisions / guidance), or liquidity (reserves "
+            "/ funding spreads)."
+        ),
+    },
+    "uncertainty_concentration": {
+        "meaning": (
+            "News-derived map of where macro uncertainty is "
+            "concentrating — global vs. sector-specific, with the "
+            "leading sector flagged when concentration is high."
+        ),
+        "what_changes_it": (
+            "Newsflow on a single sector or theme outpacing global "
+            "macro coverage, or a sustained burst of cross-asset "
+            "uncertainty."
+        ),
+    },
+}
+
+
+def _explanations_block() -> dict:
+    """Return a fresh copy of the static explanations table so callers
+    can mutate the response shape without bleeding back into the module
+    constant.  Pure: no I/O, no scoring."""
+    return {k: dict(v) for k, v in _CONTEXT_EXPLANATIONS.items()}
+
+
 def _normalize_generic(block: Optional[dict]) -> dict:
     """Pass-through normaliser for blocks that already carry their own
     ``available`` flag.  Falls back to ``{"available": False}`` when
@@ -172,6 +318,9 @@ def compose_market_context(
         source:          "yfinance" / "polygon" / "unknown"
         snapshots:       list[snapshot dict]   (per-market freshness inside)
         snapshots_meta:  {total, fresh, stale, unavailable}
+        snapshot_freshness_note: operator-readable explanation when the
+                         strip carries stale or unavailable rows; None
+                         when every snapshot is fresh.
         stress:          stress regime dict   (with `available` flag)
         rates:           rates context dict   (with `available` flag)
         regime_vector:   compact 4-axis regime vector
@@ -180,11 +329,16 @@ def compose_market_context(
         uncertainty_concentration: news-derived sector concentration (with `available` flag)
       }
     """
+    snaps = list(snapshots or [])
+    snaps_meta = _summarize_snapshots(snaps)
     return {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": source or _provider_name(),
-        "snapshots": list(snapshots or []),
-        "snapshots_meta": _summarize_snapshots(snapshots or []),
+        "snapshots": snaps,
+        "snapshots_meta": snaps_meta,
+        "snapshot_freshness_note": _compose_snapshot_freshness_note(
+            snaps, snaps_meta,
+        ),
         "stress": _normalize_stress(stress),
         "rates": _normalize_rates(rates),
         "regime_vector": _normalize_regime_vector(regime_vector),
@@ -196,4 +350,7 @@ def compose_market_context(
         "funding_stress_mode":  _normalize_generic(funding_stress_mode),
         "sector_rotation":      _normalize_generic(sector_rotation),
         "finance_playbook":     _normalize_generic(finance_playbook),
+        # Read-only product-facing explanations for the A/B cards.  Static
+        # copy; consumers render verbatim under each card title.
+        "context_explanations": _explanations_block(),
     }

@@ -50,6 +50,9 @@ SNAPSHOT_REQUIRED_KEYS = {
 CONTEXT_REQUIRED_KEYS = {
     "built_at", "source",
     "snapshots", "snapshots_meta",
+    # Operator-readable explanation when the strip carries stale or
+    # unavailable rows; None when every snapshot is fresh.
+    "snapshot_freshness_note",
     "stress", "rates", "regime_vector",
     "highlights", "highlights_meta",
     "uncertainty_concentration",
@@ -57,6 +60,8 @@ CONTEXT_REQUIRED_KEYS = {
     # so partial availability doesn't require a separate contract.
     "credit_regime", "funding_stress_mode",
     "sector_rotation", "finance_playbook",
+    # Read-only static copy describing each A/B card and what changes it.
+    "context_explanations",
 }
 
 # Frontend reads these from snapshots_meta to size the partial availability footer.
@@ -392,6 +397,104 @@ class TestUncertaintyConcentration(_Base):
         self.assertIn("uncertainty_concentration", data)
         uc = data["uncertainty_concentration"]
         self.assertEqual(uc["uncertainty_scope"], "global")
+
+
+# ---------------------------------------------------------------------------
+# snapshot_freshness_note — operator-readable explanation when the
+# benchmark strip carries stale or unavailable snapshots.  Distinguishes
+# stale (cached values past TTL) from unavailable (no value / provider
+# error) so the operator can act on the truthful state.  Pure read; the
+# composer never refreshes.
+# ---------------------------------------------------------------------------
+
+
+class TestSnapshotFreshnessNote(_Base):
+
+    def test_all_fresh_note_is_none(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+            data = self.client.get("/market-context").json()
+        self.assertIsNone(data["snapshot_freshness_note"])
+
+    def test_all_stale_note_explains_cached_values(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        store = get_store()
+        with store._lock:
+            for k, (snap, _ts) in list(store._entries.items()):
+                store._entries[k] = (
+                    snap, time.monotonic() - SNAPSHOT_MAX_AGE_SECONDS - 5,
+                )
+        data = self.client.get("/market-context").json()
+        note = data["snapshot_freshness_note"] or ""
+        # Product-facing phrasing: cached + lag, never the internal
+        # term ``stale`` directly.
+        self.assertIn("cached", note.lower())
+        self.assertIn("lag", note.lower())
+        self.assertNotIn("not_refreshed", note)
+
+    def test_partial_stale_note_carries_count(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        store = get_store()
+        with store._lock:
+            # Stale only ES.
+            snap, _ = store._entries["ES"]
+            store._entries["ES"] = (
+                snap, time.monotonic() - SNAPSHOT_MAX_AGE_SECONDS - 5,
+            )
+        data = self.client.get("/market-context").json()
+        note = data["snapshot_freshness_note"] or ""
+        self.assertIn("1 of 8", note)
+        self.assertIn("cached", note.lower())
+
+    def test_unavailable_note_distinguishes_provider_failure(self):
+        with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
+            refresh_all()
+            data = self.client.get("/market-context").json()
+        note = data["snapshot_freshness_note"] or ""
+        # Real provider failure language — not the cold-start "not yet
+        # refreshed" phrasing.
+        self.assertIn("failed to refresh", note.lower())
+        self.assertIn("data provider", note.lower())
+        self.assertNotIn("cached", note.lower())
+
+    def test_cold_store_note_distinguishes_not_yet_refreshed(self):
+        # Cold store with auto-warm patched out so the placeholder rows
+        # remain.  This is the "not yet refreshed" path — operator
+        # phrasing must NOT call this a provider failure.
+        with patch("market_snapshots.get_all_snapshots", return_value=[]), \
+             patch("market_snapshots.refresh_all"):
+            data = self.client.get("/market-context").json()
+        note = data["snapshot_freshness_note"] or ""
+        self.assertIn("not been refreshed yet", note.lower())
+        self.assertNotIn("failed", note.lower())
+
+    def test_mixed_stale_and_unavailable_explained_separately(self):
+        # Half the markets fail to refresh; the other half refresh and
+        # then get backdated → stale.  Note must mention both states.
+        def _flaky(symbol):
+            if symbol in {"NQ=F", "GC=F", "RTY=F"}:
+                raise RuntimeError("provider down")
+            return _good_df()
+        with patch("market_check._fetch", side_effect=_flaky):
+            refresh_all()
+        store = get_store()
+        with store._lock:
+            # Backdate every successfully-fetched row so the live ones
+            # become stale; failed rows are already error rows.
+            for k, (snap, ts) in list(store._entries.items()):
+                if snap.value is not None:
+                    store._entries[k] = (
+                        snap, time.monotonic() - SNAPSHOT_MAX_AGE_SECONDS - 5,
+                    )
+        data = self.client.get("/market-context").json()
+        meta = data["snapshots_meta"]
+        self.assertGreater(meta["stale"], 0)
+        self.assertGreater(meta["unavailable"], 0)
+        note = data["snapshot_freshness_note"] or ""
+        self.assertIn("cached", note.lower())
+        self.assertIn("failed to refresh", note.lower())
 
 
 if __name__ == "__main__":
