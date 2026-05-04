@@ -249,6 +249,11 @@ class TestBackfillRegistryShortCircuit(_RegistryTestBase):
     """Stub the analyze + market-check + provider helpers so tests
     measure routing decisions, not LLM behaviour."""
 
+    def setUp(self) -> None:
+        super().setUp()
+        self._orig_enable_paid = os.environ.get("ENABLE_PAID_ANALYSIS")
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+
     def _stub_route_for_test(self, monkey: dict) -> None:
         """Replace heavy collaborators in routes.movers with stubs.
 
@@ -270,6 +275,10 @@ class TestBackfillRegistryShortCircuit(_RegistryTestBase):
                         delattr(self._rm, name)
                 else:
                     setattr(self._rm, name, value)
+        if self._orig_enable_paid is None:
+            os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        else:
+            os.environ["ENABLE_PAID_ANALYSIS"] = self._orig_enable_paid
         super().tearDown()
 
     def _seed_registry_analyzed(self, headline: str) -> str:
