@@ -43,6 +43,9 @@ events*.db
 *.db-wal
 *.db-shm
 
+# Local backup directory created by scripts/backup_archive.py
+backups/
+
 # Evaluation outputs
 evaluation_output.json
 evaluation_output*.json

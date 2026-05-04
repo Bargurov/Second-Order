@@ -103,6 +103,25 @@ def _max_backfill_llm_calls() -> int:
     )
 
 
+def _paid_analysis_enabled() -> bool:
+    """Server-side master switch for paid LLM analysis paths.
+
+    When ``ENABLE_PAID_ANALYSIS`` is unset, false, or otherwise falsy,
+    every paid endpoint must short-circuit BEFORE any LLM /
+    market_check / persistence work — even when the request carries
+    ``confirm_paid=true`` and a per-call budget within
+    ``MAX_BACKFILL_LLM_CALLS``.  The two URL-level guards
+    (``confirm_paid`` and ``max_llm_calls``) protect against accidental
+    UI clicks; this env switch is the operator-level kill-switch that
+    a deployment can flip without touching code.
+
+    Default false — the safe state for an unconfigured environment is
+    "no spend" so a fresh checkout cannot accidentally call the LLM
+    even with the right query params.
+    """
+    return _env_bool("ENABLE_PAID_ANALYSIS", False)
+
+
 def _backfill_dry_run_default() -> bool:
     return _env_bool(
         "BACKFILL_DRY_RUN_DEFAULT",
@@ -1400,6 +1419,19 @@ def movers_backfill_recent(
                 "or use max_llm_calls=1 / dry_run=true."
             ),
         )
+    # Server-side kill-switch — ENABLE_PAID_ANALYSIS must be true for
+    # any paid invocation to proceed.  Dry-run mode is unaffected (no
+    # spend), and the previous URL-level checks (max_llm_calls cap,
+    # confirm_paid) stay in force when the kill-switch is on.
+    if not effective_dry_run and not _paid_analysis_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Paid analysis is disabled on this server. Set "
+                "ENABLE_PAID_ANALYSIS=true to authorise paid LLM "
+                "invocations from /movers/backfill-recent."
+            ),
+        )
     llm_available = _llm_available(provider)
     skipped: dict[str, int] = {}
 
@@ -2066,6 +2098,19 @@ def movers_backfill_candidate(
             detail=(
                 "confirm_paid=true is required for "
                 "/movers/backfill-candidate (single paid LLM invocation)."
+            ),
+        )
+    # Server-side kill-switch — every invocation of this endpoint is
+    # paid by design, so ENABLE_PAID_ANALYSIS must be true regardless
+    # of the per-request flags.  Short-circuits BEFORE any provider /
+    # LLM / persistence work.
+    if not _paid_analysis_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Paid analysis is disabled on this server. Set "
+                "ENABLE_PAID_ANALYSIS=true to authorise paid LLM "
+                "invocations from /movers/backfill-candidate."
             ),
         )
 

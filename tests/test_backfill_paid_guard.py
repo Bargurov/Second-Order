@@ -9,6 +9,7 @@ Run with:
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import tempfile
@@ -34,6 +35,13 @@ class _PaidGuardTestBase(unittest.TestCase):
         self._db = db
         self._original: dict = {}
         self._rm = None
+        # ENABLE_PAID_ANALYSIS gates the paid endpoints server-side.
+        # Default-on for the existing paid-allowed cases; the dedicated
+        # ``TestServerPaidAnalysisEnvGuard`` class flips it back to
+        # confirm the kill-switch fires.  Each test restores the
+        # original value in tearDown.
+        self._orig_enable_paid = os.environ.get("ENABLE_PAID_ANALYSIS")
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
 
     def tearDown(self) -> None:
         # Restore monkey-patches.
@@ -52,6 +60,11 @@ class _PaidGuardTestBase(unittest.TestCase):
             os.unlink(self.db_path)
         except OSError:
             pass
+        # Restore the ENABLE_PAID_ANALYSIS env var.
+        if self._orig_enable_paid is None:
+            os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        else:
+            os.environ["ENABLE_PAID_ANALYSIS"] = self._orig_enable_paid
 
     def _stub_route(self, monkey: dict) -> None:
         import routes.movers as rm
@@ -808,6 +821,12 @@ class TestBackfillCandidateHTTPRoute(unittest.TestCase):
         _db.DB_FILE = self._tmp
         _db._db_ready = False
         _db.init_db()
+        # Default-on the paid kill-switch for the existing per-test
+        # cases in this class (which already exercise paid paths via
+        # confirm_paid=true).  ``TestServerPaidAnalysisEnvGuard`` flips
+        # it off in its own tests.
+        self._orig_enable_paid = os.environ.get("ENABLE_PAID_ANALYSIS")
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
 
     def tearDown(self) -> None:
         import db as _db
@@ -817,6 +836,10 @@ class TestBackfillCandidateHTTPRoute(unittest.TestCase):
             os.unlink(self._tmp)
         except OSError:
             pass
+        if self._orig_enable_paid is None:
+            os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        else:
+            os.environ["ENABLE_PAID_ANALYSIS"] = self._orig_enable_paid
 
     @staticmethod
     def _ban(label: str):
@@ -1300,6 +1323,216 @@ class TestRegistryCandidateQueue(_PaidGuardTestBase):
         self.assertIsInstance(body["items"], list)
         self.assertIn("counts", body)
         self.assertIn("eligible", body["counts"])
+
+
+class TestServerPaidAnalysisEnvGuard(unittest.TestCase):
+    """Server-side ``ENABLE_PAID_ANALYSIS`` kill-switch contract:
+
+      1. With the env var unset (default), every paid endpoint blocks
+         with HTTP 403 before any LLM, ``market_check``, ``yfinance``,
+         or persistence call — even when ``confirm_paid=true`` and the
+         per-call budget is within ``MAX_BACKFILL_LLM_CALLS``.
+      2. With the env var explicitly false, same behaviour.
+      3. Preview GET (``/movers/backfill-preview``) is unaffected.
+      4. Dry-run on ``/movers/backfill-recent`` is unaffected.
+      5. With the env var true, paid endpoints proceed past the env
+         check (other guards still apply).
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from fastapi.testclient import TestClient
+        import api as _api
+        cls._api = _api
+        cls.client = TestClient(_api.app)
+
+    def setUp(self) -> None:
+        # Per-test temp DB so registry rows don't leak across cases.
+        fd, self._tmp = tempfile.mkstemp(suffix=".sqlite")
+        os.close(fd)
+        import db as _db
+        self._orig_db = _db.DB_FILE
+        _db.DB_FILE = self._tmp
+        _db._db_ready = False
+        _db.init_db()
+        # Each test sets ENABLE_PAID_ANALYSIS explicitly; remember the
+        # original so tearDown can restore.
+        self._orig_enable_paid = os.environ.get("ENABLE_PAID_ANALYSIS")
+        # Per-test paid budget — keeps the surface deterministic.
+        self._orig_max_calls = os.environ.get("MAX_BACKFILL_LLM_CALLS")
+        os.environ["MAX_BACKFILL_LLM_CALLS"] = "5"
+        self._orig_dry_run_default = os.environ.get(
+            "BACKFILL_DRY_RUN_DEFAULT",
+        )
+        os.environ["BACKFILL_DRY_RUN_DEFAULT"] = "false"
+
+    def tearDown(self) -> None:
+        import db as _db
+        _db.DB_FILE = self._orig_db
+        _db._db_ready = False
+        try:
+            os.unlink(self._tmp)
+        except OSError:
+            pass
+        for var, original in (
+            ("ENABLE_PAID_ANALYSIS",     self._orig_enable_paid),
+            ("MAX_BACKFILL_LLM_CALLS",   self._orig_max_calls),
+            ("BACKFILL_DRY_RUN_DEFAULT", self._orig_dry_run_default),
+        ):
+            if original is None:
+                os.environ.pop(var, None)
+            else:
+                os.environ[var] = original
+
+    @staticmethod
+    def _ban(label: str):
+        def _raise(*_a, **_kw):
+            raise AssertionError(
+                f"paid path must not reach {label} when ENABLE_PAID_ANALYSIS is off",
+            )
+        return _raise
+
+    def _spend_seam_patches(self):
+        """Context-manager friendly tuple of every paid seam banned."""
+        from unittest.mock import patch
+        return (
+            patch("routes.movers._fresh_analysis_market_event",
+                  self._ban("_fresh_analysis_market_event")),
+            patch("routes.movers._refresh_existing_market_event",
+                  self._ban("_refresh_existing_market_event")),
+            patch("api.analyze_event",  self._ban("api.analyze_event")),
+            patch("api.market_check",   self._ban("api.market_check")),
+            patch("api._persist_event", self._ban("api._persist_event")),
+            patch("yfinance.download",  self._ban("yfinance.download")),
+            patch("yfinance.Ticker",    self._ban("yfinance.Ticker")),
+        )
+
+    def test_candidate_blocked_when_env_unset(self) -> None:
+        os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        with contextlib.ExitStack() as stack:
+            for p in self._spend_seam_patches():
+                stack.enter_context(p)
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={
+                    "headline":     "Fed signals two rate cuts at next meeting",
+                    "confirm_paid": "true",
+                },
+            )
+        self.assertEqual(r.status_code, 403)
+        self.assertIn(
+            "ENABLE_PAID_ANALYSIS",
+            (r.json().get("detail", "") or ""),
+        )
+
+    def test_candidate_blocked_when_env_false(self) -> None:
+        os.environ["ENABLE_PAID_ANALYSIS"] = "false"
+        with contextlib.ExitStack() as stack:
+            for p in self._spend_seam_patches():
+                stack.enter_context(p)
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={
+                    "headline":     "Fed signals two rate cuts at next meeting",
+                    "confirm_paid": "true",
+                },
+            )
+        self.assertEqual(r.status_code, 403)
+
+    def test_recent_paid_blocked_when_env_unset(self) -> None:
+        os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        with contextlib.ExitStack() as stack:
+            for p in self._spend_seam_patches():
+                stack.enter_context(p)
+            r = self.client.post(
+                "/movers/backfill-recent",
+                params={
+                    "max_llm_calls": 1,
+                    "dry_run":       "false",
+                    "confirm_paid":  "true",
+                },
+            )
+        self.assertEqual(r.status_code, 403)
+        self.assertIn(
+            "ENABLE_PAID_ANALYSIS",
+            (r.json().get("detail", "") or ""),
+        )
+
+    def test_preview_get_unaffected_when_env_unset(self) -> None:
+        # Preview is zero-cost by design — the kill-switch must not
+        # touch it even when paid is fully disabled server-side.
+        os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        with contextlib.ExitStack() as stack:
+            for p in self._spend_seam_patches():
+                stack.enter_context(p)
+            r = self.client.get(
+                "/movers/backfill-preview", params={"limit": 5},
+            )
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertIn("items", r.json())
+
+    def test_recent_dry_run_unaffected_when_env_unset(self) -> None:
+        # Dry-run is zero-cost — the env check must NOT block it even
+        # when paid analysis is disabled server-side.
+        os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        with contextlib.ExitStack() as stack:
+            for p in self._spend_seam_patches():
+                stack.enter_context(p)
+            r = self.client.post(
+                "/movers/backfill-recent",
+                params={
+                    "max_llm_calls": 1,
+                    "dry_run":       "true",
+                    "confirm_paid":  "false",
+                },
+            )
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertTrue(body.get("dry_run"))
+
+    def test_paid_recent_proceeds_when_env_true(self) -> None:
+        # With the kill-switch on, the paid path passes the env check
+        # and continues to the next gate — proven by reaching the
+        # ``analyze_event`` seam in our stubs (capped at one call).
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+
+        from unittest.mock import patch
+
+        analyze_calls = {"count": 0}
+
+        def fake_fresh(*a, **kw):
+            analyze_calls["count"] += 1
+            return {
+                "status": "ok", "analyzed": True, "with_returns": True,
+                "with_tickers": True, "persisted": True, "ticker_count": 1,
+                "event_id": 99, "conviction": {"impact_level": "high"},
+            }
+
+        def fake_payload():
+            return ({
+                "clusters": [{
+                    "headline":     "Fed signals two rate cuts at next meeting",
+                    "source_count": 5,
+                    "published_at": "2026-05-03T08:00:00",
+                    "sources":      [{"name": "Reuters"}],
+                }],
+            }, "memory")
+
+        with patch("routes.movers._cached_news_payload", fake_payload), \
+             patch("routes.movers._fresh_analysis_market_event", fake_fresh), \
+             patch("routes.movers._llm_available",   lambda *_: True), \
+             patch("routes.movers._headline_is_market_relevant",
+                   lambda *_: True):
+            r = self.client.post(
+                "/movers/backfill-recent",
+                params={
+                    "max_llm_calls": 1,
+                    "dry_run":       "false",
+                    "confirm_paid":  "false",
+                },
+            )
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertGreaterEqual(analyze_calls["count"], 1)
 
 
 if __name__ == "__main__":
