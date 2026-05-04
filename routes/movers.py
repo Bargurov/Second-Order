@@ -2004,6 +2004,246 @@ def movers_backfill_preview(
     })
 
 
+@router.post("/movers/backfill-candidate")
+def movers_backfill_candidate(
+    headline: str = Query(
+        ...,
+        min_length=1,
+        description=(
+            "Headline of the preview candidate to analyze.  Matched "
+            "against the cached news payload via the same dedup-key "
+            "function the registry uses, so minor punctuation / case "
+            "differences resolve to the same cluster."
+        ),
+    ),
+    confirm_paid: bool = Query(
+        False,
+        description=(
+            "Required.  Must be true — this is the explicit paid "
+            "confirmation gate.  Mirrors the multi-call paid-backfill "
+            "guard on /movers/backfill-recent: a paid LLM invocation "
+            "from a single-candidate request must still be opted into."
+        ),
+    ),
+    since_hours: int = Query(
+        72, ge=1, le=720,
+        description=(
+            "Recency window for matching the headline against the news "
+            "cache.  A cluster older than this is treated as not found "
+            "so a stale headline can't be re-analyzed by accident."
+        ),
+    ),
+    force_reanalyze: bool = Query(
+        False,
+        description=(
+            "Mirrors the /movers/backfill-recent flag — bypasses the "
+            "registry already-analyzed / cached-event short-circuits."
+        ),
+    ),
+    include_low_signal: bool = Query(
+        False,
+        description=(
+            "Mirrors the /movers/backfill-recent flag — admits low-"
+            "signal clusters and headlines that fail the relevance gate."
+        ),
+    ),
+):
+    """Analyze exactly one preview candidate identified by ``headline``.
+
+    Hard cap: at most one LLM call per request.  The cached-event
+    refresh path (no LLM, no new analysis) is reused unchanged so a
+    stale-tickers refresh on an existing event doesn't burn an LLM
+    invocation that the operator authorised for fresh analysis.
+
+    All other gates (registry state, market-checked cache, recency,
+    relevance, low_signal) match /movers/backfill-recent so behaviour
+    is consistent — this endpoint is a single-row variant of the same
+    pipeline, not a parallel implementation.
+    """
+    if not confirm_paid:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "confirm_paid=true is required for "
+                "/movers/backfill-candidate (single paid LLM invocation)."
+            ),
+        )
+
+    provider = _backfill_provider()
+    model = _backfill_model(provider)
+    model_key = _backfill_model_key(provider, model)
+    llm_available = _llm_available(provider)
+
+    base_response: dict = {
+        "headline": headline,
+        "analyzed": False,
+        "persisted": False,
+        "with_tickers": False,
+        "with_returns": False,
+        "ticker_count": 0,
+        "event_id": None,
+        "llm_calls": 0,
+        "llm_provider": provider,
+        "analysis_model": model,
+        "analysis_model_key": model_key,
+    }
+
+    def _result(status: str, reason: str | None, **extra) -> dict:
+        return _api._sanitize_floats({
+            **base_response,
+            "status": status,
+            "reason": reason,
+            **extra,
+        })
+
+    if not llm_available:
+        # Fail fast before reading the cache so the operator sees the
+        # real cause; no LLM call is attempted, no registry stamps move.
+        return _result("degraded", "llm_unavailable")
+
+    payload, _source = _cached_news_payload()
+    raw_clusters = (payload or {}).get("clusters") or []
+    since_dt = (
+        datetime.now() - timedelta(hours=since_hours)
+        if since_hours and since_hours > 0 else None
+    )
+
+    target_key = _hr_dedup_key(headline)
+    cluster: dict | None = None
+    for c in raw_clusters:
+        if not isinstance(c, dict):
+            continue
+        if _hr_dedup_key(_cluster_headline(c)) == target_key:
+            cluster = c
+            break
+    if cluster is None:
+        return _result("skipped", "candidate_not_found")
+    if not _cluster_is_recent(cluster, since=since_dt):
+        return _result("skipped", "outside_recency_window")
+    candidate_headline = _cluster_headline(cluster)
+    if (
+        candidate_headline
+        and not include_low_signal
+        and not _headline_is_market_relevant(candidate_headline)
+    ):
+        return _result("skipped", "irrelevant_headline")
+    if cluster.get("low_signal") and not include_low_signal:
+        return _result("skipped", "low_signal")
+
+    registry_title_key = _hr_dedup_key(candidate_headline)
+    registry_state, _ = _registry_state_for_title_key(registry_title_key)
+    if not force_reanalyze and registry_state in (
+        "analyzed", "market_checked", "surfaced",
+    ):
+        _hr.advance_state(
+            title_key=registry_title_key,
+            last_skip_reason="registry_already_analyzed",
+        )
+        return _result("skipped", "registry_already_analyzed")
+    if not force_reanalyze and registry_state == "expired_low_impact":
+        _hr.advance_state(
+            title_key=registry_title_key,
+            last_skip_reason="registry_expired_low_impact",
+        )
+        return _result("skipped", "registry_expired_low_impact")
+
+    event_date = _cluster_event_date(cluster)
+    cached = _find_recent_saved_event(candidate_headline, event_date, model_key)
+    existing_tickers = (cached or {}).get("market_tickers") or []
+    if (
+        cached
+        and not force_reanalyze
+        and _has_any_usable_return(existing_tickers)
+    ):
+        _hr.advance_state(
+            title_key=registry_title_key,
+            last_skip_reason="already_market_checked",
+        )
+        return _result(
+            "skipped", "already_market_checked",
+            event_id=cached.get("id"),
+        )
+
+    # ── Single LLM-spending pass ───────────────────────────────────────
+    # The cached-but-stale path goes through ``_refresh_existing_market_event``
+    # first (no LLM); only when it explicitly returns ``status='skipped'``
+    # because the row needs fresh analysis do we promote to
+    # ``_fresh_analysis_market_event`` — and that's the one and only LLM
+    # call this endpoint authorises.
+    try:
+        if cached and not force_reanalyze:
+            result = _refresh_existing_market_event(cached)
+            if result.get("status") == "skipped":
+                # Refresh helper signalled "needs fresh analysis" — spend
+                # the single authorised LLM call.
+                result = _fresh_analysis_market_event(
+                    candidate_headline,
+                    event_context=_cluster_event_context(cluster),
+                    event_date=event_date,
+                    provider=provider,
+                    model=model,
+                    model_key=model_key,
+                    existing_event=cached,
+                )
+                base_response["llm_calls"] = 1
+        else:
+            result = _fresh_analysis_market_event(
+                candidate_headline,
+                event_context=_cluster_event_context(cluster),
+                event_date=event_date,
+                provider=provider,
+                model=model,
+                model_key=model_key,
+                existing_event=cached,
+            )
+            base_response["llm_calls"] = 1
+    except Exception as exc:
+        _api._log.warning(
+            "/movers/backfill-candidate analyze failed for %r",
+            candidate_headline, exc_info=True,
+        )
+        return _result("degraded", f"analyze_failed: {exc}")
+
+    if not isinstance(result, dict):
+        return _result("degraded", "invalid_pipeline_result")
+
+    # Registry forward-only stamps so subsequent previews / runs see the
+    # advanced state.  Mirrors /movers/backfill-recent post-action stamps.
+    try:
+        impact_level = (result.get("conviction") or {}).get("impact_level")
+        if result.get("analyzed"):
+            _hr.advance_state(
+                title_key=registry_title_key,
+                new_state="analyzed",
+                event_id=result.get("event_id"),
+                impact_level=impact_level,
+                analyzed_at=datetime.now().replace(
+                    microsecond=0,
+                ).isoformat(),
+            )
+        if result.get("with_returns"):
+            _hr.advance_state(
+                title_key=registry_title_key,
+                new_state="market_checked",
+            )
+    except Exception:
+        _api._log.warning(
+            "/movers/backfill-candidate registry stamp failed", exc_info=True,
+        )
+
+    return _result(
+        result.get("status") or ("analyzed" if result.get("analyzed") else "skipped"),
+        result.get("reason"),
+        analyzed=bool(result.get("analyzed")),
+        persisted=bool(result.get("persisted")),
+        with_tickers=bool(result.get("with_tickers")),
+        with_returns=bool(result.get("with_returns")),
+        ticker_count=int(result.get("ticker_count") or 0),
+        event_id=result.get("event_id"),
+        outcome=result.get("outcome"),
+    )
+
+
 def _project(envelope: dict, *, include_meta: bool):
     """Return the bare items list by default; surface the full
     ``{items, meta}`` envelope only when the caller opts in via

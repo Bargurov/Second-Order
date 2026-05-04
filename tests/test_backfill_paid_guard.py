@@ -548,5 +548,233 @@ class TestBackfillPreviewNoSpend(_PaidGuardTestBase):
         )
 
 
+class TestBackfillCandidateEndpoint(_PaidGuardTestBase):
+    """``POST /movers/backfill-candidate`` is the single-row paid path.
+
+    Contract:
+      * Without ``confirm_paid=true`` → 400, no LLM work attempted.
+      * Hard cap of one ``_fresh_analysis_market_event`` invocation.
+      * Skip gates (registry, cached-event, recency, relevance,
+        low_signal) match /movers/backfill-recent so a candidate the
+        preview marked ``would_skip`` doesn't get reanalyzed by accident.
+      * Result dict carries ``status`` / ``reason`` / ``event_id``
+        deterministically so the UI can branch.
+    """
+
+    def _stubs(
+        self,
+        *,
+        clusters: list[dict] | None = None,
+        analyze_returns: dict | None = None,
+        refresh_returns: dict | None = None,
+    ) -> dict:
+        self._analyze_calls = {"count": 0}
+        self._refresh_calls = {"count": 0}
+
+        default_clusters = [{
+            "headline":     "Fed cuts rates by 25bp",
+            "source_count": 5,
+            "published_at": "2026-05-03T08:00:00",
+            "sources":      [{"name": "Reuters"}],
+        }]
+        seeded_clusters = clusters if clusters is not None else default_clusters
+
+        def fake_payload():
+            return ({"clusters": seeded_clusters}, "memory")
+
+        def fake_fresh(*a, **kw):
+            self._analyze_calls["count"] += 1
+            return analyze_returns or {
+                "status": "ok", "analyzed": True, "with_returns": True,
+                "with_tickers": True, "persisted": True, "ticker_count": 1,
+                "event_id": 999, "conviction": {"impact_level": "high"},
+            }
+
+        def fake_refresh(*a, **kw):
+            self._refresh_calls["count"] += 1
+            return refresh_returns or {"status": "skipped", "reason": "needs_fresh"}
+
+        return {
+            "_cached_news_payload":           fake_payload,
+            "_fresh_analysis_market_event":   fake_fresh,
+            "_refresh_existing_market_event": fake_refresh,
+            "_llm_available":                 lambda *_: True,
+            "_headline_is_market_relevant":   lambda *_: True,
+        }
+
+    def test_blocks_without_confirm_paid(self) -> None:
+        from fastapi import HTTPException
+        from routes.movers import movers_backfill_candidate
+        self._stub_route(self._stubs())
+        with self.assertRaises(HTTPException) as ctx:
+            movers_backfill_candidate(
+                headline="Fed cuts rates by 25bp",
+                confirm_paid=False,
+                since_hours=72,
+                force_reanalyze=False,
+                include_low_signal=False,
+            )
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertIn("confirm_paid", ctx.exception.detail)
+        self.assertEqual(self._analyze_calls["count"], 0)
+        self.assertEqual(self._refresh_calls["count"], 0)
+
+    def test_analyzes_one_candidate_when_confirmed(self) -> None:
+        from routes.movers import movers_backfill_candidate
+        self._stub_route(self._stubs())
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=False,
+            include_low_signal=False,
+        )
+        # Exactly one LLM call regardless of pipeline path.
+        self.assertEqual(self._analyze_calls["count"], 1)
+        self.assertEqual(result["status"], "ok")
+        self.assertTrue(result["analyzed"])
+        self.assertTrue(result["persisted"])
+        self.assertEqual(result["llm_calls"], 1)
+        self.assertEqual(result["event_id"], 999)
+        self.assertEqual(result["headline"], "Fed cuts rates by 25bp")
+
+    def test_candidate_not_found_returns_skipped(self) -> None:
+        from routes.movers import movers_backfill_candidate
+        self._stub_route(self._stubs())
+        result = movers_backfill_candidate(
+            headline="Headline that is not in the cache at all",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=False,
+            include_low_signal=False,
+        )
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "candidate_not_found")
+        self.assertEqual(self._analyze_calls["count"], 0)
+        self.assertEqual(result["llm_calls"], 0)
+
+    def test_registry_already_analyzed_skips_without_llm(self) -> None:
+        from news_sources import _dedup_key
+        from routes.movers import movers_backfill_candidate
+
+        title_key = _dedup_key("Fed cuts rates by 25bp")
+        self._db.upsert_headline_registry_seen(
+            [("Reuters", title_key, 1)], "2026-05-01T10:00:00",
+        )
+        self._db.update_registry_state(
+            title_key=title_key, new_state="analyzed",
+            event_id=42, impact_level="high",
+            analyzed_at="2026-05-01T10:30:00",
+        )
+        self._stub_route(self._stubs())
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=False,
+            include_low_signal=False,
+        )
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "registry_already_analyzed")
+        self.assertEqual(self._analyze_calls["count"], 0)
+        self.assertEqual(result["llm_calls"], 0)
+
+    def test_outside_recency_window_skips_without_llm(self) -> None:
+        from routes.movers import movers_backfill_candidate
+        old_clusters = [{
+            "headline":     "Fed cuts rates by 25bp",
+            "source_count": 5,
+            "published_at": "2024-01-01T08:00:00",
+            "sources":      [{"name": "Reuters"}],
+        }]
+        self._stub_route(self._stubs(clusters=old_clusters))
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=24,
+            force_reanalyze=False,
+            include_low_signal=False,
+        )
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "outside_recency_window")
+        self.assertEqual(self._analyze_calls["count"], 0)
+
+    def test_irrelevant_headline_skips_unless_low_signal_opt_in(self) -> None:
+        from routes.movers import movers_backfill_candidate
+        # Stub relevance → False so the headline fails the gate.
+        stubs = self._stubs()
+        stubs["_headline_is_market_relevant"] = lambda *_: False
+        self._stub_route(stubs)
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=False,
+            include_low_signal=False,
+        )
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "irrelevant_headline")
+        self.assertEqual(self._analyze_calls["count"], 0)
+
+    def test_irrelevant_headline_admitted_with_include_low_signal(self) -> None:
+        from routes.movers import movers_backfill_candidate
+        stubs = self._stubs()
+        stubs["_headline_is_market_relevant"] = lambda *_: False
+        self._stub_route(stubs)
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=False,
+            include_low_signal=True,
+        )
+        # include_low_signal lets the irrelevant-headline gate through —
+        # the LLM call proceeds.
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(self._analyze_calls["count"], 1)
+
+    def test_llm_unavailable_returns_degraded(self) -> None:
+        from routes.movers import movers_backfill_candidate
+        stubs = self._stubs()
+        stubs["_llm_available"] = lambda *_: False
+        self._stub_route(stubs)
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=False,
+            include_low_signal=False,
+        )
+        self.assertEqual(result["status"], "degraded")
+        self.assertEqual(result["reason"], "llm_unavailable")
+        self.assertEqual(self._analyze_calls["count"], 0)
+        self.assertEqual(result["llm_calls"], 0)
+
+    def test_force_reanalyze_bypasses_registry_skip(self) -> None:
+        from news_sources import _dedup_key
+        from routes.movers import movers_backfill_candidate
+
+        title_key = _dedup_key("Fed cuts rates by 25bp")
+        self._db.upsert_headline_registry_seen(
+            [("Reuters", title_key, 1)], "2026-05-01T10:00:00",
+        )
+        self._db.update_registry_state(
+            title_key=title_key, new_state="analyzed",
+            event_id=42, impact_level="high",
+            analyzed_at="2026-05-01T10:30:00",
+        )
+        self._stub_route(self._stubs())
+        result = movers_backfill_candidate(
+            headline="Fed cuts rates by 25bp",
+            confirm_paid=True,
+            since_hours=72,
+            force_reanalyze=True,
+            include_low_signal=False,
+        )
+        # force_reanalyze=True overrides the registry skip → one LLM call.
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(self._analyze_calls["count"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
