@@ -70,6 +70,51 @@ def _is_mock_demo_or_degraded(row: dict) -> bool:
     return is_mock_event(row) or _is_demo_event(row) or _is_degraded_event(row)
 
 
+# Operational archive-quality buckets exposed via ``/events?quality=...``.
+# Distinct from the engine ``quality_tier`` filter — these classify rows
+# by archive lifecycle state (analyzed → market-checked → clean) rather
+# than by engine evidence tier.  See _matches_quality below for the
+# precedence rules (degraded wins over data-state buckets so each row
+# lands in at most one bucket).
+_QUALITY_VALUES: frozenset[str] = frozenset({
+    "pending", "degraded", "no_tickers", "market_checked", "clean",
+})
+
+
+def _has_market_check_stamp(row: dict) -> bool:
+    return bool(row.get("last_market_check_at"))
+
+
+def _has_any_market_tickers(row: dict) -> bool:
+    tickers = row.get("market_tickers") or []
+    return isinstance(tickers, list) and len(tickers) > 0
+
+
+def _matches_quality(row: dict, quality: str) -> bool:
+    """True when ``row`` lands in the requested archive-quality bucket.
+
+    Bucket precedence — ``degraded`` wins over the data-state buckets so
+    a degraded row that happens to carry tickers stays classified as
+    ``degraded`` (a single row matches at most one bucket).  ``clean``
+    is a strict subset of ``market_checked``.
+    """
+    is_degraded = _is_degraded_event(row)
+    if quality == "degraded":
+        return is_degraded
+    if is_degraded:
+        return False
+    has_tx = _has_any_market_tickers(row)
+    if quality == "market_checked":
+        return has_tx
+    if quality == "clean":
+        return has_tx and not portfolio_flags(row)["low_information"]
+    if quality == "no_tickers":
+        return _has_market_check_stamp(row) and not has_tx
+    if quality == "pending":
+        return not _has_market_check_stamp(row) and not has_tx
+    return False
+
+
 def _score_validation(row: dict) -> str:
     """Derive validation status from stored market_tickers direction_tags.
 
@@ -299,6 +344,18 @@ def events(
             "/events/{event_id} so detail review still works."
         ),
     ),
+    quality: str | None = Query(
+        None,
+        description=(
+            "Narrow the archive listing to one operational quality bucket: "
+            "pending | degraded | no_tickers | market_checked | clean.  "
+            "``quality=degraded`` is the explicit opt-in to surface "
+            "degraded rows — mock + demo stay hidden unless "
+            "``include_mock=true`` is also set.  Bucket precedence: a "
+            "degraded row stays in ``degraded`` even when it carries "
+            "tickers, so each row matches at most one bucket."
+        ),
+    ),
 ):
     # Normalise date filters up-front — anything other than
     # YYYY-MM-DD gets converted to its calendar-day form so the SQL
@@ -312,6 +369,8 @@ def events(
         mechanism_subtype = None
     if not isinstance(tradable, bool):
         tradable = None
+    if not isinstance(quality, str):
+        quality = None
     if quality_tier is not None:
         from low_information_gate import EVIDENCE_QUALITY_TIERS
         if quality_tier not in EVIDENCE_QUALITY_TIERS:
@@ -319,6 +378,12 @@ def events(
                 400,
                 f"quality_tier must be one of {list(EVIDENCE_QUALITY_TIERS)}",
             )
+
+    if quality is not None and quality not in _QUALITY_VALUES:
+        raise HTTPException(
+            400,
+            f"quality must be one of {sorted(_QUALITY_VALUES)}",
+        )
 
     rows = query_events_filtered(
         search=search,
@@ -347,8 +412,26 @@ def events(
     # are NOT deleted; ``include_mock=true`` brings them back, and
     # /events/{event_id} keeps serving them regardless so review by id
     # still works.
+    #
+    # Carve-out: ``quality=degraded`` is the documented opt-in to drill
+    # into the degraded bucket without flipping ``include_mock``.  Mock
+    # and demo rows stay suppressed regardless — only the degraded
+    # subset of the suppression is lifted.
     if not include_mock:
-        rows = [r for r in rows if not _is_mock_demo_or_degraded(r)]
+        if quality == "degraded":
+            rows = [
+                r for r in rows
+                if not (is_mock_event(r) or _is_demo_event(r))
+            ]
+        else:
+            rows = [r for r in rows if not _is_mock_demo_or_degraded(r)]
+
+    # Quality bucket filter — operator-driven narrowing on top of the
+    # suppression above.  Applied BEFORE the offset/limit slice so
+    # ``total`` reflects the post-filter universe; doesn't require row
+    # decoration so it stays on the fast path.
+    if quality is not None:
+        rows = [r for r in rows if _matches_quality(r, quality)]
 
     # Build the event→active-windows index once per request so we
     # can (a) filter by ``mover_window`` without per-row recomputation

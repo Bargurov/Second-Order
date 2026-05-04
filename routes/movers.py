@@ -585,6 +585,166 @@ def _cluster_has_asset_terms(cluster: dict) -> bool:
     return bool(_ASSET_TERM_RE.search(headline))
 
 
+# Zero-cost preview ranking
+# ---------------------------------------------------------------------------
+# /movers/backfill-preview ranks candidate clusters using metadata that
+# is already in the cached news payload (no LLM, no market_check, no
+# yfinance).  Weights are intentionally separated so the operator can
+# read each component on the per-item ``rank_factors`` block; tuning
+# them later is a one-place edit.
+_RANK_W_SOURCE_COUNT_PER     = 1.0   # per publisher, clamped to _RANK_SOURCE_COUNT_CAP
+_RANK_SOURCE_COUNT_CAP       = 8     # diminishing returns past this
+_RANK_W_HIGH_TIER_PER        = 1.5   # per high-tier publisher in `sources`
+_RANK_W_ASSET_TERMS          = 1.5   # explicit ticker / company-form mention
+_RANK_W_MACRO_POLICY         = 3.0   # central bank, CPI / payrolls, rate decision
+_RANK_W_GEOPOLITICAL         = 2.5   # sanctions / tariffs / military escalation
+_RANK_W_COMMODITY_POLICY     = 2.5   # OPEC, crude / LNG output, rare-earth quotas
+_RANK_W_CORPORATE_ACTION     = 1.0   # M&A, buyback, IPO, guidance reset
+_RANK_W_GENERIC_NOISE        = -3.0  # market-wrap roundups w/ no specific event
+
+_MACRO_POLICY_RE = re.compile(
+    r"\b("
+    r"federal\s+reserve|fed(?:eral)?\b|fomc|"
+    r"ecb|boj|boe|pboc|snb|rba|rbnz|bank\s+of\s+(?:england|japan|canada|korea)|"
+    r"central\s+bank|monetary\s+policy|rate\s+(?:cut|hike|decision|hold)s?|"
+    r"interest\s+rate(?:s)?|cpi|ppi|pce|nonfarm|payrolls|jobs\s+report|"
+    r"inflation|unemployment|gdp|recession|stimulus|quantitative"
+    r")\b",
+    re.IGNORECASE,
+)
+_GEOPOLITICAL_RE = re.compile(
+    r"\b("
+    r"sanction(?:s|ed|ing)?|embargo(?:es|ed)?|tariff(?:s)?|export\s+control|"
+    r"missile|airstrike|invasion|escalat(?:e|es|ed|ion)|retaliat(?:e|es|ed|ion)|"
+    r"strait\s+of\s+hormuz|red\s+sea|suez|blockade|"
+    r"nato|kremlin|white\s+house|pentagon|brussels|"
+    r"ceasefire|truce|treaty|annex(?:ed|ation)?"
+    r")\b",
+    re.IGNORECASE,
+)
+_COMMODITY_POLICY_RE = re.compile(
+    r"\b("
+    r"opec(?:\+|plus)?|crude(?:\s+oil)?|brent|wti|natural\s+gas|lng|"
+    r"oil\s+(?:output|production|export|price|embargo|sanction)|"
+    r"rare\s+earth(?:s)?|lithium|cobalt|copper|nickel|uranium|"
+    r"semiconductor(?:s)?|chip\s+(?:export|import|ban)|wafer|foundry|"
+    r"wheat|grain|fertili[sz]er"
+    r")\b",
+    re.IGNORECASE,
+)
+_CORPORATE_ACTION_RE = re.compile(
+    r"\b("
+    r"merger|acquisition|acquires?|takeover|buyback|repurchase|"
+    r"ipo\b|listing|spin[\s\-]?off|"
+    r"earnings|guidance|profit\s+warning|"
+    r"dividend\s+(?:cut|raise|hike)|"
+    r"layoffs?|restructur(?:e|ing)"
+    r")\b",
+    re.IGNORECASE,
+)
+# Wire-style market-wrap headlines: high source_count, low informational
+# value.  Penalty pushes them below specific-event headlines even when
+# many publishers cover the daily roundup.
+_GENERIC_FINANCE_NOISE_RE = re.compile(
+    r"\b("
+    r"market\s+wrap|markets?\s+(?:close|open)|"
+    r"stocks?\s+(?:open|close|edge|ease|rise|fall|slip|gain|drop)|"
+    r"shares?\s+(?:open|close|edge|ease|rise|fall|slip|gain|drop)|"
+    r"wall\s+street\s+(?:close|open|wrap|recap|edges?)|"
+    r"asia\s+(?:close|opens?)|europe\s+(?:close|opens?)|"
+    r"yields?\s+(?:tick|edge|drift|inch)|"
+    r"recap\b|roundup\b|wrap[\s\-]?up\b|"
+    r"light\s+trading|quiet\s+trading|range[\s\-]bound"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _cluster_high_tier_source_count(cluster: dict) -> int:
+    """Number of high-tier publishers in ``cluster["sources"]``.
+
+    Uses ``news_fetch.source_tier`` (re-exported from ``news_sources``)
+    so the tier list stays in one place.  Missing or malformed
+    ``sources`` returns 0 — the scorer treats unknown providers as low
+    tier rather than raising on a feed that omitted publisher metadata.
+    """
+    sources = cluster.get("sources") or []
+    if not isinstance(sources, list):
+        return 0
+    from news_sources import source_tier
+    count = 0
+    for s in sources:
+        name = ""
+        if isinstance(s, dict):
+            name = str(s.get("name") or "").strip()
+        elif isinstance(s, str):
+            name = s.strip()
+        if name and source_tier(name) == "high":
+            count += 1
+    return count
+
+
+def _headline_keyword_signals(headline: str) -> dict:
+    """Boolean flags for each topical category the scorer cares about.
+
+    All categories run over the same headline text; a single headline
+    can light up several flags (an OPEC sanctions headline is both
+    ``geopolitical`` and ``commodity_policy``).  ``generic_finance_noise``
+    is independent of the boost categories — a noisy wrap could in
+    principle name a Fed event, but in practice these flags don't
+    co-occur and the boost dominates the penalty.
+    """
+    text = headline or ""
+    return {
+        "macro_policy":          bool(_MACRO_POLICY_RE.search(text)),
+        "geopolitical":          bool(_GEOPOLITICAL_RE.search(text)),
+        "commodity_policy":      bool(_COMMODITY_POLICY_RE.search(text)),
+        "corporate_action":      bool(_CORPORATE_ACTION_RE.search(text)),
+        "generic_finance_noise": bool(_GENERIC_FINANCE_NOISE_RE.search(text)),
+    }
+
+
+def _score_cluster_for_preview(cluster: dict) -> tuple[float, dict]:
+    """Return (rank_score, rank_factors) for one cluster.
+
+    ``rank_factors`` always carries the full keyset (8 keys, defaults
+    0/False) so consumers can bind to a stable shape.  Score components
+    sum the weighted constants above; the ``factors`` dict carries the
+    raw inputs (count of high-tier sources, source_count, asset-term
+    boolean, topical booleans) — not the per-component weighted score
+    — so a future weight tweak doesn't change the diagnostics shape.
+    """
+    source_count = int(cluster.get("source_count") or 0)
+    high_tier = _cluster_high_tier_source_count(cluster)
+    has_asset = _cluster_has_asset_terms(cluster)
+    headline = str(cluster.get("headline") or "")
+    signals = _headline_keyword_signals(headline)
+
+    score = 0.0
+    score += min(source_count, _RANK_SOURCE_COUNT_CAP) * _RANK_W_SOURCE_COUNT_PER
+    score += high_tier * _RANK_W_HIGH_TIER_PER
+    if has_asset:
+        score += _RANK_W_ASSET_TERMS
+    if signals["macro_policy"]:
+        score += _RANK_W_MACRO_POLICY
+    if signals["geopolitical"]:
+        score += _RANK_W_GEOPOLITICAL
+    if signals["commodity_policy"]:
+        score += _RANK_W_COMMODITY_POLICY
+    if signals["corporate_action"]:
+        score += _RANK_W_CORPORATE_ACTION
+    if signals["generic_finance_noise"]:
+        score += _RANK_W_GENERIC_NOISE
+
+    factors = {
+        "source_count":          source_count,
+        "high_tier_sources":     high_tier,
+        "has_asset_terms":       has_asset,
+        **signals,
+    }
+    return score, factors
+
+
 def _has_tickers(tickers) -> bool:
     return isinstance(tickers, list) and any(
         isinstance(t, dict) and t.get("symbol") for t in tickers
@@ -1673,13 +1833,25 @@ def movers_backfill_preview(
             continue
         eligible_clusters.append(cluster)
 
-    eligible_clusters.sort(
-        key=lambda c: (
-            int(c.get("source_count") or 0),
-            1 if _cluster_has_asset_terms(c) else 0,
+    # Score once, attach to the cluster dict so the per-item loop below
+    # can surface ``rank_score`` + ``rank_factors`` on each preview row
+    # without recomputing.  Sort by score, then fall back to the legacy
+    # ``(source_count, has_asset_terms)`` tiebreak so equal-score
+    # clusters land in a stable order across runs.
+    cluster_scores: list[tuple[dict, float, dict]] = []
+    for cluster in eligible_clusters:
+        score, factors = _score_cluster_for_preview(cluster)
+        cluster_scores.append((cluster, score, factors))
+    cluster_scores.sort(
+        key=lambda triple: (
+            triple[1],
+            int(triple[0].get("source_count") or 0),
+            1 if _cluster_has_asset_terms(triple[0]) else 0,
         ),
         reverse=True,
     )
+    eligible_clusters = [t[0] for t in cluster_scores]
+    score_by_id = {id(t[0]): (t[1], t[2]) for t in cluster_scores}
 
     items: list[dict] = []
     for cluster in eligible_clusters:
@@ -1735,6 +1907,16 @@ def movers_backfill_preview(
         if would_call_llm:
             counts["would_call_llm"] += 1
 
+        rank_score, rank_factors = score_by_id.get(
+            id(cluster), (0.0, _headline_keyword_signals("")),
+        )
+        if "source_count" not in rank_factors:
+            rank_factors = {
+                "source_count":      int(cluster.get("source_count") or 0),
+                "high_tier_sources": 0,
+                "has_asset_terms":   False,
+                **rank_factors,
+            }
         items.append({
             "headline": headline,
             "source_count": int(cluster.get("source_count") or 0),
@@ -1742,6 +1924,8 @@ def movers_backfill_preview(
             "skip_reason": skip_reason,
             "already_analyzed": already_analyzed,
             "would_call_llm": would_call_llm,
+            "rank_score":   round(float(rank_score), 3),
+            "rank_factors": rank_factors,
         })
 
     return _api._sanitize_floats({

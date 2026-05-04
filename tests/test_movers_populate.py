@@ -1294,5 +1294,210 @@ class TestPreviewPaidGuardUnchanged(_PreviewBase):
         self.assertIn("confirm_paid", r.json().get("detail", ""))
 
 
+# ---------------------------------------------------------------------------
+# Preview candidate ranking — zero-cost score surfaces "major market
+# headline" above "generic finance wrap" noise.  All inputs come from
+# already-cached cluster metadata (source_count, sources, headline
+# text); ranking does NOT call the LLM, market_check, or yfinance.
+# ---------------------------------------------------------------------------
+
+
+class TestPreviewRankingPrefersMajorOverGeneric(_PreviewBase):
+    """A central-bank headline at a lower source_count must rank above
+    a generic finance wrap at a higher source_count.  The legacy
+    source_count-only sort produced the opposite order."""
+
+    def test_macro_headline_outranks_generic_finance_wrap(self):
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "Wall Street markets close mixed",
+                "source_count": 6,
+                "published_at": ts,
+                "sources": [{"name": "MarketWatch"}],
+            },
+            {
+                "id": 2,
+                "headline": "Fed signals two rate cuts at next meeting",
+                "source_count": 3,
+                "published_at": ts,
+                "sources": [{"name": "Reuters World"}],
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        body = r.json()
+        headlines = [i["headline"] for i in body["items"]]
+        self.assertLess(
+            headlines.index("Fed signals two rate cuts at next meeting"),
+            headlines.index("Wall Street markets close mixed"),
+            f"macro headline should outrank generic finance wrap; "
+            f"got order: {headlines}",
+        )
+
+    def test_geopolitical_headline_outranks_generic_finance_wrap(self):
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "Bond yields tick higher in light trading",
+                "source_count": 5,
+                "published_at": ts,
+                "sources": [{"name": "Yahoo Finance"}],
+            },
+            {
+                "id": 2,
+                "headline": "US imposes new sanctions on Iranian crude exports",
+                "source_count": 3,
+                "published_at": ts,
+                "sources": [{"name": "Reuters World"}],
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        body = r.json()
+        headlines = [i["headline"] for i in body["items"]]
+        self.assertLess(
+            headlines.index(
+                "US imposes new sanctions on Iranian crude exports"
+            ),
+            headlines.index("Bond yields tick higher in light trading"),
+            f"geopolitical+commodity headline should outrank generic "
+            f"yields-tick wrap; got order: {headlines}",
+        )
+
+
+class TestPreviewItemsCarryRankingDiagnostics(_PreviewBase):
+    """Per-item ``rank_score`` + ``rank_factors`` are stable shape so
+    the operator UI can explain why each candidate ranked where it did."""
+
+    _RANK_FACTOR_KEYS = (
+        "source_count", "high_tier_sources", "has_asset_terms",
+        "macro_policy", "geopolitical", "commodity_policy",
+        "corporate_action", "generic_finance_noise",
+    )
+
+    def test_each_item_has_rank_score_and_full_rank_factors_shape(self):
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "Fed signals two rate cuts at next meeting",
+                "source_count": 4,
+                "published_at": ts,
+                "sources": [
+                    {"name": "Reuters World"},
+                    {"name": "Bloomberg Markets"},
+                ],
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        item = r.json()["items"][0]
+        self.assertIn("rank_score", item)
+        self.assertIsInstance(item["rank_score"], (int, float))
+        self.assertIn("rank_factors", item)
+        factors = item["rank_factors"]
+        for key in self._RANK_FACTOR_KEYS:
+            self.assertIn(
+                key, factors, f"missing rank_factors key: {key}",
+            )
+        # Fed mention → macro_policy fires.  Reuters + Bloomberg are
+        # both ``high`` tier in news_fetch._SOURCE_TIERS.
+        self.assertTrue(factors["macro_policy"])
+        self.assertEqual(factors["high_tier_sources"], 2)
+        self.assertEqual(factors["source_count"], 4)
+        self.assertFalse(factors["generic_finance_noise"])
+
+    def test_geopolitical_and_commodity_factors_fire(self):
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "OPEC slashes output 500k bpd; Iran sanctions extended",
+                "source_count": 4,
+                "published_at": ts,
+                "sources": [{"name": "Reuters World"}],
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        factors = r.json()["items"][0]["rank_factors"]
+        self.assertTrue(factors["commodity_policy"])
+        self.assertTrue(factors["geopolitical"])
+
+    def test_generic_finance_noise_factor_fires(self):
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "Wall Street markets close mixed in light trading",
+                "source_count": 4,
+                "published_at": ts,
+                "sources": [{"name": "Yahoo Finance"}],
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        factors = r.json()["items"][0]["rank_factors"]
+        self.assertTrue(factors["generic_finance_noise"])
+        self.assertFalse(factors["macro_policy"])
+        self.assertEqual(factors["high_tier_sources"], 0)
+
+    def test_missing_sources_field_yields_zero_high_tier(self):
+        # ``_seed_news`` (used by other paid-flow tests) omits ``sources``.
+        # The scorer must default to 0 without raising.
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "Treasury yields rise on jobs data",
+                "source_count": 3,
+                "published_at": ts,
+                # NB: no ``sources`` key.
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        item = r.json()["items"][0]
+        self.assertEqual(item["rank_factors"]["high_tier_sources"], 0)
+        # Score still numeric — no None / NaN leakage on missing sources.
+        self.assertIsInstance(item["rank_score"], (int, float))
+
+
+class TestPreviewRankingTiebreakStability(_PreviewBase):
+    """Equal-rank clusters fall back to the legacy
+    ``(source_count, has_asset_terms)`` tiebreak so order is
+    deterministic across runs."""
+
+    def test_equal_score_falls_back_to_source_count(self):
+        ts = datetime.now().isoformat(timespec="seconds")
+        self._seed_news_with_meta([
+            {
+                "id": 1,
+                "headline": "OPEC slashes output 500k bpd",
+                "source_count": 3,
+                "published_at": ts,
+                "sources": [{"name": "Reuters World"}],
+            },
+            {
+                "id": 2,
+                "headline": "OPEC raises output 500k bpd",
+                "source_count": 5,
+                "published_at": ts,
+                "sources": [{"name": "Reuters World"}],
+            },
+        ])
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get("/movers/backfill-preview")
+        headlines = [i["headline"] for i in r.json()["items"]]
+        # Both score the same on keyword categories + tier; higher
+        # source_count wins the tiebreak.
+        self.assertEqual(
+            headlines[0], "OPEC raises output 500k bpd",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
