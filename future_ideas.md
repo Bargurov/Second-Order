@@ -132,3 +132,10 @@ Accepted limitations:
   - "Which policy events are awaiting review or expiry?"
 - Add Telegram/WhatsApp delivery via OpenClaw after the core app is stable.
 - Add saved-study sharing and research-note delivery workflows for users who want output outside the app.
+
+## 10 Backfill-preview ranking — small tuning candidates
+
+Validated on real local cache (233 clusters, since_hours=72, 2026-05-04). Top 20 was dominated by Iran/Hormuz, Fed/ECB, OPEC+, and tariff content — no weight change needed today. Two regex edges to revisit if a future cache mix surfaces them more often:
+
+- `_GEOPOLITICAL_RE` matches the bare institution tokens `white\s+house|pentagon|brussels`. On this cache that incorrectly boosted "White House correspondents' dinner shooting" by +2.5. Consider keeping action verbs (`sanctions|tariff|escalat|treaty|...`) and dropping bare institution names, or requiring co-occurrence with a policy verb.
+- `_GENERIC_FINANCE_NOISE_RE` does not catch headlines like "Wall Street traders post triple the gains" — pattern requires `wall\s+street\s+(?:close|open|wrap|recap|edges?)`. Not currently flooding the top, but worth widening to `wall\s+street\s+\w+` co-occurring with no boost flag if wrap-style traffic grows.

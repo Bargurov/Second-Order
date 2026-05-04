@@ -339,5 +339,87 @@ class TestEndpointResilience(SnapshotsEndpointBase):
         )
 
 
+# ---------------------------------------------------------------------------
+# Snapshot reliability regression — warm-fresh state and cross-endpoint
+# agreement with /market-context.  Companion to the same-named regression
+# class in tests/test_market_context.py; the contract is enforced from
+# both endpoint surfaces so a divergent code path is caught wherever
+# the operator looks first.
+# ---------------------------------------------------------------------------
+
+
+class TestSnapshotEndpointReliabilityRegression(SnapshotsEndpointBase):
+
+    def test_warm_fresh_store_no_not_refreshed_rows(self):
+        """After a successful refresh, no row may carry the
+        ``not_refreshed`` placeholder error.  Pinned alongside the
+        equivalent /market-context guard so a regression in either
+        route's padding logic is caught here."""
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        rows = self.client.get("/snapshots").json()
+        not_refreshed_count = sum(
+            1 for s in rows
+            if (s.get("error") or "") == "not_refreshed"
+        )
+        self.assertEqual(
+            not_refreshed_count, 0,
+            f"/snapshots returned {not_refreshed_count}/8 not_refreshed "
+            f"placeholders despite a fresh store",
+        )
+        for snap in rows:
+            self.assertIsNone(snap["error"])
+            self.assertIsNotNone(snap["value"])
+
+    def test_warm_fresh_store_does_not_refetch(self):
+        """Warm + fresh: the next /snapshots read (without ?refresh)
+        must not invoke the provider.  Pinned because the auto-warm
+        in ``_padded_snapshots_payload`` only fires on a partial store
+        — an accidental change that always refreshes would surface
+        here."""
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        with patch("market_check._fetch", side_effect=RuntimeError("should not refetch")) as mock_fetch:
+            response = self.client.get("/snapshots")
+            mock_fetch.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        for snap in response.json():
+            self.assertIsNone(snap["error"])
+            self.assertIsNotNone(snap["value"])
+
+    def test_snapshots_agrees_with_market_context_after_refresh(self):
+        """/snapshots and /market-context must surface the same
+        per-market row contents once the store is warm.  Mirror of the
+        cross-endpoint test in tests/test_market_context.py."""
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        snaps = self.client.get("/snapshots").json()
+        ctx_snaps = self.client.get("/market-context").json()["snapshots"]
+        self.assertEqual(
+            [s["market"] for s in snaps],
+            [s["market"] for s in ctx_snaps],
+        )
+        for s1, s2 in zip(snaps, ctx_snaps):
+            self.assertEqual(s1["value"], s2["value"])
+            self.assertEqual(s1["error"], s2["error"])
+            self.assertEqual(s1["stale"], s2["stale"])
+
+    def test_warm_failed_store_preserves_truthful_errors(self):
+        """When refresh_all() failed across all markets, the resulting
+        warm store carries truthful per-market errors.  A subsequent
+        /snapshots read must surface those rather than the generic
+        ``not_refreshed`` placeholder.  Mirrors the warm-failed
+        contract in tests/test_market_context.py."""
+        with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
+            refresh_all()
+        rows = self.client.get("/snapshots").json()
+        self.assertEqual(len(rows), 8)
+        for snap in rows:
+            err = snap.get("error") or ""
+            self.assertIn("provider down", err)
+            self.assertNotEqual(err, "not_refreshed")
+            self.assertIsNone(snap["value"])
+
+
 if __name__ == "__main__":
     unittest.main()

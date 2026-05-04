@@ -496,5 +496,138 @@ class TestEndpointHighlightLimit(MarketContextEndpointBase):
         self.assertLessEqual(data["highlights_meta"]["count"], 5)
 
 
+# ---------------------------------------------------------------------------
+# Snapshot reliability regression tests
+# ---------------------------------------------------------------------------
+# Three store states get explicit guards:
+#   1. Cold store + healthy provider — auto-warm produces 8 fresh rows.
+#   2. Cold store + failing provider — every row carries the truthful
+#      provider error (NOT the generic ``not_refreshed`` placeholder).
+#   3. Warm fresh store — /market-context reads warm data without re-
+#      fetching; /snapshots and /market-context agree per-row.
+#
+# A fourth case (``warm but every row is an error row``) pins the
+# truthful-unavailable contract through a post-failure refresh.
+#
+# The contract being protected is "/market-context must not show
+# 8/8 not_refreshed when fresh snapshots exist" — a regression that
+# would surface placeholder rows even after a successful warm.
+# ---------------------------------------------------------------------------
+
+
+class TestSnapshotReliabilityRegression(MarketContextEndpointBase):
+
+    def test_cold_store_with_healthy_provider_yields_zero_unavailable(self):
+        self.assertEqual(get_store().all(), [], "store must start cold")
+        with patch("market_check._fetch", return_value=_good_df()):
+            data = self.client.get("/market-context").json()
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["total"],       8)
+        self.assertEqual(meta["fresh"],       8)
+        self.assertEqual(meta["unavailable"], 0)
+        # No row may carry the ``not_refreshed`` placeholder error after
+        # a successful auto-warm — even one would mean the route fell
+        # back to the placeholder despite live data being available.
+        for snap in data["snapshots"]:
+            self.assertIsNotNone(
+                snap.get("value"),
+                f"{snap.get('market')} value missing after healthy warm",
+            )
+            self.assertNotEqual(
+                snap.get("error"), "not_refreshed",
+                f"{snap.get('market')} fell back to placeholder despite "
+                f"a successful auto-warm",
+            )
+
+    def test_cold_store_with_failing_provider_shows_truthful_errors(self):
+        self.assertEqual(get_store().all(), [], "store must start cold")
+        with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
+            data = self.client.get("/market-context").json()
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["total"],       8)
+        self.assertEqual(meta["unavailable"], 8)
+        self.assertEqual(meta["fresh"],       0)
+        for snap in data["snapshots"]:
+            self.assertIsNone(snap.get("value"))
+            err = snap.get("error") or ""
+            # Truthful provider failure must surface — not the generic
+            # placeholder a partial pad would emit.
+            self.assertIn("provider down", err)
+            self.assertNotEqual(err, "not_refreshed")
+
+    def test_warm_fresh_store_market_context_uses_warm_data(self):
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        # Provider broken on the read — if the route mistakenly re-fetches
+        # against a fresh store, the broken provider would surface
+        # ``fetch error: ...`` rows instead of the warm values.
+        with patch("market_check._fetch", side_effect=RuntimeError("should not refetch")):
+            data = self.client.get("/market-context").json()
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["total"],       8)
+        self.assertEqual(meta["fresh"],       8)
+        self.assertEqual(meta["unavailable"], 0)
+        for snap in data["snapshots"]:
+            self.assertIsNone(
+                snap.get("error"),
+                f"{snap.get('market')} carries error despite warm-fresh store",
+            )
+            self.assertIsNotNone(snap.get("value"))
+
+    def test_warm_fresh_store_no_8_of_8_not_refreshed(self):
+        """Tight regression: even when the warm store has every row
+        fresh, the route must not pad with ``not_refreshed`` placeholders.
+        Counts the explicit ``not_refreshed`` markers."""
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        data = self.client.get("/market-context").json()
+        not_refreshed_count = sum(
+            1 for s in data["snapshots"]
+            if (s.get("error") or "") == "not_refreshed"
+        )
+        self.assertEqual(
+            not_refreshed_count, 0,
+            f"market-context returned {not_refreshed_count}/8 "
+            f"not_refreshed placeholders despite a fresh store",
+        )
+        self.assertEqual(data["snapshots_meta"]["unavailable"], 0)
+
+    def test_snapshots_and_market_context_agree_after_refresh(self):
+        """Cross-endpoint regression: per-row (value/error/stale) must
+        match between /snapshots and /market-context once the store is
+        warm.  Pinned so a future code path that diverges padding logic
+        between the two routes is caught."""
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        snaps = self.client.get("/snapshots").json()
+        ctx_snaps = self.client.get("/market-context").json()["snapshots"]
+        self.assertEqual(
+            [s["market"] for s in snaps],
+            [s["market"] for s in ctx_snaps],
+            "/snapshots and /market-context must share canonical order",
+        )
+        for s1, s2 in zip(snaps, ctx_snaps):
+            self.assertEqual(s1["market"], s2["market"])
+            self.assertEqual(s1["value"],  s2["value"])
+            self.assertEqual(s1["error"],  s2["error"])
+            self.assertEqual(s1["stale"],  s2["stale"])
+
+    def test_warm_failed_store_preserves_truthful_unavailable_state(self):
+        """After a failed refresh, the warm store carries truthful error
+        rows.  A subsequent /market-context read must surface those
+        without overwriting them with the ``not_refreshed`` placeholder."""
+        with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
+            refresh_all()
+        # Store now has 8 error rows; auto-warm is skipped (len==8).
+        data = self.client.get("/market-context").json()
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["total"],       8)
+        self.assertEqual(meta["unavailable"], 8)
+        for snap in data["snapshots"]:
+            err = snap.get("error") or ""
+            self.assertIn("provider down", err)
+            self.assertNotEqual(err, "not_refreshed")
+
+
 if __name__ == "__main__":
     unittest.main()
