@@ -269,13 +269,13 @@ function PaginatedHeadlines({ onAnalyze }: { onAnalyze?: (headline: string, cont
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: qk.newsPaginated(PAGE_SIZE),
-    queryFn: ({ pageParam = 0 }) => api.news(PAGE_SIZE, pageParam as number),
+    queryFn: ({ pageParam = "0" }) => api.news(PAGE_SIZE, pageParam),
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((n, p) => n + p.clusters.length, 0);
       if (loaded >= lastPage.total_count) return undefined;
-      return loaded;
+      return String(loaded);
     },
-    initialPageParam: 0,
+    initialPageParam: "0",
     staleTime: 300_000,
   });
 
@@ -283,7 +283,7 @@ function PaginatedHeadlines({ onAnalyze }: { onAnalyze?: (headline: string, cont
     const el = sentinelRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
+      (entries) => { if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage(); },
       { rootMargin: "200px" },
     );
     obs.observe(el);
@@ -359,7 +359,7 @@ export function NewsInbox({ onAnalyze }: NewsInboxProps) {
 
   const { data: initialData, isLoading: initialLoading, error } = useQuery({
     queryKey: qk.newsPaginated(1),
-    queryFn: () => api.news(1, 0),
+    queryFn: () => api.news(1, "0"),
     staleTime: 300_000,
   });
 
