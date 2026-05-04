@@ -383,5 +383,170 @@ class TestDryRunPreview(_PaidGuardTestBase):
         self.assertEqual(result["diagnostics"]["would_call_llm"], 1)
 
 
+class TestBackfillPreviewNoSpend(_PaidGuardTestBase):
+    """GET /movers/backfill-preview is a zero-cost classifier.
+
+    It must never call ``analyze_event``, ``market_check``,
+    ``_persist_event``, or ``yfinance`` — even when clusters are
+    uncached, market-relevant, and an LLM key is present.  Pinning
+    that contract here so a regression that lets the preview path
+    spend money or hit the network is caught before merge.
+    """
+
+    def _no_spend_stubs(self) -> dict:
+        """Routes-side stubs that keep the preview deterministic
+        without touching feeds, news_relevance, or env state."""
+        def fake_payload():
+            return ({
+                "clusters": [
+                    {"headline":     "OPEC slashes output 500k bpd",
+                     "source_count": 5,
+                     "published_at": "2026-05-03T08:00:00",
+                     "sources":      [{"name": "Reuters"}]},
+                    {"headline":     "Fed cuts rates by 25bp",
+                     "source_count": 7,
+                     "published_at": "2026-05-03T09:00:00",
+                     "sources":      [{"name": "Bloomberg"}]},
+                ],
+            }, "memory")
+        return {
+            "_cached_news_payload":         fake_payload,
+            "_llm_available":               lambda *_: True,
+            "_headline_is_market_relevant": lambda *_: True,
+        }
+
+    def _ban_spend_apis(self) -> None:
+        """Replace ``analyze_event`` / ``market_check`` /
+        ``_persist_event`` on the ``api`` module and the two
+        ``yfinance`` entry points with raisers.  Recorded so
+        tearDown can restore them."""
+        import api as _api
+        import yfinance
+        self._spend_patches: list = []
+
+        def _ban(label: str):
+            def _raise(*_a, **_kw):
+                raise AssertionError(
+                    f"backfill-preview must not call {label}",
+                )
+            return _raise
+
+        for name in ("analyze_event", "market_check", "_persist_event"):
+            self._spend_patches.append((_api, name, getattr(_api, name)))
+            setattr(_api, name, _ban(f"api.{name}"))
+        for name in ("download", "Ticker"):
+            self._spend_patches.append(
+                (yfinance, name, getattr(yfinance, name)),
+            )
+            setattr(yfinance, name, _ban(f"yfinance.{name}"))
+
+    def _restore_spend_apis(self) -> None:
+        for mod, name, original in self._spend_patches:
+            setattr(mod, name, original)
+        self._spend_patches = []
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._ban_spend_apis()
+
+    def tearDown(self) -> None:
+        self._restore_spend_apis()
+        super().tearDown()
+
+    def test_preview_invokes_no_spend_apis(self) -> None:
+        """Two uncached, market-relevant clusters with an LLM key
+        present.  The preview must classify them without invoking any
+        spend API; if it does, the banned stubs raise AssertionError
+        and this test fails."""
+        from routes.movers import movers_backfill_preview
+        self._stub_route(self._no_spend_stubs())
+        result = movers_backfill_preview(
+            limit=25,
+            since_hours=72,
+            include_low_signal=False,
+            force_reanalyze=False,
+        )
+        items = result["items"]
+        self.assertEqual(len(items), 2)
+        # Both clusters are uncached + relevant + LLM-available.
+        self.assertTrue(all(i["would_call_llm"] for i in items))
+        self.assertTrue(all(not i["already_analyzed"] for i in items))
+
+    def test_preview_response_envelope_carries_required_fields(self) -> None:
+        """Wire shape: items / counts / skip_reasons + model and
+        provider identifiers so the operator can confirm what would
+        run before authorising a paid backfill."""
+        from routes.movers import movers_backfill_preview
+        self._stub_route(self._no_spend_stubs())
+        result = movers_backfill_preview(
+            limit=25,
+            since_hours=72,
+            include_low_signal=False,
+            force_reanalyze=False,
+        )
+        for key in ("items", "counts", "skip_reasons",
+                    "analysis_model", "llm_provider"):
+            self.assertIn(key, result, f"missing top-level key: {key}")
+        for k in ("scanned", "considered", "eligible",
+                  "already_analyzed", "would_call_llm"):
+            self.assertIn(k, result["counts"], f"missing counts key: {k}")
+        self.assertIsInstance(result["items"], list)
+        self.assertIsInstance(result["counts"], dict)
+        self.assertIsInstance(result["skip_reasons"], dict)
+        self.assertIsInstance(result["analysis_model"], str)
+        self.assertTrue(result["analysis_model"])
+        self.assertIsInstance(result["llm_provider"], str)
+        self.assertTrue(result["llm_provider"])
+
+    def test_registry_analyzed_marks_already_analyzed_no_llm_call(self) -> None:
+        """A cluster whose registry shows state='analyzed' surfaces
+        as already_analyzed=true / would_call_llm=false in the per-
+        item preview — and still does not touch any spend API."""
+        from news_sources import _dedup_key
+        from routes.movers import movers_backfill_preview
+
+        tk_seeded = _dedup_key("OPEC slashes output 500k bpd")
+        self._db.upsert_headline_registry_seen(
+            [("Reuters", tk_seeded, 1)], "2026-05-01T10:00:00",
+        )
+        self._db.update_registry_state(
+            title_key=tk_seeded,
+            new_state="analyzed",
+            event_id=1,
+            impact_level="high",
+            analyzed_at="2026-05-01T10:30:00",
+        )
+
+        self._stub_route(self._no_spend_stubs())
+        result = movers_backfill_preview(
+            limit=25,
+            since_hours=72,
+            include_low_signal=False,
+            force_reanalyze=False,
+        )
+
+        items = result["items"]
+        seeded = [i for i in items
+                  if i["headline"] == "OPEC slashes output 500k bpd"]
+        other = [i for i in items
+                 if i["headline"] == "Fed cuts rates by 25bp"]
+        self.assertEqual(len(seeded), 1)
+        self.assertEqual(len(other), 1)
+        # Registry-analyzed cluster: marked already_analyzed, no LLM.
+        self.assertTrue(seeded[0]["already_analyzed"])
+        self.assertFalse(seeded[0]["would_call_llm"])
+        self.assertEqual(
+            seeded[0]["skip_reason"], "registry_already_analyzed",
+        )
+        # The fresh cluster remains a would-call candidate.
+        self.assertFalse(other[0]["already_analyzed"])
+        self.assertTrue(other[0]["would_call_llm"])
+        # Counts reflect the registry-skip.
+        self.assertGreaterEqual(result["counts"]["already_analyzed"], 1)
+        self.assertGreaterEqual(
+            result["skip_reasons"].get("registry_already_analyzed", 0), 1,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

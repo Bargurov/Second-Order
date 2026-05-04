@@ -155,9 +155,30 @@ function MoversChapter({
   );
 }
 
-function _previewSkipLabel(reason?: string | null): string {
-  if (!reason) return "eligible";
-  return reason.replace(/_/g, " ");
+type BackfillPreviewCandidate = BackfillPreviewResponse["items"][number];
+
+function _previewReasonLabel(reason?: string | null): string {
+  if (!reason) return "Ready for review";
+  const labels: Record<string, string> = {
+    already_market_checked: "Already checked against market data",
+    already_analyzed: "Already analyzed",
+    low_signal: "Thin market evidence",
+    llm_budget_exhausted: "Outside this preview budget",
+    llm_unavailable: "Analysis provider unavailable",
+    no_api_key: "Analysis provider unavailable",
+    no_headline: "Missing headline",
+    outside_recency_window: "Outside the recent-news window",
+    not_market_relevant: "Not market-linked enough",
+    irrelevant: "Not market-linked enough",
+  };
+  return labels[reason] ?? reason.replace(/_/g, " ");
+}
+
+function _previewDecisionLabel(candidate: BackfillPreviewCandidate): string {
+  if (candidate.already_analyzed) return "Already checked";
+  if (candidate.would_call_llm) return "Would need analysis";
+  if (candidate.skip_reason) return "Not queued";
+  return "Ready for review";
 }
 
 function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse }) {
@@ -179,38 +200,40 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
           Preview only — no Claude/API spend
         </span>
         <span className="ml-auto text-[11px] tabular-nums text-on-surface-variant/45">
-          {wouldCall} would call LLM
+          {wouldCall} would need analysis
         </span>
       </summary>
 
       {candidates.length > 0 ? (
-        <ul className="mt-2.5 space-y-1.5 border-t border-white/[0.035] pt-2.5">
-          {candidates.map((candidate) => (
-            <li
-              key={`${candidate.headline}-${candidate.published_at ?? ""}`}
-              className="flex flex-wrap items-center gap-1.5 text-[11px] leading-snug text-on-surface-variant/60"
-            >
-              <span className="min-w-0 flex-1 truncate">{candidate.headline}</span>
-              <span className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
-                candidate.would_call_llm
-                  ? "bg-primary/10 text-primary/80"
-                  : "bg-white/[0.04] text-on-surface-variant/55",
-              )}>
-                would_call_llm: {candidate.would_call_llm ? "yes" : "no"}
-              </span>
-              <span className="shrink-0 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/55">
-                already_analyzed: {candidate.already_analyzed ? "yes" : "no"}
-              </span>
-              <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/45">
-                skip_reason: {_previewSkipLabel(candidate.skip_reason)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-2.5 border-t border-white/[0.035] pt-2.5">
+          <p className="mb-2 text-[11px] leading-snug text-on-surface-variant/55">
+            Headlines found by the zero-cost scan. They are not validated until analysis and market evidence broaden.
+          </p>
+          <ul className="space-y-1.5">
+            {candidates.map((candidate) => (
+              <li
+                key={`${candidate.headline}-${candidate.published_at ?? ""}`}
+                className="flex flex-wrap items-center gap-1.5 text-[11px] leading-snug text-on-surface-variant/60"
+              >
+                <span className="min-w-0 flex-1 truncate">{candidate.headline}</span>
+                <span className={cn(
+                  "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
+                  candidate.would_call_llm
+                    ? "bg-primary/10 text-primary/80"
+                    : "bg-white/[0.04] text-on-surface-variant/55",
+                )}>
+                  {_previewDecisionLabel(candidate)}
+                </span>
+                <span className="shrink-0 rounded-full bg-white/[0.03] px-2 py-0.5 text-[10.5px] font-medium text-on-surface-variant/45">
+                  Reason: {_previewReasonLabel(candidate.skip_reason)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
         <p className="mt-2 border-t border-white/[0.035] pt-2.5 text-[11px] text-on-surface-variant/55">
-          No preview candidates in the current zero-cost scan.
+          No candidate headlines in the current zero-cost scan.
         </p>
       )}
     </details>

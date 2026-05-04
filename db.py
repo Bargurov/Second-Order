@@ -2881,28 +2881,37 @@ def load_registry_expired_count_since(since_iso: str) -> int:
     return int(row[0] or 0)
 
 
-def load_registry_analyzed_at_for_keys(
+def load_registry_anchors_for_keys(
     title_keys: list[str],
-) -> dict[str, str]:
-    """Return ``{title_key: max(analyzed_at)}`` for the given keys.
+) -> dict[str, dict[str, str | None]]:
+    """Return ``{title_key: {"analyzed_at", "impact_level"}}`` for keys.
 
     Used by ``headline_registry.filter_expired_low_impact`` to bulk-load
-    analyzed_at for a page of events.  Same title_key from multiple
-    sources collapses via MAX so the most recent analysis wins.
+    both registry anchors for a page of events in one round trip.  When
+    a title_key has multiple analyzed rows (same headline ingested from
+    multiple sources), the row with the latest ``analyzed_at`` wins and
+    its paired ``impact_level`` is returned alongside.  ``analyzed_at``
+    NULL rows are skipped — only analyzed entries can pin TTL.
     """
     if not _db_ready or not title_keys:
         return {}
     placeholders = ",".join("?" * len(title_keys))
+    out: dict[str, dict[str, str | None]] = {}
     with sqlite3.connect(DB_FILE) as conn:
         rows = conn.execute(
-            f"SELECT title_key, MAX(analyzed_at) "
+            f"SELECT title_key, analyzed_at, impact_level "
             f"FROM headline_registry "
             f"WHERE title_key IN ({placeholders}) "
             f"  AND analyzed_at IS NOT NULL "
-            f"GROUP BY title_key",
+            f"ORDER BY analyzed_at DESC",
             title_keys,
         ).fetchall()
-    return {tk: at for tk, at in rows if at}
+    for tk, at, il in rows:
+        if tk in out:
+            # ORDER BY analyzed_at DESC — first row wins per key.
+            continue
+        out[tk] = {"analyzed_at": at, "impact_level": il}
+    return out
 
 
 def load_eligible_unanalyzed_candidates(
