@@ -1243,8 +1243,10 @@ class TestMoversToday(APITestCase):
         self.assertEqual(body[0]["headline"], "OPEC cuts output by 500k bpd")
 
     def test_excludes_old_events(self):
-        """Events older than 24h are excluded."""
-        old_ts = (datetime.now() - timedelta(hours=25)).isoformat(timespec="seconds")
+        """Events older than the 48h fallback boundary are excluded.
+        The strict 24h window widens to 48h only when 24h is empty;
+        50h is past both, so the surface stays empty."""
+        old_ts = (datetime.now() - timedelta(hours=50)).isoformat(timespec="seconds")
         self._seed("EU sanctions on Russian energy", 5.0, timestamp=old_ts)
         r = self.client.get("/movers/today")
         self.assertEqual(r.status_code, 200)

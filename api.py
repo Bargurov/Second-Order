@@ -2995,7 +2995,7 @@ def _score_event(ev: dict, threshold: float) -> dict | None:
 # Today's biggest movers — last 24 hours, lower bar
 # ---------------------------------------------------------------------------
 
-_TODAYS_MOVERS_CACHE: dict = {"data": None, "ts": 0.0}
+_TODAYS_MOVERS_CACHE: dict = {"data": None, "ts": 0.0, "window_hours": 24}
 _TODAYS_MOVERS_TTL = 300  # 5 minutes
 
 
@@ -3079,30 +3079,31 @@ def _today_window_qualify(tickers: list[dict]) -> list[dict]:
     return out
 
 
-def movers_today(limit: int = 10):
-    """Return analyzed events from the last 24 hours with any confirmed ticker move.
+# Today-window cadence fallback ---------------------------------------------
+# The strict 24h window is the right "today" semantics on a healthy ingestion
+# cadence: fresh events analyzed and market-checked in the last day populate
+# the surface naturally.  When analysis arrives in bursts (the LLM-batched
+# operating mode) the most recent saves often carry empty ``market_tickers``
+# (no market_check yet) while the prior batch with real returns sits at
+# ~25–48h — just past the strict cutoff.  In that mode the strict 24h
+# returns [] even though there ARE real, recently-checked event-linked moves
+# the operator should see.  The fallback below extends the cutoff to 48h
+# only when strict-24h yields zero qualified movers; if 48h is also empty,
+# the response stays truthfully empty.  No filler is invented either way.
+_TODAY_WINDOW_HOURS:   int = 24
+_TODAY_FALLBACK_HOURS: int = 48
 
-    Lower bar than /market-movers: any non-null return (5d or 1d fallback)
-    qualifies, no minimum magnitude.  Sorted by abs(max ticker return)
-    descending.  Cached for 5 minutes.
 
-    A 24-hour window is younger than the 5-day return window — fresh
-    events typically only have a 1-day reaction so far.  ``return_1d``
-    is accepted as a fallback so today's events surface immediately;
-    ``return_window`` on each ticker records which window the displayed
-    value came from.
+def _movers_today_compute(cutoff_hours: int) -> list[dict]:
+    """Score today-eligible movers against a single cutoff window.
 
-    Candidate selection uses a 24-hour time window via ``load_events_since``
-    (not a row-count limit) so a burst of low-value rows never pushes
-    relevant events out of the candidate set.  Consistent with /market-movers.
+    Pure function: no caching, no fetches.  Re-used by ``movers_today``
+    on its strict-24h pass and again on the 48h fallback.
     """
-    now = time.monotonic()
-    if _TODAYS_MOVERS_CACHE["data"] is not None and (now - _TODAYS_MOVERS_CACHE["ts"]) < _TODAYS_MOVERS_TTL:
-        return _TODAYS_MOVERS_CACHE["data"][:limit]
-
-    cutoff = (datetime.now() - timedelta(hours=24)).isoformat(timespec="seconds")
+    cutoff = (
+        datetime.now() - timedelta(hours=cutoff_hours)
+    ).isoformat(timespec="seconds")
     events = _today_mover_candidate_events(cutoff)
-
     seen_headlines: set[str] = set()
     scored: list[dict] = []
     for ev in events:
@@ -3110,36 +3111,65 @@ def movers_today(limit: int = 10):
         if hl in seen_headlines:
             continue
         seen_headlines.add(hl)
-
         # Skip low-signal OR irrelevant-headline events.  Uses the
         # unified gate from movers_cache which checks both the low_signal
         # column AND headline relevance via news_sources.is_relevant().
         from movers_cache import _is_event_low_signal
         if _is_event_low_signal(ev):
             continue
-
-        # Scrub absurd return values, then suppress cross-
-        # contaminated rows.  Order matters: scrubbing first nukes
-        # garbage values to None so the dedup signature isn't
-        # polluted by 1348%-style outliers.
+        # Scrub absurd return values, then suppress cross-contaminated
+        # rows.  Order matters: scrubbing first nukes garbage values to
+        # None so the dedup signature isn't polluted by 1348%-outliers.
         tickers = _scrub_implausible_ticker_returns(ev.get("market_tickers", []))
         tickers = _suppress_duplicate_tickers(tickers)
         if not tickers:
             continue
-
         with_return = _today_window_qualify(tickers)
         if not with_return:
             continue
-
-        # Use the unified deterministic helper so today's-movers
-        # cards report the same agreement % as /market-movers and
-        # /movers/persistent for the same event.
+        # Unified deterministic helper so today / market-movers / persistent
+        # report the same agreement % for the same event.
         support_ratio = _compute_support_ratio(tickers)
         scored.append(_build_mover_summary(ev, with_return, support_ratio))
-
     scored.sort(key=lambda x: x["impact"], reverse=True)
+    return scored
+
+
+def movers_today(limit: int = 10):
+    """Return analyzed events with any confirmed ticker move.
+
+    Strict-24h preferred, with a 48h fallback when 24h is empty so a
+    bursty analysis cadence (yesterday's session market-checked, today's
+    saves not yet market-checked) doesn't leave the surface empty when
+    there are real recent moves to show.  ``return_1d`` is accepted as
+    a fallback to ``return_5d`` so events younger than the 5-day window
+    still score; ``return_window`` on each ticker records which window
+    the displayed value came from.
+
+    Candidate selection uses a time-window via ``load_events_since``
+    (not a row-count limit) so a burst of low-value rows never pushes
+    relevant events out of the candidate set.  Cached for 5 minutes.
+    """
+    now = time.monotonic()
+    if _TODAYS_MOVERS_CACHE["data"] is not None and (now - _TODAYS_MOVERS_CACHE["ts"]) < _TODAYS_MOVERS_TTL:
+        return _TODAYS_MOVERS_CACHE["data"][:limit]
+
+    scored = _movers_today_compute(_TODAY_WINDOW_HOURS)
+    window_used = _TODAY_WINDOW_HOURS
+    if not scored and _TODAY_FALLBACK_HOURS > _TODAY_WINDOW_HOURS:
+        # ``window_used`` reflects the widest cutoff actually attempted,
+        # not the one that produced rows.  When 24h is empty the system
+        # has consulted 48h regardless of outcome, and the operator
+        # diagnostic should report that fact so a doubly-empty surface
+        # reads as "no rows in 48h" rather than "narrow 24h gap".
+        window_used = _TODAY_FALLBACK_HOURS
+        fallback = _movers_today_compute(_TODAY_FALLBACK_HOURS)
+        if fallback:
+            scored = fallback
+
     _TODAYS_MOVERS_CACHE["data"] = scored
     _TODAYS_MOVERS_CACHE["ts"] = now
+    _TODAYS_MOVERS_CACHE["window_hours"] = window_used
     return scored[:limit]
 
 

@@ -125,8 +125,10 @@ class TestOlderInWindowEventPreserved(_DBTestCase):
         headlines = {m["headline"] for m in result}
         self.assertIn("Edge event 23h", headlines)
 
-    def test_today_excludes_25h_old_event(self):
-        db.save_event(_make_event("Expired event", hours_ago=25))
+    def test_today_excludes_50h_old_event(self):
+        # 50h is past both the strict 24h preferred window and the 48h
+        # fallback (which fires only when 24h is empty).
+        db.save_event(_make_event("Expired event", hours_ago=50))
 
         with patch("movers_cache._is_event_low_signal", return_value=False):
             result = api.movers_today(limit=10)

@@ -7,6 +7,7 @@ the full design.  This module exposes the non-DB surface:
   * stamp_expired_if_observed — idempotent lazy-stamp (writes to DB)
   * filter_expired_low_impact — bulk page filter for read sites
   * advance_state            — thin wrapper around db.update_registry_state
+  * compose_diagnostics      — read-only registry-lifecycle view
 """
 from __future__ import annotations
 
@@ -215,3 +216,65 @@ def advance_state(
             "headline_registry.advance_state failed for %s", title_key,
             exc_info=True,
         )
+
+
+def compose_diagnostics(
+    *,
+    candidates_limit: int = 50,
+    recent_hours: int = 24,
+) -> dict:
+    """Read-only registry-lifecycle view used by /registry/diagnostics.
+
+    Existing fields (``state_counts``, ``skip_reason_counts``,
+    ``last_analyzed_at``, ``expired_count_24h``,
+    ``eligible_unanalyzed_candidates``) are preserved verbatim so
+    consumers binding to that shape do not break.  A new ``counts``
+    block surfaces the demo-readiness signals and ``last_surfaced_at``
+    is added at the top level when at least one row sits in the
+    ``surfaced`` state.
+
+    Pure read; never analyzes, never mutates registry rows.  The only
+    write path the diagnostics surface tolerates is the lazy expiry
+    stamp inside ``filter_expired_low_impact`` — and the diagnostics
+    composer itself does not call that filter.
+    """
+    from db import (
+        load_eligible_unanalyzed_candidates,
+        load_registry_analyzed_count_since,
+        load_registry_eligible_unanalyzed_count,
+        load_registry_expired_count_since,
+        load_registry_expired_low_impact_count,
+        load_registry_last_analyzed_at,
+        load_registry_last_surfaced_at,
+        load_registry_skip_reason_counts,
+        load_registry_state_counts,
+        load_registry_surfaced_count_since,
+    )
+
+    since_recent = (
+        datetime.now() - timedelta(hours=recent_hours)
+    ).isoformat(timespec="seconds")
+    since_24h = (
+        datetime.now() - timedelta(hours=24)
+    ).isoformat(timespec="seconds")
+
+    return {
+        "state_counts":            load_registry_state_counts(),
+        "skip_reason_counts":      load_registry_skip_reason_counts(),
+        "last_analyzed_at":        load_registry_last_analyzed_at(),
+        "last_surfaced_at":        load_registry_last_surfaced_at(),
+        "expired_count_24h":       load_registry_expired_count_since(since_24h),
+        "eligible_unanalyzed_candidates":
+            load_eligible_unanalyzed_candidates(limit=candidates_limit),
+        "counts": {
+            "eligible_unanalyzed":
+                load_registry_eligible_unanalyzed_count(),
+            "analyzed_recent":
+                load_registry_analyzed_count_since(since_recent),
+            "surfaced_recent":
+                load_registry_surfaced_count_since(since_recent),
+            "expired_low_impact":
+                load_registry_expired_low_impact_count(),
+        },
+        "recent_window_hours": int(recent_hours),
+    }

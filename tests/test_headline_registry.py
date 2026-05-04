@@ -677,6 +677,114 @@ class TestRegistryDiagnosticsRoute(_RegistryTestBase):
         )
 
 
+class TestRegistryDiagnosticsDemoReadiness(_RegistryTestBase):
+    """Demo-readiness counts surface eligible / analyzed / surfaced /
+    expired in a single ``counts`` block, plus ``last_surfaced_at`` at
+    the top level when at least one row sits in the surfaced state."""
+
+    def _seed(self, source: str, headline: str, ts: str) -> str:
+        from news_sources import _dedup_key
+        tk = _dedup_key(headline)
+        self._db.upsert_headline_registry_seen([(source, tk, None)], ts)
+        return tk
+
+    def test_counts_block_carries_all_demo_readiness_keys(self) -> None:
+        from datetime import datetime, timedelta
+        from fastapi.testclient import TestClient
+        from api import app
+
+        now = datetime.now()
+        recent = (now - timedelta(hours=2)).isoformat(timespec="seconds")
+        old    = (now - timedelta(hours=48)).isoformat(timespec="seconds")
+
+        # Eligible / unanalyzed
+        self._seed("Reuters",   "eligible-1", recent)
+        self._seed("Bloomberg", "eligible-2", recent)
+        # Analyzed recently
+        tk_a = self._seed("Reuters", "analyzed-recent", recent)
+        self._db.update_registry_state(
+            title_key=tk_a, new_state="analyzed",
+            event_id=10, impact_level="high", analyzed_at=recent,
+        )
+        # Analyzed but outside the recent window
+        tk_old = self._seed("Reuters", "analyzed-old", old)
+        self._db.update_registry_state(
+            title_key=tk_old, new_state="analyzed",
+            event_id=11, impact_level="high", analyzed_at=old,
+        )
+        # Surfaced recently — last_seen_at is the surfaced proxy
+        tk_s = self._seed("Reuters", "surfaced-recent", recent)
+        self._db.update_registry_state(
+            title_key=tk_s, new_state="surfaced",
+            event_id=12, impact_level="high", analyzed_at=recent,
+        )
+        # Expired low impact
+        tk_e = self._seed("Reuters", "expired-row", old)
+        self._db.update_registry_state(
+            title_key=tk_e, new_state="analyzed",
+            event_id=13, impact_level="low", analyzed_at=old,
+        )
+        self._db.update_registry_state(
+            title_key=tk_e, new_state="expired_low_impact",
+            expired_at=old,
+        )
+
+        body = TestClient(app).get("/registry/diagnostics").json()
+
+        self.assertIn("counts", body)
+        counts = body["counts"]
+        for key in (
+            "eligible_unanalyzed", "analyzed_recent",
+            "surfaced_recent",     "expired_low_impact",
+        ):
+            self.assertIn(key, counts)
+            self.assertIsInstance(counts[key], int)
+
+        self.assertEqual(counts["eligible_unanalyzed"], 2)
+        # Recent analyzed window covers analyzed-recent + surfaced-recent.
+        # The expired row was analyzed in the old window AND has since
+        # advanced to expired_low_impact, so it is excluded by state.
+        self.assertEqual(counts["analyzed_recent"], 2)
+        self.assertEqual(counts["surfaced_recent"], 1)
+        self.assertEqual(counts["expired_low_impact"], 1)
+        self.assertIn("last_surfaced_at", body)
+        self.assertEqual(body["last_surfaced_at"], recent)
+        self.assertIn("recent_window_hours", body)
+        self.assertEqual(body["recent_window_hours"], 24)
+
+    def test_last_surfaced_at_none_when_no_surfaced_rows(self) -> None:
+        from fastapi.testclient import TestClient
+        from api import app
+        # Seed a single eligible row only — no surfaced state in registry.
+        self._seed("Reuters", "eligible-only", "2026-05-03T10:00:00")
+        body = TestClient(app).get("/registry/diagnostics").json()
+        self.assertIsNone(body["last_surfaced_at"])
+        self.assertEqual(body["counts"]["surfaced_recent"], 0)
+
+    def test_recent_hours_param_widens_window(self) -> None:
+        """``recent_hours=72`` covers a row analyzed 48h ago that the
+        default 24h window excludes — proves the param is wired through."""
+        from datetime import datetime, timedelta
+        from fastapi.testclient import TestClient
+        from api import app
+        ts_48h = (
+            datetime.now() - timedelta(hours=48)
+        ).isoformat(timespec="seconds")
+        tk = self._seed("Reuters", "analyzed-48h-ago", ts_48h)
+        self._db.update_registry_state(
+            title_key=tk, new_state="analyzed",
+            event_id=20, impact_level="high", analyzed_at=ts_48h,
+        )
+        client = TestClient(app)
+        default_body = client.get("/registry/diagnostics").json()
+        wide_body    = client.get(
+            "/registry/diagnostics?recent_hours=72",
+        ).json()
+        self.assertEqual(default_body["counts"]["analyzed_recent"], 0)
+        self.assertEqual(wide_body["counts"]["analyzed_recent"], 1)
+        self.assertEqual(wide_body["recent_window_hours"], 72)
+
+
 class TestPersistentYearlyUntouched(unittest.TestCase):
     """Regression: /movers/persistent and /movers/yearly handlers must
     NOT call the expiry filter.  Source-level inspection guard so a

@@ -745,6 +745,62 @@ def _score_cluster_for_preview(cluster: dict) -> tuple[float, dict]:
     return score, factors
 
 
+# Display-only labels for backfill preview ──────────────────────────────────
+# Additive UI glue.  ``skip_reason`` and ``rank_factors`` stay raw on every
+# preview item so existing consumers don't break; the route appends a
+# product-facing label/explanation pair so the UI can render without a
+# client-side translation table.
+_SKIP_REASON_LABELS: dict[str, str] = {
+    "low_signal":                  "Low-signal cluster",
+    "registry_already_analyzed":   "Already analyzed",
+    "registry_expired_low_impact": "Expired (low impact)",
+    "already_market_checked":      "Already market-checked",
+}
+
+_RANK_TOPIC_LABELS: dict[str, str] = {
+    "macro_policy":     "macro",
+    "geopolitical":     "geopolitical",
+    "commodity_policy": "commodity policy",
+    "corporate_action": "corporate action",
+}
+
+
+def _skip_reason_label(skip_reason: str | None) -> str:
+    if skip_reason is None:
+        return "Eligible for analysis"
+    return _SKIP_REASON_LABELS.get(skip_reason, skip_reason)
+
+
+def _rank_explanation(factors: dict) -> str:
+    """One-line, product-facing summary of a ``rank_factors`` block.
+
+    Composes the active topical flags, the source-coverage stats, and
+    the asset-mention / market-wrap modifiers — kept short so it fits
+    a list row.  ``rank_factors`` is still emitted unchanged so the
+    operator UI can drill in when needed.
+    """
+    parts: list[str] = []
+    topics = [
+        label for key, label in _RANK_TOPIC_LABELS.items()
+        if factors.get(key)
+    ]
+    if topics:
+        joined = " + ".join(topics)
+        parts.append(joined[:1].upper() + joined[1:])
+    source_count = int(factors.get("source_count") or 0)
+    high_tier = int(factors.get("high_tier_sources") or 0)
+    if source_count:
+        if high_tier:
+            parts.append(f"{source_count} sources ({high_tier} high-tier)")
+        else:
+            parts.append(f"{source_count} sources")
+    if factors.get("has_asset_terms"):
+        parts.append("asset mention")
+    if factors.get("generic_finance_noise"):
+        parts.append("market-wrap penalty")
+    return " · ".join(parts) or "no signal"
+
+
 def _has_tickers(tickers) -> bool:
     return isinstance(tickers, list) and any(
         isinstance(t, dict) and t.get("symbol") for t in tickers
@@ -1922,10 +1978,12 @@ def movers_backfill_preview(
             "source_count": int(cluster.get("source_count") or 0),
             "published_at": str(cluster.get("published_at") or "") or None,
             "skip_reason": skip_reason,
+            "skip_reason_label": _skip_reason_label(skip_reason),
             "already_analyzed": already_analyzed,
             "would_call_llm": would_call_llm,
             "rank_score":   round(float(rank_score), 3),
             "rank_factors": rank_factors,
+            "rank_explanation": _rank_explanation(rank_factors),
         })
 
     return _api._sanitize_floats({
@@ -2010,6 +2068,31 @@ def movers_today(
         window="today",
         diagnostics=_time_window_diagnostics("today"),
     )
+    # Surface which today-window cutoff actually produced the items
+    # (24h preferred, 48h fallback when 24h is empty).  Lifted onto
+    # ``meta`` directly so the field is visible whether or not the
+    # diagnostics block was attached (the diagnostics block is gated
+    # on a non-empty events_scanned/rejections count, which a
+    # genuinely-empty DB can't satisfy).
+    window_hours = int(_api._TODAYS_MOVERS_CACHE.get("window_hours", _api._TODAY_WINDOW_HOURS))
+    fallback_active = window_hours > _api._TODAY_WINDOW_HOURS
+    has_items = bool(envelope.get("items")) if isinstance(envelope, dict) else False
+    if not has_items:
+        note = (
+            "No event-linked moves in the last 48 hours." if fallback_active
+            else "No event-linked moves in the last 24 hours."
+        )
+    elif fallback_active:
+        note = (
+            "No fresh moves in the last 24 hours; "
+            "showing the most recent session (48h window)."
+        )
+    else:
+        note = "Showing fresh moves from the last 24 hours."
+    if isinstance(envelope, dict) and isinstance(envelope.get("meta"), dict):
+        envelope["meta"]["today_window_hours_used"] = window_hours
+        envelope["meta"]["today_window_fallback_active"] = fallback_active
+        envelope["meta"]["today_window_note"] = note
     return _project(envelope, include_meta=include_meta)
 
 

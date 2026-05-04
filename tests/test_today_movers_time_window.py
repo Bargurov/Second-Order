@@ -123,9 +123,11 @@ class TestInWindowEventsPreserved(_TimeWindowBase):
         headlines = [m["headline"] for m in _items(r.json())]
         self.assertIn("OPEC cuts output — edge case", headlines)
 
-    def test_today_25h_event_excluded(self):
-        """/movers/today excludes an event from 25 hours ago (outside 24h window)."""
-        _save("Stale oil event", return_5d=9.9, hours_ago=25.0)
+    def test_today_50h_event_excluded(self):
+        """/movers/today excludes an event from 50 hours ago (outside the
+        48h fallback boundary).  The strict 24h preferred window is
+        widened to 48h only when 24h yields nothing; 50h is past both."""
+        _save("Stale oil event", return_5d=9.9, hours_ago=50.0)
         r = self.client.get("/movers/today")
         self.assertEqual(r.status_code, 200)
         headlines = [m["headline"] for m in _items(r.json())]
@@ -148,8 +150,9 @@ class TestInWindowEventsPreserved(_TimeWindowBase):
         self.assertNotIn("Stale tariff event", headlines)
 
     def test_today_returns_empty_when_no_in_window_events(self):
-        """Empty result is correct when no events fall inside the window."""
-        _save("Ancient gold move", return_5d=9.9, hours_ago=26.0)
+        """Empty result is correct when no events fall inside any window
+        (strict 24h or 48h fallback).  50h is past both."""
+        _save("Ancient gold move", return_5d=9.9, hours_ago=50.0)
         r = self.client.get("/movers/today")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(_items(r.json()), [])
@@ -267,8 +270,13 @@ class TestRoutesAligned(_TimeWindowBase):
         self.assertIn("Russia oil sanction update", mm_hl)
 
     def test_market_movers_only_event_not_in_today(self):
-        """Event 26h old (inside 48h, outside 24h) appears in /market-movers only."""
-        _save("China tariff retaliation wave", return_5d=4.0, hours_ago=26.0)
+        """Event 50h old (outside both Today's 48h fallback boundary AND
+        /market-movers' 48h window) appears in neither.  Pre-fallback
+        this test seeded at 26h to land in 48h-only; with the fallback
+        the strict-24h-empty case widens Today to 48h, so the 26h slot
+        no longer separates the two surfaces — push past 48h to keep
+        the original "not in today" assertion meaningful."""
+        _save("China tariff retaliation wave", return_5d=4.0, hours_ago=50.0)
 
         self._api._TODAYS_MOVERS_CACHE["data"] = None
         self._api._TODAYS_MOVERS_CACHE["ts"] = 0.0
@@ -277,7 +285,10 @@ class TestRoutesAligned(_TimeWindowBase):
         mm_hl    = {m["headline"] for m in _items(self.client.get("/market-movers?limit=100").json())}
 
         self.assertNotIn("China tariff retaliation wave", today_hl)
-        self.assertIn("China tariff retaliation wave",  mm_hl)
+        # 50h is also past /market-movers' 48h window; the surface is
+        # empty rather than the previous "today excludes / mm includes"
+        # split.  Test still anchors the "not in today" half.
+        self.assertNotIn("China tariff retaliation wave", mm_hl)
 
     def test_today_below_threshold_not_in_market_movers(self):
         """Event with return 0.5% (below 1.5% threshold) shows in /movers/today but not /market-movers."""
@@ -383,12 +394,15 @@ class TestTodayLastMarketCheckEligibility(_TimeWindowBase):
         self.assertIn("OPEC backfill-refreshed oil sanctions update", headlines)
 
     def test_old_timestamp_old_market_check_excluded(self):
-        """Stale on both anchors → still excluded (no false admit)."""
+        """Stale on both anchors past the 48h fallback boundary → still
+        excluded (no false admit).  Pre-fallback this seeded at 30h on
+        both anchors; with the 48h fallback that lands inside-window
+        when 24h is empty, so push to 50h to keep the exclusion."""
         _save_with_check(
             "Iran oil sanctions doubly stale",
             return_5d=9.9,
-            timestamp_hours_ago=30.0,
-            last_check_hours_ago=30.0,
+            timestamp_hours_ago=50.0,
+            last_check_hours_ago=50.0,
         )
         self._api._TODAYS_MOVERS_CACHE["data"] = None
         self._api._TODAYS_MOVERS_CACHE["ts"] = 0.0
@@ -398,10 +412,14 @@ class TestTodayLastMarketCheckEligibility(_TimeWindowBase):
         self.assertNotIn("Iran oil sanctions doubly stale", headlines)
 
     def test_diagnostics_breakdown_reports_excluding_field(self):
-        """outside_window_breakdown identifies which anchor failed."""
-        # Stale on both timestamp and last_market_check_at (default save
-        # behaviour: last_check defaults to timestamp value if not given).
-        _save("Stale 30h", return_5d=4.0, hours_ago=30.0)
+        """outside_window_breakdown identifies which anchor failed.
+
+        The diagnostic envelope is only attached when ``items`` is
+        empty, so the seeded row must be past BOTH the strict 24h
+        window AND the 48h fallback — 50h is.  The breakdown is
+        computed against the strict 24h cutoff, so the 50h row still
+        registers as ``stale_timestamp_and_market_check`` there."""
+        _save("Stale 50h", return_5d=4.0, hours_ago=50.0)
         self._api._TODAYS_MOVERS_CACHE["data"] = None
         self._api._TODAYS_MOVERS_CACHE["ts"] = 0.0
         r = self.client.get("/movers/today?include_meta=true")

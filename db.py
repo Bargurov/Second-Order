@@ -2881,6 +2881,94 @@ def load_registry_expired_count_since(since_iso: str) -> int:
     return int(row[0] or 0)
 
 
+def load_registry_eligible_unanalyzed_count() -> int:
+    """Count of registry rows still waiting to be analyzed.
+
+    Mirrors the predicate used by ``load_eligible_unanalyzed_candidates``
+    so the count and the candidate list always describe the same
+    universe (state ∈ {seen, eligible} AND ``event_id IS NULL``).
+    """
+    if not _db_ready:
+        return 0
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM headline_registry "
+            "WHERE state IN ('seen', 'eligible') AND event_id IS NULL"
+        ).fetchone()
+    return int(row[0] or 0)
+
+
+def load_registry_analyzed_count_since(since_iso: str) -> int:
+    """Count rows whose ``analyzed_at >= since_iso``.
+
+    Counts every row that has been analyzed in the window, regardless
+    of where the row currently sits in the lifecycle (``analyzed`` /
+    ``market_checked`` / ``surfaced``) — analysis is a one-way stamp,
+    so a row that has since advanced still counts toward "analyzed
+    recently".  Excludes ``expired_low_impact`` because the operator
+    reads that as a separate signal.
+    """
+    if not _db_ready:
+        return 0
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM headline_registry "
+            "WHERE analyzed_at IS NOT NULL "
+            "  AND analyzed_at >= ? "
+            "  AND state IN ('analyzed', 'market_checked', 'surfaced')",
+            (since_iso,),
+        ).fetchone()
+    return int(row[0] or 0)
+
+
+def load_registry_surfaced_count_since(since_iso: str) -> int:
+    """Count surfaced rows with ``last_seen_at >= since_iso``.
+
+    The schema has no dedicated ``surfaced_at`` column; ``last_seen_at``
+    is the most recent timestamp that touches the row, so a surfaced
+    row whose ``last_seen_at`` falls inside the window is the closest
+    truthful proxy for "surfaced recently".  Read-only diagnostic.
+    """
+    if not _db_ready:
+        return 0
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM headline_registry "
+            "WHERE state = 'surfaced' AND last_seen_at >= ?",
+            (since_iso,),
+        ).fetchone()
+    return int(row[0] or 0)
+
+
+def load_registry_expired_low_impact_count() -> int:
+    """Total count of rows currently in ``expired_low_impact`` state."""
+    if not _db_ready:
+        return 0
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM headline_registry "
+            "WHERE state = 'expired_low_impact'"
+        ).fetchone()
+    return int(row[0] or 0)
+
+
+def load_registry_last_surfaced_at() -> str | None:
+    """Latest ``last_seen_at`` across rows currently in ``surfaced`` state.
+
+    No dedicated ``surfaced_at`` column exists; ``last_seen_at`` is the
+    truthful proxy (it is the most recent activity stamp on the row).
+    Returns None when no surfaced rows exist.
+    """
+    if not _db_ready:
+        return None
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            "SELECT MAX(last_seen_at) FROM headline_registry "
+            "WHERE state = 'surfaced'"
+        ).fetchone()
+    return row[0] if row and row[0] else None
+
+
 def load_registry_anchors_for_keys(
     title_keys: list[str],
 ) -> dict[str, dict[str, str | None]]:
