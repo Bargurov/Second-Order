@@ -17,6 +17,9 @@ import zipfile
 # Configure news/cluster loggers to emit at INFO under uvicorn.
 # Attach a stderr handler so messages appear in the console even when
 # the root logger has no handler configured (common under uvicorn).
+# ``propagate = False`` keeps these emissions from also reaching the
+# structured root handler installed by ``logging_config.setup_logging``
+# below, so the existing human-friendly bracketed format isn't doubled.
 _so_handler = logging.StreamHandler()
 _so_handler.setFormatter(logging.Formatter("[%(name)s] %(levelname)s: %(message)s"))
 for _ln in ("second_order.news", "second_order.cluster"):
@@ -24,6 +27,14 @@ for _ln in ("second_order.news", "second_order.cluster"):
     _lgr.setLevel(logging.INFO)
     if not _lgr.handlers:
         _lgr.addHandler(_so_handler)
+    _lgr.propagate = False
+
+# Install the shared key=value root handler.  Idempotent — safe to
+# import api.py from multiple entry points (tests, scripts, uvicorn)
+# without stacking handlers.  Loggers that already have their own
+# handler (the two above) keep their existing format.
+from logging_config import setup_logging as _setup_logging  # noqa: E402
+_setup_logging()
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
