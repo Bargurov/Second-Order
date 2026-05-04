@@ -4,8 +4,11 @@ docs/superpowers/specs/2026-05-03-headline-registry-design.md.
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Query
 
+import api as _api
 from headline_registry import compose_diagnostics
 
 router = APIRouter()
@@ -37,3 +40,183 @@ def registry_diagnostics(
         candidates_limit=candidates_limit,
         recent_hours=recent_hours,
     )
+
+
+@router.get("/registry/candidate-queue")
+def registry_candidate_queue(
+    limit: int = Query(25, ge=1, le=200),
+    since_hours: int = Query(
+        72, ge=1, le=720,
+        description=(
+            "Recency window (hours) for cluster eligibility.  Mirrors the "
+            "``since_hours`` filter on ``/movers/backfill-preview`` so "
+            "the queue reflects the same universe a paid run would see."
+        ),
+    ),
+    include_low_signal: bool = Query(
+        False,
+        description=(
+            "When true, low-signal clusters and headlines that fail the "
+            "relevance gate are admitted.  Mirrors the backfill flag of "
+            "the same name."
+        ),
+    ),
+):
+    """Read-only queue of unanalyzed preview candidates, ranked.
+
+    Pure read of in-memory + SQLite state — no LLM call, no
+    ``yfinance`` fetch, no persistence write.  Reuses
+    ``routes.movers``'s preview helpers (cluster filter, scorer,
+    label/explanation composers) plus the headline-registry lookup so
+    the queue stays byte-aligned with what the preview would emit.
+
+    Items: clusters whose registry state is unanalyzed (``seen`` /
+    ``eligible`` / not-yet-registered).  ``registry_state`` and
+    ``skip_reason`` per item carry the registry's current view so the
+    operator sees prior skip reasons (e.g., ``llm_budget_exhausted``)
+    on rows that survived an earlier paid run.
+
+    Counts are aggregated over clusters that passed the recency +
+    relevance pre-filter:
+      * ``eligible``           — items in the queue.
+      * ``already_analyzed``   — registry state in
+        ``{analyzed, market_checked, surfaced}``.
+      * ``expired_low_impact`` — registry state ``expired_low_impact``.
+      * ``skipped``            — sum of the two above.
+    """
+    # Late imports — keep diagnostics' import-time surface light and
+    # prevent a circular import path through routes.movers at startup.
+    from routes.movers import (
+        _cached_news_payload,
+        _cluster_event_date,
+        _cluster_has_asset_terms,
+        _cluster_headline,
+        _cluster_is_recent,
+        _hr_dedup_key,
+        _headline_is_market_relevant,
+        _rank_explanation,
+        _registry_state_for_title_key,
+        _score_cluster_for_preview,
+        _skip_reason_label,
+    )
+
+    payload, source = _cached_news_payload()
+    raw_clusters = (payload or {}).get("clusters") or []
+    since_dt = (
+        datetime.now() - timedelta(hours=since_hours)
+        if since_hours and since_hours > 0 else None
+    )
+
+    counts = {
+        "eligible":           0,
+        "skipped":            0,
+        "already_analyzed":   0,
+        "expired_low_impact": 0,
+    }
+
+    # Pre-filter: same recency / relevance / low_signal gates the
+    # backfill-preview applies, so the queue counts reflect the same
+    # working set a paid run would consider.
+    eligible_clusters: list[dict] = []
+    for cluster in raw_clusters:
+        if not isinstance(cluster, dict):
+            continue
+        if not _cluster_is_recent(cluster, since=since_dt):
+            continue
+        headline = _cluster_headline(cluster)
+        if not headline:
+            continue
+        if cluster.get("low_signal") and not include_low_signal:
+            continue
+        if (
+            not include_low_signal
+            and not _headline_is_market_relevant(headline)
+        ):
+            continue
+        eligible_clusters.append(cluster)
+
+    cluster_scores: list[tuple[dict, float, dict]] = []
+    for cluster in eligible_clusters:
+        score, factors = _score_cluster_for_preview(cluster)
+        cluster_scores.append((cluster, score, factors))
+    cluster_scores.sort(
+        key=lambda triple: (
+            triple[1],
+            int(triple[0].get("source_count") or 0),
+            1 if _cluster_has_asset_terms(triple[0]) else 0,
+        ),
+        reverse=True,
+    )
+
+    items: list[dict] = []
+    for cluster, rank_score, rank_factors in cluster_scores:
+        headline = _cluster_headline(cluster)
+        title_key = _hr_dedup_key(headline)
+        registry_state, _eid = _registry_state_for_title_key(title_key)
+
+        if registry_state in ("analyzed", "market_checked", "surfaced"):
+            counts["already_analyzed"] += 1
+            counts["skipped"] += 1
+            continue
+        if registry_state == "expired_low_impact":
+            counts["expired_low_impact"] += 1
+            counts["skipped"] += 1
+            continue
+
+        # Surface the registry's last_skip_reason (e.g.,
+        # ``llm_budget_exhausted`` from a prior partial run) so the
+        # operator can tell why an actionable cluster hasn't been
+        # picked up yet.  Pulled lazily; missing rows return None.
+        last_skip_reason = _last_skip_reason_for_title_key(title_key)
+        counts["eligible"] += 1
+        if len(items) >= limit:
+            continue
+        items.append({
+            "headline":          headline,
+            "source_count":      int(cluster.get("source_count") or 0),
+            "published_at":      str(cluster.get("published_at") or "") or None,
+            "event_date":        _cluster_event_date(cluster),
+            "registry_state":    registry_state,
+            "skip_reason":       last_skip_reason,
+            "skip_reason_label": _skip_reason_label(last_skip_reason),
+            "rank_score":        round(float(rank_score), 3),
+            "rank_factors":      rank_factors,
+            "rank_explanation":  _rank_explanation(rank_factors),
+        })
+
+    return _api._sanitize_floats({
+        "items": items,
+        "counts": counts,
+        "filters": {
+            "limit":              limit,
+            "since_hours":        since_hours,
+            "include_low_signal": include_low_signal,
+        },
+        "news_source": source,
+    })
+
+
+def _last_skip_reason_for_title_key(title_key: str) -> str | None:
+    """Return the most recent ``last_skip_reason`` across all registry
+    rows that share ``title_key``.  Multiple sources can register
+    duplicate headlines; the queue surfaces the freshest skip
+    annotation so an operator sees the latest reason.  Pure read; no
+    writes, no LLM, no provider calls.
+    """
+    import sqlite3
+    from db import DB_FILE, _db_ready
+    if not _db_ready:
+        return None
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            row = conn.execute(
+                "SELECT last_skip_reason "
+                "FROM headline_registry "
+                "WHERE title_key = ? AND last_skip_reason IS NOT NULL "
+                "ORDER BY last_seen_at DESC "
+                "LIMIT 1",
+                (title_key,),
+            ).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    return row[0] if row and row[0] else None

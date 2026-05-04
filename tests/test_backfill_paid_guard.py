@@ -921,5 +921,386 @@ class TestBackfillCandidateHTTPRoute(unittest.TestCase):
         self.assertIsNone(body["event_id"])
 
 
+class TestManualCandidateUiContract(_PaidGuardTestBase):
+    """End-to-end UI contract for the manual paid candidate flow:
+
+      1. ``POST /movers/backfill-candidate`` without ``confirm_paid=true``
+         must short-circuit with HTTP 400 BEFORE any LLM, ``market_check``,
+         ``yfinance``, or ``_persist_event`` invocation.
+      2. ``GET /movers/backfill-preview`` (the zero-cost step the UI
+         calls first) must not invoke any spend seam AND must not
+         mutate the headline_registry — registry-row count and the
+         ``state_counts`` snapshot are identical before and after.
+
+    Mocks every paid seam (analyze + market_check + persistence +
+    yfinance + the registry-mutation helper) with an AssertionError-
+    raising ``_ban`` stub; if any is reached, the test fails loudly.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        from fastapi.testclient import TestClient
+        import api as _api
+        self._api = _api
+        self.client = TestClient(_api.app)
+
+    @staticmethod
+    def _ban(label: str):
+        def _raise(*_a, **_kw):
+            raise AssertionError(
+                f"manual-candidate UI contract: must not call {label}",
+            )
+        return _raise
+
+    def _seed_news_cache_with(self, headline: str) -> None:
+        from datetime import datetime
+        self._api._news_cache["data"] = {
+            "clusters": [{
+                "id":           1,
+                "headline":     headline,
+                "source_count": 4,
+                "published_at": datetime.now().isoformat(timespec="seconds"),
+                "sources":      [{"name": "Reuters"}],
+            }],
+            "total_headlines": 1,
+            "feed_status":     [{"name": "test", "ok": True}],
+            "refresh_meta": {
+                "status": "ok", "freshness": "fresh",
+                "last_successful_refresh":
+                    datetime.now().isoformat(timespec="seconds"),
+            },
+            "_schema_version": self._api._NEWS_CACHE_VERSION,
+        }
+        self._api._news_cache["ts"] = 999_999_999.0
+
+    def _registry_signature(self) -> tuple:
+        """Capture (row count, state-counts dict) for change detection."""
+        import sqlite3
+        with sqlite3.connect(self._db.DB_FILE) as conn:
+            row_count = conn.execute(
+                "SELECT COUNT(*) FROM headline_registry",
+            ).fetchone()[0]
+        state_counts = self._db.load_registry_state_counts()
+        return int(row_count), dict(state_counts)
+
+    def test_post_without_confirm_paid_returns_400_no_spend(self) -> None:
+        """Omitting ``confirm_paid`` defaults it to false → 400 before
+        any spend seam runs.  Banning every paid helper proves the
+        rejection is genuinely cost-free even when the news cache
+        carries a matching cluster the UI just previewed."""
+        from unittest.mock import patch
+
+        headline = "Fed signals two rate cuts at next meeting"
+        self._seed_news_cache_with(headline)
+
+        sig_before = self._registry_signature()
+
+        with patch("routes.movers._fresh_analysis_market_event",
+                   self._ban("_fresh_analysis_market_event")), \
+             patch("routes.movers._refresh_existing_market_event",
+                   self._ban("_refresh_existing_market_event")), \
+             patch("api.analyze_event",  self._ban("api.analyze_event")), \
+             patch("api.market_check",   self._ban("api.market_check")), \
+             patch("api._persist_event", self._ban("api._persist_event")), \
+             patch("yfinance.download",  self._ban("yfinance.download")), \
+             patch("yfinance.Ticker",    self._ban("yfinance.Ticker")):
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={"headline": headline},  # no confirm_paid
+            )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn(
+            "confirm_paid",
+            (r.json().get("detail", "") or "").lower(),
+        )
+        # Registry untouched on the rejection path.
+        self.assertEqual(self._registry_signature(), sig_before)
+
+    def test_post_with_confirm_paid_false_returns_400_no_spend(self) -> None:
+        """Explicit ``confirm_paid=false`` follows the same gate path
+        as the omitted case.  Pinned separately so a future change that
+        treats omission and explicit-false differently can't slip past
+        the contract."""
+        from unittest.mock import patch
+
+        headline = "Fed signals two rate cuts at next meeting"
+        self._seed_news_cache_with(headline)
+
+        with patch("routes.movers._fresh_analysis_market_event",
+                   self._ban("_fresh_analysis_market_event")), \
+             patch("routes.movers._refresh_existing_market_event",
+                   self._ban("_refresh_existing_market_event")), \
+             patch("api.analyze_event",  self._ban("api.analyze_event")), \
+             patch("api.market_check",   self._ban("api.market_check")), \
+             patch("api._persist_event", self._ban("api._persist_event")), \
+             patch("yfinance.download",  self._ban("yfinance.download")), \
+             patch("yfinance.Ticker",    self._ban("yfinance.Ticker")):
+            r = self.client.post(
+                "/movers/backfill-candidate",
+                params={"headline": headline, "confirm_paid": "false"},
+            )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn(
+            "confirm_paid",
+            (r.json().get("detail", "") or "").lower(),
+        )
+
+    def test_preview_get_is_zero_cost_and_does_not_mutate_registry(self) -> None:
+        """The UI's first step (``GET /movers/backfill-preview``) must
+        never invoke a paid seam AND must not mutate the
+        headline_registry — even when an LLM key is available and the
+        cache carries an analyzable cluster.  Captures (row_count,
+        state_counts) before and after, asserts identical."""
+        from unittest.mock import patch
+
+        headline = "Fed signals two rate cuts at next meeting"
+        self._seed_news_cache_with(headline)
+
+        sig_before = self._registry_signature()
+
+        with patch("routes.movers._fresh_analysis_market_event",
+                   self._ban("_fresh_analysis_market_event")), \
+             patch("routes.movers._refresh_existing_market_event",
+                   self._ban("_refresh_existing_market_event")), \
+             patch("routes.movers._hr.advance_state",
+                   self._ban("_hr.advance_state")), \
+             patch("api.analyze_event",  self._ban("api.analyze_event")), \
+             patch("api.market_check",   self._ban("api.market_check")), \
+             patch("api._persist_event", self._ban("api._persist_event")), \
+             patch("yfinance.download",  self._ban("yfinance.download")), \
+             patch("yfinance.Ticker",    self._ban("yfinance.Ticker")), \
+             patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+            r = self.client.get(
+                "/movers/backfill-preview",
+                params={"limit": 5},
+            )
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        # The preview classified the cluster — would_call_llm reflects
+        # what a paid run would do, but the preview itself spent
+        # nothing and the registry signature is unchanged.
+        self.assertEqual(len(body["items"]), 1)
+        self.assertEqual(body["items"][0]["headline"], headline)
+        self.assertTrue(body["items"][0]["would_call_llm"])
+        self.assertEqual(self._registry_signature(), sig_before)
+
+
+class TestRegistryCandidateQueue(_PaidGuardTestBase):
+    """``GET /registry/candidate-queue`` is a zero-cost ranked queue.
+
+    Reuses the preview's cluster-walk + scorer plus the registry
+    lookup so the queue stays aligned with what the backfill preview
+    would consider.  Contract:
+
+      * No LLM, no market_check, no _persist_event, no yfinance.
+      * Items carry headline, source_count, published_at, registry_state,
+        skip_reason / skip_reason_label, rank_score / rank_explanation.
+      * Counts: ``eligible``, ``skipped``, ``already_analyzed``,
+        ``expired_low_impact`` (already_analyzed + expired_low_impact
+        sum into ``skipped``).
+      * Already-analyzed and expired-low-impact clusters drop out of
+        ``items`` but are counted.
+      * ``limit`` caps items; ``counts.eligible`` reflects the whole
+        actionable universe.
+    """
+
+    def _stubs(self) -> dict:
+        def fake_payload():
+            return ({
+                "clusters": [
+                    {"headline":     "Fed cuts rates by 25bp",
+                     "source_count": 7,
+                     "published_at": "2026-05-03T08:00:00",
+                     "sources":      [{"name": "Reuters"}, {"name": "Bloomberg"}]},
+                    {"headline":     "OPEC slashes output 500k bpd",
+                     "source_count": 5,
+                     "published_at": "2026-05-03T09:00:00",
+                     "sources":      [{"name": "Bloomberg"}]},
+                    {"headline":     "Generic celebrity wedding announcement",
+                     "source_count": 2,
+                     "published_at": "2026-05-03T10:00:00",
+                     "sources":      [{"name": "TMZ"}]},
+                ],
+            }, "memory")
+        return {
+            "_cached_news_payload":         fake_payload,
+            "_headline_is_market_relevant": lambda h: "wedding" not in (h or "").lower(),
+        }
+
+    def _ban_spend_apis(self) -> list:
+        """Replace every spend seam with raisers.  Returns the patch
+        list so the test can restore them in tearDown."""
+        import api as _api
+        import yfinance
+        spent: list = []
+        def _ban(label):
+            def _raise(*_a, **_kw):
+                raise AssertionError(
+                    f"candidate-queue must not call {label}",
+                )
+            return _raise
+        for name in ("analyze_event", "market_check", "_persist_event"):
+            spent.append((_api, name, getattr(_api, name)))
+            setattr(_api, name, _ban(f"api.{name}"))
+        for name in ("download", "Ticker"):
+            spent.append((yfinance, name, getattr(yfinance, name)))
+            setattr(yfinance, name, _ban(f"yfinance.{name}"))
+        return spent
+
+    def _restore_spend_apis(self, spent: list) -> None:
+        for mod, name, original in spent:
+            setattr(mod, name, original)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._spent = self._ban_spend_apis()
+
+    def tearDown(self) -> None:
+        self._restore_spend_apis(self._spent)
+        super().tearDown()
+
+    def _client(self):
+        from fastapi.testclient import TestClient
+        import api as _api
+        return TestClient(_api.app)
+
+    # ── shape ─────────────────────────────────────────────────────────
+
+    def test_envelope_carries_required_fields(self) -> None:
+        from routes.diagnostics import registry_candidate_queue
+        self._stub_route(self._stubs())
+        result = registry_candidate_queue(
+            limit=10, since_hours=72, include_low_signal=False,
+        )
+        for key in ("items", "counts", "filters", "news_source"):
+            self.assertIn(key, result, f"missing top-level key: {key}")
+        for k in ("eligible", "skipped", "already_analyzed", "expired_low_impact"):
+            self.assertIn(k, result["counts"], f"missing counts key: {k}")
+        # Each item carries the documented per-row fields.
+        self.assertGreaterEqual(len(result["items"]), 1)
+        sample = result["items"][0]
+        for k in (
+            "headline", "source_count", "published_at",
+            "registry_state", "skip_reason", "skip_reason_label",
+            "rank_score", "rank_factors", "rank_explanation",
+        ):
+            self.assertIn(k, sample, f"missing item field: {k}")
+
+    # ── ranking ───────────────────────────────────────────────────────
+
+    def test_items_sorted_by_rank_score_desc(self) -> None:
+        from routes.diagnostics import registry_candidate_queue
+        self._stub_route(self._stubs())
+        result = registry_candidate_queue(
+            limit=10, since_hours=72, include_low_signal=False,
+        )
+        scores = [it["rank_score"] for it in result["items"]]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+        # The macro-policy / rate-cut headline should rank #1 over OPEC
+        # given the higher source_count + macro_policy boost.
+        self.assertEqual(
+            result["items"][0]["headline"], "Fed cuts rates by 25bp",
+        )
+
+    # ── relevance gate ────────────────────────────────────────────────
+
+    def test_irrelevant_headlines_excluded_unless_low_signal_opt_in(self) -> None:
+        from routes.diagnostics import registry_candidate_queue
+        self._stub_route(self._stubs())
+        result = registry_candidate_queue(
+            limit=10, since_hours=72, include_low_signal=False,
+        )
+        headlines = [it["headline"] for it in result["items"]]
+        self.assertNotIn(
+            "Generic celebrity wedding announcement", headlines,
+        )
+
+    # ── counts ────────────────────────────────────────────────────────
+
+    def test_already_analyzed_dropped_from_items_and_counted(self) -> None:
+        """A cluster whose registry shows state='analyzed' is excluded
+        from items and bumps ``counts.already_analyzed``."""
+        from news_sources import _dedup_key
+        from routes.diagnostics import registry_candidate_queue
+
+        title_key = _dedup_key("Fed cuts rates by 25bp")
+        self._db.upsert_headline_registry_seen(
+            [("Reuters", title_key, 1)], "2026-05-01T10:00:00",
+        )
+        self._db.update_registry_state(
+            title_key=title_key, new_state="analyzed",
+            event_id=42, impact_level="high",
+            analyzed_at="2026-05-01T10:30:00",
+        )
+
+        self._stub_route(self._stubs())
+        result = registry_candidate_queue(
+            limit=10, since_hours=72, include_low_signal=False,
+        )
+        headlines = [it["headline"] for it in result["items"]]
+        self.assertNotIn("Fed cuts rates by 25bp", headlines)
+        self.assertEqual(result["counts"]["already_analyzed"], 1)
+        # ``skipped`` aggregates already_analyzed + expired_low_impact.
+        self.assertEqual(
+            result["counts"]["skipped"],
+            result["counts"]["already_analyzed"]
+            + result["counts"]["expired_low_impact"],
+        )
+
+    def test_expired_low_impact_dropped_and_counted(self) -> None:
+        from news_sources import _dedup_key
+        from routes.diagnostics import registry_candidate_queue
+
+        title_key = _dedup_key("OPEC slashes output 500k bpd")
+        self._db.upsert_headline_registry_seen(
+            [("Reuters", title_key, 1)], "2026-05-01T10:00:00",
+        )
+        self._db.update_registry_state(
+            title_key=title_key, new_state="expired_low_impact",
+        )
+
+        self._stub_route(self._stubs())
+        result = registry_candidate_queue(
+            limit=10, since_hours=72, include_low_signal=False,
+        )
+        headlines = [it["headline"] for it in result["items"]]
+        self.assertNotIn("OPEC slashes output 500k bpd", headlines)
+        self.assertEqual(result["counts"]["expired_low_impact"], 1)
+        self.assertGreaterEqual(result["counts"]["skipped"], 1)
+
+    # ── limit + counts ────────────────────────────────────────────────
+
+    def test_limit_caps_items_but_counts_reflect_full_eligible_universe(
+        self,
+    ) -> None:
+        """``limit`` truncates ``items`` to the cap, but
+        ``counts.eligible`` reflects every actionable cluster."""
+        from routes.diagnostics import registry_candidate_queue
+        self._stub_route(self._stubs())
+        result = registry_candidate_queue(
+            limit=1, since_hours=72, include_low_signal=False,
+        )
+        self.assertEqual(len(result["items"]), 1)
+        # 2 actionable clusters survive the relevance gate (Fed + OPEC);
+        # the celebrity wedding is dropped before counts accrue.
+        self.assertEqual(result["counts"]["eligible"], 2)
+
+    # ── HTTP route shape ──────────────────────────────────────────────
+
+    def test_http_route_returns_zero_cost_payload(self) -> None:
+        """End-to-end through TestClient — exercises the FastAPI router
+        wiring and proves the spend-seams stay banned across the wire."""
+        self._stub_route(self._stubs())
+        r = self._client().get(
+            "/registry/candidate-queue",
+            params={"limit": 5, "since_hours": 72},
+        )
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()
+        self.assertIsInstance(body["items"], list)
+        self.assertIn("counts", body)
+        self.assertIn("eligible", body["counts"])
+
+
 if __name__ == "__main__":
     unittest.main()

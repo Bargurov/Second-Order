@@ -267,6 +267,10 @@ function BackfillPreviewNotice({ preview }: { preview?: BackfillPreviewResponse 
         </span>
       </summary>
 
+      <p className="mt-2 text-[10.5px] leading-snug text-on-surface-variant/45">
+        Candidate Queue coming next: eligible, skipped, and already-analyzed headlines in one view.
+      </p>
+
       {candidates.length > 0 ? (
         <div className="mt-2.5 border-t border-white/[0.035] pt-2.5">
           <p className="mb-2 text-[11px] leading-snug text-on-surface-variant/55">
