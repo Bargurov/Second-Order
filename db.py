@@ -1555,6 +1555,145 @@ def find_related_events(event_id: int, headline: str,
     return [ev for _, ev in scored[:limit]]
 
 
+def _ticker_symbols(market_tickers_json) -> set[str]:
+    """Parse a stored ``market_tickers`` JSON blob and return the set of
+    upper-cased symbol strings.  Tolerant of malformed input — returns
+    an empty set on parse failure or non-list payloads.  Used by
+    ``find_similar_events`` to compute shared-ticker overlap without
+    decoding the full event row."""
+    if not market_tickers_json:
+        return set()
+    rows = market_tickers_json
+    if isinstance(rows, str):
+        try:
+            rows = json.loads(rows)
+        except (TypeError, ValueError):
+            return set()
+    if not isinstance(rows, list):
+        return set()
+    out: set[str] = set()
+    for t in rows:
+        if not isinstance(t, dict):
+            continue
+        sym = str(t.get("symbol") or "").strip().upper()
+        if sym:
+            out.add(sym)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Similar-event retrieval — deterministic field-overlap scoring.  Pure
+# read; no LLM, no yfinance, no persistence write.  Score weights are
+# tuned so headline overlap dominates, mechanism text adds context,
+# shared tickers reinforce a real link, and stage/persistence agreement
+# acts as a tie-breaker.
+# ---------------------------------------------------------------------------
+_SIMILAR_W_HEADLINE:    float = 0.40
+_SIMILAR_W_MECHANISM:   float = 0.25
+_SIMILAR_W_TICKERS:     float = 0.20
+_SIMILAR_W_STAGE:       float = 0.10
+_SIMILAR_W_PERSISTENCE: float = 0.05
+
+
+def find_similar_events(
+    event_id: int, *, limit: int = 5,
+) -> list[dict] | None:
+    """Return the top ``limit`` archived events most similar to ``event_id``.
+
+    Composite deterministic score over stored fields only:
+
+      * Jaccard overlap on headline tokens.
+      * Jaccard overlap on mechanism_summary tokens.
+      * Jaccard overlap on stored ticker symbols.
+      * Stage match (1 / 0).
+      * Persistence match (1 / 0).
+
+    Returns ``None`` when ``event_id`` does not exist (route boundary
+    translates to HTTP 404).  When the target exists but no other row
+    scores above zero, returns ``[]`` — a truthful empty signal.
+
+    Pure read.  No LLM call, no provider call, no DB write.
+    """
+    if not _db_ready:
+        return []
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        target = conn.execute(
+            "SELECT id, headline, mechanism_summary, stage, persistence, "
+            "       timestamp, market_tickers "
+            "FROM events WHERE id = ?", (event_id,),
+        ).fetchone()
+        if target is None:
+            return None
+        rows = conn.execute(
+            "SELECT id, headline, mechanism_summary, stage, persistence, "
+            "       timestamp, market_tickers "
+            "FROM events WHERE id != ?", (event_id,),
+        ).fetchall()
+
+    target_headline_words = _headline_words(target["headline"] or "")
+    target_mech_words     = _headline_words(target["mechanism_summary"] or "")
+    target_terms          = target_headline_words | target_mech_words
+    target_tickers        = _ticker_symbols(target["market_tickers"])
+    target_stage          = (target["stage"] or "").strip()
+    target_persistence    = (target["persistence"] or "").strip()
+
+    scored: list[dict] = []
+    for r in rows:
+        # Calendar headlines (e.g., "ISM Manufacturing PMI") are
+        # repetitive event-tagging artifacts that pollute the similar-
+        # event surface; the existing ``find_related_events`` skips
+        # them for the same reason and the contract here matches.
+        if _is_calendar_headline(r["headline"]):
+            continue
+
+        row_h_words = _headline_words(r["headline"] or "")
+        row_m_words = _headline_words(r["mechanism_summary"] or "")
+        row_terms   = row_h_words | row_m_words
+        row_tickers = _ticker_symbols(r["market_tickers"])
+
+        h_sim = _jaccard(target_headline_words, row_h_words)
+        m_sim = _jaccard(target_mech_words, row_m_words)
+        if target_tickers and row_tickers:
+            tk_sim = (
+                len(target_tickers & row_tickers)
+                / len(target_tickers | row_tickers)
+            )
+        else:
+            tk_sim = 0.0
+        stage_match = 1.0 if (
+            target_stage and target_stage == (r["stage"] or "").strip()
+        ) else 0.0
+        persistence_match = 1.0 if (
+            target_persistence
+            and target_persistence == (r["persistence"] or "").strip()
+        ) else 0.0
+
+        score = (
+            _SIMILAR_W_HEADLINE    * h_sim
+            + _SIMILAR_W_MECHANISM * m_sim
+            + _SIMILAR_W_TICKERS   * tk_sim
+            + _SIMILAR_W_STAGE     * stage_match
+            + _SIMILAR_W_PERSISTENCE * persistence_match
+        )
+        if score <= 0.0:
+            continue
+
+        scored.append({
+            "event_id":       int(r["id"]),
+            "headline":       r["headline"] or "",
+            "timestamp":      r["timestamp"] or "",
+            "score":          round(float(score), 4),
+            "shared_terms":   sorted(target_terms & row_terms),
+            "shared_tickers": sorted(target_tickers & row_tickers),
+            "stage":          r["stage"] or "",
+            "persistence":    r["persistence"] or "",
+        })
+
+    scored.sort(key=lambda x: (-x["score"], -x["event_id"]))
+    return scored[:int(limit)]
+
+
 def get_event_cascade(
     event_id: int,
     per_level: int = 5,

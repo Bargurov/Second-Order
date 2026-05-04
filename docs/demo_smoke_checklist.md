@@ -182,6 +182,27 @@ sections without console errors.
 
 ---
 
+## 5b. Archive analog retrieval
+
+Endpoint: `GET /events/{event_id}/similar`  **[zero-cost]**
+
+This is archive retrieval, not AI analysis. It reads saved-event
+similarity from the local archive and returns prior analog candidates;
+it does not call Claude, OpenAI, market checks, or persistence. Use a
+real `event_id` from `/events`; `1` is only the local smoke example.
+
+```powershell
+curl "http://127.0.0.1:8000/events/1/similar" | ConvertFrom-Json | ConvertTo-Json -Depth 6
+```
+
+Confirm:
+
+- Response is either a list/envelope of archived analogs or a truthful
+  empty result for that event.
+- No new analysis is generated and no provider/API spend occurs.
+
+---
+
 ## 6. Portfolio
 
 Endpoint: `GET /portfolio`  **[zero-cost]**

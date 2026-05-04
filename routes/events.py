@@ -9,7 +9,8 @@ from fastapi.responses import Response
 
 from db import (
     update_review, delete_event,
-    find_related_events, get_event_cascade, append_revisit_snapshot, load_revisit_snapshots,
+    find_related_events, find_similar_events,
+    get_event_cascade, append_revisit_snapshot, load_revisit_snapshots,
     dedup_events, query_events_filtered,
 )
 from market_check import (
@@ -868,6 +869,26 @@ def related(event_id: int):
     if not target:
         raise HTTPException(404, f"Event {event_id} not found.")
     return find_related_events(event_id, target["headline"])
+
+
+@router.get("/events/{event_id}/similar")
+def similar(
+    event_id: int = Path(..., ge=1),
+    limit: int = Query(5, ge=1, le=50),
+):
+    """Return up to ``limit`` archived events most similar to
+    ``event_id``, scored deterministically from stored fields only.
+
+    Pure read — no LLM call, no provider call, no DB write.  See
+    ``db.find_similar_events`` for the score formula.  Distinct from
+    ``/events/{id}/related`` (Jaccard on headline only) — this surface
+    blends headline / mechanism / tickers / stage / persistence so the
+    UI can show a richer neighbourhood without a paid lookup.
+    """
+    result = find_similar_events(event_id, limit=limit)
+    if result is None:
+        raise HTTPException(404, f"Event {event_id} not found.")
+    return _api._sanitize_floats(result)
 
 
 @router.get("/events/{event_id}/cascade")
