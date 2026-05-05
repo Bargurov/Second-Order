@@ -847,5 +847,265 @@ class TestExistingDiagnosticsEndpointsPreserved(_ArchiveBase):
         self.assertEqual(r.status_code, 200)
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/reaction-profile-stats — reaction_profile_v1 readiness
+# ---------------------------------------------------------------------------
+
+
+_RP_TOP_KEYS = (
+    "available",
+    "total_events",
+    "events_with_market_tickers",
+    "events_with_profile_input_ready",
+    "events_unscorable",
+    "ticker_count",
+    "tickers_with_scalar_returns",
+    "profile_basis_counts",
+    "latest_event_timestamp",
+)
+
+
+class TestReactionProfileStatsShape(_ArchiveBase):
+    def test_returns_200_with_top_keys(self) -> None:
+        r = client.get("/diagnostics/reaction-profile-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _RP_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_profile_basis_counts_is_dict(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertIsInstance(body["profile_basis_counts"], dict)
+
+
+class TestReactionProfileStatsEmptyDB(_ArchiveBase):
+    def test_available_true_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 0)
+
+    def test_all_event_counts_zero(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["events_with_market_tickers"],      0)
+        self.assertEqual(body["events_with_profile_input_ready"], 0)
+        self.assertEqual(body["events_unscorable"],               0)
+
+    def test_all_ticker_counts_zero(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["ticker_count"],                0)
+        self.assertEqual(body["tickers_with_scalar_returns"], 0)
+
+    def test_basis_counts_empty_dict(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["profile_basis_counts"], {})
+
+    def test_latest_event_timestamp_none(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertIsNone(body["latest_event_timestamp"])
+
+
+class TestReactionProfileStatsSeeded(_ArchiveBase):
+    def test_event_with_no_tickers_is_unscorable(self) -> None:
+        self._seed(market_tickers=[])
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["total_events"],                    1)
+        self.assertEqual(body["events_with_market_tickers"],      0)
+        self.assertEqual(body["events_with_profile_input_ready"], 0)
+        self.assertEqual(body["events_unscorable"],               1)
+        self.assertEqual(body["ticker_count"],                    0)
+        self.assertEqual(body["tickers_with_scalar_returns"],     0)
+        self.assertEqual(body["profile_basis_counts"], {"unscorable": 1})
+
+    def test_event_with_tickers_but_no_returns_is_unscorable(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL"},
+            {"symbol": "MSFT"},
+        ])
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["events_with_market_tickers"],      1)
+        self.assertEqual(body["events_with_profile_input_ready"], 0)
+        self.assertEqual(body["events_unscorable"],               1)
+        self.assertEqual(body["ticker_count"],                    2)
+        self.assertEqual(body["tickers_with_scalar_returns"],     0)
+        self.assertEqual(body["profile_basis_counts"], {"unscorable": 1})
+
+    def test_event_with_one_ticker_with_return_is_input_ready(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_5d": 1.23},
+            {"symbol": "MSFT"},  # no return — does not disqualify the event
+        ])
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["events_with_market_tickers"],      1)
+        self.assertEqual(body["events_with_profile_input_ready"], 1)
+        self.assertEqual(body["events_unscorable"],               0)
+        self.assertEqual(body["ticker_count"],                    2)
+        self.assertEqual(body["tickers_with_scalar_returns"],     1)
+        self.assertEqual(
+            body["profile_basis_counts"], {"scalar_returns_only": 1},
+        )
+
+    def test_mixed_archive_aggregates_correctly(self) -> None:
+        # Unscorable: no tickers.
+        self._seed(market_tickers=[])
+        # Unscorable: tickers but no numeric returns.
+        self._seed(market_tickers=[{"symbol": "TSLA"}])
+        # Input-ready: at least one ticker with a numeric return.
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_1d": 0.5},
+            {"symbol": "MSFT", "return_5d": 1.0},
+        ])
+        # Input-ready: only one of three tickers has returns.
+        self._seed(market_tickers=[
+            {"symbol": "META"},
+            {"symbol": "GOOG", "return_20d": -0.3},
+            {"symbol": "AMZN"},
+        ])
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(body["total_events"],                    4)
+        self.assertEqual(body["events_with_market_tickers"],      3)
+        self.assertEqual(body["events_with_profile_input_ready"], 2)
+        self.assertEqual(body["events_unscorable"],               2)
+        self.assertEqual(body["ticker_count"],                    6)
+        self.assertEqual(body["tickers_with_scalar_returns"],     3)
+        self.assertEqual(
+            body["profile_basis_counts"],
+            {"unscorable": 2, "scalar_returns_only": 2},
+        )
+
+    def test_input_ready_plus_unscorable_equals_total(self) -> None:
+        # Invariant: every event lands in exactly one bucket.
+        for _ in range(3):
+            self._seed(market_tickers=[])
+        for _ in range(2):
+            self._seed(market_tickers=[
+                {"symbol": "AAPL", "return_5d": 1.0},
+            ])
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertEqual(
+            body["events_with_profile_input_ready"]
+            + body["events_unscorable"],
+            body["total_events"],
+        )
+        self.assertEqual(
+            sum(body["profile_basis_counts"].values()),
+            body["total_events"],
+        )
+
+    def test_latest_event_timestamp_populated(self) -> None:
+        self._seed()
+        body = client.get("/diagnostics/reaction-profile-stats").json()
+        self.assertIsInstance(body["latest_event_timestamp"], str)
+        self.assertGreater(len(body["latest_event_timestamp"]), 0)
+
+
+class TestReactionProfileStatsNoMutation(_ArchiveBase):
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_5d": 1.0},
+        ])
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/reaction-profile-stats")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_5d": 1.0},
+        ])
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [dict(r) for r in
+                      conn.execute("SELECT * FROM events").fetchall()]
+        client.get("/diagnostics/reaction-profile-stats")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [dict(r) for r in
+                     conn.execute("SELECT * FROM events").fetchall()]
+        self.assertEqual(before, after)
+
+
+class TestReactionProfileStatsZeroCost(_ArchiveBase):
+    """Endpoint must not invoke market_check / yfinance / provider seams."""
+
+    def test_market_check_fetch_not_called(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_5d": 1.0},
+        ])
+        with patch(
+            "market_check._fetch",
+            side_effect=AssertionError("must not call market_check._fetch"),
+        ):
+            r = client.get("/diagnostics/reaction-profile-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_check_one_ticker_not_called(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_5d": 1.0},
+        ])
+        with patch(
+            "market_check._check_one_ticker",
+            side_effect=AssertionError("must not call _check_one_ticker"),
+        ):
+            r = client.get("/diagnostics/reaction-profile-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_data_provider_not_called(self) -> None:
+        self._seed()
+        try:
+            import market_data
+            patched = hasattr(market_data, "get_provider")
+        except ImportError:
+            patched = False
+        if patched:
+            with patch(
+                "market_data.get_provider",
+                side_effect=AssertionError("must not call provider"),
+            ):
+                r = client.get("/diagnostics/reaction-profile-stats")
+        else:
+            r = client.get("/diagnostics/reaction-profile-stats")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestReactionProfileStatsPartialFailure(_ArchiveBase):
+    def test_aggregator_failure_flips_available_false(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "return_5d": 1.0},
+        ])
+        with patch(
+            "routes.diagnostics._compute_reaction_profile_stats",
+            side_effect=RuntimeError("read fail"),
+        ):
+            r = client.get("/diagnostics/reaction-profile-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["available"])
+        self.assertEqual(body["total_events"],                    0)
+        self.assertEqual(body["events_with_market_tickers"],      0)
+        self.assertEqual(body["events_with_profile_input_ready"], 0)
+        self.assertEqual(body["events_unscorable"],               0)
+        self.assertEqual(body["ticker_count"],                    0)
+        self.assertEqual(body["tickers_with_scalar_returns"],     0)
+        self.assertEqual(body["profile_basis_counts"], {})
+        self.assertIsNone(body["latest_event_timestamp"])
+
+    def test_other_diagnostics_unaffected_by_reaction_failure(self) -> None:
+        self._seed()
+        with patch(
+            "routes.diagnostics._compute_reaction_profile_stats",
+            side_effect=RuntimeError("read fail"),
+        ):
+            r_rp = client.get("/diagnostics/reaction-profile-stats")
+            r_arch = client.get("/diagnostics/archive-stats")
+            r_val = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r_rp.status_code,   200)
+        self.assertEqual(r_arch.status_code, 200)
+        self.assertEqual(r_val.status_code,  200)
+        self.assertFalse(r_rp.json()["available"])
+        # Other endpoints unaffected.
+        self.assertTrue(r_arch.json()["events_by_stage"]["available"])
+        self.assertTrue(r_val.json()["available"])
+
+
 if __name__ == "__main__":
     unittest.main()

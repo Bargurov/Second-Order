@@ -690,3 +690,134 @@ def _reason_category(reason, status) -> str:
     if status in ("validated", "contradicted") and "supports vs" in r:
         return "majority_rule"
     return "other"
+
+
+@router.get("/diagnostics/reaction-profile-stats")
+def reaction_profile_stats():
+    """Archive-level visibility into reaction_profile_v1 input readiness.
+
+    Pure read.  No LLM, no yfinance, no market_check, no provider call,
+    no DB write.
+
+    Honest accounting: today's archive stores per-ticker scalar returns
+    on ``market_tickers`` but does not persist raw close-series, so
+    ``reaction_profile.compute_reaction_profile`` cannot actually run
+    on archived rows.  This endpoint reports how many rows would even
+    have the inputs to feed a future composer call.
+
+    ``profile_basis_counts`` is an *event-level* categorization derived
+    from stored shape, not a passthrough of ``REACTION_PROFILE_BASES``:
+
+      * ``unscorable``           — event has no tickers, or no ticker
+                                   carries a numeric return field; the
+                                   composer would have nothing to chew.
+      * ``scalar_returns_only``  — at least one ticker has stored
+                                   returns; would become a candidate
+                                   for the composer once raw closes
+                                   are persisted.
+
+    Single top-level ``available`` flag — when false, every numeric
+    field is zeroed and ``latest_event_timestamp`` is null, so consumers
+    can render the panel without branching on field presence.
+    """
+    try:
+        return _api._sanitize_floats(_compute_reaction_profile_stats())
+    except Exception:
+        return _api._sanitize_floats(_reaction_profile_unavailable())
+
+
+def _reaction_profile_unavailable() -> dict:
+    """Stable empty shape returned when the aggregator cannot run."""
+    return {
+        "available":                       False,
+        "total_events":                    0,
+        "events_with_market_tickers":      0,
+        "events_with_profile_input_ready": 0,
+        "events_unscorable":               0,
+        "ticker_count":                    0,
+        "tickers_with_scalar_returns":     0,
+        "profile_basis_counts":            {},
+        "latest_event_timestamp":          None,
+    }
+
+
+def _compute_reaction_profile_stats() -> dict:
+    """Single-pass aggregator over events and their stored ``market_tickers``.
+
+    Per-event categorization is mutually exclusive: every event lands
+    in either ``scalar_returns_only`` (input-ready) or ``unscorable``
+    (no usable input).  ``ticker_count`` and
+    ``tickers_with_scalar_returns`` are the underlying ticker-level
+    sums so consumers can see the per-ticker readiness rate.
+
+    Structural failures (DB unreachable) raise so the outer route
+    handler flips ``available`` to ``False``; per-row decode errors
+    are swallowed so a single bit-rotted row doesn't break the
+    aggregate.
+    """
+    import sqlite3
+    import db as _db
+
+    if not _db._db_ready:
+        return _reaction_profile_unavailable()
+
+    with sqlite3.connect(_db.DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT * FROM events").fetchall()
+
+    total_events       = 0
+    with_tickers       = 0
+    input_ready        = 0
+    unscorable         = 0
+    ticker_count       = 0
+    tickers_with_ret   = 0
+    basis_counts: dict[str, int] = {}
+    latest_ts: str | None = None
+
+    for row in rows:
+        total_events += 1
+        try:
+            event = _db._decode_event_row(row)
+        except Exception:
+            event = dict(row)
+
+        ts = event.get("timestamp")
+        if isinstance(ts, str) and ts and (latest_ts is None or ts > latest_ts):
+            latest_ts = ts
+
+        tickers = event.get("market_tickers") or []
+        if not isinstance(tickers, list):
+            tickers = []
+
+        if len(tickers) > 0:
+            with_tickers += 1
+
+        event_has_return = False
+        for t in tickers:
+            if not isinstance(t, dict):
+                continue
+            ticker_count += 1
+            if _ticker_has_return(t):
+                tickers_with_ret += 1
+                event_has_return = True
+
+        if event_has_return:
+            input_ready += 1
+            basis_counts["scalar_returns_only"] = (
+                basis_counts.get("scalar_returns_only", 0) + 1
+            )
+        else:
+            unscorable += 1
+            basis_counts["unscorable"] = basis_counts.get("unscorable", 0) + 1
+
+    return {
+        "available":                       True,
+        "total_events":                    total_events,
+        "events_with_market_tickers":      with_tickers,
+        "events_with_profile_input_ready": input_ready,
+        "events_unscorable":               unscorable,
+        "ticker_count":                    ticker_count,
+        "tickers_with_scalar_returns":     tickers_with_ret,
+        "profile_basis_counts":            basis_counts,
+        "latest_event_timestamp":          latest_ts,
+    }
