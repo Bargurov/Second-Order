@@ -48,6 +48,15 @@ Invoke-RestMethod "http://127.0.0.1:8000/movers/backfill-preview?limit=5&since_h
 
 Invoke-RestMethod "http://127.0.0.1:8000/events/1/similar?limit=5" |
   ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/validation-status-stats" |
+  ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/events?limit=5" |
+  ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/events/1" |
+  ConvertTo-Json -Depth 10
 ```
 
 Frontend verification:
@@ -56,6 +65,17 @@ Frontend verification:
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
 ```
+
+## Validation Status Read Surfaces
+
+`validation_status_v2` is live on archive read surfaces: event lists and event detail. Archive filtering is still in progress and backend-only until verified in the UI.
+
+How to interpret:
+
+- `pending`: young or incomplete evidence.
+- `unresolved`: not enough usable evidence.
+- `validated`: directional evidence majority supports the thesis.
+- `contradicted`: directional evidence majority contradicts the thesis.
 
 ## Archive Backup
 
