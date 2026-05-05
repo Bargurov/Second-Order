@@ -10,6 +10,26 @@ The system is designed for analyst workflows: ingest live headlines, cluster
 overlapping coverage, run classify -> analysis -> market stages, layer in macro
 and market-context overlays, save the result locally, and revisit dated events.
 
+## Current Status
+
+Phase 0 hardening is complete: CI, key rotation, archive backup command, paid
+server guard, structured logging, config health diagnostics, data-quality
+diagnostics, and the local operations runbook are in place.
+
+## Next Roadmap
+
+Phase 1 foundation validation:
+
+1. Magic-number inventory and empirical validation
+2. `validation_status` design and implementation
+3. Reaction profiles
+4. Archive aggregate stats
+5. Schema migration discipline
+
+Deferred until the foundation is steadier: charts, tagging expansion,
+scheduler/background jobs, deployment profiles, and Telegram/WhatsApp/OpenClaw
+delivery.
+
 ## Current Capabilities
 
 - Live inbox from `news_inbox.json` plus curated RSS sources
@@ -32,8 +52,8 @@ and market-context overlays, save the result locally, and revisit dated events.
 Engine Phase v1 and the backend productization slice are frozen. Do not modify
 engine or backend productization logic unless a regression is verified by a
 focused failing test or a reproducible eval/API artifact. The next phase is
-UI/UX implementation from the newest approved Second Order design package in
-`repo/design/`.
+foundation validation: empirical thresholds, clearer validation status,
+reaction profiles, archive aggregates, and migration discipline.
 
 UI/API/export surfaces should preserve and render the engine-visible fields at
 a high level:
@@ -128,8 +148,8 @@ the frontend build from the newest approved Second Order design package in
 `repo/design/`. Ignore stale `stitch-ref`, `stitch-analysis-ref`, and old
 design folders. Direction: modern dark premium market-forensics UI,
 institutional but not Bloomberg/terminal. Keep 8px max card radius, readable
-text, Manrope/Inter, tonal layering, and no yellow flood. The current next UI
-target is Research / Queues polish. Current frontend verification:
+text, Manrope/Inter, tonal layering, and no yellow flood. Current frontend
+verification:
 
 ```powershell
 cd frontend
