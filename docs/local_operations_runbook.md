@@ -158,6 +158,39 @@ Invoke-RestMethod -Method Post `
   -Body "{}" | ConvertTo-Json -Depth 8
 ```
 
+## Archive Rebuild Script — Safety Model
+
+`scripts/rebuild_archive.py` is the operator-side tool for refreshing
+archive overlays in bulk. The defaults are deliberately conservative:
+
+```powershell
+# Dry-run report — no DB writes. Safe to run any time.
+python scripts/rebuild_archive.py
+
+# Narrower dry-run slice (last 90 days, tariff family).
+python scripts/rebuild_archive.py --family tariff --max-age 90
+
+# Persist the changes only after reviewing the dry-run report.
+python scripts/rebuild_archive.py --write --limit 50
+```
+
+What the script does and does not touch:
+
+- **DB writes** — only when `--write` is passed. Default invocation
+  is dry-run; no row is mutated.
+- **LLM / paid analysis** — never. The composer chain is pure macro
+  math over already-fetched bars; `ENABLE_PAID_ANALYSIS` has no effect.
+- **Network / yfinance** — *not* fully isolated. The overlay composer
+  pulls today's macro tape (^TNX, ^FVX, ^TYX, TIP, HYG, LQD, SHY)
+  via `price_cache.fetch_daily_cached`. A warm cache serves from
+  SQLite with no provider call; a cold cache will fetch the missing
+  trailing window from the active provider. This applies to dry-run
+  too — the validation pass runs the same composer with
+  `persist=False`.
+
+For a strictly offline dry-run, warm the price cache first (e.g. via
+a recent market-context refresh) before invoking the script.
+
 ## Key-Rotation Reminder
 
 - Keep `.env` local and uncommitted.
