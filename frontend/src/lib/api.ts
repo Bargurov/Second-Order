@@ -344,6 +344,10 @@ export interface AnalysisDetail {
   evidence_sources?: EvidenceSource[];
   confidence_rationale?: string;
   validation_rationale?: string;
+  /** Detail-read validation block when a detail payload nests derived fields here. */
+  validation_status_v2?: ValidationStatusV2Block;
+  /** Detail-read reaction profile block when a detail payload nests derived fields here. */
+  reaction_profile_v1?: ReactionProfileV1Block;
 }
 
 /** Engine evidence-quality tier — closed set from
@@ -1086,6 +1090,10 @@ export interface AnalyzeResponse {
   analysis_failed?: boolean;
   /** Human-readable reason for the failure (e.g. "anthropic overload"). */
   failure_reason?: string;
+  /** Detail-read validation block, emitted by saved event detail surfaces. */
+  validation_status_v2?: ValidationStatusV2Block;
+  /** Detail-read reaction profile block, emitted by saved event detail surfaces. */
+  reaction_profile_v1?: ReactionProfileV1Block;
 }
 
 export interface PersistenceSignal {
@@ -1120,6 +1128,7 @@ export interface SavedEvent {
   persistence_signal?: PersistenceSignal;
   validation_status?: "validated" | "contradicted" | "unresolved";
   validation_status_v2?: ValidationStatusV2Block;
+  reaction_profile_v1?: ReactionProfileV1Block;
 }
 
 export type ValidationStatusV2 =
@@ -1141,6 +1150,50 @@ export interface ValidationStatusV2Block {
   };
   event_age_days?: number | null;
   pending_max_days?: number | null;
+}
+
+export type ReactionProfileBasis =
+  | "forward_anchored"
+  | "same_day_fallback"
+  | "stale"
+  | "unscorable"
+  | string;
+
+export type ReactionProfileFadeLabel =
+  | "hold"
+  | "fade"
+  | "reverse"
+  | "flat"
+  | "insufficient"
+  | string;
+
+export interface ReactionProfileTicker {
+  symbol?: string | null;
+  reaction_profile_basis?: ReactionProfileBasis | null;
+  return_1d?: number | null;
+  return_5d?: number | null;
+  return_20d?: number | null;
+  return_60d?: number | null;
+  benchmark_relative_return_1d?: number | null;
+  benchmark_relative_return_5d?: number | null;
+  benchmark_relative_return_20d?: number | null;
+  benchmark_relative_return_60d?: number | null;
+  peak_move_5d?: number | null;
+  peak_move_20d?: number | null;
+  peak_move_60d?: number | null;
+  time_to_peak_5d?: number | null;
+  time_to_peak_20d?: number | null;
+  time_to_peak_60d?: number | null;
+  fade_or_hold_label_5d?: ReactionProfileFadeLabel | null;
+  fade_or_hold_label_20d?: ReactionProfileFadeLabel | null;
+  fade_or_hold_label_60d?: ReactionProfileFadeLabel | null;
+}
+
+export interface ReactionProfileV1Block {
+  available: boolean;
+  reason: string;
+  tickers: ReactionProfileTicker[];
+  n_tickers: number;
 }
 
 export type ArchiveQuality =

@@ -116,6 +116,177 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // Macro Backdrop — compact regime/rates summary that was fed into the LLM
 // ---------------------------------------------------------------------------
 
+const VALIDATION_STATUS_META: Record<string, { label: string; dot: string; text: string; bg: string }> = {
+  validated:    { label: "Validated",    dot: "bg-[#6ec6a5]", text: "text-[#6ec6a5]", bg: "bg-[#6ec6a5]/8" },
+  contradicted: { label: "Contradicted", dot: "bg-[#ee7d77]", text: "text-[#ee7d77]", bg: "bg-[#ee7d77]/10" },
+  unresolved:   { label: "Unresolved",   dot: "bg-[#a89f91]", text: "text-[#a89f91]", bg: "bg-[#a89f91]/8" },
+  pending:      { label: "Pending",      dot: "bg-primary/70", text: "text-primary/80", bg: "bg-primary/8" },
+};
+
+function _compactPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
+  const normalized = Math.abs(value) <= 1 ? value * 100 : value;
+  return `${Math.round(normalized)}%`;
+}
+
+function _labelizeToken(value: string | null | undefined, fallback = "Unknown"): string {
+  if (!value) return fallback;
+  return value
+    .replace(/_/g, " ")
+    .replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
+}
+
+function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["validation_status_v2"]> }) {
+  const meta = VALIDATION_STATUS_META[block.status] ?? VALIDATION_STATUS_META.unresolved!;
+  const counts = block.counts ?? {};
+  const directional = counts.directional ?? 0;
+  const supporting = counts.supporting ?? 0;
+  const contradicting = counts.contradicting ?? 0;
+  const total = counts.total_tickers ?? 0;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="section-kicker mb-1.5">Validation status</p>
+          <div className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1", meta.bg)}>
+            <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} />
+            <span className={cn("text-[10px] font-bold uppercase tracking-[0.14em]", meta.text)}>
+              {meta.label}
+            </span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-on-surface-variant/45">
+            Support ratio
+          </p>
+          <p className="font-num text-[18px] font-bold leading-none text-on-surface">
+            {_compactPercent(block.ratio)}
+          </p>
+        </div>
+      </div>
+
+      <p className="mb-4 text-[12px] leading-relaxed text-on-surface-variant/80">
+        {block.reason || "No validation reason available."}
+      </p>
+
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          ["Directional", directional],
+          ["Supports", supporting],
+          ["Contradicts", contradicting],
+        ].map(([label, value]) => (
+          <div key={label} className={cn(INNER_CARD, "px-3 py-2")}>
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/45">
+              {label}
+            </p>
+            <p className="font-num text-[15px] font-semibold text-on-surface">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-3 text-[10px] text-on-surface-variant/45">
+        {total} ticker{total === 1 ? "" : "s"} checked
+        {block.event_age_days != null ? ` / ${block.event_age_days}d since event` : ""}
+      </p>
+    </section>
+  );
+}
+
+function ReactionProfileCard({ block }: { block: NonNullable<AnalyzeResponse["reaction_profile_v1"]> }) {
+  const tickers = block.tickers ?? [];
+  const displayTickers = tickers.slice(0, 4);
+  const isUnscorable = !block.available;
+
+  return (
+    <section className={cn(SECTION_CARD, "p-5")}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="section-kicker mb-1.5">Reaction profile</p>
+          <div
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
+              isUnscorable ? "bg-[#a89f91]/8" : "bg-primary/8",
+            )}
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full", isUnscorable ? "bg-[#a89f91]" : "bg-primary")} />
+            <span
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-[0.14em]",
+                isUnscorable ? "text-[#a89f91]" : "text-primary",
+              )}
+            >
+              {isUnscorable ? "Unscorable" : "Available"}
+            </span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-on-surface-variant/45">
+            Tickers
+          </p>
+          <p className="font-num text-[18px] font-bold leading-none text-on-surface">
+            {block.n_tickers ?? tickers.length}
+          </p>
+        </div>
+      </div>
+
+      <p className="mb-4 text-[12px] leading-relaxed text-on-surface-variant/80">
+        {block.reason || (isUnscorable ? "Not enough stored price history to score the reaction profile." : "Reaction profile computed.")}
+      </p>
+
+      {displayTickers.length > 0 ? (
+        <div className="space-y-2">
+          {displayTickers.map((ticker, index) => {
+            const basis = ticker.reaction_profile_basis ?? "unscorable";
+            const status =
+              ticker.fade_or_hold_label_20d
+              ?? ticker.fade_or_hold_label_5d
+              ?? ticker.fade_or_hold_label_60d
+              ?? (basis === "unscorable" ? "insufficient" : null);
+            return (
+              <div key={`${ticker.symbol ?? "ticker"}-${index}`} className={cn(INNER_CARD, "flex items-center justify-between gap-3 px-3 py-2")}>
+                <div className="min-w-0">
+                  <p className="font-num text-[12px] font-bold text-on-surface">
+                    {ticker.symbol || "Unknown"}
+                  </p>
+                  <p className="truncate text-[10px] text-on-surface-variant/50">
+                    {_labelizeToken(basis, "No basis")}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded bg-surface-container-low px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/70">
+                  {_labelizeToken(status, "No status")}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={cn(INNER_CARD, "px-3 py-2 text-[11px] text-on-surface-variant/60")}>
+          No market tickers were stored for this event, so there is no per-ticker reaction profile.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ValidationReactionPanel({ result }: { result: AnalyzeResponse }) {
+  const validationBlock = result.validation_status_v2 ?? result.analysis?.validation_status_v2;
+  const reactionBlock = result.reaction_profile_v1 ?? result.analysis?.reaction_profile_v1;
+
+  if (!validationBlock && !reactionBlock) return null;
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {validationBlock && (
+        <ValidationStatusCard block={validationBlock} />
+      )}
+      {reactionBlock && (
+        <ReactionProfileCard block={reactionBlock} />
+      )}
+    </div>
+  );
+}
+
 function MacroBackdropBlock({ analysis }: { analysis: AnalysisDetail }) {
   const ps  = analysis.policy_sensitivity;
   const ryc = analysis.real_yield_context;
@@ -3530,6 +3701,8 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               <MarketSection tickers={result.market.tickers} eventDate={result.event_date ?? undefined} analysis={result.analysis ?? undefined} />
             </section>
           )}
+
+          <ValidationReactionPanel result={result} />
 
           {/* ── More analysis ── secondary specialist blocks
               (currency, real yield, shock decomposition, sector

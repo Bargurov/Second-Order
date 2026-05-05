@@ -1107,5 +1107,371 @@ class TestReactionProfileStatsPartialFailure(_ArchiveBase):
         self.assertTrue(r_val.json()["available"])
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/major-skipped-headlines — high-priority unanalyzed view
+# ---------------------------------------------------------------------------
+
+
+_MS_TOP_KEYS = (
+    "available",
+    "items",
+    "counts",
+    "counts_by_skip_reason",
+    "counts_by_registry_state",
+    "filters",
+    "news_source",
+)
+
+_MS_COUNT_KEYS = (
+    "eligible", "skipped", "already_analyzed", "expired_low_impact",
+)
+
+_MS_ITEM_KEYS = (
+    "headline", "source_count", "published_at", "event_date",
+    "registry_state", "skip_reason", "skip_reason_label",
+    "rank_score", "rank_factors", "rank_explanation", "why_visible",
+)
+
+
+class _MajorSkippedBase(_ArchiveBase):
+    """Shared setup — wipes the news cache so per-test patches are
+    deterministic and don't leak from one case to the next."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        api._news_cache["data"] = None
+        api._news_cache["ts"]   = 0.0
+
+    def _payload(self, *clusters) -> tuple[dict, str]:
+        return ({"clusters": list(clusters)}, "synthetic-test")
+
+    def _cluster(
+        self,
+        headline: str,
+        source_count: int = 5,
+        *,
+        published_at: str | None = None,
+        low_signal: bool = False,
+    ) -> dict:
+        return {
+            "headline":     headline,
+            "source_count": source_count,
+            "published_at": published_at or datetime.now().isoformat(),
+            "low_signal":   low_signal,
+        }
+
+
+class TestMajorSkippedHeadlinesShape(_MajorSkippedBase):
+    def test_returns_200(self) -> None:
+        r = client.get("/diagnostics/major-skipped-headlines")
+        self.assertEqual(r.status_code, 200)
+
+    def test_top_keys_present(self) -> None:
+        body = client.get("/diagnostics/major-skipped-headlines").json()
+        for k in _MS_TOP_KEYS:
+            self.assertIn(k, body, f"missing top-level key: {k}")
+
+    def test_counts_block_has_all_four_keys(self) -> None:
+        body = client.get("/diagnostics/major-skipped-headlines").json()
+        for k in _MS_COUNT_KEYS:
+            self.assertIn(k, body["counts"], f"missing counts key: {k}")
+
+    def test_filters_echo_query_defaults(self) -> None:
+        body = client.get("/diagnostics/major-skipped-headlines").json()
+        f = body["filters"]
+        self.assertEqual(f["limit"],              25)
+        self.assertEqual(f["since_hours"],        72)
+        self.assertEqual(f["min_source_count"],   2)
+        self.assertFalse(f["include_low_signal"])
+
+
+class TestMajorSkippedHeadlinesEmptyCache(_MajorSkippedBase):
+    def test_no_items_when_cache_empty(self) -> None:
+        body = client.get("/diagnostics/major-skipped-headlines").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["items"], [])
+        for v in body["counts"].values():
+            self.assertEqual(v, 0)
+        self.assertEqual(body["counts_by_skip_reason"],    {})
+        self.assertEqual(body["counts_by_registry_state"], {})
+
+
+class TestMajorSkippedHeadlinesSeeded(_MajorSkippedBase):
+    """Patch the news payload + registry helpers with synthetic clusters."""
+
+    def test_eligible_high_source_count_appears_in_items(self) -> None:
+        cluster = self._cluster("Federal Reserve cuts rates 50bps", 5)
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(cluster),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(len(body["items"]), 1)
+        item = body["items"][0]
+        for k in _MS_ITEM_KEYS:
+            self.assertIn(k, item, f"item missing key: {k}")
+        self.assertEqual(item["headline"], cluster["headline"])
+        self.assertEqual(body["counts"]["eligible"], 1)
+        self.assertEqual(body["counts"]["already_analyzed"], 0)
+
+    def test_already_analyzed_counted_but_excluded_from_items(self) -> None:
+        cluster = self._cluster("Federal Reserve cuts rates 50bps", 5)
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(cluster),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=("analyzed", 123),
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        self.assertEqual(body["items"], [])
+        self.assertEqual(body["counts"]["already_analyzed"], 1)
+        self.assertEqual(body["counts"]["skipped"],          1)
+        self.assertEqual(body["counts_by_registry_state"], {"analyzed": 1})
+
+    def test_expired_low_impact_appears_in_items_with_why_visible(self) -> None:
+        cluster = self._cluster("Federal Reserve announces QE tapering", 4)
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(cluster),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=("expired_low_impact", 9),
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        self.assertEqual(len(body["items"]), 1)
+        item = body["items"][0]
+        self.assertEqual(item["registry_state"], "expired_low_impact")
+        self.assertIn("expired", item["why_visible"])
+        self.assertEqual(body["counts"]["expired_low_impact"], 1)
+        self.assertEqual(body["counts"]["skipped"],            1)
+        self.assertEqual(body["counts"]["eligible"],           0)
+
+    def test_skip_reason_populates_counts_and_why_visible(self) -> None:
+        cluster = self._cluster("Federal Reserve hikes rates by 25bps", 6)
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(cluster),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ), patch(
+            "routes.diagnostics._last_skip_reason_for_title_key",
+            return_value="llm_budget_exhausted",
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        self.assertEqual(len(body["items"]), 1)
+        item = body["items"][0]
+        self.assertEqual(item["skip_reason"], "llm_budget_exhausted")
+        self.assertIn("llm_budget_exhausted", item["why_visible"])
+        # skip_reason_label populated by routes.movers._skip_reason_label.
+        self.assertIsInstance(item["skip_reason_label"], str)
+        self.assertEqual(
+            body["counts_by_skip_reason"]["llm_budget_exhausted"], 1,
+        )
+
+    def test_mixed_states_partition_correctly(self) -> None:
+        clusters = [
+            self._cluster("Federal Reserve cuts rates 50bps",        7),
+            self._cluster("Federal Reserve hikes rates by 25bps",    6),
+            self._cluster("Federal Reserve announces QE tapering",   4),
+        ]
+        # Map each headline to a different registry state.
+        state_map = {
+            "Federal Reserve cuts rates 50bps":      (None, None),
+            "Federal Reserve hikes rates by 25bps":  ("analyzed", 1),
+            "Federal Reserve announces QE tapering": ("expired_low_impact", 2),
+        }
+        def _state(title_key):
+            for h, s in state_map.items():
+                if title_key and title_key in h.lower().replace(" ", ""):
+                    return s
+            for h, s in state_map.items():
+                if h.lower() in title_key or title_key in h.lower():
+                    return s
+            return (None, None)
+
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=({"clusters": clusters}, "synthetic-test"),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            side_effect=lambda tk: _state(tk),
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        # Two items surfaced (eligible + expired_low_impact); analyzed excluded.
+        self.assertEqual(len(body["items"]), 2)
+        states = {it["registry_state"] for it in body["items"]}
+        self.assertIn("expired_low_impact", states)
+        self.assertIn(None, states)
+        self.assertEqual(body["counts"]["eligible"],           1)
+        self.assertEqual(body["counts"]["already_analyzed"],   1)
+        self.assertEqual(body["counts"]["expired_low_impact"], 1)
+        self.assertEqual(body["counts"]["skipped"],            2)
+
+
+class TestMajorSkippedHeadlinesRanking(_MajorSkippedBase):
+    def test_items_sorted_by_rank_score_descending(self) -> None:
+        # All three are market-relevant Federal Reserve headlines so
+        # only source_count differentiates the rank score.
+        clusters = [
+            self._cluster("Federal Reserve cuts rates amid recession fears", 2),
+            self._cluster("Federal Reserve hikes rates by 25bps",            10),
+            self._cluster("Federal Reserve announces QE tapering",           5),
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=({"clusters": clusters}, "synthetic-test"),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        scores = [it["rank_score"] for it in body["items"]]
+        self.assertEqual(scores, sorted(scores, reverse=True))
+        # Highest source_count should be at the top.
+        self.assertEqual(body["items"][0]["source_count"], 10)
+        # Lowest source_count at the bottom.
+        self.assertEqual(body["items"][-1]["source_count"], 2)
+
+
+class TestMajorSkippedHeadlinesMinSourceCount(_MajorSkippedBase):
+    def test_below_threshold_excluded(self) -> None:
+        clusters = [
+            self._cluster("Federal Reserve cuts rates 50bps",     5),
+            # source_count=1 is below default min_source_count=2.
+            self._cluster("Federal Reserve hikes rates by 25bps", 1),
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=({"clusters": clusters}, "synthetic-test"),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.get("/diagnostics/major-skipped-headlines").json()
+        headlines = [it["headline"] for it in body["items"]]
+        self.assertEqual(len(headlines), 1)
+        self.assertEqual(headlines[0], "Federal Reserve cuts rates 50bps")
+
+    def test_min_source_count_query_param_overrides_default(self) -> None:
+        clusters = [
+            self._cluster("Federal Reserve cuts rates 50bps",     2),
+            self._cluster("Federal Reserve hikes rates by 25bps", 4),
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=({"clusters": clusters}, "synthetic-test"),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.get(
+                "/diagnostics/major-skipped-headlines?min_source_count=3"
+            ).json()
+        # Only the source_count=4 cluster survives the raised threshold.
+        self.assertEqual(len(body["items"]), 1)
+        self.assertEqual(body["items"][0]["source_count"], 4)
+        self.assertEqual(body["filters"]["min_source_count"], 3)
+
+
+class TestMajorSkippedHeadlinesLimit(_MajorSkippedBase):
+    def test_limit_caps_items_but_counts_reflect_full_universe(self) -> None:
+        clusters = [
+            self._cluster(f"Federal Reserve hikes rates by {i}bps", 5)
+            for i in (10, 20, 30, 40, 50)
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=({"clusters": clusters}, "synthetic-test"),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.get(
+                "/diagnostics/major-skipped-headlines?limit=2"
+            ).json()
+        self.assertEqual(len(body["items"]), 2)
+        # Counts cover all 5 clusters even though items are capped.
+        self.assertEqual(body["counts"]["eligible"], 5)
+
+
+class TestMajorSkippedHeadlinesZeroCost(_MajorSkippedBase):
+    def test_market_check_fetch_not_called(self) -> None:
+        with patch(
+            "market_check._fetch",
+            side_effect=AssertionError("must not call market_check._fetch"),
+        ):
+            r = client.get("/diagnostics/major-skipped-headlines")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_check_one_ticker_not_called(self) -> None:
+        with patch(
+            "market_check._check_one_ticker",
+            side_effect=AssertionError("must not call _check_one_ticker"),
+        ):
+            r = client.get("/diagnostics/major-skipped-headlines")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_data_provider_not_called(self) -> None:
+        try:
+            import market_data
+            patched = hasattr(market_data, "get_provider")
+        except ImportError:
+            patched = False
+        if patched:
+            with patch(
+                "market_data.get_provider",
+                side_effect=AssertionError("must not call provider"),
+            ):
+                r = client.get("/diagnostics/major-skipped-headlines")
+        else:
+            r = client.get("/diagnostics/major-skipped-headlines")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestMajorSkippedHeadlinesNoMutation(_MajorSkippedBase):
+    def test_repeated_calls_do_not_change_archive_fingerprint(self) -> None:
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/major-skipped-headlines")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        self._seed()
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [dict(r) for r in
+                      conn.execute("SELECT * FROM events").fetchall()]
+        for _ in range(3):
+            client.get("/diagnostics/major-skipped-headlines")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [dict(r) for r in
+                     conn.execute("SELECT * FROM events").fetchall()]
+        self.assertEqual(before, after)
+
+
+class TestMajorSkippedHeadlinesPartialFailure(_MajorSkippedBase):
+    def test_internal_failure_returns_unavailable_shape(self) -> None:
+        with patch(
+            "routes.diagnostics._compute_major_skipped",
+            side_effect=RuntimeError("compute fail"),
+        ):
+            r = client.get("/diagnostics/major-skipped-headlines")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["available"])
+        self.assertEqual(body["items"], [])
+        for v in body["counts"].values():
+            self.assertEqual(v, 0)
+        # Filters echo the request even on failure.
+        self.assertEqual(body["filters"]["limit"], 25)
+
+
 if __name__ == "__main__":
     unittest.main()

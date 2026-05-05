@@ -692,6 +692,262 @@ def _reason_category(reason, status) -> str:
     return "other"
 
 
+@router.get("/diagnostics/major-skipped-headlines")
+def major_skipped_headlines(
+    limit: int = Query(25, ge=1, le=200),
+    since_hours: int = Query(
+        72, ge=1, le=720,
+        description=(
+            "Recency window (hours) for cluster eligibility.  Mirrors "
+            "the ``since_hours`` filter on ``/registry/candidate-queue`` "
+            "so this view reflects the same working set the queue and "
+            "any paid backfill would consider."
+        ),
+    ),
+    min_source_count: int = Query(
+        2, ge=1, le=50,
+        description=(
+            "Minimum cluster ``source_count`` to admit into the items "
+            "list.  Default 2 filters singleton-source rumours; raise to "
+            "narrow further for an at-a-glance major-headline view."
+        ),
+    ),
+    include_low_signal: bool = Query(
+        False,
+        description=(
+            "When true, low-signal clusters and headlines that fail the "
+            "relevance gate are admitted.  Mirrors the candidate-queue "
+            "flag of the same name."
+        ),
+    ),
+):
+    """High-priority headlines NOT reaching analysis — early-warning view.
+
+    Pure read.  Reuses cached news payload + headline registry only —
+    no LLM, no yfinance, no market_check, no provider call, no DB
+    write.  Companion to ``/registry/candidate-queue``: the queue
+    surfaces *eligible* items; this view extends that with
+    ``expired_low_impact`` rows and per-item ``why_visible`` so the
+    operator can see at a glance which major headlines are stuck or
+    expiring.
+
+    **Treats already-analyzed separately.**  Rows whose registry state
+    is ``analyzed`` / ``market_checked`` / ``surfaced`` are counted in
+    ``counts.already_analyzed`` but are NOT included in ``items``;
+    they are doing fine and would crowd out the headlines that need
+    operator attention.
+
+    Items are ranked by
+    ``routes.movers._score_cluster_for_preview`` (the same scorer the
+    paid backfill ranks against), tie-broken by ``source_count`` then
+    by asset-term presence, capped at ``limit``.
+
+    Returns ``available=False`` with an empty items list if the
+    aggregator cannot run (registry helpers unimportable, news cache
+    inaccessible) so the operator panel renders a clear unavailable
+    state rather than a 500.
+    """
+    try:
+        return _api._sanitize_floats(_compute_major_skipped(
+            limit=limit,
+            since_hours=since_hours,
+            min_source_count=min_source_count,
+            include_low_signal=include_low_signal,
+        ))
+    except Exception:
+        return _api._sanitize_floats(_major_skipped_unavailable(
+            limit=limit,
+            since_hours=since_hours,
+            min_source_count=min_source_count,
+            include_low_signal=include_low_signal,
+        ))
+
+
+def _major_skipped_unavailable(
+    *,
+    limit: int,
+    since_hours: int,
+    min_source_count: int,
+    include_low_signal: bool,
+) -> dict:
+    """Stable empty shape returned when the aggregator cannot run."""
+    return {
+        "available":               False,
+        "items":                   [],
+        "counts": {
+            "eligible":            0,
+            "skipped":             0,
+            "already_analyzed":    0,
+            "expired_low_impact":  0,
+        },
+        "counts_by_skip_reason":   {},
+        "counts_by_registry_state": {},
+        "filters": {
+            "limit":               limit,
+            "since_hours":         since_hours,
+            "min_source_count":    min_source_count,
+            "include_low_signal":  include_low_signal,
+        },
+        "news_source":             None,
+    }
+
+
+def _compute_major_skipped(
+    *,
+    limit: int,
+    since_hours: int,
+    min_source_count: int,
+    include_low_signal: bool,
+) -> dict:
+    """Single-pass aggregator over the cached news clusters.
+
+    Mirrors the pre-filter pipeline ``/registry/candidate-queue`` uses
+    (recency + headline + low_signal + relevance) so the two views
+    operate on the same universe; adds the ``min_source_count`` filter
+    and the ``expired_low_impact`` surfacing on top.
+
+    Pure read — every helper imported from ``routes.movers`` is
+    ``_cached_*`` / pure / read-only.  Late imports keep this
+    diagnostics module's import-time surface light and avoid pulling
+    in the movers cycle when the endpoint isn't called.
+    """
+    from datetime import datetime, timedelta
+    from routes.movers import (
+        _cached_news_payload,
+        _cluster_event_date,
+        _cluster_has_asset_terms,
+        _cluster_headline,
+        _cluster_is_recent,
+        _hr_dedup_key,
+        _headline_is_market_relevant,
+        _rank_explanation,
+        _registry_state_for_title_key,
+        _score_cluster_for_preview,
+        _skip_reason_label,
+    )
+
+    payload, source = _cached_news_payload()
+    raw_clusters = (payload or {}).get("clusters") or []
+    since_dt = (
+        datetime.now() - timedelta(hours=since_hours)
+        if since_hours and since_hours > 0 else None
+    )
+
+    counts = {
+        "eligible":           0,
+        "skipped":            0,
+        "already_analyzed":   0,
+        "expired_low_impact": 0,
+    }
+    counts_by_skip_reason:    dict[str, int] = {}
+    counts_by_registry_state: dict[str, int] = {}
+
+    eligible_clusters: list[dict] = []
+    for cluster in raw_clusters:
+        if not isinstance(cluster, dict):
+            continue
+        if not _cluster_is_recent(cluster, since=since_dt):
+            continue
+        headline = _cluster_headline(cluster)
+        if not headline:
+            continue
+        if int(cluster.get("source_count") or 0) < min_source_count:
+            continue
+        if cluster.get("low_signal") and not include_low_signal:
+            continue
+        if (
+            not include_low_signal
+            and not _headline_is_market_relevant(headline)
+        ):
+            continue
+        eligible_clusters.append(cluster)
+
+    cluster_scores: list[tuple[dict, float, dict]] = []
+    for cluster in eligible_clusters:
+        score, factors = _score_cluster_for_preview(cluster)
+        cluster_scores.append((cluster, score, factors))
+    cluster_scores.sort(
+        key=lambda triple: (
+            triple[1],
+            int(triple[0].get("source_count") or 0),
+            1 if _cluster_has_asset_terms(triple[0]) else 0,
+        ),
+        reverse=True,
+    )
+
+    items: list[dict] = []
+    for cluster, rank_score, rank_factors in cluster_scores:
+        headline = _cluster_headline(cluster)
+        title_key = _hr_dedup_key(headline)
+        registry_state, _eid = _registry_state_for_title_key(title_key)
+
+        state_key = registry_state if registry_state else "unregistered"
+        counts_by_registry_state[state_key] = (
+            counts_by_registry_state.get(state_key, 0) + 1
+        )
+
+        # Already-analyzed: counted, never surfaced — those rows are
+        # doing fine and would crowd the major-skipped view.
+        if registry_state in ("analyzed", "market_checked", "surfaced"):
+            counts["already_analyzed"] += 1
+            counts["skipped"] += 1
+            continue
+
+        last_skip_reason = _last_skip_reason_for_title_key(title_key)
+        if last_skip_reason:
+            counts_by_skip_reason[last_skip_reason] = (
+                counts_by_skip_reason.get(last_skip_reason, 0) + 1
+            )
+
+        if registry_state == "expired_low_impact":
+            counts["expired_low_impact"] += 1
+            counts["skipped"] += 1
+            why_visible = (
+                f"expired before analysis (state={registry_state})"
+            )
+        else:
+            counts["eligible"] += 1
+            if last_skip_reason:
+                why_visible = f"skipped: {last_skip_reason}"
+            else:
+                why_visible = (
+                    f"high source_count "
+                    f"({int(cluster.get('source_count') or 0)}), "
+                    f"awaiting analysis"
+                )
+
+        if len(items) >= limit:
+            continue
+        items.append({
+            "headline":          headline,
+            "source_count":      int(cluster.get("source_count") or 0),
+            "published_at":      str(cluster.get("published_at") or "") or None,
+            "event_date":        _cluster_event_date(cluster),
+            "registry_state":    registry_state,
+            "skip_reason":       last_skip_reason,
+            "skip_reason_label": _skip_reason_label(last_skip_reason),
+            "rank_score":        round(float(rank_score), 3),
+            "rank_factors":      rank_factors,
+            "rank_explanation":  _rank_explanation(rank_factors),
+            "why_visible":       why_visible,
+        })
+
+    return {
+        "available":               True,
+        "items":                   items,
+        "counts":                  counts,
+        "counts_by_skip_reason":   counts_by_skip_reason,
+        "counts_by_registry_state": counts_by_registry_state,
+        "filters": {
+            "limit":               limit,
+            "since_hours":         since_hours,
+            "min_source_count":    min_source_count,
+            "include_low_signal":  include_low_signal,
+        },
+        "news_source":             source,
+    }
+
+
 @router.get("/diagnostics/reaction-profile-stats")
 def reaction_profile_stats():
     """Archive-level visibility into reaction_profile_v1 input readiness.

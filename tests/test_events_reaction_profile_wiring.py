@@ -60,7 +60,10 @@ _PEAK_HORIZONS   = ("5d", "20d", "60d")
 
 
 def _expected_per_ticker_keys() -> set[str]:
-    keys = {"symbol", "reaction_profile_basis"}
+    # ``hydration_status`` is the operator-facing triage label distinct
+    # from the composer's scoring-shape ``reaction_profile_basis``.
+    # See ``reaction_profile_hydration.HYDRATION_STATUSES``.
+    keys = {"symbol", "reaction_profile_basis", "hydration_status"}
     for h in _RETURN_HORIZONS:
         keys.add(f"return_{h}")
         keys.add(f"benchmark_relative_return_{h}")
@@ -137,6 +140,55 @@ def _snapshot_events_table(path: str) -> list[tuple]:
         return list(conn.execute("SELECT * FROM events ORDER BY id"))
 
 
+def _snapshot_price_cache_table(path: str) -> list[tuple]:
+    with sqlite3.connect(path) as conn:
+        return list(conn.execute(
+            "SELECT ticker, date, close, volume, auto_adjust "
+            "FROM price_cache ORDER BY ticker, date, auto_adjust"
+        ))
+
+
+def _seed_price_cache_rows(
+    path: str,
+    *,
+    ticker: str,
+    start: str,
+    closes: list[float],
+    auto_adjust: int = 0,
+) -> None:
+    """Insert raw close rows directly into the price_cache table.
+
+    Hand-crafts rows on consecutive business days starting at ``start``
+    so the cache reader (``read_window_no_fetch``) sees a forward
+    window for the ticker without ever invoking the provider.
+    """
+    base = datetime.fromisoformat(start)
+    rows: list[tuple] = []
+    cursor = base
+    for c in closes:
+        # Skip weekends — match the price-cache convention.
+        while cursor.weekday() >= 5:
+            cursor = cursor + timedelta(days=1)
+        rows.append((
+            ticker.upper(),
+            cursor.strftime("%Y-%m-%d"),
+            float(c),
+            1_000_000.0,
+            auto_adjust,
+            datetime.now().isoformat(timespec="seconds"),
+        ))
+        cursor = cursor + timedelta(days=1)
+    with sqlite3.connect(path) as conn:
+        conn.executemany(
+            """
+            INSERT OR REPLACE INTO price_cache
+                (ticker, date, close, volume, auto_adjust, fetched_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Base — temp DB per test
 # ---------------------------------------------------------------------------
@@ -149,11 +201,16 @@ class _Base(unittest.TestCase):
         self._tmp = _tmp_db()
         db.DB_FILE = self._tmp
         db.init_db()
+        # Force price_cache to re-probe the new temp DB on first read.
+        import price_cache as _pc
+        _pc._reset_table_ready_for_tests()
         _reset_caches()
 
     def tearDown(self) -> None:
         db.DB_FILE = self._orig
         _reset_caches()
+        import price_cache as _pc
+        _pc._reset_table_ready_for_tests()
         try:
             os.remove(self._tmp)
         except (OSError, PermissionError):
@@ -304,11 +361,16 @@ class TestReactionProfileReadOnlyContract(_Base):
     def test_detail_does_not_write_to_db(self) -> None:
         eid = _seed()
         before = _snapshot_events_table(self._tmp)
+        before_cache = _snapshot_price_cache_table(self._tmp)
         r = client.get(f"/events/{eid}")
         self.assertEqual(r.status_code, 200)
         self.assertIn("reaction_profile_v1", r.json())
         after = _snapshot_events_table(self._tmp)
+        after_cache = _snapshot_price_cache_table(self._tmp)
         self.assertEqual(before, after, "detail mutated events table")
+        self.assertEqual(
+            before_cache, after_cache, "detail mutated price_cache table",
+        )
 
     def test_detail_makes_no_provider_calls(self) -> None:
         eid = _seed()
@@ -319,10 +381,159 @@ class TestReactionProfileReadOnlyContract(_Base):
              patch("yfinance.download",
                    side_effect=AssertionError("detail must not call yfinance.download")), \
              patch("yfinance.Ticker",
-                   side_effect=AssertionError("detail must not call yfinance.Ticker")):
+                   side_effect=AssertionError("detail must not call yfinance.Ticker")), \
+             patch("market_data.get_provider",
+                   side_effect=AssertionError("detail must not call market_data.get_provider")):
             r = client.get(f"/events/{eid}")
         self.assertEqual(r.status_code, 200, r.text)
         self.assertIn("reaction_profile_v1", r.json())
+
+
+# ---------------------------------------------------------------------------
+# Hydration from cached closes — `available = True` path
+# ---------------------------------------------------------------------------
+
+
+class TestReactionProfileHydratesFromCache(_Base):
+    def test_block_available_true_when_price_cache_hits(self) -> None:
+        eid = _seed()
+        # Anchor + 21 forward closes ramping +0.5%/bar — covers 1d/5d/20d.
+        closes = [100.0] + [100.0 + i * 0.5 for i in range(1, 22)]
+        _seed_price_cache_rows(
+            self._tmp, ticker="XLE", start=_today_iso(), closes=closes,
+        )
+        rp = client.get(f"/events/{eid}").json()["reaction_profile_v1"]
+        self.assertTrue(rp["available"])
+        self.assertEqual(rp["n_tickers"], 1)
+        per_ticker = rp["tickers"][0]
+        self.assertEqual(per_ticker["symbol"], "XLE")
+        self.assertEqual(
+            per_ticker["reaction_profile_basis"], "forward_anchored",
+        )
+        self.assertIsNotNone(per_ticker["return_5d"])
+        self.assertIsNotNone(per_ticker["return_20d"])
+
+    def test_reason_distinguishes_hydrated_from_unscorable(self) -> None:
+        # Two events with disjoint tickers: only the "warm" ticker has
+        # seeded cache rows; the "cold" ticker has no cache window.
+        # The ``reason`` strings must differ so consumers can branch.
+        eid_warm = _seed(headline="Warm event", tickers=[_ticker("XLE")])
+        closes = [100.0] + [100.5] * 21
+        _seed_price_cache_rows(
+            self._tmp, ticker="XLE", start=_today_iso(), closes=closes,
+        )
+        eid_cold = _seed(
+            headline="Cold event ECB rate hold",
+            tickers=[_ticker("ZZZ_NO_CACHE")],
+        )
+
+        warm = client.get(f"/events/{eid_warm}").json()["reaction_profile_v1"]
+        cold = client.get(f"/events/{eid_cold}").json()["reaction_profile_v1"]
+        self.assertTrue(warm["available"])
+        self.assertFalse(cold["available"])
+        self.assertNotEqual(warm["reason"], cold["reason"])
+        self.assertGreater(len(warm["reason"]), 0)
+        self.assertGreater(len(cold["reason"]), 0)
+
+    def test_partial_hydration_some_tickers_unscorable(self) -> None:
+        # Two tickers, only XLE seeded.  XOM stays unscorable; XLE
+        # hydrates.  Block remains ``available = True``.
+        eid = _seed(tickers=[_ticker("XLE"), _ticker("XOM")])
+        closes = [100.0] + [100.5] * 21
+        _seed_price_cache_rows(
+            self._tmp, ticker="XLE", start=_today_iso(), closes=closes,
+        )
+        rp = client.get(f"/events/{eid}").json()["reaction_profile_v1"]
+        self.assertTrue(rp["available"])
+        by_symbol = {t["symbol"]: t for t in rp["tickers"]}
+        self.assertEqual(
+            by_symbol["XLE"]["reaction_profile_basis"], "forward_anchored",
+        )
+        self.assertEqual(
+            by_symbol["XOM"]["reaction_profile_basis"], "unscorable",
+        )
+
+    def test_hydration_path_does_not_write_to_db(self) -> None:
+        # Snapshot both tables before / after a request that hydrates.
+        eid = _seed()
+        closes = [100.0] + [100.5] * 21
+        _seed_price_cache_rows(
+            self._tmp, ticker="XLE", start=_today_iso(), closes=closes,
+        )
+        before_events = _snapshot_events_table(self._tmp)
+        before_cache  = _snapshot_price_cache_table(self._tmp)
+        r = client.get(f"/events/{eid}")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()["reaction_profile_v1"]["available"])
+        self.assertEqual(
+            before_events, _snapshot_events_table(self._tmp),
+            "hydration path mutated events table",
+        )
+        self.assertEqual(
+            before_cache, _snapshot_price_cache_table(self._tmp),
+            "hydration path mutated price_cache table",
+        )
+
+    def test_hydration_path_does_not_call_provider(self) -> None:
+        eid = _seed()
+        closes = [100.0] + [100.5] * 21
+        _seed_price_cache_rows(
+            self._tmp, ticker="XLE", start=_today_iso(), closes=closes,
+        )
+        with patch("api.analyze_event",
+                   side_effect=AssertionError("hydration must not call analyze_event")), \
+             patch("api.market_check",
+                   side_effect=AssertionError("hydration must not call market_check")), \
+             patch("yfinance.download",
+                   side_effect=AssertionError("hydration must not call yfinance.download")), \
+             patch("yfinance.Ticker",
+                   side_effect=AssertionError("hydration must not call yfinance.Ticker")), \
+             patch("market_data.get_provider",
+                   side_effect=AssertionError("hydration must not call market_data.get_provider")):
+            rp = client.get(f"/events/{eid}").json()["reaction_profile_v1"]
+        self.assertTrue(rp["available"])
+        self.assertEqual(
+            rp["tickers"][0]["reaction_profile_basis"], "forward_anchored",
+        )
+
+    def test_stale_ticker_with_cached_rows_stays_unavailable(self) -> None:
+        # A delisted/halted ticker carries ``stale=True`` on the saved
+        # row.  Even when raw cache rows are present, the composer
+        # collapses every forward-looking field to None — surfacing
+        # ``available=True`` here would mislead consumers into reading
+        # all-null fields as "we hydrated successfully".
+        stale_t = _ticker("XLE")
+        stale_t["stale"] = True
+        eid = _seed(tickers=[stale_t])
+        closes = [100.0] + [100.5] * 21
+        _seed_price_cache_rows(
+            self._tmp, ticker="XLE", start=_today_iso(), closes=closes,
+        )
+        rp = client.get(f"/events/{eid}").json()["reaction_profile_v1"]
+        self.assertFalse(rp["available"])
+        self.assertEqual(
+            rp["tickers"][0]["reaction_profile_basis"], "stale",
+        )
+        # Forward-looking fields are nulled; available must reflect that.
+        for h in ("1d", "5d", "20d", "60d"):
+            self.assertIsNone(rp["tickers"][0][f"return_{h}"])
+
+    def test_hydrator_module_does_not_import_market_data(self) -> None:
+        # Defense-in-depth: even if a future edit adds a provider seam,
+        # the module-level import set must stay free of ``market_data``
+        # so the read-only contract is grep-able.
+        import inspect
+        import reaction_profile_hydration as rph
+        src = inspect.getsource(rph)
+        # Allow the substring inside docstrings / comments only as a
+        # mention; ban actual ``import market_data`` lines.
+        for line in src.splitlines():
+            stripped = line.lstrip()
+            self.assertFalse(
+                stripped.startswith("import market_data")
+                or stripped.startswith("from market_data"),
+                f"hydrator must not import market_data; saw: {line!r}",
+            )
 
 
 # ---------------------------------------------------------------------------

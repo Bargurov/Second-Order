@@ -553,3 +553,60 @@ def fetch_daily_cached(
     if cached is None or cached.empty:
         return None
     return cached
+
+
+# ---------------------------------------------------------------------------
+# Read-only entry point — safe for request handlers
+# ---------------------------------------------------------------------------
+
+def read_window_no_fetch(
+    ticker: str,
+    *,
+    start: str,
+    end: Optional[str] = None,
+    auto_adjust: bool = False,
+) -> Optional[pd.DataFrame]:
+    """Strictly read-only window read from the SQLite price cache.
+
+    Mirrors the cache-read half of :func:`fetch_daily_cached` — same
+    SQL, same DataFrame shape — but **never** plans or executes a
+    provider fetch.  A cache miss returns whatever rows are present
+    (possibly an empty frame); the caller decides whether the result
+    is sufficient.  Returns ``None`` only when the DB itself is
+    unreachable or the inputs are unparseable (mirroring the rest of
+    this module's degrade-quietly contract).
+
+    Unlike :func:`fetch_daily_cached`, this entry point does **not**
+    clamp ``end`` to today.  Callers that want the raw forward window
+    from the anchor (e.g. reaction-profile hydration) need every
+    cached row at or after ``start``, including rows that the cache
+    layer might consider "future" relative to the current process
+    clock.  Pass ``end=None`` to read everything from ``start``
+    onward.
+
+    Safe to call from a request handler: no provider seam, no gap
+    backfill, no DB writes, no ``market_data`` import.
+    """
+    if not ticker or not isinstance(ticker, str):
+        return None
+    if not start or not isinstance(start, str):
+        return None
+    if not _ensure_table():
+        return None
+
+    try:
+        start_d = _date.fromisoformat(start[:10])
+    except (ValueError, TypeError):
+        return None
+    if end is not None:
+        try:
+            end_d = _date.fromisoformat(end[:10])
+        except (ValueError, TypeError):
+            return None
+    else:
+        # Far-future sentinel — covers every plausibly cached row
+        # without forcing the caller to think about a clamp.
+        end_d = _date(9999, 12, 31)
+    if start_d > end_d:
+        return _df_from_rows([])
+    return _read_range(ticker, start_d, end_d, auto_adjust)

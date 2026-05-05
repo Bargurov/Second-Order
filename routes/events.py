@@ -32,7 +32,7 @@ from validation_outcome import (
     score_weighted_evidence,
 )
 from validation_status import score_validation_status
-from reaction_profile import compute_reaction_profile
+from reaction_profile_hydration import hydrate_per_ticker_profile
 
 import api as _api
 import headline_registry as _hr
@@ -121,20 +121,25 @@ def _matches_quality(row: dict, quality: str) -> bool:
 def _build_reaction_profile_v1(event: dict) -> dict:
     """Compose the detail-only ``reaction_profile_v1`` block.
 
-    Read-only over the saved event row.  Saved ``market_tickers``
-    entries carry scalar ``return_5d`` / ``return_20d`` and a
-    *normalized* sparkline; they do **not** carry a raw close series.
-    The pure calculator (:func:`reaction_profile.compute_reaction_profile`)
-    needs raw closes, so we feed it ``None`` per ticker and let it
-    return its null-safe / unscorable shape.  The wrapper records why
-    so consumers can branch on ``available`` deterministically.
+    Read-only over the saved event row.  For each saved
+    ``market_tickers`` entry the helper hands the per-ticker dict to
+    :func:`reaction_profile_hydration.hydrate_per_ticker_profile`,
+    which reads the raw close window from the SQLite price-cache
+    table and feeds it into the pure
+    :func:`reaction_profile.compute_reaction_profile`.  The hydrator
+    is read-only over the cache: it never plans or triggers a
+    provider fetch (see ``docs/reaction_profile_hydration_plan.md``
+    §6 / §7).
 
-    No DB read, no DB write, no provider call.
+    ``available`` is True when at least one ticker hydrated to a
+    non-unscorable basis; consumers can branch on it without
+    re-deriving the cause.
     """
     raw_tickers = event.get("market_tickers")
     tickers: list[dict] = (
         list(raw_tickers) if isinstance(raw_tickers, list) else []
     )
+    event_date = event.get("event_date")
     per_ticker: list[dict] = []
     for t in tickers:
         if not isinstance(t, dict):
@@ -142,24 +147,53 @@ def _build_reaction_profile_v1(event: dict) -> dict:
             # path, but we don't want to attach a profile to a row we
             # can't even name.
             continue
-        # Raw closes are not on the saved ticker block, so the calculator
-        # falls through to the unscorable branch.  Future work that
-        # hydrates closes from price_cache plugs in here.
-        profile = compute_reaction_profile(None)
-        symbol = t.get("symbol")
-        per_ticker.append({
-            "symbol": symbol if isinstance(symbol, str) else None,
-            **profile,
-        })
-    if not per_ticker:
+        per_ticker.append(
+            hydrate_per_ticker_profile(t, event_date=event_date)
+        )
+
+    # ``available`` means at least one per-ticker entry hydrated to a
+    # real numeric signal.  Aligned with the per-ticker
+    # ``hydration_status`` enum from the hydrator: status="hydrated"
+    # iff any return_* is non-null.
+    from reaction_profile_hydration import HYDRATION_STATUSES
+
+    status_counts: dict[str, int] = {s: 0 for s in HYDRATION_STATUSES}
+    for entry in per_ticker:
+        s = entry.get("hydration_status")
+        if isinstance(s, str) and s in status_counts:
+            status_counts[s] += 1
+
+    n_hydrated = status_counts["hydrated"]
+    total = len(per_ticker)
+    available = n_hydrated > 0
+
+    if total == 0:
         reason = "no market_tickers on this event"
     else:
-        reason = (
-            "raw close series not stored on market_tickers; "
-            "per-ticker profiles are unscorable until closes are hydrated"
-        )
+        # Always emit a per-status breakdown so consumers can see why
+        # the block reads the way it does without re-deriving the
+        # cause.  Surfaces the three states the brief calls out
+        # explicitly (cache_miss / insufficient_window / hydrated)
+        # plus stale and same_day_fallback when present.
+        bits: list[str] = []
+        for s in HYDRATION_STATUSES:
+            n = status_counts[s]
+            if n > 0:
+                bits.append(f"{n} {s}")
+        breakdown = ", ".join(bits) if bits else f"{total} unknown"
+        if available:
+            reason = (
+                f"hydrated {n_hydrated}/{total} per-ticker profile(s) "
+                f"from cached close windows ({breakdown})"
+            )
+        else:
+            reason = (
+                f"0/{total} per-ticker profile(s) hydrated; per-ticker "
+                f"status: {breakdown}"
+            )
+
     return {
-        "available": False,
+        "available": available,
         "reason":    reason,
         "tickers":   per_ticker,
         "n_tickers": len(per_ticker),
