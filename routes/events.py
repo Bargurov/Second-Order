@@ -365,6 +365,18 @@ def events(
     date_from:   str | None = Query(None),
     date_to:     str | None = Query(None),
     validated:   str | None = Query(None, pattern="^(validated|contradicted|unresolved)$"),
+    validation_status_v2: str | None = Query(
+        None,
+        pattern="^(validated|contradicted|unresolved|pending)$",
+        description=(
+            "Filter rows by the four-label scorer's status "
+            "(validated | contradicted | unresolved | pending).  Composes "
+            "with the legacy ``validated`` filter by AND when both are "
+            "supplied; the legacy filter still binds to the three-label "
+            "string under ``validation_status``.  See "
+            "docs/validation_status_design.md."
+        ),
+    ),
     mover_window: str | None = Query(
         None,
         pattern="^(today|weekly|persistent|market)$",
@@ -558,9 +570,14 @@ def events(
 
     # Any filter that requires per-row Python scoring forces a whole-
     # archive decorate-then-paginate pass.  ``validated`` already has
-    # that contract; ``mover_window`` and engine-derived filters join it
-    # for the same reason.
-    needs_full_scan = bool(validated) or mover_window is not None or engine_filters_active
+    # that contract; ``mover_window`` / engine-derived / four-label
+    # ``validation_status_v2`` filters join it for the same reason.
+    needs_full_scan = (
+        bool(validated)
+        or mover_window is not None
+        or engine_filters_active
+        or validation_status_v2 is not None
+    )
 
     if needs_full_scan:
         for row in rows:
@@ -572,6 +589,17 @@ def events(
                 _surface_engine_compact(row)
         if validated:
             rows = [r for r in rows if r["validation_status"] == validated]
+        if validation_status_v2 is not None:
+            # ``validation_status_v2`` is the dict from
+            # ``score_validation_status``; the ``status`` key carries
+            # the four-label string the filter binds against.  Default
+            # to ``""`` so a row missing the block (shouldn't happen
+            # post-decoration, but defensive) cleanly drops out.
+            rows = [
+                r for r in rows
+                if (r.get("validation_status_v2") or {}).get("status")
+                    == validation_status_v2
+            ]
         if mover_window is not None:
             rows = [
                 r for r in rows
