@@ -148,11 +148,10 @@ and eligible unanalyzed candidates.
 
 Market Overview, Event Detail, shell, portfolio, and archive polish now pass
 the frontend build from the newest approved Second Order design package in
-`repo/design/`. Ignore stale `stitch-ref`, `stitch-analysis-ref`, and old
-design folders. Direction: modern dark premium market-forensics UI,
-institutional but not Bloomberg/terminal. Keep 8px max card radius, readable
-text, Manrope/Inter, tonal layering, and no yellow flood. Current frontend
-verification:
+`repo/design/`. Ignore old design folders that are not part of that approved
+source. Direction: modern dark premium market-forensics UI, institutional but
+not Bloomberg/terminal. Keep 8px max card radius, readable text, Manrope/Inter,
+tonal layering, and no yellow flood. Current frontend verification:
 
 ```powershell
 cd frontend
