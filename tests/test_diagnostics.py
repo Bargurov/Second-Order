@@ -1473,5 +1473,444 @@ class TestMajorSkippedHeadlinesPartialFailure(_MajorSkippedBase):
         self.assertEqual(body["filters"]["limit"], 25)
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/track-record — validation status × hydrated reaction profile
+# ---------------------------------------------------------------------------
+
+
+_TR_TOP_KEYS = (
+    "available",
+    "total_events",
+    "counts_by_validation_status",
+    "reaction_profile_available_count",
+    "average_return_5d_by_validation_status",
+    "average_peak_move_20d_by_validation_status",
+    "fade_or_hold_counts_by_validation_status",
+    "coverage_notes",
+    "latest_event_timestamp",
+)
+
+
+def _seed_price_cache(
+    db_path: str, *, ticker: str, start: str, closes: list[float],
+) -> None:
+    """Hand-write rows into the temp DB's price_cache table."""
+    from datetime import timedelta as _td
+    base = datetime.fromisoformat(start)
+    rows: list[tuple] = []
+    cursor = base
+    for c in closes:
+        while cursor.weekday() >= 5:
+            cursor = cursor + _td(days=1)
+        rows.append((
+            ticker.upper(), cursor.strftime("%Y-%m-%d"),
+            float(c), 1_000_000.0, 0,
+            datetime.now().isoformat(timespec="seconds"),
+        ))
+        cursor = cursor + _td(days=1)
+    with _sqlite3.connect(db_path) as conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO price_cache "
+            "(ticker, date, close, volume, auto_adjust, fetched_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+
+
+class _TrackRecordBase(_ArchiveBase):
+    """Adds price_cache reset around the events-archive base."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        import price_cache as _pc
+        _pc._reset_table_ready_for_tests()
+
+    def tearDown(self) -> None:
+        import price_cache as _pc
+        _pc._reset_table_ready_for_tests()
+        super().tearDown()
+
+
+class TestTrackRecordShape(_TrackRecordBase):
+    def test_returns_200_with_full_top_keyset(self) -> None:
+        r = client.get("/diagnostics/track-record")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _TR_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_counts_by_validation_status_has_all_four_labels(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        self.assertEqual(
+            set(body["counts_by_validation_status"].keys()),
+            set(_VAL_STATUS_KEYS),
+        )
+
+    def test_average_dicts_keyed_by_validation_status(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        for key in (
+            "average_return_5d_by_validation_status",
+            "average_peak_move_20d_by_validation_status",
+            "fade_or_hold_counts_by_validation_status",
+        ):
+            self.assertEqual(set(body[key].keys()), set(_VAL_STATUS_KEYS))
+
+
+class TestTrackRecordEmptyDB(_TrackRecordBase):
+    def test_available_true_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 0)
+        self.assertEqual(body["reaction_profile_available_count"], 0)
+
+    def test_all_status_counts_zero(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        for status in _VAL_STATUS_KEYS:
+            self.assertEqual(body["counts_by_validation_status"][status], 0)
+
+    def test_averages_all_none(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        for status in _VAL_STATUS_KEYS:
+            self.assertIsNone(
+                body["average_return_5d_by_validation_status"][status]
+            )
+            self.assertIsNone(
+                body["average_peak_move_20d_by_validation_status"][status]
+            )
+            self.assertIsInstance(
+                body["fade_or_hold_counts_by_validation_status"][status], dict,
+            )
+
+    def test_coverage_notes_present(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        self.assertIsInstance(body["coverage_notes"], dict)
+
+    def test_latest_event_timestamp_none(self) -> None:
+        body = client.get("/diagnostics/track-record").json()
+        self.assertIsNone(body["latest_event_timestamp"])
+
+
+class TestTrackRecordSeededRows(_TrackRecordBase):
+    """Per-status bucketing + per-status average rollups, hydrated from cache."""
+
+    def test_validation_status_buckets_count_correctly(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        # validated
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+            {"symbol": "MSFT", "direction_tag": "supports thesis"},
+        ])
+        # contradicted
+        self._seed(market_tickers=[
+            {"symbol": "TSLA", "direction_tag": "contradicts thesis"},
+            {"symbol": "GOOG", "direction_tag": "contradicts thesis"},
+        ])
+        # unresolved
+        self._seed(market_tickers=[
+            {"symbol": "META", "direction_tag": "needs more evidence"},
+        ])
+        # pending
+        self._seed(
+            event_date=today,
+            mechanism_summary="Real thesis.",
+            market_tickers=[{"symbol": "NVDA"}],
+        )
+        body = client.get("/diagnostics/track-record").json()
+        self.assertEqual(body["total_events"], 4)
+        c = body["counts_by_validation_status"]
+        self.assertEqual(c["validated"],    1)
+        self.assertEqual(c["contradicted"], 1)
+        self.assertEqual(c["unresolved"],   1)
+        self.assertEqual(c["pending"],      1)
+
+    def test_reaction_profile_available_count_reflects_cache_hits(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[
+                {"symbol": "AAPL", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+                {"symbol": "MSFT", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+            ],
+        )
+        self._seed(
+            event_date=today,
+            market_tickers=[
+                {"symbol": "ZZZ_NO_CACHE", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+                {"symbol": "QQQ_NO_CACHE", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+            ],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0],
+        )
+        body = client.get("/diagnostics/track-record").json()
+        self.assertEqual(body["total_events"], 2)
+        self.assertEqual(body["reaction_profile_available_count"], 1)
+
+    def test_average_return_5d_aggregates_per_status(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[
+                {"symbol": "AAPL", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+                {"symbol": "MSFT", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+            ],
+        )
+        self._seed(
+            event_date=today,
+            market_tickers=[
+                {"symbol": "NVDA", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+                {"symbol": "GOOG", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+            ],
+        )
+        # AAPL: anchor 100, +5% at bar 5.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 100.0, 100.0, 100.0, 100.0, 105.0, 105.0],
+        )
+        # NVDA: anchor 100, -3% at bar 5.
+        _seed_price_cache(
+            self._tmp, ticker="NVDA", start=today,
+            closes=[100.0, 100.0, 100.0, 100.0, 100.0, 97.0, 97.0],
+        )
+        body = client.get("/diagnostics/track-record").json()
+        avg_5d = body["average_return_5d_by_validation_status"]["validated"]
+        self.assertIsNotNone(avg_5d)
+        # AAPL +5, NVDA -3 → average across the two scorable tickers = 1.0.
+        self.assertAlmostEqual(avg_5d, 1.0, places=2)
+
+    def test_fade_or_hold_counts_populated_for_hydrated_status(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[
+                {"symbol": "AAPL", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+                {"symbol": "MSFT", "direction_tag": "supports thesis",
+                 "anchor_date": today},
+            ],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0] + [100.0 + i * 0.5 for i in range(1, 22)],
+        )
+        body = client.get("/diagnostics/track-record").json()
+        counts = body["fade_or_hold_counts_by_validation_status"]["validated"]
+        self.assertGreater(sum(counts.values()), 0)
+
+    def test_coverage_notes_track_unscorable_and_signal(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        # Event A: tickers but no cache rows.
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "ZZZ_MISS",
+                             "direction_tag": "supports thesis",
+                             "anchor_date": today}],
+        )
+        # Event B: empty market_tickers.
+        self._seed(market_tickers=[])
+        # Event C: tickers with seeded cache rows that hydrate.
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL",
+                             "direction_tag": "supports thesis",
+                             "anchor_date": today}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        body = client.get("/diagnostics/track-record").json()
+        notes = body["coverage_notes"]
+        self.assertEqual(notes["events_with_no_tickers"], 1)
+        self.assertGreaterEqual(notes["events_unscorable"], 1)
+        self.assertGreaterEqual(notes["events_with_5d_signal"], 1)
+
+    def test_latest_event_timestamp_populated(self) -> None:
+        self._seed()
+        body = client.get("/diagnostics/track-record").json()
+        self.assertIsInstance(body["latest_event_timestamp"], str)
+        self.assertGreater(len(body["latest_event_timestamp"]), 0)
+
+
+class TestTrackRecordNoMutation(_TrackRecordBase):
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        self._seed()
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/track-record")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_or_cache_rows(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL",
+                             "direction_tag": "supports thesis",
+                             "anchor_date": today}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            ev_before = [dict(r) for r in
+                         conn.execute("SELECT * FROM events").fetchall()]
+            pc_before = list(conn.execute(
+                "SELECT ticker, date, close, volume, auto_adjust "
+                "FROM price_cache ORDER BY ticker, date"
+            ))
+        client.get("/diagnostics/track-record")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            ev_after = [dict(r) for r in
+                        conn.execute("SELECT * FROM events").fetchall()]
+            pc_after = list(conn.execute(
+                "SELECT ticker, date, close, volume, auto_adjust "
+                "FROM price_cache ORDER BY ticker, date"
+            ))
+        self.assertEqual(ev_before, ev_after)
+        self.assertEqual(pc_before, pc_after)
+
+
+class TestTrackRecordZeroCost(_TrackRecordBase):
+    """Endpoint must not invoke market_check / yfinance / provider seams."""
+
+    def test_market_check_not_called(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+        ])
+        with patch(
+            "market_check._fetch",
+            side_effect=AssertionError("must not call market_check._fetch"),
+        ), patch(
+            "market_check._check_one_ticker",
+            side_effect=AssertionError("must not call _check_one_ticker"),
+        ):
+            r = client.get("/diagnostics/track-record")
+        self.assertEqual(r.status_code, 200)
+
+    def test_provider_not_called(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL",
+                             "direction_tag": "supports thesis",
+                             "anchor_date": today}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        try:
+            import market_data
+            patched = hasattr(market_data, "get_provider")
+        except ImportError:
+            patched = False
+        if patched:
+            with patch(
+                "market_data.get_provider",
+                side_effect=AssertionError("must not call provider"),
+            ), patch(
+                "yfinance.download",
+                side_effect=AssertionError("must not call yfinance.download"),
+            ), patch(
+                "yfinance.Ticker",
+                side_effect=AssertionError("must not call yfinance.Ticker"),
+            ):
+                r = client.get("/diagnostics/track-record")
+        else:
+            r = client.get("/diagnostics/track-record")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        # Hydration must have completed from cache without provider help.
+        self.assertGreaterEqual(body["reaction_profile_available_count"], 1)
+
+
+class TestTrackRecordPartialFailure(_TrackRecordBase):
+    def test_aggregator_failure_flips_available_false(self) -> None:
+        self._seed()
+        with patch(
+            "routes.diagnostics._compute_track_record",
+            side_effect=RuntimeError("aggregator fail"),
+        ):
+            r = client.get("/diagnostics/track-record")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["available"])
+        self.assertEqual(body["total_events"], 0)
+        self.assertEqual(body["reaction_profile_available_count"], 0)
+        for status in _VAL_STATUS_KEYS:
+            self.assertEqual(body["counts_by_validation_status"][status], 0)
+            self.assertIsNone(
+                body["average_return_5d_by_validation_status"][status]
+            )
+        self.assertIsNone(body["latest_event_timestamp"])
+
+    def test_per_event_hydration_failure_keeps_aggregate_available(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+        ])
+        self._seed(market_tickers=[
+            {"symbol": "MSFT", "direction_tag": "supports thesis"},
+        ])
+
+        from reaction_profile_hydration import (
+            hydrate_per_ticker_profile as _real_hpp,
+        )
+        call_count = {"n": 0}
+
+        def _flaky(saved_ticker, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise RuntimeError("hydrate fail")
+            return _real_hpp(saved_ticker, **kwargs)
+
+        with patch(
+            "routes.diagnostics.hydrate_per_ticker_profile",
+            side_effect=_flaky,
+        ):
+            r = client.get("/diagnostics/track-record")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 2)
+        # Both events were validated; the hydration failure on one
+        # ticker doesn't change the validation-status histogram.
+        self.assertEqual(
+            body["counts_by_validation_status"]["validated"], 2,
+        )
+
+    def test_per_event_score_failure_keeps_aggregate_available(self) -> None:
+        self._seed()
+        self._seed()
+        from itertools import count as _count
+        counter = _count()
+
+        def _flaky(event, **kwargs):
+            if next(counter) == 0:
+                raise RuntimeError("score fail")
+            return {"status": "validated", "reason": "ok"}
+
+        with patch(
+            "routes.diagnostics.score_validation_status",
+            side_effect=_flaky,
+        ):
+            r = client.get("/diagnostics/track-record")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

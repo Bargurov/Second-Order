@@ -10,6 +10,8 @@ from fastapi import APIRouter, Query
 
 import api as _api
 from headline_registry import compose_diagnostics
+from reaction_profile_hydration import hydrate_per_ticker_profile
+from validation_status import VALID_STATUSES, score_validation_status
 
 router = APIRouter()
 
@@ -1076,4 +1078,205 @@ def _compute_reaction_profile_stats() -> dict:
         "tickers_with_scalar_returns":     tickers_with_ret,
         "profile_basis_counts":            basis_counts,
         "latest_event_timestamp":          latest_ts,
+    }
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/track-record — validation status × hydrated reaction profile
+# ---------------------------------------------------------------------------
+
+
+@router.get("/diagnostics/track-record")
+def track_record():
+    """Aggregate "did the thesis play out?" view.
+
+    Pure read.  Joins
+    :func:`validation_status.score_validation_status` (event-level
+    classification into ``validated`` / ``contradicted`` / ``unresolved``
+    / ``pending``) with the per-ticker reaction-profile hydration path
+    (:func:`reaction_profile_hydration.hydrate_per_ticker_profile`,
+    which itself reads from ``price_cache`` only — no provider call,
+    no fetch).
+
+    Returns compact aggregates: count of events per validation status,
+    how many events have a hydrated reaction profile, average ``return_5d``
+    and ``peak_move_20d`` per status, and the per-status
+    ``fade_or_hold_label_20d`` histogram.  Coverage notes call out how
+    many events landed in each "no signal" reason (no tickers, all
+    tickers unscorable, partial horizon coverage) so consumers can
+    interpret a thin average without re-deriving the cause.
+
+    Single top-level ``available`` flag — when false, every numeric
+    field is zeroed and ``latest_event_timestamp`` is null.  Per-event
+    failures (scoring or hydration) are caught so a single bad row
+    cannot collapse the aggregate to ``available=False``.
+
+    No DB write, no LLM, no ``yfinance`` / ``market_check`` /
+    provider / network call.
+    """
+    try:
+        return _api._sanitize_floats(_compute_track_record())
+    except Exception:
+        return _api._sanitize_floats(_track_record_unavailable())
+
+
+def _track_record_unavailable() -> dict:
+    """Stable empty shape returned when the aggregator cannot run."""
+    return {
+        "available":                                False,
+        "total_events":                             0,
+        "counts_by_validation_status":              {s: 0 for s in VALID_STATUSES},
+        "reaction_profile_available_count":         0,
+        "average_return_5d_by_validation_status":   {s: None for s in VALID_STATUSES},
+        "average_peak_move_20d_by_validation_status": {s: None for s in VALID_STATUSES},
+        "fade_or_hold_counts_by_validation_status": {s: {} for s in VALID_STATUSES},
+        "coverage_notes": {
+            "events_with_no_tickers": 0,
+            "events_unscorable":      0,
+            "events_with_5d_signal":  0,
+            "events_with_20d_signal": 0,
+            "score_failures":         0,
+            "hydration_failures":     0,
+        },
+        "latest_event_timestamp":                   None,
+    }
+
+
+def _compute_track_record() -> dict:
+    """Single-pass aggregator joining validation_status + hydrated profile.
+
+    Per-row scoring or hydration failures are caught individually so
+    one bad row never breaks the aggregate; the failure counts surface
+    in ``coverage_notes`` so consumers can see how thin the underlying
+    data is.  Structural failures (DB unreachable, import error) raise
+    so the outer route handler can flip ``available`` to ``False``.
+    """
+    import sqlite3
+    import db as _db
+
+    if not _db._db_ready:
+        return _track_record_unavailable()
+
+    with sqlite3.connect(_db.DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT * FROM events").fetchall()
+
+    counts_by_status: dict[str, int] = {s: 0 for s in VALID_STATUSES}
+    sum_5d:   dict[str, float] = {s: 0.0 for s in VALID_STATUSES}
+    n_5d:     dict[str, int]   = {s: 0   for s in VALID_STATUSES}
+    sum_20d:  dict[str, float] = {s: 0.0 for s in VALID_STATUSES}
+    n_20d:    dict[str, int]   = {s: 0   for s in VALID_STATUSES}
+    fhh:      dict[str, dict[str, int]] = {s: {} for s in VALID_STATUSES}
+
+    total_events                 = 0
+    rp_available_events          = 0
+    events_with_no_tickers       = 0
+    events_unscorable            = 0
+    events_with_5d_signal        = 0
+    events_with_20d_signal       = 0
+    score_failures               = 0
+    hydration_failures           = 0
+    latest_ts: str | None        = None
+
+    for raw in rows:
+        total_events += 1
+        try:
+            event = _db._decode_event_row(raw)
+        except Exception:
+            event = dict(raw)
+
+        ts = event.get("timestamp")
+        if isinstance(ts, str) and ts and (latest_ts is None or ts > latest_ts):
+            latest_ts = ts
+
+        try:
+            scored = score_validation_status(event)
+            status = scored.get("status") if isinstance(scored, dict) else None
+        except Exception:
+            score_failures += 1
+            status = None
+
+        if status in counts_by_status:
+            counts_by_status[status] += 1
+
+        tickers = event.get("market_tickers") or []
+        if not isinstance(tickers, list) or not tickers:
+            events_with_no_tickers += 1
+            # Without tickers there is nothing to hydrate; the event
+            # contributes only to total_events and the status bucket.
+            continue
+
+        event_date = event.get("event_date")
+        any_5d   = False
+        any_20d  = False
+        any_hyd  = False
+        for t in tickers:
+            if not isinstance(t, dict):
+                continue
+            try:
+                profile = hydrate_per_ticker_profile(t, event_date=event_date)
+            except Exception:
+                hydration_failures += 1
+                continue
+
+            r5  = profile.get("return_5d")
+            r20 = profile.get("return_20d")
+            p20 = profile.get("peak_move_20d")
+            label20 = profile.get("fade_or_hold_label_20d")
+
+            if isinstance(r5, (int, float)) and not isinstance(r5, bool):
+                any_5d = True
+                any_hyd = True
+                if status in counts_by_status:
+                    sum_5d[status] += float(r5)
+                    n_5d[status]   += 1
+            if isinstance(r20, (int, float)) and not isinstance(r20, bool):
+                any_20d = True
+                any_hyd = True
+            if isinstance(p20, (int, float)) and not isinstance(p20, bool):
+                if status in counts_by_status:
+                    sum_20d[status] += float(p20)
+                    n_20d[status]   += 1
+            if (
+                isinstance(label20, str)
+                and label20 != "insufficient"
+                and status in fhh
+            ):
+                fhh[status][label20] = fhh[status].get(label20, 0) + 1
+
+        if any_hyd:
+            rp_available_events += 1
+        else:
+            events_unscorable += 1
+        if any_5d:
+            events_with_5d_signal += 1
+        if any_20d:
+            events_with_20d_signal += 1
+
+    avg_5d = {
+        s: (round(sum_5d[s] / n_5d[s], 2) if n_5d[s] > 0 else None)
+        for s in VALID_STATUSES
+    }
+    avg_20d = {
+        s: (round(sum_20d[s] / n_20d[s], 2) if n_20d[s] > 0 else None)
+        for s in VALID_STATUSES
+    }
+
+    return {
+        "available":                                True,
+        "total_events":                             total_events,
+        "counts_by_validation_status":              counts_by_status,
+        "reaction_profile_available_count":         rp_available_events,
+        "average_return_5d_by_validation_status":   avg_5d,
+        "average_peak_move_20d_by_validation_status": avg_20d,
+        "fade_or_hold_counts_by_validation_status": fhh,
+        "coverage_notes": {
+            "events_with_no_tickers": events_with_no_tickers,
+            "events_unscorable":      events_unscorable,
+            "events_with_5d_signal":  events_with_5d_signal,
+            "events_with_20d_signal": events_with_20d_signal,
+            "score_failures":         score_failures,
+            "hydration_failures":     hydration_failures,
+        },
+        "latest_event_timestamp":                   latest_ts,
     }
