@@ -31,6 +31,7 @@ from validation_outcome import (
     score_validation_label,
     score_weighted_evidence,
 )
+from validation_status import score_validation_status
 
 import api as _api
 import headline_registry as _hr
@@ -572,6 +573,14 @@ def _decorate_row(row: dict) -> None:
     row["event_age_days"]     = sig.get("event_age_days")
     row["persistence_signal"] = classify_persistence_signal(row)
     row["validation_status"]  = _score_validation(row)
+    # Four-label status block from validation_status.score_validation_status.
+    # Additive: keyed under a new field so the legacy
+    # ``validation_status`` STRING above and any client filtering
+    # against it stay stable.  The scorer is pure (no DB / provider
+    # calls); it reads the row's tickers + age anchor and returns the
+    # full {status, reason, ratio, counts, event_age_days,
+    # pending_max_days} block.  See docs/validation_status_design.md.
+    row["validation_status_v2"] = score_validation_status(row)
     # Weighted event-level evidence — additive, keyed under a new block
     # so the existing validation_status string stays stable.
     row["weighted_evidence"]  = score_weighted_evidence(
@@ -692,6 +701,10 @@ def get_event_detail(event_id: int = Path(..., ge=1)):
     ev["thesis_state"]        = state
     ev["thesis_state_reason"] = derive_thesis_state_reason(ev, state=state)
     ev["validation_rationale"] = derive_validation_rationale(ev, state=state)
+    # Four-label status block — same key + shape the listing surfaces
+    # via _decorate_row above so list-vs-detail consumers can bind to a
+    # single contract.  Pure read (see docs/validation_status_design.md).
+    ev["validation_status_v2"] = score_validation_status(ev)
     return _api._sanitize_floats(ev)
 
 
