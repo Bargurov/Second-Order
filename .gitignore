@@ -65,6 +65,15 @@ tests/.fuse_hidden*
 .claude/
 .codex/
 
+# Public repo quarantine / local-only artifacts
+.superpowers/
+gimp/
+CALIBRATION_REPORT.md
+TOPIC_BALANCE_REVIEW.md
+VALIDATION_LOG.md
+product_validation_log.md
+eval_run_index.json
+
 # Frontend
 node_modules/
 frontend/node_modules/

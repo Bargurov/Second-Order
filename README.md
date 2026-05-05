@@ -197,6 +197,9 @@ set `CORS_ALLOWED_ORIGINS` on the backend to the frontend origin.
 
 Copy `.env.example` to `.env` for local use and keep `.env` untracked. Real current keys are:
 
+Security and paid-action guardrails are documented in [SECURITY.md](SECURITY.md).
+Contribution workflow and local verification commands are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 - `ANTHROPIC_API_KEY`
 - `OPENAI_API_KEY`
 - `ANALYSIS_PROVIDER`
