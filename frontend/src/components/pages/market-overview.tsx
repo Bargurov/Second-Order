@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, Scale, ChevronDown } from "lucide-react";
-import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type RegistryCandidateQueueResponse, type RegistryDiagnostics, type SectorRotation } from "@/lib/api";
+import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type ReactionProfileStats, type RegistryCandidateQueueResponse, type RegistryDiagnostics, type SectorRotation, type ValidationStatusStats } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
@@ -1705,6 +1705,81 @@ export function computeTrackRecordDisplay(data: TrackRecord) {
   return { resolved, hitRate, hitTone, avgSupport };
 }
 
+function PhaseOneDiagnosticsStrip({
+  validation,
+  reaction,
+  isLoading,
+}: {
+  validation?: ValidationStatusStats;
+  reaction?: ReactionProfileStats;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <section className="mb-4">
+        <Skeleton className="h-24 rounded-lg bg-surface-container-low" />
+      </section>
+    );
+  }
+
+  if (!validation && !reaction) return null;
+
+  const validationCounts = validation?.counts_by_status;
+  const ready = reaction?.events_with_profile_input_ready ?? 0;
+  const total = reaction?.total_events ?? 0;
+  const readyPct = total > 0 ? Math.round((ready / total) * 100) : null;
+
+  return (
+    <section className="mb-4 rounded-lg bg-surface-container-low px-4 py-3">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant/65">
+            Phase 1 diagnostics
+          </p>
+          <p className="mt-0.5 text-[11px] text-on-surface-variant/50">
+            Zero-cost archive reads for validation status and reaction-profile readiness.
+          </p>
+        </div>
+        <span className="text-[10.5px] tabular-nums text-on-surface-variant/45">
+          {validation?.total_events ?? reaction?.total_events ?? 0} events
+        </span>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2">
+        {validation && (
+          <div className="rounded-md bg-white/[0.02] px-3 py-2">
+            <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/45">
+              Validation status
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <MetricCard label="Pending" value={validationCounts?.pending ?? 0} accent="text-[#facc15]/85" />
+              <MetricCard label="Validated" value={validationCounts?.validated ?? 0} accent="text-primary" />
+              <MetricCard label="Contradicted" value={validationCounts?.contradicted ?? 0} accent="text-error-dim" />
+              <MetricCard label="Unresolved" value={validationCounts?.unresolved ?? 0} accent="text-on-surface-variant/50" />
+            </div>
+          </div>
+        )}
+
+        {reaction && (
+          <div className="rounded-md bg-white/[0.02] px-3 py-2">
+            <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/45">
+              Reaction profiles
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <MetricCard label="Ready" value={reaction.events_with_profile_input_ready} accent="text-primary" />
+              <MetricCard label="Unscorable" value={reaction.events_unscorable} accent="text-on-surface-variant/50" />
+              <MetricCard label="Tickers" value={reaction.tickers_with_scalar_returns} />
+              {readyPct !== null && (
+                <MetricCard label="Coverage" value={`${readyPct}%`} />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
   if (isLoading) {
     return (
@@ -2148,7 +2223,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   });
 
   const { data: candidateQueue } = useQuery({
-    queryKey: ["registry", "candidate-queue", 25, 72],
+    queryKey: qk.registryCandidateQueue(25, 72),
     queryFn: () => api.registryCandidateQueue({ limit: 25, sinceHours: 72 }),
     staleTime: 300_000,
     refetchInterval: 300_000,
@@ -2164,6 +2239,18 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   const { data: trackRecord, isLoading: trackLoading } = useQuery({
     queryKey: qk.trackRecord(),
     queryFn: () => api.trackRecord(),
+    staleTime: 300_000,
+  });
+
+  const { data: validationStats, isLoading: validationStatsLoading } = useQuery({
+    queryKey: qk.validationStatusStats(),
+    queryFn: () => api.validationStatusStats(),
+    staleTime: 300_000,
+  });
+
+  const { data: reactionStats, isLoading: reactionStatsLoading } = useQuery({
+    queryKey: qk.reactionProfileStats(),
+    queryFn: () => api.reactionProfileStats(),
     staleTime: 300_000,
   });
 
@@ -2384,6 +2471,12 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         onAnalyze={onAnalyze}
         refreshMeta={newsData?.refresh_meta}
         failedHeadlines={failedHeadlines}
+      />
+
+      <PhaseOneDiagnosticsStrip
+        validation={validationStats}
+        reaction={reactionStats}
+        isLoading={validationStatsLoading || reactionStatsLoading}
       />
 
       {/* Track Record — thesis outcome summary (hit rate, validated /

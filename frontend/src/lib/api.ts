@@ -1119,6 +1119,28 @@ export interface SavedEvent {
   event_age_days?: number | null;
   persistence_signal?: PersistenceSignal;
   validation_status?: "validated" | "contradicted" | "unresolved";
+  validation_status_v2?: ValidationStatusV2Block;
+}
+
+export type ValidationStatusV2 =
+  | "validated"
+  | "contradicted"
+  | "unresolved"
+  | "pending";
+
+export interface ValidationStatusV2Block {
+  status: ValidationStatusV2;
+  reason?: string | null;
+  ratio?: number | null;
+  counts?: {
+    total_tickers?: number;
+    tagged_tickers?: number;
+    directional?: number;
+    supporting?: number;
+    contradicting?: number;
+  };
+  event_age_days?: number | null;
+  pending_max_days?: number | null;
 }
 
 export type ArchiveQuality =
@@ -1139,6 +1161,7 @@ export interface EventsQuery {
   date_from?:   string;
   date_to?:     string;
   validated?:   "validated" | "contradicted" | "unresolved";
+  validation_status_v2?: ValidationStatusV2;
   quality?:     ArchiveQuality;
   include_mock?: boolean;
 }
@@ -1402,6 +1425,28 @@ export interface MarketContext {
   funding_stress_mode?: FundingStressMode;
   sector_rotation?: SectorRotation;
   finance_playbook?: FinancePlaybook;
+}
+
+export interface ValidationStatusStats {
+  available: boolean;
+  total_events: number;
+  counts_by_status: Record<ValidationStatusV2, number>;
+  counts_by_reason: Record<string, number>;
+  pending_count: number;
+  unresolved_count: number;
+  latest_event_timestamp: string | null;
+}
+
+export interface ReactionProfileStats {
+  available: boolean;
+  total_events: number;
+  events_with_market_tickers: number;
+  events_with_profile_input_ready: number;
+  events_unscorable: number;
+  ticker_count: number;
+  tickers_with_scalar_returns: number;
+  profile_basis_counts: Record<string, number>;
+  latest_event_timestamp: string | null;
 }
 
 export interface RegistryCandidate {
@@ -2674,6 +2719,7 @@ export const api = {
     if (query.date_from)       params.set("date_from",   query.date_from);
     if (query.date_to)         params.set("date_to",     query.date_to);
     if (query.validated)       params.set("validated",   query.validated);
+    if (query.validation_status_v2) params.set("validation_status_v2", query.validation_status_v2);
     if (query.quality)         params.set("quality",     query.quality);
     if (query.include_mock)    params.set("include_mock", "true");
     const qs = params.toString();
@@ -2811,6 +2857,12 @@ export const api = {
 
   marketContext: (highlightLimit = 3) =>
     request<MarketContext>(`/market-context?highlight_limit=${highlightLimit}`),
+
+  validationStatusStats: () =>
+    request<ValidationStatusStats>("/diagnostics/validation-status-stats"),
+
+  reactionProfileStats: () =>
+    request<ReactionProfileStats>("/diagnostics/reaction-profile-stats"),
 
   registryDiagnostics: () =>
     request<RegistryDiagnostics>("/registry/diagnostics"),

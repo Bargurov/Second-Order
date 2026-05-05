@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
-import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality } from "@/lib/api";
+import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality, type ValidationStatusV2 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -89,6 +89,13 @@ const QUALITY_FILTERS: readonly { value: ArchiveQuality | null; label: string }[
   { value: "no_tickers", label: "No tickers" },
   { value: "market_checked", label: "Checked" },
   { value: "clean", label: "Clean" },
+];
+
+const VALIDATION_V2_FILTERS: readonly { value: ValidationStatusV2; label: string }[] = [
+  { value: "pending", label: "Pending" },
+  { value: "unresolved", label: "Unresolved" },
+  { value: "validated", label: "Validated" },
+  { value: "contradicted", label: "Contradicted" },
 ];
 
 function pct(v: number | null | undefined): string {
@@ -1245,6 +1252,7 @@ export function RecentEvents() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [validationFilter, setValidationFilter] = useState<"validated" | "contradicted" | "unresolved" | null>(null);
+  const [validationV2Filter, setValidationV2Filter] = useState<ValidationStatusV2 | null>(null);
   const [qualityFilter, setQualityFilter] = useState<ArchiveQuality | null>(null);
   const [includeMock, setIncludeMock] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -1278,7 +1286,7 @@ export function RecentEvents() {
   // Reset to page 0 whenever any filter changes.
   useEffect(() => {
     setOffset(0);
-  }, [debouncedSearch, stageFilter, confFilter, persistenceFilter, ratingFilter, dateFrom, dateTo, validationFilter, qualityFilter, includeMock]);
+  }, [debouncedSearch, stageFilter, confFilter, persistenceFilter, ratingFilter, dateFrom, dateTo, validationFilter, validationV2Filter, qualityFilter, includeMock]);
 
   const PAGE_SIZE = 25;
 
@@ -1293,6 +1301,7 @@ export function RecentEvents() {
     date_from:   dateFrom        || undefined,
     date_to:     dateTo          || undefined,
     validated:   validationFilter ?? undefined,
+    validation_status_v2: validationV2Filter ?? undefined,
     quality:     qualityFilter   ?? undefined,
     include_mock: includeMock || undefined,
   };
@@ -1306,6 +1315,7 @@ export function RecentEvents() {
     || dateFrom
     || dateTo
     || validationFilter
+    || validationV2Filter
     || qualityFilter
     || includeMock,
   );
@@ -1703,6 +1713,22 @@ export function RecentEvents() {
             >
               Include mock/demo
             </button>
+            <span className="ml-2 text-[10px] font-medium uppercase tracking-[0.12em] text-on-surface-variant/55">Evidence</span>
+            {VALIDATION_V2_FILTERS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setValidationV2Filter(validationV2Filter === value ? null : value)}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  validationV2Filter === value
+                    ? "bg-primary/[0.12] text-primary"
+                    : "bg-white/[0.03] text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
+                )}
+                title="Filters the live validation_status_v2 read on archive rows."
+              >
+                {label}
+              </button>
+            ))}
           </div>
           {/* Sort + date range + active count */}
           <div className="flex flex-wrap items-center gap-1.5">

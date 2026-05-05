@@ -21,7 +21,11 @@ export const qk = {
   ratesContext:  () => ["rates-context"] as const,
   snapshots:     () => ["snapshots"] as const,
   marketContext: () => ["market-context"] as const,
+  validationStatusStats: () => ["diagnostics", "validation-status-stats"] as const,
+  reactionProfileStats: () => ["diagnostics", "reaction-profile-stats"] as const,
   registryDiagnostics: () => ["registry", "diagnostics"] as const,
+  registryCandidateQueue: (limit: number, sinceHours: number) =>
+    ["registry", "candidate-queue", limit, sinceHours] as const,
   backfillPreview: (limit: number, sinceHours: number) =>
     ["movers", "backfill-preview", limit, sinceHours] as const,
   marketMovers:  () => ["market-movers"] as const,
