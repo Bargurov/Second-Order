@@ -21,10 +21,13 @@ diagnostics, and the local operations runbook are in place.
 Phase 1 foundation validation:
 
 1. Magic-number inventory and empirical validation
-2. `validation_status` design and implementation
-3. Reaction profiles
+2. `validation_status` implementation from the committed design sketch
+3. Reaction profile implementation from the committed design sketch
 4. Archive aggregate stats
 5. Schema migration discipline
+
+The `validation_status` and reaction-profile designs are documented, but their
+runtime implementation is still Phase 1 work.
 
 Deferred until the foundation is steadier: charts, tagging expansion,
 scheduler/background jobs, deployment profiles, and Telegram/WhatsApp/OpenClaw

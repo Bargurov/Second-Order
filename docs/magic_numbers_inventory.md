@@ -252,4 +252,4 @@ Honourable mentions worth queueing right after the top 5: `routes/movers.py:1339
 
 ## Verification
 
-`git diff --check` is run after this file is written; expected output: nothing (this commit is doc-only and CLAUDE.md mandates editing in place on `master`). Result recorded below.
+`git diff --check` is run after this file is written; expected output: nothing. This inventory is doc-only and should be edited in place on the current working branch. Result recorded below.

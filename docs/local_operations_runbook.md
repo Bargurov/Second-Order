@@ -7,14 +7,14 @@ Practical local-first runbook for daily Second Order operation.
 Start backend:
 
 ```powershell
-cd C:\Users\Bar\Desktop\geo_mechanism_project
+# From the repository root
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Start frontend in a second terminal:
 
 ```powershell
-cd C:\Users\Bar\Desktop\geo_mechanism_project\frontend
+cd frontend
 npm run dev -- --host 0.0.0.0 --port 3000
 ```
 
@@ -29,7 +29,7 @@ start http://127.0.0.1:3000
 These commands should not call Claude/OpenAI or trigger paid analysis.
 
 ```powershell
-cd C:\Users\Bar\Desktop\geo_mechanism_project
+# From the repository root
 
 Invoke-RestMethod "http://127.0.0.1:8000/health" |
   ConvertTo-Json -Depth 6
@@ -62,7 +62,7 @@ npm --prefix frontend run build
 Dry run first:
 
 ```powershell
-cd C:\Users\Bar\Desktop\geo_mechanism_project
+# From the repository root
 python scripts/backup_archive.py --dry-run
 ```
 
@@ -81,10 +81,12 @@ GitHub Actions runs on push and pull request. It installs backend and frontend d
 Local pre-push check:
 
 ```powershell
-cd C:\Users\Bar\Desktop\geo_mechanism_project
+# From the repository root
 
+python -m unittest tests.test_diagnostics tests.test_logging_config -v
 python -m unittest tests.test_headline_registry tests.test_backfill_paid_guard tests.test_market_context_consumer -v
 python -m unittest discover -s tests -p "test_events*.py" -v
+python scripts/backup_archive.py --dry-run
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
 ```
