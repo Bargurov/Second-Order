@@ -2,24 +2,20 @@
 
 Purpose: classify the remaining untracked/quarantine artifacts before any public-facing cleanup. No files were deleted while preparing this plan.
 
-## Current Untracked Set
+## Final Untracked-Candidate Decisions
 
-`git status --short` currently shows only untracked artifacts. No tracked source files are dirty.
+`git status --short` currently shows only untracked artifacts. No tracked source files are dirty. These are the final recommended actions for the remaining candidates; no files were deleted, staged, or committed while preparing this table.
 
-| Path | Classification | Public GitHub risk | Recommendation |
-|---|---|---|---|
-| `.githooks/` | Review for future commit | Low to medium. A repo-managed hook is useful, but an undocumented local hook can surprise contributors. | Either commit with README/runbook setup instructions, or keep local-only and add `.githooks/` to `.gitignore`. |
-| `.superpowers/` | Handled: ignored local-only quarantine | High. Contains agent/session state, generated HTML brainstorm output, server PID/state files, and messy workflow traces. | Ignored in `.gitignore`. Safe to delete locally after confirming no active session needs it. Do not commit. |
-| `design/` | Keep and commit selected files | Medium. The extracted JSX/CSS source appears to be the current approved design reference, but the zip archive and exported HTML are generated artifacts. | Commit selected source files only: `design/extracted/screens/**`, `design/extracted/styles.css`, `design/extracted/primitives.jsx`, `design/extracted/data.jsx`, and the extracted movers source if still needed. Keep `design/second-order-design.zip` and exported HTML local-only or quarantine/delete later. |
-| `gimp/` | Handled: ignored local-only quarantine | High. This is unrelated third-party/agent tooling and would make the repo look unfocused. | Ignored in `.gitignore`. Safe to delete locally unless there is a deliberate image-tooling task later. |
-| `CALIBRATION_REPORT.md` | Handled: ignored local-only report artifact | Medium. Useful evidence in principle, but this root-level generated report has mojibake and generated-run flavor. | Ignored in `.gitignore`. Future public calibration notes should be regenerated or polished under `docs/`. |
-| `TOPIC_BALANCE_REVIEW.md` | Handled: ignored local-only report artifact | Medium. Useful process material in principle, but this root-level report is detached from current docs and has encoding artifacts. | Ignored in `.gitignore`. Future public topic-balance notes should be cleaned and moved under `docs/`. |
-| `VALIDATION_LOG.md` | Handled: ignored local-only scratch log | Medium. Empty duplicate validation template; public repo already has stronger docs. | Ignored in `.gitignore`. Safe to delete locally if superseded by the runbook/checklists. |
-| `product_validation_log.md` | Handled: ignored local-only scratch log | Low to medium. It may invite private notes/screenshots if used directly in the repo root. | Ignored in `.gitignore`. If revived publicly, move a cleaned blank template under `docs/`. |
-| `eval_run_index.json` | Handled: ignored generated eval artifact | Medium. Generated eval metadata ages quickly and can imply benchmark claims without context. | Ignored in `.gitignore`. Delete local copies after any needed results are summarized. |
-| `scripts/rebuild_archive.py` | Review for future commit | Medium. Could be operationally useful, but archive rebuild tooling can mutate data with `--write` and needs tests/docs before public exposure. | Keep unstaged until paired with composer/tests/runbook warnings. Do not ignore as mere scratch yet. |
-| `tests/test_events_archive_detail_consistency.py` | Review for future commit | Low. Looks like a serious regression test, but it is broad and untracked. | Run and inspect with current events suite before committing in a dedicated test slice. |
-| `docs/superpowers/**` | Review for future commit or move private | Medium to high. These are AI-agent implementation plans/specs with stale V1/task wording and internal workflow instructions. | Extract durable product decisions into normal docs if needed; otherwise keep private/local and ignore the directory. |
+| Path | Final action | Reason |
+|---|---|---|
+| `.githooks/pre-commit` | Commit later after review | Useful shared hook (`npm run typecheck`), but public hooks should be opt-in and documented in CONTRIBUTING/runbook so contributors are not surprised. |
+| `design/extracted/screens/*.jsx`, `design/extracted/styles.css`, `design/extracted/primitives.jsx`, `design/extracted/data.jsx` | Commit later after review | These are the selected source-like design references that match the approved design-source role. Review path mismatches first, especially mover source location. |
+| `design/extracted/movers.jsx`, `design/extracted/movers.css`, `design/extracted/movers_data.jsx`, `design/extracted/app.jsx` | Commit later after review | Potentially useful source references, but not all are named in the approved source list; confirm they are current before tracking. |
+| `design/second-order-design.zip`, `design/extracted/Second Order.html`, `design/extracted/Second Order-print.html` | Add to `.gitignore` | Generated/export artifacts are public-repo noise and should not be tracked with source references. |
+| `docs/superpowers/specs/*.md` | Commit later after review | Some specs contain useful product decisions, but they should be checked for stale V1 wording and normalized into public docs before adding more. |
+| `docs/superpowers/plans/*.md` | Delete/quarantine | Mostly local workflow/task planning noise. Extract any durable decisions into normal docs, then keep the raw plans private or delete locally. |
+| `scripts/rebuild_archive.py` | Commit later after review | Prior triage found this valuable and that still applies. It defaults to dry-run, but has `--write`; pair it with tests, backup guidance, and runbook warnings before public commit. |
+| `tests/test_events_archive_detail_consistency.py` | Commit now | Prior triage found this valuable and that still applies. It is a zero-cost archive read-surface regression test and currently passes in the events discovery suite. |
 
 ## Credibility Risks
 
@@ -45,7 +41,7 @@ Recommendation: keep and commit selected design source files only. Do not commit
 ## Staged Cleanup Recommendation
 
 1. Done: ignore local-only generated/quarantine state: `.superpowers/`, `gimp/`, root report logs, and `eval_run_index.json`.
-2. Design-source policy decided: commit selected `design/extracted/` source files only; keep zip/exported HTML local-only or quarantine/delete later.
-3. Review public docs candidates: clean and move useful report material into `docs/`, dropping mojibake and stale workflow instructions.
-4. Review code/test candidates separately: validate `scripts/rebuild_archive.py` and `tests/test_events_archive_detail_consistency.py` in a focused branch before staging.
-5. Still unignored pending future decision: `.githooks/`, `design/`, `docs/superpowers/**`, `scripts/rebuild_archive.py`, and `tests/test_events_archive_detail_consistency.py`.
+2. Next quick commit candidate: `tests/test_events_archive_detail_consistency.py`.
+3. Review-before-commit candidates: `.githooks/pre-commit`, selected `design/extracted/` source files, useful `docs/superpowers/specs/*.md`, and `scripts/rebuild_archive.py`.
+4. Ignore or quarantine generated design exports: `design/second-order-design.zip` and exported HTML.
+5. Quarantine local workflow docs: `docs/superpowers/plans/*.md` after extracting any durable decisions.
