@@ -36,6 +36,9 @@ jobs:
       - name: Run Phase 0 hardening tests
         run: python -m unittest tests.test_diagnostics tests.test_logging_config -v
 
+      - name: Run Phase 1 pure-logic tests
+        run: python -m unittest tests.test_validation_status tests.test_reaction_profile -v
+
       - name: Run event archive tests
         run: python -m unittest discover -s tests -p "test_events*.py" -v
 
