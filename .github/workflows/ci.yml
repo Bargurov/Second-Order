@@ -33,8 +33,14 @@ jobs:
       - name: Run focused backend tests
         run: python -m unittest tests.test_backfill_paid_guard tests.test_headline_registry tests.test_today_movers_time_window tests.test_market_context_consumer -v
 
+      - name: Run Phase 0 hardening tests
+        run: python -m unittest tests.test_diagnostics tests.test_logging_config -v
+
       - name: Run event archive tests
         run: python -m unittest discover -s tests -p "test_events*.py" -v
+
+      - name: Check archive backup dry run
+        run: python scripts/backup_archive.py --dry-run
 
   frontend:
     name: Frontend Typecheck and Build
