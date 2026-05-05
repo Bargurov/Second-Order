@@ -42,6 +42,9 @@ jobs:
       - name: Run event archive tests
         run: python -m unittest discover -s tests -p "test_events*.py" -v
 
+      - name: Run no-paid smoke script
+        run: python scripts/no_paid_smoke.py --json
+
       - name: Check archive backup dry run
         run: python scripts/backup_archive.py --dry-run
 

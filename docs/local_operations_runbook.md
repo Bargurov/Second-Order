@@ -28,6 +28,20 @@ start http://127.0.0.1:3000
 
 These commands should not call Claude/OpenAI or trigger paid analysis.
 
+Use the consolidated local smoke script first:
+
+```powershell
+# From the repository root
+python scripts/no_paid_smoke.py --json
+```
+
+Inspect config health before enabling any paid path:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/config-health" |
+  ConvertTo-Json -Depth 8
+```
+
 ```powershell
 # From the repository root
 
@@ -117,6 +131,7 @@ Local pre-push check:
 python -m unittest tests.test_diagnostics tests.test_logging_config -v
 python -m unittest tests.test_headline_registry tests.test_backfill_paid_guard tests.test_market_context_consumer -v
 python -m unittest discover -s tests -p "test_events*.py" -v
+python scripts/no_paid_smoke.py --json
 python scripts/backup_archive.py --dry-run
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
@@ -157,6 +172,54 @@ Invoke-RestMethod -Method Post `
   -ContentType "application/json" `
   -Body "{}" | ConvertTo-Json -Depth 8
 ```
+
+## Auto-Backfill Operations
+
+Auto-backfill is disabled by default and must stay disabled before demos unless the demo explicitly includes paid background work. It requires both gates:
+
+- `ENABLE_PAID_ANALYSIS=true`
+- `ENABLE_AUTO_BACKFILL=true`
+
+Default local-safe config:
+
+```powershell
+$env:ENABLE_PAID_ANALYSIS = "false"
+$env:ENABLE_AUTO_BACKFILL = "false"
+$env:AUTO_BACKFILL_INTERVAL_HOURS = "6"
+$env:AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN = "2"
+$env:AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY = "4"
+$env:AUTO_BACKFILL_MODEL = "claude-haiku-4-5-20251001"
+```
+
+Enable intentionally:
+
+```powershell
+$env:ENABLE_PAID_ANALYSIS = "true"
+$env:ENABLE_AUTO_BACKFILL = "true"
+$env:AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN = "1"
+$env:AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY = "2"
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/config-health" |
+  ConvertTo-Json -Depth 8
+```
+
+Disable immediately:
+
+```powershell
+$env:ENABLE_AUTO_BACKFILL = "false"
+$env:ENABLE_PAID_ANALYSIS = "false"
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/config-health" |
+  ConvertTo-Json -Depth 8
+```
+
+Before a demo, do not:
+
+- Start any background paid worker.
+- Set `ENABLE_AUTO_BACKFILL=true`.
+- Set `ENABLE_PAID_ANALYSIS=true` unless the paid action is the demo topic.
+- Use paid POST routes to make the UI look populated.
+- Leave daily caps unchecked.
 
 ## Archive Rebuild Script — Safety Model
 

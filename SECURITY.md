@@ -14,6 +14,9 @@ Second Order is local-first, but it can use paid LLM and market-data providers w
 
 - Paid analysis must be intentionally enabled with `ENABLE_PAID_ANALYSIS=true`.
 - Paid candidate/backfill actions must require explicit request confirmation. Use `confirm_paid=true` only when the API spend is intentional.
+- Background paid work must stay disabled unless both `ENABLE_PAID_ANALYSIS=true` and `ENABLE_AUTO_BACKFILL=true` are explicit operator choices.
+- Paid work must never be triggered from GET routes, page load, refresh, diagnostics, preview endpoints, or background polling without both gates.
+- Daily paid-call caps such as `AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY` must remain enforced and low.
 - Keep `BACKFILL_DRY_RUN_DEFAULT=true` and `MAX_BACKFILL_LLM_CALLS` low for local work.
 - Preview and diagnostics GET routes are zero-cost inspection surfaces. Examples include `/movers/backfill-preview`, `/registry/diagnostics`, and `/registry/candidate-queue`.
 - Do not add UI or scripts that call paid endpoints on page load, refresh, or background polling.
