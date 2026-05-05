@@ -1502,6 +1502,31 @@ export interface ReactionProfileStats {
   latest_event_timestamp: string | null;
 }
 
+/** Response of GET /diagnostics/track-record — zero-cost archive
+ *  aggregate joining ``validation_status`` (event-level classification)
+ *  with hydrated reaction-profile readings (per-ticker, read-only over
+ *  the price-cache layer; no provider call).  Distinct from the legacy
+ *  ``/stats/track-record`` ({@link TrackRecord}) which feeds the
+ *  primary track-record strip. */
+export interface DiagnosticsTrackRecord {
+  available: boolean;
+  total_events: number;
+  counts_by_validation_status: Record<ValidationStatusV2, number>;
+  reaction_profile_available_count: number;
+  average_return_5d_by_validation_status: Record<ValidationStatusV2, number | null>;
+  average_peak_move_20d_by_validation_status: Record<ValidationStatusV2, number | null>;
+  fade_or_hold_counts_by_validation_status: Record<ValidationStatusV2, Record<string, number>>;
+  coverage_notes: {
+    events_with_no_tickers: number;
+    events_unscorable: number;
+    events_with_5d_signal: number;
+    events_with_20d_signal: number;
+    score_failures: number;
+    hydration_failures: number;
+  };
+  latest_event_timestamp: string | null;
+}
+
 export interface RegistryCandidate {
   headline: string;
   cluster_id?: number | string | null;
@@ -2916,6 +2941,9 @@ export const api = {
 
   reactionProfileStats: () =>
     request<ReactionProfileStats>("/diagnostics/reaction-profile-stats"),
+
+  diagnosticsTrackRecord: () =>
+    request<DiagnosticsTrackRecord>("/diagnostics/track-record"),
 
   registryDiagnostics: () =>
     request<RegistryDiagnostics>("/registry/diagnostics"),

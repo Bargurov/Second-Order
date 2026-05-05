@@ -52,6 +52,15 @@ Invoke-RestMethod "http://127.0.0.1:8000/events/1/similar?limit=5" |
 Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/validation-status-stats" |
   ConvertTo-Json -Depth 8
 
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/reaction-profile-stats" |
+  ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/track-record" |
+  ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/major-skipped-headlines?limit=5" |
+  ConvertTo-Json -Depth 8
+
 Invoke-RestMethod "http://127.0.0.1:8000/events?limit=5" |
   ConvertTo-Json -Depth 8
 
@@ -68,7 +77,9 @@ npm --prefix frontend run build
 
 ## Validation Status Read Surfaces
 
-`validation_status_v2` is live on archive read surfaces: event lists and event detail. Archive filtering is still in progress and backend-only until verified in the UI.
+`validation_status_v2` is live on archive read surfaces: event lists and event detail. The archive supports `validation_status_v2=validated|contradicted|unresolved|pending` filtering, and the frontend exposes the filter.
+
+`reaction_profile_v1` is live on event detail when cached close windows exist. It is read-only and cache-backed; detail reads do not fetch live prices.
 
 How to interpret:
 

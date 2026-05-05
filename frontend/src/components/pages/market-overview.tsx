@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, Scale, ChevronDown } from "lucide-react";
-import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type ReactionProfileStats, type RegistryCandidateQueueResponse, type RegistryDiagnostics, type SectorRotation, type ValidationStatusStats } from "@/lib/api";
+import { api, type BackfillCandidateResponse, type BackfillPreviewResponse, type ContextExplanation, type DiagnosticsTrackRecord, type MarketMover, type TrackRecord, type NewsCluster, type RegimeVector, type RefreshMeta, type PlaybookEntry, type PolicyItem, type FinancePlaybook, type FundingStressMode, type NewsUncertaintyConcentration, type ReactionProfileStats, type RegistryCandidateQueueResponse, type RegistryDiagnostics, type SectorRotation, type ValidationStatusStats } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
@@ -1780,6 +1780,130 @@ function PhaseOneDiagnosticsStrip({
   );
 }
 
+function DiagnosticsTrackRecordStrip({
+  data,
+  isLoading,
+}: {
+  data?: DiagnosticsTrackRecord;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <section className="mb-4">
+        <Skeleton className="h-24 rounded-lg bg-surface-container-low" />
+      </section>
+    );
+  }
+  if (!data) return null;
+
+  const counts = data.counts_by_validation_status;
+  const avg5d = data.average_return_5d_by_validation_status;
+  const cov = data.coverage_notes;
+  const total = data.total_events;
+  const rpAvail = data.reaction_profile_available_count;
+  const rpPct = total > 0 ? Math.round((rpAvail / total) * 100) : null;
+
+  // Format a possibly-null average to a signed 2dp string with a "%"
+  // suffix; null collapses to an em-dash so the column stays aligned.
+  const fmtPct = (v: number | null | undefined): string =>
+    typeof v === "number"
+      ? `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`
+      : "—";
+
+  // Tone the average 5d cell against zero so the institutional reading
+  // (positive = teal, negative = coral, missing = quiet neutral) is
+  // immediate.  Same vocabulary the rest of the page already uses.
+  const toneClass = (v: number | null | undefined): string => {
+    if (typeof v !== "number") return "text-on-surface-variant/45";
+    if (v > 0) return "text-primary";
+    if (v < 0) return "text-error-dim";
+    return "text-on-surface/85";
+  };
+
+  return (
+    <section className="mb-4 rounded-lg bg-surface-container-low px-4 py-3">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant/65">
+            Track Record · validation × reaction
+          </p>
+          <p className="mt-0.5 text-[11px] text-on-surface-variant/50">
+            Did the thesis play out? Joins validation status with cached
+            reaction profile — zero-cost, no provider call.
+          </p>
+        </div>
+        <span className="text-[10.5px] tabular-nums text-on-surface-variant/45">
+          {total} events
+        </span>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2">
+        {/* Status counts + reaction-profile availability */}
+        <div className="rounded-md bg-white/[0.02] px-3 py-2">
+          <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/45">
+            Outcomes
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <MetricCard label="Validated" value={counts.validated} accent="text-primary" />
+            <MetricCard label="Contradicted" value={counts.contradicted} accent="text-error-dim" />
+            <MetricCard label="Unresolved" value={counts.unresolved} accent="text-on-surface-variant/50" />
+            <MetricCard label="Pending" value={counts.pending} accent="text-on-surface-variant/50" />
+            <MetricCard label="Hydrated" value={rpAvail} />
+            {rpPct !== null && (
+              <MetricCard label="Coverage" value={`${rpPct}%`} />
+            )}
+          </div>
+        </div>
+
+        {/* Average return 5d by validation status — only render columns
+            with computable averages, suppress noise where coverage is
+            still nil. */}
+        <div className="rounded-md bg-white/[0.02] px-3 py-2">
+          <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/45">
+            Avg return 5d by status
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <MetricCard
+              label="Validated"
+              value={fmtPct(avg5d.validated)}
+              accent={toneClass(avg5d.validated)}
+            />
+            <MetricCard
+              label="Contradicted"
+              value={fmtPct(avg5d.contradicted)}
+              accent={toneClass(avg5d.contradicted)}
+            />
+            <MetricCard
+              label="Unresolved"
+              value={fmtPct(avg5d.unresolved)}
+              accent={toneClass(avg5d.unresolved)}
+            />
+            <MetricCard
+              label="Pending"
+              value={fmtPct(avg5d.pending)}
+              accent={toneClass(avg5d.pending)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Coverage notes — quiet footer row so the operator sees how
+          thin the underlying numbers are without re-deriving the cause. */}
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 px-1 text-[10.5px] tabular-nums text-on-surface-variant/45">
+        <span>5d signal: {cov.events_with_5d_signal}</span>
+        <span>20d signal: {cov.events_with_20d_signal}</span>
+        <span>unscorable: {cov.events_unscorable}</span>
+        <span>no tickers: {cov.events_with_no_tickers}</span>
+        {(cov.score_failures > 0 || cov.hydration_failures > 0) && (
+          <span className="text-error-dim/70">
+            failures: {cov.score_failures + cov.hydration_failures}
+          </span>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
   if (isLoading) {
     return (
@@ -2254,6 +2378,12 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
     staleTime: 300_000,
   });
 
+  const { data: diagnosticsTrackRecord, isLoading: diagnosticsTrackRecordLoading } = useQuery({
+    queryKey: qk.diagnosticsTrackRecord(),
+    queryFn: () => api.diagnosticsTrackRecord(),
+    staleTime: 300_000,
+  });
+
   const { data: newsData, isLoading: newsLoading } = useQuery({
     queryKey: qk.newsPaginated(30),
     queryFn: () => api.news(30),
@@ -2477,6 +2607,11 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         validation={validationStats}
         reaction={reactionStats}
         isLoading={validationStatsLoading || reactionStatsLoading}
+      />
+
+      <DiagnosticsTrackRecordStrip
+        data={diagnosticsTrackRecord}
+        isLoading={diagnosticsTrackRecordLoading}
       />
 
       {/* Track Record — thesis outcome summary (hit rate, validated /

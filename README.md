@@ -16,18 +16,25 @@ Phase 0 hardening is complete: CI, key rotation, archive backup command, paid
 server guard, structured logging, config health diagnostics, data-quality
 diagnostics, and the local operations runbook are in place.
 
+Phase 1 read surfaces are active for local archive validation: archive/detail
+reads expose `validation_status_v2`, event detail can hydrate
+`reaction_profile_v1` from cached close data, and zero-cost diagnostics now
+summarize validation, reaction-profile readiness, track-record aggregates, and
+skipped headline candidates.
+
 ## Next Roadmap
 
 Phase 1 foundation validation:
 
 1. Magic-number inventory and empirical validation
-2. `validation_status` implementation from the committed design sketch
-3. Reaction profile implementation from the committed design sketch
-4. Archive aggregate stats
+2. `validation_status_v2` calibration and UI refinement
+3. Reaction-profile calibration and coverage expansion
+4. Archive aggregate stats and track-record interpretation
 5. Schema migration discipline
 
-The `validation_status` and reaction-profile designs are documented, but their
-runtime implementation is still Phase 1 work.
+The first Phase 1 read surfaces are live. Remaining Phase 1 work is primarily
+calibration, coverage, migration discipline, and clearer public interpretation
+of archive-derived metrics.
 
 Deferred until the foundation is steadier: charts, tagging expansion,
 scheduler/background jobs, deployment profiles, and Telegram/WhatsApp/OpenClaw
@@ -39,9 +46,12 @@ delivery.
 - Source-preserving clustering and manual refresh via `/news/refresh`
 - Progressive analysis through `/analyze/stream` with mechanism, watchlists, transmission chain, and macro overlays
 - Recent events archive with search/filter, related-event linking, event cascade, and dated backtests
+- Archive/detail validation readouts through `validation_status_v2`, including the `validation_status_v2` archive filter
+- Event-detail reaction profiles through `reaction_profile_v1` when cached forward close windows exist
 - Portfolio simulator over saved events, revisit snapshots, and share-page export
 - Regime playbook, macro calendar, and policy-tracker surfaces
 - Movers (today / weekly / yearly / persistent) and stress / rates-context / market-context endpoints
+- Zero-cost diagnostics for `/diagnostics/track-record`, `/diagnostics/major-skipped-headlines`, and `/diagnostics/reaction-profile-stats`
 - Ticker detail endpoints (chart, info, headlines) for inline inspection
 - Bulk export of saved events: JSON / CSV / Markdown / ZIP / presentation deck / portfolio memo
 - Telegram delivery for headline analysis and live-inbox briefing
@@ -49,6 +59,13 @@ delivery.
   - news cache: in-memory hot cache + SQLite persistence
   - price/ticker cache for market data
   - optional snapshot warmer for liquid market benchmarks
+
+Current limitations:
+
+- Recent events can remain `pending` or `unresolved` until enough market evidence exists.
+- `reaction_profile_v1` is read-only and cache-backed; it does not fetch live prices during detail reads.
+- Reaction profiles may be unscorable until enough forward close bars are cached.
+- Paid analysis does not run unless `ENABLE_PAID_ANALYSIS=true` and the paid request is explicitly confirmed.
 
 ## Engine Phase v1 / Backend Productization Freeze
 

@@ -23,6 +23,7 @@ export const qk = {
   marketContext: () => ["market-context"] as const,
   validationStatusStats: () => ["diagnostics", "validation-status-stats"] as const,
   reactionProfileStats: () => ["diagnostics", "reaction-profile-stats"] as const,
+  diagnosticsTrackRecord: () => ["diagnostics", "track-record"] as const,
   registryDiagnostics: () => ["registry", "diagnostics"] as const,
   registryCandidateQueue: (limit: number, sinceHours: number) =>
     ["registry", "candidate-queue", limit, sinceHours] as const,

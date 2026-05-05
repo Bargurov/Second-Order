@@ -10,7 +10,7 @@ Purpose: classify the remaining untracked/quarantine artifacts before any public
 |---|---|---|---|
 | `.githooks/` | Review for future commit | Low to medium. A repo-managed hook is useful, but an undocumented local hook can surprise contributors. | Either commit with README/runbook setup instructions, or keep local-only and add `.githooks/` to `.gitignore`. |
 | `.superpowers/` | Handled: ignored local-only quarantine | High. Contains agent/session state, generated HTML brainstorm output, server PID/state files, and messy workflow traces. | Ignored in `.gitignore`. Safe to delete locally after confirming no active session needs it. Do not commit. |
-| `design/` | Review for future commit, split by subpath | Medium. Approved design source can help credibility, but zip/exported HTML/generated root files look like stale tool output. | Review `design/extracted/screens/**` plus required support files for a future design-source commit. Keep zip/export HTML local-only or delete after review. |
+| `design/` | Keep and commit selected files | Medium. The extracted JSX/CSS source appears to be the current approved design reference, but the zip archive and exported HTML are generated artifacts. | Commit selected source files only: `design/extracted/screens/**`, `design/extracted/styles.css`, `design/extracted/primitives.jsx`, `design/extracted/data.jsx`, and the extracted movers source if still needed. Keep `design/second-order-design.zip` and exported HTML local-only or quarantine/delete later. |
 | `gimp/` | Handled: ignored local-only quarantine | High. This is unrelated third-party/agent tooling and would make the repo look unfocused. | Ignored in `.gitignore`. Safe to delete locally unless there is a deliberate image-tooling task later. |
 | `CALIBRATION_REPORT.md` | Handled: ignored local-only report artifact | Medium. Useful evidence in principle, but this root-level generated report has mojibake and generated-run flavor. | Ignored in `.gitignore`. Future public calibration notes should be regenerated or polished under `docs/`. |
 | `TOPIC_BALANCE_REVIEW.md` | Handled: ignored local-only report artifact | Medium. Useful process material in principle, but this root-level report is detached from current docs and has encoding artifacts. | Ignored in `.gitignore`. Future public topic-balance notes should be cleaned and moved under `docs/`. |
@@ -29,10 +29,23 @@ Purpose: classify the remaining untracked/quarantine artifacts before any public
 - Operational scripts that can write to the archive (`scripts/rebuild_archive.py`) should not appear without tests, backup guidance, and clear dry-run defaults.
 - Empty or duplicate templates (`VALIDATION_LOG.md`) add noise and weaken public documentation focus.
 
+## Design Asset Triage
+
+`design/` currently contains 15 files, about 234 KB total:
+
+- 10 `.jsx` source/reference files
+- 2 `.css` files
+- 2 exported `.html` files
+- 1 `.zip` archive
+
+The README currently points broadly to `repo/design/`, which is directionally correct but too broad for public inclusion. The source-like files under `design/extracted/` match the approved design-reference role. The generated HTML exports and `design/second-order-design.zip` should not be tracked in the public repo.
+
+Recommendation: keep and commit selected design source files only. Do not commit the zip archive or exported HTML. A later design-source commit should either narrow the README reference to the selected committed paths or add a short note explaining that generated exports are intentionally excluded.
+
 ## Staged Cleanup Recommendation
 
 1. Done: ignore local-only generated/quarantine state: `.superpowers/`, `gimp/`, root report logs, and `eval_run_index.json`.
-2. Decide design-source policy: commit only approved `design/extracted/screens/**` and required support files, or keep all of `design/` local-only.
+2. Design-source policy decided: commit selected `design/extracted/` source files only; keep zip/exported HTML local-only or quarantine/delete later.
 3. Review public docs candidates: clean and move useful report material into `docs/`, dropping mojibake and stale workflow instructions.
 4. Review code/test candidates separately: validate `scripts/rebuild_archive.py` and `tests/test_events_archive_detail_consistency.py` in a focused branch before staging.
 5. Still unignored pending future decision: `.githooks/`, `design/`, `docs/superpowers/**`, `scripts/rebuild_archive.py`, and `tests/test_events_archive_detail_consistency.py`.
