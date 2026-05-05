@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Query
 
 import api as _api
+from auto_backfill_config import load_auto_backfill_config
 from headline_registry import compose_diagnostics
 from reaction_profile_hydration import hydrate_per_ticker_profile
 from validation_status import VALID_STATUSES, score_validation_status
@@ -1279,4 +1280,58 @@ def _compute_track_record() -> dict:
             "hydration_failures":     hydration_failures,
         },
         "latest_event_timestamp":                   latest_ts,
+    }
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-config — read-only env-driven config snapshot
+# ---------------------------------------------------------------------------
+
+
+@router.get("/diagnostics/auto-backfill-config")
+def auto_backfill_config():
+    """Read-only snapshot of the auto-backfill scheduler configuration.
+
+    Pure read of ``os.environ`` via
+    :func:`auto_backfill_config.load_auto_backfill_config` — does NOT
+    start the scheduler, does NOT execute a backfill, does NOT touch
+    SQLite, does NOT call the LLM, ``yfinance``, ``market_check``, or
+    any provider seam.  Safe to call at any time, including before any
+    paid path has been authorised.
+
+    The response surfaces operational toggles only.  No API keys, no
+    raw env values for credential variables, and no headline content
+    are emitted — see ``docs/auto_backfill_scheduler_design.md`` §9
+    for the wider data-handling contract.
+
+    The endpoint never raises: a structural failure inside the loader
+    falls back to the disabled-shape so the operator panel renders a
+    clean "off" state rather than a 500.
+    """
+    try:
+        return _api._sanitize_floats(load_auto_backfill_config().to_dict())
+    except Exception:
+        return _api._sanitize_floats(_auto_backfill_config_unavailable())
+
+
+def _auto_backfill_config_unavailable() -> dict:
+    """Stable fallback shape — every key the populated response carries,
+    with safe defaults that look like an off-and-quiet environment.
+    """
+    from auto_backfill_config import (
+        DEFAULT_INTERVAL_HOURS,
+        DEFAULT_MAX_PER_DAY,
+        DEFAULT_MAX_PER_RUN,
+        DEFAULT_MODEL,
+        EFFECTIVE_DISABLED,
+    )
+    return {
+        "enabled":               False,
+        "paid_analysis_enabled": False,
+        "interval_hours":        DEFAULT_INTERVAL_HOURS,
+        "max_calls_per_run":     DEFAULT_MAX_PER_RUN,
+        "max_calls_per_day":     DEFAULT_MAX_PER_DAY,
+        "model":                 DEFAULT_MODEL,
+        "effective_status":      EFFECTIVE_DISABLED,
+        "warnings":              [],
     }

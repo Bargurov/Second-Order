@@ -130,6 +130,7 @@ Local pre-push check:
 
 python -m unittest tests.test_diagnostics tests.test_logging_config -v
 python -m unittest tests.test_headline_registry tests.test_backfill_paid_guard tests.test_market_context_consumer -v
+python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner -v
 python -m unittest discover -s tests -p "test_events*.py" -v
 python scripts/no_paid_smoke.py --json
 python scripts/backup_archive.py --dry-run
@@ -220,6 +221,30 @@ Before a demo, do not:
 - Set `ENABLE_PAID_ANALYSIS=true` unless the paid action is the demo topic.
 - Use paid POST routes to make the UI look populated.
 - Leave daily caps unchecked.
+
+## Auto-Backfill Foundation Checks
+
+Scheduler execution is not implemented or enabled yet. The current stable
+surface is pure safety logic plus zero-cost diagnostics.
+
+Run the pure foundation tests:
+
+```powershell
+python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner -v
+```
+
+Run no-paid smoke:
+
+```powershell
+python scripts/no_paid_smoke.py --json
+```
+
+Inspect config diagnostics:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/auto-backfill-config" |
+  ConvertTo-Json -Depth 8
+```
 
 ## Archive Rebuild Script — Safety Model
 

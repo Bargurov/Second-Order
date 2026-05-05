@@ -1912,5 +1912,230 @@ class TestTrackRecordPartialFailure(_TrackRecordBase):
         self.assertEqual(body["total_events"], 2)
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-config — env-driven config snapshot
+# ---------------------------------------------------------------------------
+
+
+_ABF_TOP_KEYS = (
+    "enabled",
+    "paid_analysis_enabled",
+    "interval_hours",
+    "max_calls_per_run",
+    "max_calls_per_day",
+    "model",
+    "effective_status",
+    "warnings",
+)
+
+_ABF_ENV_VARS = (
+    "ENABLE_AUTO_BACKFILL",
+    "ENABLE_PAID_ANALYSIS",
+    "AUTO_BACKFILL_INTERVAL_HOURS",
+    "AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN",
+    "AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY",
+    "AUTO_BACKFILL_MODEL",
+)
+
+
+class _AutoBackfillEnvBase(_Base):
+    """Snapshot the relevant env vars per test so global state can't leak
+    between cases.  The diagnostics endpoint reads from ``os.environ`` at
+    call time, so each test's ``patch.dict`` window covers exactly the
+    request it makes.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._env_backup = {
+            k: os.environ.get(k) for k in _ABF_ENV_VARS
+        }
+        for k in _ABF_ENV_VARS:
+            os.environ.pop(k, None)
+
+    def tearDown(self) -> None:
+        for k, v in self._env_backup.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        super().tearDown()
+
+
+class TestAutoBackfillConfigShape(_AutoBackfillEnvBase):
+    def test_returns_200_with_full_top_keyset(self) -> None:
+        r = client.get("/diagnostics/auto-backfill-config")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _ABF_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_warnings_is_a_list(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertIsInstance(body["warnings"], list)
+
+    def test_effective_status_in_known_vocabulary(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertIn(
+            body["effective_status"],
+            {"disabled", "blocked_paid_guard", "configured"},
+        )
+
+
+class TestAutoBackfillDefaultDisabled(_AutoBackfillEnvBase):
+    def test_default_disabled_no_env_set(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertFalse(body["enabled"])
+        self.assertFalse(body["paid_analysis_enabled"])
+        self.assertEqual(body["effective_status"], "disabled")
+        # No warning is emitted in the disabled-default case — the panel
+        # should be quiet for an unconfigured environment.
+        self.assertEqual(body["warnings"], [])
+
+    def test_defaults_for_caps_and_model(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        # Values come from auto_backfill_config.DEFAULT_*; pin the
+        # primitives directly so a future re-tune touches the test.
+        self.assertEqual(body["interval_hours"],     6)
+        self.assertEqual(body["max_calls_per_run"],  3)
+        self.assertEqual(body["max_calls_per_day"], 12)
+        self.assertIsInstance(body["model"], str)
+        self.assertGreater(len(body["model"]), 0)
+
+
+class TestAutoBackfillBlockedByPaidGuard(_AutoBackfillEnvBase):
+    def test_enabled_without_paid_is_blocked(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        # ENABLE_PAID_ANALYSIS deliberately not set.
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertTrue(body["enabled"])
+        self.assertFalse(body["paid_analysis_enabled"])
+        self.assertEqual(body["effective_status"], "blocked_paid_guard")
+        self.assertGreater(
+            len(body["warnings"]), 0,
+            "blocked_paid_guard must emit at least one operator warning",
+        )
+        joined = " ".join(body["warnings"])
+        self.assertIn("ENABLE_PAID_ANALYSIS", joined)
+
+    def test_enabled_with_paid_explicitly_false_is_blocked(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "false"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertEqual(body["effective_status"], "blocked_paid_guard")
+
+
+class TestAutoBackfillConfigured(_AutoBackfillEnvBase):
+    def test_both_gates_true_yields_configured(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertTrue(body["enabled"])
+        self.assertTrue(body["paid_analysis_enabled"])
+        self.assertEqual(body["effective_status"], "configured")
+        # No paid-guard warning when both gates agree; cross-field
+        # sanity warnings (per-run > per-day) may still appear and are
+        # tested separately.
+        joined = " ".join(body["warnings"])
+        self.assertNotIn("ENABLE_PAID_ANALYSIS is false", joined)
+
+
+class TestAutoBackfillInvalidEnvFallback(_AutoBackfillEnvBase):
+    def test_negative_interval_falls_back_to_default(self) -> None:
+        os.environ["AUTO_BACKFILL_INTERVAL_HOURS"] = "-1"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertEqual(body["interval_hours"], 6)  # default
+        joined = " ".join(body["warnings"])
+        self.assertIn("AUTO_BACKFILL_INTERVAL_HOURS", joined)
+
+    def test_non_integer_interval_falls_back(self) -> None:
+        os.environ["AUTO_BACKFILL_INTERVAL_HOURS"] = "lots"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertEqual(body["interval_hours"], 6)
+        joined = " ".join(body["warnings"])
+        self.assertIn("AUTO_BACKFILL_INTERVAL_HOURS", joined)
+        self.assertIn("not an integer", joined)
+
+    def test_per_run_above_max_clamps(self) -> None:
+        os.environ["AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN"] = "9999"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        # Module clamps per-run to a hard maximum (10 today).  Test
+        # against that primitive without re-importing the constant so a
+        # future bump only touches the module.
+        self.assertLessEqual(body["max_calls_per_run"], 10)
+        joined = " ".join(body["warnings"])
+        self.assertIn("AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN", joined)
+
+    def test_unknown_model_passes_through(self) -> None:
+        # Unknown model strings are not validated against a registry —
+        # the diagnostics surface returns whatever the operator set.
+        # Validation against a known-model list is the scheduler's job
+        # at boot time.
+        os.environ["AUTO_BACKFILL_MODEL"] = "operator-typo-model"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        self.assertEqual(body["model"], "operator-typo-model")
+
+    def test_per_run_above_per_day_emits_warning(self) -> None:
+        os.environ["AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN"] = "5"
+        os.environ["AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY"] = "3"
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        joined = " ".join(body["warnings"])
+        self.assertIn("PER_RUN", joined)
+        self.assertIn("PER_DAY", joined)
+
+
+class TestAutoBackfillNoSideEffects(_AutoBackfillEnvBase):
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/auto-backfill-config")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [dict(r) for r in
+                      conn.execute("SELECT * FROM events").fetchall()]
+        client.get("/diagnostics/auto-backfill-config")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [dict(r) for r in
+                     conn.execute("SELECT * FROM events").fetchall()]
+        self.assertEqual(before, after)
+
+    def test_endpoint_does_not_invoke_paid_or_provider_seams(self) -> None:
+        # The diagnostics surface must remain zero-cost.  Patch the same
+        # banlist the other diagnostics endpoints use.
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        with patch("api.analyze_event",
+                   side_effect=AssertionError("must not call analyze_event")), \
+             patch("api.market_check",
+                   side_effect=AssertionError("must not call market_check")), \
+             patch("yfinance.download",
+                   side_effect=AssertionError("must not call yfinance.download")), \
+             patch("yfinance.Ticker",
+                   side_effect=AssertionError("must not call yfinance.Ticker")):
+            r = client.get("/diagnostics/auto-backfill-config")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestAutoBackfillNeverExposesSecrets(_AutoBackfillEnvBase):
+    def test_response_does_not_carry_api_keys(self) -> None:
+        os.environ["ANTHROPIC_API_KEY"] = "sk-test-secret-DO-NOT-LEAK"
+        os.environ["OPENAI_API_KEY"]    = "sk-openai-secret-DO-NOT-LEAK"
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        try:
+            body = client.get("/diagnostics/auto-backfill-config").text
+            self.assertNotIn("sk-test-secret-DO-NOT-LEAK", body)
+            self.assertNotIn("sk-openai-secret-DO-NOT-LEAK", body)
+            self.assertNotIn("ANTHROPIC_API_KEY", body)
+            self.assertNotIn("OPENAI_API_KEY",    body)
+        finally:
+            os.environ.pop("ANTHROPIC_API_KEY", None)
+            os.environ.pop("OPENAI_API_KEY",    None)
+
+
 if __name__ == "__main__":
     unittest.main()
