@@ -430,3 +430,143 @@ def config_health():
         "openai_key_present":        openai_ok,
         "warnings":                  warnings,
     }
+
+
+@router.get("/diagnostics/archive-stats")
+def archive_stats():
+    """Compact zero-cost archive aggregates for Phase 1 validation planning.
+
+    Each block carries an ``available`` flag so partial failures stay
+    isolated — consumers branch on ``available`` rather than presence.
+
+    Pure read.  No LLM, no yfinance, no market_check, no provider call,
+    no DB write.  Deliberately does not depend on ``validation_status``
+    while that wiring lands separately.
+    """
+    out: dict = {
+        "total_events":            {"available": False},
+        "events_with_tickers":     {"available": False},
+        "events_with_returns":     {"available": False},
+        "events_by_stage":         {"available": False},
+        "events_by_persistence":   {"available": False},
+        "events_by_thesis_state":  {"available": False},
+        "market_checked_count":    {"available": False},
+        "latest_event_timestamp":  None,
+    }
+
+    try:
+        from db import get_events_fingerprint
+        count, _max_id = get_events_fingerprint()
+        out["total_events"] = {"available": True, "count": int(count)}
+    except Exception:
+        pass
+
+    try:
+        agg = _compute_archive_aggregates()
+        for key, value in agg.items():
+            out[key] = value
+    except Exception:
+        pass
+
+    return _api._sanitize_floats(out)
+
+
+def _compute_archive_aggregates() -> dict:
+    """Single-pass aggregator over the events archive.
+
+    Returned dict mirrors the archive-stats blocks the aggregator owns
+    (everything except ``total_events``).  Each block carries
+    ``available`` (or, for ``latest_event_timestamp``, the ISO-8601
+    string or ``None``).  Pure read; never raises — structural
+    failures collapse to the unavailable shape.
+    """
+    blocks: dict = {
+        "events_with_tickers":    {"available": False},
+        "events_with_returns":    {"available": False},
+        "events_by_stage":        {"available": False},
+        "events_by_persistence":  {"available": False},
+        "events_by_thesis_state": {"available": False},
+        "market_checked_count":   {"available": False},
+        "latest_event_timestamp": None,
+    }
+
+    try:
+        import sqlite3
+        import db as _db
+        if not _db._db_ready:
+            return blocks
+        with sqlite3.connect(_db.DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute("SELECT * FROM events").fetchall()
+    except Exception:
+        return blocks
+
+    decoded: list[dict] = []
+    by_stage:       dict[str, int] = {}
+    by_persistence: dict[str, int] = {}
+    with_tickers   = 0
+    with_returns   = 0
+    market_checked = 0
+    latest_ts: str | None = None
+
+    for row in rows:
+        try:
+            event = _db._decode_event_row(row)
+        except Exception:
+            event = dict(row)
+        decoded.append(event)
+
+        stage = (event.get("stage") or "").strip() or "unknown"
+        by_stage[stage] = by_stage.get(stage, 0) + 1
+
+        persistence = (event.get("persistence") or "").strip() or "unknown"
+        by_persistence[persistence] = by_persistence.get(persistence, 0) + 1
+
+        tickers = event.get("market_tickers") or []
+        if isinstance(tickers, list) and len(tickers) > 0:
+            with_tickers += 1
+            if any(_ticker_has_return(t) for t in tickers):
+                with_returns += 1
+
+        mc = event.get("last_market_check_at")
+        if isinstance(mc, str) and mc.strip():
+            market_checked += 1
+
+        ts = event.get("timestamp")
+        if isinstance(ts, str) and ts and (latest_ts is None or ts > latest_ts):
+            latest_ts = ts
+
+    blocks["events_by_stage"]        = {"available": True, "counts": by_stage}
+    blocks["events_by_persistence"]  = {"available": True, "counts": by_persistence}
+    blocks["events_with_tickers"]    = {"available": True, "count": with_tickers}
+    blocks["events_with_returns"]    = {"available": True, "count": with_returns}
+    blocks["market_checked_count"]   = {"available": True, "count": market_checked}
+    blocks["latest_event_timestamp"] = latest_ts
+
+    try:
+        from thesis_state import derive_thesis_state
+        ts_counts: dict[str, int] = {}
+        for event in decoded:
+            try:
+                state = derive_thesis_state(event)
+            except Exception:
+                continue
+            ts_counts[state] = ts_counts.get(state, 0) + 1
+        blocks["events_by_thesis_state"] = {
+            "available": True, "counts": ts_counts,
+        }
+    except Exception:
+        pass
+
+    return blocks
+
+
+def _ticker_has_return(ticker) -> bool:
+    """True when the ticker dict carries at least one numeric return field."""
+    if not isinstance(ticker, dict):
+        return False
+    for key in ("return_1d", "return_5d", "return_20d"):
+        v = ticker.get(key)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return True
+    return False

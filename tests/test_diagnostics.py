@@ -278,5 +278,302 @@ class TestConfigHealthWarnings(_ConfigHealthBase):
         self.assertEqual(body["warnings"], [])
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/archive-stats — zero-cost archive aggregates
+# ---------------------------------------------------------------------------
+
+import sqlite3 as _sqlite3  # noqa: E402
+
+
+_ARCHIVE_TOP_KEYS = (
+    "total_events",
+    "events_with_tickers",
+    "events_with_returns",
+    "events_by_stage",
+    "events_by_persistence",
+    "events_by_thesis_state",
+    "market_checked_count",
+    "latest_event_timestamp",
+)
+
+_ARCHIVE_BLOCKS_WITH_AVAILABLE = (
+    "total_events",
+    "events_with_tickers",
+    "events_with_returns",
+    "events_by_stage",
+    "events_by_persistence",
+    "events_by_thesis_state",
+    "market_checked_count",
+)
+
+
+class _ArchiveBase(_Base):
+    def setUp(self) -> None:
+        super().setUp()
+        self._seed_counter = 0
+
+    def _seed(self, **overrides) -> None:
+        # ``save_event`` dedups by headline; give each row a unique headline
+        # so seed() actually inserts every time.
+        self._seed_counter += 1
+        event = {
+            "headline":       f"Stub headline {self._seed_counter} {uuid.uuid4().hex[:8]}",
+            "stage":          "realized",
+            "persistence":    "medium",
+            "event_date":     datetime.now().strftime("%Y-%m-%d"),
+            "market_tickers": [],
+        }
+        event.update(overrides)
+        db.save_event(event)
+
+
+class TestArchiveStatsShape(_ArchiveBase):
+    def test_returns_200_with_full_top_keyset(self) -> None:
+        r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _ARCHIVE_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_each_block_has_available_flag(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        for key in _ARCHIVE_BLOCKS_WITH_AVAILABLE:
+            self.assertIn(
+                "available", body[key],
+                f"block {key!r} missing ``available`` flag",
+            )
+
+
+class TestArchiveStatsEmptyDB(_ArchiveBase):
+    def test_total_events_zero(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertTrue(body["total_events"]["available"])
+        self.assertEqual(body["total_events"]["count"], 0)
+
+    def test_events_with_tickers_zero(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertTrue(body["events_with_tickers"]["available"])
+        self.assertEqual(body["events_with_tickers"]["count"], 0)
+
+    def test_events_with_returns_zero(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertTrue(body["events_with_returns"]["available"])
+        self.assertEqual(body["events_with_returns"]["count"], 0)
+
+    def test_market_checked_count_zero(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertTrue(body["market_checked_count"]["available"])
+        self.assertEqual(body["market_checked_count"]["count"], 0)
+
+    def test_groupings_empty_dicts(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertTrue(body["events_by_stage"]["available"])
+        self.assertEqual(body["events_by_stage"]["counts"], {})
+        self.assertTrue(body["events_by_persistence"]["available"])
+        self.assertEqual(body["events_by_persistence"]["counts"], {})
+
+    def test_latest_event_timestamp_none(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertIsNone(body["latest_event_timestamp"])
+
+    def test_thesis_state_block_present_with_zero_counts(self) -> None:
+        body = client.get("/diagnostics/archive-stats").json()
+        block = body["events_by_thesis_state"]
+        self.assertIn("available", block)
+        if block["available"]:
+            counts = block["counts"]
+            self.assertIsInstance(counts, dict)
+            self.assertEqual(sum(counts.values()), 0)
+
+
+class TestArchiveStatsSeededRows(_ArchiveBase):
+    def test_total_events_increments(self) -> None:
+        self._seed()
+        self._seed()
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertEqual(body["total_events"]["count"], 2)
+
+    def test_events_with_tickers_counts_only_non_empty(self) -> None:
+        self._seed(market_tickers=[])
+        self._seed(market_tickers=[{"symbol": "AAPL"}])
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertEqual(body["events_with_tickers"]["count"], 1)
+        # Tickers without any numeric return → excluded.
+        self.assertEqual(body["events_with_returns"]["count"], 0)
+
+    def test_events_with_returns_requires_numeric_return_value(self) -> None:
+        self._seed(market_tickers=[{"symbol": "AAPL", "return_5d": 1.23}])
+        self._seed(market_tickers=[{"symbol": "MSFT", "return_5d": None}])
+        self._seed(market_tickers=[{"symbol": "NVDA", "return_1d": -0.4}])
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertEqual(body["events_with_tickers"]["count"], 3)
+        self.assertEqual(body["events_with_returns"]["count"], 2)
+
+    def test_events_by_stage_groups_correctly(self) -> None:
+        self._seed(stage="realized")
+        self._seed(stage="realized")
+        self._seed(stage="anticipation")
+        body = client.get("/diagnostics/archive-stats").json()
+        counts = body["events_by_stage"]["counts"]
+        self.assertEqual(counts.get("realized"),    2)
+        self.assertEqual(counts.get("anticipation"), 1)
+
+    def test_events_by_persistence_groups_correctly(self) -> None:
+        self._seed(persistence="medium")
+        self._seed(persistence="structural")
+        self._seed(persistence="structural")
+        body = client.get("/diagnostics/archive-stats").json()
+        counts = body["events_by_persistence"]["counts"]
+        self.assertEqual(counts.get("medium"),     1)
+        self.assertEqual(counts.get("structural"), 2)
+
+    def test_market_checked_count_uses_last_market_check_at(self) -> None:
+        # ``save_event`` auto-stamps ``last_market_check_at``; clear one
+        # row directly via SQL so the count distinguishes stamped from
+        # unstamped rows.  No provider call, no market_check invocation.
+        self._seed()
+        self._seed()
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.execute(
+                "UPDATE events SET last_market_check_at = NULL "
+                "WHERE id = (SELECT MIN(id) FROM events)"
+            )
+            conn.commit()
+        body = client.get("/diagnostics/archive-stats").json()
+        self.assertEqual(body["market_checked_count"]["count"], 1)
+
+    def test_latest_event_timestamp_is_max(self) -> None:
+        self._seed()
+        self._seed()
+        body = client.get("/diagnostics/archive-stats").json()
+        ts = body["latest_event_timestamp"]
+        self.assertIsInstance(ts, str)
+        self.assertGreater(len(ts), 0)
+
+
+class TestArchiveStatsNoMutation(_ArchiveBase):
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        self._seed()
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/archive-stats")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        self._seed(
+            stage="realized", persistence="structural",
+            market_tickers=[{"symbol": "AAPL", "return_5d": 1.0}],
+        )
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [dict(r) for r in
+                      conn.execute("SELECT * FROM events").fetchall()]
+        client.get("/diagnostics/archive-stats")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [dict(r) for r in
+                     conn.execute("SELECT * FROM events").fetchall()]
+        self.assertEqual(before, after)
+
+
+class TestArchiveStatsZeroCostSeams(_ArchiveBase):
+    """Endpoint must not invoke market_check / yfinance / provider seams."""
+
+    def test_market_check_fetch_is_not_called(self) -> None:
+        self._seed(market_tickers=[{"symbol": "AAPL", "return_5d": 1.0}])
+        with patch(
+            "market_check._fetch",
+            side_effect=AssertionError("must not call market_check._fetch"),
+        ):
+            r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_check_one_ticker_is_not_called(self) -> None:
+        self._seed(market_tickers=[{"symbol": "AAPL", "return_5d": 1.0}])
+        with patch(
+            "market_check._check_one_ticker",
+            side_effect=AssertionError("must not call _check_one_ticker"),
+        ):
+            r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_data_provider_is_not_called(self) -> None:
+        self._seed(market_tickers=[{"symbol": "AAPL", "return_5d": 1.0}])
+        try:
+            import market_data
+            target = "market_data.get_provider"
+            patched = hasattr(market_data, "get_provider")
+        except ImportError:
+            patched = False
+        if patched:
+            with patch(
+                target,
+                side_effect=AssertionError("must not call provider"),
+            ):
+                r = client.get("/diagnostics/archive-stats")
+        else:
+            r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestArchiveStatsBlockIsolation(_ArchiveBase):
+    def test_total_events_failure_does_not_break_response(self) -> None:
+        self._seed()
+        with patch(
+            "db.get_events_fingerprint",
+            side_effect=RuntimeError("disk gone"),
+        ):
+            r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["total_events"]["available"])
+        # Aggregator-owned blocks unaffected (separate code path).
+        self.assertTrue(body["events_by_stage"]["available"])
+        self.assertTrue(body["events_with_tickers"]["available"])
+
+    def test_aggregator_failure_isolated(self) -> None:
+        self._seed()
+        with patch(
+            "routes.diagnostics._compute_archive_aggregates",
+            side_effect=RuntimeError("aggregate fail"),
+        ):
+            r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        # total_events still works (not aggregator-owned).
+        self.assertTrue(body["total_events"]["available"])
+        # All aggregator blocks fall back to unavailable.
+        for key in (
+            "events_with_tickers", "events_with_returns",
+            "events_by_stage", "events_by_persistence",
+            "events_by_thesis_state", "market_checked_count",
+        ):
+            with self.subTest(block=key):
+                self.assertFalse(body[key]["available"])
+        self.assertIsNone(body["latest_event_timestamp"])
+
+    def test_thesis_state_per_event_failure_keeps_other_aggregates(self) -> None:
+        # Per-event derivation errors are skipped; the block stays available
+        # with whatever counts accumulated, and the other aggregates remain
+        # intact.
+        self._seed()
+        with patch(
+            "thesis_state.derive_thesis_state",
+            side_effect=RuntimeError("derive fail"),
+        ):
+            r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        # Other aggregates still computed normally.
+        self.assertTrue(body["events_by_stage"]["available"])
+        self.assertEqual(body["events_by_stage"]["counts"].get("realized"), 1)
+        # Thesis state block stays available with empty counts (every per-event
+        # call raised → nothing accumulated).
+        self.assertTrue(body["events_by_thesis_state"]["available"])
+        self.assertEqual(
+            body["events_by_thesis_state"]["counts"], {},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
