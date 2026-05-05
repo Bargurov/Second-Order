@@ -570,3 +570,123 @@ def _ticker_has_return(ticker) -> bool:
         if isinstance(v, (int, float)) and not isinstance(v, bool):
             return True
     return False
+
+
+@router.get("/diagnostics/validation-status-stats")
+def validation_status_stats():
+    """Archive-aggregate counts of the four-label validation status.
+
+    Pure read.  No LLM, no yfinance, no market_check, no provider call,
+    no DB write.  Calls ``validation_status.score_validation_status`` on
+    each archived event and aggregates by status + reason category.
+
+    Single top-level ``available`` flag — when false, every numeric
+    field is zeroed and ``latest_event_timestamp`` is null, so consumers
+    can render the panel without branching on field presence.
+    """
+    try:
+        return _api._sanitize_floats(_compute_validation_status_stats())
+    except Exception:
+        return _api._sanitize_floats(_validation_status_unavailable())
+
+
+def _validation_status_unavailable() -> dict:
+    """Stable empty shape returned when the aggregator cannot run."""
+    return {
+        "available":              False,
+        "total_events":           0,
+        "counts_by_status": {
+            "validated":    0,
+            "contradicted": 0,
+            "unresolved":   0,
+            "pending":      0,
+        },
+        "counts_by_reason":       {},
+        "pending_count":          0,
+        "unresolved_count":       0,
+        "latest_event_timestamp": None,
+    }
+
+
+def _compute_validation_status_stats() -> dict:
+    """Single-pass aggregator scoring every archived event.
+
+    Per-event scoring failures are skipped (the row contributes to
+    ``total_events`` and ``latest_event_timestamp`` but not to status /
+    reason counts) so a single bad row never breaks the aggregate.
+    Structural failures (DB unreachable, import error) raise so the
+    outer route handler can flip ``available`` to ``False``.
+    """
+    import sqlite3
+    import db as _db
+    from validation_status import VALID_STATUSES, score_validation_status
+
+    if not _db._db_ready:
+        return _validation_status_unavailable()
+
+    with sqlite3.connect(_db.DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT * FROM events").fetchall()
+
+    counts_by_status: dict[str, int] = {s: 0 for s in VALID_STATUSES}
+    counts_by_reason: dict[str, int] = {}
+    latest_ts: str | None = None
+    total = 0
+
+    for row in rows:
+        try:
+            event = _db._decode_event_row(row)
+        except Exception:
+            event = dict(row)
+        total += 1
+
+        ts = event.get("timestamp")
+        if isinstance(ts, str) and ts and (latest_ts is None or ts > latest_ts):
+            latest_ts = ts
+
+        try:
+            scored = score_validation_status(event)
+        except Exception:
+            continue
+
+        status = scored.get("status") if isinstance(scored, dict) else None
+        if status in counts_by_status:
+            counts_by_status[status] += 1
+
+        reason = scored.get("reason") if isinstance(scored, dict) else None
+        category = _reason_category(reason, status)
+        counts_by_reason[category] = counts_by_reason.get(category, 0) + 1
+
+    return {
+        "available":              True,
+        "total_events":           total,
+        "counts_by_status":       counts_by_status,
+        "counts_by_reason":       counts_by_reason,
+        "pending_count":          counts_by_status["pending"],
+        "unresolved_count":       counts_by_status["unresolved"],
+        "latest_event_timestamp": latest_ts,
+    }
+
+
+def _reason_category(reason, status) -> str:
+    """Bucket a free-form ``score_validation_status`` reason into a
+    stable category so the ``counts_by_reason`` histogram has bounded
+    keys.  The categories track the branches in
+    ``validation_status.score_validation_status``.
+    """
+    if not isinstance(reason, str) or not reason:
+        return "unknown"
+    r = reason.lower()
+    if "classifier abstained" in r:
+        return "classifier_abstained"
+    if "no parsable" in r:
+        return "missing_anchor"
+    if "pending window" in r and ">" in reason:
+        return "past_pending_window"
+    if "no directional tags yet" in r:
+        return "pending_within_window"
+    if "no scorable surface" in r:
+        return "no_scorable_surface"
+    if status in ("validated", "contradicted") and "supports vs" in r:
+        return "majority_rule"
+    return "other"

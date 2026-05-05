@@ -575,5 +575,277 @@ class TestArchiveStatsBlockIsolation(_ArchiveBase):
         )
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/validation-status-stats — archive-aggregate validation stats
+# ---------------------------------------------------------------------------
+
+
+_VAL_TOP_KEYS = (
+    "available",
+    "total_events",
+    "counts_by_status",
+    "counts_by_reason",
+    "pending_count",
+    "unresolved_count",
+    "latest_event_timestamp",
+)
+
+_VAL_STATUS_KEYS = ("validated", "contradicted", "unresolved", "pending")
+
+
+class TestValidationStatusStatsShape(_ArchiveBase):
+    def test_returns_200_with_top_keys(self) -> None:
+        r = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _VAL_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_counts_by_status_has_all_four_labels(self) -> None:
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertEqual(set(body["counts_by_status"].keys()),
+                         set(_VAL_STATUS_KEYS))
+
+
+class TestValidationStatusStatsEmptyDB(_ArchiveBase):
+    def test_available_true_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 0)
+
+    def test_all_status_counts_zero(self) -> None:
+        body = client.get("/diagnostics/validation-status-stats").json()
+        for status in _VAL_STATUS_KEYS:
+            self.assertEqual(body["counts_by_status"][status], 0)
+
+    def test_pending_unresolved_top_level_zero(self) -> None:
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertEqual(body["pending_count"], 0)
+        self.assertEqual(body["unresolved_count"], 0)
+
+    def test_counts_by_reason_empty_dict(self) -> None:
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertEqual(body["counts_by_reason"], {})
+
+    def test_latest_event_timestamp_none(self) -> None:
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertIsNone(body["latest_event_timestamp"])
+
+
+class TestValidationStatusStatsSeeded(_ArchiveBase):
+    """One representative seeded row per status, plus a mixed-archive case."""
+
+    def test_validated_row_increments_validated(self) -> None:
+        # Majority supports → validated.
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+            {"symbol": "MSFT", "direction_tag": "supports thesis"},
+            {"symbol": "NVDA", "direction_tag": "contradicts thesis"},
+        ])
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 1)
+        self.assertEqual(body["counts_by_status"]["validated"], 1)
+
+    def test_contradicted_row_increments_contradicted(self) -> None:
+        # Contradicts >= supports → contradicted.
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "contradicts thesis"},
+            {"symbol": "MSFT", "direction_tag": "contradicts thesis"},
+            {"symbol": "NVDA", "direction_tag": "supports thesis"},
+        ])
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertEqual(body["counts_by_status"]["contradicted"], 1)
+
+    def test_unresolved_row_via_tagged_no_direction(self) -> None:
+        # Tag present but neither supports/contradicts → classifier_abstained.
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "needs more evidence"},
+        ])
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertEqual(body["counts_by_status"]["unresolved"], 1)
+        self.assertEqual(body["unresolved_count"], 1)
+        self.assertIn("classifier_abstained", body["counts_by_reason"])
+
+    def test_pending_row_fresh_event_with_thesis(self) -> None:
+        # Hot/warm event with a thesis but no direction tags → pending.
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            mechanism_summary="A real thesis about transmission.",
+            market_tickers=[{"symbol": "AAPL"}],
+        )
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertEqual(body["counts_by_status"]["pending"], 1)
+        self.assertEqual(body["pending_count"], 1)
+        self.assertIn("pending_within_window", body["counts_by_reason"])
+
+    def test_mixed_archive_aggregates_all_four_buckets(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        # validated
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+            {"symbol": "MSFT", "direction_tag": "supports thesis"},
+        ])
+        # contradicted
+        self._seed(market_tickers=[
+            {"symbol": "TSLA", "direction_tag": "contradicts thesis"},
+            {"symbol": "GOOG", "direction_tag": "contradicts thesis"},
+        ])
+        # unresolved (tagged but neutral)
+        self._seed(market_tickers=[
+            {"symbol": "META", "direction_tag": "needs more evidence"},
+        ])
+        # pending (fresh + thesis)
+        self._seed(
+            event_date=today,
+            mechanism_summary="Real thesis.",
+            market_tickers=[{"symbol": "NVDA"}],
+        )
+        body = client.get("/diagnostics/validation-status-stats").json()
+        s = body["counts_by_status"]
+        self.assertEqual(s["validated"],    1)
+        self.assertEqual(s["contradicted"], 1)
+        self.assertEqual(s["unresolved"],   1)
+        self.assertEqual(s["pending"],      1)
+        self.assertEqual(body["total_events"],     4)
+        self.assertEqual(body["pending_count"],    1)
+        self.assertEqual(body["unresolved_count"], 1)
+        # Reason histogram populated, sums to total_events.
+        self.assertEqual(
+            sum(body["counts_by_reason"].values()),
+            body["total_events"],
+        )
+        self.assertIn("majority_rule", body["counts_by_reason"])
+        self.assertIn("classifier_abstained", body["counts_by_reason"])
+        self.assertIn("pending_within_window", body["counts_by_reason"])
+
+    def test_latest_event_timestamp_populated(self) -> None:
+        self._seed()
+        body = client.get("/diagnostics/validation-status-stats").json()
+        self.assertIsInstance(body["latest_event_timestamp"], str)
+        self.assertGreater(len(body["latest_event_timestamp"]), 0)
+
+
+class TestValidationStatusStatsNoMutation(_ArchiveBase):
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        self._seed()
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+        ])
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [dict(r) for r in
+                      conn.execute("SELECT * FROM events").fetchall()]
+        client.get("/diagnostics/validation-status-stats")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [dict(r) for r in
+                     conn.execute("SELECT * FROM events").fetchall()]
+        self.assertEqual(before, after)
+
+
+class TestValidationStatusStatsZeroCost(_ArchiveBase):
+    """Endpoint must not invoke market_check / yfinance / provider seams."""
+
+    def test_market_check_fetch_not_called(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+        ])
+        with patch(
+            "market_check._fetch",
+            side_effect=AssertionError("must not call market_check._fetch"),
+        ):
+            r = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_check_one_ticker_not_called(self) -> None:
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+        ])
+        with patch(
+            "market_check._check_one_ticker",
+            side_effect=AssertionError("must not call _check_one_ticker"),
+        ):
+            r = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_market_data_provider_not_called(self) -> None:
+        self._seed()
+        try:
+            import market_data
+            patched = hasattr(market_data, "get_provider")
+        except ImportError:
+            patched = False
+        if patched:
+            with patch(
+                "market_data.get_provider",
+                side_effect=AssertionError("must not call provider"),
+            ):
+                r = client.get("/diagnostics/validation-status-stats")
+        else:
+            r = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestValidationStatusStatsPartialFailure(_ArchiveBase):
+    def test_aggregator_failure_flips_available_false(self) -> None:
+        self._seed()
+        with patch(
+            "routes.diagnostics._compute_validation_status_stats",
+            side_effect=RuntimeError("read fail"),
+        ):
+            r = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["available"])
+        self.assertEqual(body["total_events"],     0)
+        self.assertEqual(body["pending_count"],    0)
+        self.assertEqual(body["unresolved_count"], 0)
+        self.assertEqual(body["counts_by_reason"], {})
+        for status in _VAL_STATUS_KEYS:
+            self.assertEqual(body["counts_by_status"][status], 0)
+        self.assertIsNone(body["latest_event_timestamp"])
+
+    def test_per_event_scoring_failure_keeps_aggregate_available(self) -> None:
+        # Per-event score errors are caught — the row counts toward
+        # total_events but contributes no status / reason.  Block stays
+        # available so consumers don't lose the panel over one bad row.
+        self._seed()
+        with patch(
+            "validation_status.score_validation_status",
+            side_effect=RuntimeError("score fail"),
+        ):
+            r = client.get("/diagnostics/validation-status-stats")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 1)
+        self.assertEqual(sum(body["counts_by_status"].values()), 0)
+        self.assertEqual(body["counts_by_reason"], {})
+
+
+class TestExistingDiagnosticsEndpointsPreserved(_ArchiveBase):
+    """Sanity check — adding the new route must not regress the others."""
+
+    def test_data_quality_still_responds(self) -> None:
+        r = client.get("/diagnostics/data-quality")
+        self.assertEqual(r.status_code, 200)
+
+    def test_archive_stats_still_responds(self) -> None:
+        r = client.get("/diagnostics/archive-stats")
+        self.assertEqual(r.status_code, 200)
+
+    def test_config_health_still_responds(self) -> None:
+        r = client.get("/diagnostics/config-health")
+        self.assertEqual(r.status_code, 200)
+
+
 if __name__ == "__main__":
     unittest.main()
