@@ -1,0 +1,133 @@
+{
+  "db_path": "C:/Users/Bar/desktop/geo_mechanism_project/events.db",
+  "computed_at": "2026-05-05T10:57:38",
+  "risk1_cluster_ranking_weights": {
+    "n_clusters": 6255,
+    "skipped_payload_parse_failures": 0,
+    "fired_counts": {
+      "macro_policy": 358,
+      "has_asset_terms": 1101,
+      "corporate_action": 217,
+      "geopolitical": 773,
+      "generic_finance_noise": 34,
+      "commodity_policy": 475
+    },
+    "fired_rates": {
+      "macro_policy": 0.0572,
+      "has_asset_terms": 0.176,
+      "corporate_action": 0.0347,
+      "geopolitical": 0.1236,
+      "generic_finance_noise": 0.0054,
+      "commodity_policy": 0.0759
+    },
+    "source_count_q": {
+      "p5": 1,
+      "p25": 1,
+      "p50": 1,
+      "p75": 1,
+      "p90": 2,
+      "p95": 3,
+      "p99": 22
+    },
+    "source_count_above_cap_count": 98,
+    "high_tier_q": {
+      "p5": 0,
+      "p25": 0,
+      "p50": 1,
+      "p75": 1,
+      "p90": 1,
+      "p95": 2,
+      "p99": 11
+    },
+    "high_tier_eq0_count": 3069,
+    "score_q": {
+      "p5": 1.0,
+      "p25": 2.0,
+      "p50": 2.5,
+      "p75": 4.0,
+      "p90": 5.5,
+      "p95": 7.5,
+      "p99": 25.5
+    },
+    "score_mean": 3.445003996802558,
+    "score_negative_count": 10,
+    "score_zero_count": 0,
+    "dominant_contributor_counts": {
+      "high_tier": 2040,
+      "source_count": 2164,
+      "generic_noise": 29,
+      "macro_policy": 297,
+      "commodity_policy": 403,
+      "geopolitical": 628,
+      "asset_terms": 694
+    }
+  },
+  "risk2_jaccard_family": {
+    "n_events": 270,
+    "n_pairs_total": 36315,
+    "n_pairs_within_2d_window": 8898,
+    "sim_quantiles_all_pairs": {
+      "p5": 0.0,
+      "p25": 0.0,
+      "p50": 0.0,
+      "p75": 0.0,
+      "p90": 0.5,
+      "p95": 1.0,
+      "p99": 1.0
+    },
+    "sim_max_all_pairs": 1.0,
+    "sim_quantiles_within_window": {
+      "p5": 0.0,
+      "p25": 0.0,
+      "p50": 0.0,
+      "p75": 0.5,
+      "p90": 1.0,
+      "p95": 1.0,
+      "p99": 1.0
+    },
+    "above_analog_threshold_0p15": 4434,
+    "above_related_threshold_0p35": 4216,
+    "above_dedup_threshold_0p65_no_guard": 2278,
+    "above_dedup_threshold_0p65_with_short_guard": 2278,
+    "above_dedup_threshold_0p65_in_window_with_guard": 1150,
+    "above_analog_rate": 0.122098,
+    "above_related_rate": 0.116095,
+    "above_dedup_rate": 0.062729
+  },
+  "risk5_low_impact_ttl": {
+    "n_registry_rows": 766,
+    "by_impact_level": {
+      "<null>": 766
+    },
+    "by_state": {
+      "seen": 766
+    },
+    "low_impact_total": 0,
+    "low_impact_no_anchor": 0,
+    "insufficient_data_for_ttl": true,
+    "insufficient_data_reason": "0 rows in headline_registry have impact_level='low'; the TTL filter has nothing to fire on, so no empirical TTL distribution can be computed from the local archive.",
+    "low_age_days_anchor_q": {},
+    "low_age_days_anchor_buckets": {},
+    "low_age_days_first_seen_q": {},
+    "low_age_days_first_seen_buckets": {},
+    "all_rows_first_seen_age_q": {
+      "p5": 0.020186750208333333,
+      "p25": 0.6647700835416667,
+      "p50": 0.869515453912037,
+      "p75": 1.0097585094675925,
+      "p90": 1.682293231689815,
+      "p95": 1.6923742502083334,
+      "p99": 1.9578140650231484
+    },
+    "all_rows_first_seen_age_buckets": {
+      "lt_1d": 531,
+      "lt_5d": 766,
+      "ge_5d": 0,
+      "ge_10d": 0,
+      "ge_30d": 0,
+      "ge_90d": 0
+    },
+    "ttl_days_in_effect": 5,
+    "ttl_note": "ttl checks impact_level=='low' AND anchor < now - 5d, where anchor = analyzed_at, falling back to event timestamp / first_seen_at"
+  }
+}
