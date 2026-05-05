@@ -168,5 +168,115 @@ class TestDataQualityBlockIsolation(_Base):
         self.assertTrue(body["snapshot_freshness"]["available"])
 
 
+class _ConfigHealthBase(_Base):
+    """Saves + restores every env var the config-health endpoint
+    reads so cases never leak state across the suite."""
+
+    _MANAGED_ENV_VARS = (
+        "ENABLE_PAID_ANALYSIS",
+        "BACKFILL_DRY_RUN_DEFAULT",
+        "MOVERS_BACKFILL_DRY_RUN",
+        "MAX_BACKFILL_LLM_CALLS",
+        "MOVERS_BACKFILL_MAX_LLM_CALLS",
+        "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
+    )
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._orig_env = {
+            k: os.environ.get(k) for k in self._MANAGED_ENV_VARS
+        }
+        # Wipe to a clean baseline — tests opt into specific flags.
+        for k in self._MANAGED_ENV_VARS:
+            os.environ.pop(k, None)
+
+    def tearDown(self) -> None:
+        for k, v in self._orig_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        super().tearDown()
+
+
+class TestConfigHealthShape(_ConfigHealthBase):
+
+    def test_returns_required_keys_with_safe_defaults(self) -> None:
+        body = client.get("/diagnostics/config-health").json()
+        for key in (
+            "paid_analysis_enabled", "backfill_dry_run_default",
+            "max_backfill_llm_calls",
+            "anthropic_key_present", "openai_key_present",
+            "warnings",
+        ):
+            self.assertIn(key, body, f"missing key: {key}")
+        # Safe defaults: paid disabled, dry-run on, no key present.
+        self.assertFalse(body["paid_analysis_enabled"])
+        self.assertTrue(body["backfill_dry_run_default"])
+        self.assertFalse(body["anthropic_key_present"])
+        self.assertFalse(body["openai_key_present"])
+        self.assertIsInstance(body["warnings"], list)
+
+    def test_response_never_contains_secret_bytes(self) -> None:
+        os.environ["ANTHROPIC_API_KEY"] = "sk-ant-supersecret-do-not-leak"
+        os.environ["OPENAI_API_KEY"]    = "sk-openai-also-secret"
+        raw = client.get("/diagnostics/config-health").text
+        self.assertNotIn("sk-ant-supersecret-do-not-leak", raw)
+        self.assertNotIn("sk-openai-also-secret",         raw)
+        body = client.get("/diagnostics/config-health").json()
+        # Booleans only — keys reported as present without leaking bytes.
+        self.assertTrue(body["anthropic_key_present"])
+        self.assertTrue(body["openai_key_present"])
+
+    def test_placeholder_keys_are_treated_as_absent(self) -> None:
+        # The ``_llm_available`` helper rejects placeholder values like
+        # "your_api_key_here" so a fresh ``.env.example`` setup never
+        # reports a false-positive present-key.
+        os.environ["ANTHROPIC_API_KEY"] = "your_anthropic_api_key_here"
+        body = client.get("/diagnostics/config-health").json()
+        self.assertFalse(body["anthropic_key_present"])
+
+
+class TestConfigHealthWarnings(_ConfigHealthBase):
+
+    def test_no_warnings_on_safe_defaults(self) -> None:
+        body = client.get("/diagnostics/config-health").json()
+        self.assertEqual(body["warnings"], [])
+
+    def test_paid_enabled_but_no_keys_warns(self) -> None:
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        body = client.get("/diagnostics/config-health").json()
+        joined = " ".join(body["warnings"])
+        self.assertIn("no provider API key", joined)
+
+    def test_paid_enabled_with_zero_cap_warns(self) -> None:
+        os.environ["ENABLE_PAID_ANALYSIS"]    = "true"
+        os.environ["MAX_BACKFILL_LLM_CALLS"]  = "0"
+        os.environ["ANTHROPIC_API_KEY"]       = "sk-real-key"
+        body = client.get("/diagnostics/config-health").json()
+        joined = " ".join(body["warnings"])
+        self.assertIn("max_backfill_llm_calls=0", joined)
+        self.assertEqual(body["max_backfill_llm_calls"], 0)
+
+    def test_paid_enabled_high_cap_no_dryrun_warns(self) -> None:
+        os.environ["ENABLE_PAID_ANALYSIS"]      = "true"
+        os.environ["MAX_BACKFILL_LLM_CALLS"]    = "20"
+        os.environ["BACKFILL_DRY_RUN_DEFAULT"]  = "false"
+        os.environ["ANTHROPIC_API_KEY"]         = "sk-real-key"
+        body = client.get("/diagnostics/config-health").json()
+        joined = " ".join(body["warnings"])
+        self.assertIn("could spend up to 20 LLM calls", joined)
+
+    def test_paid_disabled_silences_warnings(self) -> None:
+        # Even a wide-open cap + no key is not a warning while the
+        # server-side kill-switch is off — that env path can't spend.
+        os.environ["MAX_BACKFILL_LLM_CALLS"]    = "20"
+        os.environ["BACKFILL_DRY_RUN_DEFAULT"]  = "false"
+        body = client.get("/diagnostics/config-health").json()
+        self.assertFalse(body["paid_analysis_enabled"])
+        self.assertEqual(body["warnings"], [])
+
+
 if __name__ == "__main__":
     unittest.main()

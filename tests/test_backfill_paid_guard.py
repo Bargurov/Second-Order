@@ -1509,11 +1509,13 @@ class TestServerPaidAnalysisEnvGuard(unittest.TestCase):
             }
 
         def fake_payload():
+            from datetime import datetime
+
             return ({
                 "clusters": [{
                     "headline":     "Fed signals two rate cuts at next meeting",
                     "source_count": 5,
-                    "published_at": "2026-05-03T08:00:00",
+                    "published_at": datetime.now().isoformat(timespec="seconds"),
                     "sources":      [{"name": "Reuters"}],
                 }],
             }, "memory")

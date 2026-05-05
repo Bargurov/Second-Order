@@ -365,3 +365,68 @@ def _candidate_queue_counts() -> dict:
             counts["eligible"] += 1
 
     return {"available": True, **counts}
+
+
+@router.get("/diagnostics/config-health")
+def config_health():
+    """Operator-readable cost/security config snapshot.
+
+    Returns booleans, integer caps, and a coarse ``present`` flag for
+    each provider key — never the key text itself.  Pure read of env
+    state via the ``routes.movers`` helpers; no LLM call, no provider
+    request, no DB write.
+
+    Top-level shape:
+      * ``paid_analysis_enabled``      — ``ENABLE_PAID_ANALYSIS`` flag.
+      * ``backfill_dry_run_default``   — default dry-run mode for
+        ``/movers/backfill-recent`` when the request omits ``dry_run``.
+      * ``max_backfill_llm_calls``     — server-side cap.
+      * ``anthropic_key_present``      — bool only; no key bytes leaked.
+      * ``openai_key_present``         — bool only.
+      * ``warnings``                   — list of operator-actionable
+        config-risk strings (paid+no-cap, paid+no-key, etc.).  Empty
+        list = config looks safe.
+    """
+    from routes.movers import (
+        _backfill_dry_run_default,
+        _llm_available,
+        _max_backfill_llm_calls,
+        _paid_analysis_enabled,
+    )
+
+    paid_enabled  = bool(_paid_analysis_enabled())
+    dry_run_def   = bool(_backfill_dry_run_default())
+    max_calls     = int(_max_backfill_llm_calls())
+    anthropic_ok  = bool(_llm_available("anthropic"))
+    openai_ok     = bool(_llm_available("openai"))
+
+    warnings: list[str] = []
+    if paid_enabled and max_calls <= 0:
+        warnings.append(
+            "paid_analysis_enabled=true but max_backfill_llm_calls=0 — "
+            "paid backfill cannot spend; either lift the cap or "
+            "disable paid analysis."
+        )
+    if paid_enabled and not dry_run_def and max_calls > 5:
+        warnings.append(
+            f"paid_analysis_enabled=true with backfill_dry_run_default=false "
+            f"and max_backfill_llm_calls={max_calls} (>5) — a stray request "
+            f"could spend up to {max_calls} LLM calls. Consider lowering "
+            f"the cap or re-enabling the dry-run default."
+        )
+    if paid_enabled and not (anthropic_ok or openai_ok):
+        warnings.append(
+            "paid_analysis_enabled=true but no provider API key is "
+            "present — paid invocations will fail before any work is "
+            "done.  Set ANTHROPIC_API_KEY or OPENAI_API_KEY, or "
+            "disable paid analysis."
+        )
+
+    return {
+        "paid_analysis_enabled":     paid_enabled,
+        "backfill_dry_run_default":  dry_run_def,
+        "max_backfill_llm_calls":    max_calls,
+        "anthropic_key_present":     anthropic_ok,
+        "openai_key_present":        openai_ok,
+        "warnings":                  warnings,
+    }
