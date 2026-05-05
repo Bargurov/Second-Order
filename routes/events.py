@@ -32,6 +32,7 @@ from validation_outcome import (
     score_weighted_evidence,
 )
 from validation_status import score_validation_status
+from reaction_profile import compute_reaction_profile
 
 import api as _api
 import headline_registry as _hr
@@ -115,6 +116,54 @@ def _matches_quality(row: dict, quality: str) -> bool:
     if quality == "pending":
         return not _has_market_check_stamp(row) and not has_tx
     return False
+
+
+def _build_reaction_profile_v1(event: dict) -> dict:
+    """Compose the detail-only ``reaction_profile_v1`` block.
+
+    Read-only over the saved event row.  Saved ``market_tickers``
+    entries carry scalar ``return_5d`` / ``return_20d`` and a
+    *normalized* sparkline; they do **not** carry a raw close series.
+    The pure calculator (:func:`reaction_profile.compute_reaction_profile`)
+    needs raw closes, so we feed it ``None`` per ticker and let it
+    return its null-safe / unscorable shape.  The wrapper records why
+    so consumers can branch on ``available`` deterministically.
+
+    No DB read, no DB write, no provider call.
+    """
+    raw_tickers = event.get("market_tickers")
+    tickers: list[dict] = (
+        list(raw_tickers) if isinstance(raw_tickers, list) else []
+    )
+    per_ticker: list[dict] = []
+    for t in tickers:
+        if not isinstance(t, dict):
+            # Malformed entry — skip.  Composer never raises on this
+            # path, but we don't want to attach a profile to a row we
+            # can't even name.
+            continue
+        # Raw closes are not on the saved ticker block, so the calculator
+        # falls through to the unscorable branch.  Future work that
+        # hydrates closes from price_cache plugs in here.
+        profile = compute_reaction_profile(None)
+        symbol = t.get("symbol")
+        per_ticker.append({
+            "symbol": symbol if isinstance(symbol, str) else None,
+            **profile,
+        })
+    if not per_ticker:
+        reason = "no market_tickers on this event"
+    else:
+        reason = (
+            "raw close series not stored on market_tickers; "
+            "per-ticker profiles are unscorable until closes are hydrated"
+        )
+    return {
+        "available": False,
+        "reason":    reason,
+        "tickers":   per_ticker,
+        "n_tickers": len(per_ticker),
+    }
 
 
 def _score_validation(row: dict) -> str:
@@ -705,6 +754,12 @@ def get_event_detail(event_id: int = Path(..., ge=1)):
     # via _decorate_row above so list-vs-detail consumers can bind to a
     # single contract.  Pure read (see docs/validation_status_design.md).
     ev["validation_status_v2"] = score_validation_status(ev)
+    # Reaction-profile v1 block — detail-only.  Per-ticker null-safe
+    # shape when raw closes aren't stored (always the case today); the
+    # block ships anyway so consumers can bind to a stable key set
+    # before a future task hydrates closes from price_cache.  See
+    # docs/reaction_profile_design.md.
+    ev["reaction_profile_v1"] = _build_reaction_profile_v1(ev)
     return _api._sanitize_floats(ev)
 
 
