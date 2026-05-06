@@ -1,16 +1,19 @@
-"""Zero-LLM price-cache refresh — pure planner.
+"""Zero-LLM price-cache refresh — planner + executor.
 
 Selects archived events whose ``market_tickers`` blocks need
-additional ``price_cache`` rows to become reaction-profile-scorable
-and computes the missing date windows + an upper-bound provider-call
-estimate.  Planner only — no provider calls, no DB writes, no LLM,
+additional ``price_cache`` rows to become reaction-profile-scorable,
+computes the missing date windows + an upper-bound provider-call
+estimate, and (only under an explicit ``confirm=True`` flag) writes
+the freshly-fetched rows into ``price_cache``.  No LLM, no
+``analyze_event``, no ``auto_backfill_runner.execute_paid_candidate``,
 no FastAPI wiring.
 
-Companion design: ``docs/price_cache_refresh_design.md`` (§§4–5
-specify the window contract, skip taxonomy, and dry-run output
-shape this module mirrors).
+Companion design: ``docs/price_cache_refresh_design.md`` — §§4–5
+specify the window contract / skip taxonomy / dry-run output shape;
+§6 specifies the ``--write --confirm`` write contract this module
+implements at the function level.
 
-The module exposes two seams so tests can drive each independently:
+The module exposes three seams so tests can drive each independently:
 
 * :func:`plan_refresh` — fully pure.  Takes pre-decoded events and a
   per-ticker cached-date map, returns a :class:`RefreshPlan`.  Never
@@ -19,10 +22,15 @@ The module exposes two seams so tests can drive each independently:
   a SQLite DB path so the CLI / future executor can hand inputs to
   :func:`plan_refresh`.  Read-only; the function never issues
   ``INSERT`` / ``UPDATE`` / ``DELETE`` statements.
+* :func:`execute_refresh` — the only seam in this module that may
+  call the active provider or write ``price_cache`` rows, and only
+  when the caller passes ``confirm=True``.  The provider seam is
+  injectable so tests can drive it with a ``MagicMock`` and assert
+  the executor never reaches the real network.
 
-Both are deliberately stand-alone: importing this module pulls in
-``sqlite3`` and the stdlib only.  No ``api``, no ``market_check``,
-no ``analyze_event``, no ``auto_backfill_runner`` import is reached.
+Importing this module pulls in ``sqlite3`` and the stdlib only.
+No ``api``, no ``market_check``, no ``analyze_event``, no
+``auto_backfill_runner`` import is reached.
 """
 from __future__ import annotations
 
@@ -32,7 +40,7 @@ import re
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import date as _date, datetime as _dt, timedelta as _timedelta, timezone as _tz
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any, Callable, Iterable, Mapping, NamedTuple, Optional, Sequence
 
 _log = logging.getLogger("second_order.price_cache_refresh")
 
@@ -469,3 +477,255 @@ def load_inputs(
                 cached_by_ticker.setdefault(ticker, set()).add(parsed)
 
     return events, {k: frozenset(v) for k, v in cached_by_ticker.items()}
+
+
+# ---------------------------------------------------------------------------
+# Executor — write mode behind explicit confirm=True
+# ---------------------------------------------------------------------------
+
+
+class ProviderRow(NamedTuple):
+    """One bar returned by an injected provider seam.
+
+    Kept deliberately stdlib-only (no pandas dependency for tests) so a
+    ``MagicMock`` in a unit test can produce these tuples directly.
+    """
+    date:   str    # ISO ``YYYY-MM-DD``
+    close:  float
+    volume: float
+
+
+# Type alias for the injectable provider seam.  Tests pass a
+# ``MagicMock`` shaped like this; the production CLI will inject a
+# small adapter over ``price_cache.fetch_daily_cached`` that yields
+# ``ProviderRow`` tuples without ever pulling pandas into this module.
+ProviderFetch = Callable[[str, _date, _date, bool], Sequence[ProviderRow]]
+
+
+@dataclass(frozen=True)
+class RefreshError:
+    """One failed (symbol, interval) attempt.  Errors are isolated:
+    a raise inside the provider seam is captured here and the
+    executor moves on to the next interval / job.
+    """
+    symbol:        str
+    interval:      tuple[str, str]
+    error_type:    str
+    message:       str
+
+
+@dataclass(frozen=True)
+class ExecutorResult:
+    """Outcome of one :func:`execute_refresh` invocation.
+
+    ``dry_run`` and ``confirmed`` are inverses (``dry_run = not confirmed``)
+    and both are surfaced so callers can read either name without
+    second-guessing — the design doc and the runbook each use one.
+    """
+    attempted_jobs:  int
+    written_rows:    int
+    skipped_jobs:    int
+    errors:          tuple[RefreshError, ...]
+    dry_run:         bool
+    confirmed:       bool
+    provider_calls:  int
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+
+def execute_refresh(
+    plan: RefreshPlan,
+    db_path: str,
+    *,
+    confirm: bool = False,
+    provider_fetch: Optional[ProviderFetch] = None,
+    fetched_at: Optional[str] = None,
+) -> ExecutorResult:
+    """Execute a :class:`RefreshPlan` — write mode is opt-in only.
+
+    The default invocation (``confirm=False``, no ``provider_fetch``)
+    is a strict no-op: zero provider calls, zero DB writes, every plan
+    job recorded as ``skipped_jobs``.  This is the "explicit confirm
+    required" gate spelled out in
+    ``docs/price_cache_refresh_design.md`` §6.1 — neither flag alone
+    can issue a provider call.
+
+    With ``confirm=True``:
+
+    * ``provider_fetch`` is required.  If the caller forgets it, the
+      executor refuses to run and returns a structured result with
+      no writes (so a misconfigured CLI does not silently succeed).
+    * Each (symbol, interval) pair invokes ``provider_fetch`` exactly
+      once.  Returned :class:`ProviderRow` tuples are upserted into
+      ``price_cache`` via ``INSERT OR REPLACE`` — idempotent, so
+      re-running the same plan over the same provider rows leaves the
+      table in the same shape.
+    * ``plan.max_provider_calls`` is enforced defensively.  If the
+      plan was hand-constructed and overshoots the cap, the executor
+      stops at the cap; remaining jobs are recorded as
+      ``skipped_jobs``.
+    * Errors are isolated per interval: a provider raise is caught,
+      recorded in :attr:`ExecutorResult.errors`, and the executor
+      continues with the next interval / job.  The DB transaction
+      commits whatever rows did succeed.
+    * No LLM seam, no ``analyze_event``, no
+      ``auto_backfill_runner.execute_paid_candidate`` is touched.
+      The only side effects are: provider calls (via the injected
+      seam) and ``INSERT OR REPLACE`` against ``price_cache``.
+
+    The executor never opens or imports FastAPI.  It is invoked only
+    from explicit CLI entry points.
+    """
+    timestamp = fetched_at or _dt.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # ----- Dry-run / confirm-not-set short circuit ---------------------
+    if not confirm:
+        return ExecutorResult(
+            attempted_jobs=0,
+            written_rows=0,
+            skipped_jobs=len(plan.refresh_jobs),
+            errors=(),
+            dry_run=True,
+            confirmed=False,
+            provider_calls=0,
+        )
+
+    if provider_fetch is None:
+        # ``confirm=True`` without an injected fetch seam is a
+        # configuration error.  Refuse to proceed; record every plan
+        # job as skipped so the operator-facing report explains the
+        # no-op clearly rather than silently succeeding.
+        _log.warning(
+            "execute_refresh: confirm=True but provider_fetch is None; "
+            "no provider calls and no writes will be issued.",
+        )
+        return ExecutorResult(
+            attempted_jobs=0,
+            written_rows=0,
+            skipped_jobs=len(plan.refresh_jobs),
+            errors=(),
+            dry_run=False,
+            confirmed=True,
+            provider_calls=0,
+        )
+
+    # ----- Confirmed write path ---------------------------------------
+    cap = max(0, int(plan.max_provider_calls))
+    calls_used = 0
+    attempted = 0
+    written   = 0
+    skipped   = 0
+    errors:   list[RefreshError] = []
+
+    with sqlite3.connect(db_path) as conn:
+        for job in plan.refresh_jobs:
+            if calls_used >= cap:
+                # Plan over-stuffed (or cap=0): record the rest as
+                # skipped without issuing further provider calls.
+                skipped += 1
+                continue
+
+            attempted_this_job = False
+            for interval in job.intervals:
+                if calls_used >= cap:
+                    break
+
+                start_str, end_str = interval
+                try:
+                    start = _dt.strptime(start_str, "%Y-%m-%d").date()
+                    end   = _dt.strptime(end_str,   "%Y-%m-%d").date()
+                except (ValueError, TypeError) as exc:
+                    errors.append(RefreshError(
+                        symbol=job.symbol,
+                        interval=interval,
+                        error_type=type(exc).__name__,
+                        message=str(exc),
+                    ))
+                    continue
+
+                calls_used += 1
+                attempted_this_job = True
+                try:
+                    rows = provider_fetch(
+                        job.symbol, start, end, job.auto_adjust,
+                    )
+                except Exception as exc:
+                    # Per design §6: a provider raise on one interval
+                    # must not abort the run.  Capture and continue.
+                    errors.append(RefreshError(
+                        symbol=job.symbol,
+                        interval=interval,
+                        error_type=type(exc).__name__,
+                        message=str(exc),
+                    ))
+                    continue
+
+                written += _upsert_rows(
+                    conn, job.symbol, rows,
+                    auto_adjust=job.auto_adjust,
+                    fetched_at=timestamp,
+                )
+
+            if attempted_this_job:
+                attempted += 1
+        conn.commit()
+
+    return ExecutorResult(
+        attempted_jobs=attempted,
+        written_rows=written,
+        skipped_jobs=skipped,
+        errors=tuple(errors),
+        dry_run=False,
+        confirmed=True,
+        provider_calls=calls_used,
+    )
+
+
+def _upsert_rows(
+    conn:        sqlite3.Connection,
+    symbol:      str,
+    rows:        Sequence[Any],
+    *,
+    auto_adjust: bool,
+    fetched_at:  str,
+) -> int:
+    """Upsert provider-returned bars into ``price_cache``.
+
+    Accepts both :class:`ProviderRow` tuples and dict-shaped rows so
+    test mocks can return the more readable form.  Returns the count
+    of rows that were actually written (rows missing the required
+    fields are silently dropped — a malformed row is not an error,
+    it's just data the planner cannot use yet).
+    """
+    flag = 1 if auto_adjust else 0
+    written = 0
+    for row in rows:
+        if isinstance(row, ProviderRow):
+            date_str = row.date
+            close    = row.close
+            volume   = row.volume
+        elif isinstance(row, Mapping):
+            date_str = row.get("date")
+            close    = row.get("close")
+            volume   = row.get("volume", 0.0)
+        else:
+            continue
+
+        if not isinstance(date_str, str) or not date_str:
+            continue
+        try:
+            close_v  = float(close)  if close  is not None else None
+            volume_v = float(volume) if volume is not None else None
+        except (TypeError, ValueError):
+            continue
+
+        conn.execute(
+            "INSERT OR REPLACE INTO price_cache "
+            "(ticker, date, close, volume, auto_adjust, fetched_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (symbol, date_str[:10], close_v, volume_v, flag, fetched_at),
+        )
+        written += 1
+    return written

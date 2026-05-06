@@ -389,6 +389,230 @@ class TestNoPaidSeams(_CliBase):
         self.assertEqual(rc, 0, msg=buf.getvalue())
 
 
+# ---------------------------------------------------------------------------
+# Write-mode flags — --write / --confirm gating + executor seam
+# ---------------------------------------------------------------------------
+
+
+class TestWriteModeGating(_CliBase):
+    def test_default_invocation_mode_is_dry_run(self) -> None:
+        # No flags → dry_run, confirmed=false, executor never called.
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called in default dry-run",
+        ))
+        with patch.object(cli, "execute_refresh", sentinel_executor):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--json"], out=buf)
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"],           "dry_run")
+        self.assertIs(payload["confirmed"],         False)
+        self.assertEqual(payload["attempted_jobs"], 0)
+        self.assertEqual(payload["written_rows"],   0)
+        self.assertEqual(payload["errors"],         [])
+
+    def test_confirm_alone_is_dry_run(self) -> None:
+        # --confirm without --write must NOT enable write mode.
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called when --write is absent",
+        ))
+        with patch.object(cli, "execute_refresh", sentinel_executor):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--confirm", "--json"], out=buf)
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"],   "dry_run")
+        self.assertIs(payload["confirmed"], False)
+
+    def test_write_alone_exits_nonzero_and_skips_executor(self) -> None:
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called when --confirm is missing",
+        ))
+        with patch.object(cli, "execute_refresh", sentinel_executor):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--json"], out=buf)
+        self.assertEqual(rc, 1, msg=buf.getvalue())
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"],           "write")
+        self.assertIs(payload["confirmed"],         False)
+        self.assertEqual(payload["attempted_jobs"], 0)
+        self.assertEqual(payload["written_rows"],   0)
+        self.assertEqual(payload["errors"],         [])
+        # Top-level human-readable error is set; ok flag is false.
+        self.assertIn("error",                      payload)
+        self.assertIn("--confirm",                  payload["error"])
+        self.assertIs(payload["ok"],                False)
+
+    def test_write_alone_does_not_print_to_stderr(self) -> None:
+        # The verification command pipes JSON; stderr would split the
+        # output.  Even on the exit-1 path the JSON must land on the
+        # ``out`` stream the caller passed.
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called when --confirm is missing",
+        ))
+        buf = io.StringIO()
+        with patch.object(cli, "execute_refresh", sentinel_executor):
+            rc = cli.main(argv=["--write", "--json"], out=buf)
+        self.assertEqual(rc, 1)
+        # Body parses as JSON — proves the report did not leak to a
+        # secondary stream.
+        json.loads(buf.getvalue())
+
+
+class TestWriteConfirmInvokesExecutor(_CliBase):
+    def test_write_and_confirm_invokes_executor_once(self) -> None:
+        plan = _plan(
+            refresh_jobs=(
+                _job(event_id=1, event_date="2026-04-12", symbol="AAPL"),
+            ),
+            events_considered=1,
+            tickers_considered=1,
+            provider_calls_estimate=1,
+            decision_reason="planned",
+        )
+        cli.plan_refresh = MagicMock(return_value=plan)
+        executor_stub = MagicMock(return_value={
+            "attempted_jobs": 1,
+            "written_rows":   24,
+            "errors":         [],
+        })
+        with patch.object(cli, "execute_refresh", executor_stub):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+        self.assertEqual(rc, 0)
+        executor_stub.assert_called_once()
+        args, kwargs = executor_stub.call_args
+        # Plan passed positionally; config kwarg carries RefreshConfig.
+        self.assertIs(args[0], plan)
+        self.assertIsInstance(kwargs.get("config"), pcr.RefreshConfig)
+
+    def test_write_confirm_propagates_executor_counters_into_payload(self) -> None:
+        cli.plan_refresh = MagicMock(return_value=_plan(decision_reason="planned"))
+        executor_stub = MagicMock(return_value={
+            "attempted_jobs": 7,
+            "written_rows":   124,
+            "errors":         [],
+        })
+        with patch.object(cli, "execute_refresh", executor_stub):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"],           "write")
+        self.assertIs(payload["confirmed"],         True)
+        self.assertEqual(payload["attempted_jobs"], 7)
+        self.assertEqual(payload["written_rows"],   124)
+        self.assertEqual(payload["errors"],         [])
+
+    def test_write_confirm_with_errors_exits_nonzero(self) -> None:
+        cli.plan_refresh = MagicMock(return_value=_plan(decision_reason="planned"))
+        executor_stub = MagicMock(return_value={
+            "attempted_jobs": 3,
+            "written_rows":   60,
+            "errors": [
+                {
+                    "event_id":       42,
+                    "symbol":         "TSLA",
+                    "interval_start": "2026-04-01",
+                    "interval_end":   "2026-04-25",
+                    "error":          "RuntimeError: provider down",
+                },
+            ],
+        })
+        with patch.object(cli, "execute_refresh", executor_stub):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+        self.assertEqual(rc, 1)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"],          "write")
+        self.assertIs(payload["confirmed"],        True)
+        self.assertEqual(payload["attempted_jobs"], 3)
+        self.assertEqual(payload["written_rows"],   60)
+        self.assertEqual(len(payload["errors"]),    1)
+        self.assertEqual(payload["errors"][0]["symbol"], "TSLA")
+
+    def test_write_confirm_executor_raise_lands_in_errors(self) -> None:
+        # If the executor itself blows up (rather than returning per-
+        # interval errors), the exception is captured into the errors
+        # list and the run still reports a stable JSON shape, exit 1.
+        cli.plan_refresh = MagicMock(return_value=_plan(decision_reason="planned"))
+        executor_stub = MagicMock(side_effect=RuntimeError("executor exploded"))
+        with patch.object(cli, "execute_refresh", executor_stub):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+        self.assertEqual(rc, 1)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["mode"],   "write")
+        self.assertIs(payload["confirmed"], True)
+        self.assertGreaterEqual(len(payload["errors"]), 1)
+        self.assertIn("executor exploded", payload["errors"][0]["error"])
+
+
+class TestWriteConfirmDoesNotInvokeRealProvider(_CliBase):
+    """The default executor would call ``price_cache.fetch_daily_cached``
+    which in turn reaches the market-data provider.  Tests must patch
+    the executor seam so no provider call happens.  This case
+    additionally raisers ``price_cache.fetch_daily_cached`` to prove
+    the patched executor is the *only* path the CLI took.
+    """
+
+    def test_provider_seam_never_reached_with_patched_executor(self) -> None:
+        cli.plan_refresh = MagicMock(return_value=_plan(
+            refresh_jobs=(
+                _job(event_id=1, event_date="2026-04-12", symbol="AAPL"),
+                _job(event_id=2, event_date="2026-04-13", symbol="MSFT"),
+            ),
+            events_considered=2,
+            tickers_considered=2,
+            provider_calls_estimate=2,
+            decision_reason="planned",
+        ))
+        executor_stub = MagicMock(return_value={
+            "attempted_jobs": 2,
+            "written_rows":   48,
+            "errors":         [],
+        })
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(cli, "execute_refresh", executor_stub))
+            _patch_raisers(
+                stack,
+                _FORBIDDEN_PAID_SEAMS + (("price_cache", "fetch_daily_cached"),),
+                label="paid/provider seam",
+            )
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError(
+                        "refresh_price_cache --write must not call yfinance",
+                    ),
+                ))
+            except ImportError:
+                pass
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+        self.assertEqual(rc, 0)
+        executor_stub.assert_called_once()
+
+
+class TestWriteModeTextRendering(_CliBase):
+    def test_write_confirm_text_carries_mode_and_executor_summary(self) -> None:
+        cli.plan_refresh = MagicMock(return_value=_plan(decision_reason="planned"))
+        with patch.object(cli, "execute_refresh", MagicMock(return_value={
+            "attempted_jobs": 4,
+            "written_rows":   88,
+            "errors":         [],
+        })):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm"], out=buf)
+        self.assertEqual(rc, 0)
+        text = buf.getvalue()
+        self.assertIn("Mode: write",           text)
+        self.assertIn("confirmed=true",        text)
+        self.assertIn("attempted_jobs=4",      text)
+        self.assertIn("written_rows=88",       text)
+
+
 class TestNoDbWrites(_CliBase):
     def test_no_db_writers_invoked(self) -> None:
         cli.plan_refresh = MagicMock(return_value=_plan(

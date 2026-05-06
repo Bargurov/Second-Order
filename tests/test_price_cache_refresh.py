@@ -694,5 +694,456 @@ class TestEndToEnd(unittest.TestCase):
         self.assertEqual(plan.decision_reason, pcr.DECISION_PLANNED)
 
 
+# ---------------------------------------------------------------------------
+# Executor — confirm-gated write contract
+# ---------------------------------------------------------------------------
+
+
+class _ExecutorTestBase(unittest.TestCase):
+    """Shared temp-DB + simple-plan fixture used by the executor suites."""
+
+    def setUp(self) -> None:
+        self._tmp_path = os.path.join(
+            tempfile.gettempdir(),
+            f"test_pcr_exec_{uuid.uuid4().hex}.db",
+        )
+        with sqlite3.connect(self._tmp_path) as conn:
+            conn.execute("""
+                CREATE TABLE price_cache (
+                    ticker      TEXT NOT NULL,
+                    date        TEXT NOT NULL,
+                    close       REAL,
+                    volume      REAL,
+                    auto_adjust INTEGER NOT NULL,
+                    fetched_at  TEXT NOT NULL,
+                    PRIMARY KEY (ticker, date, auto_adjust)
+                )
+            """)
+
+    def tearDown(self) -> None:
+        try:
+            os.remove(self._tmp_path)
+        except (OSError, PermissionError):
+            pass
+
+    def _row_count(self, *, ticker: str | None = None) -> int:
+        with sqlite3.connect(self._tmp_path) as conn:
+            if ticker is None:
+                cur = conn.execute("SELECT COUNT(*) FROM price_cache")
+            else:
+                cur = conn.execute(
+                    "SELECT COUNT(*) FROM price_cache WHERE ticker = ?",
+                    (ticker,),
+                )
+            return int(cur.fetchone()[0])
+
+    def _plan_with_one_job(
+        self,
+        *,
+        symbol: str = "AAPL",
+        intervals: tuple[tuple[str, str], ...] = (("2026-04-01", "2026-04-03"),),
+        max_provider_calls: int = 50,
+    ) -> pcr.RefreshPlan:
+        job = pcr.TickerRefreshJob(
+            event_id=1,
+            event_date="2026-04-01",
+            symbol=symbol,
+            intervals=intervals,
+            business_days=sum(1 for _ in intervals),
+            auto_adjust=True,
+        )
+        return pcr.RefreshPlan(
+            events_considered=1,
+            tickers_considered=1,
+            refresh_jobs=(job,),
+            skipped_counts={k: 0 for k in pcr.SKIP_COUNT_KEYS},
+            provider_calls_estimate=len(intervals),
+            max_provider_calls=max_provider_calls,
+            cap_applied=False,
+            decision_reason=pcr.DECISION_PLANNED,
+        )
+
+    @staticmethod
+    def _provider_returning(
+        rows_by_symbol: dict[str, list[pcr.ProviderRow]],
+    ) -> mock.MagicMock:
+        """Return a MagicMock provider that yields per-symbol rows."""
+        def _fetch(symbol, start, end, auto_adjust):
+            return list(rows_by_symbol.get(symbol, []))
+        return mock.MagicMock(side_effect=_fetch, name="provider_fetch")
+
+
+class TestExecutorConfirmGate(_ExecutorTestBase):
+    """``confirm=True`` is mandatory before any write or provider call."""
+
+    def test_default_invocation_is_dry_run(self) -> None:
+        plan = self._plan_with_one_job()
+        provider = mock.MagicMock(
+            side_effect=AssertionError("provider must not be called in dry run"),
+        )
+
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, provider_fetch=provider,
+        )
+
+        self.assertTrue(result.dry_run)
+        self.assertFalse(result.confirmed)
+        self.assertEqual(result.attempted_jobs, 0)
+        self.assertEqual(result.written_rows, 0)
+        self.assertEqual(result.skipped_jobs, 1)
+        self.assertEqual(result.errors, ())
+        self.assertEqual(result.provider_calls, 0)
+        provider.assert_not_called()
+
+    def test_confirm_false_writes_nothing_to_db(self) -> None:
+        plan = self._plan_with_one_job()
+        provider = self._provider_returning({
+            "AAPL": [pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6)],
+        })
+
+        before = self._row_count()
+        pcr.execute_refresh(
+            plan, self._tmp_path, confirm=False, provider_fetch=provider,
+        )
+        after = self._row_count()
+
+        self.assertEqual(before, 0)
+        self.assertEqual(after, 0)
+        provider.assert_not_called()
+
+    def test_confirm_true_without_provider_is_safe_noop(self) -> None:
+        plan = self._plan_with_one_job()
+        before = self._row_count()
+        result = pcr.execute_refresh(plan, self._tmp_path, confirm=True)
+        after = self._row_count()
+
+        self.assertFalse(result.dry_run)
+        self.assertTrue(result.confirmed)
+        self.assertEqual(result.attempted_jobs, 0)
+        self.assertEqual(result.written_rows, 0)
+        self.assertEqual(result.skipped_jobs, 1)
+        self.assertEqual(after, before)
+
+
+class TestExecutorWritePath(_ExecutorTestBase):
+    """``confirm=True`` + provider seam writes only the expected rows."""
+
+    def test_confirm_true_writes_provider_rows(self) -> None:
+        plan = self._plan_with_one_job(
+            intervals=(("2026-04-01", "2026-04-03"),),
+        )
+        rows = [
+            pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1.0e6),
+            pcr.ProviderRow(date="2026-04-02", close=181.0, volume=1.1e6),
+            pcr.ProviderRow(date="2026-04-03", close=182.0, volume=1.2e6),
+        ]
+        provider = self._provider_returning({"AAPL": rows})
+
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+
+        self.assertTrue(result.confirmed)
+        self.assertFalse(result.dry_run)
+        self.assertEqual(result.attempted_jobs, 1)
+        self.assertEqual(result.written_rows, 3)
+        self.assertEqual(result.skipped_jobs, 0)
+        self.assertEqual(result.errors, ())
+        self.assertEqual(result.provider_calls, 1)
+        self.assertEqual(self._row_count(ticker="AAPL"), 3)
+        provider.assert_called_once()
+        # Provider received the correct args.
+        args, kwargs = provider.call_args
+        self.assertEqual(args[0], "AAPL")
+        self.assertEqual(args[1], date(2026, 4, 1))
+        self.assertEqual(args[2], date(2026, 4, 3))
+        self.assertIs(args[3], True)  # auto_adjust
+
+    def test_writes_only_to_price_cache_table(self) -> None:
+        # Other tables in the same DB must not be touched.  Create a
+        # sibling table and assert it stays untouched.
+        with sqlite3.connect(self._tmp_path) as conn:
+            conn.execute("CREATE TABLE events (id INTEGER PRIMARY KEY)")
+            conn.execute("INSERT INTO events (id) VALUES (1)")
+            conn.execute("INSERT INTO events (id) VALUES (2)")
+
+        plan = self._plan_with_one_job()
+        provider = self._provider_returning({
+            "AAPL": [pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6)],
+        })
+        pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+
+        with sqlite3.connect(self._tmp_path) as conn:
+            ev_count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        self.assertEqual(ev_count, 2)
+
+    def test_uses_injected_fetched_at_timestamp(self) -> None:
+        plan = self._plan_with_one_job(
+            intervals=(("2026-04-01", "2026-04-01"),),
+        )
+        provider = self._provider_returning({
+            "AAPL": [pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6)],
+        })
+        pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True,
+            provider_fetch=provider, fetched_at="2026-05-06T12:00:00Z",
+        )
+        with sqlite3.connect(self._tmp_path) as conn:
+            row = conn.execute(
+                "SELECT fetched_at FROM price_cache WHERE ticker = ?",
+                ("AAPL",),
+            ).fetchone()
+        self.assertEqual(row[0], "2026-05-06T12:00:00Z")
+
+    def test_idempotent_repeated_write(self) -> None:
+        plan = self._plan_with_one_job(
+            intervals=(("2026-04-01", "2026-04-02"),),
+        )
+        rows = [
+            pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6),
+            pcr.ProviderRow(date="2026-04-02", close=181.0, volume=1.1e6),
+        ]
+        provider = self._provider_returning({"AAPL": rows})
+
+        pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+            fetched_at="2026-05-06T12:00:00Z",
+        )
+        first_count = self._row_count(ticker="AAPL")
+        # Re-run.  INSERT OR REPLACE leaves the table at the same
+        # cardinality.
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+            fetched_at="2026-05-07T12:00:00Z",
+        )
+        second_count = self._row_count(ticker="AAPL")
+
+        self.assertEqual(first_count, 2)
+        self.assertEqual(second_count, 2)
+        self.assertEqual(result.written_rows, 2)
+        # The fetched_at column was overwritten on re-run.
+        with sqlite3.connect(self._tmp_path) as conn:
+            stamps = {
+                row[0] for row in conn.execute(
+                    "SELECT fetched_at FROM price_cache",
+                )
+            }
+        self.assertEqual(stamps, {"2026-05-07T12:00:00Z"})
+
+    def test_returns_zero_writes_when_provider_returns_empty(self) -> None:
+        plan = self._plan_with_one_job()
+        provider = self._provider_returning({"AAPL": []})
+
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+
+        self.assertEqual(result.attempted_jobs, 1)
+        self.assertEqual(result.written_rows, 0)
+        self.assertEqual(result.errors, ())
+        self.assertEqual(self._row_count(), 0)
+
+
+class TestExecutorErrorIsolation(_ExecutorTestBase):
+    """A provider raise on one interval must not poison the run."""
+
+    def test_provider_error_isolated_per_interval(self) -> None:
+        # Two jobs.  AAPL's provider call raises; MSFT succeeds.
+        good_rows = [
+            pcr.ProviderRow(date="2026-04-01", close=300.0, volume=2e6),
+        ]
+
+        def _fetch(symbol, start, end, auto_adjust):
+            if symbol == "AAPL":
+                raise RuntimeError("simulated provider blow-up")
+            return list(good_rows)
+
+        provider = mock.MagicMock(side_effect=_fetch, name="provider_fetch")
+        plan = pcr.RefreshPlan(
+            events_considered=2,
+            tickers_considered=2,
+            refresh_jobs=(
+                pcr.TickerRefreshJob(
+                    event_id=1, event_date="2026-04-01", symbol="AAPL",
+                    intervals=(("2026-04-01", "2026-04-01"),),
+                    business_days=1, auto_adjust=True,
+                ),
+                pcr.TickerRefreshJob(
+                    event_id=2, event_date="2026-04-02", symbol="MSFT",
+                    intervals=(("2026-04-01", "2026-04-01"),),
+                    business_days=1, auto_adjust=True,
+                ),
+            ),
+            skipped_counts={k: 0 for k in pcr.SKIP_COUNT_KEYS},
+            provider_calls_estimate=2,
+            max_provider_calls=50,
+            cap_applied=False,
+            decision_reason=pcr.DECISION_PLANNED,
+        )
+
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+
+        # Both jobs were attempted; one succeeded, one captured an error.
+        self.assertEqual(result.attempted_jobs, 2)
+        self.assertEqual(result.written_rows, 1)
+        self.assertEqual(self._row_count(ticker="AAPL"),  0)
+        self.assertEqual(self._row_count(ticker="MSFT"),  1)
+        self.assertEqual(len(result.errors), 1)
+        err = result.errors[0]
+        self.assertEqual(err.symbol, "AAPL")
+        self.assertEqual(err.error_type, "RuntimeError")
+        self.assertIn("simulated provider blow-up", err.message)
+        self.assertFalse(result.ok)
+
+
+class TestExecutorCapEnforcement(_ExecutorTestBase):
+    """Defensive cap: the executor must never overshoot
+    ``plan.max_provider_calls`` even if the plan is over-stuffed.
+    """
+
+    def test_executor_stops_at_plan_cap(self) -> None:
+        # Hand-construct a plan that already overshoots the cap (cap=2,
+        # 4 intervals across 2 jobs).  The executor must call the
+        # provider at most twice and skip the rest.
+        provider = mock.MagicMock(side_effect=lambda *a, **kw: [
+            pcr.ProviderRow(date="2026-04-01", close=100.0, volume=1.0),
+        ])
+        plan = pcr.RefreshPlan(
+            events_considered=2,
+            tickers_considered=2,
+            refresh_jobs=(
+                pcr.TickerRefreshJob(
+                    event_id=1, event_date="2026-04-01", symbol="AAPL",
+                    intervals=(
+                        ("2026-04-01", "2026-04-01"),
+                        ("2026-04-03", "2026-04-03"),
+                        ("2026-04-05", "2026-04-05"),
+                    ),
+                    business_days=3, auto_adjust=True,
+                ),
+                pcr.TickerRefreshJob(
+                    event_id=2, event_date="2026-04-02", symbol="MSFT",
+                    intervals=(("2026-04-01", "2026-04-01"),),
+                    business_days=1, auto_adjust=True,
+                ),
+            ),
+            skipped_counts={k: 0 for k in pcr.SKIP_COUNT_KEYS},
+            provider_calls_estimate=4,
+            max_provider_calls=2,
+            cap_applied=True,
+            decision_reason=pcr.DECISION_CAP_EXHAUSTED,
+        )
+
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+
+        self.assertEqual(provider.call_count, 2)
+        self.assertEqual(result.provider_calls, 2)
+        # AAPL was attempted (2 of its 3 intervals fetched); MSFT was
+        # skipped because the cap was already exhausted.
+        self.assertEqual(result.attempted_jobs, 1)
+        self.assertEqual(result.skipped_jobs, 1)
+        self.assertEqual(self._row_count(ticker="MSFT"), 0)
+
+    def test_zero_cap_skips_all_jobs(self) -> None:
+        provider = mock.MagicMock(
+            side_effect=AssertionError("provider must not be called when cap=0"),
+        )
+        plan = self._plan_with_one_job(max_provider_calls=0)
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+        self.assertEqual(result.attempted_jobs, 0)
+        self.assertEqual(result.written_rows, 0)
+        self.assertEqual(result.skipped_jobs, 1)
+        provider.assert_not_called()
+
+
+class TestExecutorPaidSeamPurity(_ExecutorTestBase):
+    """The executor must never reach an LLM / paid auto-backfill seam."""
+
+    def test_executor_never_calls_llm_or_paid_seams(self) -> None:
+        plan = self._plan_with_one_job(
+            intervals=(("2026-04-01", "2026-04-01"),),
+        )
+        provider = self._provider_returning({
+            "AAPL": [pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6)],
+        })
+
+        with mock.patch(
+            "analyze_event.analyze_event",
+            side_effect=AssertionError("analyze_event forbidden"),
+        ), mock.patch(
+            "auto_backfill_runner.execute_paid_candidate",
+            side_effect=AssertionError("execute_paid_candidate forbidden"),
+        ), mock.patch(
+            "yfinance.download",
+            side_effect=AssertionError("yfinance.download forbidden"),
+        ), mock.patch(
+            "yfinance.Ticker",
+            side_effect=AssertionError("yfinance.Ticker forbidden"),
+        ):
+            result = pcr.execute_refresh(
+                plan, self._tmp_path, confirm=True, provider_fetch=provider,
+            )
+
+        self.assertTrue(result.confirmed)
+        self.assertEqual(result.written_rows, 1)
+        self.assertEqual(result.errors, ())
+
+    def test_dry_run_invokes_no_provider_seam(self) -> None:
+        plan = self._plan_with_one_job()
+        # ANY provider seam getting invoked under confirm=False is a
+        # contract violation.  Pass a raiser to fail loudly.
+        raiser = mock.MagicMock(
+            side_effect=AssertionError("provider must not be called under dry-run"),
+        )
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=False, provider_fetch=raiser,
+        )
+        self.assertTrue(result.dry_run)
+        self.assertEqual(self._row_count(), 0)
+        raiser.assert_not_called()
+
+
+class TestExecutorRowFiltering(_ExecutorTestBase):
+    """Bad rows from the provider mock are dropped silently."""
+
+    def test_rows_with_missing_date_are_dropped(self) -> None:
+        plan = self._plan_with_one_job(
+            intervals=(("2026-04-01", "2026-04-02"),),
+        )
+        # One good row, two malformed.
+        rows = [
+            pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6),
+            {"date": "", "close": 1.0, "volume": 1.0},  # type: ignore[list-item]
+            {"close": 1.0, "volume": 1.0},              # type: ignore[list-item]
+        ]
+        provider = self._provider_returning({"AAPL": rows})  # type: ignore[arg-type]
+
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+        self.assertEqual(result.written_rows, 1)
+        self.assertEqual(self._row_count(ticker="AAPL"), 1)
+
+    def test_dict_rows_are_accepted(self) -> None:
+        plan = self._plan_with_one_job(
+            intervals=(("2026-04-01", "2026-04-01"),),
+        )
+        provider = self._provider_returning({
+            "AAPL": [{"date": "2026-04-01", "close": 180.0, "volume": 1e6}],  # type: ignore[list-item]
+        })  # type: ignore[arg-type]
+        result = pcr.execute_refresh(
+            plan, self._tmp_path, confirm=True, provider_fetch=provider,
+        )
+        self.assertEqual(result.written_rows, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -351,25 +351,45 @@ a recent market-context refresh) before invoking the script.
 - After rotating, run zero-cost smoke first before any paid command.
 - Never print or log API keys.
 
-## Price-Cache Refresh Dry-Run
+## Price-Cache Refresh
 
-Run the price-cache refresh planner before any paid auto-backfill work. This is
-dry-run only for now: it estimates missing cache work and does not write cache
-rows.
+Run dry-run first before any paid auto-backfill work or cache write:
 
 ```powershell
 python scripts/refresh_price_cache.py --json
 ```
 
+Write mode is guarded and must be explicit:
+
+```powershell
+python scripts/refresh_price_cache.py --write --confirm --json
+```
+
+This does not spend LLM/API-analysis calls, but it may call the configured
+market-data provider to fetch missing bars. Do not trigger it from a GET route,
+page load, scheduler experiment, or demo flow. Run archive backup and local
+preflight first, then review the dry-run plan before using write mode. This
+write path has not been run on the real archive yet.
+
 Inspect:
 
-- `provider_calls_estimate`: expected provider/network calls if a future write
-  mode were enabled.
+- `provider_calls_estimate`: expected provider/network calls if write mode is
+  used.
 - `refresh_jobs`: count of ticker/date windows that would need cache refresh.
 - `skipped_counts`: why candidates were skipped from refresh planning.
-- `/diagnostics/price-cache-coverage`: once write mode exists, compare before
-  and after a refresh run to confirm coverage improved. Today, dry-run output
-  should not change coverage.
+
+Before and after guarded write mode, inspect:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/price-cache-coverage" |
+  ConvertTo-Json -Depth 10
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/reaction-profile-stats" |
+  ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/track-record" |
+  ConvertTo-Json -Depth 8
+```
 
 ## Dirty-Tree Hygiene
 

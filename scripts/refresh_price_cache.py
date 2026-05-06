@@ -1,40 +1,44 @@
 #!/usr/bin/env python3
-"""Price-cache refresh dry-run CLI.
+"""Price-cache refresh CLI.
 
 Composes :func:`price_cache_refresh.plan_refresh` with the read-only
 input loader to preview which event x ticker windows a refresh would
-warm.  Emits a compact text report by default; ``--json`` for tooling
-/ CI.
+warm.  Default: dry-run.  ``--write --confirm`` (both required) hands
+the plan to a thin executor that issues the cache fetches.
 
 Out of scope (deliberately)
 ---------------------------
-* **No write mode.**  The planner is pure; no executor is invoked.
-  ``--write`` / ``--confirm`` are deliberately absent on this CLI
-  iteration; the design at ``docs/price_cache_refresh_design.md``
-  pins the future write-mode contract.
-* **No provider call.**  Neither :func:`price_cache_refresh.load_inputs`
-  nor :func:`price_cache_refresh.plan_refresh` reach the network or
-  the market-data provider.
-* **No DB write.**  ``load_inputs`` opens SQLite in ``mode=ro``; this
-  CLI never invokes ``db.save_event`` / ``update_review`` /
-  ``append_revisit_snapshot``.
-* **No LLM, no analyze_event, no auto-backfill paid path.**  The
-  refresh planner is independent of the paid-execution graph; the
-  test suite pins these invariants.
+* **No FastAPI route.**  This CLI is invocation-only; it never
+  publishes to ``app.state``, never starts a scheduler, never opens
+  a socket.
+* **No LLM, no analyze_event, no auto-backfill paid path.**  Neither
+  the planner nor the executor reaches the LLM seams or
+  ``auto_backfill_runner.execute_paid_candidate``; the test suite
+  pins these invariants.
+* **No archive mutation.**  Only ``price_cache`` rows can ever be
+  written, and only via the established ``fetch_daily_cached``
+  upsert path.  ``db.save_event`` / ``update_review`` /
+  ``append_revisit_snapshot`` are never called.
 
-Two seams keep the CLI hermetic for tests:
+Three seams keep the CLI hermetic for tests:
 
 * :data:`plan_refresh` — the planner seam.  Tests patch
   ``scripts.refresh_price_cache.plan_refresh`` directly.
 * :data:`load_inputs` — the events + cached-dates loader.  Tests
   patch with a stub returning ``([], {})`` so the hermetic path
   never touches SQLite.
+* :data:`execute_refresh` — the executor seam invoked only under
+  ``--write --confirm``.  Tests patch with a MagicMock so the
+  default implementation (which calls ``price_cache.fetch_daily_cached``)
+  is never reached.
 
 Usage::
 
     python scripts/refresh_price_cache.py
     python scripts/refresh_price_cache.py --json
     python scripts/refresh_price_cache.py --max-events 25 --max-provider-calls 20 --json
+    python scripts/refresh_price_cache.py --write --confirm
+    python scripts/refresh_price_cache.py --write --confirm --json
 """
 from __future__ import annotations
 
@@ -82,6 +86,120 @@ def _default_db_path() -> str:
     """
     from db import DB_FILE
     return DB_FILE
+
+
+# ---------------------------------------------------------------------------
+# Executor seam — invoked only under ``--write --confirm``
+# ---------------------------------------------------------------------------
+
+
+_EXECUTOR_RESULT_KEYS: tuple[str, ...] = (
+    "attempted_jobs",
+    "written_rows",
+    "errors",
+)
+
+
+def _empty_executor_result() -> dict:
+    return {"attempted_jobs": 0, "written_rows": 0, "errors": []}
+
+
+def _default_execute_refresh(plan: Any, *, config: RefreshConfig) -> dict:
+    """Default executor — issues one ``fetch_daily_cached`` per
+    ``(symbol, interval)`` pair in ``plan.refresh_jobs``.
+
+    Lazy import of :mod:`price_cache` keeps the dry-run path free of
+    the cache module's import side-effects (``_purge_corrupt_rows``
+    on first ``_ensure_table``).  The provider is reached only when
+    this default executor actually runs — i.e. only under
+    ``--write --confirm``.
+
+    Returns a dict with the contract keys ``attempted_jobs`` /
+    ``written_rows`` / ``errors``.  Per-interval failures are
+    captured into ``errors`` and the run continues so a single bad
+    ticker does not block the rest of the plan.
+    """
+    from price_cache import fetch_daily_cached  # lazy: see docstring
+
+    attempted = 0
+    written   = 0
+    errors: list[dict] = []
+
+    refresh_jobs = list(getattr(plan, "refresh_jobs", ()) or ())
+    for job in refresh_jobs:
+        for interval in job.intervals:
+            start_iso, end_iso = interval[0], interval[1]
+            attempted += 1
+            try:
+                df = fetch_daily_cached(
+                    job.symbol,
+                    start=start_iso,
+                    end=end_iso,
+                    auto_adjust=job.auto_adjust,
+                )
+            except Exception as exc:
+                errors.append({
+                    "event_id":       job.event_id,
+                    "symbol":         job.symbol,
+                    "interval_start": start_iso,
+                    "interval_end":   end_iso,
+                    "error":          f"{type(exc).__name__}: {exc}",
+                })
+                continue
+            if df is None:
+                continue
+            try:
+                written += int(len(df))
+            except Exception:
+                pass
+
+    return {
+        "attempted_jobs": attempted,
+        "written_rows":   written,
+        "errors":         errors,
+    }
+
+
+# Module-level binding tests patch via
+# ``patch("scripts.refresh_price_cache.execute_refresh", MagicMock(...))``.
+execute_refresh = _default_execute_refresh
+
+
+def _normalise_executor_result(result: Any) -> dict:
+    """Normalise the executor return into the contract dict.
+
+    Tolerates dataclass / dict / namespaced returns so a future
+    ``RefreshResult`` dataclass drops in without test churn.
+    Missing keys collapse to safe zeros / empty list.
+    """
+    if result is None:
+        return _empty_executor_result()
+    if dataclasses.is_dataclass(result):
+        result = dataclasses.asdict(result)
+    if not isinstance(result, dict):
+        return _empty_executor_result()
+
+    attempted = result.get("attempted_jobs", 0)
+    try:
+        attempted = int(attempted)
+    except (TypeError, ValueError):
+        attempted = 0
+
+    written = result.get("written_rows", 0)
+    try:
+        written = int(written)
+    except (TypeError, ValueError):
+        written = 0
+
+    errors = result.get("errors") or []
+    if not isinstance(errors, list):
+        errors = []
+
+    return {
+        "attempted_jobs": attempted,
+        "written_rows":   written,
+        "errors":         errors,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -150,11 +268,37 @@ def _plan_to_dict(plan: Any) -> dict:
     return {}
 
 
-def _compose_payload(*, plan_dict: dict, caps: dict, now_iso: str) -> dict:
-    """Wrap the normalised plan in the CLI's outer envelope."""
-    return {
-        "ok":                      True,
+def _compose_payload(
+    *,
+    plan_dict: dict,
+    caps: dict,
+    now_iso: str,
+    mode: str,
+    confirmed: bool,
+    executor_result: dict,
+    error_message: str | None = None,
+) -> dict:
+    """Wrap the normalised plan + executor result in the outer envelope.
+
+    Top-level keys ``mode`` / ``confirmed`` / ``attempted_jobs`` /
+    ``written_rows`` / ``errors`` are pinned by the task's JSON
+    contract.  Plan + cap fields stay at the top level too so the
+    dry-run shape from the previous CLI iteration remains intact for
+    operator panels that already consume it.
+
+    ``error_message`` is set when ``--write`` was passed without
+    ``--confirm`` so the JSON carries a human-readable reason
+    alongside the structured ``mode="write"`` / ``confirmed=false``
+    flags.
+    """
+    payload: dict = {
+        "ok":                      error_message is None,
         "now":                     now_iso,
+        "mode":                    mode,
+        "confirmed":               confirmed,
+        "attempted_jobs":          executor_result["attempted_jobs"],
+        "written_rows":            executor_result["written_rows"],
+        "errors":                  executor_result["errors"],
         "decision_reason":         plan_dict.get("decision_reason", "no_work"),
         "caps":                    caps,
         "events_considered":       plan_dict.get("events_considered",       0),
@@ -168,6 +312,9 @@ def _compose_payload(*, plan_dict: dict, caps: dict, now_iso: str) -> dict:
         "skipped_counts":          plan_dict.get("skipped_counts",          {}),
         "events":                  plan_dict.get("events",                  []),
     }
+    if error_message is not None:
+        payload["error"] = error_message
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +327,21 @@ def _render_json(payload: dict) -> str:
 
 
 def _render_text(payload: dict) -> str:
-    lines: list[str] = ["Price-cache refresh dry-run", ""]
+    mode = payload.get("mode", "dry_run")
+    confirmed = bool(payload.get("confirmed"))
+    header = "Price-cache refresh dry-run" if mode == "dry_run" else "Price-cache refresh write mode"
+    lines: list[str] = [header, ""]
+    lines.append(f"Mode: {mode}  confirmed={str(confirmed).lower()}")
+    err = payload.get("error")
+    if err:
+        lines.append(f"Error: {err}")
+    if mode == "write" and confirmed:
+        lines.append(
+            f"Executor: attempted_jobs={payload.get('attempted_jobs', 0)} "
+            f"written_rows={payload.get('written_rows', 0)} "
+            f"errors={len(payload.get('errors') or [])}"
+        )
+    lines.append("")
     lines.append(f"Decision reason: {payload.get('decision_reason', '-')}")
     caps = payload.get("caps", {})
     lines.append(
@@ -276,6 +437,24 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         action="store_true",
         help="Emit structured JSON instead of the compact text report.",
     )
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help=(
+            "Run the planner AND invoke the executor.  Requires "
+            "--confirm; without --confirm this CLI exits non-zero "
+            "and writes nothing."
+        ),
+    )
+    parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help=(
+            "Confirmation flag required alongside --write before any "
+            "provider call is issued.  Has no effect on its own; the "
+            "default remains dry-run."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -305,17 +484,72 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
 
     plan = plan_refresh(events, cached_by_ticker, config=cfg)
     plan_dict = _plan_to_dict(plan)
-    payload = _compose_payload(
-        plan_dict=plan_dict,
-        caps=caps,
-        now_iso=_now_iso(),
-    )
+    now_iso = _now_iso()
+
+    # Three-branch decision tree:
+    #   1. --write and not --confirm → exit 1, executor NEVER called.
+    #   2. --write and --confirm     → executor called once; exit 1 only
+    #                                   if it reports errors.
+    #   3. otherwise (dry-run)       → executor never called, exit 0.
+    # ``--confirm`` alone is silently treated as dry-run; the design
+    # doc reserves the warn / error path for a future iteration.
+    write_requested = bool(args.write)
+    confirmed       = write_requested and bool(args.confirm)
+
+    if write_requested and not args.confirm:
+        payload = _compose_payload(
+            plan_dict=plan_dict,
+            caps=caps,
+            now_iso=now_iso,
+            mode="write",
+            confirmed=False,
+            executor_result=_empty_executor_result(),
+            error_message=(
+                "--write requires --confirm; refusing to run the "
+                "executor.  Re-run with both flags to issue provider "
+                "calls."
+            ),
+        )
+        exit_code = 1
+    elif confirmed:
+        try:
+            raw_result = execute_refresh(plan, config=cfg)
+        except Exception as exc:
+            executor_result = _empty_executor_result()
+            executor_result["errors"].append({
+                "event_id":       None,
+                "symbol":         None,
+                "interval_start": None,
+                "interval_end":   None,
+                "error":          f"{type(exc).__name__}: {exc}",
+            })
+        else:
+            executor_result = _normalise_executor_result(raw_result)
+        payload = _compose_payload(
+            plan_dict=plan_dict,
+            caps=caps,
+            now_iso=now_iso,
+            mode="write",
+            confirmed=True,
+            executor_result=executor_result,
+        )
+        exit_code = 1 if executor_result["errors"] else 0
+    else:
+        payload = _compose_payload(
+            plan_dict=plan_dict,
+            caps=caps,
+            now_iso=now_iso,
+            mode="dry_run",
+            confirmed=False,
+            executor_result=_empty_executor_result(),
+        )
+        exit_code = 0
 
     if args.json:
         print(_render_json(payload), file=output)
     else:
         print(_render_text(payload), file=output)
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":
