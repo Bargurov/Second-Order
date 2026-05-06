@@ -351,6 +351,26 @@ a recent market-context refresh) before invoking the script.
 - After rotating, run zero-cost smoke first before any paid command.
 - Never print or log API keys.
 
+## Price-Cache Refresh Dry-Run
+
+Run the price-cache refresh planner before any paid auto-backfill work. This is
+dry-run only for now: it estimates missing cache work and does not write cache
+rows.
+
+```powershell
+python scripts/refresh_price_cache.py --json
+```
+
+Inspect:
+
+- `provider_calls_estimate`: expected provider/network calls if a future write
+  mode were enabled.
+- `refresh_jobs`: count of ticker/date windows that would need cache refresh.
+- `skipped_counts`: why candidates were skipped from refresh planning.
+- `/diagnostics/price-cache-coverage`: once write mode exists, compare before
+  and after a refresh run to confirm coverage improved. Today, dry-run output
+  should not change coverage.
+
 ## Dirty-Tree Hygiene
 
 Before committing:
