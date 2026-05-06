@@ -63,6 +63,42 @@ to pin every call site.  The allow-list below names each route +
 seam pair with a rationale; any new caller will fail the invariant
 test loudly until the operator decides whether the new call site is
 correct.
+
+About the market_data.get_provider allow-list
+---------------------------------------------
+``market_data.get_provider`` is the factory that hands out the
+currently-active ``MarketDataProvider``.  It is not itself a paid
+network call — the paid calls live inside the returned provider's
+methods, and those (``yfinance.download`` / ``yfinance.Ticker``) are
+already tracked above — but it is a documented dispatch seam and the
+``no_paid_smoke`` / runbook treats it as one, so this test tracks it
+under the same allow-list discipline as yfinance.
+
+Two practical wrinkles drive the patching here:
+
+* ``market_universe`` and ``market_snapshots`` both pull ``get_provider``
+  in at module-load time via ``from market_data import get_provider``.
+  Once either module is loaded in the test process the function lives
+  under three names.  We patch all three with the SAME ``MagicMock``
+  so the call is attributed to one logical target,
+  ``"market_data.get_provider"``.
+* ``scripts/no_paid_smoke.py``'s ``guard_no_paid_provider_calls()``
+  patches ``market_data.get_provider`` with a ``RuntimeError`` raiser
+  for the duration of the smoke run.  If ``market_universe`` /
+  ``market_snapshots`` are lazy-imported during that window
+  (e.g., by ``tests/test_auto_backfill_scheduler_smoke.py`` running
+  earlier in the same process), they capture the raiser via the
+  ``from market_data import get_provider`` alias and the guard's
+  cleanup only restores the canonical ``market_data`` attribute —
+  leaving the raiser stranded as ``market_universe.get_provider`` /
+  ``market_snapshots.get_provider``.  ``setUpClass`` force-rebinds
+  every known shadow back to the live original BEFORE applying our
+  patches; this is the heal that keeps the suite order-independent.
+
+The proxy mock returns the real provider via a thin lambda so the
+allow-listed routes (e.g., ``/macro``, ``/snapshots``) keep
+functioning end-to-end; the actual paid surface is still gated by
+the strict yfinance raisers.
 """
 
 from __future__ import annotations
@@ -140,6 +176,7 @@ _PAID_SEAM_TARGETS: tuple[str, ...] = (
     "yfinance.download",
     "yfinance.Ticker",
     "auto_backfill_runner.execute_paid_candidate",
+    "market_data.get_provider",
 )
 
 # Strictly-forbidden seams: ZERO calls allowed from any GET route.
@@ -148,6 +185,21 @@ _STRICT_FORBIDDEN_TARGETS: frozenset[str] = frozenset({
     "api.market_check",
     "auto_backfill_runner.execute_paid_candidate",
 })
+
+# Provider-factory seam.  Patched non-raising (the proxy returns the
+# live provider) so allow-listed routes keep functioning; tracked as a
+# normal allow-list target via ``_KNOWN_PAID_SEAM_CALLERS`` below.
+_PROVIDER_PROXY_TARGET: str = "market_data.get_provider"
+
+# Shadow bindings created by ``from market_data import get_provider``
+# at module-load time.  We force-rebind these back to the live
+# original in setUpClass, then patch each with the same proxy mock so
+# calls are attributed to the canonical target regardless of which
+# alias the caller resolved through.
+_PROVIDER_PROXY_SHADOW_BINDINGS: tuple[str, ...] = (
+    "market_universe.get_provider",
+    "market_snapshots.get_provider",
+)
 
 # Provider seams that MAY be called only by the documented allow-list
 # below.  Every (route, target) pair carries a rationale string.
@@ -182,6 +234,56 @@ _KNOWN_PAID_SEAM_CALLERS: dict[tuple[str, str], str] = {
         "the event's tickers; under ?force=true (or a stale cache) the "
         "fetch falls through to fetch_daily_cached → yfinance.download. "
         "No paid LLM seam is involved on this path."
+    ),
+    # ``market_data.get_provider`` — factory that returns the active
+    # ``MarketDataProvider``.  Allow-listed for every route that
+    # transitively resolves a liquid-market identifier through
+    # ``market_universe.resolve_symbol → _provider_kind → get_provider()``
+    # or that constructs a provider-specific symbol map via
+    # ``market_snapshots.get_provider()``.  The factory itself never
+    # touches the network — the paid surface is the provider methods,
+    # which are independently gated by the yfinance.* raisers above.
+    ("/macro", "market_data.get_provider"): (
+        "macro snapshot resolves liquid-market identifiers via "
+        "market_universe.resolve_symbol → _provider_kind → get_provider() "
+        "to pick the active provider's preferred ticker for each "
+        "instrument on the macro tape (DXY, 10Y, CL, ...)"
+    ),
+    ("/stress", "market_data.get_provider"): (
+        "stress-regime composer resolves yield-curve / credit-tape "
+        "symbols via market_universe → _provider_kind → get_provider() "
+        "before dispatching the cold-cache fetch"
+    ),
+    ("/rates-context", "market_data.get_provider"): (
+        "rates-context composer resolves yield-curve symbols via "
+        "market_universe → _provider_kind → get_provider() before "
+        "the cold-cache fetch"
+    ),
+    ("/snapshots", "market_data.get_provider"): (
+        "snapshots composer (market_snapshots.py) calls get_provider() "
+        "to pick provider-specific ETFs/futures and to dispatch the "
+        "fetch on cache miss"
+    ),
+    ("/market-context", "market_data.get_provider"): (
+        "market-context composes snapshots + stress + rates; each leg "
+        "resolves its symbol set via market_universe → _provider_kind "
+        "→ get_provider() on cache miss"
+    ),
+    ("/ticker/{symbol}/chart", "market_data.get_provider"): (
+        "ticker chart resolves liquid-market symbols via market_universe "
+        "→ _provider_kind → get_provider() before dispatching the OHLC "
+        "fetch"
+    ),
+    ("/ticker/{symbol}/info", "market_data.get_provider"): (
+        "ticker info reads provider metadata via market_universe → "
+        "_provider_kind → get_provider() so the right symbol alphabet "
+        "is queried"
+    ),
+    ("/events/{event_id}/backtest", "market_data.get_provider"): (
+        "backtest re-runs market_check for the event's tickers; under "
+        "?force=true the cold-cache path resolves provider-specific "
+        "symbols via market_universe → _provider_kind → get_provider() "
+        "before dispatching the historical fetch"
     ),
 }
 
@@ -233,12 +335,41 @@ class TestNoPaidGetRoutes(unittest.TestCase):
         os.environ["ENABLE_AUTO_BACKFILL"] = "true"
         os.environ["ENABLE_PAID_ANALYSIS"] = "true"
 
-        # Patch every paid/provider seam to raise on call.  The mock
-        # objects are reset between requests so the probe can attribute
-        # call counts to individual routes.
+        # Heal any leak from a prior test in the same process before
+        # patching.  ``scripts/no_paid_smoke.py``'s
+        # ``guard_no_paid_provider_calls`` patches
+        # ``market_data.get_provider`` with a ``RuntimeError`` raiser
+        # for the duration of its with-block; if ``market_universe`` /
+        # ``market_snapshots`` were lazy-imported during that window
+        # they captured the raiser via the ``from market_data import
+        # get_provider`` alias and the guard's cleanup only restored
+        # the canonical ``market_data`` attribute.  Force-rebind every
+        # known shadow back to the live original so our patches start
+        # from a clean baseline regardless of test order.
+        import importlib
+        import market_data
+        for shadow in _PROVIDER_PROXY_SHADOW_BINDINGS:
+            mod_name, attr_name = shadow.rsplit(".", 1)
+            if mod_name not in sys.modules:
+                # Force-import so the binding exists with the right
+                # value before we patch (and so a future test cannot
+                # observe a half-resolved shadow).
+                importlib.import_module(mod_name)
+            setattr(
+                sys.modules[mod_name], attr_name, market_data.get_provider,
+            )
+
+        # Patch every paid/provider seam.  Strict targets get a raiser
+        # so any unexpected call fails the request loudly; the
+        # provider-factory target gets a non-raising proxy mock so
+        # allow-listed routes keep functioning.  Both flavours land in
+        # ``cls._mocks`` so the per-route call counts feed the same
+        # allow-list invariant.
         cls._patches = []
         cls._mocks = {}
         for target in _PAID_SEAM_TARGETS:
+            if target == _PROVIDER_PROXY_TARGET:
+                continue
             patcher = mock.patch(
                 target,
                 side_effect=AssertionError(
@@ -248,6 +379,23 @@ class TestNoPaidGetRoutes(unittest.TestCase):
             mock_obj = patcher.start()
             cls._patches.append(patcher)
             cls._mocks[target] = mock_obj
+
+        # Provider-factory proxy: one ``MagicMock`` shared across the
+        # canonical attribute and every shadow binding so a call
+        # through any alias is attributed to the same logical target.
+        # ``side_effect=lambda: real_get_provider()`` keeps the routes
+        # functional — they receive the real provider object — while
+        # the mock records the call count.
+        real_get_provider = market_data.get_provider
+        provider_proxy_mock = mock.MagicMock(
+            side_effect=lambda: real_get_provider(),
+            name=_PROVIDER_PROXY_TARGET,
+        )
+        for binding in (_PROVIDER_PROXY_TARGET,) + _PROVIDER_PROXY_SHADOW_BINDINGS:
+            patcher = mock.patch(binding, new=provider_proxy_mock)
+            patcher.start()
+            cls._patches.append(patcher)
+        cls._mocks[_PROVIDER_PROXY_TARGET] = provider_proxy_mock
 
         # Swap to a fresh temp DB so the probe is hermetic and seed a
         # single event whose backtest path will exercise the cold-cache
