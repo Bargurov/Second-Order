@@ -115,12 +115,104 @@ async def _lifespan(app: FastAPI):
         except ValueError:
             revisit_interval = 3600
         _start_revisit(interval=revisit_interval)
+    # Auto-backfill scheduler — dry-run only, disabled by default.  Both
+    # ENABLE_AUTO_BACKFILL and ENABLE_PAID_ANALYSIS must be true for the
+    # scheduler to start; otherwise this is a no-op.  Boot failures are
+    # logged and swallowed so the app keeps serving requests.  The
+    # contract is pinned in tests/test_auto_backfill_lifespan_wiring.py
+    # (real api.app) and tests/test_auto_backfill_lifespan_plan.py
+    # (harness-level spec).
+    _start_auto_backfill_scheduler(app)
     yield
-    # Stop both threads cleanly on shutdown (no-op if they never started).
+    # Stop background threads cleanly on shutdown (no-op if they never started).
     from market_snapshots import stop_background_refresh
     stop_background_refresh()
     from auto_revisit import stop_background_refresh as _stop_revisit
     _stop_revisit()
+    _stop_auto_backfill_scheduler(app)
+
+
+def _start_auto_backfill_scheduler(app: FastAPI) -> None:
+    """Boot the dry-run auto-backfill scheduler under both env gates.
+
+    No-op when:
+      * ``ENABLE_AUTO_BACKFILL`` is unset / false → ``effective_status="disabled"``
+      * ``ENABLE_PAID_ANALYSIS`` is unset / false → ``effective_status="blocked_paid_guard"``
+
+    On a successful start, the scheduler is published to
+    ``app.state.auto_backfill_scheduler`` so the shutdown half can stop
+    it.  Pre-start ordering is load-bearing: the attribute is set ONLY
+    after :func:`start_auto_backfill_scheduler` returns, so a start
+    exception leaves nothing for the shutdown half to touch.
+
+    Boot failures (config load, factory raise, start raise) are logged
+    and swallowed; the app keeps serving requests.
+    """
+    try:
+        from auto_backfill_config import load_auto_backfill_config
+        cfg = load_auto_backfill_config()
+    except Exception:
+        _log.warning(
+            "auto_backfill: config load failed; app continues",
+            exc_info=True,
+        )
+        return
+
+    if cfg.effective_status != "configured":
+        if cfg.effective_status == "blocked_paid_guard":
+            _log.warning(
+                "auto_backfill: ENABLE_AUTO_BACKFILL=true but "
+                "ENABLE_PAID_ANALYSIS is false; not scheduling.",
+            )
+        return
+
+    try:
+        from auto_backfill_scheduler import (
+            create_auto_backfill_scheduler,
+            start_auto_backfill_scheduler,
+        )
+        scheduler = create_auto_backfill_scheduler(config=cfg)
+        start_auto_backfill_scheduler(scheduler)
+    except Exception:
+        _log.warning(
+            "auto_backfill: scheduler boot failed; app continues",
+            exc_info=True,
+        )
+        return
+
+    # Pre-start ordering: publish to app.state ONLY after start
+    # returned successfully.  A half-started scheduler must never
+    # land here.
+    app.state.auto_backfill_scheduler = scheduler
+
+
+def _stop_auto_backfill_scheduler(app: FastAPI) -> None:
+    """Stop the auto-backfill scheduler if one was published at boot.
+
+    No-op when no scheduler was created (disabled / paid-guard / boot
+    failure).  ``stop`` exceptions are logged and swallowed so a buggy
+    shutdown does not crash the FastAPI shutdown path.
+    """
+    scheduler = getattr(app.state, "auto_backfill_scheduler", None)
+    if scheduler is None:
+        return
+    try:
+        from auto_backfill_scheduler import stop_auto_backfill_scheduler
+        stop_auto_backfill_scheduler(scheduler)
+    except Exception:
+        _log.warning(
+            "auto_backfill: scheduler stop raised; ignoring",
+            exc_info=True,
+        )
+    finally:
+        # Drop the reference so a follow-on lifespan boot starts clean.
+        # Starlette's ``State.__delattr__`` raises ``KeyError`` on a
+        # missing key (not ``AttributeError``); guard both so the
+        # cleanup is a true no-op when nothing was published.
+        try:
+            delattr(app.state, "auto_backfill_scheduler")
+        except (AttributeError, KeyError):
+            pass
 
 
 app = FastAPI(title="Second Order API", version="0.1.0", lifespan=_lifespan)

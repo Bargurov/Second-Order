@@ -1,4 +1,5 @@
 anthropic
+apscheduler>=3.10
 openai
 feedparser
 fastapi

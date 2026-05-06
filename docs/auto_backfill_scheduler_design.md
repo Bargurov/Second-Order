@@ -429,6 +429,44 @@ queued, APScheduler runs the job once.  Anything older than 10 minutes
 is dropped — rather than firing a stale paid run "to catch up,"
 better to wait for the next regular tick.
 
+### 7.5 Lifespan shutdown
+
+The lifespan teardown path mirrors §7.1 boot — short, swallow-and-log,
+never raises.  Code shape:
+
+```python
+# api._lifespan teardown half — runs after `yield`
+scheduler = getattr(app.state, "auto_backfill_scheduler", None)
+if scheduler is not None:
+    try:
+        from auto_backfill_scheduler import stop_auto_backfill_scheduler
+        stop_auto_backfill_scheduler(scheduler)
+    except Exception:
+        _log.warning(
+            "auto_backfill: stop raised; ignoring",
+            exc_info=True,
+        )
+```
+
+Two load-bearing rules:
+
+1. **Stop only if a scheduler exists.**  A boot that hit
+   `effective_status != "configured"` or that crashed mid-`start()`
+   leaves `app.state.auto_backfill_scheduler` unset (or `None`).
+   The teardown must be a no-op on that path — never synthesise a
+   stop call against a never-built object.
+2. **Pre-start ordering.**  Boot must NOT publish the scheduler to
+   `app.state` until `start_auto_backfill_scheduler()` returns
+   successfully.  A `start` exception that left a half-built scheduler
+   in `app.state` would invite teardown to call `stop()` on a
+   never-started object — `stop_auto_backfill_scheduler` already
+   guards `scheduler.running`, but the simpler safety is "do not
+   publish a partial scheduler in the first place."
+
+The contract is pinned in `tests/test_auto_backfill_lifespan_plan.py`
+(harness-level today, replaced with real `api.app` lifespan once the
+wiring lands).
+
 ---
 
 ## 8. Candidate selection
