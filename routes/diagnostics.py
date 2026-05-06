@@ -4,7 +4,7 @@ docs/superpowers/specs/2026-05-03-headline-registry-design.md.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Query, Request
@@ -1886,3 +1886,272 @@ def _auto_backfill_dry_run_unavailable(
         },
         "available": False,
     }
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/price-cache-coverage — pure SQL, no provider, no DB write
+# ---------------------------------------------------------------------------
+
+
+# Bucket label, inclusive lower bound (calendar days) for events whose
+# ``event_date`` is set.  Events without ``event_date`` land in the
+# ``"unknown"`` bucket so the coverage panel never silently drops them.
+_PRICE_CACHE_AGE_BUCKETS: tuple[tuple[str, int], ...] = (
+    ("0_7d",     0),
+    ("8_30d",    8),
+    ("31_90d",  31),
+    ("91d_plus", 91),
+)
+_PRICE_CACHE_BUCKET_UNKNOWN = "unknown"
+
+
+def _empty_age_bucket() -> dict:
+    return {
+        "total_events":                  0,
+        "events_with_market_tickers":    0,
+        "events_with_any_forward_cache": 0,
+        "events_with_5d_forward_cache":  0,
+        "events_with_20d_forward_cache": 0,
+    }
+
+
+def _empty_age_bucket_set() -> dict:
+    buckets: dict[str, dict] = {
+        label: _empty_age_bucket()
+        for label, _ in _PRICE_CACHE_AGE_BUCKETS
+    }
+    buckets[_PRICE_CACHE_BUCKET_UNKNOWN] = _empty_age_bucket()
+    return buckets
+
+
+def _age_bucket_label(age_days: int) -> str:
+    """Map an event's age-in-calendar-days (vs. today) to a bucket key.
+
+    Negative ages (event_date in the future) collapse into the
+    youngest bucket so a clock-skewed row never disappears.  The
+    boundaries are inclusive on the lower side and the buckets are
+    contiguous, so every non-negative age maps to exactly one label.
+    """
+    if age_days < 0:
+        return _PRICE_CACHE_AGE_BUCKETS[0][0]
+    chosen = _PRICE_CACHE_AGE_BUCKETS[0][0]
+    for label, lower in _PRICE_CACHE_AGE_BUCKETS:
+        if age_days >= lower:
+            chosen = label
+        else:
+            break
+    return chosen
+
+
+def _business_day_offset(start: date, n: int) -> date:
+    """Shift ``start`` forward by ``n`` business days.
+
+    Inlined here so the endpoint never imports ``price_cache`` (which
+    would trip ``_purge_corrupt_rows`` and violate the no-DB-write
+    contract on first call).
+    """
+    if n <= 0:
+        return start
+    out = start
+    remaining = n
+    while remaining > 0:
+        out = out + timedelta(days=1)
+        if out.weekday() < 5:
+            remaining -= 1
+    return out
+
+
+@router.get("/diagnostics/price-cache-coverage")
+def price_cache_coverage():
+    """Read-only coverage view of the SQLite ``price_cache`` against the
+    ``events`` archive.
+
+    Pure read.  Issues only ``SELECT`` statements directly against the
+    local SQLite DB.  Never imports ``market_data`` or ``price_cache``
+    (the latter would trigger ``_purge_corrupt_rows`` on first call,
+    violating the no-DB-write contract), never touches ``yfinance``,
+    never calls the LLM, and never writes to the DB.  Safe to poll
+    from an operator panel at any cadence.
+
+    Top-level fields:
+
+      * ``total_events``                — ``COUNT(*)`` of events.
+      * ``events_with_market_tickers``  — events whose ``market_tickers``
+                                          JSON decodes to at least one
+                                          recognised symbol entry.
+      * ``unique_tickers``              — distinct upper-cased symbols
+                                          across every event row.
+      * ``tickers_with_cache_rows``     — count of those symbols that
+                                          appear in ``price_cache``.
+      * ``tickers_without_cache_rows``  — ``unique_tickers`` minus the
+                                          above.
+      * ``events_with_any_forward_cache``  — events with ``event_date``
+                                              and at least one ticker
+                                              whose ``MAX(date)`` in
+                                              ``price_cache`` is at or
+                                              after the event date.
+      * ``events_with_5d_forward_cache``   — same, but the ticker max
+                                              must reach
+                                              ``event_date + 5`` business
+                                              days.
+      * ``events_with_20d_forward_cache``  — same, ``+20`` business days.
+      * ``coverage_by_event_age_bucket`` — per-bucket event tallies.
+                                          Bucket labels:
+                                          ``0_7d`` / ``8_30d`` /
+                                          ``31_90d`` / ``91d_plus`` /
+                                          ``unknown``.  ``unknown``
+                                          holds events without an
+                                          ``event_date``.  Each bucket
+                                          carries
+                                          ``total_events``,
+                                          ``events_with_market_tickers``,
+                                          and the three forward-cache
+                                          counts.
+      * ``latest_cache_date``           — ``MAX(date)`` over every row
+                                          in ``price_cache``, ISO-8601,
+                                          or ``None`` when the cache is
+                                          empty.
+
+    Forward-coverage semantics: a ticker satisfies the ``+Nd``
+    condition when its newest cached row is dated at or after
+    ``event_date + N`` business days.  Per-event truth is OR across
+    the event's tickers.  Events without ``event_date`` or
+    ``market_tickers`` still appear in ``total_events`` and the bucket
+    breakdown but never count toward the forward-coverage totals.
+    """
+    import sqlite3
+    import db as _db
+    from db import _ticker_symbols
+
+    empty = {
+        "total_events":                  0,
+        "events_with_market_tickers":    0,
+        "unique_tickers":                0,
+        "tickers_with_cache_rows":       0,
+        "tickers_without_cache_rows":    0,
+        "events_with_any_forward_cache": 0,
+        "events_with_5d_forward_cache":  0,
+        "events_with_20d_forward_cache": 0,
+        "coverage_by_event_age_bucket":  _empty_age_bucket_set(),
+        "latest_cache_date":             None,
+    }
+
+    try:
+        conn = sqlite3.connect(_db.DB_FILE)
+    except sqlite3.Error:
+        return _api._sanitize_floats(empty)
+
+    try:
+        try:
+            event_rows = conn.execute(
+                "SELECT market_tickers, event_date FROM events"
+            ).fetchall()
+        except sqlite3.Error:
+            event_rows = []
+
+        try:
+            cache_max_rows = conn.execute(
+                "SELECT ticker, MAX(date) FROM price_cache GROUP BY ticker"
+            ).fetchall()
+        except sqlite3.Error:
+            cache_max_rows = []
+
+        try:
+            row = conn.execute(
+                "SELECT MAX(date) FROM price_cache"
+            ).fetchone()
+            latest_cache_date = row[0] if row else None
+        except sqlite3.Error:
+            latest_cache_date = None
+    finally:
+        conn.close()
+
+    cache_max_by_ticker: dict[str, date] = {}
+    for ticker, max_date_str in cache_max_rows:
+        if not isinstance(ticker, str) or not isinstance(max_date_str, str):
+            continue
+        try:
+            cache_max_by_ticker[ticker.upper()] = date.fromisoformat(
+                max_date_str[:10],
+            )
+        except (ValueError, TypeError):
+            continue
+
+    total_events = len(event_rows)
+    events_with_market_tickers = 0
+    events_with_any_forward = 0
+    events_with_5d_forward  = 0
+    events_with_20d_forward = 0
+    unique_tickers: set[str] = set()
+    age_buckets = _empty_age_bucket_set()
+    today = date.today()
+
+    for market_tickers_blob, event_date_str in event_rows:
+        symbols = _ticker_symbols(market_tickers_blob)
+        has_tickers = bool(symbols)
+        if has_tickers:
+            events_with_market_tickers += 1
+            unique_tickers.update(symbols)
+
+        event_d: date | None = None
+        if isinstance(event_date_str, str) and event_date_str:
+            try:
+                event_d = date.fromisoformat(event_date_str[:10])
+            except (ValueError, TypeError):
+                event_d = None
+
+        any_forward = five_forward = twenty_forward = False
+        if has_tickers and event_d is not None:
+            plus_5  = _business_day_offset(event_d, 5)
+            plus_20 = _business_day_offset(event_d, 20)
+            for symbol in symbols:
+                cache_max = cache_max_by_ticker.get(symbol)
+                if cache_max is None:
+                    continue
+                if cache_max >= event_d:
+                    any_forward = True
+                if cache_max >= plus_5:
+                    five_forward = True
+                if cache_max >= plus_20:
+                    twenty_forward = True
+                if any_forward and five_forward and twenty_forward:
+                    break
+
+        if any_forward:
+            events_with_any_forward += 1
+        if five_forward:
+            events_with_5d_forward += 1
+        if twenty_forward:
+            events_with_20d_forward += 1
+
+        if event_d is None:
+            bucket_label = _PRICE_CACHE_BUCKET_UNKNOWN
+        else:
+            bucket_label = _age_bucket_label((today - event_d).days)
+        bucket = age_buckets[bucket_label]
+        bucket["total_events"] += 1
+        if has_tickers:
+            bucket["events_with_market_tickers"] += 1
+        if any_forward:
+            bucket["events_with_any_forward_cache"] += 1
+        if five_forward:
+            bucket["events_with_5d_forward_cache"] += 1
+        if twenty_forward:
+            bucket["events_with_20d_forward_cache"] += 1
+
+    tickers_with_cache_rows = sum(
+        1 for sym in unique_tickers if sym in cache_max_by_ticker
+    )
+
+    return _api._sanitize_floats({
+        "total_events":                  total_events,
+        "events_with_market_tickers":    events_with_market_tickers,
+        "unique_tickers":                len(unique_tickers),
+        "tickers_with_cache_rows":       tickers_with_cache_rows,
+        "tickers_without_cache_rows":    len(unique_tickers) - tickers_with_cache_rows,
+        "events_with_any_forward_cache": events_with_any_forward,
+        "events_with_5d_forward_cache":  events_with_5d_forward,
+        "events_with_20d_forward_cache": events_with_20d_forward,
+        "coverage_by_event_age_bucket":  age_buckets,
+        "latest_cache_date":             latest_cache_date,
+    })

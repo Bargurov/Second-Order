@@ -3040,6 +3040,459 @@ class TestAutoBackfillStatusNoSchedulerThread(_AutoBackfillStatusBase):
             f"calls — possible scheduler leak",
         )
 
+# ---------------------------------------------------------------------------
+# /diagnostics/price-cache-coverage — pure-SQL coverage view
+# ---------------------------------------------------------------------------
+
+
+_PRICE_CACHE_TOP_KEYS = (
+    "total_events",
+    "events_with_market_tickers",
+    "unique_tickers",
+    "tickers_with_cache_rows",
+    "tickers_without_cache_rows",
+    "events_with_any_forward_cache",
+    "events_with_5d_forward_cache",
+    "events_with_20d_forward_cache",
+    "coverage_by_event_age_bucket",
+    "latest_cache_date",
+)
+
+_PRICE_CACHE_BUCKET_KEYS = ("0_7d", "8_30d", "31_90d", "91d_plus", "unknown")
+
+_PRICE_CACHE_BUCKET_FIELDS = (
+    "total_events",
+    "events_with_market_tickers",
+    "events_with_any_forward_cache",
+    "events_with_5d_forward_cache",
+    "events_with_20d_forward_cache",
+)
+
+
+def _insert_price_cache_row_for_coverage(
+    db_path: str,
+    ticker: str,
+    iso_date: str,
+    *,
+    auto_adjust: int = 1,
+    close: float = 100.0,
+    volume: float = 5_000_000.0,
+) -> None:
+    """Direct INSERT into ``price_cache``.
+
+    Bypasses ``price_cache.fetch_daily_cached`` so the test never
+    touches the provider or cache-write side-effect path.  ``init_db``
+    creates the table at setUp; we just upsert.
+    """
+    conn = _sqlite3.connect(db_path)
+    try:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO price_cache
+                (ticker, date, close, volume, auto_adjust, fetched_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                ticker.upper(),
+                iso_date,
+                close,
+                volume,
+                auto_adjust,
+                "2026-05-06T12:00:00+00:00",
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _snapshot_tables_for_coverage(db_path: str) -> tuple[list[tuple], list[tuple]]:
+    conn = _sqlite3.connect(db_path)
+    try:
+        events = list(conn.execute("SELECT * FROM events ORDER BY id"))
+        cache = list(conn.execute(
+            "SELECT ticker, date, close, volume, auto_adjust, fetched_at "
+            "FROM price_cache ORDER BY ticker, date, auto_adjust"
+        ))
+        return events, cache
+    finally:
+        conn.close()
+
+
+class _PriceCacheCoverageBase(_Base):
+    """Adds a ``today_minus`` helper anchored on ``date.today()``.
+
+    Tests that need deterministic age-bucket placement compute their
+    ``event_date`` relative to today, so the bucket assignment stays
+    stable regardless of when the suite runs.
+    """
+
+    @staticmethod
+    def _today_minus(days: int) -> str:
+        from datetime import date as _date, timedelta as _td
+        return (_date.today() - _td(days=days)).isoformat()
+
+    @staticmethod
+    def _seed_event(
+        *,
+        event_date: str | None,
+        symbols: list[str],
+        headline: str | None = None,
+    ) -> None:
+        head = headline or f"Coverage seed {uuid.uuid4().hex[:10]}"
+        db.save_event({
+            "headline":       head,
+            "stage":          "realized",
+            "persistence":    "medium",
+            "event_date":     event_date,
+            "market_tickers": [{"symbol": s.upper()} for s in symbols],
+        })
+
+
+class TestPriceCacheCoverageEmptyDB(_PriceCacheCoverageBase):
+    def test_returns_200_with_full_top_keyset(self) -> None:
+        r = client.get("/diagnostics/price-cache-coverage")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _PRICE_CACHE_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_all_counts_zero_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        for key in (
+            "total_events",
+            "events_with_market_tickers",
+            "unique_tickers",
+            "tickers_with_cache_rows",
+            "tickers_without_cache_rows",
+            "events_with_any_forward_cache",
+            "events_with_5d_forward_cache",
+            "events_with_20d_forward_cache",
+        ):
+            self.assertEqual(body[key], 0, f"{key} should be zero")
+        self.assertIsNone(body["latest_cache_date"])
+
+    def test_bucket_keyset_and_fields_stable_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        buckets = body["coverage_by_event_age_bucket"]
+        self.assertEqual(set(buckets.keys()), set(_PRICE_CACHE_BUCKET_KEYS))
+        for label in _PRICE_CACHE_BUCKET_KEYS:
+            self.assertEqual(
+                set(buckets[label].keys()),
+                set(_PRICE_CACHE_BUCKET_FIELDS),
+                f"bucket {label!r} missing one of the required fields",
+            )
+            self.assertEqual(sum(buckets[label].values()), 0)
+
+
+class TestPriceCacheCoverageSeededRows(_PriceCacheCoverageBase):
+    def test_total_and_unique_counts_reflect_seeded_events(self) -> None:
+        self._seed_event(
+            event_date=self._today_minus(2),
+            symbols=["AAPL", "MSFT"],
+        )
+        self._seed_event(
+            event_date=self._today_minus(20),
+            symbols=["AAPL", "GOOG"],
+        )
+        # Event with no tickers contributes only to ``total_events``.
+        db.save_event({
+            "headline":       "No-ticker coverage seed",
+            "stage":          "realized",
+            "persistence":    "medium",
+            "event_date":     self._today_minus(1),
+            "market_tickers": [],
+        })
+
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["total_events"],               3)
+        self.assertEqual(body["events_with_market_tickers"], 2)
+        self.assertEqual(body["unique_tickers"],             3)
+        self.assertEqual(body["tickers_with_cache_rows"],    0)
+        self.assertEqual(body["tickers_without_cache_rows"], 3)
+        self.assertEqual(body["events_with_any_forward_cache"], 0)
+        self.assertEqual(body["events_with_5d_forward_cache"],  0)
+        self.assertEqual(body["events_with_20d_forward_cache"], 0)
+
+    def test_ticker_split_with_and_without_cache_rows(self) -> None:
+        self._seed_event(
+            event_date=self._today_minus(2),
+            symbols=["AAPL", "TSLA"],
+        )
+        # Only AAPL has a cache row; TSLA does not.
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+        )
+
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["unique_tickers"],             2)
+        self.assertEqual(body["tickers_with_cache_rows"],    1)
+        self.assertEqual(body["tickers_without_cache_rows"], 1)
+        self.assertEqual(body["latest_cache_date"], self._today_minus(1))
+
+    def test_forward_cache_satisfied_at_long_horizon(self) -> None:
+        # Event 60 calendar days ago — well past +20 business days, so
+        # any cache row from yesterday satisfies all three horizons.
+        self._seed_event(
+            event_date=self._today_minus(60),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+        )
+
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["events_with_any_forward_cache"], 1)
+        self.assertEqual(body["events_with_5d_forward_cache"],  1)
+        self.assertEqual(body["events_with_20d_forward_cache"], 1)
+
+    def test_forward_cache_zero_when_cache_predates_event(self) -> None:
+        # Event today, cache row dated yesterday → cache max is BEFORE
+        # the event date, so no horizon (including ``any``) is satisfied.
+        self._seed_event(
+            event_date=self._today_minus(0),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["events_with_any_forward_cache"], 0)
+        self.assertEqual(body["events_with_5d_forward_cache"],  0)
+        self.assertEqual(body["events_with_20d_forward_cache"], 0)
+
+    def test_5d_horizon_can_pass_while_20d_horizon_fails(self) -> None:
+        # Event ~1 calendar week ago.  +5 business days from then is
+        # near today (covered by a cache row dated today); +20 business
+        # days lands ~3 weeks in the future, which the cache cannot
+        # satisfy.
+        self._seed_event(
+            event_date=self._today_minus(7),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(0),
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["events_with_any_forward_cache"], 1)
+        self.assertEqual(body["events_with_5d_forward_cache"],  1)
+        self.assertEqual(body["events_with_20d_forward_cache"], 0)
+
+    def test_or_across_tickers_for_per_event_truth(self) -> None:
+        # One event with two tickers; only one ticker has a recent
+        # cache row.  Per-event truth is OR across tickers, so the
+        # event still counts once for each satisfied horizon.
+        self._seed_event(
+            event_date=self._today_minus(60),
+            symbols=["AAPL", "TSLA"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+        )
+        # TSLA cached only at a date that PRECEDES the event.
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "TSLA", self._today_minus(120),
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["events_with_any_forward_cache"], 1)
+        self.assertEqual(body["events_with_5d_forward_cache"],  1)
+        self.assertEqual(body["events_with_20d_forward_cache"], 1)
+
+    def test_event_without_event_date_lands_in_unknown_bucket(self) -> None:
+        # Event with no ``event_date`` contributes to the ``unknown``
+        # bucket and counts toward ``total_events`` /
+        # ``events_with_market_tickers`` / ``unique_tickers`` but
+        # NEVER toward forward-cache counters.
+        db.save_event({
+            "headline":       "Date-less event",
+            "stage":          "realized",
+            "persistence":    "medium",
+            "event_date":     None,
+            "market_tickers": [{"symbol": "AAPL"}],
+        })
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(0),
+        )
+
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["total_events"],                  1)
+        self.assertEqual(body["events_with_market_tickers"],    1)
+        self.assertEqual(body["unique_tickers"],                1)
+        self.assertEqual(body["tickers_with_cache_rows"],       1)
+        self.assertEqual(body["events_with_any_forward_cache"], 0)
+        self.assertEqual(body["events_with_5d_forward_cache"],  0)
+        self.assertEqual(body["events_with_20d_forward_cache"], 0)
+        unknown = body["coverage_by_event_age_bucket"]["unknown"]
+        self.assertEqual(unknown["total_events"],               1)
+        self.assertEqual(unknown["events_with_market_tickers"], 1)
+        for f in (
+            "events_with_any_forward_cache",
+            "events_with_5d_forward_cache",
+            "events_with_20d_forward_cache",
+        ):
+            self.assertEqual(unknown[f], 0)
+
+    def test_age_bucket_totals_sum_to_archive_total(self) -> None:
+        # Every event must land in exactly one bucket — across-bucket
+        # sums of ``total_events`` and ``events_with_market_tickers``
+        # must equal the top-level totals.
+        self._seed_event(
+            event_date=self._today_minus(1),    # 0_7d
+            symbols=["AAPL"],
+        )
+        self._seed_event(
+            event_date=self._today_minus(15),   # 8_30d
+            symbols=["MSFT"],
+        )
+        self._seed_event(
+            event_date=self._today_minus(45),   # 31_90d
+            symbols=["GOOG"],
+        )
+        self._seed_event(
+            event_date=self._today_minus(180),  # 91d_plus
+            symbols=["TSLA"],
+        )
+        # No event_date → unknown bucket; counts toward total_events.
+        db.save_event({
+            "headline":       "Bucket-sum no-date",
+            "stage":          "realized",
+            "persistence":    "medium",
+            "event_date":     None,
+            "market_tickers": [],
+        })
+
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        buckets = body["coverage_by_event_age_bucket"]
+        self.assertEqual(
+            sum(b["total_events"] for b in buckets.values()),
+            body["total_events"],
+        )
+        self.assertEqual(
+            sum(b["events_with_market_tickers"] for b in buckets.values()),
+            body["events_with_market_tickers"],
+        )
+        # Each dated event falls in its expected bucket.
+        self.assertEqual(buckets["0_7d"]["total_events"],     1)
+        self.assertEqual(buckets["8_30d"]["total_events"],    1)
+        self.assertEqual(buckets["31_90d"]["total_events"],   1)
+        self.assertEqual(buckets["91d_plus"]["total_events"], 1)
+        self.assertEqual(buckets["unknown"]["total_events"],  1)
+
+
+class TestPriceCacheCoverageNoMutation(_PriceCacheCoverageBase):
+    def test_repeated_calls_do_not_modify_events_or_price_cache(self) -> None:
+        self._seed_event(
+            event_date=self._today_minus(10),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(2),
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+        )
+
+        before = _snapshot_tables_for_coverage(self._tmp)
+        for _ in range(3):
+            r = client.get("/diagnostics/price-cache-coverage")
+            self.assertEqual(r.status_code, 200)
+        after = _snapshot_tables_for_coverage(self._tmp)
+        self.assertEqual(
+            before, after,
+            "events + price_cache rows must be byte-identical "
+            "before and after repeated endpoint calls",
+        )
+
+    def test_corrupt_fingerprint_row_is_not_purged(self) -> None:
+        # The endpoint must NOT invoke ``price_cache._ensure_table``
+        # (which would trigger ``_purge_corrupt_rows``) — verify by
+        # seeding a row matching the corrupt fingerprint and asserting
+        # it survives.
+        self._seed_event(
+            event_date=self._today_minus(10),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(2),
+            close=2.0, volume=1_000_000.0,
+        )
+        before = _snapshot_tables_for_coverage(self._tmp)
+        client.get("/diagnostics/price-cache-coverage")
+        after = _snapshot_tables_for_coverage(self._tmp)
+        self.assertEqual(
+            before, after,
+            "corrupt-fingerprint row must survive — endpoint must not "
+            "trigger price_cache._purge_corrupt_rows",
+        )
+
+
+class TestPriceCacheCoverageNoProviderCalls(_PriceCacheCoverageBase):
+    """Endpoint must never call market_check, market_data, yfinance,
+    fetch_daily_cached, or any LLM seam.  Patches every plausible
+    provider seam with a raiser so a regression that pulls one in
+    blows up loudly.
+    """
+
+    def test_no_provider_yfinance_or_llm_seam_invoked(self) -> None:
+        from contextlib import ExitStack
+
+        self._seed_event(
+            event_date=self._today_minus(10),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+        )
+
+        candidate_seams = (
+            ("market_check", "_fetch"),
+            ("market_check", "_fetch_since"),
+            ("market_check", "market_check"),
+            ("market_check", "_check_one_ticker"),
+            ("market_data",  "get_provider"),
+            ("market_data",  "reload_provider_from_env"),
+            ("price_cache",  "fetch_daily_cached"),
+            ("price_cache",  "_purge_corrupt_rows"),
+            ("price_cache",  "_ensure_table"),
+        )
+
+        with ExitStack() as stack:
+            for module_name, attr in candidate_seams:
+                try:
+                    mod = __import__(module_name)
+                except Exception:
+                    continue
+                if not hasattr(mod, attr):
+                    continue
+                stack.enter_context(patch.object(
+                    mod, attr,
+                    side_effect=AssertionError(
+                        f"price-cache-coverage must not call "
+                        f"{module_name}.{attr}",
+                    ),
+                ))
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError(
+                        "price-cache-coverage must not call yfinance",
+                    ),
+                ))
+            except ImportError:
+                pass
+
+            r = client.get("/diagnostics/price-cache-coverage")
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        # Sanity: the seeded event + cache row are reflected in the
+        # response, proving the endpoint produced real output rather
+        # than degrading to the empty fallback.
+        self.assertEqual(body["total_events"],            1)
+        self.assertEqual(body["unique_tickers"],          1)
+        self.assertEqual(body["tickers_with_cache_rows"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
