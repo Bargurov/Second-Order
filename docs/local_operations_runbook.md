@@ -255,6 +255,22 @@ Run no-paid smoke:
 python scripts/no_paid_smoke.py --json
 ```
 
+Run dry-run scheduler smoke:
+
+```powershell
+python scripts/auto_backfill_scheduler_smoke.py --json
+python scripts/no_paid_smoke.py --json
+```
+
+This smoke is fake/dry-run only. It checks the mocked lifespan scheduler path
+and no-paid route inventory; it does not prove paid automation is safe and
+does not mean paid scheduler execution is implemented. Expected fields:
+
+- `mode` should be `dry_run_only` inside the scheduler smoke result.
+- `scheduler_started` should be `true` only in the mocked/fake lifespan smoke.
+- `ledger.used` should remain `0`.
+- `spent_calls` should remain `0`.
+
 Inspect config and status diagnostics:
 
 ```powershell
