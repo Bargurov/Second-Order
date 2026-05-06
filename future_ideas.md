@@ -273,6 +273,12 @@ When you do return to it, prioritize:
 
 ---
 
+## Deferred Ops Follow-Ups
+
+- 2026-05-06 price-cache refresh: created backup `backups/events-20260506T165921.db`; guarded refresh wrote 139 rows and improved forward-cache coverage, but reaction-profile readiness did not improve. POT raised a provider warning and is likely delisted/no-data. Follow-up: diagnose reaction-profile hydration blockers before another refresh.
+
+---
+
 ## What This Roadmap Buys You
 
 After Phase 1 alone, your "validated" claim becomes statistically defensible. After Phase 2, your reaction profiles become regime-aware. After Phase 3, you can distinguish causation from correlation. After Phase 4, you can quantify second-order transmission — which is literally your product's name.

@@ -1288,6 +1288,203 @@ def _compute_track_record() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# /diagnostics/reaction-profile-blockers — per-event/ticker hydration triage
+# ---------------------------------------------------------------------------
+
+
+_RPB_REASON_KEYS: tuple[str, ...] = (
+    "no_market_tickers",
+    "no_event_date",
+    "no_anchor_close",
+    "no_forward_1d_close",
+    "no_forward_5d_close",
+    "no_forward_20d_close",
+    "scalar_returns_only_fallback",
+    "hydrated_from_price_cache",
+    "invalid_ticker",
+)
+
+# The success bucket — ``examples`` excludes rows that landed here.
+_RPB_HYDRATED_REASON: str = "hydrated_from_price_cache"
+
+_RPB_EXAMPLES_LIMIT: int = 10
+
+
+@router.get("/diagnostics/reaction-profile-blockers")
+def reaction_profile_blockers():
+    """Per-event/ticker triage of why reaction-profile hydration is blocked.
+
+    Pure read.  Loops over the events archive and the SQLite
+    ``price_cache`` only — no LLM call, no ``yfinance`` import, no
+    provider seam, no ``market_check`` invocation, no DB write.
+
+    Each event's tickers are classified into exactly one bucket:
+
+      * ``no_market_tickers``           — event-level: the event has no
+                                          tickers to hydrate.  Counted
+                                          once per event.
+      * ``no_event_date``               — per-ticker: the event has no
+                                          ``event_date`` so the
+                                          hydrator has no anchor.
+      * ``invalid_ticker``              — per-ticker: dict missing a
+                                          usable ``symbol`` field.
+      * ``no_anchor_close``             — per-ticker: cache holds zero
+                                          rows at or after the anchor.
+      * ``scalar_returns_only_fallback``— per-ticker: cache miss but
+                                          the saved row carries a
+                                          legacy scalar return field.
+      * ``no_forward_1d_close``         — per-ticker: composer ran but
+                                          ``return_1d`` is None.
+      * ``no_forward_5d_close``         — per-ticker: ``return_1d``
+                                          populated, ``return_5d`` is
+                                          None.
+      * ``no_forward_20d_close``        — per-ticker: ``return_5d``
+                                          populated, ``return_20d`` is
+                                          None.
+      * ``hydrated_from_price_cache``   — per-ticker success: every
+                                          horizon up through 20d has a
+                                          numeric return.
+
+    ``examples`` carries up to 10 blocked rows
+    (``hydrated_from_price_cache`` is the success bucket and is
+    excluded).  Each example is ``{event_id, headline, ticker,
+    missing_reason}``; for ``no_market_tickers`` the ``ticker`` field
+    is ``None``.
+
+    Single top-level ``available`` flag — when false, every count is
+    zero and ``examples`` is empty.
+    """
+    try:
+        return _api._sanitize_floats(_compute_reaction_profile_blockers())
+    except Exception:
+        return _api._sanitize_floats(_reaction_profile_blockers_unavailable())
+
+
+def _reaction_profile_blockers_unavailable() -> dict:
+    """Stable empty shape returned when the aggregator cannot run."""
+    return {
+        "available":    False,
+        "total_events": 0,
+        "counts":       {k: 0 for k in _RPB_REASON_KEYS},
+        "examples":     [],
+    }
+
+
+def _classify_blocker_for_ticker(saved_ticker: Any, event_date: Any) -> str:
+    """Map one saved per-ticker dict to its blocker bucket.
+
+    Mutually exclusive: every ticker lands in exactly one reason.
+    Per-ticker hydration failures collapse to a cache-miss-equivalent
+    bucket so one bad row never raises out of the aggregator.
+    """
+    if not isinstance(saved_ticker, dict):
+        return "invalid_ticker"
+    sym = saved_ticker.get("symbol")
+    if not isinstance(sym, str) or not sym:
+        return "invalid_ticker"
+    if not (isinstance(event_date, str) and event_date):
+        return "no_event_date"
+
+    try:
+        profile = hydrate_per_ticker_profile(
+            saved_ticker, event_date=event_date,
+        )
+    except Exception:
+        if _ticker_has_return(saved_ticker):
+            return "scalar_returns_only_fallback"
+        return "no_anchor_close"
+
+    if profile.get("hydration_status") == "cache_miss":
+        if _ticker_has_return(saved_ticker):
+            return "scalar_returns_only_fallback"
+        return "no_anchor_close"
+
+    if profile.get("return_1d") is None:
+        return "no_forward_1d_close"
+    if profile.get("return_5d") is None:
+        return "no_forward_5d_close"
+    if profile.get("return_20d") is None:
+        return "no_forward_20d_close"
+    return "hydrated_from_price_cache"
+
+
+def _compute_reaction_profile_blockers() -> dict:
+    """Single-pass aggregator over events + ``price_cache`` (read-only).
+
+    Structural failures (DB unreachable) raise so the outer route
+    handler flips ``available`` to ``False``; per-row decode and
+    per-ticker classification errors are absorbed so one bad row
+    cannot collapse the aggregate.
+    """
+    import sqlite3
+    import db as _db
+
+    if not _db._db_ready:
+        return _reaction_profile_blockers_unavailable()
+
+    with sqlite3.connect(_db.DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT * FROM events").fetchall()
+
+    counts: dict[str, int] = {k: 0 for k in _RPB_REASON_KEYS}
+    examples: list[dict] = []
+    total_events = 0
+
+    for raw in rows:
+        total_events += 1
+        try:
+            event = _db._decode_event_row(raw)
+        except Exception:
+            event = dict(raw)
+
+        event_id = event.get("id")
+        headline = event.get("headline")
+        if not isinstance(headline, str):
+            headline = "" if headline is None else str(headline)
+
+        tickers = event.get("market_tickers") or []
+        if not isinstance(tickers, list) or len(tickers) == 0:
+            counts["no_market_tickers"] += 1
+            if len(examples) < _RPB_EXAMPLES_LIMIT:
+                examples.append({
+                    "event_id":       event_id,
+                    "headline":       headline,
+                    "ticker":         None,
+                    "missing_reason": "no_market_tickers",
+                })
+            continue
+
+        event_date = event.get("event_date")
+        for t in tickers:
+            reason = _classify_blocker_for_ticker(t, event_date)
+            counts[reason] += 1
+            if (
+                reason != _RPB_HYDRATED_REASON
+                and len(examples) < _RPB_EXAMPLES_LIMIT
+            ):
+                ticker_sym = (
+                    t.get("symbol")
+                    if isinstance(t, dict)
+                    and isinstance(t.get("symbol"), str)
+                    and t.get("symbol")
+                    else None
+                )
+                examples.append({
+                    "event_id":       event_id,
+                    "headline":       headline,
+                    "ticker":         ticker_sym,
+                    "missing_reason": reason,
+                })
+
+    return {
+        "available":    True,
+        "total_events": total_events,
+        "counts":       counts,
+        "examples":     examples,
+    }
+
+
+# ---------------------------------------------------------------------------
 # /diagnostics/auto-backfill-config — read-only env-driven config snapshot
 # ---------------------------------------------------------------------------
 

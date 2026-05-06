@@ -3494,5 +3494,328 @@ class TestPriceCacheCoverageNoProviderCalls(_PriceCacheCoverageBase):
         self.assertEqual(body["tickers_with_cache_rows"], 1)
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/reaction-profile-blockers — per-event/ticker hydration triage
+# ---------------------------------------------------------------------------
+
+
+_RPB_TOP_KEYS = (
+    "available",
+    "total_events",
+    "counts",
+    "examples",
+)
+
+_RPB_REASON_KEYS = (
+    "no_market_tickers",
+    "no_event_date",
+    "no_anchor_close",
+    "no_forward_1d_close",
+    "no_forward_5d_close",
+    "no_forward_20d_close",
+    "scalar_returns_only_fallback",
+    "hydrated_from_price_cache",
+    "invalid_ticker",
+)
+
+
+class TestReactionProfileBlockersShape(_TrackRecordBase):
+    def test_returns_200_with_top_keyset(self) -> None:
+        r = client.get("/diagnostics/reaction-profile-blockers")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _RPB_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_counts_carries_every_reason_key(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(set(body["counts"].keys()), set(_RPB_REASON_KEYS))
+
+
+class TestReactionProfileBlockersEmptyDB(_TrackRecordBase):
+    def test_available_true_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_events"], 0)
+        for reason in _RPB_REASON_KEYS:
+            self.assertEqual(
+                body["counts"][reason], 0,
+                f"{reason} should be zero on empty DB",
+            )
+        self.assertEqual(body["examples"], [])
+
+
+class TestReactionProfileBlockersClassification(_TrackRecordBase):
+    def test_no_market_tickers_counts_events_with_empty_tickers(self) -> None:
+        self._seed(market_tickers=[])
+        self._seed(market_tickers=[])
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_market_tickers"], 2)
+
+    def test_no_event_date_counts_each_ticker_when_date_missing(self) -> None:
+        self._seed(
+            event_date=None,
+            market_tickers=[
+                {"symbol": "AAPL"},
+                {"symbol": "MSFT"},
+            ],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_event_date"], 2)
+
+    def test_invalid_ticker_counts_dicts_missing_symbol(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[
+                {"direction_tag": "supports thesis"},   # no symbol field
+                {"symbol": ""},                          # empty symbol
+                {"symbol": "AAPL", "anchor_date": today},  # valid
+            ],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["invalid_ticker"], 2)
+
+    def test_no_anchor_close_counts_tickers_without_cache_rows(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "ZZZ_NO_CACHE",
+                             "anchor_date": today}],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_anchor_close"], 1)
+        self.assertEqual(body["counts"]["scalar_returns_only_fallback"], 0)
+
+    def test_scalar_returns_only_fallback_counts_legacy_returns(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{
+                "symbol":      "ZZZ_NO_CACHE",
+                "anchor_date": today,
+                "return_5d":   1.23,
+            }],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["scalar_returns_only_fallback"], 1)
+        self.assertEqual(body["counts"]["no_anchor_close"], 0)
+
+    def test_no_forward_1d_close_when_only_anchor_bar_cached(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        # Single bar at the anchor; composer sees < 2 closes → all returns None.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today, closes=[100.0],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_forward_1d_close"], 1)
+
+    def test_no_forward_5d_close_when_window_short_of_5d_bar(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        # Anchor + 1 bar → return_1d populates, return_5d / 20d are None.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today, closes=[100.0, 101.0],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_forward_5d_close"], 1)
+
+    def test_no_forward_20d_close_when_window_short_of_20d_bar(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        # Anchor + 5 bars → return_5d populates, return_20d is None.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_forward_20d_close"], 1)
+
+    def test_hydrated_when_full_forward_window_present(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        # Anchor + 21 bars → return_1d / 5d / 20d all populate.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0] + [100.0 + i * 0.5 for i in range(1, 22)],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["hydrated_from_price_cache"], 1)
+        self.assertEqual(body["counts"]["no_forward_20d_close"], 0)
+
+
+class TestReactionProfileBlockersExamples(_TrackRecordBase):
+    def test_examples_capped_at_10(self) -> None:
+        for _ in range(12):
+            self._seed(market_tickers=[])
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["no_market_tickers"], 12)
+        self.assertEqual(len(body["examples"]), 10)
+
+    def test_example_carries_required_fields(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "ZZZ_NO_CACHE",
+                             "anchor_date": today}],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertGreaterEqual(len(body["examples"]), 1)
+        ex = body["examples"][0]
+        for key in ("event_id", "headline", "ticker", "missing_reason"):
+            self.assertIn(key, ex, f"example missing field: {key}")
+        self.assertEqual(ex["ticker"], "ZZZ_NO_CACHE")
+        self.assertEqual(ex["missing_reason"], "no_anchor_close")
+        self.assertIsInstance(ex["event_id"], int)
+        self.assertIsInstance(ex["headline"], str)
+
+    def test_no_market_tickers_example_has_null_ticker(self) -> None:
+        self._seed(market_tickers=[])
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(len(body["examples"]), 1)
+        ex = body["examples"][0]
+        self.assertIsNone(ex["ticker"])
+        self.assertEqual(ex["missing_reason"], "no_market_tickers")
+
+    def test_examples_exclude_hydrated_success_rows(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0] + [100.0 + i * 0.5 for i in range(1, 22)],
+        )
+        body = client.get("/diagnostics/reaction-profile-blockers").json()
+        self.assertEqual(body["counts"]["hydrated_from_price_cache"], 1)
+        self.assertEqual(body["examples"], [])
+
+
+class TestReactionProfileBlockersNoMutation(_TrackRecordBase):
+    def test_repeated_calls_do_not_modify_event_or_cache_rows(self) -> None:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            ev_before = [dict(r) for r in
+                         conn.execute("SELECT * FROM events").fetchall()]
+            pc_before = list(conn.execute(
+                "SELECT ticker, date, close, volume, auto_adjust "
+                "FROM price_cache ORDER BY ticker, date"
+            ))
+        for _ in range(3):
+            client.get("/diagnostics/reaction-profile-blockers")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            ev_after = [dict(r) for r in
+                        conn.execute("SELECT * FROM events").fetchall()]
+            pc_after = list(conn.execute(
+                "SELECT ticker, date, close, volume, auto_adjust "
+                "FROM price_cache ORDER BY ticker, date"
+            ))
+        self.assertEqual(ev_before, ev_after)
+        self.assertEqual(pc_before, pc_after)
+
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        self._seed()
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/reaction-profile-blockers")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+
+class TestReactionProfileBlockersZeroCost(_TrackRecordBase):
+    """Endpoint must not invoke market_check / yfinance / provider /
+    LLM seams.  Patches every plausible network seam with a raiser so a
+    regression that pulls one in blows up loudly."""
+
+    def test_no_provider_yfinance_or_market_check_seam(self) -> None:
+        from contextlib import ExitStack
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        self._seed(
+            event_date=today,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": today}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=today,
+            closes=[100.0, 101.0, 102.0],
+        )
+
+        candidate_seams = (
+            ("market_check", "_fetch"),
+            ("market_check", "_fetch_since"),
+            ("market_check", "market_check"),
+            ("market_check", "_check_one_ticker"),
+            ("market_data",  "get_provider"),
+            ("price_cache",  "fetch_daily_cached"),
+        )
+        with ExitStack() as stack:
+            for module_name, attr in candidate_seams:
+                try:
+                    mod = __import__(module_name)
+                except Exception:
+                    continue
+                if not hasattr(mod, attr):
+                    continue
+                stack.enter_context(patch.object(
+                    mod, attr,
+                    side_effect=AssertionError(
+                        f"reaction-profile-blockers must not call "
+                        f"{module_name}.{attr}",
+                    ),
+                ))
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError(
+                        "reaction-profile-blockers must not call yfinance",
+                    ),
+                ))
+            except ImportError:
+                pass
+            r = client.get("/diagnostics/reaction-profile-blockers")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestReactionProfileBlockersPartialFailure(_TrackRecordBase):
+    def test_aggregator_failure_flips_available_false(self) -> None:
+        self._seed()
+        with patch(
+            "routes.diagnostics._compute_reaction_profile_blockers",
+            side_effect=RuntimeError("aggregator fail"),
+        ):
+            r = client.get("/diagnostics/reaction-profile-blockers")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["available"])
+        self.assertEqual(body["total_events"], 0)
+        self.assertEqual(body["examples"], [])
+        for reason in _RPB_REASON_KEYS:
+            self.assertEqual(body["counts"][reason], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
