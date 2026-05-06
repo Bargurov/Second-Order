@@ -1485,6 +1485,228 @@ def _compute_reaction_profile_blockers() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# /diagnostics/no-forward-20d-blockers — sub-classification of why the 20d
+# horizon can't hydrate
+# ---------------------------------------------------------------------------
+
+
+_NF20_REASON_KEYS: tuple[str, ...] = (
+    "event_too_recent_for_20d",
+    "auto_adjust_mismatch_for_20d",
+    "likely_delisted_or_sparse",
+    "cache_max_before_20d_horizon",
+)
+_NF20_EXAMPLES_LIMIT: int = 10
+# A ticker whose newest cached row across both ``auto_adjust`` flags is
+# more than this many calendar days behind today is treated as
+# delisted/sparse.  60 days is wide enough to ride out normal weekend +
+# holiday gaps and any short refresh lag, but narrow enough to surface
+# a ticker that has stopped reporting altogether.
+_NF20_DELISTED_THRESHOLD_CALENDAR_DAYS: int = 60
+
+
+@router.get("/diagnostics/no-forward-20d-blockers")
+def no_forward_20d_blockers():
+    """Sub-classification of /diagnostics/reaction-profile-blockers'
+    ``no_forward_20d_close`` bucket.
+
+    Pure read.  Does not call the LLM, ``yfinance``,
+    ``market_check.market_check``, or any provider seam, and never
+    writes to the DB.  Re-uses :func:`_classify_blocker_for_ticker` so
+    the universe (``total_no_forward_20d``) matches the headline
+    ``no_forward_20d_close`` count exactly, then for every such ticker
+    queries ``price_cache`` once for ``MAX(date)`` per
+    ``(ticker, auto_adjust)`` pair and assigns one of four diagnostic
+    sub-reasons (mutually exclusive, in precedence order):
+
+      * ``event_too_recent_for_20d``       — ``event_date + 20 bd`` is
+                                             still in the future, so no
+                                             cache anywhere can satisfy
+                                             the 20d horizon yet.  No
+                                             action needed; wait for
+                                             time to pass.
+      * ``auto_adjust_mismatch_for_20d``   — cache rows reach the 20d
+                                             target but only at
+                                             ``auto_adjust=1``, while
+                                             the hydrator reads
+                                             ``auto_adjust=0``.  An
+                                             ingestion-flag regression
+                                             — the cache HAS the data,
+                                             the hydrator can't see it.
+      * ``likely_delisted_or_sparse``      — the newest cached row for
+                                             the ticker (across both
+                                             flags) is more than
+                                             ``_NF20_DELISTED_THRESHOLD_CALENDAR_DAYS``
+                                             calendar days behind
+                                             today, suggesting the
+                                             ticker stopped reporting.
+                                             Backfill won't fix this
+                                             one — the data source
+                                             does not have rows to
+                                             give.
+      * ``cache_max_before_20d_horizon``   — fallback: cache exists,
+                                             newest row is reasonably
+                                             fresh, but the per-ticker
+                                             window doesn't extend
+                                             back to cover the 20d
+                                             horizon.  Refresh-lag /
+                                             partial backfill — a
+                                             targeted re-fetch should
+                                             close it.
+
+    ``examples`` carries up to 10 rows
+    (``{event_id, headline, ticker, missing_reason,
+    diagnostic_reason}``) so an operator can spot-check which events
+    drove which sub-bucket.
+
+    Single top-level ``available`` flag — when false, every count is
+    zero and ``examples`` is empty.
+    """
+    try:
+        return _api._sanitize_floats(_compute_no_forward_20d_breakdown())
+    except Exception:
+        return _api._sanitize_floats(_no_forward_20d_blockers_unavailable())
+
+
+def _no_forward_20d_blockers_unavailable() -> dict:
+    """Stable empty shape returned when the aggregator cannot run."""
+    return {
+        "available":            False,
+        "total_no_forward_20d": 0,
+        "counts":               {k: 0 for k in _NF20_REASON_KEYS},
+        "examples":             [],
+    }
+
+
+def _classify_no_forward_20d_subreason(
+    *,
+    event_d: date,
+    today: date,
+    aa_false_max: date | None,
+    aa_true_max: date | None,
+) -> str:
+    """Pure decision tree.  Inputs are already-parsed dates; no I/O."""
+    target_20d = _business_day_offset(event_d, 20)
+    if target_20d > today:
+        return "event_too_recent_for_20d"
+
+    aa_true_satisfies  = aa_true_max  is not None and aa_true_max  >= target_20d
+    aa_false_satisfies = aa_false_max is not None and aa_false_max >= target_20d
+    if aa_true_satisfies and not aa_false_satisfies:
+        return "auto_adjust_mismatch_for_20d"
+
+    newest: date | None = None
+    for d in (aa_false_max, aa_true_max):
+        if d is not None and (newest is None or d > newest):
+            newest = d
+    if (
+        newest is not None
+        and (today - newest).days > _NF20_DELISTED_THRESHOLD_CALENDAR_DAYS
+    ):
+        return "likely_delisted_or_sparse"
+    return "cache_max_before_20d_horizon"
+
+
+def _compute_no_forward_20d_breakdown() -> dict:
+    """Single-pass breakdown.  One ``SELECT *`` against ``events``, one
+    ``GROUP BY ticker, auto_adjust`` against ``price_cache``, then per
+    ticker a hydration call (already cached behind the same SQLite
+    file the breakdown reads).
+    """
+    import sqlite3
+    import db as _db
+
+    if not _db._db_ready:
+        return _no_forward_20d_blockers_unavailable()
+
+    with sqlite3.connect(_db.DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT * FROM events").fetchall()
+        try:
+            cache_max_rows = conn.execute(
+                "SELECT ticker, auto_adjust, MAX(date) "
+                "FROM price_cache GROUP BY ticker, auto_adjust"
+            ).fetchall()
+        except sqlite3.Error:
+            cache_max_rows = []
+
+    cache_max: dict[tuple[str, int], date] = {}
+    for ticker, flag, max_d in cache_max_rows:
+        if not isinstance(ticker, str) or not isinstance(max_d, str):
+            continue
+        try:
+            cache_max[(ticker.upper(), int(flag))] = date.fromisoformat(
+                max_d[:10],
+            )
+        except (ValueError, TypeError):
+            continue
+
+    today = date.today()
+    counts: dict[str, int] = {k: 0 for k in _NF20_REASON_KEYS}
+    examples: list[dict] = []
+    total = 0
+
+    for raw in rows:
+        try:
+            event = _db._decode_event_row(raw)
+        except Exception:
+            event = dict(raw)
+
+        event_id = event.get("id")
+        headline = event.get("headline")
+        if not isinstance(headline, str):
+            headline = "" if headline is None else str(headline)
+
+        event_date_str = event.get("event_date")
+        if not isinstance(event_date_str, str) or not event_date_str:
+            continue
+        try:
+            event_d = date.fromisoformat(event_date_str[:10])
+        except (ValueError, TypeError):
+            continue
+
+        tickers = event.get("market_tickers") or []
+        if not isinstance(tickers, list):
+            continue
+
+        for t in tickers:
+            try:
+                reason = _classify_blocker_for_ticker(t, event_date_str)
+            except Exception:
+                continue
+            if reason != "no_forward_20d_close":
+                continue
+
+            total += 1
+            sym_raw = t.get("symbol") if isinstance(t, dict) else None
+            sym_upper = sym_raw.upper() if isinstance(sym_raw, str) else ""
+
+            sub = _classify_no_forward_20d_subreason(
+                event_d=event_d,
+                today=today,
+                aa_false_max=cache_max.get((sym_upper, 0)),
+                aa_true_max=cache_max.get((sym_upper, 1)),
+            )
+            counts[sub] += 1
+
+            if len(examples) < _NF20_EXAMPLES_LIMIT:
+                examples.append({
+                    "event_id":          event_id,
+                    "headline":          headline,
+                    "ticker":            sym_upper or None,
+                    "missing_reason":    "no_forward_20d_close",
+                    "diagnostic_reason": sub,
+                })
+
+    return {
+        "available":            True,
+        "total_no_forward_20d": total,
+        "counts":               counts,
+        "examples":             examples,
+    }
+
+
+# ---------------------------------------------------------------------------
 # /diagnostics/auto-backfill-config — read-only env-driven config snapshot
 # ---------------------------------------------------------------------------
 

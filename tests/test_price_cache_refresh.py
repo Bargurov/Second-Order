@@ -1247,5 +1247,332 @@ class TestAutoAdjustHydratorAlignment(unittest.TestCase):
                 pass
 
 
+# ---------------------------------------------------------------------------
+# Gap-mode-20d planner — focused refresh of true cache_max_before_20d gaps
+# ---------------------------------------------------------------------------
+
+
+class TestGapMode20dKeys(unittest.TestCase):
+    """The 4 new skip-count keys must be exposed at the module level
+    so callers can introspect the taxonomy without string-matching."""
+
+    def test_gap_mode_20d_count_keys_exposed(self) -> None:
+        for attr in (
+            "SKIP_TOO_RECENT_20D",
+            "SKIP_AUTO_ADJUST_MISMATCH_20D",
+            "GAP_20D_PLANNED",
+            "SKIP_LIKELY_DELISTED_OR_SPARSE",
+            "GAP_MODE_20D_COUNT_KEYS",
+        ):
+            self.assertTrue(
+                hasattr(pcr, attr),
+                f"price_cache_refresh missing public attribute: {attr}",
+            )
+        self.assertEqual(pcr.GAP_MODE_20D_COUNT_KEYS, (
+            "too_recent_20d",
+            "auto_adjust_mismatch_20d",
+            "cache_window_gap_20d_planned",
+            "likely_delisted_or_sparse",
+        ))
+
+
+class TestGapMode20dDefaultOff(unittest.TestCase):
+    """When ``gap_mode_20d`` is False (default) the planner's
+    skipped_counts shape must be byte-identical to the legacy
+    behaviour — same keys, same iteration order."""
+
+    _now = datetime(2026, 5, 6, tzinfo=timezone.utc)
+
+    def test_default_skipped_counts_keys_unchanged(self) -> None:
+        plan = pcr.plan_refresh([], {}, now=self._now)
+        self.assertEqual(
+            tuple(plan.skipped_counts.keys()), pcr.SKIP_COUNT_KEYS,
+        )
+
+    def test_default_planner_unaffected_by_other_flag_kwarg(self) -> None:
+        # Passing cached_dates_other_flag with gap_mode_20d=False must
+        # not change planner output — the kwarg is gap-mode-only.
+        events = [_make_event(
+            event_id=1, event_date=date(2026, 4, 1),
+            tickers=[_make_ticker("AAPL")],
+        )]
+        plan_a = pcr.plan_refresh(events, {}, now=self._now)
+        plan_b = pcr.plan_refresh(
+            events, {},
+            cached_dates_other_flag={"AAPL": frozenset({date(2026, 4, 1)})},
+            now=self._now,
+        )
+        self.assertEqual(plan_a.refresh_jobs, plan_b.refresh_jobs)
+        self.assertEqual(plan_a.skipped_counts, plan_b.skipped_counts)
+
+
+class TestGapMode20dPurity(unittest.TestCase):
+    """Even with gap_mode_20d=True the planner stays pure — no
+    provider seam, no SQLite write, no LLM."""
+
+    _now = datetime(2026, 5, 6, tzinfo=timezone.utc)
+
+    def test_no_yfinance_call_in_gap_mode(self) -> None:
+        events = [_make_event(
+            event_id=1, event_date=date(2026, 4, 1),
+            tickers=[_make_ticker("AAPL")],
+        )]
+        with mock.patch(
+            "yfinance.download",
+            side_effect=AssertionError("yfinance.download must not be called"),
+        ), mock.patch(
+            "price_cache.fetch_daily_cached",
+            side_effect=AssertionError(
+                "price_cache.fetch_daily_cached must not be called"
+            ),
+        ):
+            pcr.plan_refresh(
+                events, {}, gap_mode_20d=True, now=self._now,
+            )
+
+
+class TestGapMode20dKeySet(unittest.TestCase):
+    """When gap_mode_20d=True the skipped_counts dict carries every
+    legacy key AND every gap-mode key, in a stable order."""
+
+    _now = datetime(2026, 5, 6, tzinfo=timezone.utc)
+
+    def test_skipped_counts_extended_in_gap_mode(self) -> None:
+        plan = pcr.plan_refresh([], {}, gap_mode_20d=True, now=self._now)
+        keys = tuple(plan.skipped_counts.keys())
+        self.assertEqual(keys[: len(pcr.SKIP_COUNT_KEYS)], pcr.SKIP_COUNT_KEYS)
+        self.assertEqual(
+            keys[len(pcr.SKIP_COUNT_KEYS):], pcr.GAP_MODE_20D_COUNT_KEYS,
+        )
+        for key in (
+            *pcr.SKIP_COUNT_KEYS, *pcr.GAP_MODE_20D_COUNT_KEYS,
+        ):
+            self.assertEqual(plan.skipped_counts[key], 0)
+
+
+class TestGapMode20dClassification(unittest.TestCase):
+    """Each test seeds one event/ticker pair; the planner must put it
+    in exactly the named gap-mode bucket and produce zero or one
+    refresh_jobs accordingly."""
+
+    _now = datetime(2026, 5, 6, tzinfo=timezone.utc)
+    _today = _now.date()
+
+    def test_too_recent_when_target_20d_in_future(self) -> None:
+        # Event today → +20bd lands ~4 weeks in the future, no cache
+        # anywhere can satisfy it yet.
+        events = [_make_event(
+            event_id=1, event_date=self._today,
+            tickers=[_make_ticker("AAPL")],
+        )]
+        # Seed 6 cached bars so the ticker would otherwise look like a
+        # cache_max_before_20d_horizon candidate — the too-recent guard
+        # must fire first.
+        cached = {"AAPL": frozenset(_bdays(self._today, 6))}
+        plan = pcr.plan_refresh(
+            events, cached, gap_mode_20d=True, now=self._now,
+        )
+        self.assertEqual(plan.skipped_counts["too_recent_20d"], 1)
+        self.assertEqual(plan.skipped_counts["cache_window_gap_20d_planned"], 0)
+        self.assertEqual(plan.refresh_jobs, ())
+
+    def test_already_hydrated_when_window_fully_cached(self) -> None:
+        # Event 35 calendar days ago, full 21-bar coverage from anchor.
+        ev_date = self._today - timedelta(days=35)
+        # Snap to a weekday so anchor matches the seeded grid.
+        while ev_date.weekday() >= 5:
+            ev_date -= timedelta(days=1)
+        full = frozenset(_bdays(ev_date, 21))
+        events = [_make_event(
+            event_id=1, event_date=ev_date,
+            tickers=[_make_ticker("AAPL")],
+        )]
+        plan = pcr.plan_refresh(
+            events, {"AAPL": full}, gap_mode_20d=True, now=self._now,
+        )
+        # Already hydrated → routes to existing SKIP_ALREADY_COVERED;
+        # none of the new gap-mode keys fire.
+        self.assertEqual(
+            plan.skipped_counts[pcr.SKIP_ALREADY_COVERED], 1,
+        )
+        for new_key in (
+            "too_recent_20d", "auto_adjust_mismatch_20d",
+            "cache_window_gap_20d_planned", "likely_delisted_or_sparse",
+        ):
+            self.assertEqual(
+                plan.skipped_counts[new_key], 0,
+                f"{new_key} must not fire for an already-hydrated ticker",
+            )
+        self.assertEqual(plan.refresh_jobs, ())
+
+    def test_auto_adjust_mismatch_when_other_flag_covers_target(self) -> None:
+        # Event 35 days ago.  Primary cache (auto_adjust=False) has
+        # only 6 bars; the inverse flag has 25 bars reaching past the
+        # 20d target.  Refresh would re-fetch identical data into the
+        # primary flag — surface separately so the operator can decide.
+        ev_date = self._today - timedelta(days=35)
+        while ev_date.weekday() >= 5:
+            ev_date -= timedelta(days=1)
+        primary = frozenset(_bdays(ev_date, 6))
+        other   = frozenset(_bdays(ev_date, 25))
+        events = [_make_event(
+            event_id=1, event_date=ev_date,
+            tickers=[_make_ticker("AAPL")],
+        )]
+        plan = pcr.plan_refresh(
+            events, {"AAPL": primary},
+            cached_dates_other_flag={"AAPL": other},
+            gap_mode_20d=True, now=self._now,
+        )
+        self.assertEqual(plan.skipped_counts["auto_adjust_mismatch_20d"], 1)
+        self.assertEqual(plan.skipped_counts["cache_window_gap_20d_planned"], 0)
+        self.assertEqual(plan.refresh_jobs, ())
+
+    def test_likely_delisted_when_newest_row_far_behind_today(self) -> None:
+        # Event 120 calendar days ago, only 6 bars cached, max date
+        # 110-ish days behind today (> 60 day threshold).
+        ev_date = self._today - timedelta(days=120)
+        while ev_date.weekday() >= 5:
+            ev_date -= timedelta(days=1)
+        cached = frozenset(_bdays(ev_date, 6))
+        events = [_make_event(
+            event_id=1, event_date=ev_date,
+            tickers=[_make_ticker("DEAD")],
+        )]
+        plan = pcr.plan_refresh(
+            events, {"DEAD": cached}, gap_mode_20d=True, now=self._now,
+        )
+        self.assertEqual(plan.skipped_counts["likely_delisted_or_sparse"], 1)
+        self.assertEqual(plan.skipped_counts["cache_window_gap_20d_planned"], 0)
+        self.assertEqual(plan.refresh_jobs, ())
+
+    def test_cache_window_gap_planned_is_the_only_path_to_jobs(self) -> None:
+        # Event 35 days ago, only 6 bars cached, newest row ~26 days
+        # behind today (< 60 threshold), no other-flag rows.  This is
+        # the bucket the gap-mode refresh exists to fix.
+        ev_date = self._today - timedelta(days=35)
+        while ev_date.weekday() >= 5:
+            ev_date -= timedelta(days=1)
+        cached = frozenset(_bdays(ev_date, 6))
+        events = [_make_event(
+            event_id=1, event_date=ev_date,
+            tickers=[_make_ticker("MSFT")],
+        )]
+        plan = pcr.plan_refresh(
+            events, {"MSFT": cached}, gap_mode_20d=True, now=self._now,
+        )
+        self.assertEqual(plan.skipped_counts["cache_window_gap_20d_planned"], 1)
+        for other in (
+            "too_recent_20d", "auto_adjust_mismatch_20d",
+            "likely_delisted_or_sparse",
+        ):
+            self.assertEqual(plan.skipped_counts[other], 0)
+        self.assertEqual(len(plan.refresh_jobs), 1)
+        self.assertEqual(plan.refresh_jobs[0].symbol, "MSFT")
+
+    def test_planned_intervals_only_cover_the_20d_post_window(self) -> None:
+        # Verify the planned interval is the 21-bday post-window only,
+        # not the legacy pre+post.  No pre-window bars in the cache —
+        # if gap-mode were using the legacy window the test would
+        # observe a longer business_days count.
+        ev_date = self._today - timedelta(days=35)
+        while ev_date.weekday() >= 5:
+            ev_date -= timedelta(days=1)
+        events = [_make_event(
+            event_id=1, event_date=ev_date,
+            tickers=[_make_ticker("MSFT")],
+        )]
+        plan = pcr.plan_refresh(
+            events, {}, gap_mode_20d=True, now=self._now,
+        )
+        self.assertEqual(len(plan.refresh_jobs), 1)
+        job = plan.refresh_jobs[0]
+        # 1 anchor + 20 forward bdays = 21 total; legacy window would
+        # include 5 pre-bdays for 26 total.
+        self.assertEqual(job.business_days, 21)
+
+
+class TestGapMode20dUniverseInvariants(unittest.TestCase):
+    """Cross-bucket invariants — only true 20d cache gaps should land
+    in refresh_jobs; everything else must skip."""
+
+    _now = datetime(2026, 5, 6, tzinfo=timezone.utc)
+    _today = _now.date()
+
+    def _weekday_n_days_ago(self, n: int) -> date:
+        d = self._today - timedelta(days=n)
+        while d.weekday() >= 5:
+            d -= timedelta(days=1)
+        return d
+
+    def test_only_planned_bucket_drives_refresh_jobs(self) -> None:
+        # One event per category; only the cache_window_gap_20d_planned
+        # event should make it into refresh_jobs.
+        too_recent_d   = self._today
+        delisted_d     = self._weekday_n_days_ago(120)
+        mismatch_d     = self._weekday_n_days_ago(35)
+        planned_d      = self._weekday_n_days_ago(35)
+        hydrated_d     = self._weekday_n_days_ago(35)
+
+        events = [
+            _make_event(event_id=1, event_date=too_recent_d,
+                        tickers=[_make_ticker("RECENT")]),
+            _make_event(event_id=2, event_date=delisted_d,
+                        tickers=[_make_ticker("DEAD")]),
+            _make_event(event_id=3, event_date=mismatch_d,
+                        tickers=[_make_ticker("MISMATCH")]),
+            _make_event(event_id=4, event_date=planned_d,
+                        tickers=[_make_ticker("FILL")]),
+            _make_event(event_id=5, event_date=hydrated_d,
+                        tickers=[_make_ticker("HYDRATED")]),
+        ]
+        primary = {
+            "RECENT":   frozenset(_bdays(too_recent_d, 6)),
+            "DEAD":     frozenset(_bdays(delisted_d, 6)),
+            "MISMATCH": frozenset(_bdays(mismatch_d, 6)),
+            "FILL":     frozenset(_bdays(planned_d, 6)),
+            "HYDRATED": frozenset(_bdays(hydrated_d, 21)),
+        }
+        other = {
+            "MISMATCH": frozenset(_bdays(mismatch_d, 25)),
+        }
+
+        plan = pcr.plan_refresh(
+            events, primary,
+            cached_dates_other_flag=other,
+            gap_mode_20d=True, now=self._now,
+        )
+        # Only FILL is planned.
+        self.assertEqual(len(plan.refresh_jobs), 1)
+        self.assertEqual(plan.refresh_jobs[0].symbol, "FILL")
+        # Counts line up exactly.
+        self.assertEqual(plan.skipped_counts["too_recent_20d"], 1)
+        self.assertEqual(plan.skipped_counts["likely_delisted_or_sparse"], 1)
+        self.assertEqual(plan.skipped_counts["auto_adjust_mismatch_20d"], 1)
+        self.assertEqual(plan.skipped_counts["cache_window_gap_20d_planned"], 1)
+        self.assertEqual(plan.skipped_counts[pcr.SKIP_ALREADY_COVERED], 1)
+
+
+class TestGapMode20dDeterminism(unittest.TestCase):
+    """Two identical inputs → identical plans, including key order."""
+
+    _now = datetime(2026, 5, 6, tzinfo=timezone.utc)
+
+    def test_plan_is_deterministic_in_gap_mode(self) -> None:
+        ev_date = date(2026, 4, 1)
+        events = [_make_event(
+            event_id=1, event_date=ev_date,
+            tickers=[_make_ticker("AAPL")],
+        )]
+        plan_a = pcr.plan_refresh(
+            events, {}, gap_mode_20d=True, now=self._now,
+        )
+        plan_b = pcr.plan_refresh(
+            events, {}, gap_mode_20d=True, now=self._now,
+        )
+        self.assertEqual(plan_a.refresh_jobs, plan_b.refresh_jobs)
+        self.assertEqual(plan_a.skipped_counts, plan_b.skipped_counts)
+
+
 if __name__ == "__main__":
     unittest.main()

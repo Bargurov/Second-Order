@@ -45,10 +45,13 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import os
+import sqlite3
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -58,7 +61,23 @@ from price_cache_refresh import (                              # noqa: E402
     RefreshConfig,
     load_inputs,
     plan_refresh,
+    _bday_offset,
+    _clean_symbol,
 )
+
+
+# ---------------------------------------------------------------------------
+# --focus dry-run buckets — narrow which events the planner sees so the
+# operator can target a specific gap without re-deriving the filter logic
+# at the call site.  Adding a new bucket = one entry in ``_FOCUS_CHOICES``
+# plus one branch in :func:`_apply_focus`.  Default ``"none"`` is a
+# pass-through so existing dry-run output is bit-stable.
+# ---------------------------------------------------------------------------
+
+FOCUS_NONE: str                = "none"
+FOCUS_NO_FORWARD_20D_GAP: str  = "no-forward-20d-gap"
+
+_FOCUS_CHOICES: tuple[str, ...] = (FOCUS_NONE, FOCUS_NO_FORWARD_20D_GAP)
 
 
 # Defaults pinned by ``docs/price_cache_refresh_design.md`` §5.3.
@@ -69,6 +88,191 @@ _DEFAULT_MAX_EVENTS:         int = RefreshConfig.__dataclass_fields__[
 _DEFAULT_MAX_PROVIDER_CALLS: int = RefreshConfig.__dataclass_fields__[
     "max_provider_calls"
 ].default
+
+
+def _apply_focus(
+    focus: str,
+    events: list[dict],
+    cached_by_ticker: dict,
+) -> list[dict]:
+    """Return ``events`` narrowed to the named focus bucket.
+
+    ``no-forward-20d-gap`` keeps events where at least one ticker's
+    cached coverage does not reach ``event_date + 20 business days``.
+    A ticker absent from ``cached_by_ticker`` (or with an empty cached
+    set) counts as missing 20d coverage — that is exactly the case the
+    refresh exists to fix.
+
+    Pure: never reads SQLite, never invokes a provider, returns a new
+    list so the caller can still log the unfiltered length.  Unknown
+    focus values short-circuit to a pass-through; argparse already
+    refuses values outside :data:`_FOCUS_CHOICES`, so a wrong value
+    here would only arrive via a programmatic caller — better to
+    return the input than to drop events silently.
+    """
+    if focus != FOCUS_NO_FORWARD_20D_GAP:
+        return list(events)
+
+    out: list[dict] = []
+    for ev in events:
+        if not isinstance(ev, dict):
+            continue
+        raw_date = ev.get("event_date")
+        if not isinstance(raw_date, str) or not raw_date:
+            continue
+        try:
+            event_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            continue
+        target = _bday_offset(event_date, 20)
+
+        tickers = ev.get("market_tickers") or []
+        if not isinstance(tickers, list) or not tickers:
+            continue
+
+        any_missing = False
+        for raw in tickers:
+            symbol = _clean_symbol(
+                raw.get("symbol") if isinstance(raw, dict) else raw
+            )
+            if not symbol:
+                continue
+            cached = cached_by_ticker.get(symbol) or frozenset()
+            if not cached or max(cached) < target:
+                any_missing = True
+                break
+        if any_missing:
+            out.append(ev)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Provider/SQLite preflight — surfaces store-level failures (yfinance's
+# internal tz/cookie cache, the project events.db) BEFORE the executor
+# attempts N provider calls.  Without this, a sandboxed run that cannot
+# write outside the project dir produces N silent ``OperationalError(
+# 'unable to open database file')`` errors with ok=true, 0 rows
+# written, and no visible cause for the operator.
+# ---------------------------------------------------------------------------
+
+
+def _resolve_yfinance_cache_dir() -> Optional[str]:
+    """Best-effort resolution of yfinance's tz/cookie cache directory.
+
+    Returns ``None`` when yfinance is not installed or its internal
+    layout has shifted — the preflight then skips the yfinance probe
+    rather than raising.  Pure: no network, no SQLite.
+    """
+    try:
+        from yfinance.cache import _TzDBManager  # type: ignore[import-not-found]
+    except Exception:
+        return None
+    try:
+        loc = _TzDBManager.get_location()
+    except Exception:
+        return None
+    return loc if isinstance(loc, str) and loc else None
+
+
+def _probe_dir_writable(path: Optional[str]) -> tuple[bool, Optional[str]]:
+    """Return ``(ok, reason)`` for a directory's writability.
+
+    Uses a uuid-named sentinel file so a parallel preflight cannot
+    collide on the same name.  The sentinel is removed on success.
+    Read-only: a probe failure does not mutate the directory beyond
+    the lifetime of the sentinel attempt.
+    """
+    if path is None:
+        return False, "path-unresolved"
+    if not os.path.isdir(path):
+        return False, "directory-missing"
+    sentinel = os.path.join(path, f".pcr_preflight_{uuid.uuid4().hex}.tmp")
+    try:
+        with open(sentinel, "w") as fh:
+            fh.write("ok")
+    except Exception as exc:
+        return False, f"{type(exc).__name__}: {exc}"
+    try:
+        os.remove(sentinel)
+    except Exception:
+        # Sentinel write succeeded — that is the property we're
+        # checking.  A failed cleanup is logged into the reason but
+        # does not flip ok=False.
+        return True, "cleanup-failed-but-write-ok"
+    return True, None
+
+
+def _probe_sqlite_writable(
+    path: Optional[str],
+) -> tuple[bool, Optional[str]]:
+    """Return ``(ok, reason)`` for a SQLite file's writability.
+
+    Opens a ``mode=rw`` URI connection, runs ``BEGIN IMMEDIATE`` then
+    ``ROLLBACK`` to force the journal-file path SQLite would use under
+    a real write.  Never commits; never mutates the database.  ``None``
+    or non-existent paths fail closed with a structured reason.
+    """
+    if not path:
+        return False, "path-unresolved"
+    if not os.path.isfile(path):
+        return False, "file-missing"
+    if not os.access(path, os.W_OK):
+        return False, "not-writable"
+    try:
+        with sqlite3.connect(
+            f"file:{path}?mode=rw", uri=True, timeout=2.0,
+        ) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("ROLLBACK")
+    except sqlite3.OperationalError as exc:
+        return False, f"OperationalError: {exc}"
+    except Exception as exc:
+        return False, f"{type(exc).__name__}: {exc}"
+    return True, None
+
+
+def _provider_cache_preflight(
+    *, db_path: Optional[str] = None,
+) -> dict:
+    """Read-only writability probe for the executor's downstream stores.
+
+    Probes:
+
+      * yfinance's internal tz/cookie cache directory (typically
+        ``%LOCALAPPDATA%/py-yfinance`` on Windows or
+        ``~/.cache/py-yfinance`` on POSIX).  A failure here is the
+        proximate cause of the ``OperationalError('unable to open
+        database file')`` storm seen on sandboxed Windows runs.
+      * The project ``events.db`` SQLite file.  ``BEGIN IMMEDIATE``
+        forces SQLite to verify it can acquire the write lock — the
+        same precondition the executor relies on for INSERT OR REPLACE.
+
+    Pure: no network, no LLM, no provider call, no DDL/DML against
+    either store.  Tests patch this function on the cli module so
+    failure paths can be exercised without touching the filesystem.
+    """
+    yf_path = _resolve_yfinance_cache_dir()
+    yf_ok, yf_reason = _probe_dir_writable(yf_path)
+    db_ok, db_reason = _probe_sqlite_writable(db_path)
+
+    errors: list[str] = []
+    if not yf_ok:
+        errors.append(
+            f"yfinance cache dir not writable "
+            f"(path={yf_path or 'unresolved'!s}): {yf_reason}"
+        )
+    if not db_ok:
+        errors.append(
+            f"events.db not writable (path={db_path or 'unresolved'!s}): "
+            f"{db_reason}"
+        )
+
+    return {
+        "ok":              yf_ok and db_ok,
+        "yfinance_cache":  {"path": yf_path, "ok": yf_ok, "reason": yf_reason},
+        "events_db":       {"path": db_path, "ok": db_ok, "reason": db_reason},
+        "errors":          errors,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +480,7 @@ def _compose_payload(
     mode: str,
     confirmed: bool,
     executor_result: dict,
+    focus: str = FOCUS_NONE,
     error_message: str | None = None,
 ) -> dict:
     """Wrap the normalised plan + executor result in the outer envelope.
@@ -296,6 +501,7 @@ def _compose_payload(
         "now":                     now_iso,
         "mode":                    mode,
         "confirmed":               confirmed,
+        "focus":                   focus,
         "attempted_jobs":          executor_result["attempted_jobs"],
         "written_rows":            executor_result["written_rows"],
         "errors":                  executor_result["errors"],
@@ -332,6 +538,9 @@ def _render_text(payload: dict) -> str:
     header = "Price-cache refresh dry-run" if mode == "dry_run" else "Price-cache refresh write mode"
     lines: list[str] = [header, ""]
     lines.append(f"Mode: {mode}  confirmed={str(confirmed).lower()}")
+    focus = payload.get("focus") or FOCUS_NONE
+    if focus != FOCUS_NONE:
+        lines.append(f"Focus: {focus}")
     err = payload.get("error")
     if err:
         lines.append(f"Error: {err}")
@@ -455,6 +664,17 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "default remains dry-run."
         ),
     )
+    parser.add_argument(
+        "--focus",
+        choices=list(_FOCUS_CHOICES),
+        default=FOCUS_NONE,
+        help=(
+            "Narrow the planner's input to a named gap bucket.  "
+            "'no-forward-20d-gap' keeps events whose tickers do not "
+            "yet reach event_date + 20 business days in the cache.  "
+            "Default: 'none' (no filter)."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -482,6 +702,10 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
         # so the dry-run still produces a stable report.
         events, cached_by_ticker = [], {}
 
+    focus = getattr(args, "focus", FOCUS_NONE) or FOCUS_NONE
+    if focus != FOCUS_NONE:
+        events = _apply_focus(focus, events, cached_by_ticker)
+
     plan = plan_refresh(events, cached_by_ticker, config=cfg)
     plan_dict = _plan_to_dict(plan)
     now_iso = _now_iso()
@@ -504,6 +728,7 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
             mode="write",
             confirmed=False,
             executor_result=_empty_executor_result(),
+            focus=focus,
             error_message=(
                 "--write requires --confirm; refusing to run the "
                 "executor.  Re-run with both flags to issue provider "
@@ -512,28 +737,61 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
         )
         exit_code = 1
     elif confirmed:
-        try:
-            raw_result = execute_refresh(plan, config=cfg)
-        except Exception as exc:
+        # Preflight runs ONLY in the confirmed-write branch; dry-run
+        # and write-without-confirm paths skip it so a sandboxed dev
+        # box can still produce a stable dry-run payload.
+        preflight = _provider_cache_preflight(db_path=_default_db_path())
+        if not preflight["ok"]:
             executor_result = _empty_executor_result()
-            executor_result["errors"].append({
-                "event_id":       None,
-                "symbol":         None,
-                "interval_start": None,
-                "interval_end":   None,
-                "error":          f"{type(exc).__name__}: {exc}",
-            })
+            for msg in preflight["errors"]:
+                executor_result["errors"].append({
+                    "event_id":       None,
+                    "symbol":         None,
+                    "interval_start": None,
+                    "interval_end":   None,
+                    "error":          f"PreflightError: {msg}",
+                })
+            payload = _compose_payload(
+                plan_dict=plan_dict,
+                caps=caps,
+                now_iso=now_iso,
+                mode="write",
+                confirmed=True,
+                executor_result=executor_result,
+                focus=focus,
+                error_message=(
+                    "provider-cache preflight failed; refusing to "
+                    "invoke the executor.  Re-run after fixing the "
+                    "reported store(s)."
+                ),
+            )
+            payload["preflight"] = preflight
+            exit_code = 1
         else:
-            executor_result = _normalise_executor_result(raw_result)
-        payload = _compose_payload(
-            plan_dict=plan_dict,
-            caps=caps,
-            now_iso=now_iso,
-            mode="write",
-            confirmed=True,
-            executor_result=executor_result,
-        )
-        exit_code = 1 if executor_result["errors"] else 0
+            try:
+                raw_result = execute_refresh(plan, config=cfg)
+            except Exception as exc:
+                executor_result = _empty_executor_result()
+                executor_result["errors"].append({
+                    "event_id":       None,
+                    "symbol":         None,
+                    "interval_start": None,
+                    "interval_end":   None,
+                    "error":          f"{type(exc).__name__}: {exc}",
+                })
+            else:
+                executor_result = _normalise_executor_result(raw_result)
+            payload = _compose_payload(
+                plan_dict=plan_dict,
+                caps=caps,
+                now_iso=now_iso,
+                mode="write",
+                confirmed=True,
+                executor_result=executor_result,
+                focus=focus,
+            )
+            payload["preflight"] = preflight
+            exit_code = 1 if executor_result["errors"] else 0
     else:
         payload = _compose_payload(
             plan_dict=plan_dict,
@@ -542,6 +800,7 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
             mode="dry_run",
             confirmed=False,
             executor_result=_empty_executor_result(),
+            focus=focus,
         )
         exit_code = 0
 

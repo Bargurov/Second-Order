@@ -1493,18 +1493,26 @@ _TR_TOP_KEYS = (
 
 def _seed_price_cache(
     db_path: str, *, ticker: str, start: str, closes: list[float],
+    auto_adjust: int = 0,
 ) -> None:
-    """Hand-write rows into the temp DB's price_cache table."""
+    """Hand-write rows into the temp DB's price_cache table.
+
+    ``auto_adjust`` mirrors the column the hydrator filters on: pass
+    ``0`` (default) for hydrator-visible raw closes, ``1`` for adjusted
+    closes that the hydrator's ``read_window_no_fetch(...,
+    auto_adjust=False)`` will skip.
+    """
     from datetime import timedelta as _td
     base = datetime.fromisoformat(start)
     rows: list[tuple] = []
     cursor = base
+    flag = 1 if int(auto_adjust) else 0
     for c in closes:
         while cursor.weekday() >= 5:
             cursor = cursor + _td(days=1)
         rows.append((
             ticker.upper(), cursor.strftime("%Y-%m-%d"),
-            float(c), 1_000_000.0, 0,
+            float(c), 1_000_000.0, flag,
             datetime.now().isoformat(timespec="seconds"),
         ))
         cursor = cursor + _td(days=1)
@@ -3924,6 +3932,350 @@ class TestReactionProfileBlockersPartialFailure(_TrackRecordBase):
         self.assertEqual(body["examples"], [])
         for reason in _RPB_REASON_KEYS:
             self.assertEqual(body["counts"][reason], 0)
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/no-forward-20d-blockers — sub-classification of why the 20d
+# horizon can't hydrate
+# ---------------------------------------------------------------------------
+
+
+_NF20_TOP_KEYS = (
+    "available",
+    "total_no_forward_20d",
+    "counts",
+    "examples",
+)
+
+_NF20_REASON_KEYS = (
+    "event_too_recent_for_20d",
+    "auto_adjust_mismatch_for_20d",
+    "likely_delisted_or_sparse",
+    "cache_max_before_20d_horizon",
+)
+
+
+def _nf20_weekday_n_calendar_days_ago(n: int) -> str:
+    """Return the ISO date ``n`` calendar days ago, snapped back to the
+    most recent weekday + clamped to a real trading session via
+    ``market_check._clamp_to_market_date``.  Using the clamped date as
+    the event_date guarantees the hydrator's anchor matches the date
+    we seed cache rows under (clamp is idempotent on weekday
+    non-holidays).
+    """
+    from datetime import date as _d, timedelta as _td
+    from market_check import _clamp_to_market_date
+    target = _d.today() - _td(days=n)
+    while target.weekday() >= 5:
+        target = target - _td(days=1)
+    return _clamp_to_market_date(target.isoformat())
+
+
+class TestNoForward20dBlockersShape(_TrackRecordBase):
+    def test_returns_200_with_top_keyset(self) -> None:
+        r = client.get("/diagnostics/no-forward-20d-blockers")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _NF20_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_counts_carries_every_subreason_key(self) -> None:
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(set(body["counts"].keys()), set(_NF20_REASON_KEYS))
+
+
+class TestNoForward20dBlockersEmptyDB(_TrackRecordBase):
+    def test_available_true_on_empty_db(self) -> None:
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["total_no_forward_20d"], 0)
+        for reason in _NF20_REASON_KEYS:
+            self.assertEqual(body["counts"][reason], 0)
+        self.assertEqual(body["examples"], [])
+
+
+class TestNoForward20dBlockersClassification(_TrackRecordBase):
+    """Each test seeds one event whose ticker MUST land in
+    ``no_forward_20d_close`` (so the universe matches the headline
+    bucket exactly) and asserts the diagnostic sub-bucket."""
+
+    def test_event_too_recent_when_target_20d_in_future(self) -> None:
+        anchor = _nf20_weekday_n_calendar_days_ago(0)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": anchor}],
+        )
+        # 6 forward bars at the visible flag → composer populates
+        # return_1d / 5d, leaves return_20d None.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(body["total_no_forward_20d"], 1)
+        self.assertEqual(body["counts"]["event_too_recent_for_20d"], 1)
+        for other in (
+            "auto_adjust_mismatch_for_20d",
+            "likely_delisted_or_sparse",
+            "cache_max_before_20d_horizon",
+        ):
+            self.assertEqual(body["counts"][other], 0)
+
+    def test_auto_adjust_mismatch_when_aa_true_reaches_target(self) -> None:
+        # Event old enough that target_20d is in the past.
+        anchor = _nf20_weekday_n_calendar_days_ago(35)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": anchor}],
+        )
+        # 6 raw (auto_adjust=0) bars — hydrator-visible, classifies as
+        # no_forward_20d_close.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+            auto_adjust=0,
+        )
+        # 30 adjusted (auto_adjust=1) bars — extends past target_20d so
+        # the cache HAS the data, just at the wrong flag.
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0 + i * 0.1 for i in range(30)],
+            auto_adjust=1,
+        )
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(body["total_no_forward_20d"], 1)
+        self.assertEqual(body["counts"]["auto_adjust_mismatch_for_20d"], 1)
+        self.assertEqual(body["counts"]["cache_max_before_20d_horizon"], 0)
+
+    def test_likely_delisted_when_newest_row_far_behind_today(self) -> None:
+        # Event well past target_20d, only 6 bars cached, max date now
+        # > 60 calendar days behind today.
+        anchor = _nf20_weekday_n_calendar_days_ago(120)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "DEAD", "anchor_date": anchor}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="DEAD", start=anchor,
+            closes=[100.0, 99.0, 98.0, 97.0, 96.0, 95.0],
+            auto_adjust=0,
+        )
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(body["total_no_forward_20d"], 1)
+        self.assertEqual(body["counts"]["likely_delisted_or_sparse"], 1)
+        self.assertEqual(body["counts"]["cache_max_before_20d_horizon"], 0)
+
+    def test_cache_max_before_20d_horizon_fallback(self) -> None:
+        # Event old enough (target in past), no auto_adjust=1 rows at
+        # all, but newest cached row is recent enough that we don't
+        # call it delisted.  Falls through to the catch-all bucket.
+        anchor = _nf20_weekday_n_calendar_days_ago(35)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "MSFT", "anchor_date": anchor}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="MSFT", start=anchor,
+            closes=[200.0, 201.0, 202.0, 203.0, 204.0, 205.0],
+            auto_adjust=0,
+        )
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(body["total_no_forward_20d"], 1)
+        self.assertEqual(body["counts"]["cache_max_before_20d_horizon"], 1)
+        for other in (
+            "event_too_recent_for_20d",
+            "auto_adjust_mismatch_for_20d",
+            "likely_delisted_or_sparse",
+        ):
+            self.assertEqual(body["counts"][other], 0)
+
+
+class TestNoForward20dBlockersUniverseConsistency(_TrackRecordBase):
+    """The diagnostic's ``total_no_forward_20d`` must equal the headline
+    ``no_forward_20d_close`` count from /reaction-profile-blockers."""
+
+    def test_total_matches_reaction_profile_blockers_count(self) -> None:
+        anchor_recent = _nf20_weekday_n_calendar_days_ago(0)
+        anchor_old    = _nf20_weekday_n_calendar_days_ago(35)
+        # Three events: each with one ticker that should land in
+        # no_forward_20d_close, but for different sub-reasons.
+        self._seed(
+            event_date=anchor_recent,
+            market_tickers=[{"symbol": "RECENT", "anchor_date": anchor_recent}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="RECENT", start=anchor_recent,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        self._seed(
+            event_date=anchor_old,
+            market_tickers=[{"symbol": "STALE", "anchor_date": anchor_old}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="STALE", start=anchor_old,
+            closes=[50.0, 51.0, 52.0, 53.0, 54.0, 55.0],
+        )
+
+        rpb = client.get("/diagnostics/reaction-profile-blockers").json()
+        nf20 = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(
+            nf20["total_no_forward_20d"],
+            rpb["counts"]["no_forward_20d_close"],
+            "diagnostic must enumerate exactly the headline universe",
+        )
+        # Sum of sub-buckets must equal the total — no double-counting,
+        # no dropped rows.
+        self.assertEqual(
+            sum(nf20["counts"].values()),
+            nf20["total_no_forward_20d"],
+        )
+
+    def test_hydrated_ticker_does_not_appear_in_breakdown(self) -> None:
+        # A ticker that hydrates fully must not contribute to any
+        # sub-bucket — it isn't in the headline universe.
+        anchor = _nf20_weekday_n_calendar_days_ago(35)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": anchor}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0] + [100.0 + i * 0.5 for i in range(1, 25)],
+        )
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertEqual(body["total_no_forward_20d"], 0)
+        for reason in _NF20_REASON_KEYS:
+            self.assertEqual(body["counts"][reason], 0)
+
+
+class TestNoForward20dBlockersExamples(_TrackRecordBase):
+    def test_examples_carry_required_fields(self) -> None:
+        anchor = _nf20_weekday_n_calendar_days_ago(35)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": anchor}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        body = client.get("/diagnostics/no-forward-20d-blockers").json()
+        self.assertGreaterEqual(len(body["examples"]), 1)
+        ex = body["examples"][0]
+        for key in (
+            "event_id", "headline", "ticker",
+            "missing_reason", "diagnostic_reason",
+        ):
+            self.assertIn(key, ex, f"example missing field: {key}")
+        self.assertEqual(ex["ticker"], "AAPL")
+        self.assertEqual(ex["missing_reason"], "no_forward_20d_close")
+        self.assertIn(ex["diagnostic_reason"], _NF20_REASON_KEYS)
+        self.assertIsInstance(ex["event_id"], int)
+
+
+class TestNoForward20dBlockersNoMutation(_TrackRecordBase):
+    def test_repeated_calls_do_not_modify_event_or_cache_rows(self) -> None:
+        anchor = _nf20_weekday_n_calendar_days_ago(35)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": anchor}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+            auto_adjust=0,
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0, 101.0, 102.0],
+            auto_adjust=1,
+        )
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            ev_before = [dict(r) for r in
+                         conn.execute("SELECT * FROM events").fetchall()]
+            pc_before = list(conn.execute(
+                "SELECT ticker, date, close, volume, auto_adjust "
+                "FROM price_cache ORDER BY ticker, date, auto_adjust"
+            ))
+        for _ in range(3):
+            client.get("/diagnostics/no-forward-20d-blockers")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            ev_after = [dict(r) for r in
+                        conn.execute("SELECT * FROM events").fetchall()]
+            pc_after = list(conn.execute(
+                "SELECT ticker, date, close, volume, auto_adjust "
+                "FROM price_cache ORDER BY ticker, date, auto_adjust"
+            ))
+        self.assertEqual(ev_before, ev_after)
+        self.assertEqual(pc_before, pc_after)
+
+
+class TestNoForward20dBlockersZeroCost(_TrackRecordBase):
+    def test_no_provider_yfinance_or_market_check_seam(self) -> None:
+        from contextlib import ExitStack
+        anchor = _nf20_weekday_n_calendar_days_ago(35)
+        self._seed(
+            event_date=anchor,
+            market_tickers=[{"symbol": "AAPL", "anchor_date": anchor}],
+        )
+        _seed_price_cache(
+            self._tmp, ticker="AAPL", start=anchor,
+            closes=[100.0, 101.0, 102.0, 103.0, 104.0, 105.0],
+        )
+        candidate_seams = (
+            ("market_check", "_fetch"),
+            ("market_check", "_fetch_since"),
+            ("market_check", "market_check"),
+            ("market_check", "_check_one_ticker"),
+            ("market_data",  "get_provider"),
+            ("price_cache",  "fetch_daily_cached"),
+        )
+        with ExitStack() as stack:
+            for module_name, attr in candidate_seams:
+                try:
+                    mod = __import__(module_name)
+                except Exception:
+                    continue
+                if not hasattr(mod, attr):
+                    continue
+                stack.enter_context(patch.object(
+                    mod, attr,
+                    side_effect=AssertionError(
+                        f"no-forward-20d-blockers must not call "
+                        f"{module_name}.{attr}",
+                    ),
+                ))
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError(
+                        "no-forward-20d-blockers must not call yfinance",
+                    ),
+                ))
+            except ImportError:
+                pass
+            r = client.get("/diagnostics/no-forward-20d-blockers")
+        self.assertEqual(r.status_code, 200)
+
+
+class TestNoForward20dBlockersPartialFailure(_TrackRecordBase):
+    def test_aggregator_failure_flips_available_false(self) -> None:
+        self._seed()
+        with patch(
+            "routes.diagnostics._compute_no_forward_20d_breakdown",
+            side_effect=RuntimeError("aggregator fail"),
+        ):
+            r = client.get("/diagnostics/no-forward-20d-blockers")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["available"])
+        self.assertEqual(body["total_no_forward_20d"], 0)
+        for reason in _NF20_REASON_KEYS:
+            self.assertEqual(body["counts"][reason], 0)
+        self.assertEqual(body["examples"], [])
 
 
 if __name__ == "__main__":

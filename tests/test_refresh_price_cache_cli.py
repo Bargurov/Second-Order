@@ -637,6 +637,338 @@ class TestNoDbWrites(_CliBase):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# --focus dry-run option — narrows the events fed into the planner to a
+# named gap bucket (e.g. ``no-forward-20d-gap``) without touching write
+# behaviour.  The focus value must reach the planner via the events list
+# it is called with, and must be visible in the rendered payload.
+# ---------------------------------------------------------------------------
+
+
+class TestFocusMode(_CliBase):
+    """``--focus`` filters which events the planner sees but never
+    changes write-mode gating, executor invocation, or the cap config.
+    """
+
+    @staticmethod
+    def _events_with_mixed_20d_coverage() -> tuple[list[dict], dict]:
+        """Two events: one fully covered through +20bd, one with a ticker
+        whose cached max ends well before +20bd.  Used by every focus
+        test so the per-test set-up reads identically.
+        """
+        from datetime import date
+        # Event 1 anchor 2026-04-01.  +20 business days → 2026-04-29.
+        # AAPL cached through 2026-04-30  → covered.
+        # Event 2 anchor 2026-04-15.  +20 business days → 2026-05-13.
+        # TSLA cached through 2026-04-20 → 20d gap.
+        events = [
+            {"id": 1, "event_date": "2026-04-01",
+             "market_tickers": [{"symbol": "AAPL"}]},
+            {"id": 2, "event_date": "2026-04-15",
+             "market_tickers": [{"symbol": "TSLA"}]},
+        ]
+        cached = {
+            "AAPL": frozenset({date(2026, 4, 30)}),
+            "TSLA": frozenset({date(2026, 4, 20)}),
+        }
+        return events, cached
+
+    def test_default_focus_is_none_in_payload(self) -> None:
+        buf = io.StringIO()
+        cli.main(argv=["--json"], out=buf)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["focus"], "none")
+
+    def test_focus_no_forward_20d_filters_events_reaching_planner(self) -> None:
+        events, cached = self._events_with_mixed_20d_coverage()
+        cli.load_inputs = MagicMock(return_value=(events, cached))
+
+        cli.main(
+            argv=["--focus", "no-forward-20d-gap", "--json"],
+            out=io.StringIO(),
+        )
+
+        cli.plan_refresh.assert_called_once()
+        args, _kwargs = cli.plan_refresh.call_args
+        forwarded_events = list(args[0])
+        forwarded_ids = [ev["id"] for ev in forwarded_events]
+        self.assertEqual(
+            forwarded_ids, [2],
+            msg="Only events whose tickers lack 20d forward coverage "
+                "should reach the planner under --focus no-forward-20d-gap.",
+        )
+        # cached_by_ticker map is forwarded unchanged so the planner can
+        # still see what is already covered for the surviving event.
+        self.assertEqual(args[1], cached)
+
+    def test_focus_value_appears_in_json_payload(self) -> None:
+        events, cached = self._events_with_mixed_20d_coverage()
+        cli.load_inputs = MagicMock(return_value=(events, cached))
+        buf = io.StringIO()
+        cli.main(
+            argv=["--focus", "no-forward-20d-gap", "--json"],
+            out=buf,
+        )
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["focus"], "no-forward-20d-gap")
+
+    def test_focus_value_appears_in_text_output(self) -> None:
+        events, cached = self._events_with_mixed_20d_coverage()
+        cli.load_inputs = MagicMock(return_value=(events, cached))
+        # Return a populated plan so the rendering path exercises the
+        # planned-jobs section alongside the focus banner.
+        cli.plan_refresh = MagicMock(return_value=_plan(
+            refresh_jobs=(_job(
+                event_id=2, event_date="2026-04-15", symbol="TSLA",
+            ),),
+            events_considered=1,
+            tickers_considered=1,
+            provider_calls_estimate=1,
+            decision_reason="planned",
+        ))
+        buf = io.StringIO()
+        cli.main(argv=["--focus", "no-forward-20d-gap"], out=buf)
+        text = buf.getvalue()
+        self.assertIn("Focus: no-forward-20d-gap", text)
+        # Planned jobs section still renders the surviving event.
+        self.assertIn("event_id=2", text)
+        self.assertIn("TSLA",       text)
+
+    def test_focus_does_not_invoke_executor(self) -> None:
+        # Focus is a dry-run-side filter; --write is absent so the
+        # executor must remain untouched even when focus is set.
+        events, cached = self._events_with_mixed_20d_coverage()
+        cli.load_inputs = MagicMock(return_value=(events, cached))
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called by a --focus dry-run",
+        ))
+        with patch.object(cli, "execute_refresh", sentinel_executor):
+            cli.main(
+                argv=["--focus", "no-forward-20d-gap", "--json"],
+                out=io.StringIO(),
+            )
+
+    def test_focus_invalid_value_rejected_by_argparse(self) -> None:
+        # Unknown focus values must be rejected at the CLI boundary; the
+        # CLI never silently accepts a typo and runs the unfiltered path.
+        with self.assertRaises(SystemExit):
+            cli.main(
+                argv=["--focus", "definitely-not-a-bucket", "--json"],
+                out=io.StringIO(),
+            )
+
+    def test_focus_does_not_alter_refresh_config(self) -> None:
+        events, cached = self._events_with_mixed_20d_coverage()
+        cli.load_inputs = MagicMock(return_value=(events, cached))
+        cli.main(
+            argv=["--focus", "no-forward-20d-gap", "--json"],
+            out=io.StringIO(),
+        )
+        cfg = cli.plan_refresh.call_args.kwargs["config"]
+        defaults = pcr.RefreshConfig()
+        self.assertEqual(cfg.max_events,         defaults.max_events)
+        self.assertEqual(cfg.max_provider_calls, defaults.max_provider_calls)
+        self.assertEqual(cfg.auto_adjust,        defaults.auto_adjust)
+
+
+# ---------------------------------------------------------------------------
+# Provider/SQLite preflight — the executor short-circuits when the
+# yfinance tz/cookie cache directory or the project events.db is not
+# writable, so a sandboxed run reports one structured cause instead of
+# N silent OperationalError errors.
+# ---------------------------------------------------------------------------
+
+
+class TestProviderCachePreflightHelper(unittest.TestCase):
+    """Direct unit coverage of the preflight helper — no main()/argparse
+    plumbing.  Filesystem probes are patched so the test never depends
+    on whether yfinance is installed or where its cache lives.
+    """
+
+    def test_returns_ok_when_both_probes_pass(self) -> None:
+        with patch.object(cli, "_resolve_yfinance_cache_dir",
+                          return_value="/tmp/yf"), \
+             patch.object(cli, "_probe_dir_writable",
+                          return_value=(True, None)), \
+             patch.object(cli, "_probe_sqlite_writable",
+                          return_value=(True, None)):
+            result = cli._provider_cache_preflight(db_path="/tmp/events.db")
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["errors"], [])
+        self.assertEqual(result["yfinance_cache"]["path"], "/tmp/yf")
+        self.assertTrue(result["yfinance_cache"]["ok"])
+        self.assertTrue(result["events_db"]["ok"])
+
+    def test_yfinance_dir_failure_propagates(self) -> None:
+        with patch.object(cli, "_resolve_yfinance_cache_dir",
+                          return_value=r"C:\Users\Bar\AppData\Local\py-yfinance"), \
+             patch.object(cli, "_probe_dir_writable",
+                          return_value=(False, "PermissionError: sandbox")), \
+             patch.object(cli, "_probe_sqlite_writable",
+                          return_value=(True, None)):
+            result = cli._provider_cache_preflight(db_path="/tmp/events.db")
+
+        self.assertFalse(result["ok"])
+        self.assertFalse(result["yfinance_cache"]["ok"])
+        self.assertEqual(len(result["errors"]), 1)
+        self.assertIn("yfinance cache dir not writable", result["errors"][0])
+        self.assertIn("PermissionError",                 result["errors"][0])
+        self.assertIn("sandbox",                         result["errors"][0])
+
+    def test_events_db_failure_propagates(self) -> None:
+        with patch.object(cli, "_resolve_yfinance_cache_dir",
+                          return_value="/tmp/yf"), \
+             patch.object(cli, "_probe_dir_writable",
+                          return_value=(True, None)), \
+             patch.object(cli, "_probe_sqlite_writable",
+                          return_value=(False, "OperationalError: locked")):
+            result = cli._provider_cache_preflight(db_path="/tmp/events.db")
+
+        self.assertFalse(result["ok"])
+        self.assertFalse(result["events_db"]["ok"])
+        self.assertEqual(len(result["errors"]), 1)
+        self.assertIn("events.db not writable", result["errors"][0])
+        self.assertIn("OperationalError",       result["errors"][0])
+
+    def test_skips_yfinance_probe_when_path_unresolved(self) -> None:
+        # yfinance not installed (or layout shifted) → resolver returns
+        # None.  The probe must NOT silently mark everything ok; the
+        # operator deserves to see "path-unresolved".
+        with patch.object(cli, "_resolve_yfinance_cache_dir",
+                          return_value=None), \
+             patch.object(cli, "_probe_sqlite_writable",
+                          return_value=(True, None)):
+            result = cli._provider_cache_preflight(db_path="/tmp/events.db")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["yfinance_cache"]["reason"], "path-unresolved")
+
+
+class TestWriteConfirmPreflight(_CliBase):
+    """Integration: --write --confirm honours the preflight result."""
+
+    def test_preflight_failure_short_circuits_executor(self) -> None:
+        # Plan is non-empty so we can prove the executor would have
+        # been reachable — only the preflight blocks it.
+        cli.plan_refresh = MagicMock(return_value=_plan(
+            refresh_jobs=(
+                _job(event_id=1, event_date="2026-04-12", symbol="AAPL"),
+            ),
+            events_considered=1,
+            tickers_considered=1,
+            provider_calls_estimate=1,
+            decision_reason="planned",
+        ))
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called when preflight fails",
+        ))
+        failing_preflight = {
+            "ok": False,
+            "yfinance_cache": {
+                "path":   r"C:\Users\Bar\AppData\Local\py-yfinance",
+                "ok":     False,
+                "reason": "PermissionError: sandbox blocks AppData",
+            },
+            "events_db": {"path": "events.db", "ok": True, "reason": None},
+            "errors": [
+                "yfinance cache dir not writable "
+                "(path='C:\\\\Users\\\\Bar\\\\AppData\\\\Local\\\\py-yfinance'): "
+                "PermissionError: sandbox blocks AppData",
+            ],
+        }
+        with patch.object(cli, "execute_refresh", sentinel_executor), \
+             patch.object(cli, "_provider_cache_preflight",
+                          return_value=failing_preflight):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+
+        self.assertEqual(rc, 1, msg=buf.getvalue())
+        payload = json.loads(buf.getvalue())
+        # Top-level shape: confirmed run, but ok=false and an error
+        # message naming the preflight as the cause.
+        self.assertEqual(payload["mode"],   "write")
+        self.assertIs(payload["confirmed"], True)
+        self.assertIs(payload["ok"],        False)
+        self.assertIn("preflight",          payload["error"])
+        # Per-error rows carry the structured PreflightError prefix so
+        # operators can grep for the failure family.
+        self.assertGreaterEqual(len(payload["errors"]), 1)
+        self.assertTrue(any(
+            "PreflightError" in e["error"] for e in payload["errors"]
+        ))
+        # Structured preflight block surfaces the resolved path so the
+        # operator does not need to re-derive it.
+        self.assertIn("preflight", payload)
+        self.assertFalse(payload["preflight"]["ok"])
+        self.assertEqual(
+            payload["preflight"]["yfinance_cache"]["path"],
+            r"C:\Users\Bar\AppData\Local\py-yfinance",
+        )
+
+    def test_preflight_pass_invokes_executor_normally(self) -> None:
+        cli.plan_refresh = MagicMock(return_value=_plan(
+            refresh_jobs=(
+                _job(event_id=1, event_date="2026-04-12", symbol="AAPL"),
+            ),
+            events_considered=1,
+            tickers_considered=1,
+            provider_calls_estimate=1,
+            decision_reason="planned",
+        ))
+        executor_stub = MagicMock(return_value={
+            "attempted_jobs": 1,
+            "written_rows":   24,
+            "errors":         [],
+        })
+        passing_preflight = {
+            "ok": True,
+            "yfinance_cache": {"path": "/tmp/yf",         "ok": True, "reason": None},
+            "events_db":      {"path": "/tmp/events.db",  "ok": True, "reason": None},
+            "errors": [],
+        }
+        with patch.object(cli, "execute_refresh", executor_stub), \
+             patch.object(cli, "_provider_cache_preflight",
+                          return_value=passing_preflight):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--confirm", "--json"], out=buf)
+
+        self.assertEqual(rc, 0)
+        executor_stub.assert_called_once()
+        payload = json.loads(buf.getvalue())
+        self.assertIs(payload["preflight"]["ok"], True)
+        self.assertEqual(payload["written_rows"], 24)
+
+    def test_preflight_does_not_run_in_dry_run(self) -> None:
+        # No --write → preflight must NOT run.  Patch the function with
+        # a raiser so an accidental invocation fails the test loudly.
+        sentinel_preflight = MagicMock(side_effect=AssertionError(
+            "_provider_cache_preflight must NOT run in dry-run mode",
+        ))
+        with patch.object(cli, "_provider_cache_preflight", sentinel_preflight):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--json"], out=buf)
+        self.assertEqual(rc, 0)
+        # Dry-run payload does NOT carry a preflight block — the field
+        # is reserved for the confirmed-write branch.
+        payload = json.loads(buf.getvalue())
+        self.assertNotIn("preflight", payload)
+
+    def test_preflight_does_not_run_when_write_without_confirm(self) -> None:
+        # --write without --confirm short-circuits with exit 1; the
+        # preflight is reserved for the confirmed branch and must not
+        # run on the refusal path either.
+        sentinel_preflight = MagicMock(side_effect=AssertionError(
+            "_provider_cache_preflight must NOT run on the --write-only "
+            "refusal path",
+        ))
+        with patch.object(cli, "_provider_cache_preflight", sentinel_preflight):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--write", "--json"], out=buf)
+        self.assertEqual(rc, 1)
+        payload = json.loads(buf.getvalue())
+        self.assertNotIn("preflight", payload)
+
+
 class TestImportSurface(_CliBase):
     def test_default_db_path_helper_lazy_imports_db(self) -> None:
         # The CLI imports ``price_cache_refresh`` at top-level (which

@@ -275,7 +275,7 @@ When you do return to it, prioritize:
 
 ## Deferred Ops Follow-Ups
 
-- 2026-05-06 price-cache refresh: created backup `backups/events-20260506T165921.db`; guarded refresh wrote 139 rows and improved forward-cache coverage, but reaction-profile readiness did not improve. POT raised a provider warning and is likely delisted/no-data. Follow-up: diagnose reaction-profile hydration blockers before another refresh.
+- 2026-05-06 price-cache refreshes: guarded `auto_adjust=False` refresh improved reaction hydration (`hydrated_from_price_cache` 77, `reaction_profile_available_count` 49, `events_with_20d_signal` 31) with no paid/LLM paths. Current no-forward-20d split: 53 too recent, 3 `auto_adjust` mismatches, 71 cache-window gaps, 0 likely delisted/sparse. A focused no-forward-20d-gap refresh attempted 50 jobs but wrote 0 rows after yfinance raised `OperationalError: unable to open database file`; coverage stayed unchanged and no-paid smoke stayed green. Stop: do not run further refreshes until the provider cache failure is diagnosed.
 
 ---
 

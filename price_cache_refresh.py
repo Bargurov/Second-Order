@@ -70,6 +70,30 @@ DECISION_PLANNED       = "planned"
 DECISION_CAP_EXHAUSTED = "cap_exhausted"
 
 
+# Gap-mode-20d skip taxonomy.  These keys are appended to
+# ``skipped_counts`` only when ``plan_refresh`` is invoked with
+# ``gap_mode_20d=True``; the default keyset stays
+# ``SKIP_COUNT_KEYS`` for byte-compatibility with existing consumers.
+SKIP_TOO_RECENT_20D            = "too_recent_20d"
+SKIP_AUTO_ADJUST_MISMATCH_20D  = "auto_adjust_mismatch_20d"
+GAP_20D_PLANNED                = "cache_window_gap_20d_planned"
+SKIP_LIKELY_DELISTED_OR_SPARSE = "likely_delisted_or_sparse"
+
+GAP_MODE_20D_COUNT_KEYS: tuple[str, ...] = (
+    SKIP_TOO_RECENT_20D,
+    SKIP_AUTO_ADJUST_MISMATCH_20D,
+    GAP_20D_PLANNED,
+    SKIP_LIKELY_DELISTED_OR_SPARSE,
+)
+
+# Mirrors the diagnostic endpoint's threshold so the planner agrees
+# with /diagnostics/no-forward-20d-blockers' classification: a ticker
+# whose newest cached row across both ``auto_adjust`` flags is more
+# than this many calendar days behind today is treated as
+# delisted/sparse rather than a refreshable cache gap.
+GAP_MODE_20D_DELISTED_THRESHOLD_CALENDAR_DAYS: int = 60
+
+
 # ---------------------------------------------------------------------------
 # Local helpers — re-implemented here so the module stays import-light.
 # ---------------------------------------------------------------------------
@@ -252,6 +276,10 @@ def plan_refresh(
     *,
     config: Optional[RefreshConfig] = None,
     now: Optional[_dt] = None,
+    gap_mode_20d: bool = False,
+    cached_dates_other_flag: Optional[
+        Mapping[str, frozenset[_date]]
+    ] = None,
 ) -> RefreshPlan:
     """Return a deterministic dry-run refresh plan.
 
@@ -259,6 +287,43 @@ def plan_refresh(
     ``db._decode_event_row`` produces).  ``cached_dates_by_ticker``
     maps a normalised ticker symbol to the set of dates already in
     ``price_cache`` for the configured ``auto_adjust`` flag.
+
+    Optional ``gap_mode_20d`` switches the planner into a focused
+    "fix only true cache_max_before_20d_horizon gaps" mode.  When True:
+
+      * The window is narrowed to ``[event_date, event_date + 20bd]``
+        (the post-window only) — the pre-window is dropped because the
+        20d horizon does not depend on it.
+      * Each ticker that survives the standard validity gates lands
+        in exactly one of four mutually-exclusive sub-buckets, in
+        precedence order:
+
+          1. ``too_recent_20d`` — ``event_date + 20bd > today``; the
+             20d target is in the future, no provider can fill it yet.
+          2. ``already_covered`` (existing key) — the 20d window is
+             already cached at the configured flag; no work to do.
+          3. ``auto_adjust_mismatch_20d`` — ``cached_dates_other_flag``
+             reaches the 20d target while ``cached_dates_by_ticker``
+             does not.  A refresh would re-fetch identical data into
+             the wrong cache bucket; surface separately so the operator
+             can decide.
+          4. ``likely_delisted_or_sparse`` — the newest cached row
+             across BOTH flags is more than
+             ``GAP_MODE_20D_DELISTED_THRESHOLD_CALENDAR_DAYS`` calendar
+             days behind today; refresh cannot help.
+          5. ``cache_window_gap_20d_planned`` — none of the above; the
+             ticker has a real, refreshable 20d gap.  A
+             :class:`TickerRefreshJob` is added with the 20d-only
+             window.
+
+      * ``skipped_counts`` carries every legacy key plus the four
+        gap-mode keys (``GAP_MODE_20D_COUNT_KEYS``).
+
+    ``cached_dates_other_flag`` is consulted only when
+    ``gap_mode_20d=True``; in default mode it is ignored.  Default
+    invocations remain byte-compatible with the existing planner —
+    ``skipped_counts`` keys, refresh-job semantics, and cap behaviour
+    are unchanged.
 
     No provider call, no SQLite write, no FastAPI / LLM import is
     reachable from this function.  Tests in
@@ -269,6 +334,14 @@ def plan_refresh(
     stale_cutoff = today - _timedelta(days=cfg.stale_after_days)
 
     skip_counts: dict[str, int] = {key: 0 for key in SKIP_COUNT_KEYS}
+    if gap_mode_20d:
+        for key in GAP_MODE_20D_COUNT_KEYS:
+            skip_counts[key] = 0
+    other_flag_cache: Mapping[str, frozenset[_date]] = (
+        cached_dates_other_flag if (gap_mode_20d and cached_dates_other_flag)
+        else {}
+    )
+
     jobs: list[TickerRefreshJob] = []
 
     events_considered = 0
@@ -301,10 +374,18 @@ def plan_refresh(
             continue
 
         # Window endpoints — anchored on event_date and snapped onto
-        # the Mon-Fri grid.
-        pre_start = _bday_offset(event_date, -cfg.pre_window_business_days)
-        post_end  = _bday_offset(event_date,  cfg.post_window_business_days)
-        window = _business_days_inclusive(pre_start, post_end)
+        # the Mon-Fri grid.  Gap-mode-20d narrows to the post-window
+        # only; default mode includes the pre+anchor+post run so the
+        # legacy refresh-job semantics are preserved.
+        post_end = _bday_offset(event_date, cfg.post_window_business_days)
+        if gap_mode_20d:
+            anchor_snapped = _bday_offset(event_date, 0)
+            window = _business_days_inclusive(anchor_snapped, post_end)
+        else:
+            pre_start = _bday_offset(
+                event_date, -cfg.pre_window_business_days,
+            )
+            window = _business_days_inclusive(pre_start, post_end)
 
         per_event_jobs: list[TickerRefreshJob] = []
 
@@ -323,16 +404,93 @@ def plan_refresh(
 
             cached = cached_dates_by_ticker.get(symbol, frozenset())
 
-            # Stale detection: cache has rows for this symbol AND the
-            # latest cached date is older than today by more than
-            # ``stale_after_days``.  Symbols never queried before
-            # (empty cache) get a chance — that is exactly what the
-            # refresh exists for.
-            if cached:
+            # Stale detection (default mode only): cache has rows for
+            # this symbol AND the latest cached date is older than
+            # today by more than ``stale_after_days``.  Skipped under
+            # gap_mode_20d so the gap-mode 60-day delisted check (a
+            # tighter, more useful threshold) is the sole stale signal
+            # — otherwise tickers between 60 and 365 days behind would
+            # silently fall through both checks.
+            if not gap_mode_20d and cached:
                 latest = max(cached)
                 if latest < stale_cutoff:
                     skip_counts[SKIP_STALE_TICKER] += 1
                     continue
+
+            if gap_mode_20d:
+                target_20d = post_end
+
+                # 1. too_recent_20d
+                if target_20d > today:
+                    skip_counts[SKIP_TOO_RECENT_20D] += 1
+                    continue
+
+                # 2. already_covered (legacy key) — the hydrator gets
+                # ≥ 21 cache rows from the anchor, so the composer
+                # populates return_20d.  Counted under the stable
+                # legacy key rather than a new gap-mode key so the
+                # operator-facing taxonomy stays compact.
+                cached_in_window = sum(
+                    1 for d in cached if d >= window[0] and d <= post_end
+                )
+                if cached_in_window >= len(window):
+                    skip_counts[SKIP_ALREADY_COVERED] += 1
+                    continue
+
+                # 3. auto_adjust_mismatch_20d — the inverse-flag cache
+                # reaches the 20d target while the configured-flag
+                # cache does not.
+                other_cached = other_flag_cache.get(symbol, frozenset())
+                primary_covers_target = (
+                    bool(cached) and max(cached) >= target_20d
+                )
+                other_covers_target = (
+                    bool(other_cached) and max(other_cached) >= target_20d
+                )
+                if other_covers_target and not primary_covers_target:
+                    skip_counts[SKIP_AUTO_ADJUST_MISMATCH_20D] += 1
+                    continue
+
+                # 4. likely_delisted_or_sparse — newest cached row
+                # across both flags is too far behind today.
+                newest_anywhere: Optional[_date] = None
+                if cached:
+                    newest_anywhere = max(cached)
+                if other_cached:
+                    cand = max(other_cached)
+                    if newest_anywhere is None or cand > newest_anywhere:
+                        newest_anywhere = cand
+                if (
+                    newest_anywhere is not None
+                    and (today - newest_anywhere).days
+                    > GAP_MODE_20D_DELISTED_THRESHOLD_CALENDAR_DAYS
+                ):
+                    skip_counts[SKIP_LIKELY_DELISTED_OR_SPARSE] += 1
+                    continue
+
+                # 5. cache_window_gap_20d_planned — true gap; plan it.
+                intervals = _compute_missing_intervals(window, cached)
+                if not intervals:
+                    # Defensive: window was not fully covered above
+                    # but every weekday in it is in cache (shouldn't
+                    # happen, but route to the legacy bucket).
+                    skip_counts[SKIP_ALREADY_COVERED] += 1
+                    continue
+                skip_counts[GAP_20D_PLANNED] += 1
+                per_event_jobs.append(TickerRefreshJob(
+                    event_id=event_id,
+                    event_date=event_date.isoformat(),
+                    symbol=symbol,
+                    intervals=tuple(
+                        (s.isoformat(), e.isoformat()) for s, e in intervals
+                    ),
+                    business_days=sum(
+                        len(_business_days_inclusive(s, e))
+                        for s, e in intervals
+                    ),
+                    auto_adjust=cfg.auto_adjust,
+                ))
+                continue
 
             intervals = _compute_missing_intervals(window, cached)
             if not intervals:

@@ -370,9 +370,18 @@ market-data provider to fetch missing bars. Do not trigger it from a GET route,
 page load, scheduler experiment, or demo flow. Run archive backup and local
 preflight first, then review the dry-run plan before using write mode.
 
-Warning: reaction-profile hydration currently expects `auto_adjust=False`
-cache rows. Do not run another real refresh until the auto-adjust alignment
-fix is implemented and verified.
+Recent outcome, 2026-05-06: guarded `auto_adjust=False` refresh improved
+hydration (`hydrated_from_price_cache` 77, `reaction_profile_available_count`
+49, `events_with_20d_signal` 31) with no paid/LLM paths. POT still warns as
+likely delisted/no-data. Current no-forward-20d split: 53 too recent, 3
+`auto_adjust` mismatches, 71 cache-window gaps, 0 likely delisted/sparse.
+
+Focused no-forward-20d-gap refresh attempted 50 jobs but wrote 0 rows because
+yfinance raised `OperationalError: unable to open database file`; coverage was
+unchanged and no-paid smoke stayed green.
+
+Stop condition: do not run further refreshes until the provider cache failure
+is diagnosed.
 
 Inspect:
 
