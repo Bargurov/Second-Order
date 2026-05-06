@@ -186,7 +186,11 @@ class RefreshConfig:
     """
     pre_window_business_days:  int  = 5
     post_window_business_days: int  = 20
-    auto_adjust:               bool = True
+    # Pinned to False so refresh-written rows are visible to
+    # ``reaction_profile_hydration`` (which reads with ``auto_adjust=False``).
+    # Cross-module contract pinned by
+    # ``tests.test_price_cache_refresh.TestAutoAdjustHydratorAlignment``.
+    auto_adjust:               bool = False
     max_events:                int  = 100
     max_tickers_per_event:     int  = 8
     max_provider_calls:        int  = 50
@@ -400,7 +404,7 @@ def plan_refresh(
 def load_inputs(
     db_path: str,
     *,
-    auto_adjust: bool = True,
+    auto_adjust: bool = False,
     since_days: Optional[int] = None,
 ) -> tuple[list[dict[str, Any]], dict[str, frozenset[_date]]]:
     """Load events + cached price-cache dates from a SQLite DB.

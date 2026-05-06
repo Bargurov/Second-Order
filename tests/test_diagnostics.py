@@ -3056,6 +3056,10 @@ _PRICE_CACHE_TOP_KEYS = (
     "events_with_20d_forward_cache",
     "coverage_by_event_age_bucket",
     "latest_cache_date",
+    "cache_rows_auto_adjust_false",
+    "cache_rows_auto_adjust_true",
+    "hydrated_visible_tickers_auto_adjust_false",
+    "cache_only_auto_adjust_true_tickers",
 )
 
 _PRICE_CACHE_BUCKET_KEYS = ("0_7d", "8_30d", "31_90d", "91d_plus", "unknown")
@@ -3168,6 +3172,10 @@ class TestPriceCacheCoverageEmptyDB(_PriceCacheCoverageBase):
             "events_with_any_forward_cache",
             "events_with_5d_forward_cache",
             "events_with_20d_forward_cache",
+            "cache_rows_auto_adjust_false",
+            "cache_rows_auto_adjust_true",
+            "hydrated_visible_tickers_auto_adjust_false",
+            "cache_only_auto_adjust_true_tickers",
         ):
             self.assertEqual(body[key], 0, f"{key} should be zero")
         self.assertIsNone(body["latest_cache_date"])
@@ -3492,6 +3500,107 @@ class TestPriceCacheCoverageNoProviderCalls(_PriceCacheCoverageBase):
         self.assertEqual(body["total_events"],            1)
         self.assertEqual(body["unique_tickers"],          1)
         self.assertEqual(body["tickers_with_cache_rows"], 1)
+
+
+class TestPriceCacheCoverageAutoAdjustSplit(_PriceCacheCoverageBase):
+    """``reaction_profile_hydration`` reads with ``auto_adjust=False``;
+    rows persisted with ``auto_adjust=True`` are invisible to the
+    hydrator.  These tests pin the split so a regression that flips the
+    cache-write flag (or the hydrator-read flag) gets caught at the
+    coverage panel rather than as silent zero hydrations downstream."""
+
+    def test_cache_row_counts_split_by_auto_adjust_flag(self) -> None:
+        # 2 rows at auto_adjust=0 (visible), 3 rows at auto_adjust=1.
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(2),
+            auto_adjust=0,
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+            auto_adjust=0,
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "MSFT", self._today_minus(2),
+            auto_adjust=1,
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "MSFT", self._today_minus(1),
+            auto_adjust=1,
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "GOOG", self._today_minus(1),
+            auto_adjust=1,
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["cache_rows_auto_adjust_false"], 2)
+        self.assertEqual(body["cache_rows_auto_adjust_true"],  3)
+
+    def test_auto_adjust_true_only_ticker_is_invisible_to_hydrator(self) -> None:
+        # AAPL only persisted with auto_adjust=1 → not readable by
+        # ``read_window_no_fetch(..., auto_adjust=False)``.
+        self._seed_event(
+            event_date=self._today_minus(2),
+            symbols=["AAPL"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+            auto_adjust=1,
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["hydrated_visible_tickers_auto_adjust_false"], 0)
+        self.assertEqual(body["cache_only_auto_adjust_true_tickers"],        1)
+        # Existing top-level counters still see the row through their
+        # auto_adjust-agnostic queries — proves the new split is
+        # additive and doesn't silently drop the row.
+        self.assertEqual(body["tickers_with_cache_rows"], 1)
+
+    def test_auto_adjust_false_ticker_counts_as_visible(self) -> None:
+        self._seed_event(
+            event_date=self._today_minus(2),
+            symbols=["MSFT"],
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "MSFT", self._today_minus(1),
+            auto_adjust=0,
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["hydrated_visible_tickers_auto_adjust_false"], 1)
+        self.assertEqual(body["cache_only_auto_adjust_true_tickers"],        0)
+
+    def test_ticker_with_both_flags_counts_only_as_visible(self) -> None:
+        # When both auto_adjust=0 and auto_adjust=1 rows exist for the
+        # same ticker, the hydrator will still see the False row, so the
+        # ticker is NOT counted as "cache only auto_adjust_true".
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(2),
+            auto_adjust=0,
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+            auto_adjust=1,
+        )
+        body = client.get("/diagnostics/price-cache-coverage").json()
+        self.assertEqual(body["hydrated_visible_tickers_auto_adjust_false"], 1)
+        self.assertEqual(body["cache_only_auto_adjust_true_tickers"],        0)
+
+    def test_repeated_calls_do_not_modify_auto_adjust_split(self) -> None:
+        # Read-only contract: the new fields must not trigger any write
+        # path.  Snapshot the cache rows before/after three calls and
+        # assert byte equality.
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", self._today_minus(1),
+            auto_adjust=1,
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "MSFT", self._today_minus(1),
+            auto_adjust=0,
+        )
+        before = _snapshot_tables_for_coverage(self._tmp)
+        for _ in range(3):
+            r = client.get("/diagnostics/price-cache-coverage")
+            self.assertEqual(r.status_code, 200)
+        after = _snapshot_tables_for_coverage(self._tmp)
+        self.assertEqual(before, after)
 
 
 # ---------------------------------------------------------------------------

@@ -368,8 +368,11 @@ python scripts/refresh_price_cache.py --write --confirm --json
 This does not spend LLM/API-analysis calls, but it may call the configured
 market-data provider to fetch missing bars. Do not trigger it from a GET route,
 page load, scheduler experiment, or demo flow. Run archive backup and local
-preflight first, then review the dry-run plan before using write mode. This
-write path has not been run on the real archive yet.
+preflight first, then review the dry-run plan before using write mode.
+
+Warning: reaction-profile hydration currently expects `auto_adjust=False`
+cache rows. Do not run another real refresh until the auto-adjust alignment
+fix is implemented and verified.
 
 Inspect:
 
@@ -381,6 +384,9 @@ Inspect:
 Before and after guarded write mode, inspect:
 
 ```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/reaction-profile-blockers" |
+  ConvertTo-Json -Depth 10
+
 Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/price-cache-coverage" |
   ConvertTo-Json -Depth 10
 

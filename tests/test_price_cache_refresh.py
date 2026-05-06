@@ -489,7 +489,7 @@ class TestLoadInputsFromTempDB(unittest.TestCase):
             )
 
     def _insert_cache(
-        self, *, ticker: str, dates: list[str], auto_adjust: int = 1,
+        self, *, ticker: str, dates: list[str], auto_adjust: int = 0,
     ) -> None:
         with sqlite3.connect(self._tmp_path) as conn:
             for d in dates:
@@ -553,13 +553,15 @@ class TestLoadInputsFromTempDB(unittest.TestCase):
         self._insert_cache(ticker="AAPL", dates=["2026-03-30"], auto_adjust=0)
         self._insert_cache(ticker="AAPL", dates=["2026-03-31"], auto_adjust=1)
 
-        # Default: auto_adjust=True → only the auto_adjust=1 row.
+        # Default: auto_adjust=False → only the auto_adjust=0 row.  The
+        # default mirrors the hydrator's read flag so refresh-planned
+        # work targets the bucket reaction-profile hydration consumes.
         _events, cache_map = pcr.load_inputs(self._tmp_path)
-        self.assertEqual(cache_map["AAPL"], frozenset({date(2026, 3, 31)}))
-
-        # auto_adjust=False → only the auto_adjust=0 row.
-        _events, cache_map = pcr.load_inputs(self._tmp_path, auto_adjust=False)
         self.assertEqual(cache_map["AAPL"], frozenset({date(2026, 3, 30)}))
+
+        # Explicit auto_adjust=True still works → only the auto_adjust=1 row.
+        _events, cache_map = pcr.load_inputs(self._tmp_path, auto_adjust=True)
+        self.assertEqual(cache_map["AAPL"], frozenset({date(2026, 3, 31)}))
 
     def test_load_inputs_since_days_filters_old_events(self) -> None:
         today = datetime.now(timezone.utc).date()
@@ -655,7 +657,7 @@ class TestEndToEnd(unittest.TestCase):
                 "INSERT INTO price_cache "
                 "(ticker, date, close, volume, auto_adjust, fetched_at) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
-                ("AAPL", "2026-04-01", 180.0, 1_000_000.0, 1, "2026-05-01T00:00:00Z"),
+                ("AAPL", "2026-04-01", 180.0, 1_000_000.0, 0, "2026-05-01T00:00:00Z"),
             )
 
     def tearDown(self) -> None:
@@ -1143,6 +1145,106 @@ class TestExecutorRowFiltering(_ExecutorTestBase):
             plan, self._tmp_path, confirm=True, provider_fetch=provider,
         )
         self.assertEqual(result.written_rows, 1)
+
+
+# ---------------------------------------------------------------------------
+# Regression: refresh default ``auto_adjust`` must match the hydrator read
+# path so freshly-refreshed rows are visible to reaction-profile hydration.
+# ---------------------------------------------------------------------------
+
+
+class TestAutoAdjustHydratorAlignment(unittest.TestCase):
+    """Pins the cross-module contract uncovered when a refresh run improved
+    /diagnostics/price-cache-coverage but left /diagnostics/track-record
+    unchanged: the executor wrote rows under one ``auto_adjust`` flag while
+    the hydrator was reading under the other.
+    """
+
+    def test_refresh_config_default_matches_hydrator_read_flag(self) -> None:
+        # Lazy import — keeps this file's import graph stable for the
+        # rest of the suite (which already imports ``pcr`` at top level).
+        import reaction_profile_hydration as rph
+
+        captured: dict[str, object] = {}
+
+        def _recording_reader(
+            ticker: str, *, start: str, end: object = None,
+            auto_adjust: bool = False,
+        ):
+            captured["auto_adjust"] = auto_adjust
+            return None  # cache miss is fine — we only care about the kwarg
+
+        rph.hydrate_per_ticker_profile(
+            {"symbol": "AAPL"},
+            event_date="2026-04-01",
+            benchmark_resolver=lambda _s: ("SPY", "energy"),
+            cache_reader=_recording_reader,
+        )
+
+        self.assertIn("auto_adjust", captured)
+        self.assertEqual(captured["auto_adjust"], pcr.RefreshConfig().auto_adjust)
+
+    def test_execute_refresh_writes_auto_adjust_zero_under_default_config(
+        self,
+    ) -> None:
+        # Build a plan with a job that inherits the default RefreshConfig
+        # auto_adjust flag, exactly as ``plan_refresh`` would.
+        cfg = pcr.RefreshConfig()
+        job = pcr.TickerRefreshJob(
+            event_id=1,
+            event_date="2026-04-01",
+            symbol="AAPL",
+            intervals=(("2026-04-01", "2026-04-01"),),
+            business_days=1,
+            auto_adjust=cfg.auto_adjust,
+        )
+        plan = pcr.RefreshPlan(
+            events_considered=1,
+            tickers_considered=1,
+            refresh_jobs=(job,),
+            skipped_counts={k: 0 for k in pcr.SKIP_COUNT_KEYS},
+            provider_calls_estimate=1,
+            max_provider_calls=10,
+            cap_applied=False,
+            decision_reason=pcr.DECISION_PLANNED,
+        )
+
+        tmp_path = os.path.join(
+            tempfile.gettempdir(),
+            f"test_pcr_aa_align_{uuid.uuid4().hex}.db",
+        )
+        with sqlite3.connect(tmp_path) as conn:
+            conn.execute("""
+                CREATE TABLE price_cache (
+                    ticker      TEXT NOT NULL,
+                    date        TEXT NOT NULL,
+                    close       REAL,
+                    volume      REAL,
+                    auto_adjust INTEGER NOT NULL,
+                    fetched_at  TEXT NOT NULL,
+                    PRIMARY KEY (ticker, date, auto_adjust)
+                )
+            """)
+        try:
+            def _provider(symbol, start, end, auto_adjust):
+                return [pcr.ProviderRow(date="2026-04-01", close=180.0, volume=1e6)]
+
+            result = pcr.execute_refresh(
+                plan, tmp_path, confirm=True, provider_fetch=_provider,
+            )
+            self.assertEqual(result.written_rows, 1)
+
+            with sqlite3.connect(tmp_path) as conn:
+                rows = conn.execute(
+                    "SELECT auto_adjust FROM price_cache WHERE ticker = ?",
+                    ("AAPL",),
+                ).fetchall()
+            self.assertEqual([r[0] for r in rows], [0])
+        finally:
+            try:
+                os.remove(tmp_path)
+            except (OSError, PermissionError):
+                pass
 
 
 if __name__ == "__main__":

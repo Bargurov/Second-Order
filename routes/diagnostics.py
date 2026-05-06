@@ -2208,6 +2208,35 @@ def price_cache_coverage():
                                           in ``price_cache``, ISO-8601,
                                           or ``None`` when the cache is
                                           empty.
+      * ``cache_rows_auto_adjust_false``—  total ``COUNT(*)`` of
+                                          ``price_cache`` rows persisted
+                                          with ``auto_adjust=0``.  These
+                                          are the rows
+                                          :func:`reaction_profile_hydration.hydrate_per_ticker_profile`
+                                          can actually read (it always
+                                          calls
+                                          ``read_window_no_fetch(...,
+                                          auto_adjust=False)``).
+      * ``cache_rows_auto_adjust_true`` — total ``COUNT(*)`` of rows
+                                          with ``auto_adjust=1``.
+                                          Invisible to the hydrator.
+      * ``hydrated_visible_tickers_auto_adjust_false`` —
+                                          distinct symbols in
+                                          ``price_cache`` with at least
+                                          one ``auto_adjust=0`` row.
+      * ``cache_only_auto_adjust_true_tickers`` —
+                                          distinct symbols that appear
+                                          ONLY with ``auto_adjust=1``
+                                          (i.e., the ticker has cached
+                                          rows but the hydrator cannot
+                                          see any of them).  Non-zero
+                                          here is the early signal of an
+                                          ingestion-flag regression
+                                          where the cache write side
+                                          flipped to adjusted-close
+                                          while the hydrator is still
+                                          reading raw closes (or vice
+                                          versa).
 
     Forward-coverage semantics: a ticker satisfies the ``+Nd``
     condition when its newest cached row is dated at or after
@@ -2221,16 +2250,20 @@ def price_cache_coverage():
     from db import _ticker_symbols
 
     empty = {
-        "total_events":                  0,
-        "events_with_market_tickers":    0,
-        "unique_tickers":                0,
-        "tickers_with_cache_rows":       0,
-        "tickers_without_cache_rows":    0,
-        "events_with_any_forward_cache": 0,
-        "events_with_5d_forward_cache":  0,
-        "events_with_20d_forward_cache": 0,
-        "coverage_by_event_age_bucket":  _empty_age_bucket_set(),
-        "latest_cache_date":             None,
+        "total_events":                              0,
+        "events_with_market_tickers":                0,
+        "unique_tickers":                            0,
+        "tickers_with_cache_rows":                   0,
+        "tickers_without_cache_rows":                0,
+        "events_with_any_forward_cache":             0,
+        "events_with_5d_forward_cache":              0,
+        "events_with_20d_forward_cache":             0,
+        "coverage_by_event_age_bucket":              _empty_age_bucket_set(),
+        "latest_cache_date":                         None,
+        "cache_rows_auto_adjust_false":              0,
+        "cache_rows_auto_adjust_true":               0,
+        "hydrated_visible_tickers_auto_adjust_false": 0,
+        "cache_only_auto_adjust_true_tickers":       0,
     }
 
     try:
@@ -2260,8 +2293,60 @@ def price_cache_coverage():
             latest_cache_date = row[0] if row else None
         except sqlite3.Error:
             latest_cache_date = None
+
+        # Auto-adjust split — cheap GROUP BY queries straight off the
+        # ``price_cache`` table.  Two queries (row count + distinct
+        # ticker per flag) so we can derive both the row totals and the
+        # "ticker is invisible to hydrator" set without round-tripping.
+        try:
+            auto_adjust_count_rows = conn.execute(
+                "SELECT auto_adjust, COUNT(*) FROM price_cache "
+                "GROUP BY auto_adjust"
+            ).fetchall()
+        except sqlite3.Error:
+            auto_adjust_count_rows = []
+
+        try:
+            auto_adjust_ticker_rows = conn.execute(
+                "SELECT DISTINCT ticker, auto_adjust FROM price_cache"
+            ).fetchall()
+        except sqlite3.Error:
+            auto_adjust_ticker_rows = []
     finally:
         conn.close()
+
+    cache_rows_aa_false = 0
+    cache_rows_aa_true  = 0
+    for flag, n in auto_adjust_count_rows:
+        try:
+            flag_int = int(flag)
+            n_int    = int(n)
+        except (TypeError, ValueError):
+            continue
+        if flag_int == 0:
+            cache_rows_aa_false += n_int
+        elif flag_int == 1:
+            cache_rows_aa_true += n_int
+
+    tickers_with_aa_false: set[str] = set()
+    tickers_with_aa_true:  set[str] = set()
+    for ticker, flag in auto_adjust_ticker_rows:
+        if not isinstance(ticker, str) or not ticker:
+            continue
+        try:
+            flag_int = int(flag)
+        except (TypeError, ValueError):
+            continue
+        sym = ticker.upper()
+        if flag_int == 0:
+            tickers_with_aa_false.add(sym)
+        elif flag_int == 1:
+            tickers_with_aa_true.add(sym)
+
+    hydrated_visible_tickers = len(tickers_with_aa_false)
+    cache_only_aa_true_tickers = len(
+        tickers_with_aa_true - tickers_with_aa_false,
+    )
 
     cache_max_by_ticker: dict[str, date] = {}
     for ticker, max_date_str in cache_max_rows:
@@ -2341,14 +2426,18 @@ def price_cache_coverage():
     )
 
     return _api._sanitize_floats({
-        "total_events":                  total_events,
-        "events_with_market_tickers":    events_with_market_tickers,
-        "unique_tickers":                len(unique_tickers),
-        "tickers_with_cache_rows":       tickers_with_cache_rows,
-        "tickers_without_cache_rows":    len(unique_tickers) - tickers_with_cache_rows,
-        "events_with_any_forward_cache": events_with_any_forward,
-        "events_with_5d_forward_cache":  events_with_5d_forward,
-        "events_with_20d_forward_cache": events_with_20d_forward,
-        "coverage_by_event_age_bucket":  age_buckets,
-        "latest_cache_date":             latest_cache_date,
+        "total_events":                              total_events,
+        "events_with_market_tickers":                events_with_market_tickers,
+        "unique_tickers":                            len(unique_tickers),
+        "tickers_with_cache_rows":                   tickers_with_cache_rows,
+        "tickers_without_cache_rows":                len(unique_tickers) - tickers_with_cache_rows,
+        "events_with_any_forward_cache":             events_with_any_forward,
+        "events_with_5d_forward_cache":              events_with_5d_forward,
+        "events_with_20d_forward_cache":             events_with_20d_forward,
+        "coverage_by_event_age_bucket":              age_buckets,
+        "latest_cache_date":                         latest_cache_date,
+        "cache_rows_auto_adjust_false":              cache_rows_aa_false,
+        "cache_rows_auto_adjust_true":               cache_rows_aa_true,
+        "hydrated_visible_tickers_auto_adjust_false": hydrated_visible_tickers,
+        "cache_only_auto_adjust_true_tickers":       cache_only_aa_true_tickers,
     })
