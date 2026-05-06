@@ -74,6 +74,11 @@ VALIDATION_LOG.md
 product_validation_log.md
 eval_run_index.json
 
+# Generated design exports
+design/second-order-design.zip
+design/extracted/Second\ Order.html
+design/extracted/Second\ Order-print.html
+
 # Frontend
 node_modules/
 frontend/node_modules/
