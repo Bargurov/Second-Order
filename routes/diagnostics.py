@@ -4,12 +4,14 @@ docs/superpowers/specs/2026-05-03-headline-registry-design.md.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Query
 
 import api as _api
 from auto_backfill_config import load_auto_backfill_config
+from auto_backfill_ledger import AutoBackfillLedger
+from auto_backfill_state import AutoBackfillState
 from headline_registry import compose_diagnostics
 from reaction_profile_hydration import hydrate_per_ticker_profile
 from validation_status import VALID_STATUSES, score_validation_status
@@ -1334,4 +1336,147 @@ def _auto_backfill_config_unavailable() -> dict:
         "model":                 DEFAULT_MODEL,
         "effective_status":      EFFECTIVE_DISABLED,
         "warnings":              [],
+    }
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-status — config + ledger + state composition
+# ---------------------------------------------------------------------------
+
+# Process-local singletons.  Created lazily on first endpoint hit so
+# importing this module never starts a scheduler, never opens a socket,
+# and never spends an LLM call.  The ledger is keyed on the current
+# ``max_calls_per_day`` so an env-driven cap change is observable on
+# the next snapshot without restarting the process.
+_AUTO_BACKFILL_LEDGER: AutoBackfillLedger | None = None
+_AUTO_BACKFILL_LEDGER_CAP: int | None = None
+_AUTO_BACKFILL_STATE: AutoBackfillState | None = None
+# 1h covers a generous lock TTL even if some future scheduler holds
+# the lock for the full interval; this layer never triggers a run.
+_AUTO_BACKFILL_STATE_TTL_SECONDS: int = 3600
+
+
+def _get_auto_backfill_ledger(daily_cap: int) -> AutoBackfillLedger:
+    global _AUTO_BACKFILL_LEDGER, _AUTO_BACKFILL_LEDGER_CAP
+    if _AUTO_BACKFILL_LEDGER is None or _AUTO_BACKFILL_LEDGER_CAP != daily_cap:
+        _AUTO_BACKFILL_LEDGER = AutoBackfillLedger(daily_cap=daily_cap)
+        _AUTO_BACKFILL_LEDGER_CAP = daily_cap
+    return _AUTO_BACKFILL_LEDGER
+
+
+def _get_auto_backfill_state() -> AutoBackfillState:
+    global _AUTO_BACKFILL_STATE
+    if _AUTO_BACKFILL_STATE is None:
+        _AUTO_BACKFILL_STATE = AutoBackfillState(
+            ttl_seconds=_AUTO_BACKFILL_STATE_TTL_SECONDS,
+        )
+    return _AUTO_BACKFILL_STATE
+
+
+@router.get("/diagnostics/auto-backfill-status")
+def auto_backfill_status():
+    """Read-only composition of config + ledger + state for the auto-
+    backfill scheduler.
+
+    Pure read.  Never starts the scheduler, never authorises paid
+    execution, never writes to SQLite, never calls the LLM,
+    ``yfinance``, ``market_check``, or any provider.  Safe to call at
+    any time.
+
+    The response composes:
+      * ``config``           — the same shape ``/diagnostics/auto-backfill-config``
+                               returns.
+      * ``ledger``           — daily-cap / used / remaining / day from
+                               the in-memory call ledger.
+      * ``state``            — the lock + last-run snapshot from the
+                               in-memory state holder.
+      * ``effective_status`` — mirror of ``config.effective_status`` so
+                               consumers can branch on the canonical
+                               vocabulary without unwrapping ``config``.
+      * ``last_skip_reason`` / ``last_error`` — convenience top-level
+                               mirrors of the matching state fields so
+                               the operator panel can render a one-line
+                               status without descending into ``state``.
+      * ``daily_remaining``  — convenience top-level mirror of
+                               ``ledger.remaining``.
+
+    The endpoint never raises: a structural failure inside any helper
+    falls back to the stable unavailable shape so the operator panel
+    renders cleanly rather than 500-ing.
+    """
+    try:
+        return _api._sanitize_floats(_compose_auto_backfill_status())
+    except Exception:
+        return _api._sanitize_floats(_auto_backfill_status_unavailable())
+
+
+def _compose_auto_backfill_status() -> dict:
+    cfg = load_auto_backfill_config()
+    now = datetime.now(timezone.utc)
+
+    ledger = _get_auto_backfill_ledger(cfg.max_calls_per_day)
+    state = _get_auto_backfill_state()
+    ledger_dec = ledger.snapshot(now=now)
+    state_snap = state.snapshot(now=now)
+
+    return {
+        "config":           cfg.to_dict(),
+        "ledger": {
+            "daily_cap":    ledger_dec.daily_cap,
+            "used":         ledger_dec.used,
+            "remaining":    ledger_dec.remaining,
+            "day":          ledger_dec.day,
+        },
+        "state": {
+            "lock_held":           state_snap.lock_held,
+            "lock_owner":          state_snap.lock_owner,
+            "lock_acquired_at":    state_snap.lock_acquired_at,
+            "lock_expires_at":     state_snap.lock_expires_at,
+            "last_run_id":         state_snap.last_run_id,
+            "last_started_at":     state_snap.last_started_at,
+            "last_completed_at":   state_snap.last_completed_at,
+            "last_skip_reason":    state_snap.last_skip_reason,
+            "last_error":          state_snap.last_error,
+            "last_selected_count": state_snap.last_selected_count,
+            "last_spent_calls":    state_snap.last_spent_calls,
+        },
+        "effective_status": cfg.effective_status,
+        "last_skip_reason": state_snap.last_skip_reason,
+        "last_error":       state_snap.last_error,
+        "daily_remaining":  ledger_dec.remaining,
+    }
+
+
+def _auto_backfill_status_unavailable() -> dict:
+    """Stable fallback shape — every field the populated response
+    carries, with safe defaults that look like an off-and-quiet
+    environment.  Mirrors the shape ``_compose_auto_backfill_status``
+    builds so consumers never need to branch on key presence.
+    """
+    cfg_block = _auto_backfill_config_unavailable()
+    return {
+        "config":           cfg_block,
+        "ledger": {
+            "daily_cap":    0,
+            "used":         0,
+            "remaining":    0,
+            "day":          None,
+        },
+        "state": {
+            "lock_held":           False,
+            "lock_owner":          None,
+            "lock_acquired_at":    None,
+            "lock_expires_at":     None,
+            "last_run_id":         None,
+            "last_started_at":     None,
+            "last_completed_at":   None,
+            "last_skip_reason":    None,
+            "last_error":          None,
+            "last_selected_count": None,
+            "last_spent_calls":    None,
+        },
+        "effective_status": cfg_block["effective_status"],
+        "last_skip_reason": None,
+        "last_error":       None,
+        "daily_remaining":  0,
     }

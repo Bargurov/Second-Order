@@ -40,7 +40,7 @@ jobs:
         run: python -m unittest tests.test_validation_status tests.test_reaction_profile -v
 
       - name: Run auto-backfill foundation tests
-        run: python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner -v
+        run: python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner tests.test_auto_backfill_policy tests.test_auto_backfill_state -v
 
       - name: Run event archive tests
         run: python -m unittest discover -s tests -p "test_events*.py" -v

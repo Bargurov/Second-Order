@@ -2137,5 +2137,239 @@ class TestAutoBackfillNeverExposesSecrets(_AutoBackfillEnvBase):
             os.environ.pop("OPENAI_API_KEY",    None)
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-status — config + ledger + state composition
+# ---------------------------------------------------------------------------
+
+
+_ABF_STATUS_TOP_KEYS = (
+    "config",
+    "ledger",
+    "state",
+    "effective_status",
+    "last_skip_reason",
+    "last_error",
+    "daily_remaining",
+)
+
+_ABF_STATUS_LEDGER_KEYS = (
+    "daily_cap",
+    "used",
+    "remaining",
+    "day",
+)
+
+_ABF_STATUS_STATE_KEYS = (
+    "lock_held",
+    "lock_owner",
+    "lock_acquired_at",
+    "lock_expires_at",
+    "last_run_id",
+    "last_started_at",
+    "last_completed_at",
+    "last_skip_reason",
+    "last_error",
+    "last_selected_count",
+    "last_spent_calls",
+)
+
+
+class _AutoBackfillStatusBase(_AutoBackfillEnvBase):
+    """Resets the route's lazy singletons each test so per-test config
+    overrides are observable without ordering coupling.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        from routes import diagnostics as _diag
+        _diag._AUTO_BACKFILL_LEDGER = None
+        _diag._AUTO_BACKFILL_LEDGER_CAP = None
+        _diag._AUTO_BACKFILL_STATE = None
+
+    def tearDown(self) -> None:
+        from routes import diagnostics as _diag
+        _diag._AUTO_BACKFILL_LEDGER = None
+        _diag._AUTO_BACKFILL_LEDGER_CAP = None
+        _diag._AUTO_BACKFILL_STATE = None
+        super().tearDown()
+
+
+class TestAutoBackfillStatusShape(_AutoBackfillStatusBase):
+    def test_returns_200_with_full_top_keyset(self) -> None:
+        r = client.get("/diagnostics/auto-backfill-status")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _ABF_STATUS_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_config_block_carries_full_config_keyset(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        for key in _ABF_TOP_KEYS:
+            self.assertIn(
+                key, body["config"],
+                f"missing config sub-key: {key}",
+            )
+
+    def test_ledger_block_has_stable_keyset(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        for key in _ABF_STATUS_LEDGER_KEYS:
+            self.assertIn(key, body["ledger"], f"missing ledger key: {key}")
+
+    def test_state_block_has_stable_keyset(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        for key in _ABF_STATUS_STATE_KEYS:
+            self.assertIn(key, body["state"], f"missing state key: {key}")
+
+    def test_effective_status_in_known_vocabulary(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertIn(
+            body["effective_status"],
+            {"disabled", "blocked_paid_guard", "configured"},
+        )
+
+    def test_top_level_mirrors_match_state_and_ledger_blocks(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(
+            body["last_skip_reason"], body["state"]["last_skip_reason"],
+        )
+        self.assertEqual(body["last_error"], body["state"]["last_error"])
+        self.assertEqual(body["daily_remaining"], body["ledger"]["remaining"])
+
+
+class TestAutoBackfillStatusDefaultDisabled(_AutoBackfillStatusBase):
+    def test_default_disabled_no_env_set(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["effective_status"], "disabled")
+        self.assertFalse(body["config"]["enabled"])
+        self.assertFalse(body["config"]["paid_analysis_enabled"])
+
+    def test_idle_state_block_is_all_none_or_false(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        state = body["state"]
+        self.assertFalse(state["lock_held"])
+        self.assertIsNone(state["lock_owner"])
+        self.assertIsNone(state["lock_acquired_at"])
+        self.assertIsNone(state["lock_expires_at"])
+        self.assertIsNone(state["last_run_id"])
+        self.assertIsNone(state["last_started_at"])
+        self.assertIsNone(state["last_completed_at"])
+        self.assertIsNone(state["last_skip_reason"])
+        self.assertIsNone(state["last_error"])
+        self.assertIsNone(state["last_selected_count"])
+        self.assertIsNone(state["last_spent_calls"])
+
+    def test_fresh_ledger_reports_full_remaining(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        ledger = body["ledger"]
+        # Default daily cap is 12 (auto_backfill_config.DEFAULT_MAX_PER_DAY).
+        self.assertEqual(ledger["daily_cap"], 12)
+        self.assertEqual(ledger["used"], 0)
+        self.assertEqual(ledger["remaining"], 12)
+        self.assertEqual(body["daily_remaining"], 12)
+        self.assertIsInstance(ledger["day"], str)
+        self.assertGreater(len(ledger["day"]), 0)
+
+
+class TestAutoBackfillStatusConfiguredEnv(_AutoBackfillStatusBase):
+    def test_both_gates_true_yields_configured(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["effective_status"], "configured")
+        self.assertTrue(body["config"]["enabled"])
+        self.assertTrue(body["config"]["paid_analysis_enabled"])
+
+    def test_enabled_without_paid_is_blocked_by_paid_guard(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["effective_status"], "blocked_paid_guard")
+
+    def test_per_day_env_drives_ledger_cap(self) -> None:
+        os.environ["AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY"] = "7"
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["ledger"]["daily_cap"], 7)
+        self.assertEqual(body["ledger"]["remaining"], 7)
+        self.assertEqual(body["daily_remaining"], 7)
+
+
+class TestAutoBackfillStatusNoSideEffects(_AutoBackfillStatusBase):
+    def test_repeated_calls_do_not_change_fingerprint(self) -> None:
+        before = db.get_events_fingerprint()
+        for _ in range(3):
+            client.get("/diagnostics/auto-backfill-status")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [
+                dict(r) for r in conn.execute(
+                    "SELECT * FROM events"
+                ).fetchall()
+            ]
+        for _ in range(3):
+            client.get("/diagnostics/auto-backfill-status")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [
+                dict(r) for r in conn.execute(
+                    "SELECT * FROM events"
+                ).fetchall()
+            ]
+        self.assertEqual(before, after)
+
+    def test_endpoint_does_not_invoke_paid_or_provider_seams(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        with patch("api.analyze_event",
+                   side_effect=AssertionError("must not call analyze_event")), \
+             patch("api.market_check",
+                   side_effect=AssertionError("must not call market_check")), \
+             patch("yfinance.download",
+                   side_effect=AssertionError("must not call yfinance.download")), \
+             patch("yfinance.Ticker",
+                   side_effect=AssertionError("must not call yfinance.Ticker")):
+            r = client.get("/diagnostics/auto-backfill-status")
+        self.assertEqual(r.status_code, 200)
+
+    def test_endpoint_does_not_advance_ledger_used(self) -> None:
+        # Calling the diagnostics surface must never reserve a call.
+        for _ in range(5):
+            client.get("/diagnostics/auto-backfill-status")
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["ledger"]["used"], 0)
+        self.assertEqual(
+            body["ledger"]["remaining"], body["ledger"]["daily_cap"],
+        )
+
+
+class TestAutoBackfillStatusKeepsConfigEndpointWorking(_AutoBackfillStatusBase):
+    def test_config_endpoint_still_returns_full_keyset(self) -> None:
+        # The new status endpoint must not regress the existing config
+        # endpoint — they share helpers but stay independent.
+        body = client.get("/diagnostics/auto-backfill-config").json()
+        for key in _ABF_TOP_KEYS:
+            self.assertIn(key, body, f"config endpoint missing key: {key}")
+
+
+class TestAutoBackfillStatusFallback(_AutoBackfillStatusBase):
+    def test_loader_failure_falls_back_to_unavailable_shape(self) -> None:
+        # When the underlying loader raises, the endpoint must return a
+        # 200 with the stable unavailable shape rather than 500.
+        with patch(
+            "routes.diagnostics.load_auto_backfill_config",
+            side_effect=RuntimeError("boom"),
+        ):
+            r = client.get("/diagnostics/auto-backfill-status")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _ABF_STATUS_TOP_KEYS:
+            self.assertIn(key, body)
+        self.assertEqual(body["effective_status"], "disabled")
+        self.assertEqual(body["ledger"]["daily_cap"], 0)
+        self.assertEqual(body["ledger"]["remaining"], 0)
+        self.assertEqual(body["daily_remaining"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

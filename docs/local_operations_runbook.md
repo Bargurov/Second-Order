@@ -130,7 +130,7 @@ Local pre-push check:
 
 python -m unittest tests.test_diagnostics tests.test_logging_config -v
 python -m unittest tests.test_headline_registry tests.test_backfill_paid_guard tests.test_market_context_consumer -v
-python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner -v
+python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner tests.test_auto_backfill_policy tests.test_auto_backfill_state -v
 python -m unittest discover -s tests -p "test_events*.py" -v
 python scripts/no_paid_smoke.py --json
 python scripts/backup_archive.py --dry-run
@@ -224,13 +224,15 @@ Before a demo, do not:
 
 ## Auto-Backfill Foundation Checks
 
-Scheduler execution is not implemented or enabled yet. The current stable
-surface is pure safety logic plus zero-cost diagnostics.
+The auto-backfill foundation exists: config parsing, daily ledger, candidate
+planner, policy decisions, and local run-state helpers. Scheduler execution is
+not implemented or enabled yet. Paid execution is not implemented here. The
+diagnostics/config surface is safe and zero-cost.
 
 Run the pure foundation tests:
 
 ```powershell
-python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner -v
+python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner tests.test_auto_backfill_policy tests.test_auto_backfill_state -v
 ```
 
 Run no-paid smoke:
