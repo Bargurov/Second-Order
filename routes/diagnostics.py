@@ -5,12 +5,14 @@ docs/superpowers/specs/2026-05-03-headline-registry-design.md.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 import api as _api
 from auto_backfill_config import load_auto_backfill_config
 from auto_backfill_ledger import AutoBackfillLedger
+from auto_backfill_runner import run_auto_backfill_dry_run
 from auto_backfill_state import AutoBackfillState
 from headline_registry import compose_diagnostics
 from reaction_profile_hydration import hydrate_per_ticker_profile
@@ -1374,7 +1376,7 @@ def _get_auto_backfill_state() -> AutoBackfillState:
 
 
 @router.get("/diagnostics/auto-backfill-status")
-def auto_backfill_status():
+def auto_backfill_status(request: Request):
     """Read-only composition of config + ledger + state for the auto-
     backfill scheduler.
 
@@ -1390,6 +1392,11 @@ def auto_backfill_status():
                                the in-memory call ledger.
       * ``state``            — the lock + last-run snapshot from the
                                in-memory state holder.
+      * ``scheduler``        — live snapshot of any scheduler the
+                               FastAPI lifespan published to
+                               ``app.state.auto_backfill_scheduler``;
+                               falls back to the not-wired shape when
+                               nothing was published.
       * ``effective_status`` — mirror of ``config.effective_status`` so
                                consumers can branch on the canonical
                                vocabulary without unwrapping ``config``.
@@ -1405,12 +1412,17 @@ def auto_backfill_status():
     renders cleanly rather than 500-ing.
     """
     try:
-        return _api._sanitize_floats(_compose_auto_backfill_status())
+        scheduler = getattr(
+            request.app.state, "auto_backfill_scheduler", None,
+        )
+        return _api._sanitize_floats(
+            _compose_auto_backfill_status(scheduler=scheduler),
+        )
     except Exception:
         return _api._sanitize_floats(_auto_backfill_status_unavailable())
 
 
-def _compose_auto_backfill_status() -> dict:
+def _compose_auto_backfill_status(scheduler: Any = None) -> dict:
     cfg = load_auto_backfill_config()
     now = datetime.now(timezone.utc)
 
@@ -1440,10 +1452,73 @@ def _compose_auto_backfill_status() -> dict:
             "last_selected_count": state_snap.last_selected_count,
             "last_spent_calls":    state_snap.last_spent_calls,
         },
+        "scheduler":        _scheduler_block(scheduler),
         "effective_status": cfg.effective_status,
         "last_skip_reason": state_snap.last_skip_reason,
         "last_error":       state_snap.last_error,
         "daily_remaining":  ledger_dec.remaining,
+    }
+
+
+def _scheduler_block(scheduler: Any = None) -> dict:
+    """Read-only scheduler snapshot.
+
+    Surfaces enough for an operator panel to render "is the auto-
+    backfill scheduler wired and running?" without instantiating
+    APScheduler.  The diagnostics layer never constructs a
+    ``BackgroundScheduler`` — it only inspects the scheduler the
+    FastAPI lifespan attached to ``app.state.auto_backfill_scheduler``
+    (passed in via ``scheduler``) — so this function never starts a
+    thread, never imports ``apscheduler`` directly, and never makes a
+    network or paid call.
+
+    ``scheduler_available`` reflects whether the
+    :mod:`auto_backfill_scheduler` module imports cleanly.  Since
+    that module imports ``apscheduler`` at its top, a False here is
+    equally a signal that either the skeleton or its underlying
+    dependency is missing.
+
+    ``mode`` is one of:
+      * ``"not_wired"``    — no scheduler attached to ``app.state``;
+                              the lifespan either skipped construction
+                              or shut it down.
+      * ``"dry_run_only"`` — a scheduler is attached.  Whether it is
+                              currently running is reported via
+                              ``scheduler_started``; ``job_count``
+                              reflects ``len(scheduler.get_jobs())``.
+
+    The introspection is fully defensive: a scheduler whose
+    ``running`` attribute is missing or whose ``get_jobs()`` raises
+    falls back to ``scheduler_started=False`` / ``job_count=0`` while
+    keeping ``mode="dry_run_only"`` — the attachment is real even if
+    its enumeration broke.
+    """
+    try:
+        import auto_backfill_scheduler  # noqa: F401
+        available = True
+    except Exception:
+        available = False
+
+    if scheduler is None:
+        return {
+            "scheduler_available": available,
+            "scheduler_started":   False,
+            "job_count":           0,
+            "mode":                "not_wired",
+        }
+
+    started = bool(getattr(scheduler, "running", False))
+    try:
+        jobs = scheduler.get_jobs()
+        job_count = len(jobs) if jobs is not None else 0
+    except Exception:
+        job_count = 0
+
+    return {
+        "scheduler_available": available,
+        "scheduler_started":   started,
+        "job_count":           job_count,
+        "mode":                "dry_run_only",
     }
 
 
@@ -1475,8 +1550,339 @@ def _auto_backfill_status_unavailable() -> dict:
             "last_selected_count": None,
             "last_spent_calls":    None,
         },
+        "scheduler": {
+            "scheduler_available": False,
+            "scheduler_started":   False,
+            "job_count":           0,
+            "mode":                "not_wired",
+        },
         "effective_status": cfg_block["effective_status"],
         "last_skip_reason": None,
         "last_error":       None,
         "daily_remaining":  0,
+    }
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-dry-run — operator-triggered simulated tick
+# ---------------------------------------------------------------------------
+
+
+@router.post("/diagnostics/auto-backfill-dry-run")
+def auto_backfill_dry_run(
+    since_hours: int = Query(
+        72, ge=1, le=720,
+        description=(
+            "Recency window (hours) for the injected candidate list — "
+            "mirrors the ``since_hours`` filter on "
+            "``/registry/candidate-queue``."
+        ),
+    ),
+    include_low_signal: bool = Query(
+        False,
+        description=(
+            "When true, low-signal clusters and headlines that fail the "
+            "relevance gate are admitted into the injected candidate list."
+        ),
+    ),
+):
+    """Simulate one auto-backfill scheduler tick without spending anything.
+
+    Composes the cached-news candidate-queue pipeline (recency +
+    relevance + scoring, mirroring ``/registry/candidate-queue``) with
+    :func:`auto_backfill_runner.run_auto_backfill_dry_run`.  Returns the
+    config snapshot, the planner's selection, skip counts/reasons, and
+    the post-tick ledger + state snapshots so an operator can see what
+    a real tick would do *right now*.
+
+    Pure read.  Uses **ephemeral** :class:`AutoBackfillState` and
+    :class:`AutoBackfillLedger` instances per request so the call:
+
+    * never reserves a ledger call (the ephemeral ledger is discarded
+      after the response is built),
+    * never writes to SQLite,
+    * never mutates the singletons exposed by
+      ``/diagnostics/auto-backfill-status`` — repeated dry-run hits do
+      not contaminate that endpoint's view of real scheduler activity,
+    * never starts the scheduler, never invokes the LLM, ``yfinance``,
+      ``market_check``, or any provider seam.
+
+    The endpoint never raises: a structural failure inside any helper
+    falls back to a stable ``available=False`` shape so an operator
+    panel renders cleanly rather than 500-ing.
+    """
+    try:
+        return _api._sanitize_floats(_compose_auto_backfill_dry_run(
+            since_hours=since_hours,
+            include_low_signal=include_low_signal,
+        ))
+    except Exception:
+        return _api._sanitize_floats(_auto_backfill_dry_run_unavailable(
+            since_hours=since_hours,
+            include_low_signal=include_low_signal,
+        ))
+
+
+def _compose_auto_backfill_dry_run(
+    *,
+    since_hours: int,
+    include_low_signal: bool,
+) -> dict:
+    """Compose config + ephemeral state/ledger + injected candidates +
+    planner result into the dry-run response shape.
+
+    Ephemeral state/ledger: a fresh pair is constructed per call so the
+    runner's ``state.acquire`` / ``mark_started`` / ``mark_completed`` /
+    ``release`` mutations are scoped to this request and the long-lived
+    singletons backing ``/diagnostics/auto-backfill-status`` stay clean.
+    """
+    cfg = load_auto_backfill_config()
+    now = datetime.now(timezone.utc)
+
+    candidates, queue_counts, news_source = _build_dry_run_candidates(
+        since_hours=since_hours,
+        include_low_signal=include_low_signal,
+    )
+
+    state = AutoBackfillState(ttl_seconds=_AUTO_BACKFILL_STATE_TTL_SECONDS)
+    ledger = AutoBackfillLedger(daily_cap=cfg.max_calls_per_day)
+
+    result = run_auto_backfill_dry_run(
+        candidates=candidates,
+        config=cfg,
+        state=state,
+        ledger=ledger,
+        now=now,
+    )
+
+    plan = result.plan
+    selected           = [dict(item) for item in (plan.selected if plan else ())]
+    skip_counts        = dict(plan.skip_counts) if plan else {}
+    skip_reasons       = dict(plan.skip_reasons) if plan else {}
+    eligible_count     = plan.eligible_count if plan else 0
+    considered_count   = plan.considered_count if plan else 0
+    effective_call_cap = plan.effective_call_cap if plan else 0
+
+    state_snap  = result.state_snapshot_after
+    ledger_snap = ledger.snapshot(now=now)
+
+    return {
+        "config":                 cfg.to_dict(),
+        "selected":               selected,
+        "selected_count":         result.selected_count,
+        "skip_counts":            skip_counts,
+        "skip_reasons":           skip_reasons,
+        "candidates_considered":  considered_count,
+        "eligible_count":         eligible_count,
+        "effective_call_cap":     effective_call_cap,
+        "decision_reason":        result.decision_reason,
+        "started":                result.started,
+        "completed":              result.completed,
+        "skip_reason":            result.skip_reason,
+        "run_id":                 result.run_id,
+        "spent_calls":            result.spent_calls,
+        "now":                    result.now,
+        "candidate_queue_counts": queue_counts,
+        "news_source":            news_source,
+        "ledger": {
+            "daily_cap": ledger_snap.daily_cap,
+            "used":      ledger_snap.used,
+            "remaining": ledger_snap.remaining,
+            "day":       ledger_snap.day,
+        },
+        "state": {
+            "lock_held":           state_snap.lock_held,
+            "lock_owner":          state_snap.lock_owner,
+            "lock_acquired_at":    state_snap.lock_acquired_at,
+            "lock_expires_at":     state_snap.lock_expires_at,
+            "last_run_id":         state_snap.last_run_id,
+            "last_started_at":     state_snap.last_started_at,
+            "last_completed_at":   state_snap.last_completed_at,
+            "last_skip_reason":    state_snap.last_skip_reason,
+            "last_error":          state_snap.last_error,
+            "last_selected_count": state_snap.last_selected_count,
+            "last_spent_calls":    state_snap.last_spent_calls,
+        },
+        "filters": {
+            "since_hours":        since_hours,
+            "include_low_signal": include_low_signal,
+        },
+        "available": True,
+    }
+
+
+def _build_dry_run_candidates(
+    *,
+    since_hours: int,
+    include_low_signal: bool,
+) -> tuple[list[dict], dict, str | None]:
+    """Build the injected candidate list for one dry-run tick.
+
+    Mirrors the recency / headline / low_signal / relevance pre-filter
+    pipeline that ``/registry/candidate-queue`` and
+    ``/diagnostics/major-skipped-headlines`` apply, then ranks the
+    survivors with ``_score_cluster_for_preview`` so the dry-run sees
+    the same universe a paid scheduler tick would.
+
+    Already-analyzed and ``expired_low_impact`` rows are filtered out
+    here (the planner would also skip them, but pre-filtering keeps the
+    ``selected`` payload focused on actionable candidates) and tallied
+    into the ``candidate_queue_counts`` block so the response mirrors
+    the queue endpoint's view.
+
+    Returns ``(items, counts, news_source)``.  Items are NOT capped —
+    the planner enforces ``max_calls_per_run`` / ``daily_remaining``.
+
+    Pure read.  No LLM, no provider, no network, no DB write.
+    """
+    from routes.movers import (
+        _cached_news_payload,
+        _cluster_event_date,
+        _cluster_has_asset_terms,
+        _cluster_headline,
+        _cluster_is_recent,
+        _hr_dedup_key,
+        _headline_is_market_relevant,
+        _rank_explanation,
+        _registry_state_for_title_key,
+        _score_cluster_for_preview,
+        _skip_reason_label,
+    )
+
+    payload, source = _cached_news_payload()
+    raw_clusters = (payload or {}).get("clusters") or []
+    since_dt = (
+        datetime.now() - timedelta(hours=since_hours)
+        if since_hours and since_hours > 0 else None
+    )
+
+    counts = {
+        "eligible":           0,
+        "skipped":            0,
+        "already_analyzed":   0,
+        "expired_low_impact": 0,
+    }
+
+    eligible_clusters: list[dict] = []
+    for cluster in raw_clusters:
+        if not isinstance(cluster, dict):
+            continue
+        if not _cluster_is_recent(cluster, since=since_dt):
+            continue
+        headline = _cluster_headline(cluster)
+        if not headline:
+            continue
+        if cluster.get("low_signal") and not include_low_signal:
+            continue
+        if (
+            not include_low_signal
+            and not _headline_is_market_relevant(headline)
+        ):
+            continue
+        eligible_clusters.append(cluster)
+
+    cluster_scores: list[tuple[dict, float, dict]] = []
+    for cluster in eligible_clusters:
+        score, factors = _score_cluster_for_preview(cluster)
+        cluster_scores.append((cluster, score, factors))
+    cluster_scores.sort(
+        key=lambda triple: (
+            triple[1],
+            int(triple[0].get("source_count") or 0),
+            1 if _cluster_has_asset_terms(triple[0]) else 0,
+        ),
+        reverse=True,
+    )
+
+    items: list[dict] = []
+    for cluster, rank_score, rank_factors in cluster_scores:
+        headline = _cluster_headline(cluster)
+        title_key = _hr_dedup_key(headline)
+        registry_state, _eid = _registry_state_for_title_key(title_key)
+
+        if registry_state in ("analyzed", "market_checked", "surfaced"):
+            counts["already_analyzed"] += 1
+            counts["skipped"] += 1
+            continue
+        if registry_state == "expired_low_impact":
+            counts["expired_low_impact"] += 1
+            counts["skipped"] += 1
+            continue
+
+        last_skip_reason = _last_skip_reason_for_title_key(title_key)
+        counts["eligible"] += 1
+        items.append({
+            "headline":          headline,
+            "source_count":      int(cluster.get("source_count") or 0),
+            "published_at":      str(cluster.get("published_at") or "") or None,
+            "event_date":        _cluster_event_date(cluster),
+            "registry_state":    registry_state,
+            "skip_reason":       last_skip_reason,
+            "skip_reason_label": _skip_reason_label(last_skip_reason),
+            "rank_score":        round(float(rank_score), 3),
+            "rank_factors":      rank_factors,
+            "rank_explanation":  _rank_explanation(rank_factors),
+        })
+
+    return items, counts, source
+
+
+def _auto_backfill_dry_run_unavailable(
+    *,
+    since_hours: int,
+    include_low_signal: bool,
+) -> dict:
+    """Stable fallback shape — every field the populated response
+    carries, with safe defaults that look like an off-and-quiet
+    environment.  Mirrors ``_compose_auto_backfill_dry_run`` so
+    consumers never need to branch on key presence.
+    """
+    cfg_block = _auto_backfill_config_unavailable()
+    return {
+        "config":                 cfg_block,
+        "selected":               [],
+        "selected_count":         0,
+        "skip_counts":            {},
+        "skip_reasons":           {},
+        "candidates_considered":  0,
+        "eligible_count":         0,
+        "effective_call_cap":     0,
+        "decision_reason":        "unavailable",
+        "started":                False,
+        "completed":              False,
+        "skip_reason":            "unavailable",
+        "run_id":                 None,
+        "spent_calls":            0,
+        "now":                    None,
+        "candidate_queue_counts": {
+            "eligible":           0,
+            "skipped":            0,
+            "already_analyzed":   0,
+            "expired_low_impact": 0,
+        },
+        "news_source":            None,
+        "ledger": {
+            "daily_cap": 0,
+            "used":      0,
+            "remaining": 0,
+            "day":       None,
+        },
+        "state": {
+            "lock_held":           False,
+            "lock_owner":          None,
+            "lock_acquired_at":    None,
+            "lock_expires_at":     None,
+            "last_run_id":         None,
+            "last_started_at":     None,
+            "last_completed_at":   None,
+            "last_skip_reason":    None,
+            "last_error":          None,
+            "last_selected_count": None,
+            "last_spent_calls":    None,
+        },
+        "filters": {
+            "since_hours":        since_hours,
+            "include_low_signal": include_low_signal,
+        },
+        "available": False,
     }

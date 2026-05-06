@@ -727,7 +727,13 @@ def events_export(
         body = build_csv_export(evs)
         return Response(content=body, media_type="text/csv; charset=utf-8",
                         headers={"Content-Disposition": 'attachment; filename="events_export.csv"'})
-    return build_json_export(evs)
+    # Scrub NaN / inf before the response leaves the API.  Persisted
+    # market_ticker returns and derived overlays can carry NaN when a
+    # ticker has no price history (e.g. delisted symbols, stress-tape
+    # gaps); stdlib json rejects those as non-compliant on strict
+    # consumers (browsers, JSON.parse).  ``_sanitize_floats`` is the
+    # same helper the diagnostics layer uses.
+    return _api._sanitize_floats(build_json_export(evs))
 
 
 @router.get("/events/{event_id}")

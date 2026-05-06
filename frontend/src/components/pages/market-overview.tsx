@@ -1904,6 +1904,16 @@ function DiagnosticsTrackRecordStrip({
   );
 }
 
+function AutoBackfillVisibilityNote() {
+  return (
+    <section className="mb-4 rounded-md bg-white/[0.018] px-3.5 py-2 ring-1 ring-white/[0.04]">
+      <p className="text-[11px] text-on-surface-variant/60">
+        Auto-backfill dry-run is available; scheduler execution is still disabled.
+      </p>
+    </section>
+  );
+}
+
 function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
   if (isLoading) {
     return (
@@ -2608,6 +2618,8 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         reaction={reactionStats}
         isLoading={validationStatsLoading || reactionStatsLoading}
       />
+
+      <AutoBackfillVisibilityNote />
 
       <DiagnosticsTrackRecordStrip
         data={diagnosticsTrackRecord}

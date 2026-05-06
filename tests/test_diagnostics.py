@@ -2146,10 +2146,18 @@ _ABF_STATUS_TOP_KEYS = (
     "config",
     "ledger",
     "state",
+    "scheduler",
     "effective_status",
     "last_skip_reason",
     "last_error",
     "daily_remaining",
+)
+
+_ABF_STATUS_SCHEDULER_KEYS = (
+    "scheduler_available",
+    "scheduler_started",
+    "job_count",
+    "mode",
 )
 
 _ABF_STATUS_LEDGER_KEYS = (
@@ -2369,6 +2377,668 @@ class TestAutoBackfillStatusFallback(_AutoBackfillStatusBase):
         self.assertEqual(body["ledger"]["daily_cap"], 0)
         self.assertEqual(body["ledger"]["remaining"], 0)
         self.assertEqual(body["daily_remaining"], 0)
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-dry-run — operator-triggered simulated tick
+# ---------------------------------------------------------------------------
+
+
+_ABF_DRY_TOP_KEYS = (
+    "config",
+    "selected",
+    "selected_count",
+    "skip_counts",
+    "skip_reasons",
+    "candidates_considered",
+    "eligible_count",
+    "effective_call_cap",
+    "decision_reason",
+    "started",
+    "completed",
+    "skip_reason",
+    "run_id",
+    "spent_calls",
+    "now",
+    "candidate_queue_counts",
+    "news_source",
+    "ledger",
+    "state",
+    "filters",
+    "available",
+)
+
+
+class _AutoBackfillDryRunBase(_AutoBackfillEnvBase):
+    """Snapshots env vars + clears the news cache + resets the
+    /auto-backfill-status singletons so the dry-run endpoint cannot
+    contaminate or be contaminated by neighbouring tests.
+
+    The dry-run endpoint itself uses ephemeral state/ledger per call, but
+    we still reset the long-lived singletons exposed by the status
+    endpoint so the "no side-effect on the status singletons"
+    invariant is observable in this fixture.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        api._news_cache["data"] = None
+        api._news_cache["ts"]   = 0.0
+        from routes import diagnostics as _diag
+        _diag._AUTO_BACKFILL_LEDGER = None
+        _diag._AUTO_BACKFILL_LEDGER_CAP = None
+        _diag._AUTO_BACKFILL_STATE = None
+
+    def tearDown(self) -> None:
+        api._news_cache["data"] = None
+        api._news_cache["ts"]   = 0.0
+        from routes import diagnostics as _diag
+        _diag._AUTO_BACKFILL_LEDGER = None
+        _diag._AUTO_BACKFILL_LEDGER_CAP = None
+        _diag._AUTO_BACKFILL_STATE = None
+        super().tearDown()
+
+    def _payload(self, *clusters) -> tuple[dict, str]:
+        return ({"clusters": list(clusters)}, "synthetic-test")
+
+    def _cluster(
+        self,
+        headline: str,
+        source_count: int = 5,
+        *,
+        published_at: str | None = None,
+        low_signal: bool = False,
+    ) -> dict:
+        return {
+            "headline":     headline,
+            "source_count": source_count,
+            "published_at": published_at or datetime.now().isoformat(),
+            "low_signal":   low_signal,
+        }
+
+
+class TestAutoBackfillDryRunDisabled(_AutoBackfillDryRunBase):
+    """With both env gates off (default), the runner must skip with
+    ``decision_reason=disabled`` and surface no selected candidates.
+    """
+
+    def test_default_env_yields_disabled_skip(self) -> None:
+        r = client.post("/diagnostics/auto-backfill-dry-run")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _ABF_DRY_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+        self.assertEqual(body["decision_reason"], "disabled")
+        self.assertEqual(body["skip_reason"],     "disabled")
+        self.assertFalse(body["started"])
+        self.assertFalse(body["completed"])
+        self.assertEqual(body["selected"], [])
+        self.assertEqual(body["selected_count"], 0)
+        # Lock never acquired on the disabled skip path.
+        self.assertFalse(body["state"]["lock_held"])
+        # Ledger snapshot reflects the ephemeral instance — used=0,
+        # remaining=cap.  Spent calls is always 0 in dry-run.
+        self.assertEqual(body["ledger"]["used"], 0)
+        self.assertEqual(body["spent_calls"],    0)
+        # State stamp records the skip reason for diagnostic visibility.
+        self.assertEqual(body["state"]["last_skip_reason"], "disabled")
+
+    def test_paid_guard_blocked_when_only_auto_backfill_set(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        # ENABLE_PAID_ANALYSIS deliberately not set.
+        body = client.post("/diagnostics/auto-backfill-dry-run").json()
+        self.assertEqual(body["decision_reason"], "paid_guard_blocked")
+        self.assertEqual(body["skip_reason"],     "paid_guard_blocked")
+        self.assertFalse(body["started"])
+        self.assertFalse(body["completed"])
+        self.assertEqual(body["selected_count"], 0)
+
+
+class TestAutoBackfillDryRunConfigured(_AutoBackfillDryRunBase):
+    """With both gates enabled and mock candidates injected, the runner
+    completes a dry-run tick and surfaces the planner selection.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+
+    def test_configured_with_mock_candidates_completes(self) -> None:
+        clusters = [
+            self._cluster("Federal Reserve cuts rates 50bps",        7),
+            self._cluster("Federal Reserve hikes rates by 25bps",    6),
+            self._cluster("Federal Reserve announces QE tapering",   4),
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.post("/diagnostics/auto-backfill-dry-run").json()
+        self.assertTrue(body["available"])
+        self.assertEqual(body["decision_reason"], "configured")
+        self.assertTrue(body["started"])
+        self.assertTrue(body["completed"])
+        self.assertIsNone(body["skip_reason"])
+        # Default max_calls_per_run=3 — all 3 candidates fit.
+        self.assertEqual(body["selected_count"], 3)
+        self.assertEqual(len(body["selected"]),  3)
+        selected_headlines = {c["headline"] for c in body["selected"]}
+        self.assertEqual(
+            selected_headlines,
+            {c["headline"] for c in clusters},
+        )
+        # candidate_queue_counts reflect the eligible pool the planner saw.
+        self.assertEqual(body["candidate_queue_counts"]["eligible"], 3)
+        # Run id is stamped; spent_calls is always 0 in dry-run.
+        self.assertIsNotNone(body["run_id"])
+        self.assertEqual(body["spent_calls"], 0)
+
+    def test_already_analyzed_filtered_from_selection(self) -> None:
+        clusters = [
+            self._cluster("Federal Reserve cuts rates 50bps",        7),
+            self._cluster("Federal Reserve hikes rates by 25bps",    6),
+        ]
+        # First headline is registry-state ``analyzed`` → excluded; the
+        # second survives.
+        analyzed_first_headline = clusters[0]["headline"]
+
+        def _state(title_key):
+            from routes.movers import _hr_dedup_key as _key
+            if title_key == _key(analyzed_first_headline):
+                return ("analyzed", 1)
+            return (None, None)
+
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            side_effect=_state,
+        ):
+            body = client.post("/diagnostics/auto-backfill-dry-run").json()
+        self.assertEqual(body["selected_count"], 1)
+        self.assertEqual(
+            body["selected"][0]["headline"],
+            "Federal Reserve hikes rates by 25bps",
+        )
+        self.assertEqual(body["candidate_queue_counts"]["already_analyzed"], 1)
+        self.assertEqual(body["candidate_queue_counts"]["eligible"],         1)
+
+
+class TestAutoBackfillDryRunCapEnforcement(_AutoBackfillDryRunBase):
+    """The planner's run cap (env-driven ``max_calls_per_run``) caps the
+    selection.  Excess candidates land in ``skip_counts`` under
+    ``run_cap_exhausted`` (or ``daily_cap_exhausted``) so the response
+    is self-explaining.
+    """
+
+    def test_run_cap_caps_selection_and_records_overflow(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        # Force the planner to a 2-per-run cap; 5 candidates ⇒ 3
+        # overflow into the skip-count bucket.
+        os.environ["AUTO_BACKFILL_MAX_LLM_CALLS_PER_RUN"] = "2"
+        clusters = [
+            self._cluster(f"Federal Reserve hikes rates by {i}bps", 5 + i)
+            for i in range(5)
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.post("/diagnostics/auto-backfill-dry-run").json()
+        self.assertTrue(body["completed"])
+        self.assertEqual(body["selected_count"], 2)
+        self.assertEqual(len(body["selected"]),  2)
+        # 5 considered → 2 selected → 3 overflow.  Per-run cap is the
+        # binding constraint here; daily_cap (default 12) is not.
+        overflow = (
+            body["skip_counts"].get("run_cap_exhausted", 0)
+            + body["skip_counts"].get("daily_cap_exhausted", 0)
+        )
+        self.assertEqual(overflow, 3)
+        self.assertEqual(body["effective_call_cap"], 2)
+        # Top-ranked clusters survive the cap (highest source_count).
+        survivors = [c["source_count"] for c in body["selected"]]
+        self.assertEqual(sorted(survivors, reverse=True), survivors)
+        self.assertEqual(survivors, [9, 8])
+
+
+class TestAutoBackfillDryRunNoLedgerMutation(_AutoBackfillDryRunBase):
+    """The dry-run endpoint must NEVER reserve a ledger call against the
+    long-lived ``/auto-backfill-status`` singleton.  Per request a
+    fresh ephemeral ledger is constructed; the status singleton stays
+    untouched.
+    """
+
+    def test_status_singleton_ledger_stays_at_zero_after_repeated_dry_runs(
+        self,
+    ) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        clusters = [
+            self._cluster(f"Federal Reserve cuts rates {i}bps", 5)
+            for i in range(3)
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            for _ in range(4):
+                r = client.post("/diagnostics/auto-backfill-dry-run")
+                self.assertEqual(r.status_code, 200)
+                # spent_calls is the contract-level guarantee.
+                self.assertEqual(r.json()["spent_calls"], 0)
+        # The /auto-backfill-status singleton ledger was never touched —
+        # either still None (lazy) or, if a status call landed first,
+        # used=0.
+        from routes import diagnostics as _diag
+        if _diag._AUTO_BACKFILL_LEDGER is not None:
+            snap = _diag._AUTO_BACKFILL_LEDGER.snapshot()
+            self.assertEqual(snap.used, 0)
+        # Cross-check via the status endpoint.
+        status = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(status["ledger"]["used"], 0)
+
+    def test_per_request_ledger_remaining_equals_cap_after_dry_run(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        clusters = [self._cluster("Federal Reserve cuts rates 50bps", 7)]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            body = client.post("/diagnostics/auto-backfill-dry-run").json()
+        # The ephemeral ledger is reported in the response: used=0,
+        # remaining=daily_cap.  This is the load-bearing assertion that
+        # no call was reserved during the tick.
+        self.assertEqual(body["ledger"]["used"], 0)
+        self.assertEqual(body["ledger"]["remaining"], body["ledger"]["daily_cap"])
+        self.assertEqual(body["spent_calls"], 0)
+
+
+class TestAutoBackfillDryRunNoProviderCalls(_AutoBackfillDryRunBase):
+    """Zero-cost guarantee: no LLM, no ``yfinance``, no
+    ``market_check``, no provider seam may be invoked even on the
+    happy-path completed tick.
+    """
+
+    def test_no_provider_or_paid_seams_invoked(self) -> None:
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        clusters = [
+            self._cluster("Federal Reserve cuts rates 50bps", 7),
+            self._cluster("Federal Reserve hikes rates by 25bps", 6),
+        ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ), patch(
+            "api.analyze_event",
+            side_effect=AssertionError("must not call analyze_event"),
+        ), patch(
+            "api.market_check",
+            side_effect=AssertionError("must not call market_check"),
+        ), patch(
+            "yfinance.download",
+            side_effect=AssertionError("must not call yfinance.download"),
+        ), patch(
+            "yfinance.Ticker",
+            side_effect=AssertionError("must not call yfinance.Ticker"),
+        ), patch(
+            "auto_backfill_runner.execute_paid_candidate",
+            side_effect=AssertionError("must not call execute_paid_candidate"),
+        ):
+            r = client.post("/diagnostics/auto-backfill-dry-run")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertTrue(body["completed"])
+        self.assertGreater(body["selected_count"], 0)
+
+
+class TestAutoBackfillDryRunNoDBMutation(_AutoBackfillDryRunBase):
+    """The endpoint must never write to SQLite.  Repeated dry-run hits
+    leave the events table byte-identical and the fingerprint stable.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+
+    def test_repeated_calls_do_not_change_archive_fingerprint(self) -> None:
+        clusters = [self._cluster("Federal Reserve cuts rates 50bps", 7)]
+        before = db.get_events_fingerprint()
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            for _ in range(3):
+                client.post("/diagnostics/auto-backfill-dry-run")
+        self.assertEqual(db.get_events_fingerprint(), before)
+
+    def test_repeated_calls_do_not_modify_event_rows(self) -> None:
+        clusters = [self._cluster("Federal Reserve hikes rates by 25bps", 6)]
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            before = [
+                dict(r) for r in conn.execute(
+                    "SELECT * FROM events"
+                ).fetchall()
+            ]
+        with patch(
+            "routes.movers._cached_news_payload",
+            return_value=self._payload(*clusters),
+        ), patch(
+            "routes.movers._registry_state_for_title_key",
+            return_value=(None, None),
+        ):
+            for _ in range(3):
+                client.post("/diagnostics/auto-backfill-dry-run")
+        with _sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = _sqlite3.Row
+            after = [
+                dict(r) for r in conn.execute(
+                    "SELECT * FROM events"
+                ).fetchall()
+            ]
+        self.assertEqual(before, after)
+
+
+class TestAutoBackfillDryRunFallback(_AutoBackfillDryRunBase):
+    def test_loader_failure_falls_back_to_unavailable_shape(self) -> None:
+        # When the underlying loader raises, the endpoint must return
+        # 200 with the stable unavailable shape rather than 500.
+        with patch(
+            "routes.diagnostics.load_auto_backfill_config",
+            side_effect=RuntimeError("boom"),
+        ):
+            r = client.post("/diagnostics/auto-backfill-dry-run")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _ABF_DRY_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+        self.assertFalse(body["available"])
+        self.assertEqual(body["selected"], [])
+        self.assertEqual(body["selected_count"], 0)
+        self.assertEqual(body["decision_reason"], "unavailable")
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/auto-backfill-status — scheduler skeleton block
+# ---------------------------------------------------------------------------
+
+
+# Snapshot threads BEFORE and AFTER importing routes.diagnostics so the
+# "no scheduler thread spawned by import" check below is order-
+# independent.  Both snapshots are taken at module load time, so a
+# later test that starts a real scheduler cannot pollute them.
+import threading as _threading  # noqa: E402
+
+_DIAG_THREADS_BEFORE_IMPORT: set[str] = {
+    (t.name or "").lower() for t in _threading.enumerate()
+}
+import routes.diagnostics as _diagnostics_module  # noqa: E402,F401
+_DIAG_THREADS_AFTER_IMPORT: set[str] = {
+    (t.name or "").lower() for t in _threading.enumerate()
+}
+
+
+class TestAutoBackfillStatusSchedulerBlock(_AutoBackfillStatusBase):
+    """The status endpoint exposes a scheduler skeleton block.  The
+    diagnostics layer must never start an APScheduler thread — neither
+    on module import nor on endpoint hit.
+    """
+
+    def test_scheduler_block_present_with_required_keys(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertIn("scheduler", body)
+        for key in _ABF_STATUS_SCHEDULER_KEYS:
+            self.assertIn(
+                key, body["scheduler"],
+                f"missing scheduler sub-key: {key}",
+            )
+
+    def test_scheduler_started_defaults_false(self) -> None:
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertIs(body["scheduler"]["scheduler_started"], False)
+        self.assertEqual(body["scheduler"]["job_count"], 0)
+        self.assertEqual(body["scheduler"]["mode"], "not_wired")
+
+    def test_scheduler_available_when_module_importable(self) -> None:
+        # ``auto_backfill_scheduler.py`` lives in the repo and imports
+        # cleanly in the test environment, so the block reports
+        # available=True.
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertIs(body["scheduler"]["scheduler_available"], True)
+
+    def test_scheduler_started_unchanged_under_configured_env(self) -> None:
+        # Even when both env gates are true, the diagnostics layer
+        # never starts a scheduler — lifespan wiring is out of scope
+        # for this skeleton.
+        os.environ["ENABLE_AUTO_BACKFILL"] = "true"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["effective_status"], "configured")
+        self.assertIs(body["scheduler"]["scheduler_started"], False)
+        self.assertEqual(body["scheduler"]["job_count"], 0)
+        self.assertEqual(body["scheduler"]["mode"], "not_wired")
+
+    def test_scheduler_unavailable_when_module_import_fails(self) -> None:
+        # Patch the late-import path so the block reports unavailable
+        # without requiring the file to actually be missing.
+        builtins_import = __import__
+
+        def _raising_import(name, *args, **kwargs):
+            if name == "auto_backfill_scheduler":
+                raise ImportError("simulated missing dep")
+            return builtins_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=_raising_import):
+            body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertIs(body["scheduler"]["scheduler_available"], False)
+        # Even when unavailable, scheduler_started/job_count/mode stay
+        # at their conservative defaults.
+        self.assertIs(body["scheduler"]["scheduler_started"], False)
+        self.assertEqual(body["scheduler"]["job_count"], 0)
+        self.assertEqual(body["scheduler"]["mode"], "not_wired")
+
+    def test_unavailable_fallback_carries_full_scheduler_block(self) -> None:
+        # When the upstream loader raises, the unavailable shape must
+        # still carry every scheduler sub-key so consumers never have
+        # to branch on key presence.
+        with patch(
+            "routes.diagnostics.load_auto_backfill_config",
+            side_effect=RuntimeError("boom"),
+        ):
+            body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertIn("scheduler", body)
+        for key in _ABF_STATUS_SCHEDULER_KEYS:
+            self.assertIn(key, body["scheduler"])
+        self.assertIs(body["scheduler"]["scheduler_started"], False)
+        self.assertEqual(body["scheduler"]["job_count"], 0)
+        self.assertEqual(body["scheduler"]["mode"], "not_wired")
+
+
+class TestAutoBackfillStatusReflectsAttachedScheduler(_AutoBackfillStatusBase):
+    """When the FastAPI lifespan publishes a scheduler to
+    ``app.state.auto_backfill_scheduler``, the status endpoint reports
+    ``mode="dry_run_only"`` and reflects the scheduler's ``running`` /
+    ``get_jobs()`` accessors.  Tests use fake scheduler objects — no
+    real ``BackgroundScheduler`` is constructed and no thread spawns.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        # Defensively clear any leftover scheduler from prior tests so
+        # this class always starts from the not-wired state.
+        self._clear_scheduler()
+
+    def tearDown(self) -> None:
+        self._clear_scheduler()
+        super().tearDown()
+
+    @staticmethod
+    def _clear_scheduler() -> None:
+        # Starlette's State.__delattr__ raises KeyError on a missing
+        # key; guard both KeyError and AttributeError so this stays a
+        # true no-op when nothing was attached.
+        try:
+            delattr(api.app.state, "auto_backfill_scheduler")
+        except (AttributeError, KeyError):
+            pass
+
+    def _attach(self, **kwargs) -> object:
+        """Attach a fake scheduler to ``app.state`` and return it."""
+        from unittest.mock import MagicMock
+        fake = MagicMock(**kwargs)
+        api.app.state.auto_backfill_scheduler = fake
+        return fake
+
+    def test_running_attached_scheduler_reports_dry_run_only(self) -> None:
+        self._attach(running=True, get_jobs=lambda: [object()])
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        block = body["scheduler"]
+        self.assertEqual(block["mode"], "dry_run_only")
+        self.assertIs(block["scheduler_started"], True)
+        self.assertEqual(block["job_count"], 1)
+
+    def test_running_scheduler_reflects_multiple_jobs(self) -> None:
+        self._attach(
+            running=True,
+            get_jobs=lambda: [object(), object(), object()],
+        )
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        block = body["scheduler"]
+        self.assertEqual(block["mode"], "dry_run_only")
+        self.assertIs(block["scheduler_started"], True)
+        self.assertEqual(block["job_count"], 3)
+
+    def test_attached_but_not_running_reports_not_started(self) -> None:
+        self._attach(running=False, get_jobs=lambda: [object()])
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        block = body["scheduler"]
+        self.assertEqual(block["mode"], "dry_run_only")
+        self.assertIs(block["scheduler_started"], False)
+        # job_count still reports the planned jobs even when not started.
+        self.assertEqual(block["job_count"], 1)
+
+    def test_get_jobs_exception_falls_back_to_zero(self) -> None:
+        from unittest.mock import MagicMock
+        fake = MagicMock(running=True)
+        fake.get_jobs.side_effect = RuntimeError("get_jobs blew up")
+        api.app.state.auto_backfill_scheduler = fake
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        block = body["scheduler"]
+        # The attachment is real, so mode stays dry_run_only — only the
+        # enumeration broke.
+        self.assertEqual(block["mode"], "dry_run_only")
+        self.assertIs(block["scheduler_started"], True)
+        self.assertEqual(block["job_count"], 0)
+
+    def test_get_jobs_returns_none_safely(self) -> None:
+        self._attach(running=True, get_jobs=lambda: None)
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        self.assertEqual(body["scheduler"]["job_count"], 0)
+        self.assertEqual(body["scheduler"]["mode"], "dry_run_only")
+
+    def test_attribute_missing_falls_back_to_not_wired(self) -> None:
+        # Explicit absence — no attach call.  This is the default state
+        # when the lifespan did not publish a scheduler.
+        self._clear_scheduler()
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        block = body["scheduler"]
+        self.assertEqual(block["mode"], "not_wired")
+        self.assertIs(block["scheduler_started"], False)
+        self.assertEqual(block["job_count"], 0)
+
+    def test_running_attribute_missing_treated_as_not_started(self) -> None:
+        # A scheduler-shaped object lacking ``running`` is still a
+        # legitimate attachment (mode dry_run_only) but cannot be
+        # reported as started.
+        from unittest.mock import MagicMock
+        fake = MagicMock(spec=[])  # no attributes
+        fake.get_jobs = lambda: []
+        api.app.state.auto_backfill_scheduler = fake
+        body = client.get("/diagnostics/auto-backfill-status").json()
+        block = body["scheduler"]
+        self.assertEqual(block["mode"], "dry_run_only")
+        self.assertIs(block["scheduler_started"], False)
+
+    def test_diagnostics_does_not_invoke_scheduler_start(self) -> None:
+        # Strict invariant: the diagnostics path must never call
+        # start/shutdown on the attached scheduler.  A start() call
+        # here would be a regression on "diagnostics is read-only".
+        from unittest.mock import MagicMock
+        fake = MagicMock(running=False, get_jobs=lambda: [])
+        api.app.state.auto_backfill_scheduler = fake
+        client.get("/diagnostics/auto-backfill-status")
+        client.get("/diagnostics/auto-backfill-status")
+        fake.start.assert_not_called()
+        fake.shutdown.assert_not_called()
+
+
+class TestAutoBackfillStatusNoSchedulerThread(_AutoBackfillStatusBase):
+    def test_importing_routes_diagnostics_does_not_spawn_scheduler_thread(
+        self,
+    ) -> None:
+        new_threads = (
+            _DIAG_THREADS_AFTER_IMPORT - _DIAG_THREADS_BEFORE_IMPORT
+        )
+        for name in new_threads:
+            self.assertNotIn(
+                "apscheduler", name,
+                f"importing routes.diagnostics spawned an APScheduler "
+                f"thread: {name!r}",
+            )
+
+    def test_status_endpoint_call_does_not_spawn_scheduler_thread(
+        self,
+    ) -> None:
+        # Snapshot threads immediately before the request, then
+        # immediately after.  Any APScheduler-named thread that
+        # appeared would mean the diagnostics path instantiated and
+        # started a scheduler — a regression on the "do not start
+        # scheduler" contract.
+        before = {(t.name or "").lower() for t in _threading.enumerate()}
+        client.get("/diagnostics/auto-backfill-status")
+        after = {(t.name or "").lower() for t in _threading.enumerate()}
+        new = after - before
+        for name in new:
+            self.assertNotIn("apscheduler", name)
+
+    def test_repeated_status_calls_do_not_accumulate_threads(self) -> None:
+        before = len(_threading.enumerate())
+        for _ in range(5):
+            client.get("/diagnostics/auto-backfill-status")
+        after = len(_threading.enumerate())
+        # Allow small fluctuations from FastAPI / TestClient internals,
+        # but reject monotonic growth — a per-request scheduler would
+        # leak threads on every call.
+        self.assertLess(
+            after - before, 3,
+            f"thread count grew by {after - before} after 5 status "
+            f"calls — possible scheduler leak",
+        )
 
 
 if __name__ == "__main__":

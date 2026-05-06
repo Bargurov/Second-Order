@@ -113,6 +113,7 @@ class TestNoPaidSmokeInventory(unittest.TestCase):
         self.assertEqual(paths, [
             "/health",
             "/diagnostics/config-health",
+            "/diagnostics/auto-backfill-status",
             "/diagnostics/data-quality",
             "/diagnostics/archive-stats",
             "/diagnostics/validation-status-stats",
@@ -123,7 +124,10 @@ class TestNoPaidSmokeInventory(unittest.TestCase):
             "/events/1",
             "/registry/candidate-queue?limit=5",
             "/movers/backfill-preview?limit=5",
+            "/diagnostics/auto-backfill-dry-run",
         ])
+        methods = [endpoint.method for endpoint in no_paid_smoke.ENDPOINTS]
+        self.assertEqual(methods[-1], "POST")
 
     def test_inventory_rejects_paid_paths(self) -> None:
         for endpoint in no_paid_smoke.ENDPOINTS:
@@ -194,3 +198,108 @@ class TestNoPaidSmokeRunner(_Base):
         self.assertIn("No-paid demo smoke", table)
         self.assertIn("Summary:", table)
         self.assertIn("PASS", table)
+
+
+class TestAutoBackfillStatusInvariants(unittest.TestCase):
+    """The smoke runner pins ``scheduler.scheduler_started=false`` and
+    ``ledger.used=0`` on the auto-backfill-status response.  These are
+    the load-bearing assertions that catch an unwired scheduler being
+    started or a paid ledger being touched.
+    """
+
+    def test_invariant_passes_on_clean_no_paid_status(self) -> None:
+        body = {
+            "scheduler": {
+                "scheduler_available": True,
+                "scheduler_started":   False,
+                "job_count":           0,
+                "mode":                "not_wired",
+            },
+            "ledger": {"used": 0, "remaining": 12, "daily_cap": 12},
+        }
+        # No exception expected.
+        no_paid_smoke._assert_auto_backfill_status_no_paid(body)
+
+    def test_invariant_fails_when_scheduler_started_true(self) -> None:
+        body = {
+            "scheduler": {
+                "scheduler_started": True,
+            },
+            "ledger": {"used": 0},
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "scheduler.scheduler_started must be false",
+        ):
+            no_paid_smoke._assert_auto_backfill_status_no_paid(body)
+
+    def test_invariant_fails_when_ledger_used_nonzero(self) -> None:
+        body = {
+            "scheduler": {"scheduler_started": False},
+            "ledger":    {"used": 1},
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "ledger.used must be 0",
+        ):
+            no_paid_smoke._assert_auto_backfill_status_no_paid(body)
+
+    def test_invariant_fails_when_scheduler_block_missing(self) -> None:
+        # Defensive: if the response structure regresses (e.g. a
+        # refactor drops the scheduler block), the invariant must
+        # still trip on the missing field, not silently pass.
+        body = {"ledger": {"used": 0}}
+        with self.assertRaisesRegex(
+            AssertionError, "scheduler.scheduler_started must be false",
+        ):
+            no_paid_smoke._assert_auto_backfill_status_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_status_endpoint(self) -> None:
+        # Find the auto-backfill-status entry in the smoke inventory
+        # and verify the invariant is wired to it.
+        match = next(
+            (e for e in no_paid_smoke.ENDPOINTS
+             if e.path == "/diagnostics/auto-backfill-status"),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_auto_backfill_status_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestAutoBackfillStatusSmokeRunFails(_Base):
+    """End-to-end: a smoke run with a tampered status response that
+    violates the invariant must surface the failure on that endpoint
+    AND fail the overall smoke summary.
+    """
+
+    def test_smoke_marks_status_failed_when_invariant_fails(self) -> None:
+        from unittest.mock import patch
+
+        bad_body = {
+            "scheduler": {"scheduler_started": True},
+            "ledger":    {"used": 0},
+        }
+
+        class _BadStatusBody:
+            status_code = 200
+
+            def json(self):
+                return bad_body
+
+        real_request = no_paid_smoke._request
+
+        def _patched_request(client_, endpoint):
+            if endpoint.path == "/diagnostics/auto-backfill-status":
+                return _BadStatusBody()
+            return real_request(client_, endpoint)
+
+        with patch.object(no_paid_smoke, "_request", _patched_request):
+            results = no_paid_smoke.run_smoke(client=client)
+        status_result = next(
+            r for r in results
+            if r.path == "/diagnostics/auto-backfill-status"
+        )
+        self.assertFalse(status_result.ok)
+        self.assertIn("body invariant failed", status_result.error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])

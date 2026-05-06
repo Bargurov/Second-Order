@@ -357,6 +357,75 @@ class TestExportEndpoint(_ExportBase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["count"], 2)
 
+    def test_endpoint_emits_strict_json_compliant_body(self):
+        """Persisted ticker returns can be NaN (delisted symbols, gaps in
+        the stress tape, custom computations that divide by zero).  The
+        export endpoint must scrub those before responding so strict
+        JSON consumers (browsers, JSON.parse, allow_nan=False) parse
+        the body without raising.
+        """
+        import math
+        nan_ticker = {
+            "symbol": "DELISTED",
+            "role": "beneficiary",
+            "return_1d": math.nan,
+            "return_5d": math.nan,
+            "return_20d": math.nan,
+            "direction": "no data",
+        }
+        self._save_event(
+            headline="Ticker with NaN returns",
+            market_tickers=[nan_ticker],
+        )
+        r = self.client.get("/events/export")
+        self.assertEqual(r.status_code, 200)
+        body_text = r.text
+        # Strict re-encode: ``allow_nan=False`` raises if any non-finite
+        # float survived sanitisation.  This is the load-bearing check —
+        # a cosmetic ``json.dumps(body)`` would silently round-trip NaN.
+        try:
+            json.dumps(json.loads(body_text), allow_nan=False)
+        except ValueError as exc:
+            self.fail(
+                f"/events/export emitted non-JSON-compliant float: {exc}"
+            )
+        # The NaN values became null after sanitisation; the rest of the
+        # row stays intact.
+        body = r.json()
+        ev = body["events"][0]
+        ticker = ev["market_tickers"][0]
+        self.assertEqual(ticker["symbol"], "DELISTED")
+        for field in ("return_1d", "return_5d", "return_20d"):
+            self.assertIsNone(
+                ticker[field],
+                f"NaN should sanitize to None on {field}",
+            )
+
+    def test_endpoint_handles_inf_ticker_returns(self):
+        """``inf`` is the same JSON-compliance issue as NaN.  The route
+        must scrub it equivalently.
+        """
+        import math
+        self._save_event(
+            headline="Ticker with inf return",
+            market_tickers=[{
+                "symbol": "EDGE",
+                "role": "beneficiary",
+                "return_1d": math.inf,
+                "return_5d": -math.inf,
+                "return_20d": 1.0,
+                "direction": "supports thesis",
+            }],
+        )
+        r = self.client.get("/events/export")
+        self.assertEqual(r.status_code, 200)
+        try:
+            json.dumps(json.loads(r.text), allow_nan=False)
+        except ValueError as exc:
+            self.fail(
+                f"/events/export emitted non-JSON-compliant float: {exc}"
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

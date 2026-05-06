@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """No-paid local demo smoke check.
 
-Runs the demo-critical read-only endpoints that should work without
+Runs the demo-critical zero-cost endpoints that should work without
 LLM, yfinance, market-data provider, or paid backfill calls.  Default
 mode uses FastAPI's in-process TestClient and guards known paid/provider
 seams with raisers so regressions fail loudly.  ``--base-url`` can probe
@@ -24,9 +24,9 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,11 +34,45 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+BodyInvariant = Callable[[Any], None]
+
+
+def _assert_auto_backfill_status_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the auto-backfill-status response.
+
+    The diagnostics surface must report a not-wired skeleton in the
+    no-paid demo: ``scheduler.scheduler_started`` must be false (no
+    background scheduler running) and ``ledger.used`` must be zero (no
+    paid call has been reserved).  A regression on either field means
+    paid execution or background scheduling slipped in — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"auto-backfill-status response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    scheduler = body.get("scheduler") or {}
+    started = scheduler.get("scheduler_started")
+    if started is not False:
+        raise AssertionError(
+            f"scheduler.scheduler_started must be false in no-paid mode, "
+            f"got {started!r}"
+        )
+    ledger = body.get("ledger") or {}
+    used = ledger.get("used")
+    if used != 0:
+        raise AssertionError(
+            f"ledger.used must be 0 in no-paid mode, got {used!r}"
+        )
+
+
 @dataclass(frozen=True)
 class SmokeEndpoint:
     name: str
     path: str
     expected_statuses: tuple[int, ...] = (200,)
+    method: str = "GET"
+    body_invariants: tuple[BodyInvariant, ...] = field(default_factory=tuple)
 
 
 @dataclass
@@ -54,6 +88,11 @@ class SmokeResult:
 ENDPOINTS: tuple[SmokeEndpoint, ...] = (
     SmokeEndpoint("health", "/health"),
     SmokeEndpoint("config health", "/diagnostics/config-health"),
+    SmokeEndpoint(
+        "auto backfill status",
+        "/diagnostics/auto-backfill-status",
+        body_invariants=(_assert_auto_backfill_status_no_paid,),
+    ),
     SmokeEndpoint("data quality", "/diagnostics/data-quality"),
     SmokeEndpoint("archive stats", "/diagnostics/archive-stats"),
     SmokeEndpoint("validation stats", "/diagnostics/validation-status-stats"),
@@ -73,6 +112,11 @@ ENDPOINTS: tuple[SmokeEndpoint, ...] = (
     SmokeEndpoint("event detail", "/events/1", (200, 404)),
     SmokeEndpoint("candidate queue", "/registry/candidate-queue?limit=5"),
     SmokeEndpoint("backfill preview", "/movers/backfill-preview?limit=5"),
+    SmokeEndpoint(
+        "auto backfill dry-run",
+        "/diagnostics/auto-backfill-dry-run",
+        method="POST",
+    ),
 )
 
 
@@ -220,6 +264,11 @@ def _quiet_request_loggers():
 
 def _assert_endpoint_inventory_is_zero_cost() -> None:
     for endpoint in ENDPOINTS:
+        if endpoint.method.upper() not in {"GET", "POST"}:
+            raise AssertionError(
+                f"no-paid smoke inventory has unsupported method: "
+                f"{endpoint.method} {endpoint.path}"
+            )
         for marker in _BANNED_PATH_MARKERS:
             if endpoint.path.startswith(marker):
                 raise AssertionError(
@@ -252,14 +301,20 @@ class _LocalHttpClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
 
-    def get(self, path: str) -> _HttpResponse:
+    def request(self, method: str, path: str) -> _HttpResponse:
         url = self.base_url + path
-        request = urllib.request.Request(url, method="GET")
+        request = urllib.request.Request(url, method=method.upper())
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 return _HttpResponse(response.status, response.read())
         except urllib.error.HTTPError as exc:
             return _HttpResponse(exc.code, exc.read())
+
+    def get(self, path: str) -> _HttpResponse:
+        return self.request("GET", path)
+
+    def post(self, path: str) -> _HttpResponse:
+        return self.request("POST", path)
 
 
 def _response_is_json_parseable(response: Any) -> tuple[bool, str | None]:
@@ -268,6 +323,44 @@ def _response_is_json_parseable(response: Any) -> tuple[bool, str | None]:
     except Exception as exc:
         return False, f"response was not JSON parseable: {type(exc).__name__}: {exc}"
     return True, None
+
+
+def _check_body_invariants(
+    response: Any,
+    invariants: tuple[BodyInvariant, ...],
+) -> tuple[bool, str | None]:
+    """Run the per-endpoint body invariants on a successful response.
+
+    Each invariant takes the parsed JSON body and raises on failure.
+    Returns ``(ok, error)``: ``ok`` is True when every invariant
+    passes; ``error`` carries the raised message verbatim so the
+    smoke output explains why the check failed.
+    """
+    if not invariants:
+        return True, None
+    try:
+        body = response.json()
+    except Exception as exc:
+        return False, (
+            f"could not parse response for invariants: "
+            f"{type(exc).__name__}: {exc}"
+        )
+    for invariant in invariants:
+        try:
+            invariant(body)
+        except AssertionError as exc:
+            return False, f"body invariant failed: {exc}"
+    return True, None
+
+
+def _request(client: Any, endpoint: SmokeEndpoint) -> Any:
+    method = endpoint.method.upper()
+    if hasattr(client, "request"):
+        return client.request(method, endpoint.path)
+    attr = method.lower()
+    if not hasattr(client, attr):
+        raise AttributeError(f"client does not support {method}")
+    return getattr(client, attr)(endpoint.path)
 
 
 def run_smoke(
@@ -279,8 +372,8 @@ def run_smoke(
 ) -> list[SmokeResult]:
     """Run the smoke checks and return per-endpoint results.
 
-    The checks are read-only HTTP GETs.  Success means the expected HTTP
-    status was returned and the response body parsed as JSON.
+    The checks are zero-cost HTTP probes.  Success means the expected
+    HTTP status was returned and the response body parsed as JSON.
     """
     _assert_endpoint_inventory_is_zero_cost()
     if client is not None and base_url:
@@ -298,7 +391,7 @@ def run_smoke(
             ok = False
             error: str | None = None
             try:
-                response = client.get(endpoint.path)
+                response = _request(client, endpoint)
                 status_code = int(response.status_code)
                 if status_code not in endpoint.expected_statuses:
                     error = (
@@ -307,6 +400,10 @@ def run_smoke(
                     )
                 else:
                     ok, error = _response_is_json_parseable(response)
+                    if ok and endpoint.body_invariants:
+                        ok, error = _check_body_invariants(
+                            response, endpoint.body_invariants,
+                        )
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
             elapsed_ms = int((time.perf_counter() - start) * 1000)

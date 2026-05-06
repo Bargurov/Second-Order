@@ -176,10 +176,12 @@ Invoke-RestMethod -Method Post `
 
 ## Auto-Backfill Operations
 
-Auto-backfill is disabled by default and must stay disabled before demos unless the demo explicitly includes paid background work. It requires both gates:
+Auto-backfill is disabled by default and must stay disabled before demos unless the demo explicitly includes dry-run scheduler inspection. FastAPI lifespan wiring may start the dry-run scheduler only when both gates are explicit:
 
 - `ENABLE_PAID_ANALYSIS=true`
 - `ENABLE_AUTO_BACKFILL=true`
+
+This still does not mean paid auto-backfill is implemented. The scheduler path is dry-run only: no Claude/API call, no paid candidate execution, and no ledger reservation.
 
 Default local-safe config:
 
@@ -192,7 +194,7 @@ $env:AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY = "4"
 $env:AUTO_BACKFILL_MODEL = "claude-haiku-4-5-20251001"
 ```
 
-Enable intentionally:
+Enable dry-run scheduler inspection intentionally:
 
 ```powershell
 $env:ENABLE_PAID_ANALYSIS = "true"
@@ -202,9 +204,14 @@ $env:AUTO_BACKFILL_MAX_LLM_CALLS_PER_DAY = "2"
 
 Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/config-health" |
   ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/auto-backfill-status" |
+  ConvertTo-Json -Depth 10
+
+python scripts/no_paid_smoke.py --json
 ```
 
-Disable immediately:
+Emergency disable:
 
 ```powershell
 $env:ENABLE_AUTO_BACKFILL = "false"
@@ -213,6 +220,8 @@ $env:ENABLE_PAID_ANALYSIS = "false"
 Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/config-health" |
   ConvertTo-Json -Depth 8
 ```
+
+Restart the FastAPI app after setting `ENABLE_AUTO_BACKFILL=false` so any lifespan-managed dry-run scheduler is torn down.
 
 Before a demo, do not:
 
@@ -224,15 +233,20 @@ Before a demo, do not:
 
 ## Auto-Backfill Foundation Checks
 
-The auto-backfill foundation exists: config parsing, daily ledger, candidate
-planner, policy decisions, and local run-state helpers. Scheduler execution is
-not implemented or enabled yet. Paid execution is not implemented here. The
-diagnostics/config surface is safe and zero-cost.
+The auto-backfill dry-run foundation exists: config parsing, daily ledger,
+candidate planner, policy decisions, local run-state helpers, dry-run runner,
+dry-run scheduler skeleton, and lifespan plan checks. Diagnostics/status,
+POST dry-run, and CLI dry-run surfaces are available and zero-cost. Lifespan
+startup may wire a dry-run scheduler only when both env gates are true. There
+is still no paid execution.
+
+Do not enable a paid scheduler yet. Treat this as operator-visible planning
+and safety plumbing only.
 
 Run the pure foundation tests:
 
 ```powershell
-python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner tests.test_auto_backfill_policy tests.test_auto_backfill_state -v
+python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner tests.test_auto_backfill_policy tests.test_auto_backfill_state tests.test_auto_backfill_runner tests.test_auto_backfill_scheduler tests.test_auto_backfill_dry_run_cli -v
 ```
 
 Run no-paid smoke:
@@ -241,12 +255,45 @@ Run no-paid smoke:
 python scripts/no_paid_smoke.py --json
 ```
 
-Inspect config diagnostics:
+Inspect config and status diagnostics:
 
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/auto-backfill-config" |
   ConvertTo-Json -Depth 8
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/auto-backfill-status" |
+  ConvertTo-Json -Depth 10
+
+python scripts/no_paid_smoke.py --json
 ```
+
+The status route is a read-only GET. It must not reserve ledger calls:
+repeat the call and confirm `ledger.used` is unchanged, `ledger.remaining`
+does not decrease, and `state.last_spent_calls` is empty or `0`.
+
+Run auto-backfill dry-run diagnostics:
+
+```powershell
+python scripts/auto_backfill_dry_run.py --json
+
+Invoke-RestMethod -Method POST "http://127.0.0.1:8000/diagnostics/auto-backfill-dry-run" |
+  ConvertTo-Json -Depth 10
+```
+
+Confirm no ledger calls were reserved by checking the dry-run response:
+`spent_calls` should be `0`, `ledger.used` should stay unchanged, and
+the status endpoint should not show a new paid run.
+
+Dry-run interpretation:
+
+- `selected_count` means the number of candidates the dry-run planner would
+  choose under the current per-run and daily caps.
+- `skipped` or `skip_counts` explains candidates not selected, such as
+  `already_analyzed`, `expired_low_impact`, `skip_reason`,
+  `run_cap_exhausted`, or `daily_cap_exhausted`.
+- Dry-run output is planning only. It does not call Claude/API, does not
+  mutate the ledger, and does not mean a scheduler or paid execution is
+  running.
 
 ## Archive Rebuild Script — Safety Model
 
