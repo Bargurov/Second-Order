@@ -46,6 +46,9 @@ events*.db
 # Local backup directory created by scripts/backup_archive.py
 backups/
 
+# Audit logs from auto_adjust_mismatch_repair writes
+audit_logs/
+
 # Evaluation outputs
 evaluation_output.json
 evaluation_output*.json
@@ -56,6 +59,7 @@ tests/test_events*.db
 tests/test_api*.db
 tests/test_events_*/
 tests/eval_tmp_*/
+tests/test_phc_*/
 tests/.fuse_hidden*
 *.tmp
 *.temp
