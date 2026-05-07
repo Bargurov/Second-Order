@@ -93,3 +93,4 @@ frontend/*.tsbuildinfo
 .streamlit/
 Thumbs.db
 Desktop.ini
+docs/
