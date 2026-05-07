@@ -969,6 +969,125 @@ class TestWriteConfirmPreflight(_CliBase):
         self.assertNotIn("preflight", payload)
 
 
+class TestPreflightOnlyMode(_CliBase):
+    """``--preflight-only`` short-circuits BEFORE load_inputs / plan_refresh /
+    the executor.  No provider calls, no DB writes, no ``--confirm`` required.
+    Tests patch the preflight seam to control pass/fail without touching the
+    real filesystem.
+    """
+
+    @staticmethod
+    def _passing_preflight() -> dict:
+        return {
+            "ok": True,
+            "yfinance_cache": {"path": "/tmp/yf",        "ok": True, "reason": None},
+            "events_db":      {"path": "/tmp/events.db", "ok": True, "reason": None},
+            "errors": [],
+        }
+
+    @staticmethod
+    def _failing_preflight() -> dict:
+        return {
+            "ok": False,
+            "yfinance_cache": {
+                "path":   r"C:\Users\Bar\AppData\Local\py-yfinance",
+                "ok":     False,
+                "reason": "PermissionError: sandbox blocks AppData",
+            },
+            "events_db": {"path": "events.db", "ok": True, "reason": None},
+            "errors": [
+                "yfinance cache dir not writable "
+                "(path='C:\\\\Users\\\\Bar\\\\AppData\\\\Local\\\\py-yfinance'): "
+                "PermissionError: sandbox blocks AppData",
+            ],
+        }
+
+    def test_preflight_only_passes_emits_contract_keys_and_exit_zero(self) -> None:
+        with patch.object(cli, "_provider_cache_preflight",
+                          return_value=self._passing_preflight()):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--preflight-only", "--json"], out=buf)
+        self.assertEqual(rc, 0, msg=buf.getvalue())
+        payload = json.loads(buf.getvalue())
+        for key in ("ok", "mode", "focus", "preflight", "errors"):
+            self.assertIn(key, payload, f"missing JSON key: {key}")
+        self.assertIs(payload["ok"],   True)
+        self.assertEqual(payload["mode"],  "preflight")
+        self.assertEqual(payload["focus"], "none")
+        self.assertEqual(payload["errors"], [])
+        self.assertIs(payload["preflight"]["ok"], True)
+
+    def test_preflight_only_failing_exits_one_with_errors_populated(self) -> None:
+        with patch.object(cli, "_provider_cache_preflight",
+                          return_value=self._failing_preflight()):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--preflight-only", "--json"], out=buf)
+        self.assertEqual(rc, 1)
+        payload = json.loads(buf.getvalue())
+        self.assertIs(payload["ok"],   False)
+        self.assertEqual(payload["mode"], "preflight")
+        self.assertGreaterEqual(len(payload["errors"]), 1)
+        self.assertIn("yfinance cache dir not writable", payload["errors"][0])
+        self.assertIs(payload["preflight"]["ok"], False)
+
+    def test_preflight_only_with_focus_reflects_focus_in_payload(self) -> None:
+        with patch.object(cli, "_provider_cache_preflight",
+                          return_value=self._passing_preflight()):
+            buf = io.StringIO()
+            rc = cli.main(
+                argv=["--focus", "no-forward-20d-gap",
+                      "--preflight-only", "--json"],
+                out=buf,
+            )
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["focus"], "no-forward-20d-gap")
+        self.assertEqual(payload["mode"],  "preflight")
+
+    def test_preflight_only_skips_load_inputs_planner_and_executor(self) -> None:
+        # Replace every downstream seam with a raiser; preflight-only must
+        # short-circuit before any of them is reached.
+        cli.load_inputs  = MagicMock(side_effect=AssertionError(
+            "load_inputs must NOT be called under --preflight-only",
+        ))
+        cli.plan_refresh = MagicMock(side_effect=AssertionError(
+            "plan_refresh must NOT be called under --preflight-only",
+        ))
+        sentinel_executor = MagicMock(side_effect=AssertionError(
+            "execute_refresh must NOT be called under --preflight-only",
+        ))
+        with patch.object(cli, "execute_refresh", sentinel_executor), \
+             patch.object(cli, "_provider_cache_preflight",
+                          return_value=self._passing_preflight()):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--preflight-only", "--json"], out=buf)
+        self.assertEqual(rc, 0, msg=buf.getvalue())
+
+    def test_preflight_only_does_not_require_confirm(self) -> None:
+        # No --confirm passed; the run should proceed cleanly.
+        with patch.object(cli, "_provider_cache_preflight",
+                          return_value=self._passing_preflight()):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--preflight-only"], out=buf)
+        self.assertEqual(rc, 0)
+        text = buf.getvalue()
+        self.assertIn("preflight", text.lower())
+
+    def test_preflight_only_text_output_summarises_probes(self) -> None:
+        with patch.object(cli, "_provider_cache_preflight",
+                          return_value=self._failing_preflight()):
+            buf = io.StringIO()
+            rc = cli.main(argv=["--preflight-only"], out=buf)
+        self.assertEqual(rc, 1)
+        text = buf.getvalue()
+        self.assertIn("Mode:",          text)
+        self.assertIn("preflight",      text)
+        self.assertIn("yfinance_cache", text)
+        self.assertIn("events_db",      text)
+        # Failure reason surfaced so the operator can grep without the JSON.
+        self.assertIn("PermissionError", text)
+
+
 class TestImportSurface(_CliBase):
     def test_default_db_path_helper_lazy_imports_db(self) -> None:
         # The CLI imports ``price_cache_refresh`` at top-level (which

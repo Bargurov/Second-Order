@@ -66,6 +66,82 @@ def _assert_auto_backfill_status_no_paid(body: Any) -> None:
         )
 
 
+_ARCHIVE_CONSISTENCY_CATEGORIES: tuple[str, ...] = (
+    "malformed_market_tickers_json",
+    "missing_headline",
+    "missing_timestamp",
+    "missing_event_date",
+    "malformed_event_date",
+    "missing_market_tickers",
+    "duplicate_headline_event_date_clusters",
+)
+
+
+def _assert_archive_consistency_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the archive-consistency response.
+
+    The diagnostic must surface every known anomaly category and each
+    block must carry the ``{"count": int, "examples": list}`` contract
+    the runbook reads against.  Stable zero values are accepted because
+    a clean archive has no anomalies.  A regression that drops a
+    category, returns a negative count, or swaps the example list for a
+    non-list shape means the read-only audit contract changed — fail
+    closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"archive-consistency response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    for category in _ARCHIVE_CONSISTENCY_CATEGORIES:
+        block = body.get(category)
+        if not isinstance(block, dict):
+            raise AssertionError(
+                f"archive-consistency block {category!r} must be a JSON "
+                f"object with count/examples, got {type(block).__name__}"
+            )
+        count = block.get("count")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise AssertionError(
+                f"archive-consistency block {category!r}.count must be a "
+                f"non-negative int, got {count!r}"
+            )
+        examples = block.get("examples")
+        if not isinstance(examples, list):
+            raise AssertionError(
+                f"archive-consistency block {category!r}.examples must be "
+                f"a list, got {type(examples).__name__}"
+            )
+
+
+def _assert_event_date_backfill_impact_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the event-date backfill impact preview.
+
+    The impact projection must surface ``candidate_events``,
+    ``proposed_updates`` and ``projected_no_event_date_after`` as
+    non-negative ints so the runbook's projection math stays meaningful.
+    Stable zero values are accepted because an archive with no
+    candidates projects zeros across the board.  A regression that
+    drops a field, returns a negative count, or swaps shapes means the
+    impact-projection contract changed — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"event-date-backfill-impact-preview response must be a JSON "
+            f"object, got {type(body).__name__}"
+        )
+    for field_name in (
+        "candidate_events",
+        "proposed_updates",
+        "projected_no_event_date_after",
+    ):
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+
+
 def _assert_event_date_backfill_no_paid(body: Any) -> None:
     """Pin no-paid invariants on the event-date backfill candidates response.
 
@@ -126,6 +202,11 @@ ENDPOINTS: tuple[SmokeEndpoint, ...] = (
     ),
     SmokeEndpoint("data quality", "/diagnostics/data-quality"),
     SmokeEndpoint("archive stats", "/diagnostics/archive-stats"),
+    SmokeEndpoint(
+        "archive consistency",
+        "/diagnostics/archive-consistency",
+        body_invariants=(_assert_archive_consistency_no_paid,),
+    ),
     SmokeEndpoint("validation stats", "/diagnostics/validation-status-stats"),
     SmokeEndpoint("reaction stats", "/diagnostics/reaction-profile-stats"),
     SmokeEndpoint("track record", "/diagnostics/track-record"),
@@ -147,6 +228,11 @@ ENDPOINTS: tuple[SmokeEndpoint, ...] = (
         "event-date backfill",
         "/diagnostics/event-date-backfill-candidates",
         body_invariants=(_assert_event_date_backfill_no_paid,),
+    ),
+    SmokeEndpoint(
+        "event-date backfill impact",
+        "/diagnostics/event-date-backfill-impact-preview",
+        body_invariants=(_assert_event_date_backfill_impact_no_paid,),
     ),
     SmokeEndpoint(
         "auto backfill dry-run",

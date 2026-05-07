@@ -116,6 +116,7 @@ class TestNoPaidSmokeInventory(unittest.TestCase):
             "/diagnostics/auto-backfill-status",
             "/diagnostics/data-quality",
             "/diagnostics/archive-stats",
+            "/diagnostics/archive-consistency",
             "/diagnostics/validation-status-stats",
             "/diagnostics/reaction-profile-stats",
             "/diagnostics/track-record",
@@ -125,6 +126,7 @@ class TestNoPaidSmokeInventory(unittest.TestCase):
             "/registry/candidate-queue?limit=5",
             "/movers/backfill-preview?limit=5",
             "/diagnostics/event-date-backfill-candidates",
+            "/diagnostics/event-date-backfill-impact-preview",
             "/diagnostics/auto-backfill-dry-run",
         ])
         methods = [endpoint.method for endpoint in no_paid_smoke.ENDPOINTS]
@@ -347,6 +349,213 @@ class TestEventDateBackfillInvariants(unittest.TestCase):
         self.assertEqual(match.method, "GET")
         self.assertIn(
             no_paid_smoke._assert_event_date_backfill_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestArchiveConsistencyInvariants(unittest.TestCase):
+    """The smoke runner pins per-category ``count``/``examples`` shape on
+    the ``/diagnostics/archive-consistency`` response.  Stable zero
+    counts are accepted because a clean archive has no anomalies.
+    """
+
+    def _empty_blocks(self) -> dict[str, dict[str, object]]:
+        return {
+            category: {"count": 0, "examples": []}
+            for category in no_paid_smoke._ARCHIVE_CONSISTENCY_CATEGORIES
+        }
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_archive_consistency_no_paid(self._empty_blocks())
+
+    def test_invariant_passes_when_categories_populated(self) -> None:
+        body = self._empty_blocks()
+        body["missing_event_date"] = {
+            "count": 2,
+            "examples": [
+                {"event_id": 1, "headline": "h", "timestamp": "t",
+                 "event_date": None},
+                {"event_id": 2, "headline": "h2", "timestamp": "t2",
+                 "event_date": ""},
+            ],
+        }
+        body["duplicate_headline_event_date_clusters"] = {
+            "count": 1,
+            "examples": [
+                {"headline": "dup", "event_date": "2026-04-01",
+                 "count": 2, "event_ids": [3, 4]},
+            ],
+        }
+        no_paid_smoke._assert_archive_consistency_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_archive_consistency_no_paid([])
+
+    def test_invariant_fails_when_category_missing(self) -> None:
+        body = self._empty_blocks()
+        body.pop("missing_headline")
+        with self.assertRaisesRegex(
+            AssertionError, "missing_headline.*must be a JSON object",
+        ):
+            no_paid_smoke._assert_archive_consistency_no_paid(body)
+
+    def test_invariant_fails_when_block_not_object(self) -> None:
+        body = self._empty_blocks()
+        body["missing_timestamp"] = [{"count": 0, "examples": []}]
+        with self.assertRaisesRegex(
+            AssertionError, "missing_timestamp.*must be a JSON object",
+        ):
+            no_paid_smoke._assert_archive_consistency_no_paid(body)
+
+    def test_invariant_fails_when_count_missing(self) -> None:
+        body = self._empty_blocks()
+        body["missing_event_date"] = {"examples": []}
+        with self.assertRaisesRegex(
+            AssertionError, "missing_event_date.*count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_consistency_no_paid(body)
+
+    def test_invariant_fails_when_count_negative(self) -> None:
+        body = self._empty_blocks()
+        body["missing_event_date"] = {"count": -1, "examples": []}
+        with self.assertRaisesRegex(
+            AssertionError, "missing_event_date.*count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_consistency_no_paid(body)
+
+    def test_invariant_fails_when_examples_not_list(self) -> None:
+        body = self._empty_blocks()
+        body["malformed_event_date"] = {"count": 0, "examples": "nope"}
+        with self.assertRaisesRegex(
+            AssertionError, "malformed_event_date.*examples must be a list",
+        ):
+            no_paid_smoke._assert_archive_consistency_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_archive_consistency_endpoint(
+        self,
+    ) -> None:
+        match = next(
+            (e for e in no_paid_smoke.ENDPOINTS
+             if e.path == "/diagnostics/archive-consistency"),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertEqual(match.method, "GET")
+        self.assertIn(
+            no_paid_smoke._assert_archive_consistency_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestEventDateBackfillImpactInvariants(unittest.TestCase):
+    """The smoke runner pins the impact-projection contract on
+    ``/diagnostics/event-date-backfill-impact-preview``: ``candidate_events``,
+    ``proposed_updates`` and ``projected_no_event_date_after`` must all
+    be non-negative ints so the runbook math stays meaningful.  Stable
+    zero values are accepted because an archive with no candidates
+    projects zeros across the board.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        body = {
+            "candidate_events":                0,
+            "ticker_rows_blocked":             0,
+            "proposed_updates":                0,
+            "projected_no_event_date_after":   0,
+            "projected_ticker_rows_unblocked": 0,
+            "examples":                        [],
+        }
+        no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_invariant_passes_when_projection_nonzero(self) -> None:
+        body = {
+            "candidate_events":                3,
+            "ticker_rows_blocked":             5,
+            "proposed_updates":                2,
+            "projected_no_event_date_after":   1,
+            "projected_ticker_rows_unblocked": 4,
+            "examples": [
+                {
+                    "event_id":            7,
+                    "headline":            "h",
+                    "timestamp":           "2026-04-01T13:00:00",
+                    "proposed_event_date": "2026-04-01",
+                    "ticker_count":        2,
+                    "tickers":             ["AAPL", "MSFT"],
+                },
+            ],
+        }
+        no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid([])
+
+    def test_invariant_fails_when_candidate_events_missing(self) -> None:
+        body = {
+            "proposed_updates":              0,
+            "projected_no_event_date_after": 0,
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_events must be a non-negative int",
+        ):
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_invariant_fails_when_proposed_updates_missing(self) -> None:
+        body = {
+            "candidate_events":              0,
+            "projected_no_event_date_after": 0,
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "proposed_updates must be a non-negative int",
+        ):
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_invariant_fails_when_projected_after_missing(self) -> None:
+        body = {
+            "candidate_events": 0,
+            "proposed_updates": 0,
+        }
+        with self.assertRaisesRegex(
+            AssertionError,
+            "projected_no_event_date_after must be a non-negative int",
+        ):
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_invariant_fails_when_projected_after_negative(self) -> None:
+        body = {
+            "candidate_events":              0,
+            "proposed_updates":              0,
+            "projected_no_event_date_after": -1,
+        }
+        with self.assertRaisesRegex(
+            AssertionError,
+            "projected_no_event_date_after must be a non-negative int",
+        ):
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_invariant_fails_when_candidate_events_is_bool(self) -> None:
+        body = {
+            "candidate_events":              True,
+            "proposed_updates":              0,
+            "projected_no_event_date_after": 0,
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_events must be a non-negative int",
+        ):
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_impact_endpoint(self) -> None:
+        match = next(
+            (e for e in no_paid_smoke.ENDPOINTS
+             if e.path == "/diagnostics/event-date-backfill-impact-preview"),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertEqual(match.method, "GET")
+        self.assertIn(
+            no_paid_smoke._assert_event_date_backfill_impact_no_paid,
             match.body_invariants,
         )
 

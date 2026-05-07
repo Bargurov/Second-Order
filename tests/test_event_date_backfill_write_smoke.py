@@ -697,5 +697,74 @@ class TestCli(_Base):
         self.assertEqual(body["backup_path"], str(new))
 
 
+# ---------------------------------------------------------------------------
+# Post-apply baseline — pins the live-outcome shape the smoke probe
+# reports when the seeded backup carries only parseable-timestamp
+# candidates.  After the writer fires, the planner snapshot inside the
+# smoke result must show a drained backlog and the idempotent second
+# apply must write zero rows.
+# ---------------------------------------------------------------------------
+
+
+class TestPostApplyBaseline(_Base):
+    def test_after_block_drains_to_zero_when_all_candidates_parseable(self) -> None:
+        # All-parseable seeded backup mirrors the live state on the
+        # day the backfill ran cleanly.
+        backup = self._make_backup(
+            null_parseable=2, null_unparseable=0, already_dated=1,
+        )
+        result = smoke.run_write_smoke(
+            backup_path=backup,
+            live_db_path=str(self._live_db),
+        )
+
+        self.assertTrue(
+            result["ok"],
+            f"errors: {result['errors']}, warnings: {result['warnings']}",
+        )
+        # Pre-apply backlog matches the seeded mix (2 events × 2 tickers).
+        self.assertEqual(result["before"]["total_candidates"],    2)
+        self.assertEqual(result["before"]["ticker_rows_blocked"], 4)
+        # Writer cleared every parseable candidate.
+        self.assertEqual(result["write"]["applied_count"], 2)
+        # Post-apply: planner snapshot is fully drained.
+        self.assertEqual(result["after"]["total_candidates"],    0)
+        self.assertEqual(result["after"]["ticker_rows_blocked"], 0)
+
+    def test_idempotent_second_apply_writes_zero_in_baseline(self) -> None:
+        backup = self._make_backup(
+            null_parseable=2, null_unparseable=0, already_dated=1,
+        )
+        result = smoke.run_write_smoke(
+            backup_path=backup,
+            live_db_path=str(self._live_db),
+        )
+        self.assertTrue(result["ok"])
+        self.assertEqual(
+            result["idempotency"]["idempotent_second_apply_count"], 0,
+        )
+        self.assertTrue(result["idempotency"]["ok"])
+
+    def test_baseline_run_leaves_live_db_byte_identical(self) -> None:
+        # The post-apply baseline must not mutate the live events.db
+        # even on a happy-path all-parseable run.
+        self._make_live_db_sentinel(b"baseline-live-bytes")
+        before_hash  = _hash_file(self._live_db)
+        before_mtime = self._live_db.stat().st_mtime
+
+        backup = self._make_backup(
+            null_parseable=2, null_unparseable=0, already_dated=0,
+        )
+        result = smoke.run_write_smoke(
+            backup_path=backup,
+            live_db_path=str(self._live_db),
+        )
+
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["live_db_unchanged"])
+        self.assertEqual(_hash_file(self._live_db),    before_hash)
+        self.assertEqual(self._live_db.stat().st_mtime, before_mtime)
+
+
 if __name__ == "__main__":
     unittest.main()

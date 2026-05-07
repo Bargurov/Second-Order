@@ -524,6 +524,62 @@ def _compose_payload(
 
 
 # ---------------------------------------------------------------------------
+# Preflight-only payload — slim envelope used by ``--preflight-only``.  The
+# verbose dry-run shape (caps / events_considered / skipped_counts) would
+# only carry zeros on this branch and would muddy what "preflight mode"
+# means; the helper below keeps the contract surface to the keys the task
+# brief pins (ok, mode, focus, preflight, errors) plus ``now`` so the
+# timestamp story matches the other modes.
+# ---------------------------------------------------------------------------
+
+
+def _compose_preflight_payload(
+    *,
+    preflight: dict,
+    focus: str,
+    now_iso: str,
+) -> dict:
+    return {
+        "ok":        bool(preflight.get("ok")),
+        "now":       now_iso,
+        "mode":      "preflight",
+        "focus":     focus,
+        "preflight": preflight,
+        "errors":    list(preflight.get("errors") or []),
+    }
+
+
+def _render_preflight_text(payload: dict) -> str:
+    pf = payload.get("preflight") or {}
+    yf = pf.get("yfinance_cache") or {}
+    db = pf.get("events_db")      or {}
+    lines: list[str] = ["Price-cache refresh preflight", ""]
+    lines.append(f"Mode:  {payload.get('mode', 'preflight')}")
+    lines.append(f"Focus: {payload.get('focus', FOCUS_NONE)}")
+    lines.append(f"ok:    {payload.get('ok')}")
+    lines.append("")
+    lines.append(
+        f"yfinance_cache: ok={yf.get('ok')!s:<5} "
+        f"path={yf.get('path') or '(unresolved)'}"
+    )
+    if not yf.get("ok"):
+        lines.append(f"  reason: {yf.get('reason')}")
+    lines.append(
+        f"events_db:      ok={db.get('ok')!s:<5} "
+        f"path={db.get('path') or '(unresolved)'}"
+    )
+    if not db.get("ok"):
+        lines.append(f"  reason: {db.get('reason')}")
+    errors = payload.get("errors") or []
+    if errors:
+        lines.append("")
+        lines.append(f"Errors ({len(errors)}):")
+        for msg in errors:
+            lines.append(f"  - {msg}")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
 
@@ -675,6 +731,18 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "Default: 'none' (no filter)."
         ),
     )
+    parser.add_argument(
+        "--preflight-only",
+        dest="preflight_only",
+        action="store_true",
+        help=(
+            "Run only the provider-cache / events.db writability "
+            "preflight and exit before the planner or executor is "
+            "reached.  No provider calls, no DB writes; --confirm is "
+            "not required.  Takes precedence over --write when both "
+            "are passed.  Combine with --focus to label the run."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -685,6 +753,27 @@ def _now_iso() -> str:
 def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
     args = _parse_args(argv)
     output = out if out is not None else sys.stdout
+
+    focus = getattr(args, "focus", FOCUS_NONE) or FOCUS_NONE
+
+    # ``--preflight-only`` short-circuits BEFORE load_inputs / plan_refresh /
+    # the executor.  The brief pins this ordering: no provider calls, no DB
+    # reads via the loader, no DB writes, and no ``--confirm`` requirement.
+    # Calling ``_provider_cache_preflight`` is the only DB / filesystem touch
+    # — and it is read-only (mode=rw + BEGIN IMMEDIATE + ROLLBACK on the
+    # SQLite probe; sentinel-file write+remove on the dir probe).
+    if getattr(args, "preflight_only", False):
+        preflight = _provider_cache_preflight(db_path=_default_db_path())
+        payload = _compose_preflight_payload(
+            preflight=preflight,
+            focus=focus,
+            now_iso=_now_iso(),
+        )
+        if args.json:
+            print(_render_json(payload), file=output)
+        else:
+            print(_render_preflight_text(payload), file=output)
+        return 0 if payload["ok"] else 1
 
     caps = {
         "max_events":         int(args.max_events),
@@ -702,7 +791,6 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
         # so the dry-run still produces a stable report.
         events, cached_by_ticker = [], {}
 
-    focus = getattr(args, "focus", FOCUS_NONE) or FOCUS_NONE
     if focus != FOCUS_NONE:
         events = _apply_focus(focus, events, cached_by_ticker)
 

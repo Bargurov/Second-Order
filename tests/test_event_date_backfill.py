@@ -28,7 +28,10 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import db  # noqa: E402
-from event_date_backfill import plan_event_date_backfill  # noqa: E402
+from event_date_backfill import (  # noqa: E402
+    apply_event_date_backfill,
+    plan_event_date_backfill,
+)
 
 
 _TOP_KEYS = (
@@ -624,6 +627,81 @@ class TestProjectedHydrationImpactNoMutation(_Base):
             before, after,
             "events + price_cache must be byte-identical before and "
             "after repeated planner calls (projection-aware)",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Post-apply baseline — pins the live-outcome shape after a clean
+# ``apply_event_date_backfill(confirm=True)``.  The live backfill cleared
+# every parseable candidate; this class re-runs that flow on a temp DB
+# and asserts the planner reports a fully drained backlog with an
+# idempotent second apply.
+# ---------------------------------------------------------------------------
+
+
+class TestPostApplyBaseline(_Base):
+    def _seed_parseable_mix(self) -> None:
+        self._seed(
+            event_date=None,
+            symbols=["AAPL", "MSFT"],
+            timestamp="2026-04-15T13:30:00",
+            headline="EDB-POST parseable a",
+        )
+        self._seed(
+            event_date="",
+            symbols=["GOOG"],
+            timestamp="2026-04-16T09:00:00",
+            headline="EDB-POST parseable b",
+        )
+        self._seed(
+            event_date=None,
+            symbols=[],
+            timestamp="2026-04-17T10:00:00",
+            headline="EDB-POST parseable c no tickers",
+        )
+
+    def test_post_apply_planner_reports_zero_candidates(self) -> None:
+        self._seed_parseable_mix()
+        # Sanity: pre-apply, the planner sees the seeded candidates.
+        pre = plan_event_date_backfill()
+        self.assertEqual(pre["total_candidates"], 3)
+        self.assertEqual(pre["ticker_rows_blocked"], 3)
+
+        applied = apply_event_date_backfill(confirm=True)
+        self.assertEqual(applied["applied_count"], 3)
+
+        post = plan_event_date_backfill()
+        self.assertEqual(post["total_candidates"], 0)
+        self.assertEqual(post["ticker_rows_blocked"], 0)
+        self.assertEqual(post["events_with_market_tickers"], 0)
+        self.assertEqual(post["proposed_updates"], [])
+        self.assertEqual(sum(post["skipped_counts"].values()), 0)
+
+    def test_post_apply_projection_block_is_all_zeroes(self) -> None:
+        self._seed_parseable_mix()
+        apply_event_date_backfill(confirm=True)
+
+        impact = plan_event_date_backfill()["projected_hydration_impact"]
+        self.assertEqual(impact["candidate_events"],               0)
+        self.assertEqual(impact["proposed_updates_count"],         0)
+        self.assertEqual(impact["ticker_rows_blocked"],            0)
+        self.assertEqual(impact["ticker_rows_unblocked_by_write"], 0)
+        self.assertEqual(impact["remaining_ticker_rows_blocked"],  0)
+        self.assertEqual(sum(impact["skipped_counts"].values()),   0)
+
+    def test_second_apply_is_idempotent_with_zero_writes(self) -> None:
+        self._seed_parseable_mix()
+        first  = apply_event_date_backfill(confirm=True)
+        second = apply_event_date_backfill(confirm=True)
+        self.assertEqual(first["applied_count"],  3)
+        self.assertEqual(second["applied_count"], 0)
+        self.assertEqual(second["applied_updates"], [])
+        # The planner block carried on the second call must already
+        # show the drained backlog.
+        self.assertEqual(second["total_candidates"],                       0)
+        self.assertEqual(second["ticker_rows_blocked"],                    0)
+        self.assertEqual(
+            second["projected_hydration_impact"]["candidate_events"], 0,
         )
 
 
