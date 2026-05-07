@@ -37,10 +37,28 @@ The earlier untracked-candidate triage remains below. These are the final recomm
 | `scripts/rebuild_archive.py` | Commit later after review | Prior triage found this valuable and that still applies. It defaults to dry-run, but has `--write`; pair it with tests, backup guidance, and runbook warnings before public commit. |
 | `tests/test_events_archive_detail_consistency.py` | Commit now | Prior triage found this valuable and that still applies. It is a zero-cost archive read-surface regression test and currently passes in the events discovery suite. |
 
+## 2026-05-07 Technical Decision Pass
+
+Scope inspected: current untracked `.githooks/`, `design/`, and `docs/superpowers/...` only. No files were deleted, moved, staged, or committed during this pass.
+
+| Surface | Current evidence | Decision | Public risk | Future command recommendation |
+|---|---|---|---|---|
+| `.githooks/pre-commit` | 6-line hook that runs `npm run typecheck` from `frontend/`. No secrets or local paths. | Commit selected files | Low risk, but public hooks are surprising unless opt-in setup is documented. | After documenting hook setup: `git add .githooks/pre-commit CONTRIBUTING.md docs/local_operations_runbook.md` |
+| `design/extracted/app.jsx`, `design/extracted/primitives.jsx`, `design/extracted/styles.css`, `design/extracted/movers.jsx`, `design/extracted/movers.css`, `design/extracted/screens/*.jsx` | Source-like design references, 2,895 lines total across visible source/CSS files. Uses static reference globals such as `window.SO_DATA` and `window.SO_MOVERS`; no provider/API secrets found. | Commit selected files | Medium risk: can be mistaken for runnable frontend source unless README labels it as reference-only design source. Several strings show mojibake from export encoding. | After adding a design-source README note: `git add design/extracted/app.jsx design/extracted/primitives.jsx design/extracted/styles.css design/extracted/movers.jsx design/extracted/movers.css design/extracted/screens/*.jsx` |
+| `design/extracted/data.jsx`, `design/extracted/movers_data.jsx` | Static fixture-like market headlines, counts, move percentages, and synthetic mover rows. | Move/archive later | High confusion risk: fake-looking market values can conflict with the project rule to never present sample values as live data. Keep only if clearly labeled as design fixture data. | If retained as reference fixtures: `git add design/extracted/data.jsx design/extracted/movers_data.jsx README.md`; otherwise move to an archive/reference folder in a separate cleanup task. |
+| `design/second-order-design.zip`, `design/extracted/Second Order.html`, `design/extracted/Second Order-print.html` | Generated zip/exported HTML. Already hidden by precise `.gitignore` rules. | Ignore local-only | Generated export clutter, duplicate source, and poor reviewability. | Already handled; verify with `git status --short --untracked-files=all -- design`. |
+| Untracked `docs/superpowers/specs/*.md` | 5 spec files, about 37 KB. Some contain durable product decisions, but live under Superpowers/agent workflow naming. | Move/archive later | Medium risk: useful history, but public readers may treat old specs as current roadmap or shipped contract. | Normalize selected decisions first, then use a command like `git mv docs/superpowers/specs/<file>.md docs/archive/superpowers/specs/<file>.md` in a dedicated cleanup task. |
+| Untracked `docs/superpowers/plans/*.md` | 6 plan files, about 135 KB. Plans include required-agent instructions, task checklists, stale implementation steps, mojibake, local paths such as `C:/Users/Bar/...`, and dummy env snippets. | Delete later after extracting decisions | High risk: raw agent plans make the repo look like a task scratchpad, leak personal local workflow paths, and may conflict with current product state. | Extract durable decisions into normal docs, then remove only reviewed files with explicit paths, e.g. `Remove-Item -LiteralPath docs\superpowers\plans\<file>.md`. |
+| Existing tracked `docs/superpowers/**` | 11 tracked files already exist, so a broad ignore rule would hide future cleanup instead of solving current public-surface drift. | Move/archive later | Medium/high risk until normalized; tracked plans/specs are already part of public surface. | Audit tracked docs separately with `git ls-files "docs/superpowers/**"` before any ignore or archive rule. |
+
+No new `.gitignore` rules were added in this pass. The only confirmed generated/local-only files in this scope, the design zip and exported HTML, were already ignored. The remaining untracked items need deliberate review, normalization, archive moves, or explicit deletion; silently ignoring them would leave unresolved public-surface decisions.
+
 ## Credibility Risks
 
 - Local agent state (`.superpowers/`, `docs/superpowers/**`) can make the repo look like a scratchpad rather than a maintained product. `.superpowers/` is now ignored; `docs/superpowers/**` remains unignored for a future content decision.
 - Generated design/export artifacts (`design/*.zip`, exported HTML, root extracted files) blur the line between approved design source and stale generated output.
+- Static design fixture data (`design/extracted/data.jsx`, `design/extracted/movers_data.jsx`) contains fake-looking counts, headlines, and mover returns. It must never be confused with live app data.
+- Raw Superpowers plans include agent execution instructions, local paths, stale checklists, and some mojibake. Extract decisions before public inclusion.
 - Generated eval/report files without context (`eval_run_index.json`, raw calibration/topic reports) can look like unsupported performance claims.
 - Operational scripts that can write to the archive (`scripts/rebuild_archive.py`) should not appear without tests, backup guidance, and clear dry-run defaults.
 - Empty or duplicate templates (`VALIDATION_LOG.md`) add noise and weaken public documentation focus.
@@ -62,6 +80,7 @@ Recommendation: keep and commit selected design source files only. Do not commit
 
 1. Done: ignore local-only generated/quarantine state: `.superpowers/`, `gimp/`, root report logs, and `eval_run_index.json`.
 2. Next quick commit candidate: `tests/test_events_archive_detail_consistency.py`.
-3. Review-before-commit candidates: `.githooks/pre-commit`, selected `design/extracted/` source files, useful `docs/superpowers/specs/*.md`, and `scripts/rebuild_archive.py`.
+3. Review-before-commit candidates: `.githooks/pre-commit`, selected `design/extracted/` source files, useful normalized `docs/superpowers/specs/*.md`, and `scripts/rebuild_archive.py`.
 4. Done: ignore generated design exports: `design/second-order-design.zip` and exported HTML.
-5. Quarantine local workflow docs: `docs/superpowers/plans/*.md` after extracting any durable decisions.
+5. Quarantine or delete local workflow docs: `docs/superpowers/plans/*.md` after extracting any durable decisions.
+6. Do not commit `design/extracted/data.jsx` or `design/extracted/movers_data.jsx` until they are clearly labeled as static design fixtures.

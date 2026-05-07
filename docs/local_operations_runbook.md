@@ -383,6 +383,85 @@ unchanged and no-paid smoke stayed green.
 Stop condition: do not run further refreshes until the provider cache failure
 is diagnosed.
 
+Event-date dry-run checks:
+
+```powershell
+python scripts/event_date_backfill.py --json
+
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/event-date-backfill-candidates" |
+  ConvertTo-Json -Depth 10
+```
+
+Current verified blocker count: 25 candidate legacy events / 126 ticker rows.
+`no_event_date` currently blocks reaction hydration for those rows, and
+`timestamp[:10]` is the only viable candidate source.
+
+## Event-Date Backfill Write Mode
+
+Write mode persists `event_date = timestamp[:10]` for events whose
+`event_date` is NULL or empty. The writer is guarded:
+
+- Only `event_date IS NULL OR event_date = ''` rows are touched — already
+  dated rows are never re-dated.
+- `BEGIN IMMEDIATE` serialises against any concurrent uvicorn writer on
+  the same SQLite file.
+- Malformed timestamps are skipped, not coerced; surfaces in
+  `skipped_counts.timestamp_unparseable`.
+- Idempotent: a second run writes nothing.
+- No LLM, yfinance, market-data provider, `market_check`, `price_cache`,
+  or FastAPI route is invoked.
+
+**Operator sequence — backup → dry-run → write.** Stop and inspect at
+each step; never invoke `--write --confirm` against the live archive
+without first reviewing the dry-run plan from the same DB.
+
+```powershell
+# 1. Take a fresh backup. Never run write mode without one.
+python scripts/backup_archive.py
+
+# 2. Review the dry-run plan against the live DB.
+python scripts/event_date_backfill.py --json
+```
+
+Inspect `total_candidates`, `ticker_rows_blocked`,
+`projected_hydration_impact.ticker_rows_unblocked_by_write`, and
+`skipped_counts`. If anything looks wrong, stop.
+
+```powershell
+# 3. Persist. Both flags are required together; either alone exits
+#    non-zero with a guidance message and writes nothing.
+python scripts/event_date_backfill.py --write --confirm --json
+```
+
+The write-mode JSON output adds `applied_count` and `applied_updates`
+to the dry-run shape.
+
+```powershell
+# 4. Re-run the dry-run and confirm total_candidates dropped to zero
+#    (or to the unparseable subset).
+python scripts/event_date_backfill.py --json
+
+# 5. Confirm the no_event_date hydration blocker drops on the live API.
+Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/reaction-profile-blockers" |
+  ConvertTo-Json -Depth 10
+```
+
+Rehearse against a backup copy first when in doubt — write mode accepts
+`--db-path` so you can dry-run, write, and re-dry-run a copy without
+touching the live `events.db`:
+
+```powershell
+Copy-Item backups\events-LATEST.db $env:TEMP\events_apply_test.db
+python scripts/event_date_backfill.py --json --db-path $env:TEMP\events_apply_test.db
+python scripts/event_date_backfill.py --write --confirm --db-path $env:TEMP\events_apply_test.db --json
+python scripts/event_date_backfill.py --json --db-path $env:TEMP\events_apply_test.db
+```
+
+Operator validation (rehearsed against a `backups/events-*.db` copy):
+pre-write `total_candidates=25` / `ticker_rows_blocked=126`;
+`applied_count=25`; post-write dry-run `total_candidates=0`;
+idempotent rerun `applied_count=0`.
+
 Inspect:
 
 - `provider_calls_estimate`: expected provider/network calls if write mode is
@@ -405,6 +484,20 @@ Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/reaction-profile-stats" |
 Invoke-RestMethod "http://127.0.0.1:8000/diagnostics/track-record" |
   ConvertTo-Json -Depth 8
 ```
+
+## Operator-Side Safety & Diagnostic Surface
+
+The following operator tools are part of the durable safety surface.
+None of them touch product code paths or call paid/provider/LLM seams.
+
+- event-date backfill planner + guarded writer + CLI
+  (`event_date_backfill.py`, `scripts/event_date_backfill.py`,
+  `--write --confirm` required together for the writer).
+- event-date diagnostics (`/diagnostics/event-date-backfill-candidates`,
+  `/diagnostics/event-date-backfill-impact-preview`).
+- repo hygiene guard (`.githooks/`, `scripts/repo_hygiene_check.py`).
+- backup restore checker.
+- no-paid smoke (`python scripts/no_paid_smoke.py --json`).
 
 ## Dirty-Tree Hygiene
 

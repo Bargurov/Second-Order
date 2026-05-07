@@ -2663,3 +2663,177 @@ def price_cache_coverage():
         "hydrated_visible_tickers_auto_adjust_false": hydrated_visible_tickers,
         "cache_only_auto_adjust_true_tickers":       cache_only_aa_true_tickers,
     })
+
+
+_EVENT_DATE_BACKFILL_EXAMPLE_LIMIT = 10
+_EVENT_DATE_BACKFILL_CONFIDENCE_NOTE = (
+    "Same-day proxy: events without an event_date can be backfilled from "
+    "the headline timestamp's calendar date (timestamp[:10]). Confidence "
+    "is highest for headlines that report a same-day event and lowest "
+    "for headlines reporting a prior-day event or pre-/post-market "
+    "moves; verify before persisting."
+)
+
+
+@router.get("/diagnostics/event-date-backfill-candidates")
+def event_date_backfill_candidates():
+    """Read-only candidate list for event_date backfill.
+
+    Identifies events whose ``event_date`` is null or empty while
+    ``timestamp`` is present, and proposes the timestamp's calendar
+    date (``timestamp[:10]``) as the backfill candidate.  Pure read —
+    issues only ``SELECT`` statements directly against the local
+    SQLite DB, never imports ``price_cache`` or ``market_data``,
+    never touches ``yfinance`` or the LLM, and never writes to the
+    DB.  Does not implement the backfill itself.
+
+    Top-level fields:
+
+      * ``total_events_missing_event_date`` — count of events whose
+        ``event_date`` is NULL or empty and whose ``timestamp`` is
+        non-empty.
+      * ``events_with_market_tickers``       — subset of the above
+        whose ``market_tickers`` JSON decodes to at least one
+        recognised symbol.
+      * ``ticker_rows_blocked``              — total distinct ticker
+        symbols across the qualifying events; the per-ticker
+        hydration rows the absent ``event_date`` is currently
+        blocking.
+      * ``timestamp_same_day_confidence_note`` — fixed string
+        describing the heuristic and its degradation modes.
+      * ``examples`` — up to 10 candidate events ordered by ``id``
+        ascending, each carrying ``event_id``, ``headline``,
+        ``timestamp``, ``proposed_event_date`` (None when the
+        timestamp does not parse as ISO YYYY-MM-DD), ``ticker_count``,
+        and ``tickers`` (sorted symbol list).
+    """
+    import sqlite3
+    import db as _db
+    from db import _ticker_symbols
+
+    empty = {
+        "total_events_missing_event_date":    0,
+        "events_with_market_tickers":         0,
+        "ticker_rows_blocked":                0,
+        "timestamp_same_day_confidence_note": _EVENT_DATE_BACKFILL_CONFIDENCE_NOTE,
+        "examples":                           [],
+    }
+
+    try:
+        conn = sqlite3.connect(_db.DB_FILE)
+    except sqlite3.Error:
+        return _api._sanitize_floats(empty)
+
+    try:
+        try:
+            rows = conn.execute(
+                "SELECT id, headline, timestamp, market_tickers "
+                "FROM events "
+                "WHERE (event_date IS NULL OR event_date = '') "
+                "  AND timestamp IS NOT NULL "
+                "  AND timestamp != '' "
+                "ORDER BY id ASC"
+            ).fetchall()
+        except sqlite3.Error:
+            rows = []
+    finally:
+        conn.close()
+
+    total_missing = 0
+    events_with_tickers = 0
+    ticker_rows_blocked = 0
+    examples: list[dict] = []
+
+    for event_id, headline, timestamp, market_tickers_blob in rows:
+        total_missing += 1
+        symbols = _ticker_symbols(market_tickers_blob)
+        symbol_count = len(symbols)
+        if symbol_count > 0:
+            events_with_tickers += 1
+            ticker_rows_blocked += symbol_count
+
+        if len(examples) < _EVENT_DATE_BACKFILL_EXAMPLE_LIMIT:
+            proposed: str | None = None
+            if isinstance(timestamp, str) and len(timestamp) >= 10:
+                try:
+                    proposed = date.fromisoformat(
+                        timestamp[:10],
+                    ).isoformat()
+                except (ValueError, TypeError):
+                    proposed = None
+            examples.append({
+                "event_id":            event_id,
+                "headline":            headline if isinstance(headline, str) else "",
+                "timestamp":           timestamp if isinstance(timestamp, str) else None,
+                "proposed_event_date": proposed,
+                "ticker_count":        symbol_count,
+                "tickers":             sorted(symbols),
+            })
+
+    return _api._sanitize_floats({
+        "total_events_missing_event_date":    total_missing,
+        "events_with_market_tickers":         events_with_tickers,
+        "ticker_rows_blocked":                ticker_rows_blocked,
+        "timestamp_same_day_confidence_note": _EVENT_DATE_BACKFILL_CONFIDENCE_NOTE,
+        "examples":                           examples,
+    })
+
+
+@router.get("/diagnostics/event-date-backfill-impact-preview")
+def event_date_backfill_impact_preview():
+    """Read-only impact preview for the event_date backfill plan.
+
+    Reuses ``event_date_backfill.plan_event_date_backfill`` — a pure
+    SELECT-only planner that never imports ``price_cache`` /
+    ``market_data`` / ``yfinance``, never calls the LLM, and never
+    writes to the DB.  This endpoint only reshapes the planner's
+    output into impact-projection counts; it does not implement the
+    write path.
+
+    Top-level fields:
+
+      * ``candidate_events`` — events whose ``event_date`` is NULL or
+        empty AND whose ``timestamp`` is non-empty.  These are
+        currently blocking per-ticker hydration.
+      * ``ticker_rows_blocked`` — total distinct ticker symbols across
+        the candidate events; the per-ticker hydration rows the absent
+        ``event_date`` is currently blocking.  Counts every
+        candidate's tickers, including rows whose timestamp does not
+        parse — the absent ``event_date`` blocks hydration regardless
+        of whether this planner can resolve the date.
+      * ``proposed_updates`` — count of candidate events the planner
+        would propose to update.  Excludes rows whose timestamp does
+        not parse as ISO ``YYYY-MM-DD``.
+      * ``projected_no_event_date_after`` — count of events that would
+        still be missing ``event_date`` after applying every proposed
+        update.  Equal to ``candidate_events - proposed_updates``.
+      * ``projected_ticker_rows_unblocked`` — sum of ticker counts
+        across the proposed updates; the per-ticker hydration rows
+        that would become unblocked once the proposed dates are
+        persisted.  Bounded above by ``ticker_rows_blocked``.
+      * ``examples`` — up to 10 sample proposed updates ordered by
+        ``id`` ascending, each carrying ``event_id``, ``headline``,
+        ``timestamp``, ``proposed_event_date``, ``ticker_count`` and
+        ``tickers`` (sorted symbol list).  Sampled from the proposed
+        updates only, so unparseable-timestamp rows never appear.
+    """
+    from event_date_backfill import plan_event_date_backfill
+
+    plan = plan_event_date_backfill()
+
+    proposed = plan.get("proposed_updates") or []
+    candidate_events = int(plan.get("total_candidates") or 0)
+    ticker_rows_blocked = int(plan.get("ticker_rows_blocked") or 0)
+    proposed_count = len(proposed)
+    projected_unblocked = sum(
+        int(p.get("ticker_count") or 0) for p in proposed
+    )
+
+    return _api._sanitize_floats({
+        "candidate_events":                candidate_events,
+        "ticker_rows_blocked":             ticker_rows_blocked,
+        "proposed_updates":                proposed_count,
+        "projected_no_event_date_after":   candidate_events - proposed_count,
+        "projected_ticker_rows_unblocked": projected_unblocked,
+        "examples":                        proposed[:_EVENT_DATE_BACKFILL_EXAMPLE_LIMIT],
+    })

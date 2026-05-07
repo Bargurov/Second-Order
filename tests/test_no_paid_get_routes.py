@@ -651,5 +651,94 @@ class TestNoPaidGetRoutes(unittest.TestCase):
             )
 
 
+class TestRoutesDirectoryFullyMounted(unittest.TestCase):
+    """Regression: every GET path declared on a router under ``routes/``
+    must be mounted on ``api.app``.
+
+    ``test_no_paid_get_routes`` enumerates ``api.app.routes`` to drive
+    its probe — so a router that exists on disk but is missing from the
+    ``app.include_router(...)`` block in ``api.py`` would silently slip
+    past every no-paid invariant.  The check here walks ``routes/*.py``,
+    imports each module, inspects its ``router`` attribute, and asserts
+    every declared GET path also appears on ``api.app``.  Catches
+    mounting drift (a new diagnostics router added under ``routes/`` but
+    not wired into ``api.py``) before it can surface in production —
+    pure read, no DB writes, no provider/yfinance/LLM, no production
+    code touched.
+    """
+
+    def test_every_get_route_in_routes_dir_is_mounted_on_app(self) -> None:
+        import importlib
+        import pathlib
+
+        from fastapi import APIRouter
+
+        routes_dir = pathlib.Path(__file__).resolve().parents[1] / "routes"
+        self.assertTrue(
+            routes_dir.is_dir(),
+            f"expected routes/ dir at {routes_dir}, not found",
+        )
+
+        on_disk: dict[str, str] = {}
+        scanned_modules: list[str] = []
+        for py_file in sorted(routes_dir.glob("*.py")):
+            if py_file.name == "__init__.py":
+                continue
+            module_name = f"routes.{py_file.stem}"
+            module = importlib.import_module(module_name)
+            scanned_modules.append(module_name)
+            router = getattr(module, "router", None)
+            if not isinstance(router, APIRouter):
+                continue
+            for route in router.routes:
+                methods = getattr(route, "methods", None) or set()
+                if "GET" not in methods:
+                    continue
+                path = getattr(route, "path", None)
+                if path:
+                    on_disk.setdefault(path, module_name)
+
+        # Sanity — at least one router module was actually scanned, so a
+        # silent collapse of the routes/ tree (e.g., a refactor that
+        # accidentally moves every router elsewhere) doesn't make this
+        # regression test pass vacuously.
+        self.assertGreater(
+            len(scanned_modules), 0,
+            "no routes/*.py modules were scanned — refusing to pass "
+            "the mount-coverage check vacuously",
+        )
+        self.assertGreater(
+            len(on_disk), 0,
+            "no GET paths discovered across scanned routers — refusing "
+            "to pass the mount-coverage check vacuously",
+        )
+
+        mounted = set(_enumerate_get_routes())
+        missing = sorted(
+            f"{path} (declared in {module_name}, not mounted on api.app)"
+            for path, module_name in on_disk.items()
+            if path not in mounted
+        )
+        self.assertEqual(
+            missing, [],
+            "Routers exist under routes/ but their GET paths are not "
+            "mounted on api.app — wire them in via app.include_router(...):"
+            "\n  " + "\n  ".join(missing),
+        )
+
+    def test_archive_consistency_route_is_mounted(self) -> None:
+        # Explicit pin for the route this regression was added to guard.
+        # Dynamic enumeration already covers it via app.routes, but the
+        # named assertion gives a precise failure message if the
+        # ``include_router`` line for ``archive_diagnostics`` is dropped.
+        self.assertIn(
+            "/diagnostics/archive-consistency",
+            set(_enumerate_get_routes()),
+            "GET /diagnostics/archive-consistency is missing from the "
+            "mounted route inventory — restore the include_router(...) "
+            "wiring in api.py for routes.archive_diagnostics",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

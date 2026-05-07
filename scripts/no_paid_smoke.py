@@ -66,6 +66,37 @@ def _assert_auto_backfill_status_no_paid(body: Any) -> None:
         )
 
 
+def _assert_event_date_backfill_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the event-date backfill candidates response.
+
+    The dry-run diagnostic must surface a structural shape the smoke can
+    rely on regardless of archive state: a non-negative
+    ``total_events_missing_event_date`` candidate count and an
+    ``examples`` list of proposed updates.  Stable zero values are
+    accepted because a clean archive has no missing event_dates.  A
+    regression that drops either field, returns negative counts, or
+    swaps the proposals for a non-list shape means the dry-run output
+    contract changed — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"event-date-backfill response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    total = body.get("total_events_missing_event_date")
+    if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+        raise AssertionError(
+            f"total_events_missing_event_date must be a non-negative int, "
+            f"got {total!r}"
+        )
+    examples = body.get("examples")
+    if not isinstance(examples, list):
+        raise AssertionError(
+            f"examples must be a list of proposed updates, "
+            f"got {type(examples).__name__}"
+        )
+
+
 @dataclass(frozen=True)
 class SmokeEndpoint:
     name: str
@@ -112,6 +143,11 @@ ENDPOINTS: tuple[SmokeEndpoint, ...] = (
     SmokeEndpoint("event detail", "/events/1", (200, 404)),
     SmokeEndpoint("candidate queue", "/registry/candidate-queue?limit=5"),
     SmokeEndpoint("backfill preview", "/movers/backfill-preview?limit=5"),
+    SmokeEndpoint(
+        "event-date backfill",
+        "/diagnostics/event-date-backfill-candidates",
+        body_invariants=(_assert_event_date_backfill_no_paid,),
+    ),
     SmokeEndpoint(
         "auto backfill dry-run",
         "/diagnostics/auto-backfill-dry-run",

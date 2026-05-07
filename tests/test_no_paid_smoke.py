@@ -124,6 +124,7 @@ class TestNoPaidSmokeInventory(unittest.TestCase):
             "/events/1",
             "/registry/candidate-queue?limit=5",
             "/movers/backfill-preview?limit=5",
+            "/diagnostics/event-date-backfill-candidates",
             "/diagnostics/auto-backfill-dry-run",
         ])
         methods = [endpoint.method for endpoint in no_paid_smoke.ENDPOINTS]
@@ -263,6 +264,89 @@ class TestAutoBackfillStatusInvariants(unittest.TestCase):
         self.assertIsNotNone(match)
         self.assertIn(
             no_paid_smoke._assert_auto_backfill_status_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestEventDateBackfillInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on the
+    ``/diagnostics/event-date-backfill-candidates`` response: the
+    candidates count must be a non-negative int and the proposal list
+    must be a list.  Stable zero values are accepted because a clean
+    archive has no missing event_dates.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        body = {
+            "total_events_missing_event_date":    0,
+            "events_with_market_tickers":         0,
+            "ticker_rows_blocked":                0,
+            "timestamp_same_day_confidence_note": "...",
+            "examples":                           [],
+        }
+        no_paid_smoke._assert_event_date_backfill_no_paid(body)
+
+    def test_invariant_passes_when_candidates_and_proposals_present(self) -> None:
+        body = {
+            "total_events_missing_event_date": 3,
+            "events_with_market_tickers":      2,
+            "ticker_rows_blocked":             4,
+            "examples": [
+                {
+                    "event_id":            7,
+                    "headline":            "h",
+                    "timestamp":           "2026-04-01T13:00:00",
+                    "proposed_event_date": "2026-04-01",
+                    "ticker_count":        1,
+                    "tickers":             ["AAPL"],
+                },
+            ],
+        }
+        no_paid_smoke._assert_event_date_backfill_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(
+            AssertionError, "must be a JSON object",
+        ):
+            no_paid_smoke._assert_event_date_backfill_no_paid([])
+
+    def test_invariant_fails_when_candidates_count_missing(self) -> None:
+        body = {"examples": []}
+        with self.assertRaisesRegex(
+            AssertionError, "total_events_missing_event_date",
+        ):
+            no_paid_smoke._assert_event_date_backfill_no_paid(body)
+
+    def test_invariant_fails_when_candidates_count_negative(self) -> None:
+        body = {
+            "total_events_missing_event_date": -1,
+            "examples":                        [],
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "total_events_missing_event_date",
+        ):
+            no_paid_smoke._assert_event_date_backfill_no_paid(body)
+
+    def test_invariant_fails_when_examples_not_list(self) -> None:
+        body = {
+            "total_events_missing_event_date": 0,
+            "examples":                        "nope",
+        }
+        with self.assertRaisesRegex(
+            AssertionError, "examples",
+        ):
+            no_paid_smoke._assert_event_date_backfill_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_event_date_endpoint(self) -> None:
+        match = next(
+            (e for e in no_paid_smoke.ENDPOINTS
+             if e.path == "/diagnostics/event-date-backfill-candidates"),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertEqual(match.method, "GET")
+        self.assertIn(
+            no_paid_smoke._assert_event_date_backfill_no_paid,
             match.body_invariants,
         )
 

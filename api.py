@@ -3396,6 +3396,7 @@ def news(limit: int = 0, cursor: str | None = None):
 # ---------------------------------------------------------------------------
 
 from routes.analyze import router as _analyze_router
+from routes.archive_diagnostics import router as _archive_diagnostics_router
 from routes.candidates import router as _candidates_router
 from routes.diagnostics import router as _diagnostics_router
 from routes.events import router as _events_router
@@ -3406,6 +3407,7 @@ from routes.portfolio import router as _portfolio_router
 from routes.playbook import router as _playbook_router
 
 app.include_router(_analyze_router)
+app.include_router(_archive_diagnostics_router)
 app.include_router(_candidates_router)
 app.include_router(_diagnostics_router)
 app.include_router(_events_router)

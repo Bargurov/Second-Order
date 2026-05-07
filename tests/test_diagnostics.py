@@ -4278,5 +4278,581 @@ class TestNoForward20dBlockersPartialFailure(_TrackRecordBase):
         self.assertEqual(body["examples"], [])
 
 
+# ---------------------------------------------------------------------------
+# /diagnostics/event-date-backfill-candidates — read-only candidate list
+# ---------------------------------------------------------------------------
+
+
+_EVENT_DATE_BACKFILL_TOP_KEYS = (
+    "total_events_missing_event_date",
+    "events_with_market_tickers",
+    "ticker_rows_blocked",
+    "timestamp_same_day_confidence_note",
+    "examples",
+)
+
+_EVENT_DATE_BACKFILL_EXAMPLE_KEYS = (
+    "event_id",
+    "headline",
+    "timestamp",
+    "proposed_event_date",
+    "ticker_count",
+    "tickers",
+)
+
+
+class _EventDateBackfillBase(_Base):
+    """Seeds events with assorted event_date / market_tickers permutations."""
+
+    def _seed_event(
+        self,
+        *,
+        event_date,
+        symbols=None,
+        timestamp=None,
+        headline=None,
+    ) -> None:
+        head = headline or f"EDB seed {uuid.uuid4().hex[:10]}"
+        ev = {
+            "headline":       head,
+            "stage":          "realized",
+            "persistence":    "medium",
+            "event_date":     event_date,
+            "market_tickers": [{"symbol": s.upper()} for s in (symbols or [])],
+        }
+        if timestamp is not None:
+            ev["timestamp"] = timestamp
+        db.save_event(ev)
+
+
+class TestEventDateBackfillCandidatesShape(_EventDateBackfillBase):
+    def test_returns_200_with_top_keyset(self) -> None:
+        r = client.get("/diagnostics/event-date-backfill-candidates")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _EVENT_DATE_BACKFILL_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+    def test_confidence_note_is_non_empty_string(self) -> None:
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        note = body["timestamp_same_day_confidence_note"]
+        self.assertIsInstance(note, str)
+        self.assertTrue(note)
+
+
+class TestEventDateBackfillCandidatesEmptyDB(_EventDateBackfillBase):
+    def test_all_counts_zero_on_empty_db(self) -> None:
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["total_events_missing_event_date"], 0)
+        self.assertEqual(body["events_with_market_tickers"],      0)
+        self.assertEqual(body["ticker_rows_blocked"],             0)
+        self.assertEqual(body["examples"], [])
+
+
+class TestEventDateBackfillCandidatesIdentifies(_EventDateBackfillBase):
+    def test_null_event_date_counts_as_missing(self) -> None:
+        self._seed_event(event_date=None, symbols=["AAPL"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["total_events_missing_event_date"], 1)
+
+    def test_empty_string_event_date_counts_as_missing(self) -> None:
+        self._seed_event(event_date="", symbols=["MSFT"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["total_events_missing_event_date"], 1)
+
+    def test_dated_event_excluded(self) -> None:
+        self._seed_event(
+            event_date=datetime.now().strftime("%Y-%m-%d"),
+            symbols=["AAPL"],
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["total_events_missing_event_date"], 0)
+        self.assertEqual(body["events_with_market_tickers"],      0)
+        self.assertEqual(body["ticker_rows_blocked"],             0)
+        self.assertEqual(body["examples"], [])
+
+
+class TestEventDateBackfillCandidatesTickerCounts(_EventDateBackfillBase):
+    def test_events_with_market_tickers_excludes_empty_ticker_events(self) -> None:
+        self._seed_event(event_date=None, symbols=[])
+        self._seed_event(event_date=None, symbols=["AAPL"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["total_events_missing_event_date"], 2)
+        self.assertEqual(body["events_with_market_tickers"],      1)
+
+    def test_ticker_rows_blocked_sums_unique_symbols_per_event(self) -> None:
+        self._seed_event(event_date=None, symbols=["AAPL", "MSFT"])
+        self._seed_event(event_date="",   symbols=["GOOG"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["ticker_rows_blocked"], 3)
+
+    def test_dated_event_does_not_bump_ticker_rows(self) -> None:
+        self._seed_event(
+            event_date=datetime.now().strftime("%Y-%m-%d"),
+            symbols=["AAPL", "MSFT", "GOOG"],
+        )
+        self._seed_event(event_date=None, symbols=["AAPL"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["ticker_rows_blocked"], 1)
+
+
+class TestEventDateBackfillCandidatesExamples(_EventDateBackfillBase):
+    def test_examples_carry_required_fields(self) -> None:
+        self._seed_event(
+            event_date=None,
+            symbols=["AAPL", "MSFT"],
+            timestamp="2026-04-15T13:30:00",
+            headline="Backfill candidate one",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(len(body["examples"]), 1)
+        ex = body["examples"][0]
+        for key in _EVENT_DATE_BACKFILL_EXAMPLE_KEYS:
+            self.assertIn(key, ex, f"example missing field: {key}")
+        self.assertIsInstance(ex["event_id"], int)
+        self.assertEqual(ex["headline"], "Backfill candidate one")
+        self.assertEqual(ex["timestamp"], "2026-04-15T13:30:00")
+        self.assertEqual(ex["proposed_event_date"], "2026-04-15")
+        self.assertEqual(ex["ticker_count"], 2)
+        self.assertEqual(set(ex["tickers"]), {"AAPL", "MSFT"})
+
+    def test_examples_capped_at_10(self) -> None:
+        for i in range(15):
+            self._seed_event(
+                event_date=None,
+                symbols=[],
+                headline=f"EDB capped seed {i} {uuid.uuid4().hex[:8]}",
+            )
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(body["total_events_missing_event_date"], 15)
+        self.assertEqual(len(body["examples"]), 10)
+
+    def test_examples_ordered_by_event_id_ascending(self) -> None:
+        for i in range(3):
+            self._seed_event(
+                event_date=None, symbols=[],
+                headline=f"EDB order seed {i}",
+            )
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        ids = [e["event_id"] for e in body["examples"]]
+        self.assertEqual(ids, sorted(ids))
+        self.assertEqual(len(ids), 3)
+
+    def test_proposed_event_date_none_when_timestamp_unparseable(self) -> None:
+        self._seed_event(
+            event_date=None,
+            symbols=[],
+            timestamp="not-a-date",
+            headline="EDB unparseable timestamp",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        self.assertEqual(len(body["examples"]), 1)
+        self.assertIsNone(body["examples"][0]["proposed_event_date"])
+
+    def test_example_for_no_ticker_event_carries_empty_tickers_list(self) -> None:
+        self._seed_event(
+            event_date=None,
+            symbols=[],
+            headline="EDB no-ticker example",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-candidates",
+        ).json()
+        ex = body["examples"][0]
+        self.assertEqual(ex["ticker_count"], 0)
+        self.assertEqual(ex["tickers"], [])
+
+
+class TestEventDateBackfillCandidatesNoMutation(_EventDateBackfillBase):
+    def test_repeated_calls_do_not_modify_events_or_price_cache(self) -> None:
+        self._seed_event(event_date=None, symbols=["AAPL"])
+        self._seed_event(event_date="",   symbols=[])
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", datetime.now().strftime("%Y-%m-%d"),
+        )
+        before = _snapshot_tables_for_coverage(self._tmp)
+        for _ in range(3):
+            r = client.get("/diagnostics/event-date-backfill-candidates")
+            self.assertEqual(r.status_code, 200)
+        after = _snapshot_tables_for_coverage(self._tmp)
+        self.assertEqual(
+            before, after,
+            "events + price_cache rows must be byte-identical before and "
+            "after repeated endpoint calls",
+        )
+
+
+class TestEventDateBackfillCandidatesNoProviderCalls(_EventDateBackfillBase):
+    """Endpoint must never call market_check, market_data, yfinance,
+    fetch_daily_cached, or any LLM seam."""
+
+    def test_no_provider_yfinance_or_llm_seam_invoked(self) -> None:
+        from contextlib import ExitStack
+        self._seed_event(event_date=None, symbols=["AAPL"])
+
+        candidate_seams = (
+            ("market_check", "_fetch"),
+            ("market_check", "_fetch_since"),
+            ("market_check", "market_check"),
+            ("market_check", "_check_one_ticker"),
+            ("market_data",  "get_provider"),
+            ("market_data",  "reload_provider_from_env"),
+            ("price_cache",  "fetch_daily_cached"),
+            ("price_cache",  "_purge_corrupt_rows"),
+            ("price_cache",  "_ensure_table"),
+        )
+        with ExitStack() as stack:
+            for module_name, attr in candidate_seams:
+                try:
+                    mod = __import__(module_name)
+                except Exception:
+                    continue
+                if not hasattr(mod, attr):
+                    continue
+                stack.enter_context(patch.object(
+                    mod, attr,
+                    side_effect=AssertionError(
+                        f"event-date-backfill-candidates must not call "
+                        f"{module_name}.{attr}",
+                    ),
+                ))
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError(
+                        "event-date-backfill-candidates must not call "
+                        "yfinance",
+                    ),
+                ))
+            except ImportError:
+                pass
+            r = client.get("/diagnostics/event-date-backfill-candidates")
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["total_events_missing_event_date"], 1)
+        self.assertEqual(body["events_with_market_tickers"],      1)
+        self.assertEqual(body["ticker_rows_blocked"],             1)
+
+
+# ---------------------------------------------------------------------------
+# /diagnostics/event-date-backfill-impact-preview — read-only impact preview
+# ---------------------------------------------------------------------------
+
+
+_EVENT_DATE_BACKFILL_IMPACT_TOP_KEYS = (
+    "candidate_events",
+    "ticker_rows_blocked",
+    "proposed_updates",
+    "projected_no_event_date_after",
+    "projected_ticker_rows_unblocked",
+    "examples",
+)
+
+_EVENT_DATE_BACKFILL_IMPACT_EXAMPLE_KEYS = (
+    "event_id",
+    "headline",
+    "timestamp",
+    "proposed_event_date",
+    "ticker_count",
+    "tickers",
+)
+
+
+class TestEventDateBackfillImpactPreviewShape(_EventDateBackfillBase):
+    def test_returns_200_with_top_keyset(self) -> None:
+        r = client.get("/diagnostics/event-date-backfill-impact-preview")
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        for key in _EVENT_DATE_BACKFILL_IMPACT_TOP_KEYS:
+            self.assertIn(key, body, f"missing top-level key: {key}")
+
+
+class TestEventDateBackfillImpactPreviewEmptyDB(_EventDateBackfillBase):
+    def test_all_counts_zero_on_empty_db(self) -> None:
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"],                 0)
+        self.assertEqual(body["ticker_rows_blocked"],              0)
+        self.assertEqual(body["proposed_updates"],                 0)
+        self.assertEqual(body["projected_no_event_date_after"],    0)
+        self.assertEqual(body["projected_ticker_rows_unblocked"],  0)
+        self.assertEqual(body["examples"], [])
+
+
+class TestEventDateBackfillImpactPreviewIdentifies(_EventDateBackfillBase):
+    def test_null_event_date_counts_as_candidate(self) -> None:
+        self._seed_event(event_date=None, symbols=["AAPL"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"], 1)
+
+    def test_empty_string_event_date_counts_as_candidate(self) -> None:
+        self._seed_event(event_date="", symbols=["MSFT"])
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"], 1)
+
+    def test_dated_event_excluded(self) -> None:
+        self._seed_event(
+            event_date=datetime.now().strftime("%Y-%m-%d"),
+            symbols=["AAPL"],
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"],                 0)
+        self.assertEqual(body["ticker_rows_blocked"],              0)
+        self.assertEqual(body["proposed_updates"],                 0)
+        self.assertEqual(body["projected_no_event_date_after"],    0)
+        self.assertEqual(body["projected_ticker_rows_unblocked"],  0)
+        self.assertEqual(body["examples"], [])
+
+
+class TestEventDateBackfillImpactPreviewProjection(_EventDateBackfillBase):
+    def test_projection_with_only_parseable_timestamps(self) -> None:
+        self._seed_event(
+            event_date=None,
+            symbols=["AAPL", "MSFT"],
+            timestamp="2026-04-15T13:30:00",
+        )
+        self._seed_event(
+            event_date="",
+            symbols=["GOOG"],
+            timestamp="2026-04-16T09:00:00",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"],                 2)
+        self.assertEqual(body["ticker_rows_blocked"],              3)
+        self.assertEqual(body["proposed_updates"],                 2)
+        self.assertEqual(body["projected_no_event_date_after"],    0)
+        self.assertEqual(body["projected_ticker_rows_unblocked"],  3)
+
+    def test_unparseable_timestamp_blocks_remain_after_backfill(self) -> None:
+        # One parseable, one unparseable — both block hydration today, but
+        # only the parseable row is in proposed_updates.
+        self._seed_event(
+            event_date=None,
+            symbols=["AAPL"],
+            timestamp="2026-04-15T13:30:00",
+            headline="EDB-IP parseable",
+        )
+        self._seed_event(
+            event_date=None,
+            symbols=["MSFT"],
+            timestamp="not-a-date",
+            headline="EDB-IP unparseable",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"],                 2)
+        self.assertEqual(body["ticker_rows_blocked"],              2)
+        self.assertEqual(body["proposed_updates"],                 1)
+        self.assertEqual(body["projected_no_event_date_after"],    1)
+        self.assertEqual(body["projected_ticker_rows_unblocked"],  1)
+
+    def test_no_ticker_candidate_still_counted_but_unblocks_zero(self) -> None:
+        self._seed_event(
+            event_date=None,
+            symbols=[],
+            timestamp="2026-04-17T10:00:00",
+            headline="EDB-IP no-tickers",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"],                 1)
+        self.assertEqual(body["ticker_rows_blocked"],              0)
+        self.assertEqual(body["proposed_updates"],                 1)
+        self.assertEqual(body["projected_no_event_date_after"],    0)
+        self.assertEqual(body["projected_ticker_rows_unblocked"],  0)
+
+
+class TestEventDateBackfillImpactPreviewExamples(_EventDateBackfillBase):
+    def test_examples_carry_required_fields(self) -> None:
+        self._seed_event(
+            event_date=None,
+            symbols=["AAPL", "MSFT"],
+            timestamp="2026-04-15T13:30:00",
+            headline="Impact preview example",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(len(body["examples"]), 1)
+        ex = body["examples"][0]
+        for key in _EVENT_DATE_BACKFILL_IMPACT_EXAMPLE_KEYS:
+            self.assertIn(key, ex, f"example missing field: {key}")
+        self.assertIsInstance(ex["event_id"], int)
+        self.assertEqual(ex["headline"], "Impact preview example")
+        self.assertEqual(ex["timestamp"], "2026-04-15T13:30:00")
+        self.assertEqual(ex["proposed_event_date"], "2026-04-15")
+        self.assertEqual(ex["ticker_count"], 2)
+        self.assertEqual(set(ex["tickers"]), {"AAPL", "MSFT"})
+
+    def test_examples_capped_at_10(self) -> None:
+        for i in range(15):
+            self._seed_event(
+                event_date=None,
+                symbols=[],
+                timestamp="2026-04-15T13:30:00",
+                headline=f"EDB-IP capped {i} {uuid.uuid4().hex[:8]}",
+            )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(body["candidate_events"],   15)
+        self.assertEqual(body["proposed_updates"],   15)
+        self.assertEqual(len(body["examples"]),      10)
+
+    def test_examples_ordered_by_event_id_ascending(self) -> None:
+        for i in range(3):
+            self._seed_event(
+                event_date=None,
+                symbols=[],
+                timestamp="2026-04-15T13:30:00",
+                headline=f"EDB-IP order {i}",
+            )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        ids = [e["event_id"] for e in body["examples"]]
+        self.assertEqual(ids, sorted(ids))
+        self.assertEqual(len(ids), 3)
+
+    def test_unparseable_timestamp_not_in_examples(self) -> None:
+        # Examples are sampled from proposed updates, not raw candidates.
+        self._seed_event(
+            event_date=None,
+            symbols=["AAPL"],
+            timestamp="not-a-date",
+            headline="EDB-IP unparseable example excluded",
+        )
+        self._seed_event(
+            event_date=None,
+            symbols=["MSFT"],
+            timestamp="2026-04-15T13:30:00",
+            headline="EDB-IP parseable example included",
+        )
+        body = client.get(
+            "/diagnostics/event-date-backfill-impact-preview",
+        ).json()
+        self.assertEqual(len(body["examples"]), 1)
+        ex = body["examples"][0]
+        self.assertEqual(ex["headline"], "EDB-IP parseable example included")
+        self.assertEqual(ex["proposed_event_date"], "2026-04-15")
+
+
+class TestEventDateBackfillImpactPreviewNoMutation(_EventDateBackfillBase):
+    def test_repeated_calls_do_not_modify_events_or_price_cache(self) -> None:
+        self._seed_event(event_date=None, symbols=["AAPL"])
+        self._seed_event(event_date="",   symbols=[])
+        self._seed_event(
+            event_date=None, symbols=["MSFT"], timestamp="not-a-date",
+        )
+        _insert_price_cache_row_for_coverage(
+            self._tmp, "AAPL", datetime.now().strftime("%Y-%m-%d"),
+        )
+        before = _snapshot_tables_for_coverage(self._tmp)
+        for _ in range(3):
+            r = client.get(
+                "/diagnostics/event-date-backfill-impact-preview",
+            )
+            self.assertEqual(r.status_code, 200)
+        after = _snapshot_tables_for_coverage(self._tmp)
+        self.assertEqual(
+            before, after,
+            "events + price_cache rows must be byte-identical before and "
+            "after repeated impact-preview calls",
+        )
+
+
+class TestEventDateBackfillImpactPreviewNoProviderCalls(_EventDateBackfillBase):
+    """Endpoint must never call market_check, market_data, yfinance,
+    fetch_daily_cached, or any LLM seam."""
+
+    def test_no_provider_yfinance_or_llm_seam_invoked(self) -> None:
+        from contextlib import ExitStack
+        self._seed_event(event_date=None, symbols=["AAPL"])
+
+        candidate_seams = (
+            ("market_check", "_fetch"),
+            ("market_check", "_fetch_since"),
+            ("market_check", "market_check"),
+            ("market_check", "_check_one_ticker"),
+            ("market_data",  "get_provider"),
+            ("market_data",  "reload_provider_from_env"),
+            ("price_cache",  "fetch_daily_cached"),
+            ("price_cache",  "_purge_corrupt_rows"),
+            ("price_cache",  "_ensure_table"),
+        )
+        with ExitStack() as stack:
+            for module_name, attr in candidate_seams:
+                try:
+                    mod = __import__(module_name)
+                except Exception:
+                    continue
+                if not hasattr(mod, attr):
+                    continue
+                stack.enter_context(patch.object(
+                    mod, attr,
+                    side_effect=AssertionError(
+                        f"event-date-backfill-impact-preview must not "
+                        f"call {module_name}.{attr}",
+                    ),
+                ))
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError(
+                        "event-date-backfill-impact-preview must not "
+                        "call yfinance",
+                    ),
+                ))
+            except ImportError:
+                pass
+            r = client.get(
+                "/diagnostics/event-date-backfill-impact-preview",
+            )
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body["candidate_events"],   1)
+        self.assertEqual(body["ticker_rows_blocked"], 1)
+        self.assertEqual(body["proposed_updates"],   1)
+
+
 if __name__ == "__main__":
     unittest.main()
