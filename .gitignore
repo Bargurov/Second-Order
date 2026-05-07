@@ -94,3 +94,6 @@ frontend/*.tsbuildinfo
 Thumbs.db
 Desktop.ini
 docs/
+future_ideas.md
+.githooks/
+design/
