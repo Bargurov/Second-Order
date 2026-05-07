@@ -147,21 +147,24 @@ class TestNoPaidSmokeRunner(_Base):
         results = no_paid_smoke.run_smoke(client=client)
         after = _snapshot_db(self._tmp)
 
+        expected_total = (
+            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
+        )
         failures = [r for r in results if not r.ok]
         self.assertEqual(failures, [])
-        self.assertEqual(len(results), len(no_paid_smoke.ENDPOINTS))
+        self.assertEqual(len(results), expected_total)
         self.assertEqual(before, after, "smoke endpoints must not mutate DB")
 
     def test_json_summary_shape(self) -> None:
         results = no_paid_smoke.run_smoke(client=client)
         payload = no_paid_smoke.summarize(results)
+        expected_total = (
+            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
+        )
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["summary"]["failed"], 0)
-        self.assertEqual(
-            payload["summary"]["total"],
-            len(no_paid_smoke.ENDPOINTS),
-        )
-        self.assertEqual(len(payload["checks"]), len(no_paid_smoke.ENDPOINTS))
+        self.assertEqual(payload["summary"]["total"], expected_total)
+        self.assertEqual(len(payload["checks"]), expected_total)
         for check in payload["checks"]:
             self.assertIn("path", check)
             self.assertIn("ok", check)
@@ -191,8 +194,13 @@ class TestNoPaidSmokeRunner(_Base):
             client=BadClient(),
             guard_provider_seams=False,
         )
-        self.assertEqual(len(results), len(no_paid_smoke.ENDPOINTS))
+        expected_total = (
+            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
+        )
+        self.assertEqual(len(results), expected_total)
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+        # Endpoints run first; the first failed result must be an endpoint
+        # row carrying the bad-client error verbatim.
         self.assertIn("unexpected paid/provider call", results[0].error or "")
 
     def test_text_table_mentions_pass_summary(self) -> None:
@@ -595,4 +603,595 @@ class TestAutoBackfillStatusSmokeRunFails(_Base):
         )
         self.assertFalse(status_result.ok)
         self.assertIn("body invariant failed", status_result.error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+
+# ---------------------------------------------------------------------------
+# No-forward-20d CLI smoke coverage — script-level smoke for the two new
+# read-only diagnostics CLIs.  Every entry in ``SCRIPTS`` is invoked
+# in-process under the same ``guard_no_paid_provider_calls()`` context as
+# the HTTP smoke, so a forbidden seam in either script trips the same
+# raisers and lands as a failed row.
+# ---------------------------------------------------------------------------
+
+
+_GAP_REPORT_MODULE = "scripts.no_forward_20d_gap_report"
+_REFRESHABILITY_EXPORT_MODULE = "scripts.no_forward_20d_refreshability_export"
+_AUTO_ADJUST_PREVIEW_MODULE = "scripts.auto_adjust_mismatch_repair_preview"
+
+
+_VALID_GAP_REPORT_BODY = {
+    "total_no_forward_20d":          0,
+    "too_recent":                    0,
+    "auto_adjust_mismatch":          0,
+    "cache_window_gap":              0,
+    "likely_delisted_or_sparse":     0,
+    "refreshable_gap_examples":      [],
+    "non_refreshable_examples":      [],
+    "auto_adjust_mismatch_details":  [],
+    "recommended_next_action":       "no_action_needed_no_gaps",
+}
+
+
+_VALID_REFRESHABILITY_BODY = {
+    "ok":     True,
+    "count":  0,
+    "fields": [
+        "event_id",
+        "event_date",
+        "symbol",
+        "diagnostic_reason",
+        "cache_max_date",
+        "horizon_20d_date",
+        "gap_days",
+        "source",
+    ],
+    "rows":   [],
+}
+
+
+class TestNoPaidSmokeScriptInventory(unittest.TestCase):
+    """The script smoke inventory must pin exactly the read-only no-paid
+    CLIs the runbook depends on (the two no-forward-20d helpers and the
+    auto-adjust mismatch repair preview).  Adding an unintended script
+    here would leak the smoke into territory the no-paid guard cannot
+    reason about, so the inventory is pinned tightly.
+    """
+
+    def test_script_inventory_matches_pinned_set(self) -> None:
+        modules = [s.module for s in no_paid_smoke.SCRIPTS]
+        self.assertEqual(modules, [
+            _GAP_REPORT_MODULE,
+            _REFRESHABILITY_EXPORT_MODULE,
+            _AUTO_ADJUST_PREVIEW_MODULE,
+        ])
+
+    def test_each_script_passes_json_arg_for_machine_parseable_output(self) -> None:
+        for script in no_paid_smoke.SCRIPTS:
+            self.assertIn(
+                "--json", script.args,
+                f"script {script.module!r} must request JSON output for "
+                f"the smoke runner to validate body invariants",
+            )
+
+    def test_each_script_resolves_under_scripts_package(self) -> None:
+        # Defense-in-depth: a future regression that smuggles a non-script
+        # module into the smoke must trip here.
+        for script in no_paid_smoke.SCRIPTS:
+            self.assertTrue(
+                script.module.startswith("scripts."),
+                f"script module {script.module!r} must live under "
+                f"the ``scripts`` package",
+            )
+
+    def test_assert_script_inventory_is_zero_cost_passes_on_clean_inventory(
+        self,
+    ) -> None:
+        # No exception expected on the production inventory.
+        no_paid_smoke._assert_script_inventory_is_zero_cost()
+
+
+class TestNoForwardGapReportInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on
+    ``scripts.no_forward_20d_gap_report --json``: every count must be a
+    non-negative int, every example list must be a list, and the
+    recommendation must come from the script's fixed vocabulary.  Stable
+    zero values are accepted because a clean archive has no gaps.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(
+            _VALID_GAP_REPORT_BODY,
+        )
+
+    def test_invariant_passes_when_counts_and_examples_populated(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body["total_no_forward_20d"] = 5
+        body["cache_window_gap"]     = 3
+        body["auto_adjust_mismatch"] = 2
+        body["refreshable_gap_examples"] = [
+            {"event_id": 1, "ticker": "AAPL",
+             "diagnostic_reason": "cache_max_before_20d_horizon"},
+        ]
+        body["recommended_next_action"] = "fix_auto_adjust_flag_mismatch"
+        no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid([])
+
+    def test_invariant_fails_when_total_missing(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body.pop("total_no_forward_20d")
+        with self.assertRaisesRegex(
+            AssertionError, "total_no_forward_20d must be a non-negative int",
+        ):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_invariant_fails_when_count_negative(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body["cache_window_gap"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "cache_window_gap must be a non-negative int",
+        ):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_invariant_fails_when_count_is_bool(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body["too_recent"] = True
+        with self.assertRaisesRegex(
+            AssertionError, "too_recent must be a non-negative int",
+        ):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_invariant_fails_when_examples_not_list(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body["refreshable_gap_examples"] = "nope"
+        with self.assertRaisesRegex(
+            AssertionError, "refreshable_gap_examples must be a list",
+        ):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_invariant_fails_when_auto_adjust_details_not_list(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body["auto_adjust_mismatch_details"] = {"oops": True}
+        with self.assertRaisesRegex(
+            AssertionError, "auto_adjust_mismatch_details must be a list",
+        ):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_invariant_fails_when_recommendation_outside_vocabulary(self) -> None:
+        body = dict(_VALID_GAP_REPORT_BODY)
+        body["recommended_next_action"] = "drop_everything_and_panic"
+        with self.assertRaisesRegex(
+            AssertionError, "recommended_next_action must be one of",
+        ):
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_gap_report_script(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS if s.module == _GAP_REPORT_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_no_forward_20d_gap_report_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestNoForwardRefreshabilityExportInvariants(unittest.TestCase):
+    """The smoke runner pins the export envelope on
+    ``scripts.no_forward_20d_refreshability_export --json``:
+    ``{ok=True, count: non-negative int, fields: pinned 8-tuple,
+    rows: list}``.  Stable zero values are accepted because a clean
+    archive has no refreshable rows.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+            _VALID_REFRESHABILITY_BODY,
+        )
+
+    def test_invariant_passes_when_rows_populated(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["count"] = 1
+        body["rows"] = [{
+            "event_id":          7,
+            "event_date":        "2026-04-01",
+            "symbol":            "AAPL",
+            "diagnostic_reason": "cache_max_before_20d_horizon",
+            "cache_max_date":    "2026-04-15",
+            "horizon_20d_date":  "2026-04-29",
+            "gap_days":          14,
+            "source":            "no_forward_20d_blockers",
+        }]
+        no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                [],
+            )
+
+    def test_invariant_fails_when_ok_not_true(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["ok"] = False
+        with self.assertRaisesRegex(AssertionError, "ok must be True"):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_missing(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body.pop("count")
+        with self.assertRaisesRegex(
+            AssertionError, "count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_negative(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["count"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_is_bool(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["count"] = True
+        with self.assertRaisesRegex(
+            AssertionError, "count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_fields_not_list(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["fields"] = "nope"
+        with self.assertRaisesRegex(AssertionError, "fields must be a list"):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_fields_diverge_from_pinned_set(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["fields"] = ["event_id", "symbol"]  # missing the rest
+        with self.assertRaisesRegex(
+            AssertionError, "fields must equal the pinned export shape",
+        ):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_rows_not_list(self) -> None:
+        body = dict(_VALID_REFRESHABILITY_BODY)
+        body["rows"] = {"oops": True}
+        with self.assertRaisesRegex(AssertionError, "rows must be a list"):
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_export_script(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _REFRESHABILITY_EXPORT_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_no_forward_20d_refreshability_export_no_paid,
+            match.body_invariants,
+        )
+
+
+_VALID_AUTO_ADJUST_PREVIEW_BODY = {
+    "total_mismatches":        0,
+    "repairable_count":        0,
+    "non_repairable_count":    0,
+    "counts_by_status":        {},
+    "proposed_rows":           [],
+    "recommended_next_action": "no_action_needed_no_mismatches",
+}
+
+
+class TestAutoAdjustMismatchRepairPreviewInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on
+    ``scripts.auto_adjust_mismatch_repair_preview --json``: every count
+    must be a non-negative int, ``counts_by_status`` must be a dict,
+    ``proposed_rows`` must be a list, and ``recommended_next_action``
+    must come from the script's fixed vocabulary.  Stable zero values
+    are accepted because a clean archive has no mismatches.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+            _VALID_AUTO_ADJUST_PREVIEW_BODY,
+        )
+
+    def test_invariant_passes_when_counts_and_rows_populated(self) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["total_mismatches"]     = 4
+        body["repairable_count"]     = 3
+        body["non_repairable_count"] = 1
+        body["counts_by_status"] = {
+            "repairable_flag_fix":               3,
+            "not_repairable_no_in_window_data":  1,
+        }
+        body["proposed_rows"] = [
+            {
+                "event_id":      7,
+                "event_date":    "2026-04-01",
+                "symbol":        "AAPL",
+                "repair_status": "repairable_flag_fix",
+            },
+        ]
+        body["recommended_next_action"] = "fix_auto_adjust_flag_mismatch"
+        no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                [],
+            )
+
+    def test_invariant_fails_when_total_missing(self) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body.pop("total_mismatches")
+        with self.assertRaisesRegex(
+            AssertionError, "total_mismatches must be a non-negative int",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_repairable_count_negative(self) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["repairable_count"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "repairable_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_non_repairable_count_is_bool(self) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["non_repairable_count"] = True
+        with self.assertRaisesRegex(
+            AssertionError, "non_repairable_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_counts_by_status_not_dict(self) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["counts_by_status"] = ["nope"]
+        with self.assertRaisesRegex(
+            AssertionError, "counts_by_status must be a dict",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_proposed_rows_not_list(self) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["proposed_rows"] = {"oops": True}
+        with self.assertRaisesRegex(
+            AssertionError, "proposed_rows must be a list",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_recommendation_outside_vocabulary(
+        self,
+    ) -> None:
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["recommended_next_action"] = "drop_everything_and_panic"
+        with self.assertRaisesRegex(
+            AssertionError, "recommended_next_action must be one of",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_partition_does_not_sum_to_total(
+        self,
+    ) -> None:
+        # ``total_mismatches`` is a partition of
+        # ``repairable_count + non_repairable_count`` by construction.
+        # Production code enforces this; the smoke pins it so a future
+        # accounting drift in the preview tripwires here, not silently in
+        # downstream consumers' math.
+        body = dict(_VALID_AUTO_ADJUST_PREVIEW_BODY)
+        body["total_mismatches"]     = 5
+        body["repairable_count"]     = 3
+        body["non_repairable_count"] = 1  # 3 + 1 != 5
+        with self.assertRaisesRegex(
+            AssertionError,
+            "repairable_count.*non_repairable_count.*must sum to total_mismatches",
+        ):
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_preview_script(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _AUTO_ADJUST_PREVIEW_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_auto_adjust_mismatch_repair_preview_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestNoPaidSmokeScriptRunner(_Base):
+    """End-to-end: ``run_smoke`` must run every script in the inventory
+    in-process, under the same provider/paid guard as the HTTP smoke,
+    and surface a SmokeResult per script in the same shape as endpoint
+    results.
+    """
+
+    def _script_results(self, results: list) -> list:
+        script_modules = {s.module for s in no_paid_smoke.SCRIPTS}
+        return [
+            r for r in results
+            if any(mod in r.path for mod in script_modules)
+        ]
+
+    def test_smoke_includes_one_result_per_script(self) -> None:
+        results = no_paid_smoke.run_smoke(client=client)
+        script_results = self._script_results(results)
+        self.assertEqual(len(script_results), len(no_paid_smoke.SCRIPTS))
+
+    def test_each_script_smoke_result_passes_against_clean_archive(self) -> None:
+        results = no_paid_smoke.run_smoke(client=client)
+        script_results = self._script_results(results)
+        for r in script_results:
+            self.assertTrue(
+                r.ok,
+                f"script smoke unexpectedly failed: name={r.name!r} "
+                f"path={r.path!r} error={r.error!r}",
+            )
+
+    def test_script_results_appear_after_endpoint_results(self) -> None:
+        # Endpoint smoke is the established baseline; scripts run after
+        # so a smoke output reads top-down from endpoints to CLIs and so
+        # ``results[0].error`` keeps its existing semantics under the
+        # bad-client failure test.
+        results = no_paid_smoke.run_smoke(client=client)
+        endpoint_paths = {e.path for e in no_paid_smoke.ENDPOINTS}
+        endpoint_indices = [
+            i for i, r in enumerate(results) if r.path in endpoint_paths
+        ]
+        script_indices = [
+            i for i, r in enumerate(results)
+            if r not in [results[j] for j in endpoint_indices]
+        ]
+        if script_indices and endpoint_indices:
+            self.assertGreater(min(script_indices), max(endpoint_indices))
+
+    def test_total_results_equals_endpoints_plus_scripts(self) -> None:
+        results = no_paid_smoke.run_smoke(client=client)
+        self.assertEqual(
+            len(results),
+            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS),
+        )
+
+    def test_failed_script_main_is_reported_as_failed_result(self) -> None:
+        from unittest.mock import patch
+
+        bad_module = no_paid_smoke.SCRIPTS[0].module
+
+        def _broken_main(_argv, *, out=None):
+            raise RuntimeError("synthetic script failure")
+
+        target_module = __import__(bad_module, fromlist=["main"])
+        with patch.object(target_module, "main", _broken_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [r for r in results if bad_module in r.path]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("synthetic script failure", broken[0].error or "")
+
+    def test_script_invariant_failure_marks_only_that_script_failed(self) -> None:
+        from unittest.mock import patch
+
+        bad_module = no_paid_smoke.SCRIPTS[0].module
+        target_module = __import__(bad_module, fromlist=["main"])
+
+        def _bad_main(_argv, *, out=None):
+            print(json.dumps({"unexpected": "shape"}), file=out)
+            return 0
+
+        with patch.object(target_module, "main", _bad_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [r for r in results if bad_module in r.path]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("body invariant failed", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+    def test_smoke_run_does_not_mutate_db(self) -> None:
+        before = _snapshot_db(self._tmp)
+        results = no_paid_smoke.run_smoke(client=client)
+        after = _snapshot_db(self._tmp)
+        self.assertEqual(
+            before, after,
+            "script smoke must not mutate the archive — "
+            f"failures: {[r for r in results if not r.ok]}",
+        )
+
+
+class TestNoPaidSmokeScriptGuardFailsClosed(_Base):
+    """The script smoke must run under the same provider/paid guard as the
+    HTTP smoke.  If a script's main attempts a forbidden seam, the guard
+    raises and the script's SmokeResult must surface the failure.
+    """
+
+    def test_script_invoking_forbidden_seam_marks_smoke_failed(self) -> None:
+        from unittest.mock import patch
+
+        bad_module = no_paid_smoke.SCRIPTS[0].module
+        target_module = __import__(bad_module, fromlist=["main"])
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            # This is exactly what the no-paid guard pins.  If the
+            # script's main reaches a forbidden seam, the raiser fires
+            # and the smoke marks the script result failed.
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [r for r in results if bad_module in r.path]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+    def test_auto_adjust_preview_under_guard_fails_closed_on_seam(
+        self,
+    ) -> None:
+        # Symmetric pin for the auto-adjust mismatch repair preview:
+        # adding it to ``SCRIPTS`` must wire it through the same
+        # provider/paid guard as the older smoke scripts.  If a future
+        # regression has the preview reach ``market_check`` /
+        # ``yfinance`` / LLM seams, the guard fires and the smoke marks
+        # the result failed.
+        from unittest.mock import patch
+
+        target_module = __import__(
+            _AUTO_ADJUST_PREVIEW_MODULE, fromlist=["main"],
+        )
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [
+            r for r in results if _AUTO_ADJUST_PREVIEW_MODULE in r.path
+        ]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])

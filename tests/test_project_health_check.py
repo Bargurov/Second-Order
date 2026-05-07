@@ -16,9 +16,10 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
-import tempfile
 import unittest
+import uuid
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -138,7 +139,144 @@ def _patch_all_clean():
         phc, "compute_archive_consistency_local",
         return_value=_ok_archive_consistency(),
     ))
+    stack.enter_context(patch.object(
+        phc, "_compute_no_forward_20d_breakdown",
+        return_value=_ok_no_forward_20d_breakdown(),
+    ))
+    stack.enter_context(patch.object(
+        phc, "_compute_auto_adjust_repair_preview",
+        return_value=_ok_auto_adjust_repair_preview(),
+    ))
+    stack.enter_context(patch.object(
+        phc, "_check_auto_adjust_repair_writer_present",
+        return_value=False,
+    ))
+    stack.enter_context(patch.object(
+        phc, "find_latest_backup",
+        return_value=Path("backups/events-20260507T120000.db"),
+    ))
     return stack
+
+
+# ---------------------------------------------------------------------------
+# auto_adjust_repair_preview fixture — mirrors the shape produced by
+# ``scripts.auto_adjust_mismatch_repair_preview._build_payload`` so the
+# aggregator's seam never has to special-case test payloads.
+# ---------------------------------------------------------------------------
+
+
+def _ok_auto_adjust_repair_preview() -> dict:
+    return {
+        "available":             True,
+        "total_mismatches":      0,
+        "repairable_count":      0,
+        "non_repairable_count":  0,
+        "counts_by_status":      {},
+        "proposed_rows":         [],
+        "recommended_next_action": "no_action_needed_no_mismatches",
+    }
+
+
+def _auto_adjust_repair_preview_with(
+    *,
+    available: bool = True,
+    repairable: int = 0,
+    non_repairable: int = 0,
+    recommended_next_action: str | None = None,
+) -> dict:
+    """Build a repair-preview payload with selected counts populated.
+    ``available=False`` zeros every count and forces the
+    ``preview_unavailable`` recommendation to mirror the production
+    unavailable shape.
+    """
+    if not available:
+        return {
+            "available":             False,
+            "total_mismatches":      0,
+            "repairable_count":      0,
+            "non_repairable_count":  0,
+            "counts_by_status":      {},
+            "proposed_rows":         [],
+            "recommended_next_action": "preview_unavailable",
+        }
+    if recommended_next_action is None:
+        if repairable + non_repairable == 0:
+            recommended_next_action = "no_action_needed_no_mismatches"
+        elif repairable > 0:
+            recommended_next_action = "fix_auto_adjust_flag_mismatch"
+        else:
+            recommended_next_action = "investigate_non_repairable_rows"
+    counts_by_status: dict[str, int] = {}
+    if repairable:
+        counts_by_status["repairable_flag_fix"] = repairable
+    if non_repairable:
+        counts_by_status["not_repairable_no_in_window_data"] = non_repairable
+    return {
+        "available":             True,
+        "total_mismatches":      repairable + non_repairable,
+        "repairable_count":      repairable,
+        "non_repairable_count":  non_repairable,
+        "counts_by_status":      counts_by_status,
+        "proposed_rows":         [],
+        "recommended_next_action": recommended_next_action,
+    }
+
+
+# ---------------------------------------------------------------------------
+# no_forward_20d breakdown fixture — mirrors the diagnostics shape so
+# the aggregator's seam never has to special-case test payloads.
+# ---------------------------------------------------------------------------
+
+
+_NF20_REASON_KEYS_FIXTURE = (
+    "event_too_recent_for_20d",
+    "auto_adjust_mismatch_for_20d",
+    "likely_delisted_or_sparse",
+    "cache_max_before_20d_horizon",
+)
+
+
+def _ok_no_forward_20d_breakdown() -> dict:
+    return {
+        "available":            True,
+        "total_no_forward_20d": 0,
+        "counts":               {k: 0 for k in _NF20_REASON_KEYS_FIXTURE},
+        "examples":             [],
+    }
+
+
+def _no_forward_20d_breakdown_with(
+    *,
+    available: bool = True,
+    too_recent: int = 0,
+    auto_adjust_mismatch: int = 0,
+    likely_delisted_or_sparse: int = 0,
+    cache_window_gap: int = 0,
+) -> dict:
+    """Build a breakdown payload with selected sub-counts populated.
+    The total is the sum so the aggregator's slim section receives a
+    self-consistent fixture.  ``available=False`` zeros every count to
+    mirror the production unavailable shape.
+    """
+    if not available:
+        return {
+            "available":            False,
+            "total_no_forward_20d": 0,
+            "counts":               {k: 0 for k in _NF20_REASON_KEYS_FIXTURE},
+            "examples":             [],
+        }
+    counts = {
+        "event_too_recent_for_20d":      int(too_recent),
+        "auto_adjust_mismatch_for_20d":  int(auto_adjust_mismatch),
+        "likely_delisted_or_sparse":     int(likely_delisted_or_sparse),
+        "cache_max_before_20d_horizon":  int(cache_window_gap),
+    }
+    return {
+        "available":            True,
+        "total_no_forward_20d": sum(counts.values()),
+        "counts":               counts,
+        "examples":             [],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +302,9 @@ class TestAllPass(unittest.TestCase):
             "event_date_backfill_candidates",
             "archive_consistency",
             "event_date_backfill_impact",
+            "no_forward_20d_blockers",
+            "auto_adjust_repair_preview",
+            "auto_adjust_repair_write_smoke",
         ):
             self.assertIsNotNone(
                 payload.get(key),
@@ -188,6 +329,9 @@ class TestPayloadShape(unittest.TestCase):
             "event_date_backfill_candidates",
             "archive_consistency",
             "event_date_backfill_impact",
+            "no_forward_20d_blockers",
+            "auto_adjust_repair_preview",
+            "auto_adjust_repair_write_smoke",
             "warnings",
             "errors",
             "accepted_warnings",
@@ -701,6 +845,465 @@ class TestEventDateBackfillImpact(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Classification — no_forward_20d_blockers
+# ---------------------------------------------------------------------------
+
+
+class TestNoForward20dBlockers(unittest.TestCase):
+    def test_section_present_in_payload(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertIn("no_forward_20d_blockers", payload)
+        self.assertIsNotNone(payload["no_forward_20d_blockers"])
+
+    def test_section_carries_slim_summary_keys_only(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(set(section.keys()), {
+            "available",
+            "total_no_forward_20d",
+            "too_recent",
+            "auto_adjust_mismatch",
+            "cache_window_gap",
+            "likely_delisted_or_sparse",
+            "recommended_next_action",
+        })
+
+    def test_section_omits_examples_list(self) -> None:
+        # The aggregator surfaces counts only — the dedicated CLI
+        # owns the example drill-down so we never embed those rows
+        # twice.  Verify even a bulky breakdown is slimmed to ints.
+        bulky = _no_forward_20d_breakdown_with(cache_window_gap=4)
+        bulky["examples"] = [{"event_id": i} for i in range(50)]
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=bulky,
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertNotIn("examples", section)
+        self.assertIsInstance(section["cache_window_gap"], int)
+
+    def test_zero_breakdown_yields_no_action_recommendation(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertTrue(section["available"])
+        self.assertEqual(section["total_no_forward_20d"], 0)
+        self.assertEqual(section["recommended_next_action"],
+                         "no_action_needed_no_gaps")
+
+    def test_too_recent_count_propagates(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(too_recent=5),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(section["too_recent"],           5)
+        self.assertEqual(section["total_no_forward_20d"], 5)
+        self.assertEqual(section["recommended_next_action"],
+                         "wait_or_accept_no_refreshable_gaps")
+
+    def test_auto_adjust_mismatch_count_propagates(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(
+                    auto_adjust_mismatch=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(section["auto_adjust_mismatch"], 3)
+        self.assertEqual(section["recommended_next_action"],
+                         "fix_auto_adjust_flag_mismatch")
+
+    def test_cache_window_gap_count_propagates(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(
+                    cache_window_gap=7,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(section["cache_window_gap"], 7)
+        self.assertEqual(section["recommended_next_action"],
+                         "run_targeted_refresh_for_cache_window_gap")
+
+    def test_likely_delisted_count_propagates(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(
+                    likely_delisted_or_sparse=2,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(section["likely_delisted_or_sparse"], 2)
+        # Only delisted is non-zero → no refreshable gaps → wait/accept.
+        self.assertEqual(section["recommended_next_action"],
+                         "wait_or_accept_no_refreshable_gaps")
+
+    def test_auto_adjust_takes_priority_over_cache_window_gap(self) -> None:
+        # Recommendation precedence: auto_adj > cache_gap > wait > none.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(
+                    auto_adjust_mismatch=1,
+                    cache_window_gap=10,
+                    too_recent=2,
+                    likely_delisted_or_sparse=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(section["recommended_next_action"],
+                         "fix_auto_adjust_flag_mismatch")
+
+    def test_cache_window_gap_takes_priority_over_wait(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(
+                    cache_window_gap=4,
+                    too_recent=2,
+                    likely_delisted_or_sparse=1,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertEqual(section["recommended_next_action"],
+                         "run_targeted_refresh_for_cache_window_gap")
+
+    def test_unavailable_breakdown_yields_unavailable_recommendation(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(available=False),
+            ):
+                payload = phc.run_health_check()
+        section = payload["no_forward_20d_blockers"]
+        self.assertFalse(section["available"])
+        self.assertEqual(section["total_no_forward_20d"], 0)
+        self.assertEqual(section["recommended_next_action"],
+                         "breakdown_unavailable")
+
+    def test_section_does_not_emit_warnings_or_errors(self) -> None:
+        # Operator info only — the recommended_next_action field
+        # carries the actionable signal.  Mirrors the impact section's
+        # comment about double-reporting risk.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                return_value=_no_forward_20d_breakdown_with(
+                    auto_adjust_mismatch=5,
+                    cache_window_gap=10,
+                ),
+            ):
+                payload = phc.run_health_check()
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("no_forward_20d_blockers", msg)
+        self.assertTrue(payload["ok"])
+
+    def test_seam_exception_captured_others_run(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_no_forward_20d_breakdown",
+                side_effect=RuntimeError("breakdown crashed"),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        self.assertTrue(any(
+            "no_forward_20d_blockers" in e and "breakdown crashed" in e
+            for e in payload["errors"]
+        ), f"missing exception line: {payload['errors']}")
+        # Other sections still ran to completion.
+        self.assertIsNotNone(payload["repo_hygiene"])
+        self.assertIsNotNone(payload["archive_consistency"])
+
+
+# ---------------------------------------------------------------------------
+# Classification — auto_adjust_repair_preview
+# ---------------------------------------------------------------------------
+
+
+class TestAutoAdjustRepairPreview(unittest.TestCase):
+    def test_section_present_in_payload(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertIn("auto_adjust_repair_preview", payload)
+        self.assertIsNotNone(payload["auto_adjust_repair_preview"])
+
+    def test_section_carries_slim_summary_keys_only(self) -> None:
+        # The aggregator MUST surface only the four summary fields the
+        # task spec lists; the per-row drill-down belongs to the
+        # dedicated CLI to keep the JSON shape compact.
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertEqual(set(section.keys()), {
+            "total_mismatches",
+            "repairable_count",
+            "non_repairable_count",
+            "recommended_next_action",
+        })
+
+    def test_section_omits_proposed_rows_and_status_breakdown(self) -> None:
+        # Even when the underlying preview returns a bulky payload the
+        # aggregator must slim it to the four summary fields.  Verifies
+        # the slim contract holds when proposed_rows / counts_by_status
+        # are populated upstream.
+        bulky = _auto_adjust_repair_preview_with(
+            repairable=2, non_repairable=1,
+        )
+        bulky["proposed_rows"] = [{"event_id": i} for i in range(50)]
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                return_value=bulky,
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertNotIn("proposed_rows",    section)
+        self.assertNotIn("counts_by_status", section)
+        self.assertIsInstance(section["repairable_count"],     int)
+        self.assertIsInstance(section["non_repairable_count"], int)
+
+    def test_zero_preview_yields_no_action_recommendation(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertEqual(section["total_mismatches"], 0)
+        self.assertEqual(section["recommended_next_action"],
+                         "no_action_needed_no_mismatches")
+
+    def test_repairable_count_propagates(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                return_value=_auto_adjust_repair_preview_with(
+                    repairable=4,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertEqual(section["total_mismatches"],     4)
+        self.assertEqual(section["repairable_count"],     4)
+        self.assertEqual(section["non_repairable_count"], 0)
+        self.assertEqual(section["recommended_next_action"],
+                         "fix_auto_adjust_flag_mismatch")
+
+    def test_non_repairable_count_propagates(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                return_value=_auto_adjust_repair_preview_with(
+                    non_repairable=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertEqual(section["total_mismatches"],     3)
+        self.assertEqual(section["non_repairable_count"], 3)
+        self.assertEqual(section["repairable_count"],     0)
+        self.assertEqual(section["recommended_next_action"],
+                         "investigate_non_repairable_rows")
+
+    def test_repairable_recommendation_takes_priority_over_investigate(self) -> None:
+        # When both buckets are non-zero, the existing repair-preview
+        # script ranks the cheaper unblock first (any repairable row
+        # → fix_auto_adjust_flag_mismatch).  The aggregator must not
+        # invent its own priority; it propagates the upstream signal.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                return_value=_auto_adjust_repair_preview_with(
+                    repairable=2, non_repairable=5,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertEqual(section["total_mismatches"], 7)
+        self.assertEqual(section["recommended_next_action"],
+                         "fix_auto_adjust_flag_mismatch")
+
+    def test_unavailable_preview_yields_unavailable_recommendation(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                return_value=_auto_adjust_repair_preview_with(
+                    available=False,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_preview"]
+        self.assertEqual(section["total_mismatches"],     0)
+        self.assertEqual(section["repairable_count"],     0)
+        self.assertEqual(section["non_repairable_count"], 0)
+        self.assertEqual(section["recommended_next_action"],
+                         "preview_unavailable")
+
+    def test_section_does_not_emit_warnings_or_errors(self) -> None:
+        # Operator info only — the recommended_next_action field carries
+        # the actionable signal.  Mirrors the no_forward_20d_blockers /
+        # event_date_backfill_impact comments about double-reporting.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                return_value=_auto_adjust_repair_preview_with(
+                    repairable=4, non_repairable=2,
+                ),
+            ):
+                payload = phc.run_health_check()
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("auto_adjust_repair_preview", msg)
+        self.assertTrue(payload["ok"])
+
+    def test_seam_exception_captured_others_run(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_compute_auto_adjust_repair_preview",
+                side_effect=RuntimeError("preview crashed"),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        self.assertTrue(any(
+            "auto_adjust_repair_preview" in e and "preview crashed" in e
+            for e in payload["errors"]
+        ), f"missing exception line: {payload['errors']}")
+        # Other sections still ran to completion.
+        self.assertIsNotNone(payload["repo_hygiene"])
+        self.assertIsNotNone(payload["no_forward_20d_blockers"])
+
+
+# ---------------------------------------------------------------------------
+# Classification — auto_adjust_repair_write_smoke
+# ---------------------------------------------------------------------------
+
+
+class TestAutoAdjustRepairWriteSmoke(unittest.TestCase):
+    def test_section_present_in_payload(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertIn("auto_adjust_repair_write_smoke", payload)
+        self.assertIsNotNone(payload["auto_adjust_repair_write_smoke"])
+
+    def test_section_carries_slim_summary_keys_only(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_write_smoke"]
+        self.assertEqual(set(section.keys()), {
+            "available",
+            "safe_to_run_on_copy",
+            "latest_backup_found",
+            "recommended_next_action",
+        })
+
+    def test_writer_absent_backup_present_recommends_writer_absent(self) -> None:
+        # Today's live state — the contract test pins the writer
+        # absent.  Even with a backup file available the smoke can't
+        # run because there is nothing to smoke-test.
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_write_smoke"]
+        self.assertTrue(section["available"])
+        self.assertFalse(section["safe_to_run_on_copy"])
+        self.assertTrue(section["latest_backup_found"])
+        self.assertEqual(section["recommended_next_action"],
+                         "writer_not_yet_implemented")
+
+    def test_writer_absent_backup_absent_recommends_writer_absent(self) -> None:
+        # Writer-absent is the higher-priority signal — the operator
+        # cannot act on a missing-backup recommendation when the
+        # thing they would smoke-test does not exist.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "find_latest_backup", return_value=None,
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_write_smoke"]
+        self.assertFalse(section["safe_to_run_on_copy"])
+        self.assertFalse(section["latest_backup_found"])
+        self.assertEqual(section["recommended_next_action"],
+                         "writer_not_yet_implemented")
+
+    def test_writer_present_backup_absent_recommends_missing_backup(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_check_auto_adjust_repair_writer_present",
+                return_value=True,
+            ):
+                with patch.object(
+                    phc, "find_latest_backup", return_value=None,
+                ):
+                    payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_write_smoke"]
+        self.assertFalse(section["safe_to_run_on_copy"])
+        self.assertFalse(section["latest_backup_found"])
+        self.assertEqual(section["recommended_next_action"],
+                         "missing_backup_file")
+
+    def test_writer_present_backup_present_recommends_ready(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_check_auto_adjust_repair_writer_present",
+                return_value=True,
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_write_smoke"]
+        self.assertTrue(section["available"])
+        self.assertTrue(section["safe_to_run_on_copy"])
+        self.assertTrue(section["latest_backup_found"])
+        self.assertEqual(section["recommended_next_action"],
+                         "ready_to_run_write_smoke")
+
+    def test_writer_seam_exception_yields_unavailable(self) -> None:
+        # Soft-failure path — the readiness probe ran but a sub-check
+        # raised, so we cannot form a definitive answer.  ``available``
+        # flips False and the recommendation becomes the sentinel.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_check_auto_adjust_repair_writer_present",
+                side_effect=RuntimeError("find_spec exploded"),
+            ):
+                payload = phc.run_health_check()
+        section = payload["auto_adjust_repair_write_smoke"]
+        self.assertFalse(section["available"])
+        self.assertFalse(section["safe_to_run_on_copy"])
+        self.assertFalse(section["latest_backup_found"])
+        self.assertEqual(section["recommended_next_action"],
+                         "readiness_unavailable")
+        # Soft failure is captured inside the section, not lifted to
+        # the top-level errors list — the run still ok=True.
+        self.assertTrue(payload["ok"])
+
+    def test_section_does_not_emit_warnings_or_errors(self) -> None:
+        # Operator info only — same precedent as the other summary
+        # sections: the recommendation field carries the actionable
+        # signal, so we never re-emit it as a top-level warning.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "_check_auto_adjust_repair_writer_present",
+                return_value=True,
+            ):
+                with patch.object(
+                    phc, "find_latest_backup", return_value=None,
+                ):
+                    payload = phc.run_health_check()
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("auto_adjust_repair_write_smoke", msg)
+        self.assertTrue(payload["ok"])
+
+
+# ---------------------------------------------------------------------------
 # Exception handling — one section blowing up must not poison the rest
 # ---------------------------------------------------------------------------
 
@@ -789,9 +1392,16 @@ class TestExceptionHandling(unittest.TestCase):
 
 
 class TestSafety(unittest.TestCase):
+    # Repo-local fixture path, gitignored via ``tests/test_phc_*/``.
+    # Avoids ``%TEMP%`` AV/EDR rules that on some Windows configs block
+    # creation of ``events.db`` under the user temp directory before the
+    # project-health logic ever runs.
     def setUp(self) -> None:
-        self._td = tempfile.mkdtemp(prefix="test_phc_")
-        self._tmp = Path(self._td)
+        repo_root = Path(__file__).resolve().parents[1]
+        self._tmp = repo_root / "tests" / f"test_phc_{uuid.uuid4().hex}"
+        # ``exist_ok=False`` so a UUID collision raises loudly rather
+        # than silently reusing an unclean fixture.
+        self._tmp.mkdir(parents=True, exist_ok=False)
         self._sentinel_db = self._tmp / "events.db"
         self._sentinel_db.write_bytes(b"events.db must not change")
         self._sentinel_backup_dir = self._tmp / "backups"
@@ -800,19 +1410,10 @@ class TestSafety(unittest.TestCase):
         self._sentinel_backup.write_bytes(b"backup must not change")
 
     def tearDown(self) -> None:
-        for p in (self._sentinel_db, self._sentinel_backup):
-            try:
-                p.unlink()
-            except OSError:
-                pass
-        try:
-            self._sentinel_backup_dir.rmdir()
-        except OSError:
-            pass
-        try:
-            self._tmp.rmdir()
-        except OSError:
-            pass
+        # ``shutil.rmtree`` with ``ignore_errors=True`` is robust against
+        # Windows file-lock edge cases the previous per-file ``unlink``
+        # chain only papered over.
+        shutil.rmtree(self._tmp, ignore_errors=True)
 
     def test_run_does_not_modify_events_db_or_backups(self) -> None:
         before_db_bytes  = self._sentinel_db.read_bytes()
@@ -1005,6 +1606,9 @@ class TestCli(unittest.TestCase):
             "event_date_backfill_candidates",
             "archive_consistency",
             "event_date_backfill_impact",
+            "no_forward_20d_blockers",
+            "auto_adjust_repair_preview",
+            "auto_adjust_repair_write_smoke",
             "warnings",
             "errors",
             "accepted_warnings",
@@ -1061,6 +1665,9 @@ class TestCli(unittest.TestCase):
             "event_date_backfill_candidates",
             "archive_consistency",
             "event_date_backfill_impact",
+            "no_forward_20d_blockers",
+            "auto_adjust_repair_preview",
+            "auto_adjust_repair_write_smoke",
             "Warnings",
             "Errors",
         ):

@@ -34,6 +34,109 @@ jobs:
       - name: Run repo hygiene guard
         run: python scripts/repo_hygiene_check.py --json
 
+      - name: Run pure statistical utility tests
+        run: |
+          python -m unittest tests.test_event_study -v
+          python -m unittest tests.test_bootstrap_ci -v
+          python -m unittest tests.test_fdr -v
+          python -m unittest tests.test_stat_validation -v
+
+      - name: Run synthetic statistical validation smoke
+        run: |
+          python - <<'PY'
+          import json
+
+          from stats.bootstrap_ci import bootstrap_ar_ci, bootstrap_sar_ci
+          from stats.event_study import compute_event_study
+          from stats.fdr import bh_adjust
+          from stats.stat_validation import compose_validation_records
+
+          asset_prices = [
+              100.0 + (idx * 0.21) + ((idx % 7) * 0.03)
+              for idx in range(90)
+          ]
+          benchmark_prices = [
+              100.0 + (idx * 0.16) + ((idx % 5) * 0.02)
+              for idx in range(90)
+          ]
+
+          study = compute_event_study(
+              asset_prices=asset_prices,
+              benchmark_prices=benchmark_prices,
+              event_index=65,
+              horizons=(1, 5, 20),
+              estimation_window=60,
+          )
+          if not study["available"]:
+              raise SystemExit("synthetic event study unexpectedly unavailable")
+
+          rows = []
+          abnormal_returns = []
+          sar_values = []
+          p_values = [0.01, 0.03, 0.20]
+          fdr = bh_adjust(p_values, alpha=0.05)
+
+          for idx, horizon in enumerate((1, 5, 20)):
+              horizon_result = study["horizons"][horizon]
+              ar = horizon_result["abnormal_return"]
+              sar = horizon_result["sar"]
+              if ar is None or sar is None:
+                  raise SystemExit(
+                      f"synthetic horizon {horizon} returned incomplete stats"
+                  )
+              abnormal_returns.append(ar)
+              sar_values.append(sar)
+              rows.append(
+                  {
+                      "horizon": horizon,
+                      "abnormal_return": ar,
+                      "sar": sar,
+                      "ci_low": None,
+                      "ci_high": None,
+                      "p_value": p_values[idx],
+                      "fdr_q": fdr["adjusted"][idx],
+                  }
+              )
+
+          ar_ci = bootstrap_ar_ci(
+              abnormal_returns,
+              n_bootstrap=200,
+              seed=7,
+              min_samples=3,
+          )
+          sar_ci = bootstrap_sar_ci(
+              sar_values,
+              n_bootstrap=200,
+              seed=7,
+              min_samples=3,
+          )
+          if not ar_ci["ok"] or not sar_ci["ok"]:
+              raise SystemExit("synthetic bootstrap CI unexpectedly unavailable")
+
+          records = compose_validation_records(rows, alpha=0.05)
+          if len(records) != 3 or fdr["num_discoveries"] < 1:
+              raise SystemExit("synthetic statistical validation smoke failed")
+
+          print(
+              json.dumps(
+                  {
+                      "ok": True,
+                      "records": len(records),
+                      "fdr_discoveries": fdr["num_discoveries"],
+                      "ar_ci": {
+                          "lower": ar_ci["lower"],
+                          "upper": ar_ci["upper"],
+                      },
+                      "sar_ci": {
+                          "lower": sar_ci["lower"],
+                          "upper": sar_ci["upper"],
+                      },
+                  },
+                  sort_keys=True,
+              )
+          )
+          PY
+
       - name: Build runner-local health fixtures
         run: |
           python - <<'PY'
@@ -87,6 +190,61 @@ jobs:
           db.init_db()
           ensure_price_cache(db.DB_FILE)
           PY
+
+      - name: Run safe auto-adjust repair dry-run status
+        run: python scripts/auto_adjust_mismatch_repair_preview.py --json
+
+      - name: Run safe auto-adjust consistency check
+        run: python scripts/auto_adjust_mismatch_consistency_check.py --json
+
+      - name: Run safe auto-adjust temp-copy smoke
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          cmd = [
+              sys.executable,
+              "scripts/auto_adjust_mismatch_repair_write_smoke.py",
+              "--backup-path",
+              "ci_tmp/backups/events-20260507T000000.db",
+              "--live-db",
+              "ci_tmp/events.db",
+              "--json",
+          ]
+          proc = subprocess.run(
+              cmd,
+              capture_output=True,
+              check=False,
+              text=True,
+          )
+          if proc.stdout:
+              print(proc.stdout, end="")
+          if proc.stderr:
+              print(proc.stderr, end="", file=sys.stderr)
+
+          try:
+              payload = json.loads(proc.stdout)
+          except json.JSONDecodeError:
+              raise SystemExit(proc.returncode or 1)
+
+          errors = payload.get("errors") or []
+          writer_missing = (
+              proc.returncode == 1
+              and payload.get("live_db_unchanged") is True
+              and len(errors) == 1
+              and errors[0].startswith("writer not implemented yet:")
+          )
+          if proc.returncode and not writer_missing:
+              raise SystemExit(proc.returncode)
+          PY
+
+      - name: Run safe no-forward gap report
+        run: python scripts/no_forward_20d_gap_report.py --json
+
+      - name: Run safe no-forward refreshability export
+        run: python scripts/no_forward_20d_refreshability_export.py --json --limit 100
 
       - name: Run safe project health
         run: >-

@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import importlib
+import io
 import json
 import logging
 import sys
@@ -173,12 +174,223 @@ def _assert_event_date_backfill_no_paid(body: Any) -> None:
         )
 
 
+_NO_FORWARD_20D_GAP_REPORT_REQUIRED_INTS: tuple[str, ...] = (
+    "total_no_forward_20d",
+    "too_recent",
+    "auto_adjust_mismatch",
+    "cache_window_gap",
+    "likely_delisted_or_sparse",
+)
+
+
+_NO_FORWARD_20D_GAP_REPORT_REQUIRED_LISTS: tuple[str, ...] = (
+    "refreshable_gap_examples",
+    "non_refreshable_examples",
+    "auto_adjust_mismatch_details",
+)
+
+
+_NO_FORWARD_20D_GAP_REPORT_NEXT_ACTIONS: tuple[str, ...] = (
+    "no_action_needed_no_gaps",
+    "fix_auto_adjust_flag_mismatch",
+    "run_targeted_refresh_for_cache_window_gap",
+    "wait_or_accept_no_refreshable_gaps",
+)
+
+
+def _assert_no_forward_20d_gap_report_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the gap-report CLI's JSON output.
+
+    Each count must be a non-negative int (so the runbook math reads
+    correctly), each example partition must be a list (so the renderer
+    can iterate without crashing), and ``recommended_next_action`` must
+    come from the script's fixed vocabulary (so a runbook consumer can
+    branch deterministically on the value).  Stable zero values are
+    accepted because a clean archive has no gaps.  A regression that
+    drops a field, returns negatives, or invents a new recommendation
+    means the read-only report contract changed — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"no-forward-20d gap-report response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    for field_name in _NO_FORWARD_20D_GAP_REPORT_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    for list_name in _NO_FORWARD_20D_GAP_REPORT_REQUIRED_LISTS:
+        value = body.get(list_name)
+        if not isinstance(value, list):
+            raise AssertionError(
+                f"{list_name} must be a list, got "
+                f"{type(value).__name__}"
+            )
+    action = body.get("recommended_next_action")
+    if action not in _NO_FORWARD_20D_GAP_REPORT_NEXT_ACTIONS:
+        raise AssertionError(
+            f"recommended_next_action must be one of "
+            f"{list(_NO_FORWARD_20D_GAP_REPORT_NEXT_ACTIONS)}, "
+            f"got {action!r}"
+        )
+
+
+_NO_FORWARD_20D_REFRESHABILITY_FIELDS: tuple[str, ...] = (
+    "event_id",
+    "event_date",
+    "symbol",
+    "diagnostic_reason",
+    "cache_max_date",
+    "horizon_20d_date",
+    "gap_days",
+    "source",
+)
+
+
+def _assert_no_forward_20d_refreshability_export_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the refreshability-export CLI envelope.
+
+    The export contract is ``{ok=True, count: non-negative int,
+    fields: pinned 8-tuple, rows: list}``.  Stable zero values are
+    accepted because a clean archive has no refreshable rows.  A
+    regression that flips ``ok`` to false, returns a negative count, or
+    diverges from the pinned ``fields`` shape means the export's CSV /
+    JSON contract changed — fail closed before a downstream consumer
+    sees the mismatched shape.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"no-forward-20d refreshability-export response must be a JSON "
+            f"object, got {type(body).__name__}"
+        )
+    if body.get("ok") is not True:
+        raise AssertionError(
+            f"ok must be True in no-paid mode, got {body.get('ok')!r}"
+        )
+    count = body.get("count")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        raise AssertionError(
+            f"count must be a non-negative int, got {count!r}"
+        )
+    fields = body.get("fields")
+    if not isinstance(fields, list):
+        raise AssertionError(
+            f"fields must be a list, got {type(fields).__name__}"
+        )
+    if tuple(fields) != _NO_FORWARD_20D_REFRESHABILITY_FIELDS:
+        raise AssertionError(
+            f"fields must equal the pinned export shape "
+            f"{list(_NO_FORWARD_20D_REFRESHABILITY_FIELDS)}, "
+            f"got {fields!r}"
+        )
+    rows = body.get("rows")
+    if not isinstance(rows, list):
+        raise AssertionError(
+            f"rows must be a list, got {type(rows).__name__}"
+        )
+
+
+_AUTO_ADJUST_PREVIEW_REQUIRED_INTS: tuple[str, ...] = (
+    "total_mismatches",
+    "repairable_count",
+    "non_repairable_count",
+)
+
+
+_AUTO_ADJUST_PREVIEW_NEXT_ACTIONS: tuple[str, ...] = (
+    "no_action_needed_no_mismatches",
+    "fix_auto_adjust_flag_mismatch",
+    "investigate_non_repairable_rows",
+)
+
+
+def _assert_auto_adjust_mismatch_repair_preview_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the auto-adjust mismatch repair preview
+    CLI's JSON output.
+
+    Each count must be a non-negative int (so the runbook math reads
+    correctly), ``counts_by_status`` must be a dict (so the renderer can
+    iterate by status), ``proposed_rows`` must be a list (so the
+    renderer can iterate without crashing), and ``recommended_next_action``
+    must come from the script's fixed vocabulary (so a runbook consumer
+    can branch deterministically on the value).  Stable zero values are
+    accepted because a clean archive has no mismatches.  A regression
+    that drops a field, returns negatives, or invents a new
+    recommendation means the read-only preview contract changed — fail
+    closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"auto-adjust mismatch repair preview response must be a "
+            f"JSON object, got {type(body).__name__}"
+        )
+    for field_name in _AUTO_ADJUST_PREVIEW_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    counts_by_status = body.get("counts_by_status")
+    if not isinstance(counts_by_status, dict):
+        raise AssertionError(
+            f"counts_by_status must be a dict, got "
+            f"{type(counts_by_status).__name__}"
+        )
+    proposed_rows = body.get("proposed_rows")
+    if not isinstance(proposed_rows, list):
+        raise AssertionError(
+            f"proposed_rows must be a list, got "
+            f"{type(proposed_rows).__name__}"
+        )
+    action = body.get("recommended_next_action")
+    if action not in _AUTO_ADJUST_PREVIEW_NEXT_ACTIONS:
+        raise AssertionError(
+            f"recommended_next_action must be one of "
+            f"{list(_AUTO_ADJUST_PREVIEW_NEXT_ACTIONS)}, "
+            f"got {action!r}"
+        )
+    # Partition contract: every mismatch row falls into exactly one of
+    # the repairable / non-repairable buckets.  The preview enforces
+    # this by construction, but pinning it in the smoke means a future
+    # accounting drift trips here instead of leaking into downstream
+    # math.  All three counts have already been validated as
+    # non-negative ints above.
+    total          = body["total_mismatches"]
+    repairable     = body["repairable_count"]
+    non_repairable = body["non_repairable_count"]
+    if repairable + non_repairable != total:
+        raise AssertionError(
+            f"repairable_count + non_repairable_count must sum to "
+            f"total_mismatches; got {repairable} + {non_repairable} != "
+            f"{total}"
+        )
+
+
 @dataclass(frozen=True)
 class SmokeEndpoint:
     name: str
     path: str
     expected_statuses: tuple[int, ...] = (200,)
     method: str = "GET"
+    body_invariants: tuple[BodyInvariant, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class SmokeScript:
+    """A read-only CLI smoke check.
+
+    The smoke runner imports ``module``, calls ``main(list(args), out=...)``
+    against an in-memory buffer, and validates the JSON output via the
+    attached body invariants.  Each script runs under the same
+    ``guard_no_paid_provider_calls()`` context as the HTTP smoke, so a
+    forbidden seam in either script trips the same raisers and lands as
+    a failed row.
+    """
+    name: str
+    module: str
+    args: tuple[str, ...] = ("--json", "--limit", "5")
     body_invariants: tuple[BodyInvariant, ...] = field(default_factory=tuple)
 
 
@@ -238,6 +450,25 @@ ENDPOINTS: tuple[SmokeEndpoint, ...] = (
         "auto backfill dry-run",
         "/diagnostics/auto-backfill-dry-run",
         method="POST",
+    ),
+)
+
+
+SCRIPTS: tuple[SmokeScript, ...] = (
+    SmokeScript(
+        "no-forward gap report",
+        "scripts.no_forward_20d_gap_report",
+        body_invariants=(_assert_no_forward_20d_gap_report_no_paid,),
+    ),
+    SmokeScript(
+        "no-forward refreshability",
+        "scripts.no_forward_20d_refreshability_export",
+        body_invariants=(_assert_no_forward_20d_refreshability_export_no_paid,),
+    ),
+    SmokeScript(
+        "auto-adjust repair preview",
+        "scripts.auto_adjust_mismatch_repair_preview",
+        body_invariants=(_assert_auto_adjust_mismatch_repair_preview_no_paid,),
     ),
 )
 
@@ -398,6 +629,25 @@ def _assert_endpoint_inventory_is_zero_cost() -> None:
                 )
 
 
+def _assert_script_inventory_is_zero_cost() -> None:
+    """Defense-in-depth: every smoke script must live under the
+    ``scripts`` package and request JSON output.  A regression that
+    smuggles in a non-script module or drops the ``--json`` flag would
+    leak the smoke into territory the no-paid guard cannot validate.
+    """
+    for script in SCRIPTS:
+        if not script.module.startswith("scripts."):
+            raise AssertionError(
+                f"no-paid smoke inventory has non-scripts module: "
+                f"{script.module}"
+            )
+        if "--json" not in script.args:
+            raise AssertionError(
+                f"no-paid smoke inventory script {script.module} must "
+                f"request JSON output, got args {list(script.args)}"
+            )
+
+
 def _make_test_client():
     from fastapi.testclient import TestClient
     import api
@@ -485,6 +735,50 @@ def _request(client: Any, endpoint: SmokeEndpoint) -> Any:
     return getattr(client, attr)(endpoint.path)
 
 
+def _format_script_path(script: SmokeScript) -> str:
+    """Render the script as a runnable command string for the result
+    table.  The substring includes the module name verbatim so a
+    downstream filter can match results to scripts by module path.
+    """
+    return f"python -m {script.module} " + " ".join(script.args)
+
+
+def _invoke_script_main(script: SmokeScript) -> tuple[int, str]:
+    """Import the script's module and call its ``main`` against an
+    in-memory buffer.  Returns ``(exit_code, captured_stdout)``.
+    """
+    buf = io.StringIO()
+    module = importlib.import_module(script.module)
+    code = module.main(list(script.args), out=buf)
+    return int(code or 0), buf.getvalue()
+
+
+def _run_script(script: SmokeScript) -> tuple[bool, str | None]:
+    """Run a single smoke script and validate its JSON output.
+
+    Returns ``(ok, error)``.  ``ok`` is True only when ``main`` exits
+    with zero, the output parses as JSON, and every body invariant
+    accepts the parsed body.  Any failure surfaces a descriptive error
+    string the smoke runner copies into the ``SmokeResult.error`` slot.
+    """
+    code, output = _invoke_script_main(script)
+    if code != 0:
+        return False, f"script exited with code {code}"
+    try:
+        body = json.loads(output)
+    except json.JSONDecodeError as exc:
+        return False, (
+            f"script output was not JSON parseable: "
+            f"{type(exc).__name__}: {exc}"
+        )
+    for invariant in script.body_invariants:
+        try:
+            invariant(body)
+        except AssertionError as exc:
+            return False, f"body invariant failed: {exc}"
+    return True, None
+
+
 def run_smoke(
     *,
     client: Any | None = None,
@@ -498,6 +792,7 @@ def run_smoke(
     HTTP status was returned and the response body parsed as JSON.
     """
     _assert_endpoint_inventory_is_zero_cost()
+    _assert_script_inventory_is_zero_cost()
     if client is not None and base_url:
         raise ValueError("Pass either client or base_url, not both.")
 
@@ -535,6 +830,28 @@ def run_smoke(
                     path=endpoint.path,
                     ok=bool(ok and error is None),
                     status_code=status_code,
+                    elapsed_ms=elapsed_ms,
+                    error=error,
+                )
+            )
+        # Scripts run after endpoints so the smoke output reads top-down
+        # from HTTP rows to CLI rows and so ``results[0]`` keeps its
+        # endpoint-row semantics under the bad-client failure path.
+        for script in SCRIPTS:
+            start = time.perf_counter()
+            ok = False
+            error = None
+            try:
+                ok, error = _run_script(script)
+            except Exception as exc:
+                error = f"{type(exc).__name__}: {exc}"
+            elapsed_ms = int((time.perf_counter() - start) * 1000)
+            results.append(
+                SmokeResult(
+                    name=script.name,
+                    path=_format_script_path(script),
+                    ok=bool(ok and error is None),
+                    status_code=None,
                     elapsed_ms=elapsed_ms,
                     error=error,
                 )

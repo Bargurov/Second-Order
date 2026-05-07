@@ -357,12 +357,37 @@ class TestCiWorkflowConfig(unittest.TestCase):
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
 
+    def _ci_step_text(self, name: str) -> str:
+        text = self._ci_text()
+        marker = f"      - name: {name}"
+        start = text.index(marker)
+        next_start = text.find("\n      - name:", start + len(marker))
+        if next_start == -1:
+            return text[start:]
+        return text[start:next_start]
+
     def test_ci_runs_repo_hygiene_project_health_and_no_paid_only(self) -> None:
         text = self._ci_text()
 
         for needle in (
             "python -m unittest tests.test_repo_hygiene_check -v",
             "python scripts/repo_hygiene_check.py --json",
+            "python -m unittest tests.test_event_study -v",
+            "python -m unittest tests.test_bootstrap_ci -v",
+            "python -m unittest tests.test_fdr -v",
+            "python -m unittest tests.test_stat_validation -v",
+            "Run synthetic statistical validation smoke",
+            "from stats.event_study import compute_event_study",
+            "from stats.bootstrap_ci import bootstrap_ar_ci, bootstrap_sar_ci",
+            "from stats.fdr import bh_adjust",
+            "from stats.stat_validation import compose_validation_records",
+            "python scripts/no_forward_20d_gap_report.py --json",
+            "python scripts/auto_adjust_mismatch_repair_preview.py --json",
+            "python scripts/auto_adjust_mismatch_consistency_check.py --json",
+            "scripts/auto_adjust_mismatch_repair_write_smoke.py",
+            "ci_tmp/backups/events-20260507T000000.db",
+            "ci_tmp/events.db",
+            "python scripts/no_forward_20d_refreshability_export.py --json --limit 100",
             "python scripts/project_health_check.py --json",
             "--allow-duplicate-clusters 28",
             "python scripts/no_paid_smoke.py --json",
@@ -376,12 +401,121 @@ class TestCiWorkflowConfig(unittest.TestCase):
             "npm ci",
             "backup_archive.py",
             "refresh_price_cache.py",
+            "rebuild_archive.py",
+            "eval.py",
+            "price_cache_auto_adjust_coverage_report.py",
+            "auto_adjust_repair_backup_delta_report.py",
+            "auto_adjust_repair_preflight.py",
+            "db_mutation_readiness_check.py",
+            "auto_adjust_mismatch_repair.py",
+            "apply_auto_adjust_mismatch_repair",
+            "plan_auto_adjust_mismatch_repair",
+            "--apply",
+            "--write",
+            "--repair",
+            "--commit",
+            "--confirm",
         ):
             self.assertNotIn(
                 forbidden,
                 text,
                 f"CI should not run broad or provider-risky command: {forbidden}",
             )
+
+    def test_ci_runs_no_forward_diagnostics_after_repo_hygiene(self) -> None:
+        text = self._ci_text()
+
+        hygiene_idx = text.index("python scripts/repo_hygiene_check.py --json")
+        report_idx = text.index("python scripts/no_forward_20d_gap_report.py --json")
+        export_idx = text.index(
+            "python scripts/no_forward_20d_refreshability_export.py --json --limit 100"
+        )
+        health_idx = text.index("python scripts/project_health_check.py --json")
+
+        self.assertLess(hygiene_idx, report_idx)
+        self.assertLess(hygiene_idx, export_idx)
+        self.assertLess(report_idx, health_idx)
+        self.assertLess(export_idx, health_idx)
+
+    def test_ci_runs_pure_stats_after_hygiene_before_db_fixture(self) -> None:
+        text = self._ci_text()
+
+        hygiene_idx = text.index("python scripts/repo_hygiene_check.py --json")
+        stats_tests_idx = text.index("Run pure statistical utility tests")
+        stats_smoke_idx = text.index("Run synthetic statistical validation smoke")
+        fixture_idx = text.index("Build runner-local health fixtures")
+
+        self.assertLess(hygiene_idx, stats_tests_idx)
+        self.assertLess(stats_tests_idx, stats_smoke_idx)
+        self.assertLess(stats_smoke_idx, fixture_idx)
+
+        stats_step = self._ci_step_text("Run pure statistical utility tests")
+        smoke_step = self._ci_step_text("Run synthetic statistical validation smoke")
+
+        for needle in (
+            "python -m unittest tests.test_event_study -v",
+            "python -m unittest tests.test_bootstrap_ci -v",
+            "python -m unittest tests.test_fdr -v",
+            "python -m unittest tests.test_stat_validation -v",
+        ):
+            self.assertIn(needle, stats_step)
+
+        for needle in (
+            "compute_event_study",
+            "bootstrap_ar_ci",
+            "bootstrap_sar_ci",
+            "bh_adjust",
+            "compose_validation_records",
+            "asset_prices",
+            "benchmark_prices",
+        ):
+            self.assertIn(needle, smoke_step)
+
+        for forbidden in (
+            "sqlite3",
+            "db.",
+            "events.db",
+            "ci_tmp",
+            "scripts/",
+            "yfinance",
+            "market_data",
+            "market_check",
+            "analyze_event",
+            "ANTHROPIC",
+            "OPENAI",
+        ):
+            self.assertNotIn(
+                forbidden,
+                stats_step + smoke_step,
+                f"pure stats CI step should not touch DB/provider seams: {forbidden}",
+            )
+
+    def test_ci_runs_auto_adjust_dry_run_status_and_temp_copy_after_hygiene(self) -> None:
+        text = self._ci_text()
+
+        hygiene_idx = text.index("python scripts/repo_hygiene_check.py --json")
+        preview_idx = text.index(
+            "python scripts/auto_adjust_mismatch_repair_preview.py --json"
+        )
+        check_idx = text.index(
+            "python scripts/auto_adjust_mismatch_consistency_check.py --json"
+        )
+        smoke_idx = text.index("Run safe auto-adjust temp-copy smoke")
+        report_idx = text.index("python scripts/no_forward_20d_gap_report.py --json")
+        health_idx = text.index("python scripts/project_health_check.py --json")
+
+        self.assertIn("Run safe auto-adjust repair dry-run status", text)
+        self.assertIn("Run safe auto-adjust consistency check", text)
+        self.assertIn("scripts/auto_adjust_mismatch_repair_write_smoke.py", text)
+        self.assertIn("ci_tmp/backups/events-20260507T000000.db", text)
+        self.assertIn("ci_tmp/events.db", text)
+        self.assertIn("writer not implemented yet:", text)
+        self.assertIn("live_db_unchanged", text)
+        self.assertLess(hygiene_idx, preview_idx)
+        self.assertLess(preview_idx, check_idx)
+        self.assertLess(check_idx, smoke_idx)
+        self.assertLess(smoke_idx, report_idx)
+        self.assertLess(smoke_idx, health_idx)
 
     def test_ci_is_keyless_and_providerless(self) -> None:
         text = self._ci_text()
@@ -393,6 +527,12 @@ class TestCiWorkflowConfig(unittest.TestCase):
             "BACKFILL_PROVIDER",
             "MARKET_DATA_PROVIDER",
             "yfinance",
+            "market_check",
+            "market_data",
+            "analyze_event",
+            "ANTHROPIC_MODEL",
+            "OPENAI_MODEL",
+            "price_cache_refresh.py",
         ):
             self.assertNotIn(
                 forbidden,

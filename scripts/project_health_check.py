@@ -46,13 +46,190 @@ if str(ROOT) not in sys.path:
 
 # Module-level seams — tests patch these on the aggregator's namespace.
 from scripts.repo_hygiene_check  import list_tracked_generated  # noqa: E402
-from scripts.backup_restore_check import restore_check          # noqa: E402
+from scripts.backup_restore_check import (  # noqa: E402
+    restore_check,
+    find_latest_backup,
+)
 from scripts.schema_preflight     import collect as schema_preflight_collect  # noqa: E402
 from event_date_backfill          import plan_event_date_backfill  # noqa: E402
 
 
 _DEFAULT_DB         = "events.db"
 _DEFAULT_BACKUP_DIR = "backups"
+
+
+# ---------------------------------------------------------------------------
+# no_forward_20d blocker summary — shared constants and seam
+# ---------------------------------------------------------------------------
+#
+# The breakdown function lives in ``routes.diagnostics`` and depends on
+# the per-ticker hydrator; inlining it here would mean inlining the
+# hydrator chain, which is too heavy for an aggregator.  Instead we
+# expose a module-level seam that tests patch via ``_patch_all_clean()``
+# and that defaults to a best-effort lazy delegation when the script is
+# invoked live.  The lazy import only fires when the seam is NOT
+# patched — keeping the import-graph guard
+# (``test_running_does_not_import_fastapi_routes``) green requires that
+# every code path which calls ``run_health_check`` patch this seam.
+
+_NF20_REASON_KEYS: tuple[str, ...] = (
+    "event_too_recent_for_20d",
+    "auto_adjust_mismatch_for_20d",
+    "likely_delisted_or_sparse",
+    "cache_max_before_20d_horizon",
+)
+
+_NF20_RECOMMEND_NO_GAPS         = "no_action_needed_no_gaps"
+_NF20_RECOMMEND_FIX_FLAG        = "fix_auto_adjust_flag_mismatch"
+_NF20_RECOMMEND_REFRESH         = "run_targeted_refresh_for_cache_window_gap"
+_NF20_RECOMMEND_WAIT            = "wait_or_accept_no_refreshable_gaps"
+_NF20_RECOMMEND_UNAVAILABLE     = "breakdown_unavailable"
+
+
+def _no_forward_20d_blockers_unavailable() -> dict[str, Any]:
+    """Stable empty shape returned when the breakdown cannot run."""
+    return {
+        "available":            False,
+        "total_no_forward_20d": 0,
+        "counts":               {k: 0 for k in _NF20_REASON_KEYS},
+        "examples":             [],
+    }
+
+
+def _compute_no_forward_20d_breakdown() -> dict[str, Any]:
+    """Default seam — best-effort lazy delegation to
+    :func:`routes.diagnostics._compute_no_forward_20d_breakdown`.
+
+    Tests MUST patch this attribute on the aggregator's namespace
+    before invoking :func:`run_health_check`; the import-graph guard
+    (``test_running_does_not_import_fastapi_routes``) relies on the
+    seam being replaced so the lazy ``routes.diagnostics`` import
+    never fires.  Returns the all-zero ``available=False`` shape on
+    any failure (DB not bootstrapped, circular import, environment
+    missing the routes layer) so the aggregator never crashes.
+    """
+    try:
+        import api  # noqa: F401  - resolves api ↔ routes.diagnostics cycle
+        import db as _db
+        from routes.diagnostics import (
+            _compute_no_forward_20d_breakdown as _live,
+        )
+    except Exception:
+        return _no_forward_20d_blockers_unavailable()
+
+    if not _db._db_ready:
+        try:
+            _db.init_db()
+        except Exception:
+            return _no_forward_20d_blockers_unavailable()
+
+    try:
+        return _live() or _no_forward_20d_blockers_unavailable()
+    except Exception:
+        return _no_forward_20d_blockers_unavailable()
+
+
+# ---------------------------------------------------------------------------
+# auto_adjust_repair_preview — slim summary of the flag-fix repair preview
+# ---------------------------------------------------------------------------
+#
+# Wraps :mod:`scripts.auto_adjust_mismatch_repair_preview` via a
+# module-level seam.  The aggregator exposes only the four summary
+# counts an operator needs to size the unblock — the dedicated CLI
+# owns the per-row drill-down (proposed dates, repair_status,
+# repair_reason).  Following the same pattern as
+# :func:`_compute_no_forward_20d_breakdown`: tests patch the seam in
+# ``_patch_all_clean()`` so the lazy script import never fires inside
+# ``run_health_check``.
+
+# The valid action vocabulary is owned by
+# ``scripts.auto_adjust_mismatch_repair_preview._NEXT_ACTIONS`` and
+# forwarded verbatim.  ``preview_unavailable`` is the only label this
+# module mints — used when the upstream payload is missing the field.
+_AAR_RECOMMEND_UNAVAILABLE = "preview_unavailable"
+
+
+# ---------------------------------------------------------------------------
+# auto_adjust_repair_write_smoke — readiness probe for the future
+# repair writer's smoke run
+# ---------------------------------------------------------------------------
+#
+# The auto-adjust mismatch repair *writer* does not exist yet — the
+# contract test ``tests/test_auto_adjust_mismatch_repair_contract.py``
+# pins that absence as the desired signal.  When it lands, an
+# operator will want to run a write-smoke against a backup copy
+# before exercising it on the live archive.  This section reports
+# whether the project is in a state where that smoke run could
+# safely happen — without ever importing the writer (the readiness
+# check is read-only) and without ever invoking it.
+
+_AAR_WS_RECOMMEND_WRITER_ABSENT  = "writer_not_yet_implemented"
+_AAR_WS_RECOMMEND_MISSING_BACKUP = "missing_backup_file"
+_AAR_WS_RECOMMEND_READY          = "ready_to_run_write_smoke"
+_AAR_WS_RECOMMEND_UNAVAILABLE    = "readiness_unavailable"
+
+_AAR_WRITER_MODULE_NAME = "auto_adjust_mismatch_repair"
+
+
+def _check_auto_adjust_repair_writer_present() -> bool:
+    """Return True iff the future repair writer module is importable.
+
+    Uses :func:`importlib.util.find_spec` so the writer module is
+    NOT imported — the readiness check stays read-only and avoids
+    triggering any module-load side effects the future writer might
+    carry.  Tests patch this attribute on the aggregator's namespace.
+    """
+    from importlib.util import find_spec
+    try:
+        return find_spec(_AAR_WRITER_MODULE_NAME) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _auto_adjust_repair_preview_unavailable() -> dict[str, Any]:
+    """Stable empty shape returned when the preview cannot be built."""
+    return {
+        "available":             False,
+        "total_mismatches":      0,
+        "repairable_count":      0,
+        "non_repairable_count":  0,
+        "counts_by_status":      {},
+        "proposed_rows":         [],
+        "recommended_next_action": _AAR_RECOMMEND_UNAVAILABLE,
+    }
+
+
+def _compute_auto_adjust_repair_preview() -> dict[str, Any]:
+    """Default seam — best-effort lazy delegation to
+    :mod:`scripts.auto_adjust_mismatch_repair_preview`.
+
+    Tests MUST patch this attribute on the aggregator's namespace via
+    ``_patch_all_clean()``.  Returns the unavailable shape on any
+    failure so the aggregator never crashes; the script itself is
+    read-only (no provider, no LLM, no FastAPI network — its loader
+    is the same one ``no_forward_20d_blockers`` ultimately funnels
+    through).
+    """
+    try:
+        from scripts import auto_adjust_mismatch_repair_preview as _preview
+    except Exception:
+        return _auto_adjust_repair_preview_unavailable()
+
+    try:
+        details    = _preview._load_auto_adjust_mismatch_details() or []
+        specs      = _preview._windows_for_details(details)
+        cache_rows = (
+            _preview._load_in_window_cache_rows(specs) if specs else {}
+        )
+        # ``limit=0`` keeps the proposed_rows list empty — the
+        # aggregator never embeds per-row detail.  The top-level
+        # counts always reflect every mismatch.
+        payload = _preview._build_payload(details, cache_rows, limit=0)
+    except Exception:
+        return _auto_adjust_repair_preview_unavailable()
+
+    payload.setdefault("available", True)
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -270,6 +447,101 @@ def _section_archive_consistency(*, db_path: str) -> dict:
     return {"categories": categories}
 
 
+def _recommend_no_forward_20d_action(
+    counts: dict, *, available: bool,
+) -> str:
+    """Pure decision tree over the breakdown's count map.
+
+    Mirrors the priority order in
+    :mod:`scripts.no_forward_20d_gap_report` so operators see the same
+    recommendation through the focused CLI and the aggregate health
+    check.  Adds one local sentinel — ``breakdown_unavailable`` — for
+    the case where the breakdown could not run at all (DB not
+    bootstrapped, env missing routes), keeping that state visible
+    instead of being silently masked as ``no_action_needed_no_gaps``.
+    """
+    if not available:
+        return _NF20_RECOMMEND_UNAVAILABLE
+    too_recent = int(counts.get("event_too_recent_for_20d")     or 0)
+    auto_adj   = int(counts.get("auto_adjust_mismatch_for_20d") or 0)
+    cache_gap  = int(counts.get("cache_max_before_20d_horizon") or 0)
+    delisted   = int(counts.get("likely_delisted_or_sparse")    or 0)
+    if too_recent + auto_adj + cache_gap + delisted == 0:
+        return _NF20_RECOMMEND_NO_GAPS
+    if auto_adj > 0:
+        return _NF20_RECOMMEND_FIX_FLAG
+    if cache_gap > 0:
+        return _NF20_RECOMMEND_REFRESH
+    return _NF20_RECOMMEND_WAIT
+
+
+def _section_no_forward_20d_blockers() -> dict:
+    breakdown = _compute_no_forward_20d_breakdown() or {}
+    available = bool(breakdown.get("available"))
+    counts = breakdown.get("counts") or {}
+    return {
+        "available":                 available,
+        "total_no_forward_20d":      int(breakdown.get("total_no_forward_20d") or 0),
+        "too_recent":                int(counts.get("event_too_recent_for_20d")     or 0),
+        "auto_adjust_mismatch":      int(counts.get("auto_adjust_mismatch_for_20d") or 0),
+        "cache_window_gap":          int(counts.get("cache_max_before_20d_horizon") or 0),
+        "likely_delisted_or_sparse": int(counts.get("likely_delisted_or_sparse")    or 0),
+        "recommended_next_action":   _recommend_no_forward_20d_action(
+            counts, available=available,
+        ),
+    }
+
+
+def _section_auto_adjust_repair_preview() -> dict:
+    preview = _compute_auto_adjust_repair_preview() or {}
+    return {
+        "total_mismatches":     int(preview.get("total_mismatches")     or 0),
+        "repairable_count":     int(preview.get("repairable_count")     or 0),
+        "non_repairable_count": int(preview.get("non_repairable_count") or 0),
+        "recommended_next_action":
+            preview.get("recommended_next_action") or _AAR_RECOMMEND_UNAVAILABLE,
+    }
+
+
+def _section_auto_adjust_repair_write_smoke(*, backup_dir: str) -> dict:
+    """Read-only readiness probe for the future repair write-smoke run.
+
+    Combines two cheap checks — writer-module presence (via
+    :func:`_check_auto_adjust_repair_writer_present`) and latest-backup
+    discovery (via :func:`find_latest_backup`) — into the four-field
+    summary the task spec lists.  Soft failure of either sub-check
+    flips ``available`` to False and emits the
+    ``readiness_unavailable`` sentinel; the section is never lifted to
+    a top-level error so the run-wide ``ok`` stays accurate.
+    """
+    try:
+        writer_present = _check_auto_adjust_repair_writer_present()
+    except Exception:
+        return {
+            "available":              False,
+            "safe_to_run_on_copy":    False,
+            "latest_backup_found":    False,
+            "recommended_next_action": _AAR_WS_RECOMMEND_UNAVAILABLE,
+        }
+
+    backup_path = find_latest_backup(Path(backup_dir))
+    backup_found = backup_path is not None
+
+    if not writer_present:
+        action = _AAR_WS_RECOMMEND_WRITER_ABSENT
+    elif not backup_found:
+        action = _AAR_WS_RECOMMEND_MISSING_BACKUP
+    else:
+        action = _AAR_WS_RECOMMEND_READY
+
+    return {
+        "available":              True,
+        "safe_to_run_on_copy":    bool(writer_present and backup_found),
+        "latest_backup_found":    backup_found,
+        "recommended_next_action": action,
+    }
+
+
 def _section_event_date_backfill_impact(*, db_path: str) -> dict:
     # Reuses the existing ``plan_event_date_backfill`` seam — the impact
     # section is a different *view* of the same underlying plan, slimmed
@@ -369,6 +641,40 @@ def _classify_event_date_backfill_impact(
     return [], []
 
 
+def _classify_no_forward_20d_blockers(
+    section: dict,
+) -> tuple[list[str], list[str]]:
+    # Operator info only — the ``recommended_next_action`` field
+    # carries the actionable signal.  The dedicated runbook surface
+    # (``scripts/no_forward_20d_gap_report.py``) owns the drill-down,
+    # so surfacing the count as a top-level warning here would
+    # double-report the same class of issue.
+    return [], []
+
+
+def _classify_auto_adjust_repair_preview(
+    section: dict,
+) -> tuple[list[str], list[str]]:
+    # Operator info only — same reasoning as
+    # :func:`_classify_no_forward_20d_blockers`.  The dedicated CLI
+    # (``scripts/auto_adjust_mismatch_repair_preview.py``) owns the
+    # per-row drill-down, so the aggregator surfaces summary counts +
+    # the actionable recommendation without re-emitting them as
+    # top-level warnings.
+    return [], []
+
+
+def _classify_auto_adjust_repair_write_smoke(
+    section: dict,
+) -> tuple[list[str], list[str]]:
+    # Operator info only — the recommendation field carries the
+    # actionable signal (writer-absent / missing-backup / ready).
+    # ``writer_not_yet_implemented`` is the expected baseline today
+    # while the writer is unspecified; surfacing it as a warning
+    # would noise the operational channel until the writer ships.
+    return [], []
+
+
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
@@ -381,6 +687,9 @@ _SECTION_KEYS = (
     "event_date_backfill_candidates",
     "archive_consistency",
     "event_date_backfill_impact",
+    "no_forward_20d_blockers",
+    "auto_adjust_repair_preview",
+    "auto_adjust_repair_write_smoke",
 )
 
 
@@ -520,6 +829,23 @@ def run_health_check(
         lambda: _section_event_date_backfill_impact(db_path=db_path),
         _classify_event_date_backfill_impact,
     )
+    _run_section(
+        payload, "no_forward_20d_blockers",
+        _section_no_forward_20d_blockers,
+        _classify_no_forward_20d_blockers,
+    )
+    _run_section(
+        payload, "auto_adjust_repair_preview",
+        _section_auto_adjust_repair_preview,
+        _classify_auto_adjust_repair_preview,
+    )
+    _run_section(
+        payload, "auto_adjust_repair_write_smoke",
+        lambda: _section_auto_adjust_repair_write_smoke(
+            backup_dir=backup_dir,
+        ),
+        _classify_auto_adjust_repair_write_smoke,
+    )
 
     _waive_duplicate_clusters(payload, allow=int(allow_duplicate_clusters or 0))
 
@@ -589,6 +915,66 @@ def _render_text(payload: dict[str, Any]) -> str:
             lines.append(
                 f"  projected_ticker_rows_unblocked: "
                 f"{section.get('projected_ticker_rows_unblocked', 0)}",
+            )
+        elif key == "no_forward_20d_blockers":
+            lines.append(
+                f"  available: {section.get('available')}",
+            )
+            lines.append(
+                f"  total_no_forward_20d: "
+                f"{section.get('total_no_forward_20d', 0)}",
+            )
+            lines.append(
+                f"  too_recent: {section.get('too_recent', 0)}",
+            )
+            lines.append(
+                f"  auto_adjust_mismatch: "
+                f"{section.get('auto_adjust_mismatch', 0)}",
+            )
+            lines.append(
+                f"  cache_window_gap: "
+                f"{section.get('cache_window_gap', 0)}",
+            )
+            lines.append(
+                f"  likely_delisted_or_sparse: "
+                f"{section.get('likely_delisted_or_sparse', 0)}",
+            )
+            lines.append(
+                f"  recommended_next_action: "
+                f"{section.get('recommended_next_action')}",
+            )
+        elif key == "auto_adjust_repair_preview":
+            lines.append(
+                f"  total_mismatches: "
+                f"{section.get('total_mismatches', 0)}",
+            )
+            lines.append(
+                f"  repairable_count: "
+                f"{section.get('repairable_count', 0)}",
+            )
+            lines.append(
+                f"  non_repairable_count: "
+                f"{section.get('non_repairable_count', 0)}",
+            )
+            lines.append(
+                f"  recommended_next_action: "
+                f"{section.get('recommended_next_action')}",
+            )
+        elif key == "auto_adjust_repair_write_smoke":
+            lines.append(
+                f"  available: {section.get('available')}",
+            )
+            lines.append(
+                f"  safe_to_run_on_copy: "
+                f"{section.get('safe_to_run_on_copy')}",
+            )
+            lines.append(
+                f"  latest_backup_found: "
+                f"{section.get('latest_backup_found')}",
+            )
+            lines.append(
+                f"  recommended_next_action: "
+                f"{section.get('recommended_next_action')}",
             )
         lines.append("")
 
