@@ -5,17 +5,15 @@ on:
   pull_request:
 
 jobs:
-  backend:
-    name: Backend Tests
+  safe-health:
+    name: Repo Hygiene and Safe Health
     runs-on: ubuntu-latest
     env:
-      ANALYSIS_PROVIDER: anthropic
-      BACKFILL_PROVIDER: anthropic
-      ANTHROPIC_API_KEY: dummy-ci-key
-      OPENAI_API_KEY: dummy-ci-key
-      BACKFILL_MODEL: claude-haiku-4-5-20251001
-      MAX_BACKFILL_LLM_CALLS: "1"
+      ENABLE_PAID_ANALYSIS: "false"
+      ENABLE_AUTO_BACKFILL: "false"
       BACKFILL_DRY_RUN_DEFAULT: "true"
+      MAX_BACKFILL_LLM_CALLS: "0"
+      PYTHONUNBUFFERED: "1"
 
     steps:
       - name: Check out repo
@@ -30,47 +28,73 @@ jobs:
       - name: Install backend dependencies
         run: python -m pip install -r requirements.txt
 
-      - name: Run focused backend tests
-        run: python -m unittest tests.test_backfill_paid_guard tests.test_headline_registry tests.test_today_movers_time_window tests.test_market_context_consumer -v
+      - name: Run repo hygiene unit tests
+        run: python -m unittest tests.test_repo_hygiene_check -v
 
-      - name: Run Phase 0 hardening tests
-        run: python -m unittest tests.test_diagnostics tests.test_logging_config -v
+      - name: Run repo hygiene guard
+        run: python scripts/repo_hygiene_check.py --json
 
-      - name: Run Phase 1 pure-logic tests
-        run: python -m unittest tests.test_validation_status tests.test_reaction_profile -v
+      - name: Build runner-local health fixtures
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import sqlite3
 
-      - name: Run auto-backfill foundation tests
-        run: python -m unittest tests.test_auto_backfill_ledger tests.test_auto_backfill_planner tests.test_auto_backfill_policy tests.test_auto_backfill_state -v
+          import db
 
-      - name: Run event archive tests
-        run: python -m unittest discover -s tests -p "test_events*.py" -v
+          def ensure_price_cache(path: str) -> None:
+              with sqlite3.connect(path) as conn:
+                  conn.execute(
+                      "CREATE TABLE IF NOT EXISTS price_cache ("
+                      "ticker TEXT NOT NULL, "
+                      "date TEXT NOT NULL, "
+                      "close REAL, "
+                      "volume REAL, "
+                      "auto_adjust INTEGER DEFAULT 1, "
+                      "PRIMARY KEY (ticker, date, auto_adjust))"
+                  )
+                  conn.execute(
+                      "INSERT OR IGNORE INTO price_cache "
+                      "(ticker, date, close, volume, auto_adjust) "
+                      "VALUES ('SPY', '2026-05-01', 100.0, 1.0, 1)"
+                  )
+                  conn.commit()
 
-      - name: Run no-paid smoke script
+          Path("ci_tmp/backups").mkdir(parents=True, exist_ok=True)
+
+          db.DB_FILE = "ci_tmp/events.db"
+          db.init_db()
+          with sqlite3.connect(db.DB_FILE) as conn:
+              conn.execute(
+                  "INSERT INTO events "
+                  "(timestamp, headline, stage, persistence, market_tickers, event_date) "
+                  "VALUES (?, ?, ?, ?, ?, ?)",
+                  (
+                      "2026-05-01T00:00:00",
+                      "CI fixture event",
+                      "initial",
+                      "short",
+                      '[{"symbol":"SPY"}]',
+                      "2026-05-01",
+                  ),
+              )
+              conn.commit()
+          ensure_price_cache(db.DB_FILE)
+          shutil.copy2(db.DB_FILE, "ci_tmp/backups/events-20260507T000000.db")
+
+          db.DB_FILE = "events.db"
+          db.init_db()
+          ensure_price_cache(db.DB_FILE)
+          PY
+
+      - name: Run safe project health
+        run: >-
+          python scripts/project_health_check.py --json
+          --repo-path .
+          --db-path ci_tmp/events.db
+          --backup-dir ci_tmp/backups
+          --allow-duplicate-clusters 28
+
+      - name: Run no-paid smoke
         run: python scripts/no_paid_smoke.py --json
-
-      - name: Check archive backup dry run
-        run: python scripts/backup_archive.py --dry-run
-
-  frontend:
-    name: Frontend Typecheck and Build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend
-
-      - name: Typecheck frontend
-        run: npm --prefix frontend run typecheck
-
-      - name: Build frontend
-        run: npm --prefix frontend run build

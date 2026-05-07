@@ -270,6 +270,167 @@ class TestCacheWindowGapFilter(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Live validation — gap_days > 0 contract on every emitted row.
+# ---------------------------------------------------------------------------
+
+
+class TestGapDaysValidator(unittest.TestCase):
+    """Direct unit tests of :func:`_validate_gap_days_positive`.
+
+    The export contract is "no row with non-positive gap_days ever
+    reaches the renderer".  These tests pin the validator's behaviour
+    on positive, zero, negative, non-int, bool, and missing-field
+    inputs, plus an empty-input pass.
+    """
+
+    def test_validator_passes_on_positive_gap_days(self) -> None:
+        rows = [_row(event_id=1, gap_days=1), _row(event_id=2, gap_days=14)]
+        cli._validate_gap_days_positive(rows)  # no raise
+
+    def test_validator_passes_on_empty_input(self) -> None:
+        cli._validate_gap_days_positive([])
+
+    def test_validator_raises_on_zero_gap_days(self) -> None:
+        with self.assertRaisesRegex(
+            AssertionError, "non-positive gap_days",
+        ):
+            cli._validate_gap_days_positive(
+                [_row(event_id=7, symbol="AAPL", gap_days=0)],
+            )
+
+    def test_validator_raises_on_negative_gap_days(self) -> None:
+        with self.assertRaisesRegex(
+            AssertionError, "non-positive gap_days",
+        ):
+            cli._validate_gap_days_positive(
+                [_row(event_id=8, symbol="MSFT", gap_days=-3)],
+            )
+
+    def test_validator_raises_on_none_gap_days(self) -> None:
+        with self.assertRaisesRegex(
+            AssertionError, "non-positive gap_days",
+        ):
+            cli._validate_gap_days_positive(
+                [_row(event_id=9, symbol="GOOG", gap_days=None)],
+            )
+
+    def test_validator_raises_on_string_gap_days(self) -> None:
+        # A stringified number must be rejected — the field is a hard
+        # int contract, not "anything truthy".
+        with self.assertRaisesRegex(
+            AssertionError, "non-positive gap_days",
+        ):
+            cli._validate_gap_days_positive(
+                [_row(event_id=10, symbol="NVDA", gap_days="14")],
+            )
+
+    def test_validator_rejects_bool_even_though_python_int_subclass(
+        self,
+    ) -> None:
+        # ``True`` would slip past a naive ``isinstance(_, int)`` check.
+        # The validator must treat bool as "not a real int".
+        with self.assertRaisesRegex(
+            AssertionError, "non-positive gap_days",
+        ):
+            cli._validate_gap_days_positive(
+                [_row(event_id=11, symbol="TSLA", gap_days=True)],
+            )
+
+    def test_validator_error_includes_event_id_and_symbol(self) -> None:
+        with self.assertRaises(AssertionError) as ctx:
+            cli._validate_gap_days_positive(
+                [_row(event_id=99, symbol="NVDA", gap_days=0)],
+            )
+        message = str(ctx.exception)
+        self.assertIn("event_id=99", message)
+        self.assertIn("'NVDA'",      message)
+        self.assertIn("gap_days=0",  message)
+
+    def test_validator_finds_non_positive_in_mixed_batch(self) -> None:
+        # First row is fine; second row trips the validator.  A regression
+        # that only checked rows[0] would silently pass — this test is
+        # the guard against that.
+        rows = [
+            _row(event_id=1, gap_days=14),
+            _row(event_id=2, gap_days=0),
+        ]
+        with self.assertRaisesRegex(
+            AssertionError, "non-positive gap_days",
+        ):
+            cli._validate_gap_days_positive(rows)
+
+
+class TestMainAppliesGapDaysValidator(unittest.TestCase):
+    """``main()`` must run the validator on the post-filter set so a
+    non-positive row from any seam (production or mocked) cannot reach
+    CSV / JSON output."""
+
+    def test_main_raises_when_seam_yields_zero_gap_days(self) -> None:
+        rows = [_row(event_id=1, gap_days=0)]
+        with patch.object(cli, "_load_export_rows", return_value=rows):
+            with self.assertRaisesRegex(
+                AssertionError, "non-positive gap_days",
+            ):
+                cli.main(["--json"], out=StringIO())
+
+    def test_main_raises_when_seam_yields_negative_gap_days(self) -> None:
+        rows = [_row(event_id=1, gap_days=-7)]
+        with patch.object(cli, "_load_export_rows", return_value=rows):
+            with self.assertRaisesRegex(
+                AssertionError, "non-positive gap_days",
+            ):
+                cli.main(["--csv"], out=StringIO())
+
+    def test_main_raises_even_when_offender_is_past_limit(self) -> None:
+        # ``--limit 1`` would truncate the offending row out of the
+        # rendered output, but the contract is "the export never emits
+        # non-positive gap_days" — even a tail row that wouldn't be
+        # emitted should fail the validator.  Pinning this prevents a
+        # subtle regression where a non-positive row is silently
+        # tolerated as long as the cap excludes it.
+        rows = [
+            _row(event_id=1, gap_days=14),
+            _row(event_id=2, gap_days=0),  # past --limit 1, but invalid
+        ]
+        with patch.object(cli, "_load_export_rows", return_value=rows):
+            with self.assertRaisesRegex(
+                AssertionError, "non-positive gap_days",
+            ):
+                cli.main(["--json", "--limit", "1"], out=StringIO())
+
+    def test_main_succeeds_when_all_gap_days_positive(self) -> None:
+        rows = [
+            _row(event_id=1, gap_days=1),
+            _row(event_id=2, gap_days=14),
+            _row(event_id=3, gap_days=21),
+        ]
+        with patch.object(cli, "_load_export_rows", return_value=rows):
+            rc, output = _run_cli(["--json"])
+        self.assertEqual(rc, 0)
+        body = json.loads(output)
+        self.assertEqual(body["count"], 3)
+        for r in body["rows"]:
+            self.assertGreater(r["gap_days"], 0)
+
+    def test_main_does_not_validate_non_refreshable_rows(self) -> None:
+        # A non-refreshable row with gap_days=0 is dropped by the
+        # cache_window_gap filter BEFORE the validator runs.  The
+        # validator must therefore not trip on it — only post-filter
+        # rows are part of the export contract.
+        rows = [
+            _row(event_id=1, gap_days=14, diagnostic_reason=_REFRESHABLE),
+            _row(event_id=2, gap_days=0,
+                 diagnostic_reason="event_too_recent_for_20d"),
+        ]
+        with patch.object(cli, "_load_export_rows", return_value=rows):
+            rc, output = _run_cli(["--json"])
+        self.assertEqual(rc, 0)
+        body = json.loads(output)
+        self.assertEqual(body["count"], 1)
+        self.assertEqual(body["rows"][0]["event_id"], 1)
+
+
+# ---------------------------------------------------------------------------
 # --limit behaviour
 # ---------------------------------------------------------------------------
 
@@ -567,6 +728,112 @@ class TestSeamCorrectness(_TempDbBase):
         parsed = [r for r in reader if r["symbol"] == self.SYMBOL]
         self.assertEqual(len(parsed), 1)
         self.assertEqual(parsed[0]["diagnostic_reason"], _REFRESHABLE)
+
+
+class TestInteriorGapExclusion(_TempDbBase):
+    """The seam must drop rows whose cache already reaches the 20-bd
+    horizon (``gap_days <= 0``).
+
+    The classifier still routes some such rows into
+    ``cache_max_before_20d_horizon`` — typically when both
+    ``auto_adjust`` caches reach the horizon but the hydrator can't
+    produce ``return_20d`` because of an *interior* cache gap rather
+    than a window-end deficit.  A window-extending refresh wouldn't
+    close those rows, so the export must exclude them.
+
+    These tests force the path by:
+
+    1. extending the seeded cache with a ``today``-dated bar so
+       ``cache_max >= horizon`` (i.e. ``gap_days <= 0``);
+    2. patching ``_classify_blocker_for_ticker`` and
+       ``_classify_no_forward_20d_subreason`` to keep the row in the
+       refreshable bucket regardless of what the live hydrator would
+       do with the new cache shape — the test isolates the *seam's*
+       ``gap_days <= 0`` filter, not the hydrator's behaviour.
+    """
+
+    def _push_cache_max_to_today(self) -> None:
+        with sqlite3.connect(self._tmp) as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO price_cache "
+                "(ticker, date, close, volume, auto_adjust, fetched_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    self.SYMBOL, date.today().isoformat(),
+                    999.0, 5_000_000.0, 0,
+                    "2026-05-06T12:00:00+00:00",
+                ),
+            )
+            conn.commit()
+
+    def _patch_classifiers_to_force_refreshable_bucket(self, stack):
+        from routes import diagnostics as _diag
+        stack.enter_context(patch.object(
+            _diag, "_classify_blocker_for_ticker",
+            return_value="no_forward_20d_close",
+        ))
+        stack.enter_context(patch.object(
+            _diag, "_classify_no_forward_20d_subreason",
+            return_value=_REFRESHABLE,
+        ))
+
+    def test_seam_drops_row_when_cache_max_reaches_horizon(self) -> None:
+        self._push_cache_max_to_today()
+        with ExitStack() as stack:
+            self._patch_classifiers_to_force_refreshable_bucket(stack)
+            rows = cli._load_export_rows()
+        ours = [r for r in rows if r.get("symbol") == self.SYMBOL]
+        self.assertEqual(
+            ours, [],
+            "interior-gap rows (cache_max >= horizon, gap_days <= 0) "
+            f"must be excluded by the seam; got: {ours}",
+        )
+
+    def test_cli_emits_zero_rows_for_interior_gap_fixture(self) -> None:
+        self._push_cache_max_to_today()
+        with ExitStack() as stack:
+            self._patch_classifiers_to_force_refreshable_bucket(stack)
+            rc, output = _run_cli(["--json"])
+        self.assertEqual(rc, 0)
+        body = json.loads(output)
+        rendered = [r for r in body["rows"] if r.get("symbol") == self.SYMBOL]
+        self.assertEqual(rendered, [])
+
+    def test_seam_keeps_row_before_cache_extension(self) -> None:
+        # Sanity check on the fixture itself: without the today-dated
+        # bar, the seeded fixture DOES yield a refreshable row.  This
+        # pins that the exclusion in the previous test is caused by
+        # the cache extension, not by something else upstream.
+        rows = cli._load_export_rows()
+        ours = [r for r in rows if r.get("symbol") == self.SYMBOL]
+        self.assertEqual(len(ours), 1)
+        self.assertGreater(ours[0]["gap_days"], 0)
+
+
+class TestLiveSeamGapDaysAlwaysPositive(_TempDbBase):
+    """End-to-end pin: every row the live seam emits against the temp
+    fixture has ``gap_days > 0``.  Mirrors ``TestSeamCorrectness`` but
+    iterates the entire seam output rather than asserting on the
+    single-symbol row, so the contract is pinned uniformly."""
+
+    def test_every_seam_row_has_positive_int_gap_days(self) -> None:
+        rows = cli._load_export_rows()
+        for r in rows:
+            gap = r.get("gap_days")
+            self.assertIsInstance(gap, int, f"non-int gap_days: {r}")
+            self.assertNotIsInstance(
+                gap, bool,
+                f"bool gap_days slipped through (Python int subclass): {r}",
+            )
+            self.assertGreater(gap, 0, f"non-positive gap_days: {r}")
+
+    def test_main_run_does_not_raise_validator(self) -> None:
+        # The validator runs inside ``main()``; a real seam run must
+        # never trip it.  Three repeated runs to cover any state-
+        # carrying regressions.
+        for _ in range(3):
+            rc, _ = _run_cli(["--json"])
+            self.assertEqual(rc, 0)
 
 
 class TestNoMutation(_TempDbBase):

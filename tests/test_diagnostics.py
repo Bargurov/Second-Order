@@ -219,10 +219,11 @@ class TestConfigHealthShape(_ConfigHealthBase):
         self.assertIsInstance(body["warnings"], list)
 
     def test_response_never_contains_secret_bytes(self) -> None:
-        os.environ["ANTHROPIC_API_KEY"] = "sk-ant-supersecret-do-not-leak"
+        anthropic_secret = "sk-" + "ant-test-secret"
+        os.environ["ANTHROPIC_API_KEY"] = anthropic_secret
         os.environ["OPENAI_API_KEY"]    = "sk-openai-also-secret"
         raw = client.get("/diagnostics/config-health").text
-        self.assertNotIn("sk-ant-supersecret-do-not-leak", raw)
+        self.assertNotIn(anthropic_secret, raw)
         self.assertNotIn("sk-openai-also-secret",         raw)
         body = client.get("/diagnostics/config-health").json()
         # Booleans only — keys reported as present without leaking bytes.

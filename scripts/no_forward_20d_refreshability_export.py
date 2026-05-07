@@ -236,6 +236,46 @@ def _filter_to_cache_window_gap(rows: Sequence[dict]) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Live validation — defense-in-depth on the gap_days contract.  The seam
+# already drops rows with ``gap_days <= 0`` (the interior-gap exclusion at
+# the seam-level filter), so under normal operation this validator is a
+# no-op.  It exists so a future change that loosens the seam filter or a
+# mocked test input that smuggles in a non-positive row trips loudly at
+# the export boundary instead of leaking into a downstream consumer.
+# ---------------------------------------------------------------------------
+
+
+def _validate_gap_days_positive(rows: Sequence[dict]) -> None:
+    """Raise ``AssertionError`` if any row has non-positive ``gap_days``.
+
+    The export contract is "every emitted row represents a real,
+    refreshable window deficit"; a window of zero or negative days
+    cannot be closed by a window-extending refresh.  A row with
+    ``gap_days <= 0`` is therefore semantically invalid as an export
+    row and must never reach the renderer.
+
+    ``gap_days`` must also be a real ``int`` — booleans (a Python
+    ``int`` subclass) and string-encoded numbers are rejected so a
+    serialiser regression that quotes the field cannot smuggle a
+    non-positive value past this check.
+    """
+    for r in rows:
+        gap = r.get("gap_days") if isinstance(r, dict) else None
+        if (
+            not isinstance(gap, int)
+            or isinstance(gap, bool)
+            or gap <= 0
+        ):
+            raise AssertionError(
+                "refreshability export must never emit non-positive "
+                "gap_days; offending row: "
+                f"event_id={r.get('event_id') if isinstance(r, dict) else None!r}, "
+                f"symbol={r.get('symbol') if isinstance(r, dict) else None!r}, "
+                f"gap_days={gap!r}"
+            )
+
+
+# ---------------------------------------------------------------------------
 # Row normalisation + rendering
 # ---------------------------------------------------------------------------
 
@@ -316,7 +356,11 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
     limit = max(int(args.limit), 0)
 
     raw_rows = _load_export_rows()
-    rows = _filter_to_cache_window_gap(raw_rows)[:limit]
+    filtered = _filter_to_cache_window_gap(raw_rows)
+    # Validate the full filtered set (before --limit truncation) so a
+    # regression cannot hide a non-positive row past the cap.
+    _validate_gap_days_positive(filtered)
+    rows = filtered[:limit]
 
     if args.json:
         print(_render_json(rows), file=output)

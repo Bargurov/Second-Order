@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Tracked-generated-artifact guard.
+"""Tracked local-artifact guard.
 
 Reads the git index via ``git ls-files`` and reports any tracked path
-matching a generated/local-artifact pattern (databases, build info,
-frontend dist output, archive backups).  Read-only — never modifies
-the repo, never globs the filesystem.  Exits non-zero when violations
+matching a generated/local-only pattern (databases, build info,
+frontend dist output, archive backups, local docs and agent config).
+Read-only — never modifies the repo, never globs the filesystem.
+Exits non-zero when violations
 exist so the script can be wired into pre-commit / CI.
 
 Out of scope (deliberately)
@@ -37,6 +38,12 @@ CHECKED_PATTERNS: tuple[str, ...] = (
     "*.tsbuildinfo",
     "frontend/dist/*",
     "backups/*",
+    "docs/*",
+    "design/*",
+    ".githooks/*",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "future_ideas.md",
 )
 
 
@@ -45,7 +52,7 @@ def list_tracked_generated(
     repo_path: str | Path | None = None,
     patterns: Sequence[str] = CHECKED_PATTERNS,
 ) -> list[str]:
-    """Return tracked paths matching any generated-artifact pattern.
+    """Return tracked paths matching any disallowed local-artifact pattern.
 
     Read-only.  Shells out to ``git ls-files -z`` once and matches each
     line against ``patterns`` with ``fnmatch.fnmatchcase`` — never
@@ -84,25 +91,27 @@ def _build_payload(matched: list[str]) -> dict[str, Any]:
         "ok":                       len(matched) == 0,
         "tracked_generated_count":  len(matched),
         "tracked_generated_paths":  list(matched),
+        "tracked_disallowed_count": len(matched),
+        "tracked_disallowed_paths": list(matched),
         "checked_patterns":         list(CHECKED_PATTERNS),
     }
 
 
 def _render_text(payload: dict[str, Any]) -> str:
-    lines: list[str] = ["Tracked-generated-artifact guard", ""]
+    lines: list[str] = ["Tracked local-artifact guard", ""]
     lines.append(
         "Checked patterns:        " + ", ".join(payload["checked_patterns"])
     )
     lines.append(
-        f"Tracked generated count: {payload['tracked_generated_count']}"
+        f"Tracked disallowed count: {payload['tracked_disallowed_count']}"
     )
     lines.append(
         f"Status:                  {'OK' if payload['ok'] else 'VIOLATIONS'}"
     )
-    if payload["tracked_generated_paths"]:
+    if payload["tracked_disallowed_paths"]:
         lines.append("")
-        lines.append("Tracked generated paths:")
-        for p in payload["tracked_generated_paths"]:
+        lines.append("Tracked disallowed paths:")
+        for p in payload["tracked_disallowed_paths"]:
             lines.append(f"  {p}")
     return "\n".join(lines)
 
@@ -119,8 +128,9 @@ def _render_json(payload: dict[str, Any]) -> str:
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Fail when generated/local artifacts (databases, build "
-            "info, frontend/dist, backups) are tracked by git."
+            "Fail when generated/local artifacts or local-only docs "
+            "(databases, build info, frontend/dist, backups, docs/, "
+            "design/, agent config) are tracked by git."
         ),
     )
     parser.add_argument(

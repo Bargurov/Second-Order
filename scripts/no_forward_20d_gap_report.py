@@ -36,6 +36,21 @@ Output keys
                                   separately keeps the operator from
                                   burning quota refreshing tickers a
                                   refresh cannot help.
+``auto_adjust_mismatch_details`` — focused per-row enrichment for the
+                                  ``auto_adjust_mismatch_for_20d``
+                                  examples.  Each entry carries
+                                  ``event_id``, ``event_date``,
+                                  ``symbol``, the
+                                  ``available_auto_adjust_flags`` list
+                                  (which flags ``price_cache`` actually
+                                  has rows for), the
+                                  ``cache_max_per_flag`` map of flag →
+                                  newest cached date, and a fixed
+                                  ``recommended_action`` label.  Read
+                                  via ``SELECT`` only — never imports a
+                                  provider, ``yfinance``, the LLM, or
+                                  the FastAPI app surface.  Capped at
+                                  ``--limit``.
 ``recommended_next_action``    — single string drawn from a fixed
                                   vocabulary (see ``_NEXT_ACTIONS``)
                                   ranking the actionable buckets:
@@ -82,6 +97,17 @@ if str(ROOT) not in sys.path:
 # refresh re-fetch would actually fix.
 _REFRESHABLE_DIAG_REASON = "cache_max_before_20d_horizon"
 
+# Diagnostic-reason key for the cache-flag-mismatch sub-bucket.  These
+# rows have data at ``auto_adjust=1`` but the hydrator reads
+# ``auto_adjust=0``; an ingestion-flag re-fetch unblocks them without
+# any new provider call.
+_AUTO_ADJUST_MISMATCH_DIAG_REASON = "auto_adjust_mismatch_for_20d"
+
+# Fixed action label every auto_adjust mismatch row carries.  The fix
+# is uniform: re-fetch the ticker at the hydrator-visible flag so the
+# cache lines up with what the hydrator can see.
+_AUTO_ADJUST_MISMATCH_ACTION = "refresh_unadjusted_cache_to_align_hydrator"
+
 _DEFAULT_EXAMPLE_LIMIT = 10
 
 # Recommendation vocabulary — pin every legal value so consumers can
@@ -100,6 +126,144 @@ _NEXT_ACTIONS = (
 # inject synthetic breakdowns; the production path resolves to
 # :func:`routes.diagnostics._compute_no_forward_20d_breakdown`.
 # ---------------------------------------------------------------------------
+
+
+def _load_auto_adjust_mismatch_details() -> list[dict[str, Any]]:
+    """Read-only enumeration of every ``auto_adjust_mismatch_for_20d``
+    row in the events archive.
+
+    Re-uses the same classifiers as
+    :func:`routes.diagnostics._compute_no_forward_20d_breakdown` so the
+    rows match the breakdown's
+    ``counts['auto_adjust_mismatch_for_20d']`` exactly.  Unlike the
+    breakdown's 10-example budget (which can shut these out entirely
+    when the cache_window_gap bucket dominates), this enumeration
+    surfaces every matching row so the operator sees all of them.
+
+    Issues only ``SELECT`` statements; never imports a provider,
+    ``yfinance``, the LLM, or the FastAPI app surface.  The lazy
+    import of ``api`` first mirrors :func:`_compute_breakdown` to
+    resolve the ``api`` ↔ ``routes.diagnostics`` cycle when the CLI
+    is the first thing in the process to touch diagnostics.
+    """
+    import sqlite3
+    from datetime import date
+    import db as _db
+
+    if not _db._db_ready:
+        try:
+            _db.init_db()
+        except Exception:
+            return []
+
+    try:
+        import api  # noqa: F401
+        # Patch-friendly: tests stub the classifiers via
+        # ``patch("routes.diagnostics.<name>", ...)``.  Re-importing on
+        # every call re-binds the local name to the patched attribute.
+        from routes.diagnostics import (
+            _classify_blocker_for_ticker,
+            _classify_no_forward_20d_subreason,
+        )
+    except Exception:
+        return []
+
+    try:
+        conn = sqlite3.connect(_db.DB_FILE)
+    except sqlite3.Error:
+        return []
+
+    try:
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute("SELECT * FROM events").fetchall()
+        except sqlite3.Error:
+            rows = []
+        try:
+            cache_max_rows = conn.execute(
+                "SELECT ticker, auto_adjust, MAX(date) "
+                "FROM price_cache GROUP BY ticker, auto_adjust"
+            ).fetchall()
+        except sqlite3.Error:
+            cache_max_rows = []
+    finally:
+        conn.close()
+
+    cache_max: dict[tuple[str, int], date] = {}
+    for ticker, flag, max_d in cache_max_rows:
+        if not isinstance(ticker, str) or not isinstance(max_d, str):
+            continue
+        try:
+            cache_max[(ticker.upper(), int(flag))] = date.fromisoformat(
+                max_d[:10],
+            )
+        except (ValueError, TypeError):
+            continue
+
+    today = date.today()
+    out: list[dict[str, Any]] = []
+
+    for raw in rows:
+        try:
+            event = _db._decode_event_row(raw)
+        except Exception:
+            try:
+                event = dict(raw)
+            except Exception:
+                continue
+
+        event_id = event.get("id")
+        event_date_str = event.get("event_date")
+        if not isinstance(event_date_str, str) or not event_date_str:
+            continue
+        try:
+            event_d = date.fromisoformat(event_date_str[:10])
+        except (ValueError, TypeError):
+            continue
+
+        tickers = event.get("market_tickers") or []
+        if not isinstance(tickers, list):
+            continue
+
+        for t in tickers:
+            try:
+                reason = _classify_blocker_for_ticker(t, event_date_str)
+            except Exception:
+                continue
+            if reason != "no_forward_20d_close":
+                continue
+
+            sym_raw = t.get("symbol") if isinstance(t, dict) else None
+            sym_upper = sym_raw.upper() if isinstance(sym_raw, str) else ""
+
+            try:
+                sub = _classify_no_forward_20d_subreason(
+                    event_d=event_d,
+                    today=today,
+                    aa_false_max=cache_max.get((sym_upper, 0)),
+                    aa_true_max=cache_max.get((sym_upper, 1)),
+                )
+            except Exception:
+                continue
+            if sub != _AUTO_ADJUST_MISMATCH_DIAG_REASON:
+                continue
+
+            per_flag: dict[str, str] = {}
+            for flag_int in (0, 1):
+                d_val = cache_max.get((sym_upper, flag_int))
+                if d_val is not None:
+                    per_flag[str(flag_int)] = d_val.isoformat()
+
+            out.append({
+                "event_id":                    event_id,
+                "event_date":                  event_date_str,
+                "symbol":                      sym_upper or None,
+                "available_auto_adjust_flags": sorted(int(k) for k in per_flag),
+                "cache_max_per_flag":          per_flag,
+                "recommended_action":          _AUTO_ADJUST_MISMATCH_ACTION,
+            })
+
+    return out
 
 
 def _compute_breakdown() -> dict[str, Any]:
@@ -133,7 +297,12 @@ def _compute_breakdown() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _build_payload(breakdown: dict, *, limit: int) -> dict:
+def _build_payload(
+    breakdown: dict,
+    *,
+    limit: int,
+    auto_adjust_mismatch_details: list[dict] | None = None,
+) -> dict:
     counts = breakdown.get("counts") or {}
     examples = breakdown.get("examples") or []
 
@@ -147,6 +316,8 @@ def _build_payload(breakdown: dict, *, limit: int) -> dict:
         else:
             non_refreshable.append(ex)
 
+    details = list(auto_adjust_mismatch_details or [])
+
     return {
         "total_no_forward_20d":
             int(breakdown.get("total_no_forward_20d") or 0),
@@ -158,9 +329,10 @@ def _build_payload(breakdown: dict, *, limit: int) -> dict:
             int(counts.get("cache_max_before_20d_horizon") or 0),
         "likely_delisted_or_sparse":
             int(counts.get("likely_delisted_or_sparse") or 0),
-        "refreshable_gap_examples":  refreshable[:limit],
-        "non_refreshable_examples":  non_refreshable[:limit],
-        "recommended_next_action":   _recommend_next_action(counts),
+        "refreshable_gap_examples":     refreshable[:limit],
+        "non_refreshable_examples":     non_refreshable[:limit],
+        "auto_adjust_mismatch_details": details[:limit],
+        "recommended_next_action":      _recommend_next_action(counts),
     }
 
 
@@ -233,10 +405,42 @@ def _render_text(payload: dict) -> str:
         lines.append("  -")
     lines.append("")
 
+    details = payload.get("auto_adjust_mismatch_details") or []
+    lines.append(f"Auto-adjust mismatch details ({len(details)}):")
+    if details:
+        for index, detail in enumerate(details, start=1):
+            lines.append(_format_auto_adjust_detail_line(index, detail))
+    else:
+        lines.append("  -")
+    lines.append("")
+
     lines.append(
         f"Recommended next action: {payload['recommended_next_action']}"
     )
     return "\n".join(lines)
+
+
+def _format_auto_adjust_detail_line(index: int, detail: dict) -> str:
+    event_id   = detail.get("event_id")
+    event_date = detail.get("event_date") or "-"
+    symbol     = detail.get("symbol") or "-"
+    flags      = detail.get("available_auto_adjust_flags") or []
+    flags_str  = ",".join(str(f) for f in flags) if flags else "-"
+    cache_max  = detail.get("cache_max_per_flag") or {}
+    if cache_max:
+        cache_str = " ".join(
+            f"aa={flag}->{cache_max[flag]}"
+            for flag in sorted(cache_max.keys())
+        )
+    else:
+        cache_str = "-"
+    action = detail.get("recommended_action") or "-"
+    return (
+        f"  {index:>2}. id={event_id} symbol={symbol} "
+        f"event_date={event_date} flags=[{flags_str}]\n"
+        f"      cache_max: {cache_str}\n"
+        f"      action: {action}"
+    )
 
 
 def _format_example_line(index: int, ex: dict) -> str:
@@ -292,7 +496,12 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
     limit = max(int(args.limit), 0)
 
     breakdown = _compute_breakdown()
-    payload = _build_payload(breakdown, limit=limit)
+    auto_adjust_details = _load_auto_adjust_mismatch_details()
+    payload = _build_payload(
+        breakdown,
+        limit=limit,
+        auto_adjust_mismatch_details=auto_adjust_details,
+    )
 
     if args.json:
         print(_render_json(payload), file=output)
