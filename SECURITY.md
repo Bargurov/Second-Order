@@ -38,6 +38,7 @@ Confirm before pushing:
 - `.env` and provider keys are not tracked.
 - No local SQLite databases, backups, caches, logs, screenshots, generated reports, or sandbox artifacts are staged.
 - No local absolute paths or private workflow notes were added to public docs.
+- Public docs describe validation methodology at a high level only, without exposing private datasets or generated artifacts.
 - Paid paths remain guarded by `ENABLE_PAID_ANALYSIS` and `confirm_paid=true`.
 
 ## Reporting

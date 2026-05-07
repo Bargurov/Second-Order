@@ -13,8 +13,8 @@ and market-context overlays, save the result locally, and revisit dated events.
 ## Current Status
 
 Phase 0 hardening is complete: CI, key rotation, archive backup command, paid
-server guard, structured logging, config health diagnostics, data-quality
-diagnostics, and the local operations runbook are in place.
+server guard, structured logging, config health diagnostics, and data-quality
+diagnostics are in place.
 
 Phase 1 read surfaces are active for local archive validation: archive/detail
 reads expose `validation_status_v2`, event detail can hydrate
@@ -35,6 +35,10 @@ Phase 1 foundation validation:
 The first Phase 1 read surfaces are live. Remaining Phase 1 work is primarily
 calibration, coverage, migration discipline, and clearer public interpretation
 of archive-derived metrics.
+
+Market validation is being upgraded from raw forward-return checks toward
+abnormal returns, standardized abnormal returns (SAR), confidence intervals
+(CI), and false-discovery-rate (FDR) controls.
 
 Deferred until the foundation is steadier: charts, tagging expansion,
 scheduler/background jobs, deployment profiles, and Telegram/WhatsApp/OpenClaw
@@ -163,12 +167,9 @@ and eligible unanalyzed candidates.
 
 ### 2. React Frontend
 
-Market Overview, Event Detail, shell, portfolio, and archive polish now pass
-the frontend build from the newest approved Second Order design package in
-`repo/design/`. Ignore old design folders that are not part of that approved
-source. Direction: modern dark premium market-forensics UI, institutional but
-not Bloomberg/terminal. Keep 8px max card radius, readable text, Manrope/Inter,
-tonal layering, and no yellow flood. Current frontend verification:
+Market Overview, Event Detail, shell, portfolio, and archive polish use a
+modern dark market-forensics interface: institutional, readable, and restrained
+without terminal-style density. Current frontend verification:
 
 ```powershell
 cd frontend
@@ -321,5 +322,3 @@ python -m unittest discover -s tests -v
 - Local-first research support, not automated trading
 - Heuristic classification and market validation remain analyst-support tools
 - FastAPI, the React app, and the Telegram bot are the maintained product paths
-
-Later-stage work belongs in [future_ideas.md](future_ideas.md).
