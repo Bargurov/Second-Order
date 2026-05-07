@@ -73,7 +73,44 @@ _OK_PLAN = {
     "proposed_updates":           [],
     "skipped_counts":             {"timestamp_unparseable": 0},
     "confidence_note":            "stub note",
+    "projected_hydration_impact": {
+        "candidate_events":               0,
+        "proposed_updates_count":         0,
+        "ticker_rows_blocked":            0,
+        "ticker_rows_unblocked_by_write": 0,
+        "remaining_ticker_rows_blocked":  0,
+        "skipped_counts":                 {"timestamp_unparseable": 0},
+    },
 }
+
+
+_ARCHIVE_CATEGORY_KEYS = (
+    "malformed_market_tickers_json",
+    "missing_headline",
+    "missing_timestamp",
+    "missing_event_date",
+    "malformed_event_date",
+    "missing_market_tickers",
+    "duplicate_headline_event_date_clusters",
+)
+
+
+def _ok_archive_consistency() -> dict:
+    return {key: {"count": 0, "examples": []} for key in _ARCHIVE_CATEGORY_KEYS}
+
+
+def _archive_with(**counts) -> dict:
+    """Build an archive-consistency response with selected categories
+    populated.  Categories not named keep their zero-count default."""
+    base = _ok_archive_consistency()
+    for cat, count in counts.items():
+        examples = [
+            {"event_id": i, "headline": f"row {i}", "timestamp": "x",
+             "event_date": "x"}
+            for i in range(min(count, 10))
+        ]
+        base[cat] = {"count": count, "examples": examples}
+    return base
 
 
 def _patch_all_clean():
@@ -96,6 +133,10 @@ def _patch_all_clean():
     stack.enter_context(patch.object(
         phc, "plan_event_date_backfill",
         return_value=dict(_OK_PLAN),
+    ))
+    stack.enter_context(patch.object(
+        phc, "compute_archive_consistency_local",
+        return_value=_ok_archive_consistency(),
     ))
     return stack
 
@@ -121,6 +162,8 @@ class TestAllPass(unittest.TestCase):
             "backup_restore",
             "schema_preflight",
             "event_date_backfill_candidates",
+            "archive_consistency",
+            "event_date_backfill_impact",
         ):
             self.assertIsNotNone(
                 payload.get(key),
@@ -143,16 +186,28 @@ class TestPayloadShape(unittest.TestCase):
             "backup_restore",
             "schema_preflight",
             "event_date_backfill_candidates",
+            "archive_consistency",
+            "event_date_backfill_impact",
             "warnings",
             "errors",
+            "accepted_warnings",
         ):
             self.assertIn(key, payload, f"missing top-level key: {key}")
 
     def test_warnings_and_errors_are_lists(self) -> None:
         with _patch_all_clean():
             payload = phc.run_health_check()
-        self.assertIsInstance(payload["warnings"], list)
-        self.assertIsInstance(payload["errors"],   list)
+        self.assertIsInstance(payload["warnings"],          list)
+        self.assertIsInstance(payload["errors"],            list)
+        self.assertIsInstance(payload["accepted_warnings"], list)
+
+    def test_accepted_warnings_present_and_empty_by_default(self) -> None:
+        # The new key exists on every payload and starts empty so JSON
+        # consumers can rely on it without a presence check.
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertIn("accepted_warnings", payload)
+        self.assertEqual(payload["accepted_warnings"], [])
 
     def test_event_date_section_is_slim(self) -> None:
         # The aggregator must not embed the full ``proposed_updates``
@@ -332,16 +387,27 @@ class TestClassifySchemaPreflight(unittest.TestCase):
 
 class TestClassifyEventDateBackfill(unittest.TestCase):
     def test_zero_candidates_produces_no_warning(self) -> None:
+        # Live event-date backfill is complete; with zero candidates the
+        # health check must stay quiet on both backfill sections.
         with _patch_all_clean():
             payload = phc.run_health_check()
         self.assertTrue(payload["ok"])
         for w in payload["warnings"]:
             self.assertNotIn("event_date_backfill_candidates", w)
+            self.assertNotIn("event_date_backfill_impact",     w)
 
     def test_nonzero_candidates_surface_as_warning_not_error(self) -> None:
         plan = dict(_OK_PLAN, total_candidates=25,
                     events_with_market_tickers=20,
-                    ticker_rows_blocked=60)
+                    ticker_rows_blocked=60,
+                    projected_hydration_impact={
+                        "candidate_events":               25,
+                        "proposed_updates_count":         24,
+                        "ticker_rows_blocked":            60,
+                        "ticker_rows_unblocked_by_write": 56,
+                        "remaining_ticker_rows_blocked":  4,
+                        "skipped_counts": {"timestamp_unparseable": 1},
+                    })
         with _patch_all_clean():
             with patch.object(
                 phc, "plan_event_date_backfill",
@@ -353,6 +419,285 @@ class TestClassifyEventDateBackfill(unittest.TestCase):
         joined = " | ".join(payload["warnings"])
         self.assertIn("event_date_backfill_candidates", joined)
         self.assertIn("25", joined)
+
+
+# ---------------------------------------------------------------------------
+# Classification — archive_consistency
+# ---------------------------------------------------------------------------
+
+
+class TestClassifyArchiveConsistency(unittest.TestCase):
+    def test_clean_archive_yields_no_warnings_or_errors(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertTrue(payload["ok"])
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("archive_consistency", msg)
+
+    def test_malformed_market_tickers_json_is_error(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(malformed_market_tickers_json=3),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("archive_consistency", joined)
+        self.assertIn("malformed market_tickers JSON", joined)
+        self.assertIn("3", joined)
+
+    def test_missing_headline_is_error(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(missing_headline=2),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("archive_consistency", joined)
+        self.assertIn("missing headline",    joined)
+
+    def test_missing_timestamp_is_error(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(missing_timestamp=4),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("archive_consistency", joined)
+        self.assertIn("missing timestamp",   joined)
+
+    def test_malformed_event_date_is_error(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(malformed_event_date=5),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("archive_consistency",   joined)
+        self.assertIn("malformed event_date",  joined)
+
+    def test_duplicate_headline_event_date_clusters_is_warning(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=2,
+                ),
+            ):
+                payload = phc.run_health_check()
+        # Duplicates are a remediation flag, not a hard data-corruption
+        # error — the rows themselves may individually parse fine.
+        self.assertTrue(payload["ok"])
+        joined = " | ".join(payload["warnings"])
+        self.assertIn("archive_consistency",        joined)
+        self.assertIn("duplicate",                  joined)
+        self.assertNotIn("archive_consistency",
+                         " | ".join(payload["errors"]))
+
+    def test_missing_event_date_alone_does_not_error_or_warn(self) -> None:
+        # The event_date_backfill_candidates section already covers
+        # missing event_date.  archive_consistency surfaces the count in
+        # its categories block but must not double-report it as an
+        # error or warning.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(missing_event_date=7),
+            ):
+                payload = phc.run_health_check()
+        self.assertTrue(payload["ok"])
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("archive_consistency", msg)
+
+    def test_default_threshold_zero_keeps_duplicate_cluster_warning(self) -> None:
+        # No flag → strict default → cluster count > 0 stays a warning.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=2,
+                ),
+            ):
+                payload = phc.run_health_check()
+        joined = " | ".join(payload["warnings"])
+        self.assertIn("archive_consistency",        joined)
+        self.assertIn("duplicate",                  joined)
+        self.assertEqual(payload["accepted_warnings"], [])
+
+    def test_threshold_above_count_waives_warning_to_accepted(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=28,
+                ),
+            ):
+                payload = phc.run_health_check(allow_duplicate_clusters=30)
+        # No duplicate-cluster line in active warnings.
+        for w in payload["warnings"]:
+            self.assertNotIn("duplicate", w)
+        # Waiver line carries section name + threshold + live count.
+        joined = " | ".join(payload["accepted_warnings"])
+        self.assertIn("archive_consistency", joined)
+        self.assertIn("duplicate",           joined)
+        self.assertIn("28",                  joined)
+        self.assertIn("30",                  joined)
+        self.assertTrue(payload["ok"])
+
+    def test_threshold_at_count_waives_warning(self) -> None:
+        # Boundary: count == threshold → waived.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=2,
+                ),
+            ):
+                payload = phc.run_health_check(allow_duplicate_clusters=2)
+        for w in payload["warnings"]:
+            self.assertNotIn("duplicate", w)
+        self.assertEqual(len(payload["accepted_warnings"]), 1)
+
+    def test_threshold_below_count_keeps_warning_active(self) -> None:
+        # Boundary: count > threshold → still a warning.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=5,
+                ),
+            ):
+                payload = phc.run_health_check(allow_duplicate_clusters=3)
+        joined = " | ".join(payload["warnings"])
+        self.assertIn("duplicate", joined)
+        self.assertEqual(payload["accepted_warnings"], [])
+
+    def test_zero_count_with_threshold_emits_no_waiver(self) -> None:
+        # No live duplicates → nothing to waive even with a generous
+        # threshold; both lists stay empty for this section.
+        with _patch_all_clean():
+            payload = phc.run_health_check(allow_duplicate_clusters=99)
+        self.assertEqual(payload["accepted_warnings"], [])
+        for w in payload["warnings"]:
+            self.assertNotIn("duplicate", w)
+
+    def test_waiver_does_not_affect_other_archive_errors(self) -> None:
+        # A high threshold for duplicate clusters must NOT mask
+        # malformed-data errors from the same section.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=4,
+                    malformed_event_date=2,
+                ),
+            ):
+                payload = phc.run_health_check(allow_duplicate_clusters=10)
+        # malformed_event_date stays as an error → ok=False.
+        self.assertFalse(payload["ok"])
+        joined_errors = " | ".join(payload["errors"])
+        self.assertIn("malformed event_date", joined_errors)
+        # Duplicate warning was waived.
+        for w in payload["warnings"]:
+            self.assertNotIn("duplicate", w)
+        joined_accepted = " | ".join(payload["accepted_warnings"])
+        self.assertIn("duplicate", joined_accepted)
+
+    def test_section_carries_all_seven_category_counts(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(missing_headline=2,
+                                           malformed_event_date=1),
+            ):
+                payload = phc.run_health_check()
+        cats = payload["archive_consistency"]["categories"]
+        self.assertEqual(set(cats.keys()), set(_ARCHIVE_CATEGORY_KEYS))
+        self.assertEqual(cats["missing_headline"]["count"],     2)
+        self.assertEqual(cats["malformed_event_date"]["count"], 1)
+        self.assertEqual(cats["missing_timestamp"]["count"],    0)
+
+
+# ---------------------------------------------------------------------------
+# Classification — event_date_backfill_impact
+# ---------------------------------------------------------------------------
+
+
+class TestEventDateBackfillImpact(unittest.TestCase):
+    def test_zero_impact_produces_no_warning_or_error(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertTrue(payload["ok"])
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("event_date_backfill_impact", msg)
+
+    def test_section_carries_three_documented_keys(self) -> None:
+        plan = dict(_OK_PLAN, projected_hydration_impact={
+            "candidate_events":               17,
+            "proposed_updates_count":         15,
+            "ticker_rows_blocked":            42,
+            "ticker_rows_unblocked_by_write": 38,
+            "remaining_ticker_rows_blocked":  4,
+            "skipped_counts":                 {"timestamp_unparseable": 2},
+        })
+        with _patch_all_clean():
+            with patch.object(
+                phc, "plan_event_date_backfill",
+                return_value=plan,
+            ):
+                payload = phc.run_health_check()
+        section = payload["event_date_backfill_impact"]
+        self.assertEqual(section["candidate_events"],                17)
+        self.assertEqual(section["proposed_updates"],                15)
+        self.assertEqual(section["projected_ticker_rows_unblocked"], 38)
+
+    def test_section_is_slim_with_no_proposed_updates_list(self) -> None:
+        # Mirror ``test_event_date_section_is_slim`` — the impact
+        # section must not embed the planner's full ``proposed_updates``
+        # list and must report the three counts as integers.
+        bulky = dict(_OK_PLAN,
+                     proposed_updates=[{"event_id": i} for i in range(500)])
+        with _patch_all_clean():
+            with patch.object(
+                phc, "plan_event_date_backfill",
+                return_value=bulky,
+            ):
+                payload = phc.run_health_check()
+        section = payload["event_date_backfill_impact"]
+        self.assertEqual(set(section.keys()), {
+            "candidate_events",
+            "proposed_updates",
+            "projected_ticker_rows_unblocked",
+        })
+        self.assertIsInstance(section["proposed_updates"], int)
+
+    def test_impact_uses_existing_plan_seam(self) -> None:
+        # The impact section must share the existing
+        # ``plan_event_date_backfill`` seam — patching only that seam
+        # should drive both backfill sections without any new patch.
+        seen_calls = []
+
+        def fake_plan(*, db_path=None):
+            seen_calls.append(db_path)
+            return dict(_OK_PLAN)
+
+        with _patch_all_clean():
+            with patch.object(
+                phc, "plan_event_date_backfill",
+                side_effect=fake_plan,
+            ):
+                phc.run_health_check()
+        self.assertGreaterEqual(
+            len(seen_calls), 2,
+            "expected plan_event_date_backfill to drive both backfill sections",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -413,10 +758,29 @@ class TestExceptionHandling(unittest.TestCase):
             ):
                 payload = phc.run_health_check()
         self.assertFalse(payload["ok"])
+        # Both backfill sections share the seam, so both record the
+        # failure and stay inert rather than partially populating.
+        for key in ("event_date_backfill_candidates",
+                    "event_date_backfill_impact"):
+            self.assertTrue(any(
+                key in e for e in payload["errors"]
+            ), f"missing exception line for {key}: {payload['errors']}")
+
+    def test_archive_consistency_exception_captured(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                side_effect=RuntimeError("db locked"),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
         self.assertTrue(any(
-            "event_date_backfill_candidates" in e
+            "archive_consistency" in e and "db locked" in e
             for e in payload["errors"]
-        ))
+        ), f"missing archive_consistency exception: {payload['errors']}")
+        # Other sections still ran.
+        self.assertIsNotNone(payload["repo_hygiene"])
+        self.assertIsNotNone(payload["event_date_backfill_impact"])
 
 
 # ---------------------------------------------------------------------------
@@ -639,10 +1003,52 @@ class TestCli(unittest.TestCase):
             "backup_restore",
             "schema_preflight",
             "event_date_backfill_candidates",
+            "archive_consistency",
+            "event_date_backfill_impact",
             "warnings",
             "errors",
+            "accepted_warnings",
         ):
             self.assertIn(key, body, f"missing JSON key: {key}")
+
+    def test_cli_allow_duplicate_clusters_waives_warning(self) -> None:
+        # End-to-end CLI run: with the flag, the duplicate warning lands
+        # in accepted_warnings and the run still exits zero.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=28,
+                ),
+            ):
+                rc, output = self._run_cli([
+                    "--json", "--allow-duplicate-clusters", "30",
+                ])
+        self.assertEqual(rc, 0)
+        body = json.loads(output)
+        self.assertTrue(body["ok"])
+        for w in body["warnings"]:
+            self.assertNotIn("duplicate", w)
+        joined = " | ".join(body["accepted_warnings"])
+        self.assertIn("duplicate", joined)
+        self.assertIn("28",        joined)
+        self.assertIn("30",        joined)
+
+    def test_cli_text_output_renders_accepted_warnings_when_present(
+        self,
+    ) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "compute_archive_consistency_local",
+                return_value=_archive_with(
+                    duplicate_headline_event_date_clusters=4,
+                ),
+            ):
+                rc, output = self._run_cli([
+                    "--allow-duplicate-clusters", "10",
+                ])
+        self.assertEqual(rc, 0)
+        self.assertIn("Accepted warnings", output)
 
     def test_cli_text_output_summarises_each_section(self) -> None:
         with _patch_all_clean():
@@ -653,6 +1059,8 @@ class TestCli(unittest.TestCase):
             "backup_restore",
             "schema_preflight",
             "event_date_backfill_candidates",
+            "archive_consistency",
+            "event_date_backfill_impact",
             "Warnings",
             "Errors",
         ):
@@ -669,8 +1077,17 @@ class TestCli(unittest.TestCase):
                 "backup_restore": _OK_BACKUP_RESTORE,
                 "schema_preflight": _OK_SCHEMA_PREFLIGHT,
                 "event_date_backfill_candidates": _OK_PLAN,
+                "archive_consistency": {
+                    "categories": _ok_archive_consistency(),
+                },
+                "event_date_backfill_impact": {
+                    "candidate_events": 0,
+                    "proposed_updates": 0,
+                    "projected_ticker_rows_unblocked": 0,
+                },
                 "warnings": [],
                 "errors": [],
+                "accepted_warnings": [],
             }
 
         with patch.object(phc, "run_health_check", side_effect=fake_run):
@@ -678,11 +1095,42 @@ class TestCli(unittest.TestCase):
                 "--repo-path", "/tmp/repo",
                 "--db-path",   "/tmp/x.db",
                 "--backup-dir", "/tmp/bks",
+                "--allow-duplicate-clusters", "7",
             ])
         self.assertEqual(rc, 0)
-        self.assertEqual(seen["repo_path"],  "/tmp/repo")
-        self.assertEqual(seen["db_path"],    "/tmp/x.db")
-        self.assertEqual(seen["backup_dir"], "/tmp/bks")
+        self.assertEqual(seen["repo_path"],                "/tmp/repo")
+        self.assertEqual(seen["db_path"],                  "/tmp/x.db")
+        self.assertEqual(seen["backup_dir"],               "/tmp/bks")
+        self.assertEqual(seen["allow_duplicate_clusters"], 7)
+
+    def test_cli_default_threshold_is_zero(self) -> None:
+        seen: dict = {}
+
+        def fake_run(**kwargs):
+            seen.update(kwargs)
+            return {
+                "ok": True,
+                "repo_hygiene": _OK_REPO_HYGIENE,
+                "backup_restore": _OK_BACKUP_RESTORE,
+                "schema_preflight": _OK_SCHEMA_PREFLIGHT,
+                "event_date_backfill_candidates": _OK_PLAN,
+                "archive_consistency": {
+                    "categories": _ok_archive_consistency(),
+                },
+                "event_date_backfill_impact": {
+                    "candidate_events": 0,
+                    "proposed_updates": 0,
+                    "projected_ticker_rows_unblocked": 0,
+                },
+                "warnings": [],
+                "errors": [],
+                "accepted_warnings": [],
+            }
+
+        with patch.object(phc, "run_health_check", side_effect=fake_run):
+            rc, _ = self._run_cli([])
+        self.assertEqual(rc, 0)
+        self.assertEqual(seen["allow_duplicate_clusters"], 0)
 
 
 if __name__ == "__main__":
