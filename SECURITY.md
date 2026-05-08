@@ -31,6 +31,8 @@ Run a quick safety check before pushing:
 git status --short
 git diff --check
 git ls-files .env .env.* frontend/.env frontend/.env.*
+python scripts/repo_hygiene_check.py --json
+python scripts/no_paid_smoke.py --json
 ```
 
 Confirm before pushing:
@@ -39,6 +41,8 @@ Confirm before pushing:
 - No local SQLite databases, backups, caches, logs, screenshots, generated reports, or sandbox artifacts are staged.
 - No local absolute paths or private workflow notes were added to public docs.
 - Public docs describe validation methodology at a high level only, without exposing private datasets or generated artifacts.
+- Public docs do not claim full backend or frontend test-suite status unless those suites were actually run for the change.
+- Repo hygiene and no-paid smoke checks pass with dummy or absent provider keys.
 - Paid paths remain guarded by `ENABLE_PAID_ANALYSIS` and `confirm_paid=true`.
 
 ## Reporting

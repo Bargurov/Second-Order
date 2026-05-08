@@ -12,9 +12,9 @@ and market-context overlays, save the result locally, and revisit dated events.
 
 ## Current Status
 
-Phase 0 hardening is complete: CI, key rotation, archive backup command, paid
-server guard, structured logging, config health diagnostics, and data-quality
-diagnostics are in place.
+Phase 0 hardening is complete at the project-process level: CI hygiene checks,
+key rotation guidance, archive backup command, paid server guard, structured
+logging, config health diagnostics, and data-quality diagnostics are in place.
 
 Phase 1 read surfaces are active for local archive validation: archive/detail
 reads expose `validation_status_v2`, event detail can hydrate
@@ -110,7 +110,7 @@ with low/medium-impact filler when too few events qualify. `/movers/yearly` is
 a separate surface and may document different behavior if its eligibility or
 fill policy diverges.
 
-Freeze verification commands:
+Focused freeze verification commands (targeted, not a full-suite claim):
 
 ```powershell
 python -m unittest discover -s tests -p "test_*movers*.py" -v
@@ -139,9 +139,14 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
-python -m unittest discover -s tests -v
+python scripts/repo_hygiene_check.py --json
+python scripts/project_health_check.py --json --allow-duplicate-clusters 32
+python scripts/no_paid_smoke.py --json
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
 ```
+
+The health commands above are lightweight safety and readiness checks. They do
+not certify that every backend or frontend test is green.
 
 API base URL: `http://127.0.0.1:8000`. Health check: `/health`.
 
@@ -169,7 +174,7 @@ and eligible unanalyzed candidates.
 
 Market Overview, Event Detail, shell, portfolio, and archive polish use a
 modern dark market-forensics interface: institutional, readable, and restrained
-without terminal-style density. Current frontend verification:
+without terminal-style density. Current frontend type/build verification:
 
 ```powershell
 cd frontend
@@ -311,11 +316,23 @@ See [EVALUATION.md](EVALUATION.md) for the current eval flow and limits.
 
 ## Test
 
-From the repo root:
+The current conservative verification set is targeted. It checks DB isolation,
+paid-action guardrails, and health/smoke summaries without claiming full-suite
+coverage. From the repo root:
 
 ```powershell
-python -m unittest discover -s tests -v
+python scripts/repo_hygiene_check.py --json
+python scripts/project_health_check.py --json --allow-duplicate-clusters 32
+python scripts/no_paid_smoke.py --json
+python -m pytest tests/test_test_db_isolation.py -q
+python -m pytest tests/test_backfill_paid_guard.py -q
+python -m unittest tests.test_project_health_check -v
+python -m unittest tests.test_no_paid_smoke -v
 ```
+
+A full discovery run is useful before larger backend changes, but this README
+does not present it as a green release gate unless it has been separately
+verified.
 
 ## Scope
 
