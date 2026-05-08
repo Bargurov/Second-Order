@@ -14,10 +14,26 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime as _datetime, timedelta as _timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import api  # noqa: F401  — break circular import surfaced in test path
+
+
+def _recent_iso(*, hours_ago: float) -> str:
+    """Return an ISO timestamp ``hours_ago`` hours before now.
+
+    Used for cluster ``published_at`` fixtures that must fall INSIDE
+    the route's recency window (default ``since_hours=72``).  Earlier
+    revisions of this file hardcoded literal dates that aged out as
+    wall-clock time advanced past the test's authoring date — those
+    fixtures are now computed dynamically so the suite stays
+    time-independent.
+    """
+    return (
+        _datetime.now() - _timedelta(hours=hours_ago)
+    ).isoformat(timespec="seconds")
 
 
 class _PaidGuardTestBase(unittest.TestCase):
@@ -93,7 +109,7 @@ class TestPaidBackfillGuard(_PaidGuardTestBase):
                 "clusters": [{
                     "headline":     "Fed cuts rates by 25bp",
                     "source_count": 5,
-                    "published_at": "2026-05-03T08:00:00",
+                    "published_at": _recent_iso(hours_ago=2),
                     "sources":      [{"name": "Reuters"}],
                 }],
             }, "memory")
@@ -222,11 +238,11 @@ class TestDryRunPreview(_PaidGuardTestBase):
                 "clusters": [
                     {"headline":     "OPEC slashes output 500k bpd",
                      "source_count": 5,
-                     "published_at": "2026-05-03T08:00:00",
+                     "published_at": _recent_iso(hours_ago=2),
                      "sources":      [{"name": "Reuters"}]},
                     {"headline":     "Fed cuts rates by 25bp",
                      "source_count": 7,
-                     "published_at": "2026-05-03T09:00:00",
+                     "published_at": _recent_iso(hours_ago=1),
                      "sources":      [{"name": "Bloomberg"}]},
                 ],
             }, "memory")
@@ -414,11 +430,11 @@ class TestBackfillPreviewNoSpend(_PaidGuardTestBase):
                 "clusters": [
                     {"headline":     "OPEC slashes output 500k bpd",
                      "source_count": 5,
-                     "published_at": "2026-05-03T08:00:00",
+                     "published_at": _recent_iso(hours_ago=2),
                      "sources":      [{"name": "Reuters"}]},
                     {"headline":     "Fed cuts rates by 25bp",
                      "source_count": 7,
-                     "published_at": "2026-05-03T09:00:00",
+                     "published_at": _recent_iso(hours_ago=1),
                      "sources":      [{"name": "Bloomberg"}]},
                 ],
             }, "memory")
@@ -587,7 +603,7 @@ class TestBackfillCandidateEndpoint(_PaidGuardTestBase):
         default_clusters = [{
             "headline":     "Fed cuts rates by 25bp",
             "source_count": 5,
-            "published_at": "2026-05-03T08:00:00",
+            "published_at": _recent_iso(hours_ago=2),
             "sources":      [{"name": "Reuters"}],
         }]
         seeded_clusters = clusters if clusters is not None else default_clusters
@@ -881,7 +897,7 @@ class TestBackfillCandidateHTTPRoute(unittest.TestCase):
                 "clusters": [{
                     "headline":     "OPEC slashes output 500k bpd",
                     "source_count": 5,
-                    "published_at": "2026-05-03T08:00:00",
+                    "published_at": _recent_iso(hours_ago=2),
                     "sources":      [{"name": "Reuters"}],
                 }],
             }, "memory")
@@ -1133,15 +1149,15 @@ class TestRegistryCandidateQueue(_PaidGuardTestBase):
                 "clusters": [
                     {"headline":     "Fed cuts rates by 25bp",
                      "source_count": 7,
-                     "published_at": "2026-05-03T08:00:00",
+                     "published_at": _recent_iso(hours_ago=2),
                      "sources":      [{"name": "Reuters"}, {"name": "Bloomberg"}]},
                     {"headline":     "OPEC slashes output 500k bpd",
                      "source_count": 5,
-                     "published_at": "2026-05-03T09:00:00",
+                     "published_at": _recent_iso(hours_ago=1),
                      "sources":      [{"name": "Bloomberg"}]},
                     {"headline":     "Generic celebrity wedding announcement",
                      "source_count": 2,
-                     "published_at": "2026-05-03T10:00:00",
+                     "published_at": _recent_iso(hours_ago=0),
                      "sources":      [{"name": "TMZ"}]},
                 ],
             }, "memory")
