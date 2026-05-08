@@ -211,6 +211,157 @@ class TestNoPaidSmokeRunner(_Base):
         self.assertIn("PASS", table)
 
 
+class TestNoPaidSmokeBaseUrlSkipsLocalScripts(unittest.TestCase):
+    """In ``--base-url`` mode the smoke must NOT run local CLI scripts.
+
+    Codex review flagged: scripts probe the local archive regardless of
+    the operator's --base-url target, contradicting the operator's
+    intent (probe a remote backend).  They also bypass the no-paid
+    guard in base-url mode (the guard is replaced with a nullcontext),
+    so a script regression could reach a forbidden seam silently.
+    Skip them entirely; the in-process mode remains the full local
+    preflight (and these tests pin the local mode regression guard).
+    """
+
+    def _stub_response(self, status: int = 200) -> object:
+        class _R:
+            status_code = status
+            @property
+            def text(_self) -> str:
+                return "{}"
+            def json(_self):
+                return {}
+        return _R()
+
+    def test_base_url_mode_returns_only_endpoint_results(self) -> None:
+        from unittest.mock import patch
+        with patch.object(
+            no_paid_smoke, "_request",
+            return_value=self._stub_response(),
+        ):
+            results = no_paid_smoke.run_smoke(
+                base_url="http://0.0.0.0:1",
+                timeout=0.1,
+            )
+        self.assertEqual(len(results), len(no_paid_smoke.ENDPOINTS))
+
+    def test_base_url_mode_omits_every_script_module_from_results(self) -> None:
+        from unittest.mock import patch
+        with patch.object(
+            no_paid_smoke, "_request",
+            return_value=self._stub_response(),
+        ):
+            results = no_paid_smoke.run_smoke(
+                base_url="http://0.0.0.0:1",
+                timeout=0.1,
+            )
+        for script in no_paid_smoke.SCRIPTS:
+            self.assertFalse(
+                any(script.module in (r.path or "") for r in results),
+                f"--base-url mode must not run local script "
+                f"{script.module!r}; results: "
+                f"{[r.path for r in results]}",
+            )
+
+    def test_base_url_mode_does_not_invoke_run_script(self) -> None:
+        from unittest.mock import patch
+
+        seen: list[object] = []
+
+        def _spy(script):
+            seen.append(script)
+            return True, None
+
+        with patch.object(
+            no_paid_smoke, "_request",
+            return_value=self._stub_response(),
+        ):
+            with patch.object(
+                no_paid_smoke, "_run_script", side_effect=_spy,
+            ):
+                no_paid_smoke.run_smoke(
+                    base_url="http://0.0.0.0:1",
+                    timeout=0.1,
+                )
+        self.assertEqual(
+            seen, [],
+            "--base-url mode must not invoke _run_script for any local "
+            f"script; saw: {seen}",
+        )
+
+    def test_local_mode_still_invokes_run_script_for_each_script(self) -> None:
+        # Regression guard: skipping scripts in --base-url mode must not
+        # leak into the default in-process mode.  The local preflight
+        # remains the full HTTP+CLI smoke.
+        from unittest.mock import patch
+
+        seen: list[str] = []
+
+        def _spy(script):
+            seen.append(script.module)
+            return True, None
+
+        class _NoopClient:
+            def get(self, _path):
+                return self._resp()
+            def post(self, _path):
+                return self._resp()
+            def request(self, _method, _path):
+                return self._resp()
+            def _resp(self):
+                class _R:
+                    status_code = 200
+                    @property
+                    def text(self): return "{}"
+                    def json(self): return {}
+                return _R()
+
+        with patch.object(no_paid_smoke, "_run_script", side_effect=_spy):
+            no_paid_smoke.run_smoke(
+                client=_NoopClient(),
+                guard_provider_seams=False,
+            )
+        self.assertEqual(
+            seen, [s.module for s in no_paid_smoke.SCRIPTS],
+            "default local mode must still run every local script in order",
+        )
+
+    def test_main_with_base_url_skips_local_scripts(self) -> None:
+        # End-to-end: the CLI surface threading --base-url through
+        # main() must produce a payload that contains only endpoint
+        # rows, never script rows.
+        from unittest.mock import patch
+        out = io.StringIO()
+        with patch.object(
+            no_paid_smoke, "_request",
+            return_value=self._stub_response(),
+        ):
+            code = no_paid_smoke.main(
+                ["--json", "--base-url", "http://0.0.0.0:1",
+                 "--timeout", "0.1"],
+                out=out,
+            )
+        payload = json.loads(out.getvalue())
+        self.assertIsInstance(payload["checks"], list)
+        self.assertEqual(
+            len(payload["checks"]), len(no_paid_smoke.ENDPOINTS),
+            f"base_url payload must omit script rows; saw "
+            f"{len(payload['checks'])} checks",
+        )
+        for script in no_paid_smoke.SCRIPTS:
+            self.assertFalse(
+                any(script.module in (c.get("path") or "")
+                    for c in payload["checks"]),
+                f"--base-url payload must not include local script "
+                f"{script.module!r}",
+            )
+        # Exit code is orthogonal to script-skip: the stubbed bodies
+        # satisfy the JSON-parseable check but not every per-endpoint
+        # body invariant, so the run-wide ``ok`` may be False.  The
+        # load-bearing pin is the absence of script rows above.
+        self.assertIsInstance(code, int)
+
+
 class TestAutoBackfillStatusInvariants(unittest.TestCase):
     """The smoke runner pins ``scheduler.scheduler_started=false`` and
     ``ledger.used=0`` on the auto-backfill-status response.  These are
@@ -618,6 +769,8 @@ class TestAutoBackfillStatusSmokeRunFails(_Base):
 _GAP_REPORT_MODULE = "scripts.no_forward_20d_gap_report"
 _REFRESHABILITY_EXPORT_MODULE = "scripts.no_forward_20d_refreshability_export"
 _AUTO_ADJUST_PREVIEW_MODULE = "scripts.auto_adjust_mismatch_repair_preview"
+_STAT_VALIDATION_SMOKE_MODULE = "scripts.stat_validation_smoke"
+_STAT_VALIDATION_READINESS_MODULE = "scripts.stat_validation_readiness_report"
 
 
 _VALID_GAP_REPORT_BODY = {
@@ -664,7 +817,32 @@ class TestNoPaidSmokeScriptInventory(unittest.TestCase):
             _GAP_REPORT_MODULE,
             _REFRESHABILITY_EXPORT_MODULE,
             _AUTO_ADJUST_PREVIEW_MODULE,
+            _STAT_VALIDATION_SMOKE_MODULE,
+            _STAT_VALIDATION_READINESS_MODULE,
         ])
+
+    def test_stat_validation_smoke_passes_only_json_arg(self) -> None:
+        # The stat-validation smoke does not accept ``--limit`` — its
+        # cohort size is fixed by the synthetic generator. The runner
+        # must therefore pass only ``--json`` for that script.
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _STAT_VALIDATION_SMOKE_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertEqual(match.args, ("--json",))
+
+    def test_stat_validation_readiness_passes_limit_20(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _STAT_VALIDATION_READINESS_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn("--json", match.args)
+        self.assertIn("--limit", match.args)
+        self.assertIn("20", match.args)
 
     def test_each_script_passes_json_arg_for_machine_parseable_output(self) -> None:
         for script in no_paid_smoke.SCRIPTS:
@@ -1195,3 +1373,390 @@ class TestNoPaidSmokeScriptGuardFailsClosed(_Base):
         self.assertFalse(broken[0].ok)
         self.assertIn("forbidden seam", broken[0].error or "")
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+    def test_stat_validation_smoke_under_guard_fails_closed_on_seam(
+        self,
+    ) -> None:
+        # Symmetric pin for the stat-validation pipeline smoke. The
+        # smoke is meant to run pure (no DB / provider / LLM); if a
+        # future regression reaches a forbidden seam, the no-paid guard
+        # must catch it and the smoke must mark the result failed.
+        from unittest.mock import patch
+
+        target_module = __import__(
+            _STAT_VALIDATION_SMOKE_MODULE, fromlist=["main"],
+        )
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [
+            r for r in results if _STAT_VALIDATION_SMOKE_MODULE in r.path
+        ]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+    def test_stat_validation_readiness_under_guard_fails_closed_on_seam(
+        self,
+    ) -> None:
+        # Symmetric pin for the stat-validation readiness report. It
+        # reads the archive but must never reach a provider / yfinance /
+        # LLM seam. If a regression has it reach one, the guard fires
+        # and the smoke result is marked failed.
+        from unittest.mock import patch
+
+        target_module = __import__(
+            _STAT_VALIDATION_READINESS_MODULE, fromlist=["main"],
+        )
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [
+            r for r in results if _STAT_VALIDATION_READINESS_MODULE in r.path
+        ]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+
+# ---------------------------------------------------------------------------
+# Stat-validation smoke + readiness report invariants
+# ---------------------------------------------------------------------------
+
+
+_VALID_STAT_VALIDATION_SMOKE_BODY: dict = {
+    "ok":     True,
+    "errors": [],
+    "config": {
+        "alpha":         0.05,
+        "drift":         0.0001,
+        "horizons":      [1, 5, 20],
+        "n_bootstrap":   500,
+        "n_events":      12,
+        "seed":          42,
+    },
+    "records_count":     3,
+    "significant_count": 3,
+    "records": [
+        {
+            "horizon":                   1,
+            "abnormal_return":           0.04,
+            "sar":                       5.0,
+            "ci_low":                    0.03,
+            "ci_high":                   0.05,
+            "p_value":                   0.0,
+            "fdr_q":                     0.0,
+            "statistically_significant": True,
+            "interpretation":            "significant_positive",
+        },
+        {
+            "horizon":                   5,
+            "abnormal_return":           0.04,
+            "sar":                       2.6,
+            "ci_low":                    0.03,
+            "ci_high":                   0.05,
+            "p_value":                   0.0,
+            "fdr_q":                     0.0,
+            "statistically_significant": True,
+            "interpretation":            "significant_positive",
+        },
+        {
+            "horizon":                   20,
+            "abnormal_return":           0.04,
+            "sar":                       1.3,
+            "ci_low":                    0.02,
+            "ci_high":                   0.05,
+            "p_value":                   0.00001,
+            "fdr_q":                     0.00001,
+            "statistically_significant": True,
+            "interpretation":            "significant_positive",
+        },
+    ],
+}
+
+
+class TestStatValidationSmokeInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on
+    ``scripts.stat_validation_smoke --json``: ``ok`` must be True,
+    ``errors`` must be empty, ``records_count`` must equal
+    ``len(records)``, ``significant_count`` must not exceed
+    ``records_count``, and every record must carry the canonical
+    nine-field stat_validation schema. Stable values are accepted
+    because the smoke runs over a deterministic synthetic cohort.
+    """
+
+    def test_invariant_passes_on_valid_body(self) -> None:
+        no_paid_smoke._assert_stat_validation_smoke_no_paid(
+            _VALID_STAT_VALIDATION_SMOKE_BODY,
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid([])
+
+    def test_invariant_fails_when_ok_is_false(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["ok"] = False
+        with self.assertRaisesRegex(AssertionError, "ok must be True"):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_errors_non_empty(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["errors"] = ["unexpected"]
+        with self.assertRaisesRegex(
+            AssertionError, "errors must be empty in no-paid mode",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_errors_not_list(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["errors"] = {"oops": True}
+        with self.assertRaisesRegex(
+            AssertionError, "errors must be a list",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_config_not_dict(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["config"] = "nope"
+        with self.assertRaisesRegex(
+            AssertionError, "config must be a JSON object",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_records_count_negative(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["records_count"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "records_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_significant_count_is_bool(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["significant_count"] = True
+        with self.assertRaisesRegex(
+            AssertionError,
+            "significant_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_records_count_mismatches_len(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["records_count"] = 99  # len(records) is 3
+        with self.assertRaisesRegex(
+            AssertionError, "records_count must equal len\\(records\\)",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_significant_exceeds_total(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["significant_count"] = body["records_count"] + 1
+        with self.assertRaisesRegex(
+            AssertionError,
+            "significant_count must not exceed records_count",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_records_not_list(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["records"] = {"oops": True}
+        with self.assertRaisesRegex(
+            AssertionError, "records must be a list",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_record_missing_canonical_key(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["records"] = [dict(_VALID_STAT_VALIDATION_SMOKE_BODY["records"][0])]
+        body["records_count"] = 1
+        body["significant_count"] = 1
+        body["records"][0].pop("fdr_q")
+        with self.assertRaisesRegex(
+            AssertionError, "missing required key 'fdr_q'",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_invariant_fails_when_record_is_not_dict(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_SMOKE_BODY)
+        body["records"] = [["not", "a", "dict"]]
+        body["records_count"] = 1
+        body["significant_count"] = 1
+        with self.assertRaisesRegex(
+            AssertionError, "records\\[0\\] must be a JSON object",
+        ):
+            no_paid_smoke._assert_stat_validation_smoke_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_smoke_script(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _STAT_VALIDATION_SMOKE_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_stat_validation_smoke_no_paid,
+            match.body_invariants,
+        )
+
+
+_RECOMMENDED_OK_PROSE = (
+    "Every event in the archive has the cache coverage needed to run "
+    "the event-study engine over 1d/5d/20d horizons."
+)
+_RECOMMENDED_GAPS_PROSE = (
+    "Some events lack the cache coverage needed for the event-study "
+    "engine.  Refresh the price cache for the listed primary tickers "
+    "and SPY benchmark, then re-run this report."
+)
+
+
+_VALID_STAT_VALIDATION_READINESS_BODY: dict = {
+    "total_events":                                0,
+    "events_with_event_date":                      0,
+    "events_with_market_tickers":                  0,
+    "events_with_event_date_and_tickers":          0,
+    "events_with_1d_forward_cache":                0,
+    "events_with_5d_forward_cache":                0,
+    "events_with_20d_forward_cache":               0,
+    "events_missing_benchmark_proxy":              0,
+    "events_with_insufficient_estimation_window":  0,
+    "events_fully_ready":                          0,
+    "events":                                      [],
+    "recommended_next_action":                     _RECOMMENDED_GAPS_PROSE,
+}
+
+
+class TestStatValidationReadinessReportInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on
+    ``scripts.stat_validation_readiness_report --json --limit 20``:
+    every coverage count must be a non-negative int,
+    ``recommended_next_action`` must come from the report's two-prose
+    vocabulary, ``events`` must be a list, and the partition invariant
+    ``events_fully_ready <= total_events`` must hold. Stable zero
+    values are accepted because an archive without coverage produces
+    zeros across the board.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+            _VALID_STAT_VALIDATION_READINESS_BODY,
+        )
+
+    def test_invariant_passes_when_counts_populated(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["total_events"]                              = 271
+        body["events_with_event_date"]                    = 271
+        body["events_with_market_tickers"]                = 89
+        body["events_with_event_date_and_tickers"]        = 89
+        body["events_with_1d_forward_cache"]              = 82
+        body["events_with_5d_forward_cache"]              = 65
+        body["events_with_20d_forward_cache"]             = 35
+        body["events_missing_benchmark_proxy"]            = 199
+        body["events_with_insufficient_estimation_window"] = 215
+        body["events_fully_ready"]                        = 15
+        body["events"]                                    = [
+            {"event_id": 1, "fully_ready": False},
+        ]
+        no_paid_smoke._assert_stat_validation_readiness_report_no_paid(body)
+
+    def test_invariant_passes_when_recommendation_is_ok_prose(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["recommended_next_action"] = _RECOMMENDED_OK_PROSE
+        no_paid_smoke._assert_stat_validation_readiness_report_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                ["not", "a", "dict"],
+            )
+
+    def test_invariant_fails_when_total_events_missing(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body.pop("total_events")
+        with self.assertRaisesRegex(
+            AssertionError, "total_events must be a non-negative int",
+        ):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_is_negative(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["events_fully_ready"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "events_fully_ready must be a non-negative int",
+        ):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_is_bool(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["events_with_market_tickers"] = True
+        with self.assertRaisesRegex(
+            AssertionError,
+            "events_with_market_tickers must be a non-negative int",
+        ):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_events_not_list(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["events"] = {"oops": True}
+        with self.assertRaisesRegex(AssertionError, "events must be a list"):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_recommendation_outside_vocabulary(
+        self,
+    ) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["recommended_next_action"] = "drop_everything_and_panic"
+        with self.assertRaisesRegex(
+            AssertionError,
+            "recommended_next_action must be one of the two pinned",
+        ):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_fully_ready_exceeds_total(self) -> None:
+        body = dict(_VALID_STAT_VALIDATION_READINESS_BODY)
+        body["total_events"]       = 5
+        body["events_fully_ready"] = 7
+        with self.assertRaisesRegex(
+            AssertionError,
+            "events_fully_ready must not exceed total_events",
+        ):
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_readiness_script(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _STAT_VALIDATION_READINESS_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_stat_validation_readiness_report_no_paid,
+            match.body_invariants,
+        )

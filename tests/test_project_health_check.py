@@ -155,6 +155,10 @@ def _patch_all_clean():
         phc, "find_latest_backup",
         return_value=Path("backups/events-20260507T120000.db"),
     ))
+    stack.enter_context(patch.object(
+        phc, "summarize_stat_validation_readiness",
+        return_value=_ok_stat_validation_readiness(),
+    ))
     return stack
 
 
@@ -280,6 +284,77 @@ def _no_forward_20d_breakdown_with(
 
 
 # ---------------------------------------------------------------------------
+# stat_validation_readiness fixture — mirrors the shape produced by
+# ``scripts.stat_validation_readiness_report.summarize_readiness`` so the
+# aggregator's seam never has to special-case test payloads.
+# ---------------------------------------------------------------------------
+
+
+def _ok_stat_validation_readiness() -> dict:
+    """Clean baseline: 10 events, every readiness check passes."""
+    return {
+        "total_events":                                10,
+        "events_with_event_date":                      10,
+        "events_with_market_tickers":                  10,
+        "events_with_event_date_and_tickers":          10,
+        "events_with_1d_forward_cache":                10,
+        "events_with_5d_forward_cache":                10,
+        "events_with_20d_forward_cache":               10,
+        "events_missing_benchmark_proxy":              0,
+        "events_with_insufficient_estimation_window":  0,
+        "events_fully_ready":                          10,
+        "events":                                      [],
+        "recommended_next_action":                     "stub-upstream-msg",
+    }
+
+
+def _stat_validation_readiness_with(
+    *,
+    total: int = 10,
+    fully_ready: int | None = None,
+    event_date_missing: int = 0,
+    market_tickers_missing: int = 0,
+    forward_1d_missing: int = 0,
+    forward_5d_missing: int = 0,
+    forward_20d_missing: int = 0,
+    benchmark_missing: int = 0,
+    estimation_insufficient: int = 0,
+) -> dict:
+    """Build a readiness payload with selected blocker counts populated.
+
+    ``fully_ready`` defaults to ``total - max(blockers)`` so the fixture
+    stays self-consistent (no event is ready when its dominant blocker
+    fires).  Pass an explicit ``fully_ready`` to override.
+    """
+    if fully_ready is None:
+        fully_ready = max(0, total - max(
+            event_date_missing,
+            market_tickers_missing,
+            forward_1d_missing,
+            forward_5d_missing,
+            forward_20d_missing,
+            benchmark_missing,
+            estimation_insufficient,
+        ))
+    return {
+        "total_events":                                total,
+        "events_with_event_date":                      total - event_date_missing,
+        "events_with_market_tickers":                  total - market_tickers_missing,
+        "events_with_event_date_and_tickers":          total - max(
+            event_date_missing, market_tickers_missing,
+        ),
+        "events_with_1d_forward_cache":                total - forward_1d_missing,
+        "events_with_5d_forward_cache":                total - forward_5d_missing,
+        "events_with_20d_forward_cache":               total - forward_20d_missing,
+        "events_missing_benchmark_proxy":              benchmark_missing,
+        "events_with_insufficient_estimation_window":  estimation_insufficient,
+        "events_fully_ready":                          fully_ready,
+        "events":                                      [],
+        "recommended_next_action":                     "stub-upstream-msg",
+    }
+
+
+# ---------------------------------------------------------------------------
 # All-pass aggregation
 # ---------------------------------------------------------------------------
 
@@ -305,6 +380,7 @@ class TestAllPass(unittest.TestCase):
             "no_forward_20d_blockers",
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
+            "stat_validation_readiness",
         ):
             self.assertIsNotNone(
                 payload.get(key),
@@ -332,6 +408,7 @@ class TestPayloadShape(unittest.TestCase):
             "no_forward_20d_blockers",
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
+            "stat_validation_readiness",
             "warnings",
             "errors",
             "accepted_warnings",
@@ -1304,6 +1381,375 @@ class TestAutoAdjustRepairWriteSmoke(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Classification — stat_validation_readiness
+# ---------------------------------------------------------------------------
+
+
+class TestStatValidationReadiness(unittest.TestCase):
+    def test_section_present_in_payload(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        self.assertIn("stat_validation_readiness", payload)
+        self.assertIsNotNone(payload["stat_validation_readiness"])
+
+    def test_section_carries_slim_summary_keys_only(self) -> None:
+        # Spec: total_events, events_fully_ready, readiness_rate,
+        # dominant_blocker, recommended_next_action.  Nothing else.
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(set(section.keys()), {
+            "total_events",
+            "events_fully_ready",
+            "readiness_rate",
+            "dominant_blocker",
+            "recommended_next_action",
+        })
+
+    def test_section_omits_per_event_rows(self) -> None:
+        # Even when the upstream payload carries an ``events`` list the
+        # aggregator must not embed it — the dedicated CLI owns the
+        # drill-down.
+        bulky = _stat_validation_readiness_with(
+            total=10, fully_ready=8, forward_20d_missing=2,
+        )
+        bulky["events"] = [{"event_id": i} for i in range(50)]
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=bulky,
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertNotIn("events", section)
+        self.assertIsInstance(section["readiness_rate"], float)
+
+    def test_zero_events_yields_no_events_recommendation(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=0, fully_ready=0,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["total_events"],       0)
+        self.assertEqual(section["events_fully_ready"], 0)
+        self.assertEqual(section["readiness_rate"],     0.0)
+        self.assertIsNone(section["dominant_blocker"])
+        self.assertEqual(section["recommended_next_action"],
+                         "no_events_to_validate")
+
+    def test_all_ready_yields_no_action_recommendation(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["total_events"],       10)
+        self.assertEqual(section["events_fully_ready"], 10)
+        self.assertEqual(section["readiness_rate"],     1.0)
+        self.assertIsNone(section["dominant_blocker"])
+        self.assertEqual(section["recommended_next_action"],
+                         "no_action_needed_fully_ready")
+
+    def test_readiness_rate_is_partial_when_some_ready(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, fully_ready=7, forward_20d_missing=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["total_events"],       10)
+        self.assertEqual(section["events_fully_ready"], 7)
+        self.assertAlmostEqual(section["readiness_rate"], 0.7, places=10)
+
+    def test_readiness_rate_is_zero_when_total_zero(self) -> None:
+        # Pinned default: vacuously-true 1.0 would mislead operators.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=0, fully_ready=0,
+                ),
+            ):
+                payload = phc.run_health_check()
+        self.assertEqual(
+            payload["stat_validation_readiness"]["readiness_rate"], 0.0,
+        )
+
+    def test_dominant_blocker_event_date_missing(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, event_date_missing=4,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"], "event_date_missing")
+        self.assertEqual(section["recommended_next_action"],
+                         "backfill_event_date")
+
+    def test_dominant_blocker_market_tickers_missing(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, market_tickers_missing=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "market_tickers_missing")
+        self.assertEqual(section["recommended_next_action"],
+                         "backfill_market_tickers")
+
+    def test_dominant_blocker_forward_cache_20d_missing(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, forward_20d_missing=5,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "forward_cache_20d_missing")
+        self.assertEqual(section["recommended_next_action"],
+                         "refresh_forward_cache_20d")
+
+    def test_dominant_blocker_forward_cache_5d_missing(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, forward_5d_missing=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "forward_cache_5d_missing")
+        self.assertEqual(section["recommended_next_action"],
+                         "refresh_forward_cache_5d")
+
+    def test_dominant_blocker_forward_cache_1d_missing(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, forward_1d_missing=2,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "forward_cache_1d_missing")
+        self.assertEqual(section["recommended_next_action"],
+                         "refresh_forward_cache_1d")
+
+    def test_dominant_blocker_benchmark_proxy_missing(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, benchmark_missing=6,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "benchmark_proxy_missing")
+        self.assertEqual(section["recommended_next_action"],
+                         "refresh_benchmark_cache")
+
+    def test_dominant_blocker_estimation_window_insufficient(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, estimation_insufficient=4,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "estimation_window_insufficient")
+        self.assertEqual(section["recommended_next_action"],
+                         "extend_estimation_window")
+
+    def test_dominant_blocker_priority_event_date_over_forward_cache(
+        self,
+    ) -> None:
+        # Tie-break: when event_date_missing == forward_20d_missing, the
+        # coarsest input gap (event_date) wins because it must be fixed
+        # before the forward-cache check is even meaningful.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10,
+                    event_date_missing=4,
+                    forward_20d_missing=4,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"], "event_date_missing")
+
+    def test_dominant_blocker_priority_market_tickers_over_forward(
+        self,
+    ) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10,
+                    market_tickers_missing=3,
+                    forward_20d_missing=3,
+                    benchmark_missing=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "market_tickers_missing")
+
+    def test_dominant_blocker_priority_20d_over_5d_over_1d(self) -> None:
+        # Tie-break among the three forward-cache horizons: 20d wins
+        # because refreshing the longest horizon resolves the shorter
+        # ones for free.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10,
+                    forward_1d_missing=2,
+                    forward_5d_missing=2,
+                    forward_20d_missing=2,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "forward_cache_20d_missing")
+
+    def test_dominant_blocker_priority_5d_over_1d_when_20d_zero(
+        self,
+    ) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10,
+                    forward_1d_missing=3,
+                    forward_5d_missing=3,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "forward_cache_5d_missing")
+
+    def test_dominant_blocker_picks_largest_count(self) -> None:
+        # When counts differ, the largest count wins regardless of the
+        # tie-break order.  Forward-1d (count=8) beats event_date
+        # (count=2) even though event_date sits earlier in the priority.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10,
+                    event_date_missing=2,
+                    forward_1d_missing=8,
+                ),
+            ):
+                payload = phc.run_health_check()
+        section = payload["stat_validation_readiness"]
+        self.assertEqual(section["dominant_blocker"],
+                         "forward_cache_1d_missing")
+
+    def test_section_does_not_emit_warnings_or_errors(self) -> None:
+        # Operator info only — same precedent as the other summary
+        # sections: the recommended_next_action field carries the
+        # actionable signal so we never re-emit it as a warning.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                return_value=_stat_validation_readiness_with(
+                    total=10, forward_20d_missing=4,
+                ),
+            ):
+                payload = phc.run_health_check()
+        for msg in payload["warnings"] + payload["errors"]:
+            self.assertNotIn("stat_validation_readiness", msg)
+        self.assertTrue(payload["ok"])
+
+    def test_seam_exception_captured_others_run(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                side_effect=RuntimeError("readiness crashed"),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        self.assertTrue(any(
+            "stat_validation_readiness" in e and "readiness crashed" in e
+            for e in payload["errors"]
+        ), f"missing exception line: {payload['errors']}")
+        # Other sections still ran to completion.
+        self.assertIsNotNone(payload["repo_hygiene"])
+        self.assertIsNotNone(payload["archive_consistency"])
+
+    def test_section_uses_existing_summarize_readiness_seam(self) -> None:
+        # The aggregator must drive the section through the
+        # ``summarize_stat_validation_readiness`` seam — patching only
+        # that name should be sufficient to replace upstream completely.
+        seen_calls = []
+
+        def fake(**kwargs):
+            seen_calls.append(kwargs)
+            return _ok_stat_validation_readiness()
+
+        # Patch the OTHER seams via _patch_all_clean(), then override
+        # the readiness seam with the side_effect probe.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                side_effect=fake,
+            ):
+                phc.run_health_check()
+        self.assertEqual(
+            len(seen_calls), 1,
+            "expected summarize_stat_validation_readiness to be called once",
+        )
+
+    def test_section_passes_limit_zero_to_seam(self) -> None:
+        seen_kwargs: list[dict] = []
+
+        def fake(**kwargs):
+            seen_kwargs.append(dict(kwargs))
+            return _ok_stat_validation_readiness()
+
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_stat_validation_readiness",
+                side_effect=fake,
+            ):
+                phc.run_health_check()
+        self.assertEqual(len(seen_kwargs), 1)
+        # ``limit=0`` keeps the per-event list empty upstream, which is
+        # how the aggregator avoids embedding rows.
+        self.assertEqual(seen_kwargs[0].get("limit"), 0)
+
+
+# ---------------------------------------------------------------------------
 # Exception handling — one section blowing up must not poison the rest
 # ---------------------------------------------------------------------------
 
@@ -1609,6 +2055,7 @@ class TestCli(unittest.TestCase):
             "no_forward_20d_blockers",
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
+            "stat_validation_readiness",
             "warnings",
             "errors",
             "accepted_warnings",
@@ -1668,6 +2115,7 @@ class TestCli(unittest.TestCase):
             "no_forward_20d_blockers",
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
+            "stat_validation_readiness",
             "Warnings",
             "Errors",
         ):

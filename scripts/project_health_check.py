@@ -52,6 +52,9 @@ from scripts.backup_restore_check import (  # noqa: E402
 )
 from scripts.schema_preflight     import collect as schema_preflight_collect  # noqa: E402
 from event_date_backfill          import plan_event_date_backfill  # noqa: E402
+from scripts.stat_validation_readiness_report import (  # noqa: E402
+    summarize_readiness as summarize_stat_validation_readiness,
+)
 
 
 _DEFAULT_DB         = "events.db"
@@ -558,6 +561,131 @@ def _section_event_date_backfill_impact(*, db_path: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# stat_validation_readiness — slim coverage view for the event-study engine
+# ---------------------------------------------------------------------------
+#
+# Wraps :mod:`scripts.stat_validation_readiness_report` through the
+# top-level ``summarize_stat_validation_readiness`` seam.  The aggregator
+# surfaces the five summary fields the task spec lists; the dedicated
+# CLI owns the per-event drill-down.
+
+# Tie-break order for ``dominant_blocker`` — coarsest input gap first so
+# the recommended action targets the prerequisite check, not a
+# downstream symptom.  Forward-cache 20d > 5d > 1d because refreshing the
+# longest horizon resolves the shorter ones for free.
+_SVR_BLOCKER_PRIORITY: tuple[str, ...] = (
+    "event_date_missing",
+    "market_tickers_missing",
+    "forward_cache_20d_missing",
+    "forward_cache_5d_missing",
+    "forward_cache_1d_missing",
+    "benchmark_proxy_missing",
+    "estimation_window_insufficient",
+)
+
+_SVR_BLOCKER_TO_ACTION: dict[str, str] = {
+    "event_date_missing":              "backfill_event_date",
+    "market_tickers_missing":          "backfill_market_tickers",
+    "forward_cache_20d_missing":       "refresh_forward_cache_20d",
+    "forward_cache_5d_missing":        "refresh_forward_cache_5d",
+    "forward_cache_1d_missing":        "refresh_forward_cache_1d",
+    "benchmark_proxy_missing":         "refresh_benchmark_cache",
+    "estimation_window_insufficient":  "extend_estimation_window",
+}
+
+_SVR_RECOMMEND_NO_EVENTS    = "no_events_to_validate"
+_SVR_RECOMMEND_FULLY_READY  = "no_action_needed_fully_ready"
+
+
+def _svr_blocker_counts(payload: dict) -> dict[str, int]:
+    """Derive per-blocker missing counts from the upstream readiness payload.
+
+    The upstream report mixes positive coverage counts (``events_with_*``)
+    with already-negative gap counts (``events_missing_*`` / ``_with_insufficient_*``).
+    This helper normalizes both into "missing" counts so the dominant
+    blocker selection works on a single numeric vocabulary.
+    """
+    total = int(payload.get("total_events") or 0)
+    return {
+        "event_date_missing":
+            max(0, total - int(payload.get("events_with_event_date")     or 0)),
+        "market_tickers_missing":
+            max(0, total - int(payload.get("events_with_market_tickers") or 0)),
+        "forward_cache_1d_missing":
+            max(0, total - int(payload.get("events_with_1d_forward_cache")  or 0)),
+        "forward_cache_5d_missing":
+            max(0, total - int(payload.get("events_with_5d_forward_cache")  or 0)),
+        "forward_cache_20d_missing":
+            max(0, total - int(payload.get("events_with_20d_forward_cache") or 0)),
+        "benchmark_proxy_missing":
+            int(payload.get("events_missing_benchmark_proxy") or 0),
+        "estimation_window_insufficient":
+            int(payload.get("events_with_insufficient_estimation_window") or 0),
+    }
+
+
+def _pick_dominant_blocker(counts: dict[str, int]) -> str | None:
+    """Return the blocker key with the highest missing count.
+
+    Ties resolve via :data:`_SVR_BLOCKER_PRIORITY`.  Returns ``None`` when
+    every count is zero (no blocker fires).
+    """
+    best_key: str | None = None
+    best_count: int = 0
+    for key in _SVR_BLOCKER_PRIORITY:
+        count = int(counts.get(key) or 0)
+        if count > best_count:
+            best_count = count
+            best_key   = key
+    return best_key
+
+
+def _section_stat_validation_readiness(*, db_path: str) -> dict:
+    """Slim coverage view of the event-study readiness report.
+
+    Always passes ``limit=0`` to the upstream summarizer so no per-event
+    rows are embedded in the aggregator's output — the dedicated CLI
+    owns that drill-down.
+    """
+    payload = summarize_stat_validation_readiness(
+        db_path=str(db_path) if db_path else None,
+        limit=0,
+    ) or {}
+
+    total       = int(payload.get("total_events")       or 0)
+    fully_ready = int(payload.get("events_fully_ready") or 0)
+
+    if total <= 0:
+        readiness_rate     = 0.0
+        dominant_blocker   = None
+        recommended_action = _SVR_RECOMMEND_NO_EVENTS
+    else:
+        readiness_rate = fully_ready / total
+        if fully_ready >= total:
+            dominant_blocker   = None
+            recommended_action = _SVR_RECOMMEND_FULLY_READY
+        else:
+            dominant_blocker = _pick_dominant_blocker(
+                _svr_blocker_counts(payload),
+            )
+            recommended_action = (
+                _SVR_BLOCKER_TO_ACTION.get(dominant_blocker, _SVR_RECOMMEND_FULLY_READY)
+                if dominant_blocker is not None
+                # No blocker count > 0 but fully_ready < total — surface
+                # the partial state without inventing a phantom blocker.
+                else _SVR_RECOMMEND_FULLY_READY
+            )
+
+    return {
+        "total_events":           total,
+        "events_fully_ready":     fully_ready,
+        "readiness_rate":         readiness_rate,
+        "dominant_blocker":       dominant_blocker,
+        "recommended_next_action": recommended_action,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Per-section classification — derive top-level errors/warnings.
 # ---------------------------------------------------------------------------
 
@@ -675,6 +803,16 @@ def _classify_auto_adjust_repair_write_smoke(
     return [], []
 
 
+def _classify_stat_validation_readiness(
+    section: dict,
+) -> tuple[list[str], list[str]]:
+    # Operator info only — same precedent as the other summary
+    # sections.  The ``recommended_next_action`` field carries the
+    # actionable signal; the dedicated readiness-report CLI owns the
+    # per-event drill-down.
+    return [], []
+
+
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
@@ -690,6 +828,7 @@ _SECTION_KEYS = (
     "no_forward_20d_blockers",
     "auto_adjust_repair_preview",
     "auto_adjust_repair_write_smoke",
+    "stat_validation_readiness",
 )
 
 
@@ -846,6 +985,11 @@ def run_health_check(
         ),
         _classify_auto_adjust_repair_write_smoke,
     )
+    _run_section(
+        payload, "stat_validation_readiness",
+        lambda: _section_stat_validation_readiness(db_path=db_path),
+        _classify_stat_validation_readiness,
+    )
 
     _waive_duplicate_clusters(payload, allow=int(allow_duplicate_clusters or 0))
 
@@ -971,6 +1115,27 @@ def _render_text(payload: dict[str, Any]) -> str:
             lines.append(
                 f"  latest_backup_found: "
                 f"{section.get('latest_backup_found')}",
+            )
+            lines.append(
+                f"  recommended_next_action: "
+                f"{section.get('recommended_next_action')}",
+            )
+        elif key == "stat_validation_readiness":
+            lines.append(
+                f"  total_events: {section.get('total_events', 0)}",
+            )
+            lines.append(
+                f"  events_fully_ready: "
+                f"{section.get('events_fully_ready', 0)}",
+            )
+            rate = section.get("readiness_rate", 0.0)
+            rate_text = (
+                f"{rate:.4f}" if isinstance(rate, (int, float))
+                else str(rate)
+            )
+            lines.append(f"  readiness_rate: {rate_text}")
+            lines.append(
+                f"  dominant_blocker: {section.get('dominant_blocker')}",
             )
             lines.append(
                 f"  recommended_next_action: "

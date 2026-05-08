@@ -137,17 +137,19 @@ def _slim_plan(plan: Any) -> dict:
 
 def _empty_result() -> dict:
     return {
-        "ok":                False,
-        "backup_path":       None,
-        "temp_copy_path":    None,
-        "live_db_path":      None,
-        "live_db_unchanged": None,
-        "before":            None,
-        "write":             None,
-        "after":             None,
-        "idempotency":       None,
-        "warnings":          [],
-        "errors":            [],
+        "ok":                     False,
+        "backup_path":            None,
+        "temp_copy_path":         None,
+        "writer_backup_target":   None,
+        "live_db_path":           None,
+        "live_db_unchanged":      None,
+        "input_backup_unchanged": None,
+        "before":                 None,
+        "write":                  None,
+        "after":                  None,
+        "idempotency":            None,
+        "warnings":               [],
+        "errors":                 [],
     }
 
 
@@ -191,6 +193,36 @@ def _preflight_temp_db(tmp: Path) -> Optional[str]:
             + ", ".join(sorted(missing))
         )
     return None
+
+
+def _input_backup_unchanged(
+    backup: Path,
+    hash_before:  str,
+    mtime_before: float,
+    *,
+    errors: list[str],
+) -> bool:
+    """Verify the input backup file is byte-identical post-run.
+
+    The smoke MUST never overwrite the operator's input backup; this
+    check is the post-run sentinel that proves the contract held even
+    if a buggy writer wrote to its (throwaway) backup target.  A hash
+    or mtime divergence is surfaced as a hard error so the run-wide
+    ``ok`` flips to False.
+    """
+    if not backup.exists() or not backup.is_file():
+        errors.append(
+            f"input backup disappeared during run: {backup}",
+        )
+        return False
+    hash_after  = _hash_file(backup)
+    mtime_after = backup.stat().st_mtime
+    unchanged = hash_after == hash_before and mtime_after == mtime_before
+    if not unchanged:
+        errors.append(
+            f"input backup changed during run: {backup}",
+        )
+    return unchanged
 
 
 def _classify_live_db_unchanged(
@@ -310,11 +342,33 @@ def run_write_smoke(
         )
         return result
 
-    # 4. Copy backup → temp.
+    # 4. Snapshot the input backup so the post-run check can prove it
+    # is byte-identical even if the writer (legitimately) overwrites
+    # its own backup-target argument.  The smoke must NEVER point the
+    # writer's backup_path at the input backup file — that would let a
+    # buggy or future-rewritten writer destroy the operator's only
+    # on-disk pre-repair snapshot.
+    input_backup_hash_before  = _hash_file(resolved)
+    input_backup_mtime_before = resolved.stat().st_mtime
+
+    # 5. Copy backup → temp.
     fd, tmp_str = tempfile.mkstemp(prefix="aa_repair_smoke_", suffix=".db")
     os.close(fd)
     tmp = Path(tmp_str)
     result["temp_copy_path"] = str(tmp)
+
+    # 5a. Allocate a throwaway target for the writer's ``backup_path``
+    # kwarg.  We pre-create it so the writer's open-for-write call
+    # cannot collide with another temp file racing for the same name,
+    # and we keep it distinct from both the input backup and the temp
+    # DB copy so the writer can freely overwrite its target without
+    # touching either operator-visible artifact.
+    fd2, target_str = tempfile.mkstemp(
+        prefix="aa_repair_smoke_target_", suffix=".db",
+    )
+    os.close(fd2)
+    writer_backup_target = Path(target_str)
+    result["writer_backup_target"] = str(writer_backup_target)
 
     try:
         try:
@@ -326,7 +380,7 @@ def run_write_smoke(
             )
             return result
 
-        # 4a. Pre-flight: a corrupt or schema-less file would otherwise
+        # 5b. Pre-flight: a corrupt or schema-less file would otherwise
         # look like a clean run.  Open the temp copy directly and
         # confirm the required tables are readable before invoking the
         # writer.
@@ -335,7 +389,7 @@ def run_write_smoke(
             result["errors"].append(preflight_error)
             return result
 
-        # 5. Dry-run BEFORE.
+        # 6. Dry-run BEFORE.
         try:
             before_plan = plan_fn(db_path=str(tmp))
         except Exception as exc:
@@ -345,15 +399,16 @@ def run_write_smoke(
             return result
         result["before"] = _slim_plan(before_plan)
 
-        # 6. Apply with confirm.  The writer requires a backup-target
-        # kwarg per its safety contract; we point it at the source
-        # backup file because that IS a real snapshot of the temp
-        # copy's content.
+        # 7. Apply with confirm.  The writer requires a backup-target
+        # kwarg per its safety contract; we point it at a throwaway
+        # temp path (NOT the input backup) so a future writer that
+        # overwrites the target cannot destroy the operator's input
+        # backup file.
         try:
             write_result = apply_fn(
                 db_path=str(tmp),
                 confirm=True,
-                backup_path=str(resolved),
+                backup_path=str(writer_backup_target),
             )
         except Exception as exc:
             result["errors"].append(
@@ -366,12 +421,12 @@ def run_write_smoke(
             ),
         }
 
-        # 7. Second apply — must be a no-op.
+        # 8. Second apply — must be a no-op.
         try:
             second = apply_fn(
                 db_path=str(tmp),
                 confirm=True,
-                backup_path=str(resolved),
+                backup_path=str(writer_backup_target),
             )
         except Exception as exc:
             result["errors"].append(
@@ -389,7 +444,7 @@ def run_write_smoke(
                 f"{second_count} row(s)",
             )
 
-        # 8. Dry-run AFTER.
+        # 9. Dry-run AFTER.
         try:
             after_plan = plan_fn(db_path=str(tmp))
         except Exception as exc:
@@ -399,9 +454,20 @@ def run_write_smoke(
             return result
         result["after"] = _slim_plan(after_plan)
 
-        # 9. Live events.db unchanged check.
+        # 10. Live events.db unchanged check.
         result["live_db_unchanged"] = _classify_live_db_unchanged(
             live_db, live_existed, live_hash_before, live_mtime_before,
+            errors=result["errors"],
+        )
+
+        # 11. Input backup unchanged check.  The smoke pointed the
+        # writer at the throwaway target — a real or fake writer that
+        # overwrites its target should not have touched the input
+        # backup.  Surface a hard error if anything moved.
+        result["input_backup_unchanged"] = _input_backup_unchanged(
+            resolved,
+            input_backup_hash_before,
+            input_backup_mtime_before,
             errors=result["errors"],
         )
 
@@ -410,6 +476,10 @@ def run_write_smoke(
     finally:
         try:
             tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        try:
+            writer_backup_target.unlink(missing_ok=True)
         except OSError:
             pass
 
@@ -421,11 +491,13 @@ def run_write_smoke(
 
 def _render_text(result: dict) -> str:
     lines: list[str] = ["=== auto-adjust mismatch repair write smoke ==="]
-    lines.append(f"backup_path:       {result.get('backup_path')   or '(none)'}")
-    lines.append(f"temp_copy_path:    {result.get('temp_copy_path') or '(none)'}")
-    lines.append(f"live_db_path:      {result.get('live_db_path')}")
-    lines.append(f"live_db_unchanged: {result.get('live_db_unchanged')}")
-    lines.append(f"ok:                {result['ok']}")
+    lines.append(f"backup_path:            {result.get('backup_path')   or '(none)'}")
+    lines.append(f"temp_copy_path:         {result.get('temp_copy_path') or '(none)'}")
+    lines.append(f"writer_backup_target:   {result.get('writer_backup_target') or '(none)'}")
+    lines.append(f"live_db_path:           {result.get('live_db_path')}")
+    lines.append(f"live_db_unchanged:      {result.get('live_db_unchanged')}")
+    lines.append(f"input_backup_unchanged: {result.get('input_backup_unchanged')}")
+    lines.append(f"ok:                     {result['ok']}")
 
     for stage in ("before", "write", "after", "idempotency"):
         section = result.get(stage)

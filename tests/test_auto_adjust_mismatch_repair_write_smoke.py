@@ -580,6 +580,190 @@ class TestLiveDBSafety(_Base):
 
 
 # ---------------------------------------------------------------------------
+# Input backup byte-equality safety
+#
+# The writer's apply_fn takes a ``backup_path`` kwarg pointing at the
+# file the writer is supposed to snapshot to before mutating the temp
+# DB.  The smoke must NEVER point that target at the operator's input
+# backup file: a buggy or future-rewritten writer could overwrite it,
+# destroying the only on-disk copy of pre-repair state.  These pins
+# enforce that the smoke uses a throwaway backup target and that the
+# input backup ends the run byte-identical to how it started.
+# ---------------------------------------------------------------------------
+
+
+class TestInputBackupSafety(_Base):
+
+    def test_input_backup_unchanged_field_present_in_result(self) -> None:
+        backup = self._make_backup()
+        with self._patched_writer():
+            result = smoke.run_write_smoke(
+                backup_path=backup,
+                live_db_path=str(self._live_db),
+            )
+        self.assertIn("input_backup_unchanged", result)
+
+    def test_input_backup_unchanged_after_clean_run(self) -> None:
+        backup       = self._make_backup()
+        before_hash  = _hash_file(backup)
+        before_mtime = backup.stat().st_mtime
+        with self._patched_writer():
+            result = smoke.run_write_smoke(
+                backup_path=backup,
+                live_db_path=str(self._live_db),
+            )
+        self.assertTrue(
+            result["ok"],
+            f"errors: {result['errors']}, warnings: {result['warnings']}",
+        )
+        self.assertTrue(result["input_backup_unchanged"])
+        self.assertEqual(_hash_file(backup),    before_hash)
+        self.assertEqual(backup.stat().st_mtime, before_mtime)
+
+    def test_writer_backup_target_is_distinct_from_input_backup(self) -> None:
+        # The writer's ``backup_path`` kwarg must point at a throwaway
+        # target, NOT at the operator's input backup.  Capture the
+        # kwargs passed to apply_fn and verify they never reference the
+        # input backup file.
+        backup = self._make_backup()
+        captured: list[dict] = []
+
+        def capturing_apply(**kwargs):
+            captured.append(dict(kwargs))
+            return _fake_apply(**kwargs)
+
+        with patch.object(
+            smoke, "_load_writer",
+            return_value=(_fake_plan, capturing_apply),
+        ):
+            result = smoke.run_write_smoke(
+                backup_path=backup,
+                live_db_path=str(self._live_db),
+            )
+
+        self.assertTrue(
+            result["ok"],
+            f"errors: {result['errors']}, warnings: {result['warnings']}",
+        )
+        self.assertEqual(
+            len(captured), 2,
+            f"apply_fn must be called exactly twice (apply + idempotency "
+            f"check), got {len(captured)}",
+        )
+        for kwargs in captured:
+            target = Path(kwargs["backup_path"]).resolve()
+            self.assertNotEqual(
+                target, backup.resolve(),
+                "writer backup_path must NEVER be the input backup file: "
+                f"got {target} == {backup.resolve()}",
+            )
+
+    def test_input_backup_unchanged_when_writer_overwrites_its_target(
+        self,
+    ) -> None:
+        # The load-bearing pin: a writer that LEGITIMATELY overwrites
+        # its ``backup_path`` target (which is what a real writer
+        # snapshots before mutating) must not touch the operator's
+        # input backup file.  Simulate the writer truncating its target
+        # to garbage; verify the input backup ends byte-identical.
+        backup       = self._make_backup()
+        before_hash  = _hash_file(backup)
+        before_mtime = backup.stat().st_mtime
+
+        def vandalising_apply(*, db_path, confirm, backup_path):
+            # Real writer would write a SQLite snapshot here; simulate
+            # by truncating the target to garbage.  If the smoke were
+            # passing the input backup as backup_path, the input
+            # backup would be destroyed by this call.
+            Path(backup_path).write_bytes(b"writer-target-overwritten")
+            return _fake_apply(
+                db_path=db_path, confirm=confirm, backup_path=backup_path,
+            )
+
+        with patch.object(
+            smoke, "_load_writer",
+            return_value=(_fake_plan, vandalising_apply),
+        ):
+            result = smoke.run_write_smoke(
+                backup_path=backup,
+                live_db_path=str(self._live_db),
+            )
+
+        self.assertTrue(result["input_backup_unchanged"])
+        self.assertEqual(_hash_file(backup),    before_hash)
+        self.assertEqual(backup.stat().st_mtime, before_mtime)
+        self.assertTrue(
+            result["ok"],
+            f"errors: {result['errors']}, warnings: {result['warnings']}",
+        )
+
+    def test_input_backup_modified_mid_run_is_error(self) -> None:
+        # Defense-in-depth: if anything (including a buggy fake) DOES
+        # mutate the input backup between the smoke's snapshots, the
+        # post-run check must surface it as an error and fail the
+        # overall run.
+        backup    = self._make_backup()
+        live_path = self._live_db
+
+        call_count = {"n": 0}
+
+        def cheating_plan(*, db_path):
+            call_count["n"] += 1
+            # Tamper with the input backup between the before and
+            # after planner snapshots.
+            if call_count["n"] == 2:
+                backup.write_bytes(b"tampered-input-backup-bytes")
+            return _fake_plan(db_path=db_path)
+
+        with patch.object(
+            smoke, "_load_writer",
+            return_value=(cheating_plan, _fake_apply),
+        ):
+            result = smoke.run_write_smoke(
+                backup_path=backup,
+                live_db_path=str(live_path),
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertFalse(result["input_backup_unchanged"])
+        self.assertTrue(
+            any("input backup" in e for e in result["errors"]),
+            f"expected input-backup error, got {result['errors']}",
+        )
+
+    def test_writer_backup_target_is_cleaned_after_run(self) -> None:
+        # The smoke creates a throwaway backup target for the writer;
+        # it must not survive the run.  Capture the path the writer
+        # was pointed at and verify it is gone afterwards.
+        backup = self._make_backup()
+        seen_targets: list[str] = []
+
+        def capturing_apply(**kwargs):
+            seen_targets.append(kwargs["backup_path"])
+            return _fake_apply(**kwargs)
+
+        with patch.object(
+            smoke, "_load_writer",
+            return_value=(_fake_plan, capturing_apply),
+        ):
+            result = smoke.run_write_smoke(
+                backup_path=backup,
+                live_db_path=str(self._live_db),
+            )
+
+        self.assertTrue(
+            result["ok"],
+            f"errors: {result['errors']}, warnings: {result['warnings']}",
+        )
+        self.assertTrue(seen_targets, "expected at least one apply call")
+        for target in seen_targets:
+            self.assertFalse(
+                Path(target).exists(),
+                f"writer backup target must not survive the run: {target}",
+            )
+
+
+# ---------------------------------------------------------------------------
 # Backup resolution and error paths
 # ---------------------------------------------------------------------------
 

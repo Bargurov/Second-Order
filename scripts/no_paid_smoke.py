@@ -368,6 +368,176 @@ def _assert_auto_adjust_mismatch_repair_preview_no_paid(body: Any) -> None:
         )
 
 
+_STAT_VALIDATION_SMOKE_REQUIRED_INTS: tuple[str, ...] = (
+    "records_count",
+    "significant_count",
+)
+
+
+_STAT_VALIDATION_RECORD_REQUIRED_KEYS: tuple[str, ...] = (
+    "horizon",
+    "abnormal_return",
+    "sar",
+    "ci_low",
+    "ci_high",
+    "p_value",
+    "fdr_q",
+    "statistically_significant",
+    "interpretation",
+)
+
+
+def _assert_stat_validation_smoke_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the stat-validation smoke CLI's JSON output.
+
+    The smoke runs the deterministic event_study → bootstrap_ci →
+    p-value → FDR → stat_validation pipeline over synthetic data, so its
+    output is stable: ``ok`` is True, ``errors`` is empty, every count is
+    a non-negative int, ``records_count`` matches ``len(records)``,
+    ``significant_count <= records_count``, and every record carries the
+    canonical nine-field stat_validation schema.  A regression that
+    flips any of those means the pure-pipeline contract drifted — fail
+    closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"stat-validation smoke response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    if body.get("ok") is not True:
+        raise AssertionError(
+            f"ok must be True for the deterministic stat-validation "
+            f"smoke, got {body.get('ok')!r}"
+        )
+    config = body.get("config")
+    if not isinstance(config, dict):
+        raise AssertionError(
+            f"config must be a JSON object, got {type(config).__name__}"
+        )
+    errors = body.get("errors")
+    if not isinstance(errors, list):
+        raise AssertionError(
+            f"errors must be a list, got {type(errors).__name__}"
+        )
+    if errors:
+        # The smoke's deterministic synthetic path produces no errors.
+        # A non-empty errors list signals the pipeline regressed —
+        # surface every entry so the diagnostic is self-explanatory.
+        raise AssertionError(
+            f"errors must be empty in no-paid mode, got {errors!r}"
+        )
+    for field_name in _STAT_VALIDATION_SMOKE_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    records = body.get("records")
+    if not isinstance(records, list):
+        raise AssertionError(
+            f"records must be a list, got {type(records).__name__}"
+        )
+    if len(records) != body["records_count"]:
+        raise AssertionError(
+            f"records_count must equal len(records); got "
+            f"records_count={body['records_count']} vs "
+            f"len(records)={len(records)}"
+        )
+    if body["significant_count"] > body["records_count"]:
+        raise AssertionError(
+            f"significant_count must not exceed records_count; got "
+            f"{body['significant_count']} > {body['records_count']}"
+        )
+    for index, rec in enumerate(records):
+        if not isinstance(rec, dict):
+            raise AssertionError(
+                f"records[{index}] must be a JSON object, "
+                f"got {type(rec).__name__}"
+            )
+        for key in _STAT_VALIDATION_RECORD_REQUIRED_KEYS:
+            if key not in rec:
+                raise AssertionError(
+                    f"records[{index}] is missing required key {key!r}"
+                )
+
+
+_STAT_VALIDATION_READINESS_REQUIRED_INTS: tuple[str, ...] = (
+    "total_events",
+    "events_with_event_date",
+    "events_with_market_tickers",
+    "events_with_event_date_and_tickers",
+    "events_with_1d_forward_cache",
+    "events_with_5d_forward_cache",
+    "events_with_20d_forward_cache",
+    "events_missing_benchmark_proxy",
+    "events_with_insufficient_estimation_window",
+    "events_fully_ready",
+)
+
+
+# The readiness report emits one of two prose sentences as its
+# ``recommended_next_action`` — pinning the closed set means a future
+# rephrase trips here so the runbook keeps its branch on the value.
+_STAT_VALIDATION_READINESS_NEXT_ACTIONS: tuple[str, ...] = (
+    (
+        "Every event in the archive has the cache coverage needed to run "
+        "the event-study engine over 1d/5d/20d horizons."
+    ),
+    (
+        "Some events lack the cache coverage needed for the event-study "
+        "engine.  Refresh the price cache for the listed primary tickers "
+        "and SPY benchmark, then re-run this report."
+    ),
+)
+
+
+def _assert_stat_validation_readiness_report_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the stat-validation readiness report
+    CLI's JSON output.
+
+    Every coverage count must be a non-negative int (so the runbook math
+    reads correctly), ``events`` must be a list (so the renderer can
+    iterate without crashing), and ``recommended_next_action`` must come
+    from the report's two-prose-sentence vocabulary (so a runbook
+    consumer can branch deterministically on the value).  Stable zero
+    values are accepted because an archive without coverage produces
+    zeros.  A regression that drops a field, returns negatives, or
+    invents a new recommendation means the read-only report contract
+    changed — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"stat-validation readiness response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    for field_name in _STAT_VALIDATION_READINESS_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    events = body.get("events")
+    if not isinstance(events, list):
+        raise AssertionError(
+            f"events must be a list, got {type(events).__name__}"
+        )
+    action = body.get("recommended_next_action")
+    if action not in _STAT_VALIDATION_READINESS_NEXT_ACTIONS:
+        raise AssertionError(
+            f"recommended_next_action must be one of the two pinned "
+            f"prose sentences, got {action!r}"
+        )
+    # Cohort partition: fully_ready is a subset of total_events, so
+    # the count must never exceed it.  Production code enforces this
+    # via the per-event counter; the smoke pins it so a future
+    # accounting drift trips here.
+    if body["events_fully_ready"] > body["total_events"]:
+        raise AssertionError(
+            f"events_fully_ready must not exceed total_events; got "
+            f"{body['events_fully_ready']} > {body['total_events']}"
+        )
+
+
 @dataclass(frozen=True)
 class SmokeEndpoint:
     name: str
@@ -469,6 +639,20 @@ SCRIPTS: tuple[SmokeScript, ...] = (
         "auto-adjust repair preview",
         "scripts.auto_adjust_mismatch_repair_preview",
         body_invariants=(_assert_auto_adjust_mismatch_repair_preview_no_paid,),
+    ),
+    SmokeScript(
+        "stat validation smoke",
+        "scripts.stat_validation_smoke",
+        # Smoke runs on a deterministic synthetic cohort and does not
+        # accept ``--limit`` — pass only ``--json``.
+        args=("--json",),
+        body_invariants=(_assert_stat_validation_smoke_no_paid,),
+    ),
+    SmokeScript(
+        "stat validation readiness",
+        "scripts.stat_validation_readiness_report",
+        args=("--json", "--limit", "20"),
+        body_invariants=(_assert_stat_validation_readiness_report_no_paid,),
     ),
 )
 
@@ -834,28 +1018,36 @@ def run_smoke(
                     error=error,
                 )
             )
-        # Scripts run after endpoints so the smoke output reads top-down
-        # from HTTP rows to CLI rows and so ``results[0]`` keeps its
-        # endpoint-row semantics under the bad-client failure path.
-        for script in SCRIPTS:
-            start = time.perf_counter()
-            ok = False
-            error = None
-            try:
-                ok, error = _run_script(script)
-            except Exception as exc:
-                error = f"{type(exc).__name__}: {exc}"
-            elapsed_ms = int((time.perf_counter() - start) * 1000)
-            results.append(
-                SmokeResult(
-                    name=script.name,
-                    path=_format_script_path(script),
-                    ok=bool(ok and error is None),
-                    status_code=None,
-                    elapsed_ms=elapsed_ms,
-                    error=error,
+        # Local CLI scripts probe the local archive regardless of the
+        # operator's --base-url target, so running them in --base-url
+        # mode contradicts the operator's intent (probe a remote
+        # backend) and bypasses the no-paid guard (which is replaced
+        # with a nullcontext when base_url is set).  Skip them; the
+        # in-process mode remains the full local preflight.
+        if not base_url:
+            # Scripts run after endpoints so the smoke output reads
+            # top-down from HTTP rows to CLI rows and so ``results[0]``
+            # keeps its endpoint-row semantics under the bad-client
+            # failure path.
+            for script in SCRIPTS:
+                start = time.perf_counter()
+                ok = False
+                error = None
+                try:
+                    ok, error = _run_script(script)
+                except Exception as exc:
+                    error = f"{type(exc).__name__}: {exc}"
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                results.append(
+                    SmokeResult(
+                        name=script.name,
+                        path=_format_script_path(script),
+                        ok=bool(ok and error is None),
+                        status_code=None,
+                        elapsed_ms=elapsed_ms,
+                        error=error,
+                    )
                 )
-            )
     return results
 
 
