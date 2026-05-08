@@ -369,6 +369,51 @@ def _call_analyze_event(headline: str, stage: str, persistence: str,
     return _api.analyze_event(inp)
 
 
+def _apply_asset_selection(analysis: dict) -> tuple[list, list]:
+    """Run the post-LLM asset-selection discipline on ``analysis`` and
+    return ``(cleaned_beneficiary_tickers, cleaned_loser_tickers)``.
+
+    Mutates ``analysis`` in-place so ``analysis["asset_selection"]``
+    carries the full ``classify_and_rank_assets`` shape (primary /
+    secondary / hedge_signal / excluded + cleaned lists + rationale).
+    The cleaned tickers are the lists callers must feed to
+    ``market_check`` so broad-market indices, price benchmarks, foreign
+    listings, and hedge/signal ETFs never reach the provider.
+
+    Why this lives here: ``/analyze`` and ``/analyze/stream`` need to
+    run identical filtering before the market-check call.  Inlining
+    the same block twice drifted previously — the streaming path
+    skipped the step entirely and shipped raw LLM lists, polluting the
+    agreement score with SPY / ^VIX / VXX moves that had nothing to do
+    with the thesis.  See tests/test_analyze_ticker_selection_parity.py
+    for the pinned contract.
+
+    Defensive: any failure inside ``classify_and_rank_assets`` falls
+    back to the raw LLM lists (matching the pre-extraction behaviour)
+    so a bug in the composer can't take the analyze flow down with it.
+    """
+    try:
+        from asset_selection import classify_and_rank_assets
+        analysis["asset_selection"] = classify_and_rank_assets(
+            beneficiary_tickers=analysis.get("beneficiary_tickers") or [],
+            loser_tickers=analysis.get("loser_tickers") or [],
+            mechanism_family=analysis.get("mechanism_family"),
+            beneficiaries_text=analysis.get("beneficiaries") or [],
+            losers_text=analysis.get("losers") or [],
+        )
+        return (
+            analysis["asset_selection"]["cleaned_beneficiary_tickers"],
+            analysis["asset_selection"]["cleaned_loser_tickers"],
+        )
+    except Exception:
+        _api._log.warning("asset_selection failed; using raw LLM lists", exc_info=True)
+        analysis["asset_selection"] = {}
+        return (
+            analysis.get("beneficiary_tickers") or [],
+            analysis.get("loser_tickers") or [],
+        )
+
+
 def _enrich_macro_context_with_country(
     base_macro_ctx: str, headline: str,
 ) -> str:
@@ -454,25 +499,10 @@ def analyze(req: _api.AnalyzeRequest):
 
     # Post-LLM asset-selection discipline.  Runs BEFORE market_check so
     # broad-market indices, price benchmarks, foreign listings, and
-    # hedge-only tickers never ship to the provider.  The cleaned lists
-    # are what the agreement score is later computed against.  See
-    # asset_selection.py for the tier rules.
-    try:
-        from asset_selection import classify_and_rank_assets
-        analysis["asset_selection"] = classify_and_rank_assets(
-            beneficiary_tickers=analysis.get("beneficiary_tickers") or [],
-            loser_tickers=analysis.get("loser_tickers") or [],
-            mechanism_family=analysis.get("mechanism_family"),
-            beneficiaries_text=analysis.get("beneficiaries") or [],
-            losers_text=analysis.get("losers") or [],
-        )
-        _ben_for_check = analysis["asset_selection"]["cleaned_beneficiary_tickers"]
-        _los_for_check = analysis["asset_selection"]["cleaned_loser_tickers"]
-    except Exception:
-        _api._log.warning("asset_selection failed; using raw LLM lists", exc_info=True)
-        analysis["asset_selection"] = {}
-        _ben_for_check = analysis.get("beneficiary_tickers") or []
-        _los_for_check = analysis.get("loser_tickers") or []
+    # hedge-only tickers never ship to the provider.  Shared with
+    # /analyze/stream so both paths feed the same cleaned lists into
+    # the agreement score.  See asset_selection.py for the tier rules.
+    _ben_for_check, _los_for_check = _apply_asset_selection(analysis)
 
     mkt = _api.market_check(_ben_for_check, _los_for_check, event_date=req.event_date)
 
@@ -550,9 +580,16 @@ def analyze_stream(req: _api.AnalyzeRequest):
         analysis["currency_channel"] = _api._normalize_currency_channel(analysis.get("currency_channel"))
         mech_text = f"{analysis.get('what_changed', '')} {analysis.get('mechanism_summary', '')}"
         rates_for_overlays, stress_for_overlays = _run_pre_market_overlays(analysis, headline, mech_text, stage, persistence)
+        # Post-LLM asset-selection discipline — runs BEFORE the
+        # ``analysis`` SSE event so the streaming client sees the
+        # cleaned ticker lists in the same payload it already consumes,
+        # and BEFORE ``market_check`` so the provider never sees broad
+        # indices / hedge ETFs / foreign listings.  Shared with
+        # /analyze; see _apply_asset_selection for the contract.
+        _ben_for_check, _los_for_check = _apply_asset_selection(analysis)
         yield _api._sse_event("analysis", _api._sanitize_floats({"analysis": analysis, "is_mock": False}))
 
-        mkt = _api.market_check(analysis.get("beneficiary_tickers", []), analysis.get("loser_tickers", []), event_date=req.event_date)
+        mkt = _api.market_check(_ben_for_check, _los_for_check, event_date=req.event_date)
 
         _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
