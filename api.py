@@ -1159,8 +1159,14 @@ def _persist_event(
     headline: str, stage: str, persistence: str,
     analysis: AnalysisResult, mkt: dict, effective_date: str,
     model: str | None = None,
-) -> None:
+) -> str | None:
     """Build an event record from analysis results and save to the DB.
+
+    Returns ``None`` on success, or a short error-message string on
+    failure.  Existing callers (``/analyze``, ``/analyze/stream``,
+    movers backfill) rely on this function never raising past its
+    boundary, so the failure is surfaced via the return value instead
+    — callers can surface it as a ``persistence_failed`` flag.
 
     Every macro overlay block the /analyze pipeline produces is
     persisted so the frozen-cached response path can surface the
@@ -1252,11 +1258,18 @@ def _persist_event(
         event_record["country_vulnerability_context"] = {}
     try:
         save_event(event_record)
-        # Bust the today-movers in-memory cache so /movers/today reflects
-        # the new event without waiting for the 5-minute TTL to expire.
-        _TODAYS_MOVERS_CACHE["data"] = None
     except Exception as e:
-        print(f"[api] save_event failed: {e}")
+        # Caller (typically /analyze or /analyze/stream) surfaces
+        # this as ``persistence_failed: True`` so the response is
+        # never silently reported as a clean save.  The exception is
+        # NOT re-raised — every existing caller depends on this
+        # function not raising past its boundary.
+        _log.warning("save_event failed: %s", e, exc_info=True)
+        return f"{type(e).__name__}: {e}"
+    # Bust the today-movers in-memory cache so /movers/today reflects
+    # the new event without waiting for the 5-minute TTL to expire.
+    _TODAYS_MOVERS_CACHE["data"] = None
+    return None
 
 
 # ---------------------------------------------------------------------------

@@ -478,7 +478,10 @@ def analyze(req: _api.AnalyzeRequest):
 
     _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
-    _api._persist_event(headline, stage, persistence, analysis, mkt, effective_date, model=model)
+    persistence_error = _api._persist_event(
+        headline, stage, persistence, analysis, mkt, effective_date,
+        model=model,
+    )
 
     age_classification = _api._classify_for_effective_date(effective_date, force=False)
     mkt_with_freshness = _api._augment_market_freshness(mkt, age_classification)
@@ -488,6 +491,12 @@ def analyze(req: _api.AnalyzeRequest):
         "analysis": analysis, "market": mkt_with_freshness,
         "freshness": _api._freshness_payload(age_classification),
         "is_mock": False, "event_date": effective_date,
+        # Explicit persistence outcome — clients must never read a
+        # clean 200 response as proof the row was saved.  ``True``
+        # means ``save_event`` raised; ``persistence_error`` carries
+        # the short reason string.
+        "persistence_failed": persistence_error is not None,
+        "persistence_error":  persistence_error,
     })
 
 
@@ -547,7 +556,10 @@ def analyze_stream(req: _api.AnalyzeRequest):
 
         _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
-        _api._persist_event(headline, stage, persistence, analysis, mkt, effective_date, model=model)
+        persistence_error = _api._persist_event(
+            headline, stage, persistence, analysis, mkt, effective_date,
+            model=model,
+        )
         age_classification = _api._classify_for_effective_date(effective_date, force=False)
         mkt_with_freshness = _api._augment_market_freshness(mkt, age_classification)
 
@@ -556,6 +568,11 @@ def analyze_stream(req: _api.AnalyzeRequest):
             "analysis": analysis, "market": mkt_with_freshness,
             "freshness": _api._freshness_payload(age_classification),
             "is_mock": False, "event_date": effective_date,
+            # Explicit persistence outcome — streaming clients must
+            # never read a successful ``complete`` event as proof the
+            # row was saved.  See the /analyze counterpart.
+            "persistence_failed": persistence_error is not None,
+            "persistence_error":  persistence_error,
         }))
 
     return StreamingResponse(generate(), media_type="text/event-stream")
