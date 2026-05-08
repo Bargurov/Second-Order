@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import App from "./App";
 import { SharePage } from "@/components/pages/share-page";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // ---------------------------------------------------------------------------
 // URL-aware shell selection
@@ -27,15 +28,19 @@ if (_sharePath) {
   });
   createRoot(root).render(
     <StrictMode>
-      <QueryClientProvider client={qc}>
-        <SharePage eventId={eventId} />
-      </QueryClientProvider>
+      <ErrorBoundary scope="app">
+        <QueryClientProvider client={qc}>
+          <SharePage eventId={eventId} />
+        </QueryClientProvider>
+      </ErrorBoundary>
     </StrictMode>,
   );
 } else {
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <ErrorBoundary scope="app">
+        <App />
+      </ErrorBoundary>
     </StrictMode>,
   );
 }

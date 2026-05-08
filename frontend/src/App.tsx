@@ -10,6 +10,7 @@ import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
 import { Backtest } from "@/components/pages/backtest";
 import { PortfolioPage } from "@/components/pages/portfolio-page";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -126,36 +127,44 @@ export default function App() {
             </div>
             <main className="relative flex-1 px-3 pb-16 pt-3 md:px-5 md:pb-5 md:pt-4">
               <div className="page-enter w-full" key={page}>
-                {/* Market Context — the macro/uncertainty/headlines surface,
-                    reached explicitly via the ``market`` route.  ``overview``
-                    is a back-compat alias so older deep links and any
-                    setPage("overview") callers still resolve to the same
-                    page; preserve until callers migrate. */}
-                {(page === "market" || page === "overview") && (
-                  <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
-                )}
-                {page === "headlines" && (
-                  <HeadlinesPage onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
-                )}
-                {page === "analyze" && (
-                  <AnalysisView
-                    initialHeadline={pendingHeadline}
-                    initialContext={pendingContext}
-                    initialEventId={pendingEventId}
-                    onHeadlineConsumed={() => {
-                      setPendingHeadline(undefined);
-                      setPendingContext(undefined);
-                      setPendingEventId(undefined);
-                    }}
-                    // Back navigates to the default workspace landing.
-                    onBack={() => setPage("market")}
-                    onAnalysisFailed={handleAnalysisFailed}
-                    onAnalysisSucceeded={handleAnalysisSucceeded}
-                  />
-                )}
-                {page === "events" && <RecentEvents />}
-                {page === "backtest" && <Backtest />}
-                {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
+                {/* Per-page error boundary.  The outer ``key={page}`` on the
+                    wrapper div remounts the subtree on navigation, so the
+                    boundary resets automatically when the user moves to a
+                    different page.  A crash inside one page therefore
+                    cannot blank the surrounding shell or persist past the
+                    next navigation. */}
+                <ErrorBoundary scope="page">
+                  {/* Market Context — the macro/uncertainty/headlines surface,
+                      reached explicitly via the ``market`` route.  ``overview``
+                      is a back-compat alias so older deep links and any
+                      setPage("overview") callers still resolve to the same
+                      page; preserve until callers migrate. */}
+                  {(page === "market" || page === "overview") && (
+                    <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
+                  )}
+                  {page === "headlines" && (
+                    <HeadlinesPage onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
+                  )}
+                  {page === "analyze" && (
+                    <AnalysisView
+                      initialHeadline={pendingHeadline}
+                      initialContext={pendingContext}
+                      initialEventId={pendingEventId}
+                      onHeadlineConsumed={() => {
+                        setPendingHeadline(undefined);
+                        setPendingContext(undefined);
+                        setPendingEventId(undefined);
+                      }}
+                      // Back navigates to the default workspace landing.
+                      onBack={() => setPage("market")}
+                      onAnalysisFailed={handleAnalysisFailed}
+                      onAnalysisSucceeded={handleAnalysisSucceeded}
+                    />
+                  )}
+                  {page === "events" && <RecentEvents />}
+                  {page === "backtest" && <Backtest />}
+                  {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
+                </ErrorBoundary>
               </div>
             </main>
           </div>
