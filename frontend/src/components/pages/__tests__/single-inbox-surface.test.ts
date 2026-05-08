@@ -99,9 +99,14 @@ describe("route behavior", () => {
     }
   });
 
-  it("App.tsx defaults to the portfolio workspace landing", () => {
+  it("App.tsx defaults to the market workspace landing", () => {
+    // Intentional contract: the default home page is Market Context.
+    // Documented in App.tsx ("Default home page is Market Context") and
+    // sidebar.tsx ("Workspace leads with Market context (the new default
+    // landing)").  ``overview`` remains a back-compat alias that resolves
+    // to the same surface; the literal default state is ``"market"``.
     const app = readFileSync(APP_FILE, "utf-8");
-    expect(app).toMatch(/useState<Page>\("portfolio"\)/);
+    expect(app).toMatch(/useState<Page>\("market"\)/);
   });
 
   it("App.tsx routes the back-compat overview alias to MarketOverview", () => {
