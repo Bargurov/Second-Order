@@ -184,6 +184,12 @@ npm run build
 
 The Vite chunk-size warning is currently non-blocking.
 
+These commands verify types and that the bundle builds. They do not
+exercise the UI in a browser. UI-visible behavior — for example, how the
+global error-boundary fallback renders when a page crashes — is verified
+manually under `npm run dev` and is intentionally separate from the
+automated type/build gate above.
+
 ```powershell
 cd frontend
 npm install

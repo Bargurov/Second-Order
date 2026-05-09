@@ -42,6 +42,7 @@ Confirm before pushing:
 - No local absolute paths or private workflow notes were added to public docs.
 - Public docs describe validation methodology at a high level only, without exposing private datasets or generated artifacts.
 - Public docs do not claim full backend or frontend test-suite status unless those suites were actually run for the change.
+- Public docs distinguish automated frontend checks (typecheck, build) from manual visual smoke (in-browser checks such as error-boundary fallback rendering); manual checks must not be implied to be covered by the automated ones.
 - Repo hygiene and no-paid smoke checks pass with dummy or absent provider keys.
 - Paid paths remain guarded by `ENABLE_PAID_ANALYSIS` and `confirm_paid=true`.
 
