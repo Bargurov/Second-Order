@@ -771,6 +771,30 @@ _REFRESHABILITY_EXPORT_MODULE = "scripts.no_forward_20d_refreshability_export"
 _AUTO_ADJUST_PREVIEW_MODULE = "scripts.auto_adjust_mismatch_repair_preview"
 _STAT_VALIDATION_SMOKE_MODULE = "scripts.stat_validation_smoke"
 _STAT_VALIDATION_READINESS_MODULE = "scripts.stat_validation_readiness_report"
+_ARCHIVE_CLEANUP_EXECUTION_PLAN_MODULE = (
+    "scripts.archive_cleanup_execution_plan"
+)
+_ARCHIVE_CLEANUP_TICKER_READINESS_MODULE = (
+    "scripts.archive_cleanup_candidate_ticker_readiness"
+)
+_SHORT_HORIZON_READINESS_MODULE = (
+    "scripts.stat_validation_short_horizon_readiness_report"
+)
+_SHORT_HORIZON_CONTAMINATION_MODULE = (
+    "scripts.stat_validation_short_horizon_contamination_report"
+)
+_ARCHIVE_SHORT_HORIZON_RUN_MODULE = (
+    "scripts.archive_stat_validation_short_horizon_run"
+)
+_ARCHIVE_DEDUP_SUMMARY_MODULE = (
+    "scripts.archive_stat_validation_dedup_summary"
+)
+_SHORT_HORIZON_SHOWCASE_SHORTLIST_MODULE = (
+    "scripts.short_horizon_showcase_candidate_shortlist"
+)
+_MANUAL_REPAIRED_COHORT_MODULE = (
+    "scripts.manual_repaired_cohort_validation_run"
+)
 
 
 _VALID_GAP_REPORT_BODY = {
@@ -819,6 +843,14 @@ class TestNoPaidSmokeScriptInventory(unittest.TestCase):
             _AUTO_ADJUST_PREVIEW_MODULE,
             _STAT_VALIDATION_SMOKE_MODULE,
             _STAT_VALIDATION_READINESS_MODULE,
+            _ARCHIVE_CLEANUP_EXECUTION_PLAN_MODULE,
+            _ARCHIVE_CLEANUP_TICKER_READINESS_MODULE,
+            _SHORT_HORIZON_READINESS_MODULE,
+            _SHORT_HORIZON_CONTAMINATION_MODULE,
+            _ARCHIVE_SHORT_HORIZON_RUN_MODULE,
+            _ARCHIVE_DEDUP_SUMMARY_MODULE,
+            _SHORT_HORIZON_SHOWCASE_SHORTLIST_MODULE,
+            _MANUAL_REPAIRED_COHORT_MODULE,
         ])
 
     def test_stat_validation_smoke_passes_only_json_arg(self) -> None:
@@ -1432,6 +1464,67 @@ class TestNoPaidSmokeScriptGuardFailsClosed(_Base):
         self.assertIn("forbidden seam", broken[0].error or "")
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])
 
+    def test_archive_cleanup_execution_plan_under_guard_fails_closed_on_seam(
+        self,
+    ) -> None:
+        # Symmetric pin for the archive cleanup execution-plan CLI.
+        # The plan is documented as strictly read-only — no provider,
+        # yfinance, LLM or DB-write seam.  If a regression reaches one
+        # of those, the no-paid guard must fire and the smoke result
+        # must surface the failure.
+        from unittest.mock import patch
+
+        target_module = __import__(
+            _ARCHIVE_CLEANUP_EXECUTION_PLAN_MODULE, fromlist=["main"],
+        )
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [
+            r for r in results
+            if _ARCHIVE_CLEANUP_EXECUTION_PLAN_MODULE in r.path
+        ]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+    def test_archive_cleanup_ticker_readiness_under_guard_fails_closed_on_seam(
+        self,
+    ) -> None:
+        # Symmetric pin for the archive cleanup ticker-readiness CLI.
+        # The report issues only ``SELECT`` statements; any provider /
+        # yfinance / LLM seam contact would be a regression.  Guard
+        # must fire and the smoke must mark the result failed.
+        from unittest.mock import patch
+
+        target_module = __import__(
+            _ARCHIVE_CLEANUP_TICKER_READINESS_MODULE, fromlist=["main"],
+        )
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [
+            r for r in results
+            if _ARCHIVE_CLEANUP_TICKER_READINESS_MODULE in r.path
+        ]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
 
 # ---------------------------------------------------------------------------
 # Stat-validation smoke + readiness report invariants
@@ -1760,3 +1853,999 @@ class TestStatValidationReadinessReportInvariants(unittest.TestCase):
             no_paid_smoke._assert_stat_validation_readiness_report_no_paid,
             match.body_invariants,
         )
+
+
+# ---------------------------------------------------------------------------
+# Archive cleanup execution-plan + ticker-readiness invariants
+# ---------------------------------------------------------------------------
+
+
+_EXECUTION_PLAN_OK_RECOMMENDATION = (
+    "No archive cleanup candidates detected; no execution plan "
+    "required."
+)
+_EXECUTION_PLAN_READY_RECOMMENDATION = (
+    "Execution plan ready.  Take a fresh backup, review every event "
+    "in every batch, then delete via the operator path.  This script "
+    "makes no DB writes."
+)
+
+
+_VALID_EXECUTION_PLAN_BODY: dict = {
+    "candidate_count":             0,
+    "batches":                     [],
+    "risk_notes": [
+        "This script is read-only and makes no DB writes; deletion of "
+        "any flagged event remains a manual operator task.",
+        "An event matching multiple reasons appears in multiple "
+        "batches; deduplicate by event_id before issuing any DELETE "
+        "statement.",
+    ],
+    "required_confirmation_flags": [
+        "backup_taken",
+        "per_event_manual_review_complete",
+        "acknowledged_no_db_writes_from_this_script",
+    ],
+    "recommended_next_action":     _EXECUTION_PLAN_OK_RECOMMENDATION,
+}
+
+
+def _execution_plan_with_one_batch() -> dict:
+    body = dict(_VALID_EXECUTION_PLAN_BODY)
+    body["candidate_count"] = 2
+    body["batches"] = [{
+        "reason":                               "duplicate_headline_event_date",
+        "size":                                 2,
+        "event_ids":                            [3, 4],
+        "examples": [
+            {"event_id": 3, "headline": "h", "event_date": "2026-04-01",
+             "reasons": ["duplicate_headline_event_date"]},
+        ],
+        "manual_review_required_before_delete": True,
+        "description":                          "Multiple events share an "
+                                                "identical (headline, "
+                                                "event_date) pair.",
+    }]
+    body["recommended_next_action"] = _EXECUTION_PLAN_READY_RECOMMENDATION
+    return body
+
+
+class TestArchiveCleanupExecutionPlanInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on
+    ``scripts.archive_cleanup_execution_plan --json --limit 5``: the
+    plan is read-only by construction, so the smoke verifies the load-
+    bearing shape (counts non-negative, batches well-formed,
+    ``manual_review_required_before_delete=True`` on every batch,
+    pinned confirmation flags, closed two-string recommendation
+    vocabulary).  Stable zero values are accepted because a clean
+    archive emits an empty ``batches`` list.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(
+            _VALID_EXECUTION_PLAN_BODY,
+        )
+
+    def test_invariant_passes_when_batch_present(self) -> None:
+        no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(
+            _execution_plan_with_one_batch(),
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid([])
+
+    def test_invariant_fails_when_candidate_count_missing(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body.pop("candidate_count")
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_candidate_count_negative(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["candidate_count"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_candidate_count_is_bool(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["candidate_count"] = True
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_batches_not_list(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["batches"] = {"oops": True}
+        with self.assertRaisesRegex(AssertionError, "batches must be a list"):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_batch_reason_outside_vocabulary(self) -> None:
+        body = _execution_plan_with_one_batch()
+        body["batches"][0]["reason"] = "drop_everything_and_panic"
+        with self.assertRaisesRegex(
+            AssertionError, "batches\\[0\\].reason must be one of",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_batch_size_mismatches_event_ids(self) -> None:
+        body = _execution_plan_with_one_batch()
+        body["batches"][0]["size"] = 99
+        with self.assertRaisesRegex(
+            AssertionError, "size must equal len\\(event_ids\\)",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_batch_event_ids_not_list(self) -> None:
+        body = _execution_plan_with_one_batch()
+        body["batches"][0]["event_ids"] = "nope"
+        with self.assertRaisesRegex(
+            AssertionError, "event_ids must be a list",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_manual_review_flag_not_true(self) -> None:
+        # Auto-delete regression check: the plan must explicitly
+        # disclaim writes on every batch.
+        body = _execution_plan_with_one_batch()
+        body["batches"][0]["manual_review_required_before_delete"] = False
+        with self.assertRaisesRegex(
+            AssertionError,
+            "manual_review_required_before_delete must be True",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_batch_description_empty(self) -> None:
+        body = _execution_plan_with_one_batch()
+        body["batches"][0]["description"] = ""
+        with self.assertRaisesRegex(
+            AssertionError, "description must be a non-empty string",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_risk_notes_empty(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["risk_notes"] = []
+        with self.assertRaisesRegex(
+            AssertionError, "risk_notes must be a non-empty list",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_risk_note_not_string(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["risk_notes"] = [42]
+        with self.assertRaisesRegex(
+            AssertionError, "risk_notes\\[0\\] must be a non-empty string",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_required_flags_diverge_from_pin(self) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["required_confirmation_flags"] = [
+            "backup_taken", "per_event_manual_review_complete",
+        ]
+        with self.assertRaisesRegex(
+            AssertionError,
+            "required_confirmation_flags must equal the pinned tuple",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_invariant_fails_when_recommendation_outside_vocabulary(
+        self,
+    ) -> None:
+        body = dict(_VALID_EXECUTION_PLAN_BODY)
+        body["recommended_next_action"] = "drop_everything_and_panic"
+        with self.assertRaisesRegex(
+            AssertionError, "recommended_next_action must be one of",
+        ):
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_execution_plan_script(
+        self,
+    ) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _ARCHIVE_CLEANUP_EXECUTION_PLAN_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_archive_cleanup_execution_plan_no_paid,
+            match.body_invariants,
+        )
+
+    def test_execution_plan_script_passes_only_read_only_args(self) -> None:
+        # Defense-in-depth: the smoke must call the script with --json
+        # and --limit only.  No write-mode flag may be smuggled into
+        # the args tuple.
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _ARCHIVE_CLEANUP_EXECUTION_PLAN_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn("--json", match.args)
+        for arg in match.args:
+            self.assertNotIn(
+                "apply",  arg.lower(),
+                f"execution-plan smoke args must not include a write "
+                f"flag, got {match.args!r}",
+            )
+            self.assertNotIn(
+                "delete", arg.lower(),
+                f"execution-plan smoke args must not include a write "
+                f"flag, got {match.args!r}",
+            )
+            self.assertNotIn(
+                "write",  arg.lower(),
+                f"execution-plan smoke args must not include a write "
+                f"flag, got {match.args!r}",
+            )
+
+
+_TICKER_READINESS_OK_RECOMMENDATION = (
+    "No archive cleanup candidates detected; no ticker-readiness "
+    "review required."
+)
+_TICKER_READINESS_REVIEW_RECOMMENDATION = (
+    "Cleanup candidates detected.  Review per-event ticker / "
+    "price_cache / low_information columns to decide whether deletion "
+    "via the operator path is safe; this report makes no DB writes."
+)
+
+
+_VALID_TICKER_READINESS_BODY: dict = {
+    "candidate_count":           0,
+    "tickers_present_count":     0,
+    "price_cache_present_count": 0,
+    "low_information_count":     0,
+    "examples":                  [],
+    "recommended_next_action":   _TICKER_READINESS_OK_RECOMMENDATION,
+}
+
+
+class TestArchiveCleanupTickerReadinessInvariants(unittest.TestCase):
+    """The smoke runner pins structural invariants on
+    ``scripts.archive_cleanup_candidate_ticker_readiness --json --limit 5``:
+    counts are non-negative ints bounded by ``candidate_count``,
+    ``price_cache_present_count <= tickers_present_count`` (price-cache
+    coverage requires a primary ticker), and the recommendation comes
+    from the closed two-string vocabulary.  Stable zero values are
+    accepted because a clean archive has no candidates.
+    """
+
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+            _VALID_TICKER_READINESS_BODY,
+        )
+
+    def test_invariant_passes_when_counts_populated(self) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["candidate_count"]           = 203
+        body["tickers_present_count"]     = 25
+        body["price_cache_present_count"] = 22
+        body["low_information_count"]     = 1
+        body["examples"] = [{
+            "event_id": 3, "headline": "h", "primary_ticker": "XLE",
+            "has_market_tickers": True, "has_price_cache": True,
+            "low_information": False,
+            "reasons": ["duplicate_headline_event_date"],
+        }]
+        body["recommended_next_action"] = _TICKER_READINESS_REVIEW_RECOMMENDATION
+        no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                ["not", "a", "dict"],
+            )
+
+    def test_invariant_fails_when_candidate_count_missing(self) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body.pop("candidate_count")
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_is_bool(self) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["tickers_present_count"] = True
+        with self.assertRaisesRegex(
+            AssertionError, "tickers_present_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_negative(self) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["low_information_count"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "low_information_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_examples_not_list(self) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["examples"] = {"oops": True}
+        with self.assertRaisesRegex(AssertionError, "examples must be a list"):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_recommendation_outside_vocabulary(
+        self,
+    ) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["recommended_next_action"] = "drop_everything_and_panic"
+        with self.assertRaisesRegex(
+            AssertionError, "recommended_next_action must be one of",
+        ):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_subset_count_exceeds_candidate_count(
+        self,
+    ) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["candidate_count"]       = 5
+        body["tickers_present_count"] = 7
+        body["recommended_next_action"] = _TICKER_READINESS_REVIEW_RECOMMENDATION
+        with self.assertRaisesRegex(
+            AssertionError,
+            "tickers_present_count must not exceed candidate_count",
+        ):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_price_cache_exceeds_tickers(self) -> None:
+        body = dict(_VALID_TICKER_READINESS_BODY)
+        body["candidate_count"]           = 10
+        body["tickers_present_count"]     = 5
+        body["price_cache_present_count"] = 7
+        body["recommended_next_action"] = _TICKER_READINESS_REVIEW_RECOMMENDATION
+        with self.assertRaisesRegex(
+            AssertionError,
+            "price_cache_present_count must not exceed "
+            "tickers_present_count",
+        ):
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_ticker_readiness_script(
+        self,
+    ) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _ARCHIVE_CLEANUP_TICKER_READINESS_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_archive_cleanup_ticker_readiness_no_paid,
+            match.body_invariants,
+        )
+
+    def test_ticker_readiness_script_passes_only_read_only_args(self) -> None:
+        # Defense-in-depth: the smoke must call the script with --json
+        # and --limit only.  No write-mode flag may be smuggled into
+        # the args tuple.
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _ARCHIVE_CLEANUP_TICKER_READINESS_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn("--json", match.args)
+        for arg in match.args:
+            self.assertNotIn(
+                "apply",  arg.lower(),
+                f"ticker-readiness smoke args must not include a write "
+                f"flag, got {match.args!r}",
+            )
+            self.assertNotIn(
+                "delete", arg.lower(),
+                f"ticker-readiness smoke args must not include a write "
+                f"flag, got {match.args!r}",
+            )
+            self.assertNotIn(
+                "write",  arg.lower(),
+                f"ticker-readiness smoke args must not include a write "
+                f"flag, got {match.args!r}",
+            )
+
+
+# ---------------------------------------------------------------------------
+# Repaired-cohort + summary/short-horizon invariant tests
+#
+# Each new script gets the same triplet of pins as the older smoke
+# scripts: a structural pass on a stable zero-shape body, a handful of
+# fail-closed assertions that trip when a regression drops a field /
+# returns negatives / breaks a partition floor, and an inventory pin
+# proving the smoke runner attaches the matching invariant to the
+# script entry.
+# ---------------------------------------------------------------------------
+
+
+_VALID_SHORT_HORIZON_READINESS_BODY = {
+    "total_events":                          0,
+    "events_ready_1d5d":                     0,
+    "delta_vs_full_ready":                   0,
+    "missing_tickers_count":                 0,
+    "missing_benchmark_count":               0,
+    "insufficient_estimation_window_count":  0,
+    "examples":                              [],
+    "recommended_next_action":               "synthetic",
+}
+
+
+class TestShortHorizonReadinessReportInvariants(unittest.TestCase):
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_short_horizon_readiness_report_no_paid(
+            _VALID_SHORT_HORIZON_READINESS_BODY,
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_short_horizon_readiness_report_no_paid([])
+
+    def test_invariant_fails_when_count_negative(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_READINESS_BODY)
+        body["events_ready_1d5d"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "events_ready_1d5d must be a non-negative int",
+        ):
+            no_paid_smoke._assert_short_horizon_readiness_report_no_paid(body)
+
+    def test_invariant_fails_when_examples_not_list(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_READINESS_BODY)
+        body["examples"] = "nope"
+        with self.assertRaisesRegex(AssertionError, "examples must be a list"):
+            no_paid_smoke._assert_short_horizon_readiness_report_no_paid(body)
+
+    def test_invariant_fails_when_short_ready_exceeds_total(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_READINESS_BODY)
+        body["total_events"]      = 3
+        body["events_ready_1d5d"] = 5
+        with self.assertRaisesRegex(
+            AssertionError, "events_ready_1d5d must not exceed total_events",
+        ):
+            no_paid_smoke._assert_short_horizon_readiness_report_no_paid(body)
+
+    def test_invariant_fails_when_delta_exceeds_short_ready(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_READINESS_BODY)
+        body["total_events"]         = 10
+        body["events_ready_1d5d"]    = 3
+        body["delta_vs_full_ready"]  = 5
+        with self.assertRaisesRegex(
+            AssertionError,
+            "delta_vs_full_ready must not exceed events_ready_1d5d",
+        ):
+            no_paid_smoke._assert_short_horizon_readiness_report_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_short_horizon_readiness_script(
+        self,
+    ) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _SHORT_HORIZON_READINESS_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_short_horizon_readiness_report_no_paid,
+            match.body_invariants,
+        )
+
+
+_VALID_SHORT_HORIZON_CONTAMINATION_BODY = {
+    "ok":                       True,
+    "total_short_ready":        0,
+    "suspicious_count":         0,
+    "clean_short_ready_count":  0,
+    "by_flag": {
+        "driv_lit_off_topic":       0,
+        "mechanism_family_none":    0,
+        "duplicate_date_ticker":    0,
+        "local_off_topic_headline": 0,
+    },
+    "examples":                 [],
+    "recommended_next_action":  "synthetic",
+}
+
+
+class TestShortHorizonContaminationReportInvariants(unittest.TestCase):
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_short_horizon_contamination_report_no_paid(
+            _VALID_SHORT_HORIZON_CONTAMINATION_BODY,
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_short_horizon_contamination_report_no_paid([])
+
+    def test_invariant_fails_when_ok_is_false(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_CONTAMINATION_BODY)
+        body["ok"] = False
+        with self.assertRaisesRegex(AssertionError, "ok must be True"):
+            no_paid_smoke._assert_short_horizon_contamination_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_count_negative(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_CONTAMINATION_BODY)
+        body["suspicious_count"] = -1
+        with self.assertRaisesRegex(
+            AssertionError, "suspicious_count must be a non-negative int",
+        ):
+            no_paid_smoke._assert_short_horizon_contamination_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_by_flag_missing_bucket(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_CONTAMINATION_BODY)
+        by_flag = dict(body["by_flag"])
+        by_flag.pop("driv_lit_off_topic")
+        body["by_flag"] = by_flag
+        with self.assertRaisesRegex(
+            AssertionError,
+            "by_flag\\['driv_lit_off_topic'\\] must be a non-negative int",
+        ):
+            no_paid_smoke._assert_short_horizon_contamination_report_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_partition_arithmetic_breaks(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_CONTAMINATION_BODY)
+        body["total_short_ready"]       = 10
+        body["suspicious_count"]        = 4
+        body["clean_short_ready_count"] = 5  # 4+5 != 10
+        with self.assertRaisesRegex(
+            AssertionError,
+            "suspicious_count \\+ clean_short_ready_count must equal "
+            "total_short_ready",
+        ):
+            no_paid_smoke._assert_short_horizon_contamination_report_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_contamination_script(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _SHORT_HORIZON_CONTAMINATION_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_short_horizon_contamination_report_no_paid,
+            match.body_invariants,
+        )
+
+
+_VALID_ARCHIVE_SHORT_HORIZON_RUN_BODY = {
+    "events_evaluated":     0,
+    "records_count":        0,
+    "significant_count":    0,
+    "by_horizon":           {},
+    "by_mechanism_family":  {},
+    "examples":             [],
+    "errors":               [],
+}
+
+
+class TestArchiveShortHorizonRunInvariants(unittest.TestCase):
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_archive_short_horizon_run_no_paid(
+            _VALID_ARCHIVE_SHORT_HORIZON_RUN_BODY,
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_archive_short_horizon_run_no_paid([])
+
+    def test_invariant_fails_when_errors_non_empty(self) -> None:
+        body = dict(_VALID_ARCHIVE_SHORT_HORIZON_RUN_BODY)
+        body["errors"] = ["pipeline error"]
+        with self.assertRaisesRegex(AssertionError, "errors must be empty"):
+            no_paid_smoke._assert_archive_short_horizon_run_no_paid(body)
+
+    def test_invariant_fails_when_significant_exceeds_records(self) -> None:
+        body = dict(_VALID_ARCHIVE_SHORT_HORIZON_RUN_BODY)
+        body["records_count"]     = 3
+        body["significant_count"] = 5
+        with self.assertRaisesRegex(
+            AssertionError, "significant_count must not exceed records_count",
+        ):
+            no_paid_smoke._assert_archive_short_horizon_run_no_paid(body)
+
+    def test_invariant_fails_when_by_horizon_not_dict(self) -> None:
+        body = dict(_VALID_ARCHIVE_SHORT_HORIZON_RUN_BODY)
+        body["by_horizon"] = []
+        with self.assertRaisesRegex(AssertionError, "by_horizon must be a dict"):
+            no_paid_smoke._assert_archive_short_horizon_run_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_archive_short_horizon_run(
+        self,
+    ) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _ARCHIVE_SHORT_HORIZON_RUN_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_archive_short_horizon_run_no_paid,
+            match.body_invariants,
+        )
+
+
+_VALID_ARCHIVE_DEDUP_SUMMARY_BODY = {
+    "ok":                              True,
+    "records_count":                   0,
+    "effective_unique_records_count":  0,
+    "duplicate_records_count":         0,
+    "duplicate_groups_count":          0,
+    "by_horizon":                      {},
+    "qvalue_change": {
+        "raw_significant_records":            0,
+        "raw_significant_unique_records":     0,
+        "deduped_significant_unique_records": 0,
+        "groups_gaining_significance":        0,
+        "groups_losing_significance":         0,
+        "any_change":                         False,
+    },
+    "top_abs_sar":                     [],
+    "errors":                          [],
+}
+
+
+class TestArchiveDedupSummaryInvariants(unittest.TestCase):
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_archive_dedup_summary_no_paid(
+            _VALID_ARCHIVE_DEDUP_SUMMARY_BODY,
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_archive_dedup_summary_no_paid([])
+
+    def test_invariant_fails_when_ok_is_false(self) -> None:
+        body = dict(_VALID_ARCHIVE_DEDUP_SUMMARY_BODY)
+        body["ok"] = False
+        with self.assertRaisesRegex(AssertionError, "ok must be True"):
+            no_paid_smoke._assert_archive_dedup_summary_no_paid(body)
+
+    def test_invariant_fails_when_unique_exceeds_records(self) -> None:
+        body = dict(_VALID_ARCHIVE_DEDUP_SUMMARY_BODY)
+        body["records_count"]                  = 3
+        body["effective_unique_records_count"] = 5
+        with self.assertRaisesRegex(
+            AssertionError,
+            "effective_unique_records_count must not exceed records_count",
+        ):
+            no_paid_smoke._assert_archive_dedup_summary_no_paid(body)
+
+    def test_invariant_fails_when_qvalue_change_missing(self) -> None:
+        body = dict(_VALID_ARCHIVE_DEDUP_SUMMARY_BODY)
+        body["qvalue_change"] = {}  # missing every required sub-int
+        with self.assertRaisesRegex(
+            AssertionError,
+            "qvalue_change\\['raw_significant_records'\\] must be a "
+            "non-negative int",
+        ):
+            no_paid_smoke._assert_archive_dedup_summary_no_paid(body)
+
+    def test_invariant_fails_when_top_abs_sar_not_list(self) -> None:
+        body = dict(_VALID_ARCHIVE_DEDUP_SUMMARY_BODY)
+        body["top_abs_sar"] = {}
+        with self.assertRaisesRegex(AssertionError, "top_abs_sar must be a list"):
+            no_paid_smoke._assert_archive_dedup_summary_no_paid(body)
+
+    def test_inventory_attaches_invariant_to_dedup_summary(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _ARCHIVE_DEDUP_SUMMARY_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_archive_dedup_summary_no_paid,
+            match.body_invariants,
+        )
+
+
+_VALID_SHORT_HORIZON_SHOWCASE_SHORTLIST_BODY = {
+    "ok":                          True,
+    "candidate_count":             0,
+    "candidates":                  [],
+    "excluded_contaminated_count": 0,
+    "top_abs_sar":                 None,
+    "recommended_next_action":     "synthetic",
+}
+
+
+class TestShortHorizonShowcaseShortlistInvariants(unittest.TestCase):
+    def test_invariant_passes_on_stable_zero_response(self) -> None:
+        no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid(
+            _VALID_SHORT_HORIZON_SHOWCASE_SHORTLIST_BODY,
+        )
+
+    def test_invariant_passes_when_candidates_populated(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_SHOWCASE_SHORTLIST_BODY)
+        body["candidate_count"] = 1
+        body["candidates"]      = [{"event_id": 1, "abs_sar": 0.5}]
+        body["top_abs_sar"]     = {"event_id": 1, "abs_sar": 0.5}
+        no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid(body)
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid([])
+
+    def test_invariant_fails_when_candidate_count_mismatch(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_SHOWCASE_SHORTLIST_BODY)
+        body["candidate_count"] = 2
+        body["candidates"]      = [{"event_id": 1}]
+        with self.assertRaisesRegex(
+            AssertionError, "candidate_count must equal len\\(candidates\\)",
+        ):
+            no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_top_abs_sar_set_but_no_candidates(
+        self,
+    ) -> None:
+        body = dict(_VALID_SHORT_HORIZON_SHOWCASE_SHORTLIST_BODY)
+        body["top_abs_sar"] = {"event_id": 99, "abs_sar": 1.0}
+        with self.assertRaisesRegex(
+            AssertionError,
+            "top_abs_sar must be None when candidate_count == 0",
+        ):
+            no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_top_abs_sar_wrong_type(self) -> None:
+        body = dict(_VALID_SHORT_HORIZON_SHOWCASE_SHORTLIST_BODY)
+        body["candidate_count"] = 1
+        body["candidates"]      = [{"event_id": 1}]
+        body["top_abs_sar"]     = "leader"
+        with self.assertRaisesRegex(
+            AssertionError, "top_abs_sar must be a dict or None",
+        ):
+            no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_showcase_shortlist(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _SHORT_HORIZON_SHOWCASE_SHORTLIST_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_short_horizon_showcase_shortlist_no_paid,
+            match.body_invariants,
+        )
+
+
+_VALID_MANUAL_REPAIRED_COHORT_BODY = {
+    "ok":                       False,
+    "repaired_clean_event_ids": [],
+    "events_evaluated":         0,
+    "records_count":            0,
+    "significant_count":        0,
+    "by_horizon":               {},
+    "by_mechanism_family":      {},
+    "examples":                 [],
+    "excluded_event_ids":       [],
+    "remaining_blockers":       {},
+    "live_db_unchanged":        True,
+    "input_backup_unchanged":   True,
+    "errors": [
+        "Provider unavailable (yfinance not importable) — failing closed",
+    ],
+    "warnings":                 [],
+}
+
+
+class TestManualRepairedCohortValidationInvariants(unittest.TestCase):
+    def test_invariant_passes_on_fail_closed_response(self) -> None:
+        no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+            _VALID_MANUAL_REPAIRED_COHORT_BODY,
+        )
+
+    def test_invariant_fails_when_body_not_object(self) -> None:
+        with self.assertRaisesRegex(AssertionError, "must be a JSON object"):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid([])
+
+    def test_invariant_fails_when_live_db_changed(self) -> None:
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["live_db_unchanged"] = False
+        with self.assertRaisesRegex(
+            AssertionError, "live_db_unchanged must be True",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_backup_changed(self) -> None:
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["input_backup_unchanged"] = False
+        with self.assertRaisesRegex(
+            AssertionError, "input_backup_unchanged must be True",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_ok_is_true_under_stub(self) -> None:
+        # ``ok=True`` under the no-paid stub means the runner reached
+        # provider code and succeeded — exactly the regression the
+        # smoke must catch.
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["ok"] = True
+        body["errors"] = []
+        with self.assertRaisesRegex(
+            AssertionError, "ok must be False under the no-paid",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_errors_empty_under_stub(self) -> None:
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["errors"] = []
+        with self.assertRaisesRegex(
+            AssertionError, "errors must be a non-empty list",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_errors_lack_provider_keyword(self) -> None:
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["errors"] = ["unrelated failure"]
+        with self.assertRaisesRegex(
+            AssertionError, "errors must mention 'provider'",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_records_nonzero_under_stub(self) -> None:
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["records_count"] = 3
+        with self.assertRaisesRegex(
+            AssertionError, "records_count must be 0 under the no-paid",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_invariant_fails_when_examples_populated_under_stub(self) -> None:
+        body = dict(_VALID_MANUAL_REPAIRED_COHORT_BODY)
+        body["examples"] = [{"event_id": 1}]
+        with self.assertRaisesRegex(
+            AssertionError, "examples must be an empty list",
+        ):
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid(
+                body,
+            )
+
+    def test_inventory_attaches_invariant_to_repaired_cohort_runner(
+        self,
+    ) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _MANUAL_REPAIRED_COHORT_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertIn(
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid,
+            match.body_invariants,
+        )
+
+    def test_repaired_cohort_runner_args_carry_required_inputs(self) -> None:
+        # The runner needs --backup-path, --high-priority-csv,
+        # --medium-csv to do anything other than emit "missing input"
+        # errors.  Pinning the args here means a future regression that
+        # drops one of the inputs trips the smoke instead of silently
+        # leaving the runner in its no-arg fail-closed branch.
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _MANUAL_REPAIRED_COHORT_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        args = list(match.args)
+        for required_flag in (
+            "--backup-path",
+            "--high-priority-csv",
+            "--medium-csv",
+        ):
+            self.assertIn(required_flag, args)
+
+
+# ---------------------------------------------------------------------------
+# Provider seam wiring for the repaired-cohort runner
+#
+# The runner's ``_check_provider_available`` seam must be force-False
+# under the no-paid guard and ``_fetch_ticker_rows`` must be a raiser
+# (defense in depth).  Pin both wires here so a future regression that
+# drops the stub or the raiser trips a unit test before the smoke runs
+# the runner against real backups.
+# ---------------------------------------------------------------------------
+
+
+class TestRepairedCohortRunnerNoPaidWiring(unittest.TestCase):
+    def test_check_provider_available_is_stubbed_to_false_under_guard(
+        self,
+    ) -> None:
+        target_module = __import__(
+            _MANUAL_REPAIRED_COHORT_MODULE, fromlist=["main"],
+        )
+        with no_paid_smoke.guard_no_paid_provider_calls():
+            self.assertIs(target_module._check_provider_available(), False)
+        # Original seam restored after the guard exits.
+        self.assertTrue(callable(target_module._check_provider_available))
+
+    def test_fetch_ticker_rows_raises_under_guard(self) -> None:
+        target_module = __import__(
+            _MANUAL_REPAIRED_COHORT_MODULE, fromlist=["main"],
+        )
+        with no_paid_smoke.guard_no_paid_provider_calls():
+            with self.assertRaisesRegex(
+                RuntimeError, "no-paid smoke attempted forbidden seam",
+            ):
+                target_module._fetch_ticker_rows(
+                    ticker="MS", start="2026-01-01", end="2026-01-02",
+                )
+
+
+class TestRepairedCohortRunnerGuardFailsClosed(_Base):
+    """Symmetric pin for the manual repaired-cohort validation runner.
+    The runner must run under the same provider/paid guard as the
+    older smoke scripts; if a future regression has it reach
+    ``market_check`` / ``yfinance`` / LLM seams, the guard fires and
+    the smoke marks the result failed.
+    """
+
+    def test_runner_invoking_forbidden_seam_marks_smoke_failed(self) -> None:
+        from unittest.mock import patch
+
+        target_module = __import__(
+            _MANUAL_REPAIRED_COHORT_MODULE, fromlist=["main"],
+        )
+
+        def _seam_invoking_main(_argv, *, out=None):
+            import market_check
+            market_check._fetch("SPY")
+            return 0
+
+        with patch.object(target_module, "main", _seam_invoking_main):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        broken = [
+            r for r in results
+            if _MANUAL_REPAIRED_COHORT_MODULE in r.path
+        ]
+        self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].ok)
+        self.assertIn("forbidden seam", broken[0].error or "")
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])

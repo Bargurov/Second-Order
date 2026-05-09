@@ -538,6 +538,713 @@ def _assert_stat_validation_readiness_report_no_paid(body: Any) -> None:
         )
 
 
+_ARCHIVE_CLEANUP_EXECUTION_PLAN_BATCH_REASONS: frozenset[str] = frozenset((
+    "test_fixture_phrase",
+    "rotating_macro_template",
+    "fixture_timestamp_cluster",
+    "duplicate_headline_event_date",
+))
+
+
+# Pinned in the source as ``_REQUIRED_CONFIRMATION_FLAGS`` —
+# the operator runbook reads this exact ordered tuple, so a future
+# rename / reorder must trip the smoke instead of silently breaking
+# downstream consumers.
+_ARCHIVE_CLEANUP_REQUIRED_CONFIRMATION_FLAGS: tuple[str, ...] = (
+    "backup_taken",
+    "per_event_manual_review_complete",
+    "acknowledged_no_db_writes_from_this_script",
+)
+
+
+# Closed two-string vocabulary for ``recommended_next_action`` on the
+# execution-plan report.  The "plan ready" string explicitly disclaims
+# writes so an operator cannot mistake the report for a deletion tool;
+# pinning both strings means a future rephrase trips here.
+_ARCHIVE_CLEANUP_EXECUTION_PLAN_NEXT_ACTIONS: tuple[str, ...] = (
+    "No archive cleanup candidates detected; no execution plan "
+    "required.",
+    "Execution plan ready.  Take a fresh backup, review every event "
+    "in every batch, then delete via the operator path.  This script "
+    "makes no DB writes.",
+)
+
+
+def _assert_archive_cleanup_execution_plan_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the archive cleanup execution-plan
+    CLI's JSON output.
+
+    The plan is a read-only batched view of cleanup candidates that an
+    operator drives manually.  The smoke pins the load-bearing shape:
+    ``candidate_count`` is a non-negative int, ``batches`` is a list of
+    ``{reason, size, event_ids, examples, manual_review_required_before_delete,
+    description}`` rows whose ``size`` equals ``len(event_ids)``,
+    ``risk_notes`` is a non-empty list of non-empty strings,
+    ``required_confirmation_flags`` matches the pinned three-flag
+    tuple, and ``recommended_next_action`` comes from the script's
+    closed two-string vocabulary.  Stable zero values are accepted
+    because a clean archive emits an empty ``batches`` list and the
+    "no candidates" recommendation.  A regression that drops a field,
+    silently auto-deletes (``manual_review_required_before_delete=False``),
+    invents a new reason, or reorders the confirmation flags means the
+    read-only contract changed — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"archive cleanup execution-plan response must be a JSON "
+            f"object, got {type(body).__name__}"
+        )
+    candidate_count = body.get("candidate_count")
+    if (
+        not isinstance(candidate_count, int)
+        or isinstance(candidate_count, bool)
+        or candidate_count < 0
+    ):
+        raise AssertionError(
+            f"candidate_count must be a non-negative int, got "
+            f"{candidate_count!r}"
+        )
+    batches = body.get("batches")
+    if not isinstance(batches, list):
+        raise AssertionError(
+            f"batches must be a list, got {type(batches).__name__}"
+        )
+    for index, batch in enumerate(batches):
+        if not isinstance(batch, dict):
+            raise AssertionError(
+                f"batches[{index}] must be a JSON object, got "
+                f"{type(batch).__name__}"
+            )
+        reason = batch.get("reason")
+        if reason not in _ARCHIVE_CLEANUP_EXECUTION_PLAN_BATCH_REASONS:
+            raise AssertionError(
+                f"batches[{index}].reason must be one of "
+                f"{sorted(_ARCHIVE_CLEANUP_EXECUTION_PLAN_BATCH_REASONS)}, "
+                f"got {reason!r}"
+            )
+        size = batch.get("size")
+        if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+            raise AssertionError(
+                f"batches[{index}].size must be a non-negative int, got "
+                f"{size!r}"
+            )
+        event_ids = batch.get("event_ids")
+        if not isinstance(event_ids, list):
+            raise AssertionError(
+                f"batches[{index}].event_ids must be a list, got "
+                f"{type(event_ids).__name__}"
+            )
+        if len(event_ids) != size:
+            raise AssertionError(
+                f"batches[{index}].size must equal len(event_ids); "
+                f"got size={size} vs len(event_ids)={len(event_ids)}"
+            )
+        examples = batch.get("examples")
+        if not isinstance(examples, list):
+            raise AssertionError(
+                f"batches[{index}].examples must be a list, got "
+                f"{type(examples).__name__}"
+            )
+        if batch.get("manual_review_required_before_delete") is not True:
+            raise AssertionError(
+                f"batches[{index}].manual_review_required_before_delete "
+                f"must be True, got "
+                f"{batch.get('manual_review_required_before_delete')!r}"
+            )
+        description = batch.get("description")
+        if not isinstance(description, str) or not description:
+            raise AssertionError(
+                f"batches[{index}].description must be a non-empty "
+                f"string, got {description!r}"
+            )
+    risk_notes = body.get("risk_notes")
+    if not isinstance(risk_notes, list) or not risk_notes:
+        raise AssertionError(
+            f"risk_notes must be a non-empty list, got {risk_notes!r}"
+        )
+    for index, note in enumerate(risk_notes):
+        if not isinstance(note, str) or not note:
+            raise AssertionError(
+                f"risk_notes[{index}] must be a non-empty string, got "
+                f"{note!r}"
+            )
+    flags = body.get("required_confirmation_flags")
+    if not isinstance(flags, list):
+        raise AssertionError(
+            f"required_confirmation_flags must be a list, got "
+            f"{type(flags).__name__}"
+        )
+    if tuple(flags) != _ARCHIVE_CLEANUP_REQUIRED_CONFIRMATION_FLAGS:
+        raise AssertionError(
+            f"required_confirmation_flags must equal the pinned tuple "
+            f"{list(_ARCHIVE_CLEANUP_REQUIRED_CONFIRMATION_FLAGS)}, got "
+            f"{flags!r}"
+        )
+    action = body.get("recommended_next_action")
+    if action not in _ARCHIVE_CLEANUP_EXECUTION_PLAN_NEXT_ACTIONS:
+        raise AssertionError(
+            f"recommended_next_action must be one of the two pinned "
+            f"strings, got {action!r}"
+        )
+
+
+_ARCHIVE_CLEANUP_TICKER_READINESS_REQUIRED_INTS: tuple[str, ...] = (
+    "candidate_count",
+    "tickers_present_count",
+    "price_cache_present_count",
+    "low_information_count",
+)
+
+
+# Closed two-string vocabulary for ``recommended_next_action`` on the
+# ticker-readiness report.  Both strings explicitly disclaim writes so
+# an operator cannot mistake the report for a deletion tool.
+_ARCHIVE_CLEANUP_TICKER_READINESS_NEXT_ACTIONS: tuple[str, ...] = (
+    "No archive cleanup candidates detected; no ticker-readiness "
+    "review required.",
+    "Cleanup candidates detected.  Review per-event ticker / "
+    "price_cache / low_information columns to decide whether deletion "
+    "via the operator path is safe; this report makes no DB writes.",
+)
+
+
+def _assert_archive_cleanup_ticker_readiness_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the archive cleanup ticker-readiness
+    CLI's JSON output.
+
+    The report summarises, per cleanup candidate, whether market_tickers
+    is populated, whether the primary ticker is covered by
+    ``price_cache``, and whether the row is flagged ``low_signal``.
+    Every count must be a non-negative int (so the runbook math reads
+    correctly), ``examples`` must be a list (so the renderer can
+    iterate without crashing), ``recommended_next_action`` must come
+    from the script's closed two-string vocabulary (so a runbook
+    consumer can branch deterministically on the value), each subset
+    count must not exceed ``candidate_count`` (the partition floor),
+    and ``price_cache_present_count`` must not exceed
+    ``tickers_present_count`` because price-cache coverage requires a
+    primary ticker.  Stable zero values are accepted because a clean
+    archive has no candidates.  A regression that drops a field,
+    returns negatives, or invents a new recommendation means the
+    read-only report contract changed — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"archive cleanup ticker-readiness response must be a JSON "
+            f"object, got {type(body).__name__}"
+        )
+    for field_name in _ARCHIVE_CLEANUP_TICKER_READINESS_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    examples = body.get("examples")
+    if not isinstance(examples, list):
+        raise AssertionError(
+            f"examples must be a list, got {type(examples).__name__}"
+        )
+    action = body.get("recommended_next_action")
+    if action not in _ARCHIVE_CLEANUP_TICKER_READINESS_NEXT_ACTIONS:
+        raise AssertionError(
+            f"recommended_next_action must be one of the two pinned "
+            f"strings, got {action!r}"
+        )
+    # Partition floor: every subset count is at most the candidate
+    # cohort.  The script enforces this by construction (one walk over
+    # the candidate id list); pinning it here means a future
+    # accounting drift trips the smoke.
+    candidate_count = body["candidate_count"]
+    for subset in (
+        "tickers_present_count",
+        "price_cache_present_count",
+        "low_information_count",
+    ):
+        if body[subset] > candidate_count:
+            raise AssertionError(
+                f"{subset} must not exceed candidate_count; got "
+                f"{body[subset]} > {candidate_count}"
+            )
+    # Price-cache coverage requires a primary ticker, so the
+    # price_cache subset is itself bounded by the tickers subset.  A
+    # regression that decouples the two would return shapes the
+    # runbook math cannot reconcile.
+    if body["price_cache_present_count"] > body["tickers_present_count"]:
+        raise AssertionError(
+            f"price_cache_present_count must not exceed "
+            f"tickers_present_count; got "
+            f"{body['price_cache_present_count']} > "
+            f"{body['tickers_present_count']}"
+        )
+
+
+_SHORT_HORIZON_READINESS_REQUIRED_INTS: tuple[str, ...] = (
+    "total_events",
+    "events_ready_1d5d",
+    "delta_vs_full_ready",
+    "missing_tickers_count",
+    "missing_benchmark_count",
+    "insufficient_estimation_window_count",
+)
+
+
+def _assert_short_horizon_readiness_report_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the short-horizon (1d/5d) readiness
+    report CLI's JSON output.
+
+    Every coverage count must be a non-negative int, ``examples`` must
+    be a list, and ``events_ready_1d5d`` must not exceed
+    ``total_events``.  Stable zero values are accepted because an
+    archive with no qualifying events surfaces zeros across the board.
+    A regression that drops a field, returns negatives, or surfaces a
+    cohort larger than the archive means the read-only report contract
+    drifted — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"short-horizon readiness response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    for field_name in _SHORT_HORIZON_READINESS_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    examples = body.get("examples")
+    if not isinstance(examples, list):
+        raise AssertionError(
+            f"examples must be a list, got {type(examples).__name__}"
+        )
+    action = body.get("recommended_next_action")
+    if not isinstance(action, str) or not action:
+        raise AssertionError(
+            f"recommended_next_action must be a non-empty string, got "
+            f"{action!r}"
+        )
+    if body["events_ready_1d5d"] > body["total_events"]:
+        raise AssertionError(
+            f"events_ready_1d5d must not exceed total_events; got "
+            f"{body['events_ready_1d5d']} > {body['total_events']}"
+        )
+    # ``delta_vs_full_ready`` is a subset of ``events_ready_1d5d``
+    # (events that pass the short predicate but fail the full one),
+    # so the partition floor is bounded by the short-ready cohort.
+    if body["delta_vs_full_ready"] > body["events_ready_1d5d"]:
+        raise AssertionError(
+            f"delta_vs_full_ready must not exceed events_ready_1d5d; "
+            f"got {body['delta_vs_full_ready']} > "
+            f"{body['events_ready_1d5d']}"
+        )
+
+
+_SHORT_HORIZON_CONTAMINATION_REQUIRED_INTS: tuple[str, ...] = (
+    "total_short_ready",
+    "suspicious_count",
+    "clean_short_ready_count",
+)
+
+
+_SHORT_HORIZON_CONTAMINATION_FLAG_KEYS: tuple[str, ...] = (
+    "driv_lit_off_topic",
+    "mechanism_family_none",
+    "duplicate_date_ticker",
+    "local_off_topic_headline",
+)
+
+
+def _assert_short_horizon_contamination_report_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the short-horizon (1d/5d) contamination
+    report CLI's JSON output.
+
+    The report flags the four heuristic problems the fully-ready
+    contamination report surfaces, but on the short-horizon-ready
+    cohort.  ``ok`` must be True (the report runs read-only and never
+    returns an error envelope), every count must be a non-negative
+    int, ``by_flag`` must carry the four pinned flag buckets,
+    ``examples`` must be a list, and the partition arithmetic
+    ``suspicious_count + clean_short_ready_count == total_short_ready``
+    must hold.  A regression that drops a field, returns negatives,
+    invents a new flag bucket, or breaks the partition arithmetic
+    means the read-only report contract drifted — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"short-horizon contamination response must be a JSON "
+            f"object, got {type(body).__name__}"
+        )
+    if body.get("ok") is not True:
+        raise AssertionError(
+            f"ok must be True for the read-only short-horizon "
+            f"contamination report, got {body.get('ok')!r}"
+        )
+    for field_name in _SHORT_HORIZON_CONTAMINATION_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    by_flag = body.get("by_flag")
+    if not isinstance(by_flag, dict):
+        raise AssertionError(
+            f"by_flag must be a dict, got {type(by_flag).__name__}"
+        )
+    for flag in _SHORT_HORIZON_CONTAMINATION_FLAG_KEYS:
+        flag_value = by_flag.get(flag)
+        if (
+            not isinstance(flag_value, int)
+            or isinstance(flag_value, bool)
+            or flag_value < 0
+        ):
+            raise AssertionError(
+                f"by_flag[{flag!r}] must be a non-negative int, got "
+                f"{flag_value!r}"
+            )
+    examples = body.get("examples")
+    if not isinstance(examples, list):
+        raise AssertionError(
+            f"examples must be a list, got {type(examples).__name__}"
+        )
+    action = body.get("recommended_next_action")
+    if not isinstance(action, str) or not action:
+        raise AssertionError(
+            f"recommended_next_action must be a non-empty string, got "
+            f"{action!r}"
+        )
+    # Partition arithmetic: every short-ready event is either
+    # suspicious or clean, never both.  The script enforces this by
+    # construction; pinning it here means a future accounting drift
+    # trips the smoke instead of leaking into downstream math.
+    if (
+        body["suspicious_count"] + body["clean_short_ready_count"]
+        != body["total_short_ready"]
+    ):
+        raise AssertionError(
+            f"suspicious_count + clean_short_ready_count must equal "
+            f"total_short_ready; got "
+            f"{body['suspicious_count']} + "
+            f"{body['clean_short_ready_count']} != "
+            f"{body['total_short_ready']}"
+        )
+
+
+_ARCHIVE_STAT_VALIDATION_RUN_REQUIRED_INTS: tuple[str, ...] = (
+    "events_evaluated",
+    "records_count",
+    "significant_count",
+)
+
+
+def _assert_archive_short_horizon_run_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the archive short-horizon validation
+    run CLI's JSON output.
+
+    The runner walks the fully-ready short-horizon cohort and emits
+    SAR/CI/p/FDR records over 1d and 5d horizons.  ``errors`` must be
+    empty (the read-only pipeline produces no errors on a healthy
+    archive), every count must be a non-negative int, ``by_horizon``
+    and ``by_mechanism_family`` must be dicts, ``examples`` must be a
+    list, and ``significant_count <= records_count``.  Stable zero
+    values are accepted because a sparse archive yields zeros across
+    the board.  A regression that drops a field, returns negatives, or
+    breaks the significant-vs-records bound means the contract drifted
+    — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"archive short-horizon run response must be a JSON "
+            f"object, got {type(body).__name__}"
+        )
+    errors = body.get("errors")
+    if not isinstance(errors, list):
+        raise AssertionError(
+            f"errors must be a list, got {type(errors).__name__}"
+        )
+    if errors:
+        raise AssertionError(
+            f"errors must be empty in no-paid mode, got {errors!r}"
+        )
+    for field_name in _ARCHIVE_STAT_VALIDATION_RUN_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    if body["significant_count"] > body["records_count"]:
+        raise AssertionError(
+            f"significant_count must not exceed records_count; got "
+            f"{body['significant_count']} > {body['records_count']}"
+        )
+    for key in ("by_horizon", "by_mechanism_family"):
+        value = body.get(key)
+        if not isinstance(value, dict):
+            raise AssertionError(
+                f"{key} must be a dict, got {type(value).__name__}"
+            )
+    examples = body.get("examples")
+    if not isinstance(examples, list):
+        raise AssertionError(
+            f"examples must be a list, got {type(examples).__name__}"
+        )
+
+
+_ARCHIVE_STAT_VALIDATION_DEDUP_SUMMARY_REQUIRED_INTS: tuple[str, ...] = (
+    "records_count",
+    "effective_unique_records_count",
+    "duplicate_records_count",
+    "duplicate_groups_count",
+)
+
+
+_ARCHIVE_STAT_VALIDATION_DEDUP_SUMMARY_QVALUE_REQUIRED_INTS: tuple[str, ...] = (
+    "raw_significant_records",
+    "raw_significant_unique_records",
+    "deduped_significant_unique_records",
+    "groups_gaining_significance",
+    "groups_losing_significance",
+)
+
+
+def _assert_archive_dedup_summary_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the archive stat-validation deduped
+    summary CLI's JSON output.
+
+    The summary collapses ``(event_date, primary_ticker, horizon)``
+    duplicates so the operator can see how much of the surfaced
+    FDR-controlled evidence comes from independent event-windows
+    versus arithmetic duplicates that share the same price-window
+    inputs.  ``ok`` must be True, ``errors`` must be empty, every
+    count must be a non-negative int, ``by_horizon`` must be a dict,
+    ``qvalue_change`` must carry every required int sub-field plus an
+    ``any_change`` boolean, ``top_abs_sar`` must be a list, and
+    ``effective_unique_records_count <= records_count``.  Stable zero
+    values are accepted because a sparse archive yields zeros across
+    the board.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"archive dedup-summary response must be a JSON object, "
+            f"got {type(body).__name__}"
+        )
+    if body.get("ok") is not True:
+        raise AssertionError(
+            f"ok must be True for the read-only dedup summary, got "
+            f"{body.get('ok')!r}"
+        )
+    errors = body.get("errors")
+    if not isinstance(errors, list):
+        raise AssertionError(
+            f"errors must be a list, got {type(errors).__name__}"
+        )
+    if errors:
+        raise AssertionError(
+            f"errors must be empty in no-paid mode, got {errors!r}"
+        )
+    for field_name in _ARCHIVE_STAT_VALIDATION_DEDUP_SUMMARY_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    if body["effective_unique_records_count"] > body["records_count"]:
+        raise AssertionError(
+            f"effective_unique_records_count must not exceed "
+            f"records_count; got "
+            f"{body['effective_unique_records_count']} > "
+            f"{body['records_count']}"
+        )
+    by_horizon = body.get("by_horizon")
+    if not isinstance(by_horizon, dict):
+        raise AssertionError(
+            f"by_horizon must be a dict, got {type(by_horizon).__name__}"
+        )
+    qvalue_change = body.get("qvalue_change")
+    if not isinstance(qvalue_change, dict):
+        raise AssertionError(
+            f"qvalue_change must be a dict, got "
+            f"{type(qvalue_change).__name__}"
+        )
+    for field_name in (
+        _ARCHIVE_STAT_VALIDATION_DEDUP_SUMMARY_QVALUE_REQUIRED_INTS
+    ):
+        value = qvalue_change.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"qvalue_change[{field_name!r}] must be a non-negative "
+                f"int, got {value!r}"
+            )
+    any_change = qvalue_change.get("any_change")
+    if not isinstance(any_change, bool):
+        raise AssertionError(
+            f"qvalue_change['any_change'] must be bool, got "
+            f"{type(any_change).__name__}"
+        )
+    top_abs_sar = body.get("top_abs_sar")
+    if not isinstance(top_abs_sar, list):
+        raise AssertionError(
+            f"top_abs_sar must be a list, got "
+            f"{type(top_abs_sar).__name__}"
+        )
+
+
+_SHORT_HORIZON_SHOWCASE_SHORTLIST_REQUIRED_INTS: tuple[str, ...] = (
+    "candidate_count",
+    "excluded_contaminated_count",
+)
+
+
+def _assert_short_horizon_showcase_shortlist_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the short-horizon showcase candidate
+    shortlist CLI's JSON output.
+
+    The shortlist ranks short-horizon candidates by ``|sar|`` and
+    surfaces the contaminated cohort separately so an operator can
+    decide whether to promote or hold.  ``ok`` must be True, every
+    count must be a non-negative int, ``candidates`` must be a list
+    whose length matches ``candidate_count`` (the partition floor),
+    ``top_abs_sar`` is either a dict (the leading candidate) or
+    ``None`` (no candidates), and ``recommended_next_action`` must be
+    a non-empty string.  Stable zero values are accepted because a
+    contaminated archive yields ``candidate_count == 0`` and
+    ``top_abs_sar is None``.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"short-horizon showcase shortlist response must be a "
+            f"JSON object, got {type(body).__name__}"
+        )
+    if body.get("ok") is not True:
+        raise AssertionError(
+            f"ok must be True for the read-only shortlist, got "
+            f"{body.get('ok')!r}"
+        )
+    for field_name in _SHORT_HORIZON_SHOWCASE_SHORTLIST_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise AssertionError(
+                f"{field_name} must be a non-negative int, got {value!r}"
+            )
+    candidates = body.get("candidates")
+    if not isinstance(candidates, list):
+        raise AssertionError(
+            f"candidates must be a list, got {type(candidates).__name__}"
+        )
+    if len(candidates) != body["candidate_count"]:
+        raise AssertionError(
+            f"candidate_count must equal len(candidates); got "
+            f"candidate_count={body['candidate_count']} vs "
+            f"len(candidates)={len(candidates)}"
+        )
+    top_abs_sar = body.get("top_abs_sar")
+    if top_abs_sar is not None and not isinstance(top_abs_sar, dict):
+        raise AssertionError(
+            f"top_abs_sar must be a dict or None, got "
+            f"{type(top_abs_sar).__name__}"
+        )
+    # Partition consistency: when there are no candidates, there is
+    # no leading candidate either.  The script enforces this by
+    # construction; pinning it here means a future accounting drift
+    # trips the smoke.
+    if body["candidate_count"] == 0 and top_abs_sar is not None:
+        raise AssertionError(
+            f"top_abs_sar must be None when candidate_count == 0, got "
+            f"{top_abs_sar!r}"
+        )
+    action = body.get("recommended_next_action")
+    if not isinstance(action, str) or not action:
+        raise AssertionError(
+            f"recommended_next_action must be a non-empty string, got "
+            f"{action!r}"
+        )
+
+
+_MANUAL_REPAIRED_COHORT_REQUIRED_INTS: tuple[str, ...] = (
+    "events_evaluated",
+    "records_count",
+    "significant_count",
+)
+
+
+def _assert_manual_repaired_cohort_validation_no_paid(body: Any) -> None:
+    """Pin no-paid invariants on the manual repaired-cohort validation
+    runner CLI's JSON output.
+
+    The runner integrates with yfinance for price-cache backfill on
+    retag rows, so under the no-paid guard it MUST take its
+    fail-closed path: the local ``_check_provider_available`` seam is
+    forced to False (so retag rows trip the pre-copy provider check),
+    and the local ``_fetch_ticker_rows`` seam is replaced with a
+    raiser (defense in depth — any code path that reaches the fetcher
+    has bypassed the availability gate and crashes loudly).
+
+    The expected fail-closed shape is: ``ok`` is False, ``errors``
+    contains a provider-related entry, the live DB and input backup
+    are byte-identical (``live_db_unchanged`` and
+    ``input_backup_unchanged`` are True), and every derived count is
+    zero (no work happened).  A regression that flips any of those
+    means the runner has bypassed the no-paid guard or touched a file
+    we promised never to touch — fail closed.
+    """
+    if not isinstance(body, dict):
+        raise AssertionError(
+            f"manual repaired-cohort validation response must be a "
+            f"JSON object, got {type(body).__name__}"
+        )
+    # Load-bearing safety invariants — if either of these flips, the
+    # runner has touched a file we promised never to touch.
+    if body.get("live_db_unchanged") is not True:
+        raise AssertionError(
+            f"live_db_unchanged must be True, got "
+            f"{body.get('live_db_unchanged')!r}"
+        )
+    if body.get("input_backup_unchanged") is not True:
+        raise AssertionError(
+            f"input_backup_unchanged must be True, got "
+            f"{body.get('input_backup_unchanged')!r}"
+        )
+    # The runner must take the fail-closed path under the no-paid
+    # stub; ``ok`` flips to False when ``errors`` is non-empty.
+    if body.get("ok") is not False:
+        raise AssertionError(
+            f"ok must be False under the no-paid provider stub, got "
+            f"{body.get('ok')!r}"
+        )
+    errors = body.get("errors")
+    if not isinstance(errors, list) or not errors:
+        raise AssertionError(
+            f"errors must be a non-empty list under the no-paid "
+            f"provider stub, got {errors!r}"
+        )
+    if not any(
+        isinstance(e, str) and "provider" in e.lower() for e in errors
+    ):
+        raise AssertionError(
+            f"errors must mention 'provider' under the no-paid "
+            f"provider stub, got {errors!r}"
+        )
+    for field_name in _MANUAL_REPAIRED_COHORT_REQUIRED_INTS:
+        value = body.get(field_name)
+        if not isinstance(value, int) or isinstance(value, bool) or value != 0:
+            raise AssertionError(
+                f"{field_name} must be 0 under the no-paid provider "
+                f"stub, got {value!r}"
+            )
+    for list_name in ("repaired_clean_event_ids", "examples"):
+        value = body.get(list_name)
+        if not isinstance(value, list) or value:
+            raise AssertionError(
+                f"{list_name} must be an empty list under the no-paid "
+                f"provider stub, got {value!r}"
+            )
+    for dict_name in ("by_horizon", "by_mechanism_family"):
+        value = body.get(dict_name)
+        if not isinstance(value, dict):
+            raise AssertionError(
+                f"{dict_name} must be a dict, got "
+                f"{type(value).__name__}"
+            )
+
+
 @dataclass(frozen=True)
 class SmokeEndpoint:
     name: str
@@ -654,6 +1361,64 @@ SCRIPTS: tuple[SmokeScript, ...] = (
         args=("--json", "--limit", "20"),
         body_invariants=(_assert_stat_validation_readiness_report_no_paid,),
     ),
+    SmokeScript(
+        "archive cleanup execution plan",
+        "scripts.archive_cleanup_execution_plan",
+        body_invariants=(_assert_archive_cleanup_execution_plan_no_paid,),
+    ),
+    SmokeScript(
+        "archive cleanup ticker readiness",
+        "scripts.archive_cleanup_candidate_ticker_readiness",
+        body_invariants=(_assert_archive_cleanup_ticker_readiness_no_paid,),
+    ),
+    SmokeScript(
+        "stat validation short-horizon readiness",
+        "scripts.stat_validation_short_horizon_readiness_report",
+        args=("--json", "--limit", "20"),
+        body_invariants=(_assert_short_horizon_readiness_report_no_paid,),
+    ),
+    SmokeScript(
+        "stat validation short-horizon contamination",
+        "scripts.stat_validation_short_horizon_contamination_report",
+        args=("--json", "--limit", "20"),
+        body_invariants=(_assert_short_horizon_contamination_report_no_paid,),
+    ),
+    SmokeScript(
+        "archive stat validation short-horizon run",
+        "scripts.archive_stat_validation_short_horizon_run",
+        body_invariants=(_assert_archive_short_horizon_run_no_paid,),
+    ),
+    SmokeScript(
+        "archive stat validation dedup summary",
+        "scripts.archive_stat_validation_dedup_summary",
+        body_invariants=(_assert_archive_dedup_summary_no_paid,),
+    ),
+    SmokeScript(
+        "short-horizon showcase shortlist",
+        "scripts.short_horizon_showcase_candidate_shortlist",
+        body_invariants=(_assert_short_horizon_showcase_shortlist_no_paid,),
+    ),
+    # The repaired-cohort validation runner integrates with yfinance for
+    # price-cache backfill on retag rows.  Its local
+    # ``_check_provider_available`` seam is forced to False via
+    # ``_READONLY_STUB_SEAMS`` and its ``_fetch_ticker_rows`` seam is
+    # replaced with a raiser via ``_DANGEROUS_SEAMS`` so the smoke
+    # exercises the runner's fail-closed path against real CSVs without
+    # touching a paid provider.  Args carry the production-shaped
+    # backup + worksheet paths so the smoke validates the real input
+    # plumbing, not a no-arg stub path.
+    SmokeScript(
+        "manual repaired cohort validation",
+        "scripts.manual_repaired_cohort_validation_run",
+        args=(
+            "--json",
+            "--backup-path", "backups/events-20260507T095609.db",
+            "--high-priority-csv", "manual_ticker_repair_high_priority.csv",
+            "--medium-csv", "manual_ticker_repair_medium_production_like.csv",
+            "--limit", "5",
+        ),
+        body_invariants=(_assert_manual_repaired_cohort_validation_no_paid,),
+    ),
 )
 
 
@@ -722,6 +1487,14 @@ _DANGEROUS_SEAMS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "movers_backfill_candidate",
         ),
     ),
+    # Defense in depth for the repaired-cohort runner: the
+    # availability stub above routes retag rows away from the fetcher,
+    # but if a regression bypasses that gate the raiser here surfaces
+    # the bypass as a loud crash instead of a silent paid call.
+    (
+        "scripts.manual_repaired_cohort_validation_run",
+        ("_fetch_ticker_rows",),
+    ),
 )
 
 
@@ -729,11 +1502,27 @@ def _empty_mover_slices(*_args, **_kwargs) -> dict[str, list[dict]]:
     return {"today": [], "market": [], "weekly": [], "persistent": []}
 
 
+def _stub_provider_unavailable(*_args, **_kwargs) -> bool:
+    """Pretend yfinance is not importable so any script that branches
+    on a local provider-availability seam takes its fail-closed path
+    instead of reaching for a paid provider call.
+    """
+    return False
+
+
 _READONLY_STUB_SEAMS: tuple[tuple[str, str, Any], ...] = (
     (
         "routes.movers",
         "load_ui_slices_for_event_context",
         _empty_mover_slices,
+    ),
+    # The repaired-cohort runner's local availability probe — forcing
+    # it to False routes retag rows into the runner's pre-copy
+    # fail-closed branch before any provider call would fire.
+    (
+        "scripts.manual_repaired_cohort_validation_run",
+        "_check_provider_available",
+        _stub_provider_unavailable,
     ),
 )
 
