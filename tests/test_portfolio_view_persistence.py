@@ -17,17 +17,46 @@ from datetime import datetime, timedelta
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
-def _isolated_db() -> str:
+def _isolated_db() -> tuple[str, dict[str, str]]:
     """Create a fresh sqlite file, initialise the saved_studies schema,
-    and point the module-level ``DB_FILE`` at it.  Returns the path so
-    the test can ``os.unlink`` it in tearDown."""
+    and point the module-level ``DB_FILE`` at it.
+
+    Returns ``(path, originals)`` — ``path`` is the per-test sqlite
+    file the test should ``os.unlink`` in tearDown; ``originals`` is
+    the snapshot of ``db.DB_FILE`` and ``saved_studies.DB_FILE`` taken
+    BEFORE the swap so tearDown can restore them via
+    :func:`_restore_db_constants`.
+
+    Restoration matters because ``tests/conftest.py`` redirects
+    ``db.DB_FILE`` (and the snapshot modules' copies) to a per-session
+    temp path at collection time.  A test that swaps without
+    restoring leaks its per-test temp path into the session module
+    state — every subsequent test then sees ``db.DB_FILE`` pointing at
+    a deleted file, while the snapshot modules still hold the session
+    path.  ``test_test_db_isolation`` pins this contract.
+    """
     import db
     import saved_studies as _ss
-    path = tempfile.mkstemp(suffix=".db", prefix="test_portfolio_view_")[1]
+    fd, path = tempfile.mkstemp(suffix=".db", prefix="test_portfolio_view_")
+    os.close(fd)
+    originals = {
+        "db.DB_FILE":            db.DB_FILE,
+        "saved_studies.DB_FILE": _ss.DB_FILE,
+    }
     db.DB_FILE = path
     _ss.DB_FILE = path
     db.init_db()
-    return path
+    return path, originals
+
+
+def _restore_db_constants(originals: dict[str, str]) -> None:
+    """Restore ``db.DB_FILE`` and ``saved_studies.DB_FILE`` to the
+    snapshot taken in :func:`_isolated_db`.  See that helper's
+    docstring for why restoration is required."""
+    import db
+    import saved_studies as _ss
+    db.DB_FILE     = originals["db.DB_FILE"]
+    _ss.DB_FILE    = originals["saved_studies.DB_FILE"]
 
 
 # ---------------------------------------------------------------------------
@@ -103,9 +132,10 @@ class TestValidator(unittest.TestCase):
 
 class TestSaveReadRoundTrip(unittest.TestCase):
     def setUp(self):
-        self.db_path = _isolated_db()
+        self.db_path, self._db_originals = _isolated_db()
 
     def tearDown(self):
+        _restore_db_constants(self._db_originals)
         try:
             os.unlink(self.db_path)
         except OSError:
@@ -152,9 +182,10 @@ class TestSaveReadRoundTrip(unittest.TestCase):
 
 class TestUpdateByIdPreservesRow(unittest.TestCase):
     def setUp(self):
-        self.db_path = _isolated_db()
+        self.db_path, self._db_originals = _isolated_db()
 
     def tearDown(self):
+        _restore_db_constants(self._db_originals)
         try:
             os.unlink(self.db_path)
         except OSError:
@@ -220,12 +251,13 @@ class TestUpdateByIdPreservesRow(unittest.TestCase):
 
 class TestPatchRouteRename(unittest.TestCase):
     def setUp(self):
-        self.db_path = _isolated_db()
+        self.db_path, self._db_originals = _isolated_db()
         from fastapi.testclient import TestClient
         import api as _api_mod
         self.client = TestClient(_api_mod.app)
 
     def tearDown(self):
+        _restore_db_constants(self._db_originals)
         try:
             os.unlink(self.db_path)
         except OSError:
@@ -468,9 +500,10 @@ class TestEngineFilterRoundTripPersist(unittest.TestCase):
     duplicate row."""
 
     def setUp(self):
-        self.db_path = _isolated_db()
+        self.db_path, self._db_originals = _isolated_db()
 
     def tearDown(self):
+        _restore_db_constants(self._db_originals)
         try:
             os.unlink(self.db_path)
         except OSError:

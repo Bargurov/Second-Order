@@ -107,6 +107,31 @@ class TestDbFileRedirected(unittest.TestCase):
         _db_isolation.redirect_db_constants()
         self.assertEqual(db.DB_FILE, before)
 
+    def test_db_file_equals_session_redirect_path(self) -> None:
+        """``db.DB_FILE`` is the per-session redirect path (and stays
+        that way across tests).  The looser
+        ``test_db_file_lives_under_tempdir`` check above passes if any
+        test has swapped ``db.DB_FILE`` to a per-test temp file under
+        ``tempfile.gettempdir()`` and forgotten to restore — this
+        sentinel pins the stricter "no intra-session drift" contract.
+
+        Order-dependent.  Pytest collects tests alphabetically, so this
+        module runs after ``test_portfolio_view_persistence``,
+        ``test_macro_release_facts`` and ``test_macro_surprises``; any
+        leak from those files surfaces here.  A future reorder of the
+        verification command (or pytest config) that put this module
+        first would silently disarm the check, so keep this in mind
+        when adjusting test order.
+        """
+        import db
+        self.assertEqual(
+            Path(db.DB_FILE).resolve(),
+            Path(_db_isolation.TEMP_DB_PATH).resolve(),
+            "db.DB_FILE has drifted off the session redirect — an "
+            "earlier test swapped it to a per-test temp file and did "
+            "not restore in tearDown",
+        )
+
 
 # ---------------------------------------------------------------------------
 # 2. Module-top snapshot modules

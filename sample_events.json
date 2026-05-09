@@ -138,5 +138,125 @@
     "headline": "Cabinet approves restrictions on outbound investment in strategic technologies",
     "expected_stage": "realized",
     "expected_persistence": "structural"
+  },
+  {
+    "id": "sample_021",
+    "category": "supply_shock",
+    "headline": "Major copper smelter halts operations after fire damages key furnace lines",
+    "expected_stage": "realized",
+    "expected_persistence": "medium",
+    "expected_eval_focus": {
+      "mechanism_family": "commodity_squeeze",
+      "likely_channels": ["commodities", "equities"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_022",
+    "category": "policy_surprise",
+    "headline": "Central bank delivers surprise 100bp hike to defend currency from outflows",
+    "expected_stage": "realized",
+    "expected_persistence": "structural",
+    "expected_eval_focus": {
+      "mechanism_family": "policy_surprise",
+      "likely_channels": ["fx", "rates"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_023",
+    "category": "tariffs_trade",
+    "headline": "Administration imposes 25% tariff on imported electric vehicles effective immediately",
+    "expected_stage": "realized",
+    "expected_persistence": "structural",
+    "expected_eval_focus": {
+      "mechanism_family": "tariff_shock",
+      "likely_channels": ["equities", "commodities"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_024",
+    "category": "fx_reserve_stress",
+    "headline": "Emerging market reserves fall to four-year low amid heavy currency intervention",
+    "expected_stage": "escalation",
+    "expected_persistence": "medium",
+    "expected_eval_focus": {
+      "mechanism_family": "reserve_stress",
+      "likely_channels": ["fx", "credit"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_025",
+    "category": "energy_chokepoint",
+    "headline": "Tankers reroute around Strait of Hormuz after attacks on commercial shipping",
+    "expected_stage": "escalation",
+    "expected_persistence": "medium",
+    "expected_eval_focus": {
+      "mechanism_family": "energy_chokepoint",
+      "likely_channels": ["commodities", "shipping"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_026",
+    "category": "semiconductor_supply_chain",
+    "headline": "Leading Taiwan foundry suspends advanced node shipments after fab equipment failure",
+    "expected_stage": "realized",
+    "expected_persistence": "medium",
+    "expected_eval_focus": {
+      "mechanism_family": "semi_supply_disruption",
+      "likely_channels": ["equities", "commodities"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_027",
+    "category": "credit_stress",
+    "headline": "Regional bank discloses unrealized losses on bond holdings exceeding tier-1 capital",
+    "expected_stage": "realized",
+    "expected_persistence": "medium",
+    "expected_eval_focus": {
+      "mechanism_family": "credit_stress",
+      "likely_channels": ["credit", "equities"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_028",
+    "category": "low_information",
+    "headline": "Officials reportedly to discuss matters of mutual interest in coming weeks",
+    "expected_stage": "anticipation",
+    "expected_persistence": "transient",
+    "expected_eval_focus": {
+      "mechanism_family": "none",
+      "likely_channels": [],
+      "should_be_low_information": true
+    }
+  },
+  {
+    "id": "sample_029",
+    "category": "supply_shock",
+    "headline": "Brazilian iron ore producer halts mining operations following dam safety inspection",
+    "expected_stage": "realized",
+    "expected_persistence": "medium",
+    "expected_eval_focus": {
+      "mechanism_family": "commodity_squeeze",
+      "likely_channels": ["commodities", "equities"],
+      "should_be_low_information": false
+    }
+  },
+  {
+    "id": "sample_030",
+    "category": "policy_surprise",
+    "headline": "Government unveils unexpected fuel subsidy cut to address widening fiscal deficit",
+    "expected_stage": "realized",
+    "expected_persistence": "structural",
+    "expected_eval_focus": {
+      "mechanism_family": "policy_surprise",
+      "likely_channels": ["commodities", "fx"],
+      "should_be_low_information": false
+    }
   }
 ]

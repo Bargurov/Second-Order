@@ -1127,6 +1127,11 @@ def _build_cached_response(
         "freshness": _freshness_payload(age_classification),
         "is_mock":     False,
         "event_date":  effective_date,
+        # Cached responses never re-attempt persistence, so these always
+        # report a clean state.  Carrying the keys keeps the cached/fresh
+        # parity contract (test_freeze_policy_contract) intact.
+        "persistence_failed": False,
+        "persistence_error":  None,
     }
     return _sanitize_floats(response)
 

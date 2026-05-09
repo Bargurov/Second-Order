@@ -1925,12 +1925,18 @@ def find_historical_analogs(
                     "FROM events ORDER BY id DESC LIMIT 500"
                 ).fetchall()
             except sqlite3.OperationalError:
-                rows = conn.execute(
-                    "SELECT headline, event_date, stage, persistence, confidence, "
-                    "       market_tickers, mechanism_summary, low_signal, "
-                    "       regime_snapshot "
-                    "FROM events ORDER BY id DESC LIMIT 500"
-                ).fetchall()
+                try:
+                    rows = conn.execute(
+                        "SELECT headline, event_date, stage, persistence, confidence, "
+                        "       market_tickers, mechanism_summary, low_signal, "
+                        "       regime_snapshot "
+                        "FROM events ORDER BY id DESC LIMIT 500"
+                    ).fetchall()
+                except sqlite3.OperationalError:
+                    # Archive table may be absent/uninitialized (e.g. fresh
+                    # isolated test DB before init_db ran). Degrade to no
+                    # analogs rather than propagating the error.
+                    rows = []
 
     target_hl_words = _headline_words(headline)
     target_words = set(target_hl_words)

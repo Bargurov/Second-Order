@@ -309,12 +309,20 @@ class TestBackfillRegistryShortCircuit(_RegistryTestBase):
                     "with_tickers": True, "persisted": True, "ticker_count": 1,
                     "event_id": 99, "conviction": {"impact_level": "high"}}
 
+        # ``published_at`` is computed relative to ``datetime.now()`` so
+        # the cluster stays inside the ``since_hours=72`` window every
+        # time the suite runs.  A hardcoded date drifts past the window
+        # once calendar time advances, and the route then short-circuits
+        # at the recency check before reaching the registry pre-LLM
+        # check this test pins.
+        recent_published_at = datetime.now().isoformat(timespec="seconds")
+
         def fake_payload():
             return ({
                 "clusters": [{
                     "headline":     headline,
                     "source_count": 5,
-                    "published_at": "2026-05-03T08:00:00",
+                    "published_at": recent_published_at,
                     "sources":      [{"name": "Reuters"}],
                 }],
             }, "memory")
@@ -415,12 +423,17 @@ class TestBackfillRegistryShortCircuit(_RegistryTestBase):
                     "with_tickers": True, "persisted": True, "ticker_count": 1,
                     "event_id": 99, "conviction": {"impact_level": "high"}}
 
+        # Relative ``published_at`` so the cluster stays inside the
+        # ``since_hours=72`` window — see the note in
+        # ``test_pre_llm_check_skips_analyzed`` for the rationale.
+        recent_published_at = datetime.now().isoformat(timespec="seconds")
+
         def fake_payload():
             return ({
                 "clusters": [{
                     "headline":     headline,
                     "source_count": 5,
-                    "published_at": "2026-05-03T08:00:00",
+                    "published_at": recent_published_at,
                     "sources":      [{"name": "Reuters"}],
                 }],
             }, "memory")
@@ -452,8 +465,16 @@ class TestBackfillRegistryShortCircuit(_RegistryTestBase):
 
         headline = "Sports team wins championship"
         tk = _dedup_key(headline)
+        # Relative ``published_at`` so the cluster stays inside the
+        # ``since_hours=72`` window; otherwise the route stamps
+        # ``outside_recency_window`` before reaching the relevance
+        # check this test pins.  ``upsert_headline_registry_seen`` is
+        # given the same timestamp for narrative consistency — only
+        # the cluster's ``published_at`` is checked against the
+        # window.
+        recent_published_at = datetime.now().isoformat(timespec="seconds")
         self._db.upsert_headline_registry_seen(
-            [("ESPN", tk, 1)], "2026-05-03T08:00:00",
+            [("ESPN", tk, 1)], recent_published_at,
         )
 
         def fake_payload():
@@ -461,7 +482,7 @@ class TestBackfillRegistryShortCircuit(_RegistryTestBase):
                 "clusters": [{
                     "headline":     headline,
                     "source_count": 1,
-                    "published_at": "2026-05-03T08:00:00",
+                    "published_at": recent_published_at,
                     "sources":      [{"name": "ESPN"}],
                 }],
             }, "memory")

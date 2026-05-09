@@ -468,6 +468,8 @@ def events(
         tradable = None
     if not isinstance(quality, str):
         quality = None
+    if not isinstance(validation_status_v2, str):
+        validation_status_v2 = None
     if quality_tier is not None:
         from low_information_gate import EVIDENCE_QUALITY_TIERS
         if quality_tier not in EVIDENCE_QUALITY_TIERS:

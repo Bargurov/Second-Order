@@ -2911,8 +2911,19 @@ class TestAutoBackfillStatusReflectsAttachedScheduler(_AutoBackfillStatusBase):
         # Starlette's State.__delattr__ raises KeyError on a missing
         # key; guard both KeyError and AttributeError so this stays a
         # true no-op when nothing was attached.
+        #
+        # Target ``client.app.state`` rather than ``api.app.state``:
+        # tests/test_deploy_runtime_config.py reloads the ``api``
+        # module (to flip CORS wiring at import time), which replaces
+        # ``api.app`` with a fresh FastAPI instance.  The module-level
+        # ``client`` here was built against the pre-reload instance,
+        # so the request dispatches through that older app and the
+        # route reads ``request.app.state`` from it — not from the
+        # post-reload ``api.app``.  Setting state on ``client.app``
+        # writes to the same instance the route will read from,
+        # regardless of how many times ``api`` has been reloaded.
         try:
-            delattr(api.app.state, "auto_backfill_scheduler")
+            delattr(client.app.state, "auto_backfill_scheduler")
         except (AttributeError, KeyError):
             pass
 
@@ -2920,7 +2931,7 @@ class TestAutoBackfillStatusReflectsAttachedScheduler(_AutoBackfillStatusBase):
         """Attach a fake scheduler to ``app.state`` and return it."""
         from unittest.mock import MagicMock
         fake = MagicMock(**kwargs)
-        api.app.state.auto_backfill_scheduler = fake
+        client.app.state.auto_backfill_scheduler = fake
         return fake
 
     def test_running_attached_scheduler_reports_dry_run_only(self) -> None:
@@ -2955,7 +2966,7 @@ class TestAutoBackfillStatusReflectsAttachedScheduler(_AutoBackfillStatusBase):
         from unittest.mock import MagicMock
         fake = MagicMock(running=True)
         fake.get_jobs.side_effect = RuntimeError("get_jobs blew up")
-        api.app.state.auto_backfill_scheduler = fake
+        client.app.state.auto_backfill_scheduler = fake
         body = client.get("/diagnostics/auto-backfill-status").json()
         block = body["scheduler"]
         # The attachment is real, so mode stays dry_run_only — only the
@@ -2987,7 +2998,7 @@ class TestAutoBackfillStatusReflectsAttachedScheduler(_AutoBackfillStatusBase):
         from unittest.mock import MagicMock
         fake = MagicMock(spec=[])  # no attributes
         fake.get_jobs = lambda: []
-        api.app.state.auto_backfill_scheduler = fake
+        client.app.state.auto_backfill_scheduler = fake
         body = client.get("/diagnostics/auto-backfill-status").json()
         block = body["scheduler"]
         self.assertEqual(block["mode"], "dry_run_only")
@@ -2999,7 +3010,7 @@ class TestAutoBackfillStatusReflectsAttachedScheduler(_AutoBackfillStatusBase):
         # here would be a regression on "diagnostics is read-only".
         from unittest.mock import MagicMock
         fake = MagicMock(running=False, get_jobs=lambda: [])
-        api.app.state.auto_backfill_scheduler = fake
+        client.app.state.auto_backfill_scheduler = fake
         client.get("/diagnostics/auto-backfill-status")
         client.get("/diagnostics/auto-backfill-status")
         fake.start.assert_not_called()

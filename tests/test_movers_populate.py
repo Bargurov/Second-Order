@@ -67,12 +67,20 @@ class _Base(unittest.TestCase):
         self._orig_backfill_provider = os.environ.get("BACKFILL_PROVIDER")
         self._orig_backfill_dry_run = os.environ.get("BACKFILL_DRY_RUN_DEFAULT")
         self._orig_backfill_budget = os.environ.get("MAX_BACKFILL_LLM_CALLS")
+        self._orig_enable_paid = os.environ.get("ENABLE_PAID_ANALYSIS")
         # Most tests exercise the active populate pipeline through stubs.
         # Keep those tests explicit while separate cases below pin the safe
         # production defaults.
         os.environ["BACKFILL_PROVIDER"] = "anthropic"
         os.environ["BACKFILL_DRY_RUN_DEFAULT"] = "false"
         os.environ["MAX_BACKFILL_LLM_CALLS"] = "20"
+        # Kill-switch: paid populate path is gated by ENABLE_PAID_ANALYSIS
+        # at routes/movers.py:1426.  These tests exercise diagnostics shape
+        # and pipeline reuse, not the kill-switch itself (covered by
+        # tests/test_backfill_paid_guard.py), so authorise the paid path
+        # to mirror the same setUp pattern used by the registry and paid-
+        # guard contract suites.
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
 
     def tearDown(self):
         if self._orig_backfill_provider is None:
@@ -87,6 +95,10 @@ class _Base(unittest.TestCase):
             os.environ.pop("MAX_BACKFILL_LLM_CALLS", None)
         else:
             os.environ["MAX_BACKFILL_LLM_CALLS"] = self._orig_backfill_budget
+        if self._orig_enable_paid is None:
+            os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        else:
+            os.environ["ENABLE_PAID_ANALYSIS"] = self._orig_enable_paid
         db.DB_FILE = self._orig_db
         try:
             os.remove(self._tmp_db)
@@ -1062,12 +1074,19 @@ class TestPreviewResponseShape(_PreviewBase):
     """Per-item fields and aggregate counts the UI binds to."""
 
     def test_each_item_carries_required_fields(self):
+        # Relative timestamp so the cluster stays inside the default
+        # recency window regardless of when the suite runs; a hardcoded
+        # date silently slips outside the window once calendar time
+        # advances past it and the route then skips the cluster as
+        # ``outside_recency_window`` instead of returning the eligible
+        # preview row this test pins.
+        recent_published_at = datetime.now().isoformat(timespec="seconds")
         self._seed_news_with_meta([
             {
                 "id": 1,
                 "headline": "OPEC cuts output by 500k bpd",
                 "source_count": 4,
-                "published_at": "2026-05-03T08:00:00",
+                "published_at": recent_published_at,
             },
         ])
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
@@ -1089,7 +1108,7 @@ class TestPreviewResponseShape(_PreviewBase):
             self.assertIn(key, item, f"missing item key: {key}")
         # Source count came back as an int, published_at preserved.
         self.assertEqual(item["source_count"], 4)
-        self.assertEqual(item["published_at"], "2026-05-03T08:00:00")
+        self.assertEqual(item["published_at"], recent_published_at)
         # No registry / cache hit on a fresh DB → eligible.
         self.assertIsNone(item["skip_reason"])
         self.assertFalse(item["already_analyzed"])
