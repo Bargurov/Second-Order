@@ -67,6 +67,30 @@ Output contract (JSON)::
         },
         ...
       ],
+      "export_summary": {              # quote-friendly subset of the
+                                       # post-limit candidates list,
+                                       # surfacing exactly what an
+                                       # operator needs to triage by
+                                       # eye (headline, ticker, date,
+                                       # repair_type, repair_priority).
+                                       # Decoupled from the full
+                                       # per-row schema so review
+                                       # tooling can stay stable as
+                                       # the per-row contract grows.
+        "candidate_count":              int,    # = len(candidates)
+        "reviewed_exclusion_set_count": int,    # = 24
+        "top_candidates": [                     # same order as ``candidates``
+          {
+            "event_id":               int,
+            "headline":               str | None,
+            "event_date":             str | None,
+            "current_primary_ticker": str | None,
+            "repair_type":            str,
+            "repair_priority":        "high" | "medium" | "low",
+          },
+          ...
+        ],
+      },
       "recommended_next_action":         str,
     }
 
@@ -306,6 +330,22 @@ def summarize_short_horizon_repair_packet(
     total_after_filter = len(eligible)
     truncated = eligible[:capped_limit]
 
+    export_summary = {
+        "candidate_count":              len(truncated),
+        "reviewed_exclusion_set_count": len(_EXCLUDED_EVENT_IDS),
+        "top_candidates": [
+            {
+                "event_id":               c["event_id"],
+                "headline":               c["headline"],
+                "event_date":             c["event_date"],
+                "current_primary_ticker": c["current_primary_ticker"],
+                "repair_type":            c["repair_type"],
+                "repair_priority":        c["repair_priority"],
+            }
+            for c in truncated
+        ],
+    }
+
     total_short_ready = _coerce_int(readiness.get("events_ready_1d5d"))
     if total_short_ready is None:
         total_short_ready = _coerce_int(contamination.get("total_short_ready"))
@@ -325,6 +365,7 @@ def summarize_short_horizon_repair_packet(
         "delta_vs_full_ready":           delta_vs_full_ready,
         "total_candidates_after_filter": total_after_filter,
         "candidates":                    truncated,
+        "export_summary":                export_summary,
         "recommended_next_action":       _recommend(total_after_filter),
     }
 
