@@ -131,7 +131,7 @@ def _validation_run_payload(
 
 def _patch_seam(payload: dict[str, Any]):
     def fake(*, backup_path, high_priority_csv, medium_csv,
-             db_path, limit):
+             mechanism_family_csv=None, db_path, limit):
         return payload
     return patch.object(cli, "_run_validation_run", side_effect=fake)
 
@@ -480,10 +480,11 @@ class TestSeam(unittest.TestCase):
         captured: dict[str, Any] = {}
 
         def fake(*, backup_path, high_priority_csv, medium_csv,
-                 db_path, limit):
+                 mechanism_family_csv=None, db_path, limit):
             captured["backup_path"] = backup_path
             captured["high_priority_csv"] = high_priority_csv
             captured["medium_csv"] = medium_csv
+            captured["mechanism_family_csv"] = mechanism_family_csv
             captured["db_path"] = db_path
             captured["limit"] = limit
             return _validation_run_payload()
@@ -493,14 +494,34 @@ class TestSeam(unittest.TestCase):
                 backup_path="/x/backup.db",
                 high_priority_csv="/x/high.csv",
                 medium_csv="/x/medium.csv",
+                mechanism_family_csv="/x/family.csv",
                 db_path="/x/live.db",
                 limit=17,
             )
         self.assertEqual(captured["backup_path"], "/x/backup.db")
         self.assertEqual(captured["high_priority_csv"], "/x/high.csv")
         self.assertEqual(captured["medium_csv"], "/x/medium.csv")
+        self.assertEqual(captured["mechanism_family_csv"], "/x/family.csv")
         self.assertEqual(captured["db_path"], "/x/live.db")
         self.assertEqual(captured["limit"], 17)
+
+    def test_mechanism_family_csv_defaults_to_none_when_omitted(self) -> None:
+        captured: dict[str, Any] = {}
+
+        def fake(*, backup_path, high_priority_csv, medium_csv,
+                 mechanism_family_csv=None, db_path, limit):
+            captured["mechanism_family_csv"] = mechanism_family_csv
+            return _validation_run_payload()
+
+        with patch.object(cli, "_run_validation_run", side_effect=fake):
+            cli.summarize_repaired_cohort_validation(
+                backup_path="/x/backup.db",
+                high_priority_csv="/x/high.csv",
+                medium_csv="/x/medium.csv",
+                db_path=None,
+                limit=10,
+            )
+        self.assertIsNone(captured["mechanism_family_csv"])
 
 
 # ---------------------------------------------------------------------------
@@ -540,6 +561,41 @@ class TestCLI(unittest.TestCase):
             ], out=out)
         self.assertEqual(rc, 0)
         self.assertTrue(out.getvalue())
+
+    def test_cli_accepts_mechanism_family_csv_flag(self) -> None:
+        captured: dict[str, Any] = {}
+
+        def fake(*, backup_path, high_priority_csv, medium_csv,
+                 mechanism_family_csv=None, db_path, limit):
+            captured["mechanism_family_csv"] = mechanism_family_csv
+            return _validation_run_payload(
+                repaired_clean_event_ids=[30, 40, 46, 60, 73],
+                examples=[
+                    _example(event_id=30, sar=+1.4),
+                    _example(event_id=40, sar=+2.1),
+                    _example(event_id=46, sar=+0.5),
+                    _example(event_id=60, sar=+1.2),
+                    _example(event_id=73, sar=-0.8),
+                ],
+            )
+
+        out = StringIO()
+        with patch.object(cli, "_run_validation_run", side_effect=fake):
+            rc = cli.main([
+                "--json",
+                "--backup-path", "/x/backup.db",
+                "--high-priority-csv", "/x/high.csv",
+                "--medium-csv", "/x/medium.csv",
+                "--mechanism-family-csv", "/x/family.csv",
+                "--limit", "5",
+            ], out=out)
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["mechanism_family_csv"], "/x/family.csv")
+        parsed = json.loads(out.getvalue())
+        self.assertEqual(
+            sorted(parsed["repaired_clean_event_ids"]),
+            [30, 40, 46, 60, 73],
+        )
 
 
 if __name__ == "__main__":

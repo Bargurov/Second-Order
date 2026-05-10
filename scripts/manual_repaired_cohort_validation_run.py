@@ -330,11 +330,12 @@ def _mechanism_family_by_event_id(
 
 def run_manual_repaired_cohort_validation(
     *,
-    backup_path:        str | None     = None,
-    high_priority_csv:  str | None     = None,
-    medium_csv:         str | None     = None,
-    db_path:            str | None     = None,
-    limit:              int            = _DEFAULT_LIMIT,
+    backup_path:          str | None = None,
+    high_priority_csv:    str | None = None,
+    medium_csv:           str | None = None,
+    mechanism_family_csv: str | None = None,
+    db_path:              str | None = None,
+    limit:                int        = _DEFAULT_LIMIT,
 ) -> dict[str, Any]:
     """Run the temp-copy repaired-cohort validation.  Returns the
     14-key payload described in the module docstring.
@@ -372,6 +373,12 @@ def run_manual_repaired_cohort_validation(
         errors.append("--medium-csv is required")
     elif not Path(medium_csv).exists():
         errors.append(f"--medium-csv does not exist: {medium_csv}")
+    if mechanism_family_csv and not Path(mechanism_family_csv).exists():
+        # The mechanism-family CSV is optional; only assert existence
+        # when the operator supplied a path.
+        errors.append(
+            f"--mechanism-family-csv does not exist: {mechanism_family_csv}"
+        )
     if errors:
         return _envelope(
             ok=False, repaired_clean_event_ids=repaired_clean_event_ids,
@@ -390,7 +397,9 @@ def run_manual_repaired_cohort_validation(
             errors=errors, warnings=warnings,
         )
 
-    # Step 3: parse + categorize both CSVs.
+    # Step 3: parse + categorize the high/medium ticker CSVs.  The
+    # optional mechanism-family CSV uses a different schema and is
+    # parsed via lazy-imported helpers from the apply-smoke module.
     high_rows, parse_errs_h, parse_warns_h = _parse_csv_if_present(
         high_priority_csv,
     )
@@ -404,13 +413,42 @@ def run_manual_repaired_cohort_validation(
 
     high_categorized = _categorize_rows(high_rows, errors, warnings)
     medium_categorized = _categorize_rows(medium_rows, errors, warnings)
-    all_categorized = list(high_categorized) + list(medium_categorized)
 
-    # Step 4: CSV-driven mechanism_family decisions; medium overrides
-    # high on conflict (last write wins) — mirrors the smoke pattern.
+    # Step 3b: optional third CSV — mechanism_family_repair_packet.csv.
+    # Backward compat: when omitted, behaviour is byte-identical to
+    # the original two-CSV path.  Lazy import avoids a cycle with
+    # mechanism_family_repair_apply_smoke (which imports
+    # ``_adjusted_clean_event_ids`` from this module).
+    family_excluded:  list[dict[str, Any]] = []
+    family_decisions: dict[int, str] = {}
+    if mechanism_family_csv:
+        from scripts.mechanism_family_repair_apply_smoke import (
+            _classify_family_rows,
+            _parse_family_csv,
+        )
+
+        family_rows, parse_errs_f, parse_warns_f = _parse_family_csv(
+            mechanism_family_csv,
+        )
+        errors.extend(parse_errs_f)
+        warnings.extend(parse_warns_f)
+        family_excluded, family_decisions = _classify_family_rows(
+            family_rows, errors, warnings,
+        )
+
+    all_categorized = (
+        list(high_categorized)
+        + list(medium_categorized)
+        + list(family_excluded)
+    )
+
+    # Step 4: CSV-driven mechanism_family decisions.  Order: high →
+    # medium → family.  Last write wins on conflict (the family CSV
+    # is the most recent operator decision, mirroring the smoke
+    # merge pattern).
     high_mf = _extract_csv_mechanism_family_decisions(high_rows)
     medium_mf = _extract_csv_mechanism_family_decisions(medium_rows)
-    decisions: dict[int, str] = {**high_mf, **medium_mf}
+    decisions: dict[int, str] = {**high_mf, **medium_mf, **family_decisions}
 
     # Step 5: combined fetch plan.
     plan = _plan_per_ticker_windows(
@@ -1015,6 +1053,18 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--mechanism-family-csv", dest="mechanism_family_csv",
+        default=None, required=False,
+        help=(
+            "Optional path to the mechanism-family repair packet "
+            "CSV (``mechanism_family_repair_packet.csv``).  When "
+            "supplied, its operator-completed mechanism_family "
+            "decisions and exclusion rows are applied to the SAME "
+            "temp DB before validation runs.  Omitting this flag "
+            "preserves the runner's original two-CSV behaviour."
+        ),
+    )
+    parser.add_argument(
         "--db-path", dest="db_path", default=None,
         help=(
             "Optional path to the LIVE events DB.  Hashed read-only "
@@ -1056,6 +1106,7 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
         backup_path=args.backup_path,
         high_priority_csv=args.high_priority_csv,
         medium_csv=args.medium_csv,
+        mechanism_family_csv=args.mechanism_family_csv,
         db_path=db_path,
         limit=int(args.limit),
     )

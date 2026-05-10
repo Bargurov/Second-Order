@@ -1087,5 +1087,369 @@ class TestCLI(unittest.TestCase):
             self.assertIn(k, parsed)
 
 
+# ---------------------------------------------------------------------------
+# Optional --mechanism-family-csv (third repair input)
+#
+# When the operator passes a completed mechanism_family_repair_packet.csv
+# alongside the high-priority + medium ticker repair CSVs, the runner
+# applies its mechanism-family decisions and exclusion rows to the SAME
+# temp DB before validation runs.  When the param is omitted the
+# runner's two-CSV behaviour is preserved byte-for-byte.
+# ---------------------------------------------------------------------------
+
+
+_FAMILY_CSV_COLUMNS = (
+    "event_id", "headline", "event_date",
+    "current_primary_ticker", "current_benchmark",
+    "flags", "repair_priority", "reason",
+    "proposed_mechanism_family", "mechanism_rationale",
+    "exclude_reason",
+)
+
+
+def _write_family_csv(rows: list[dict], *, suffix: str = "fm_csv") -> str:
+    path = os.path.join(
+        tempfile.gettempdir(),
+        f"{suffix}_{uuid.uuid4().hex}.csv",
+    )
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv_module.writer(fh, lineterminator="\n")
+        writer.writerow(_FAMILY_CSV_COLUMNS)
+        for r in rows:
+            writer.writerow([str(r.get(c, "")) for c in _FAMILY_CSV_COLUMNS])
+    return path
+
+
+def _family_row(
+    *, event_id: int,
+    proposed_mechanism_family: str = "",
+    exclude_reason: str = "",
+    headline: str = "h",
+    event_date: str = "2026-04-05",
+    current_primary_ticker: str = "AAPL",
+    current_benchmark: str = "SPY",
+) -> dict:
+    return {
+        "event_id":                  event_id,
+        "headline":                  headline,
+        "event_date":                event_date,
+        "current_primary_ticker":    current_primary_ticker,
+        "current_benchmark":         current_benchmark,
+        "flags":                     "mechanism_family_none",
+        "repair_priority":           "high",
+        "reason":                    "Manual review candidate",
+        "proposed_mechanism_family": proposed_mechanism_family,
+        "mechanism_rationale":       "",
+        "exclude_reason":            exclude_reason,
+    }
+
+
+class TestMechanismFamilyCsvIntegration(unittest.TestCase):
+    """End-to-end: when a mechanism_family_repair_packet CSV is
+    supplied alongside the high/medium ticker CSVs, the runner applies
+    its decisions + exclusions to the same temp DB and the validation
+    pipeline sees the family-CSV-only event_ids in the repaired cohort.
+    """
+
+    def test_family_csv_decisions_land_on_temp_db(self) -> None:
+        backup = _make_temp_db(seed_events=[
+            {"id": 30, "event_date": "2026-04-05",
+             "market_tickers": '[{"symbol":"XOM"}]'},
+            {"id": 40, "event_date": "2026-04-05",
+             "market_tickers": '[{"symbol":"BDRY"}]'},
+        ])
+        high   = _write_csv([])
+        medium = _write_csv([])
+        family = _write_family_csv([
+            _family_row(event_id=30,
+                        proposed_mechanism_family="supply_shock"),
+            _family_row(event_id=40,
+                        proposed_mechanism_family="commodity_squeeze"),
+        ])
+        try:
+            patches = _patch_seams(
+                before_clean_event_ids=[],
+                after_clean_payload={
+                    "clean_fully_ready_count":     2,
+                    "clean_fully_ready_event_ids": [30, 40],
+                    "excluded_fully_ready_examples": [],
+                },
+                # Capture the post-apply temp_path so we can inspect
+                # the mutations after the run completes.
+                validation_payload=_validation_payload(records=[
+                    _validation_record(event_id=30, ticker="XOM",
+                                       mechanism_family="supply_shock",
+                                       horizon=5),
+                    _validation_record(event_id=40, ticker="BDRY",
+                                       mechanism_family="commodity_squeeze",
+                                       horizon=5),
+                ]),
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                result = _run(
+                    backup_path=backup,
+                    high_priority_csv=high, medium_csv=medium,
+                    mechanism_family_csv=family,
+                )
+        finally:
+            os.unlink(backup); os.unlink(high)
+            os.unlink(medium); os.unlink(family)
+        self.assertIs(result["ok"], True)
+        self.assertEqual(
+            sorted(result["repaired_clean_event_ids"]), [30, 40],
+        )
+        # Inspect the temp DB to verify the family decisions actually
+        # landed (mechanism_family column updated for both events).
+        temp_path = None
+        for w in result.get("warnings", []):
+            if "Temp copy at " in w:
+                temp_path = w.split("Temp copy at ", 1)[1].strip()
+                break
+        self.assertIsNotNone(temp_path)
+        try:
+            conn = sqlite3.connect(temp_path)
+            try:
+                rows = dict(conn.execute(
+                    "SELECT id, mechanism_family FROM events "
+                    "WHERE id IN (30, 40)"
+                ).fetchall())
+                self.assertEqual(rows[30], "supply_shock")
+                self.assertEqual(rows[40], "commodity_squeeze")
+            finally:
+                conn.close()
+        finally:
+            _cleanup_temp_copy(result)
+
+    def test_family_csv_exclusion_rows_flip_low_signal(self) -> None:
+        backup = _make_temp_db(seed_events=[
+            {"id": 30, "event_date": "2026-04-05",
+             "market_tickers": '[{"symbol":"XOM"}]'},
+            {"id": 44, "event_date": "2026-04-06",
+             "market_tickers": '[{"symbol":"BDRY"}]'},
+        ])
+        high   = _write_csv([])
+        medium = _write_csv([])
+        family = _write_family_csv([
+            _family_row(event_id=30,
+                        proposed_mechanism_family="supply_shock"),
+            _family_row(event_id=44,
+                        exclude_reason="Duplicate of event 40"),
+        ])
+        try:
+            patches = _patch_seams(
+                before_clean_event_ids=[],
+                after_clean_payload={
+                    "clean_fully_ready_count":     1,
+                    "clean_fully_ready_event_ids": [30],
+                    "excluded_fully_ready_examples": [],
+                },
+                validation_payload=_validation_payload(records=[
+                    _validation_record(event_id=30, ticker="XOM",
+                                       mechanism_family="supply_shock",
+                                       horizon=5),
+                ]),
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                result = _run(
+                    backup_path=backup,
+                    high_priority_csv=high, medium_csv=medium,
+                    mechanism_family_csv=family,
+                )
+        finally:
+            os.unlink(backup); os.unlink(high)
+            os.unlink(medium); os.unlink(family)
+        self.assertIs(result["ok"], True)
+        self.assertIn(44, result["excluded_event_ids"])
+        # Verify low_signal=1 actually landed on the temp DB for 44.
+        temp_path = None
+        for w in result.get("warnings", []):
+            if "Temp copy at " in w:
+                temp_path = w.split("Temp copy at ", 1)[1].strip()
+                break
+        self.assertIsNotNone(temp_path)
+        try:
+            conn = sqlite3.connect(temp_path)
+            try:
+                row = conn.execute(
+                    "SELECT low_signal FROM events WHERE id = 44"
+                ).fetchone()
+                self.assertEqual(row[0], 1)
+            finally:
+                conn.close()
+        finally:
+            _cleanup_temp_copy(result)
+
+    def test_family_csv_combines_with_high_and_medium(self) -> None:
+        # Realistic three-CSV scenario mirroring the live verification:
+        # high retags 46 DRIV→MS; medium adds 60 + 73 supply_shock;
+        # family adds 30 + 40 — final cohort has 5 events.
+        backup = _make_temp_db(seed_events=[
+            {"id": 46, "event_date": "2026-04-06",
+             "market_tickers": '[{"symbol":"DRIV"}]'},
+            {"id": 60, "event_date": "2026-04-08",
+             "market_tickers": '[{"symbol":"XOM"}]'},
+            {"id": 73, "event_date": "2026-04-06",
+             "market_tickers": '[{"symbol":"XOM"}]'},
+            {"id": 30, "event_date": "2026-04-05",
+             "market_tickers": '[{"symbol":"XOM"}]'},
+            {"id": 40, "event_date": "2026-04-05",
+             "market_tickers": '[{"symbol":"BDRY"}]'},
+        ])
+        high = _write_csv([
+            _csv_row(event_id=46, proposed_primary_ticker="MS",
+                     proposed_benchmark="SPY",
+                     proposed_mechanism_family="bank_regulatory_capital_relief",
+                     event_date="2026-04-06"),
+        ])
+        medium = _write_csv([
+            _csv_row(event_id=60, proposed_primary_ticker="XOM",
+                     proposed_benchmark="XLE",
+                     proposed_mechanism_family="supply_shock",
+                     event_date="2026-04-08"),
+            _csv_row(event_id=73, proposed_primary_ticker="XOM",
+                     proposed_benchmark="XLE",
+                     proposed_mechanism_family="supply_shock",
+                     event_date="2026-04-06"),
+        ])
+        family = _write_family_csv([
+            _family_row(event_id=30,
+                        proposed_mechanism_family="supply_shock"),
+            _family_row(event_id=40,
+                        proposed_mechanism_family="commodity_squeeze"),
+        ])
+        try:
+            patches = _patch_seams(
+                before_clean_event_ids=[],
+                after_clean_payload={
+                    "clean_fully_ready_count":     5,
+                    "clean_fully_ready_event_ids": [30, 40, 46, 60, 73],
+                    "excluded_fully_ready_examples": [],
+                },
+                fetch_rows=[_bar("2026-03-01"), _bar("2026-04-01")],
+                validation_payload=_validation_payload(records=[
+                    _validation_record(event_id=46, ticker="MS",
+                                       mechanism_family="bank_regulatory_capital_relief",
+                                       horizon=5),
+                    _validation_record(event_id=60, ticker="XOM",
+                                       mechanism_family="supply_shock",
+                                       horizon=5),
+                    _validation_record(event_id=73, ticker="XOM",
+                                       mechanism_family="supply_shock",
+                                       horizon=5),
+                    _validation_record(event_id=30, ticker="XOM",
+                                       mechanism_family="supply_shock",
+                                       horizon=5),
+                    _validation_record(event_id=40, ticker="BDRY",
+                                       mechanism_family="commodity_squeeze",
+                                       horizon=5),
+                ]),
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                result = _run(
+                    backup_path=backup,
+                    high_priority_csv=high, medium_csv=medium,
+                    mechanism_family_csv=family,
+                )
+        finally:
+            os.unlink(backup); os.unlink(high)
+            os.unlink(medium); os.unlink(family)
+            _cleanup_temp_copy(result)
+        self.assertIs(result["ok"], True)
+        self.assertEqual(
+            sorted(result["repaired_clean_event_ids"]),
+            [30, 40, 46, 60, 73],
+        )
+        self.assertEqual(result["events_evaluated"], 5)
+        self.assertEqual(result["records_count"], 5)
+
+
+class TestMechanismFamilyCsvBackwardCompat(unittest.TestCase):
+    """Omitting --mechanism-family-csv (the new optional input) must
+    preserve the runner's existing two-CSV behaviour byte-for-byte —
+    no third CSV ⇒ no family-CSV plumbing fires."""
+
+    def test_omitting_param_preserves_two_csv_behaviour(self) -> None:
+        backup = _make_temp_db(seed_events=[
+            {"id": 46, "event_date": "2026-04-06",
+             "market_tickers": '[{"symbol":"DRIV"}]'},
+        ])
+        high = _write_csv([
+            _csv_row(event_id=46, proposed_primary_ticker="MS",
+                     proposed_benchmark="SPY",
+                     proposed_mechanism_family="bank_regulatory_capital_relief",
+                     event_date="2026-04-06"),
+        ])
+        medium = _write_csv([])
+        try:
+            patches = _patch_seams(
+                before_clean_event_ids=[],
+                after_clean_payload={
+                    "clean_fully_ready_count":     1,
+                    "clean_fully_ready_event_ids": [46],
+                    "excluded_fully_ready_examples": [],
+                },
+                fetch_rows=[_bar("2026-04-01")],
+                validation_payload=_validation_payload(records=[
+                    _validation_record(event_id=46, ticker="MS",
+                                       mechanism_family="bank_regulatory_capital_relief",
+                                       horizon=5),
+                ]),
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                # No mechanism_family_csv kwarg.
+                result = _run(
+                    backup_path=backup,
+                    high_priority_csv=high, medium_csv=medium,
+                )
+        finally:
+            os.unlink(backup); os.unlink(high); os.unlink(medium)
+            _cleanup_temp_copy(result)
+        self.assertIs(result["ok"], True)
+        self.assertEqual(result["repaired_clean_event_ids"], [46])
+
+
+class TestMechanismFamilyCsvCli(unittest.TestCase):
+    def test_cli_accepts_mechanism_family_csv_flag(self) -> None:
+        backup = _make_temp_db(seed_events=[
+            {"id": 30, "event_date": "2026-04-05",
+             "market_tickers": '[{"symbol":"XOM"}]'},
+        ])
+        high   = _write_csv([])
+        medium = _write_csv([])
+        family = _write_family_csv([
+            _family_row(event_id=30,
+                        proposed_mechanism_family="supply_shock"),
+        ])
+        out = StringIO()
+        try:
+            patches = _patch_seams(
+                before_clean_event_ids=[],
+                after_clean_payload={
+                    "clean_fully_ready_count":     1,
+                    "clean_fully_ready_event_ids": [30],
+                    "excluded_fully_ready_examples": [],
+                },
+                validation_payload=_validation_payload(records=[
+                    _validation_record(event_id=30, ticker="XOM",
+                                       mechanism_family="supply_shock",
+                                       horizon=5),
+                ]),
+            )
+            with patches[0], patches[1], patches[2], patches[3]:
+                rc = cli.main([
+                    "--json", "--backup-path", backup,
+                    "--high-priority-csv", high,
+                    "--medium-csv", medium,
+                    "--mechanism-family-csv", family,
+                    "--limit", "5",
+                ], out=out)
+        finally:
+            os.unlink(backup); os.unlink(high)
+            os.unlink(medium); os.unlink(family)
+        self.assertEqual(rc, 0)
+        parsed = json.loads(out.getvalue())
+        self.assertEqual(parsed["repaired_clean_event_ids"], [30])
+
+
 if __name__ == "__main__":
     unittest.main()

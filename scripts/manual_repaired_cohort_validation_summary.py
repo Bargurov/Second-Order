@@ -109,6 +109,7 @@ def _run_validation_run(
     *, backup_path: str | None,
     high_priority_csv: str | None,
     medium_csv: str | None,
+    mechanism_family_csv: str | None = None,
     db_path: str | None,
     limit: int,
 ) -> dict[str, Any]:
@@ -116,6 +117,9 @@ def _run_validation_run(
     the operator's inputs and return its full payload.  Tests patch
     this seam to drive the summary without re-running the entire
     pipeline.
+
+    ``mechanism_family_csv`` is optional — when omitted the underlying
+    runner falls back to its original two-CSV behaviour.
     """
     from scripts.manual_repaired_cohort_validation_run import (
         run_manual_repaired_cohort_validation,
@@ -125,6 +129,7 @@ def _run_validation_run(
         backup_path=backup_path,
         high_priority_csv=high_priority_csv,
         medium_csv=medium_csv,
+        mechanism_family_csv=mechanism_family_csv,
         db_path=db_path,
         limit=limit,
     )
@@ -137,17 +142,22 @@ def _run_validation_run(
 
 def summarize_repaired_cohort_validation(
     *,
-    backup_path:        str | None     = None,
-    high_priority_csv:  str | None     = None,
-    medium_csv:         str | None     = None,
-    db_path:            str | None     = None,
-    limit:              int            = _DEFAULT_LIMIT,
-    alpha:              float          = _DEFAULT_ALPHA,
-    mechanism_direction: dict[str, int] | None = None,
+    backup_path:          str | None = None,
+    high_priority_csv:    str | None = None,
+    medium_csv:           str | None = None,
+    mechanism_family_csv: str | None = None,
+    db_path:              str | None = None,
+    limit:                int        = _DEFAULT_LIMIT,
+    alpha:                float      = _DEFAULT_ALPHA,
+    mechanism_direction:  dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """Run the validation pipeline (via the seam) and distill its
     output into the 8-key summary.  See module docstring for the full
     contract.
+
+    ``mechanism_family_csv`` is optional and forwards to the runner;
+    when omitted the runner's original two-CSV behaviour is preserved
+    byte-for-byte.
     """
     capped_limit = max(int(limit), 0)
     direction_map = dict(mechanism_direction or {})
@@ -156,6 +166,7 @@ def summarize_repaired_cohort_validation(
         backup_path=backup_path,
         high_priority_csv=high_priority_csv,
         medium_csv=medium_csv,
+        mechanism_family_csv=mechanism_family_csv,
         db_path=db_path,
         limit=capped_limit,
     )
@@ -590,6 +601,15 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help="Path to the medium-batch manual ticker repair CSV.",
     )
     parser.add_argument(
+        "--mechanism-family-csv", dest="mechanism_family_csv",
+        default=None,
+        help=(
+            "Optional path to the mechanism-family repair packet CSV.  "
+            "Forwarded to the runner so its decisions and exclusions "
+            "are applied to the same temp DB before validation."
+        ),
+    )
+    parser.add_argument(
         "--db-path", dest="db_path", default=None,
         help=(
             "Optional path to the LIVE events DB.  Hashed read-only "
@@ -627,6 +647,7 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
         backup_path=args.backup_path,
         high_priority_csv=args.high_priority_csv,
         medium_csv=args.medium_csv,
+        mechanism_family_csv=args.mechanism_family_csv,
         db_path=args.db_path,
         limit=int(args.limit),
         alpha=float(args.alpha),
