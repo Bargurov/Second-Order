@@ -340,6 +340,51 @@ def init_db() -> None:
             ON headline_registry (cluster_id)
         """)
 
+        # Curated candidate staging — operator-facing intake table for
+        # events that have been surfaced from existing read-only repair
+        # / expansion / short-horizon reports and are awaiting manual
+        # review BEFORE any analysis or backtest runs against them.
+        # Conservative by construction: nothing here is "validated" —
+        # status values are limited to {draft, needs_review,
+        # ready_for_validation, excluded}; ``primary_ticker``,
+        # ``benchmark_ticker``, and ``mechanism_family`` are filled
+        # ONLY when those fields are already present in the upstream
+        # report payload.  Missing required fields land in
+        # ``validation_errors`` (JSON-encoded list of strings) so the
+        # operator can triage gaps without the API guessing.
+        # Composite UNIQUE(source_event_id, source) so the same archive
+        # event_id can legitimately surface from multiple upstream
+        # report sources without colliding.  See routes/curated.py.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS curated_candidates (
+                id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_event_id       INTEGER NOT NULL,
+                event_date            TEXT,
+                headline              TEXT,
+                source_url            TEXT,
+                primary_ticker        TEXT,
+                benchmark_ticker      TEXT,
+                mechanism_family      TEXT,
+                mechanism_description TEXT,
+                predicted_direction   TEXT,
+                prediction_rationale  TEXT,
+                curator_notes         TEXT,
+                status                TEXT NOT NULL DEFAULT 'draft',
+                source                TEXT NOT NULL,
+                created_at            TEXT NOT NULL,
+                validation_errors     TEXT NOT NULL DEFAULT '[]',
+                UNIQUE(source_event_id, source)
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_curated_candidates_status
+            ON curated_candidates (status)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_curated_candidates_source
+            ON curated_candidates (source)
+        """)
+
         # Saved study definitions — persistent, deterministic research
         # configurations (cohort comparison, correlation study, scenario
         # pack research, cascade view).  Stores only inputs/filters, never
