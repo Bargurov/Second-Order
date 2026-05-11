@@ -629,9 +629,15 @@ class _TempDbBase(unittest.TestCase):
         # 35 calendar days ago lands the +20bd horizon ~5 weeks earlier
         # than today, well below the today threshold.
         event_d = today - timedelta(days=35)
-        # cache_max sits 10 calendar days behind today — enough to give
+        # cache_max sits ~10 calendar days behind today — enough to give
         # 1d and 5d closes after event_d, but short of event_d+20bd.
+        # Roll back onto the latest business day so the expected
+        # ``cache_max_date`` matches what the business-day-only planting
+        # loop below actually inserts (the seam reads MAX(date) from the
+        # price_cache table, which never lands on a weekend here).
         cache_max = today - timedelta(days=10)
+        while cache_max.weekday() >= 5:
+            cache_max -= timedelta(days=1)
 
         self._event_date_str  = event_d.isoformat()
         self._cache_max_str   = cache_max.isoformat()
