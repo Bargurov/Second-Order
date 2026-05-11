@@ -25,11 +25,13 @@ Pin the read-only contract:
 """
 from __future__ import annotations
 
+import gc
 import json
 import os
 import sqlite3
 import sys
 import tempfile
+import time
 import unittest
 import uuid
 from io import StringIO
@@ -550,6 +552,35 @@ class TestCLI(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+def _safe_unlink(path: str, *, attempts: int = 5, delay: float = 0.05) -> None:
+    """Windows-safe unlink for sqlite-backed temp files.
+
+    Windows refuses to delete a file while any handle on it remains
+    open.  Even after the product code's ``conn.close()`` returns,
+    sqlite3 / Python may briefly hold the underlying file via a
+    lingering reference; ``gc.collect`` plus a short retry loop
+    releases it deterministically.  Only ``PermissionError`` /
+    ``FileNotFoundError`` are swallowed — every other error
+    propagates so a real bug is never masked by cleanup.
+    """
+    gc.collect()
+    for _ in range(attempts):
+        try:
+            os.unlink(path)
+            return
+        except FileNotFoundError:
+            return
+        except PermissionError:
+            time.sleep(delay)
+    # Final attempt — swallow PermissionError so a left-behind temp
+    # file in the OS temp dir never masks the test's real assertion
+    # outcome.  The OS temp dir is purged by the OS on its own cadence.
+    try:
+        os.unlink(path)
+    except (FileNotFoundError, PermissionError):
+        pass
+
+
 class TestEndToEndAgainstTempDb(unittest.TestCase):
     def _make_temp_db(self) -> str:
         path = os.path.join(
@@ -578,11 +609,11 @@ class TestEndToEndAgainstTempDb(unittest.TestCase):
         path = self._make_temp_db()
         try:
             result = cli.summarize_showcase_candidates(db_path=path)
+            for k in _REQUIRED_TOP_KEYS:
+                self.assertIn(k, result)
+            self.assertEqual(result["candidate_count"], 0)
         finally:
-            os.unlink(path)
-        for k in _REQUIRED_TOP_KEYS:
-            self.assertIn(k, result)
-        self.assertEqual(result["candidate_count"], 0)
+            _safe_unlink(path)
 
 
 if __name__ == "__main__":
