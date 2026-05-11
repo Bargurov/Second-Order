@@ -17,6 +17,10 @@ Pin the contract:
 * The hardcoded staged cohort is exactly 5 events: 30, 40, 46, 60, 73,
   with operator-supplied metadata (primary_ticker, benchmark_ticker,
   mechanism_family, etc).
+* Each example carries the runner's per-record verdict fields
+  ``raw_p_candidate`` / ``fdr_significant`` / ``verdict`` verbatim.
+  The smoke never recomputes statistics — it propagates whatever
+  the validation runner produced.
 * Live DB is hashed before/after — bytes never change.
 * When ``--output`` is supplied, the JSON is written to that path.
   When omitted, no file is written.
@@ -186,7 +190,16 @@ def _validation_payload(
 def _validation_example(
     *, source_event_id: int, horizon: int = 5,
     sar: float = 1.0, p_value: float = 0.10, fdr_q: float = 0.20,
+    raw_p_candidate: bool = False,
+    fdr_significant: bool = False,
+    verdict: str = "inconclusive_fdr",
+    interpretation: str = "not_significant",
 ) -> dict:
+    """Synthetic example mirroring the validation runner's 16-field
+    shape (13 numeric/metadata fields + raw_p_candidate /
+    fdr_significant / verdict).  Defaults model an inconclusive
+    record; pass overrides to model raw-p-only or FDR-significant.
+    """
     return {
         "source_event_id":  source_event_id,
         "headline":         f"hl {source_event_id}",
@@ -200,7 +213,10 @@ def _validation_example(
         "ci_high":          0.05,
         "p_value":          p_value,
         "fdr_q":            fdr_q,
-        "interpretation":   "no_evidence",
+        "interpretation":   interpretation,
+        "raw_p_candidate":  raw_p_candidate,
+        "fdr_significant":  fdr_significant,
+        "verdict":          verdict,
     }
 
 
@@ -401,6 +417,105 @@ class TestOutputReshape(unittest.TestCase):
         self.assertEqual(len(report["examples"]), 1)
         self.assertEqual(len(report["excluded_candidates"]), 1)
         self.assertIn("sample warning", report["warnings"])
+
+
+# ---------------------------------------------------------------------------
+# Verdict-field propagation — the smoke must surface the runner's
+# per-record raw-p / FDR split fields verbatim without recomputing
+# statistics.
+# ---------------------------------------------------------------------------
+
+
+class TestVerdictFieldPropagation(unittest.TestCase):
+    def test_raw_p_only_example_propagates_validated_raw_only(self) -> None:
+        # Event 46-style example: raw-p clears, FDR does not, upstream
+        # interpretation is still ``not_significant``.  The verdict
+        # field must surface ``validated_raw_only`` so a demo reader
+        # sees the raw-p signal without recomputing anything.
+        fixture = _make_fixture_db(list(_REPAIRED_COHORT_IDS))
+        try:
+            with _patch_validation(_validation_payload(
+                examples=[_validation_example(
+                    source_event_id=46,
+                    p_value=0.04, fdr_q=0.20,
+                    raw_p_candidate=True,
+                    fdr_significant=False,
+                    verdict="validated_raw_only",
+                    interpretation="not_significant",
+                )],
+            )):
+                report = cli.smoke_curated_stage_validate(db_path=fixture)
+        finally:
+            os.unlink(fixture)
+        self.assertEqual(len(report["examples"]), 1)
+        ex = report["examples"][0]
+        self.assertTrue(ex["raw_p_candidate"])
+        self.assertFalse(ex["fdr_significant"])
+        self.assertEqual(ex["verdict"], "validated_raw_only")
+        # The upstream interpretation is preserved alongside.
+        self.assertEqual(ex["interpretation"], "not_significant")
+
+    def test_each_example_carries_three_verdict_fields(self) -> None:
+        fixture = _make_fixture_db(list(_REPAIRED_COHORT_IDS))
+        try:
+            with _patch_validation(_validation_payload(
+                examples=[
+                    _validation_example(
+                        source_event_id=30,
+                        verdict="inconclusive_fdr",
+                    ),
+                    _validation_example(
+                        source_event_id=46, p_value=0.04, fdr_q=0.20,
+                        raw_p_candidate=True,
+                        verdict="validated_raw_only",
+                    ),
+                    _validation_example(
+                        source_event_id=73, p_value=0.01, fdr_q=0.02,
+                        raw_p_candidate=True,
+                        fdr_significant=True,
+                        verdict="fdr_significant",
+                    ),
+                ],
+            )):
+                report = cli.smoke_curated_stage_validate(db_path=fixture)
+        finally:
+            os.unlink(fixture)
+        for ex in report["examples"]:
+            for field in ("raw_p_candidate", "fdr_significant", "verdict"):
+                self.assertIn(field, ex,
+                              f"propagated example missing {field}: {ex!r}")
+
+    def test_verdict_never_calls_raw_p_only_fdr_significant(self) -> None:
+        # Invariant check across the propagated example set.  No
+        # surfaced row may both claim ``validated_raw_only`` AND
+        # ``fdr_significant=True`` — FDR is the strict bar.
+        fixture = _make_fixture_db(list(_REPAIRED_COHORT_IDS))
+        try:
+            with _patch_validation(_validation_payload(
+                examples=[
+                    _validation_example(
+                        source_event_id=46, p_value=0.04, fdr_q=0.20,
+                        raw_p_candidate=True,
+                        fdr_significant=False,
+                        verdict="validated_raw_only",
+                    ),
+                    _validation_example(
+                        source_event_id=73, p_value=0.045, fdr_q=0.18,
+                        raw_p_candidate=True,
+                        fdr_significant=False,
+                        verdict="validated_raw_only",
+                    ),
+                ],
+            )):
+                report = cli.smoke_curated_stage_validate(db_path=fixture)
+        finally:
+            os.unlink(fixture)
+        for ex in report["examples"]:
+            if ex["verdict"] == "validated_raw_only":
+                self.assertFalse(
+                    ex["fdr_significant"],
+                    f"raw-p-only row claimed fdr_significant: {ex!r}",
+                )
 
 
 # ---------------------------------------------------------------------------

@@ -71,6 +71,15 @@ Output contract::
 The output dict carries EXACTLY these 10 keys — no ``ok`` envelope
 (by spec).  The ``errors`` list is non-empty when something failed.
 
+Each example in the ``examples`` list inherits the runner's 16-field
+shape, which now includes the three demo-facing verdict fields
+``raw_p_candidate`` / ``fdr_significant`` / ``verdict``.  The smoke
+propagates these fields verbatim — it never recomputes statistics.
+A raw-p-only record (event 46- or 73-style) lands with
+``verdict="validated_raw_only"`` while still carrying the upstream
+``interpretation="not_significant"`` label, so a demo reader sees
+the raw-p / FDR split without weakening FDR discipline.
+
 Out of scope (deliberately)
 ---------------------------
 

@@ -59,15 +59,40 @@ Output contract::
       "recommended_next_action":  str,
     }
 
-Each example carries::
+Each example carries 16 fields::
 
     source_event_id, headline, primary_ticker, benchmark_ticker,
     mechanism_family, horizon, abnormal_return, sar, ci_low,
-    ci_high, p_value, fdr_q, interpretation
+    ci_high, p_value, fdr_q, interpretation,
+    raw_p_candidate, fdr_significant, verdict
 
 The curated row is the source of truth for ``primary_ticker``,
 ``benchmark_ticker``, ``mechanism_family``, and ``headline``; the
 validation pipeline supplies the numerical fields.
+
+The three new verdict fields make a per-record raw-p/FDR split
+visible to a demo reader without weakening FDR discipline:
+
+  * ``raw_p_candidate`` — True iff ``p_value`` is a finite real and
+    ``p_value <= DEFAULT_ALPHA`` (matches the raw-p check the
+    repaired-cohort summary uses).  False when ``p_value`` is None,
+    NaN, or not a real number.
+  * ``fdr_significant`` — True iff
+    :func:`stats.stat_validation.is_statistically_significant`
+    clears.  Never True for raw-p-only records — FDR is the strict
+    bar.
+  * ``verdict`` — closed vocabulary, evaluated top-down:
+    - ``fdr_significant``     — ``fdr_significant`` is True.
+    - ``validated_raw_only``  — raw-p clears but FDR does not.
+      Never reached when ``fdr_significant`` is True.
+    - ``inconclusive_fdr``    — at least one of ``p_value`` /
+      ``fdr_q`` is a finite real, but neither bar clears.
+    - ``not_evaluable``       — both ``p_value`` and ``fdr_q`` are
+      missing / non-numeric.
+
+The ``interpretation`` field continues to surface the validation
+pipeline's signal label; the three new fields are the clearer
+demo-facing fields.
 
 Out of scope (deliberately)
 ---------------------------
@@ -95,6 +120,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sqlite3
 import sys
 from pathlib import Path
@@ -106,6 +132,15 @@ if str(ROOT) not in sys.path:
 
 
 _DEFAULT_LIMIT: int = 50
+
+
+# Closed verdict vocabulary surfaced on each example.  Ordered by the
+# verdict ladder in the module docstring — fdr_significant is the
+# strictest bar; not_evaluable is the absent-data case.
+_VERDICT_FDR_SIGNIFICANT:   str = "fdr_significant"
+_VERDICT_VALIDATED_RAW_ONLY: str = "validated_raw_only"
+_VERDICT_INCONCLUSIVE_FDR:  str = "inconclusive_fdr"
+_VERDICT_NOT_EVALUABLE:     str = "not_evaluable"
 
 _STAGED_STATUSES: frozenset[str] = frozenset({
     "needs_review",
@@ -435,8 +470,12 @@ def _build_examples(
 ) -> list[dict[str, Any]]:
     """Compose the per-record example list.  The CURATED row supplies
     primary_ticker / benchmark_ticker / mechanism_family / headline;
-    the validation pipeline supplies the numerical fields.
+    the validation pipeline supplies the numerical fields.  Each row
+    also carries the three demo-facing verdict fields documented in
+    the module docstring.
     """
+    from stats.stat_validation import DEFAULT_ALPHA
+
     sorted_records = sorted(
         records,
         key=lambda r: (
@@ -449,6 +488,20 @@ def _build_examples(
         ev_id = rec.get("event_id")
         cand = eligible_by_id.get(ev_id) if isinstance(ev_id, int) else {}
         cand = cand or {}
+        p_value = rec.get("p_value")
+        fdr_q   = rec.get("fdr_q")
+        raw_p_candidate = _is_raw_p_candidate(p_value, alpha=DEFAULT_ALPHA)
+        # Reuse the validation pipeline's own significance derivation
+        # when it surfaced one; fall back to the canonical check
+        # otherwise.  Either way, FDR is the strict bar and never
+        # fires on a raw-p-only record.
+        pipeline_sig = rec.get("statistically_significant")
+        if isinstance(pipeline_sig, bool):
+            fdr_significant = pipeline_sig
+        else:
+            fdr_significant = _safe_fdr_significant(
+                fdr_q, alpha=DEFAULT_ALPHA,
+            )
         out.append({
             "source_event_id":  ev_id,
             "headline":         cand.get("headline"),
@@ -460,11 +513,77 @@ def _build_examples(
             "sar":              rec.get("sar"),
             "ci_low":           rec.get("ci_low"),
             "ci_high":          rec.get("ci_high"),
-            "p_value":          rec.get("p_value"),
-            "fdr_q":            rec.get("fdr_q"),
+            "p_value":          p_value,
+            "fdr_q":            fdr_q,
             "interpretation":   rec.get("interpretation"),
+            "raw_p_candidate":  raw_p_candidate,
+            "fdr_significant":  fdr_significant,
+            "verdict":          _classify_verdict(
+                p_value=p_value,
+                fdr_q=fdr_q,
+                raw_p_candidate=raw_p_candidate,
+                fdr_significant=fdr_significant,
+            ),
         })
     return out
+
+
+def _is_finite_number(value: Any) -> bool:
+    """True iff ``value`` is a real number (not bool / None / NaN)."""
+    if value is None or isinstance(value, bool):
+        return False
+    if not isinstance(value, (int, float)):
+        return False
+    return not (math.isnan(float(value)) or math.isinf(float(value)))
+
+
+def _is_raw_p_candidate(p_value: Any, *, alpha: float) -> bool:
+    """True iff ``p_value`` is a finite real <= ``alpha``.
+
+    Mirrors the raw-p check used by
+    :mod:`scripts.manual_repaired_cohort_validation_summary` so the
+    runner and the cohort summary classify raw-p the same way.  No
+    new threshold introduced — ``alpha`` is the existing
+    :data:`stats.stat_validation.DEFAULT_ALPHA`.
+    """
+    if not _is_finite_number(p_value):
+        return False
+    return float(p_value) <= alpha
+
+
+def _safe_fdr_significant(fdr_q: Any, *, alpha: float) -> bool:
+    """Defensive wrapper around
+    :func:`stats.stat_validation.is_statistically_significant`.
+
+    Returns False for any input the strict canonical helper would
+    reject (bool, non-numeric, NaN, Inf) so a fixture quirk cannot
+    crash the example builder.  Conservative: never returns True
+    where the strict helper would refuse to answer.
+    """
+    from stats.stat_validation import is_statistically_significant
+
+    if not _is_finite_number(fdr_q):
+        return False
+    try:
+        return is_statistically_significant(fdr_q, alpha=alpha)
+    except (TypeError, ValueError):
+        return False
+
+
+def _classify_verdict(
+    *, p_value: Any, fdr_q: Any,
+    raw_p_candidate: bool, fdr_significant: bool,
+) -> str:
+    """Pick the demo-facing verdict for one record.  Order matters —
+    FDR is the strict bar; raw-p-only never becomes ``fdr_significant``.
+    """
+    if fdr_significant:
+        return _VERDICT_FDR_SIGNIFICANT
+    if raw_p_candidate:
+        return _VERDICT_VALIDATED_RAW_ONLY
+    if _is_finite_number(p_value) or _is_finite_number(fdr_q):
+        return _VERDICT_INCONCLUSIVE_FDR
+    return _VERDICT_NOT_EVALUABLE
 
 
 def _build_recommended(

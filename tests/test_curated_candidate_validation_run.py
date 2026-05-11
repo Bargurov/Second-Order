@@ -23,15 +23,23 @@ Pin the contract:
     missing_fields, excluded_candidates, errors, warnings,
     recommended_next_action
 
-* Each example carries 13 fields::
+* Each example carries 16 fields::
 
     source_event_id, headline, primary_ticker, benchmark_ticker,
     mechanism_family, horizon, abnormal_return, sar, ci_low,
-    ci_high, p_value, fdr_q, interpretation
+    ci_high, p_value, fdr_q, interpretation,
+    raw_p_candidate, fdr_significant, verdict
 
   The curated row is the source of truth for ``primary_ticker``,
   ``benchmark_ticker``, ``mechanism_family``, and ``headline``;
-  the validation pipeline supplies the numerical fields.
+  the validation pipeline supplies the numerical fields.  The three
+  verdict fields are the demo-facing raw-p / FDR split:
+    - ``raw_p_candidate``  — ``p_value <= DEFAULT_ALPHA`` (False
+      when missing / NaN).
+    - ``fdr_significant``  — FDR clears (never True for raw-p-only).
+    - ``verdict``          — closed vocabulary, evaluated top-down:
+      ``fdr_significant`` | ``validated_raw_only`` |
+      ``inconclusive_fdr`` | ``not_evaluable``.
 * Aggregates exclude pipeline records whose ``source_event_id`` is
   not in the staged set.
 * Conservative wording — banned tokens in any text field:
@@ -83,6 +91,17 @@ _REQUIRED_EXAMPLE_FIELDS = (
     "p_value",
     "fdr_q",
     "interpretation",
+    "raw_p_candidate",
+    "fdr_significant",
+    "verdict",
+)
+
+
+_VERDICT_VALUES = (
+    "fdr_significant",
+    "validated_raw_only",
+    "inconclusive_fdr",
+    "not_evaluable",
 )
 
 
@@ -451,6 +470,205 @@ class TestExampleShape(unittest.TestCase):
         self.assertEqual(ex["mechanism_family"],
                          "bank_regulatory_capital_relief")
         self.assertEqual(ex["headline"], "Curated headline")
+
+
+# ---------------------------------------------------------------------------
+# Per-example verdict fields — raw-p / FDR split visible without
+# weakening FDR discipline.
+# ---------------------------------------------------------------------------
+
+
+def _ex(result: dict, *, source_event_id: int, horizon: int) -> dict:
+    """Pick a single example matching ``(source_event_id, horizon)``."""
+    for ex in result["examples"]:
+        if (ex.get("source_event_id") == source_event_id
+                and ex.get("horizon") == horizon):
+            return ex
+    raise AssertionError(
+        f"no example for source_event_id={source_event_id} h={horizon}"
+    )
+
+
+class TestVerdictFields(unittest.TestCase):
+    def test_example_carries_three_new_verdict_fields(self) -> None:
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(event_id=1, horizon=5, sar=1.5),
+            ]),
+        )
+        ex = result["examples"][0]
+        for field in ("raw_p_candidate", "fdr_significant", "verdict"):
+            self.assertIn(field, ex, f"missing verdict field: {field}")
+
+    def test_verdict_value_in_closed_vocabulary(self) -> None:
+        result = _run(
+            candidates=[
+                _staged(source_event_id=1),
+                _staged(source_event_id=2),
+            ],
+            validation_payload=_validation_payload([
+                _validation_record(event_id=1, horizon=1, sar=1.0,
+                                   p_value=0.01, fdr_q=0.03,
+                                   significant=True),
+                _validation_record(event_id=2, horizon=5, sar=1.0,
+                                   p_value=0.30, fdr_q=0.40),
+            ]),
+        )
+        for ex in result["examples"]:
+            self.assertIn(ex["verdict"], _VERDICT_VALUES,
+                          f"verdict {ex['verdict']!r} outside vocab")
+
+    def test_fdr_significant_record_gets_fdr_significant_verdict(
+        self,
+    ) -> None:
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=1, horizon=5, sar=2.0,
+                    p_value=0.01, fdr_q=0.02, significant=True,
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=1, horizon=5)
+        self.assertTrue(ex["raw_p_candidate"])
+        self.assertTrue(ex["fdr_significant"])
+        self.assertEqual(ex["verdict"], "fdr_significant")
+
+    def test_raw_p_only_record_gets_validated_raw_only_verdict(
+        self,
+    ) -> None:
+        # Event 46-style case: p_value clears alpha=0.05 but FDR does
+        # not (fdr_q above alpha).
+        result = _run(
+            candidates=[_staged(source_event_id=46)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=46, horizon=5, sar=1.5,
+                    p_value=0.04, fdr_q=0.20, significant=False,
+                    interpretation="not_significant",
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=46, horizon=5)
+        self.assertTrue(ex["raw_p_candidate"])
+        self.assertFalse(ex["fdr_significant"])
+        self.assertEqual(ex["verdict"], "validated_raw_only")
+        # The clearer demo-facing field must override the easily-
+        # misread interpretation="not_significant".
+        self.assertEqual(ex["interpretation"], "not_significant")
+
+    def test_inconclusive_record_when_neither_bar_clears(self) -> None:
+        # p_value present but above alpha → neither raw-p nor FDR.
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=1, horizon=5, sar=0.5,
+                    p_value=0.30, fdr_q=0.40, significant=False,
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=1, horizon=5)
+        self.assertFalse(ex["raw_p_candidate"])
+        self.assertFalse(ex["fdr_significant"])
+        self.assertEqual(ex["verdict"], "inconclusive_fdr")
+
+    def test_not_evaluable_when_both_p_and_fdr_q_missing(self) -> None:
+        # When BOTH p_value and fdr_q are None, the verdict is the
+        # absent-data case — neither bar can be evaluated.
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=1, horizon=5, sar=0.0,
+                    p_value=None, fdr_q=None, significant=False,
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=1, horizon=5)
+        self.assertFalse(ex["raw_p_candidate"])
+        self.assertFalse(ex["fdr_significant"])
+        self.assertEqual(ex["verdict"], "not_evaluable")
+
+    def test_inconclusive_when_only_p_missing_but_fdr_present(self) -> None:
+        # fdr_q is a real number but above alpha → not_evaluable would
+        # be wrong (we have FDR data); the right call is inconclusive.
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=1, horizon=5, sar=0.5,
+                    p_value=None, fdr_q=0.40, significant=False,
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=1, horizon=5)
+        self.assertFalse(ex["raw_p_candidate"])
+        self.assertFalse(ex["fdr_significant"])
+        self.assertEqual(ex["verdict"], "inconclusive_fdr")
+
+    def test_raw_p_only_never_fires_fdr_significant_flag(self) -> None:
+        # Cross every example in a mixed-output run.  The invariant
+        # "verdict==validated_raw_only ⇒ fdr_significant=False" must
+        # hold for every record in the surfaced examples list — never
+        # weaken FDR discipline.
+        records: list[dict] = []
+        candidates: list[dict] = []
+        for i, (p, q, sig) in enumerate((
+            (0.01, 0.02, True),     # fdr_significant
+            (0.04, 0.20, False),    # raw-p only
+            (0.30, 0.40, False),    # inconclusive
+            (None, None, False),    # not_evaluable
+            (0.045, 0.30, False),   # raw-p only (just under alpha)
+        ), start=1):
+            candidates.append(_staged(source_event_id=i))
+            records.append(_validation_record(
+                event_id=i, horizon=5, sar=1.0,
+                p_value=p, fdr_q=q, significant=sig,
+            ))
+        result = _run(
+            candidates=candidates,
+            validation_payload=_validation_payload(records),
+        )
+        for ex in result["examples"]:
+            if ex["verdict"] == "validated_raw_only":
+                self.assertFalse(
+                    ex["fdr_significant"],
+                    f"raw-p-only record claimed FDR significant: {ex!r}",
+                )
+                self.assertTrue(ex["raw_p_candidate"])
+
+    def test_alpha_boundary_p_equal_alpha_counts_as_raw_p(self) -> None:
+        # p_value == DEFAULT_ALPHA (0.05) — the existing raw-p check
+        # treats this as raw-p significant; verdict must follow.
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=1, horizon=5, sar=1.0,
+                    p_value=0.05, fdr_q=0.20, significant=False,
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=1, horizon=5)
+        self.assertTrue(ex["raw_p_candidate"])
+        self.assertEqual(ex["verdict"], "validated_raw_only")
+
+    def test_alpha_boundary_p_just_above_alpha_is_not_raw_p(self) -> None:
+        result = _run(
+            candidates=[_staged(source_event_id=1)],
+            validation_payload=_validation_payload([
+                _validation_record(
+                    event_id=1, horizon=5, sar=1.0,
+                    p_value=0.0501, fdr_q=0.20, significant=False,
+                ),
+            ]),
+        )
+        ex = _ex(result, source_event_id=1, horizon=5)
+        self.assertFalse(ex["raw_p_candidate"])
+        self.assertEqual(ex["verdict"], "inconclusive_fdr")
 
 
 # ---------------------------------------------------------------------------
