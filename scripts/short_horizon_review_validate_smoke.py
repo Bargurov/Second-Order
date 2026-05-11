@@ -322,6 +322,7 @@ def _compute_envelope(
     # Step 3: classify rows.
     classified = _classify_rows(rows)
     accepted_event_ids:    set[int] = classified["accepted_event_ids"]
+    accepted_meta:         dict[int, dict[str, Any]] = classified["accepted_meta"]
     excluded_candidates: list[dict[str, Any]] = classified["excluded_candidates"]
     pending_event_ids:     list[int] = classified["pending_event_ids"]
 
@@ -356,13 +357,41 @@ def _compute_envelope(
             validation_payload = {}
 
         all_records = validation_payload.get("records") or []
+        # Copy each accepted record so the worksheet-metadata overrides
+        # don't mutate the patched payload in tests.
         accepted_records = [
-            r for r in all_records
+            dict(r)
+            for r in all_records
             if isinstance(r, dict)
             and isinstance(r.get("event_id"), int)
             and r["event_id"] in accepted_event_ids
             and r.get("horizon") in _SHORT_HORIZONS
         ]
+        _apply_worksheet_metadata(accepted_records, accepted_meta)
+
+        # Surface a clear warning for any accepted row whose
+        # ``proposed_mechanism_family`` is blank.  Those records still
+        # count toward ``records_count`` / ``by_horizon`` / examples
+        # (existing horizon-filtered semantics are unchanged), but are
+        # excluded from ``by_mechanism_family`` so the aggregation never
+        # silently buckets them under ``None``.
+        events_with_records = {
+            r["event_id"] for r in accepted_records
+            if isinstance(r.get("event_id"), int)
+        }
+        missing_family_ids = sorted(
+            ev_id for ev_id in events_with_records
+            if not (accepted_meta.get(ev_id) or {}).get(
+                "proposed_mechanism_family"
+            )
+        )
+        if missing_family_ids:
+            warnings.append(
+                f"{len(missing_family_ids)} accepted row(s) have a blank "
+                f"proposed_mechanism_family and are not included in the "
+                f"by_mechanism_family aggregation: event_ids="
+                f"{missing_family_ids}"
+            )
 
         records_count = len(accepted_records)
         events_evaluated = len({
@@ -434,14 +463,22 @@ def _classify_rows(
 
     Returns a dict with keys:
         accepted_event_ids:    set[int]
+        accepted_meta:         dict[int, dict]   # per-event worksheet metadata
         excluded_candidates:   list[{event_id, reason, headline}]
         pending_event_ids:     list[int]
 
     The canonical gate column is
     ``include_in_short_horizon_validation`` — ``yes`` accepts,
     ``no`` excludes, blank / unknown is pending.
+
+    For accepted rows we additionally capture the operator's
+    ``proposed_primary_ticker`` / ``proposed_benchmark_ticker`` /
+    ``proposed_mechanism_family`` plus the row ``headline``.  Those
+    values are the post-review source of truth for the validation
+    examples and the ``by_mechanism_family`` aggregation.
     """
     accepted_event_ids: set[int] = set()
+    accepted_meta: dict[int, dict[str, Any]] = {}
     excluded_candidates: list[dict[str, Any]] = []
     pending: list[int] = []
     excluded_seen: set[int] = set()
@@ -470,11 +507,26 @@ def _classify_rows(
             continue
         if gate == _GATE_YES:
             accepted_event_ids.add(ev_id)
+            # Last write wins on a duplicate event_id — matches the
+            # existing accepted-set semantics where duplicates collapse.
+            accepted_meta[ev_id] = {
+                "proposed_primary_ticker":   _coerce_str(
+                    row.get("proposed_primary_ticker")
+                ),
+                "proposed_benchmark_ticker": _coerce_str(
+                    row.get("proposed_benchmark_ticker")
+                ),
+                "proposed_mechanism_family": _coerce_str(
+                    row.get("proposed_mechanism_family")
+                ),
+                "headline":                  headline,
+            }
             continue
         pending.append(ev_id)
 
     return {
         "accepted_event_ids":  accepted_event_ids,
+        "accepted_meta":       accepted_meta,
         "excluded_candidates": excluded_candidates,
         "pending_event_ids":   pending,
     }
@@ -545,6 +597,45 @@ def _aggregate_by_horizon(
     return out
 
 
+def _apply_worksheet_metadata(
+    records: list[dict[str, Any]],
+    accepted_meta: dict[int, dict[str, Any]],
+) -> None:
+    """Override each record's ``mechanism_family`` / ``ticker`` /
+    ``benchmark`` / ``headline`` with the operator's worksheet values
+    where the operator filled them in.
+
+    ``mechanism_family`` is overridden unconditionally: post-review,
+    the worksheet's ``proposed_mechanism_family`` is the source of
+    truth.  A blank operator value lands ``None`` on the record so the
+    ``by_mechanism_family`` aggregator drops it cleanly rather than
+    silently bucketing the upstream value.
+
+    ``ticker`` and ``benchmark`` are overridden only when the operator
+    actually supplied a value — a blank cell falls back to the
+    upstream record's value.  ``headline`` falls back to the worksheet
+    only when the record carries none.
+    """
+    for rec in records:
+        ev_id = rec.get("event_id")
+        meta = accepted_meta.get(ev_id) if isinstance(ev_id, int) else None
+        if not meta:
+            # Defensive — record's event_id is in accepted_event_ids
+            # but somehow not in accepted_meta.  Strip mechanism_family
+            # so the aggregator doesn't silently bucket it.
+            rec["mechanism_family"] = None
+            continue
+        rec["mechanism_family"] = meta.get("proposed_mechanism_family")
+        primary = meta.get("proposed_primary_ticker")
+        if primary:
+            rec["ticker"] = primary
+        benchmark = meta.get("proposed_benchmark_ticker")
+        if benchmark:
+            rec["benchmark"] = benchmark
+        if not _coerce_str(rec.get("headline")) and meta.get("headline"):
+            rec["headline"] = meta["headline"]
+
+
 def _aggregate_by_mechanism_family(
     records: list[dict[str, Any]],
 ) -> dict[str, Any]:
@@ -585,7 +676,7 @@ def _build_examples(
             "event_id":         rec.get("event_id"),
             "headline":         rec.get("headline"),
             "primary_ticker":   rec.get("ticker"),
-            "benchmark":        _BENCHMARK_TICKER,
+            "benchmark":        rec.get("benchmark") or _BENCHMARK_TICKER,
             "mechanism_family": rec.get("mechanism_family"),
             "horizon":          rec.get("horizon"),
             "abnormal_return":  rec.get("abnormal_return"),

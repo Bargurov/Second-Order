@@ -571,6 +571,252 @@ class TestAggregates(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Worksheet metadata carries into validation output
+# ---------------------------------------------------------------------------
+
+
+class TestWorksheetMetadataEnrichment(unittest.TestCase):
+    def test_example_mechanism_family_comes_from_worksheet(self) -> None:
+        # The operator's proposed_mechanism_family is the post-review
+        # source of truth — the example must carry it even when the
+        # upstream record's mechanism_family is blank.
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_primary_ticker="XOM",
+                proposed_benchmark_ticker="SPY",
+                proposed_mechanism_family="supply_shock",
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(
+                    event_id=70, horizon=1,
+                    mechanism_family="",
+                    ticker="",
+                ),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            example = report["examples"][0]
+            self.assertEqual(example["mechanism_family"], "supply_shock")
+        finally:
+            os.unlink(path)
+
+    def test_worksheet_overrides_upstream_mechanism_family(self) -> None:
+        # The worksheet is post-review; its proposed_mechanism_family
+        # overrides whatever value the upstream pipeline attached.
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_mechanism_family="chokepoint_relief",
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(
+                    event_id=70, horizon=1,
+                    mechanism_family="supply_shock",
+                ),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            example = report["examples"][0]
+            self.assertEqual(example["mechanism_family"], "chokepoint_relief")
+            self.assertIn("chokepoint_relief", report["by_mechanism_family"])
+            self.assertNotIn("supply_shock", report["by_mechanism_family"])
+        finally:
+            os.unlink(path)
+
+    def test_worksheet_primary_and_benchmark_override_example(self) -> None:
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_primary_ticker="XOM",
+                proposed_benchmark_ticker="XLE",
+                proposed_mechanism_family="supply_shock",
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(event_id=70, horizon=1, ticker="OTHER"),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            example = report["examples"][0]
+            self.assertEqual(example["primary_ticker"], "XOM")
+            self.assertEqual(example["benchmark"], "XLE")
+        finally:
+            os.unlink(path)
+
+    def test_multiple_accepted_rows_produce_nonempty_by_mechanism_family(
+        self,
+    ) -> None:
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_mechanism_family="supply_shock",
+            ),
+            _worksheet_row(
+                event_id=80,
+                include_in_short_horizon_validation="yes",
+                proposed_mechanism_family="chokepoint_relief",
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(event_id=70, horizon=1, mechanism_family=""),
+                _validation_record(event_id=70, horizon=5, mechanism_family=""),
+                _validation_record(event_id=80, horizon=1, mechanism_family=""),
+                _validation_record(event_id=80, horizon=5, mechanism_family=""),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            fam = report["by_mechanism_family"]
+            self.assertNotEqual(fam, {})
+            self.assertEqual(fam["supply_shock"]["events_evaluated"], 1)
+            self.assertEqual(fam["supply_shock"]["records_count"], 2)
+            self.assertEqual(fam["chokepoint_relief"]["events_evaluated"], 1)
+            self.assertEqual(fam["chokepoint_relief"]["records_count"], 2)
+        finally:
+            os.unlink(path)
+
+    def test_non_accepted_event_does_not_enter_by_mechanism_family(
+        self,
+    ) -> None:
+        # A record whose event_id is excluded ("no") or absent from the
+        # worksheet must not enter the by_mechanism_family aggregation
+        # even when it carries an upstream mechanism_family value.
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_mechanism_family="supply_shock",
+            ),
+            _worksheet_row(
+                event_id=80,
+                include_in_short_horizon_validation="no",
+                exclude_reason="off-topic",
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(
+                    event_id=70, horizon=1,
+                    mechanism_family="supply_shock",
+                ),
+                _validation_record(
+                    event_id=80, horizon=1,
+                    mechanism_family="chokepoint_relief",  # must not aggregate
+                ),
+                _validation_record(
+                    event_id=999, horizon=1,
+                    mechanism_family="commodity_squeeze",  # must not aggregate
+                ),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            fam = report["by_mechanism_family"]
+            self.assertEqual(set(fam.keys()), {"supply_shock"})
+        finally:
+            os.unlink(path)
+
+    def test_pending_row_does_not_enter_by_mechanism_family(self) -> None:
+        # A pending row (blank gate) is not accepted; even if upstream
+        # surfaces records for its event_id, those records do not
+        # aggregate.
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                proposed_mechanism_family="supply_shock",
+                # Gate left blank → pending.
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(
+                    event_id=70, horizon=1,
+                    mechanism_family="supply_shock",
+                ),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            self.assertEqual(report["by_mechanism_family"], {})
+        finally:
+            os.unlink(path)
+
+    def test_missing_proposed_mechanism_family_surfaces_warning(self) -> None:
+        # An accepted row with blank proposed_mechanism_family is
+        # surfaced via a clear warning and is dropped from the
+        # by_mechanism_family aggregation — never silently bucketed
+        # under None.
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_primary_ticker="XOM",
+                # proposed_mechanism_family left blank
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(
+                    event_id=70, horizon=1,
+                    mechanism_family="supply_shock",
+                ),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            # Record still counts in the existing horizon-filtered
+            # aggregation.
+            self.assertEqual(report["records_count"], 1)
+            # But it does NOT enter the mechanism-family aggregation.
+            self.assertEqual(report["by_mechanism_family"], {})
+            # And the warning names the affected event_id explicitly.
+            joined = " ".join(report["warnings"]).lower()
+            self.assertIn("proposed_mechanism_family", joined)
+            self.assertIn("70", joined)
+        finally:
+            os.unlink(path)
+
+    def test_worksheet_headline_fills_in_when_record_headline_blank(
+        self,
+    ) -> None:
+        path = _write_worksheet([
+            _worksheet_row(
+                event_id=70,
+                include_in_short_horizon_validation="yes",
+                proposed_mechanism_family="supply_shock",
+                headline="operator-supplied headline",
+            ),
+        ])
+        try:
+            with _patched_seam([
+                _validation_record(event_id=70, horizon=1, headline=""),
+            ]):
+                report = cli.run_short_horizon_review_validate(
+                    worksheet_path=path,
+                )
+            example = report["examples"][0]
+            self.assertEqual(
+                example["headline"], "operator-supplied headline"
+            )
+        finally:
+            os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
 # Horizon restriction (1d/5d only)
 # ---------------------------------------------------------------------------
 
