@@ -13,7 +13,7 @@ Pin the contract:
   three sources speak the same vocabulary, using the canonical
   ``DEFAULT_ALPHA`` threshold from :mod:`stats.stat_validation`.  No
   new statistic is computed.
-* Envelope schema (18 keys, in any order)::
+* Envelope schema (20 keys, in any order)::
 
       ok, generated_at, sources,
       total_event_sources, total_records,
@@ -21,8 +21,22 @@ Pin the contract:
       verdict_counts, by_source, by_horizon, by_mechanism_family,
       duplicate_event_ids, strongest_raw_p_candidates,
       null_or_inconclusive_examples,
+      short_horizon_review_completion,
       evidence_claim_allowed, evidence_claim_not_allowed,
       recommended_next_action, warnings, errors
+
+* Sources include four validation artifacts:
+    1. curated_stage_validation_evidence   (required)
+    2. short_horizon_review_validation_top10   (required)
+    3. short_horizon_review_validation_next10  (required)
+    4. short_horizon_review_validation_final8  (OPTIONAL — missing
+       produces a warning, not an error)
+* ``short_horizon_review_completion`` summarises the operator's
+  yes / no / pending split across the three review worksheets
+  (top10, next10, final8).  Each worksheet contributes
+  ``total_rows`` / ``included_count`` / ``excluded_count`` /
+  ``pending_count`` to a ``by_worksheet`` block; the top-level
+  fields aggregate across the three.
 
 * ``fdr_significant_count`` is driven by the per-record fdr_q vs
   alpha check only.  ``raw_p_candidate_count`` counts records with
@@ -73,11 +87,21 @@ _REQUIRED_ENVELOPE_KEYS = (
     "duplicate_event_ids",
     "strongest_raw_p_candidates",
     "null_or_inconclusive_examples",
+    "short_horizon_review_completion",
     "evidence_claim_allowed",
     "evidence_claim_not_allowed",
     "recommended_next_action",
     "warnings",
     "errors",
+)
+
+
+# Canonical worksheet CSV header for fixture generation.
+_WORKSHEET_HEADER = (
+    "event_id",
+    "headline",
+    "include_in_short_horizon_validation",
+    "exclude_reason",
 )
 
 
@@ -205,9 +229,71 @@ def _write_artifact(
     return path
 
 
+def _write_worksheet_csv(
+    *, kind: str,
+    yes: int = 0, no: int = 0, pending: int = 0,
+    rows: list[dict[str, str]] | None = None,
+    starting_event_id: int = 1,
+) -> str:
+    """Materialise a minimal short-horizon review worksheet CSV.
+
+    Supply explicit ``rows`` for full control, or pass yes/no/pending
+    counts and let the helper generate that many of each kind.  The
+    generated header only carries the columns the completion block
+    actually reads (event_id + gate column + exclude_reason).
+    """
+    import csv as _csv
+    path = os.path.join(
+        tempfile.gettempdir(),
+        f"comb_ws_{kind}_{uuid.uuid4().hex}.csv",
+    )
+    if rows is None:
+        rows = []
+        ev = starting_event_id
+        for _ in range(yes):
+            rows.append({
+                "event_id": str(ev),
+                "headline": f"yes-row-{ev}",
+                "include_in_short_horizon_validation": "yes",
+                "exclude_reason": "",
+            })
+            ev += 1
+        for _ in range(no):
+            rows.append({
+                "event_id": str(ev),
+                "headline": f"no-row-{ev}",
+                "include_in_short_horizon_validation": "no",
+                "exclude_reason": "off-topic",
+            })
+            ev += 1
+        for _ in range(pending):
+            rows.append({
+                "event_id": str(ev),
+                "headline": f"pending-row-{ev}",
+                "include_in_short_horizon_validation": "",
+                "exclude_reason": "",
+            })
+            ev += 1
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = _csv.DictWriter(
+            fh, fieldnames=list(_WORKSHEET_HEADER), extrasaction="ignore",
+        )
+        writer.writeheader()
+        for r in rows:
+            writer.writerow(r)
+    return path
+
+
 class _Artifacts:
-    """Context manager that writes three tempfile artifacts and tears
-    them down regardless of test outcome."""
+    """Context manager that writes tempfile artifacts and tears them
+    down regardless of test outcome.
+
+    The three required validation artifacts (curated / top10 / next10)
+    are always materialised.  The optional final8 validation artifact
+    is materialised only when ``final8`` is supplied; otherwise its
+    path is ``None`` so the builder treats it as missing.  Same
+    semantics for the three worksheet CSVs.
+    """
 
     def __init__(
         self,
@@ -215,13 +301,27 @@ class _Artifacts:
         curated: list[dict[str, Any]] | None = None,
         top10:   list[dict[str, Any]] | None = None,
         next10:  list[dict[str, Any]] | None = None,
+        final8:  list[dict[str, Any]] | None = None,
+        worksheet_top10:  dict[str, int] | list[dict[str, str]] | None = None,
+        worksheet_next10: dict[str, int] | list[dict[str, str]] | None = None,
+        worksheet_final8: dict[str, int] | list[dict[str, str]] | None = None,
     ) -> None:
         self._curated_rows = list(curated or [])
         self._top10_rows   = list(top10   or [])
         self._next10_rows  = list(next10  or [])
+        self._final8_rows  = (
+            list(final8) if final8 is not None else None
+        )
+        self._ws_top10  = worksheet_top10
+        self._ws_next10 = worksheet_next10
+        self._ws_final8 = worksheet_final8
         self.curated_path: str | None = None
         self.top10_path:   str | None = None
         self.next10_path:  str | None = None
+        self.final8_path:  str | None = None
+        self.ws_top10_path:  str | None = None
+        self.ws_next10_path: str | None = None
+        self.ws_final8_path: str | None = None
 
     def __enter__(self) -> "_Artifacts":
         self.curated_path = _write_artifact(
@@ -233,18 +333,55 @@ class _Artifacts:
         self.next10_path = _write_artifact(
             kind="next10", examples=self._next10_rows,
         )
+        if self._final8_rows is not None:
+            self.final8_path = _write_artifact(
+                kind="final8", examples=self._final8_rows,
+            )
+        self.ws_top10_path  = self._materialise_worksheet(
+            "top10",  self._ws_top10,
+        )
+        self.ws_next10_path = self._materialise_worksheet(
+            "next10", self._ws_next10,
+        )
+        self.ws_final8_path = self._materialise_worksheet(
+            "final8", self._ws_final8,
+        )
         return self
 
+    @staticmethod
+    def _materialise_worksheet(
+        kind: str,
+        spec: dict[str, int] | list[dict[str, str]] | None,
+    ) -> str | None:
+        if spec is None:
+            return None
+        if isinstance(spec, dict):
+            return _write_worksheet_csv(
+                kind=kind,
+                yes=int(spec.get("yes",     0)),
+                no=int(spec.get("no",       0)),
+                pending=int(spec.get("pending", 0)),
+            )
+        return _write_worksheet_csv(kind=kind, rows=list(spec))
+
     def __exit__(self, *exc: Any) -> None:
-        for p in (self.curated_path, self.top10_path, self.next10_path):
+        for p in (
+            self.curated_path, self.top10_path, self.next10_path,
+            self.final8_path,
+            self.ws_top10_path, self.ws_next10_path, self.ws_final8_path,
+        ):
             if p and os.path.exists(p):
                 os.unlink(p)
 
-    def kwargs(self) -> dict[str, str]:
+    def kwargs(self) -> dict[str, str | None]:
         return {
-            "curated_stage_path": self.curated_path or "",
-            "review_top10_path":  self.top10_path   or "",
-            "review_next10_path": self.next10_path  or "",
+            "curated_stage_path":   self.curated_path or "",
+            "review_top10_path":    self.top10_path   or "",
+            "review_next10_path":   self.next10_path  or "",
+            "review_final8_path":   self.final8_path,
+            "worksheet_top10_path": self.ws_top10_path,
+            "worksheet_next10_path": self.ws_next10_path,
+            "worksheet_final8_path": self.ws_final8_path,
         }
 
 
@@ -343,19 +480,69 @@ class TestMissingArtifacts(unittest.TestCase):
 
 
 class TestSources(unittest.TestCase):
-    def test_three_sources_listed(self) -> None:
+    def test_four_sources_always_listed(self) -> None:
+        # final8 is OPTIONAL, but its source slot must always be
+        # surfaced (loaded=False with a warning when missing).  Three
+        # required validation artifacts + one optional final8 → four
+        # source entries every time.
         with _Artifacts() as art:
             report = cli.build_combined_evidence_report(**art.kwargs())
-        self.assertEqual(len(report["sources"]), 3,
+        self.assertEqual(len(report["sources"]), 4,
                          f"sources: {report['sources']}")
+        labels = [s["label"] for s in report["sources"]]
+        self.assertIn("short_horizon_review_validation_final8", labels)
 
     def test_each_source_carries_path_and_loaded_flag(self) -> None:
-        with _Artifacts() as art:
+        with _Artifacts(final8=[]) as art:
             report = cli.build_combined_evidence_report(**art.kwargs())
         for src in report["sources"]:
             self.assertIn("path", src)
             self.assertIn("loaded", src)
-            self.assertTrue(src["loaded"], src)
+
+
+class TestFinal8Optional(unittest.TestCase):
+    def test_missing_final8_does_not_flip_ok_to_false(self) -> None:
+        # Required artifacts present; final8 missing.  The envelope
+        # must still report ok=True and a warning about the missing
+        # optional artifact — never an error.
+        with _Artifacts() as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        self.assertTrue(report["ok"], f"errors: {report['errors']}")
+        warning_text = " ".join(report["warnings"]).lower()
+        self.assertIn("final8", warning_text)
+
+    def test_missing_final8_lands_in_warnings_not_errors(self) -> None:
+        with _Artifacts() as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        for e in report["errors"]:
+            self.assertNotIn("final8", e.lower(), f"unexpected error: {e}")
+
+    def test_present_final8_with_zero_records_loads_cleanly(self) -> None:
+        # Live behaviour: final8 validation produced 0 records because
+        # every row in the final8 worksheet is excluded.  An empty
+        # examples list must still count as "loaded" (no warning, no
+        # error) — the artifact is on disk and parseable.
+        with _Artifacts(final8=[]) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        final8_meta = next(
+            s for s in report["sources"]
+            if s["label"] == "short_horizon_review_validation_final8"
+        )
+        self.assertTrue(final8_meta["loaded"])
+        self.assertEqual(final8_meta["records_loaded"], 0)
+        # Empty final8 contributes zero records to the by_source
+        # block, so total_records stays at the sum of the other
+        # sources' record counts (here: 0).
+        self.assertEqual(report["total_records"], 0)
+
+    def test_final8_in_by_source_block_when_loaded(self) -> None:
+        with _Artifacts(final8=[]) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        # by_source must surface a final8 block — zero records is still
+        # an entry.
+        self.assertIn(
+            "short_horizon_review_validation_final8", report["by_source"],
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -706,6 +893,107 @@ class TestEvidenceClaim(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Short-horizon review completion block
+# ---------------------------------------------------------------------------
+
+
+class TestShortHorizonReviewCompletion(unittest.TestCase):
+    def test_completion_block_has_required_fields(self) -> None:
+        with _Artifacts(
+            worksheet_top10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_next10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_final8={"yes": 0, "no": 8, "pending": 0},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        block = report["short_horizon_review_completion"]
+        for key in ("total_reviewed_rows", "included_count",
+                    "excluded_count", "pending_count", "by_worksheet"):
+            self.assertIn(key, block, f"completion block missing {key}")
+
+    def test_completion_totals_match_live_expectations(self) -> None:
+        # Live counts from the on-disk worksheets:
+        #   top10:  10 rows (4 yes, 6 no, 0 pending)
+        #   next10: 10 rows (4 yes, 6 no, 0 pending)
+        #   final8:  8 rows (0 yes, 8 no, 0 pending)
+        # → 28 total, 8 included, 20 excluded, 0 pending.
+        with _Artifacts(
+            worksheet_top10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_next10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_final8={"yes": 0, "no": 8, "pending": 0},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        block = report["short_horizon_review_completion"]
+        self.assertEqual(block["total_reviewed_rows"], 28)
+        self.assertEqual(block["included_count"],      8)
+        self.assertEqual(block["excluded_count"],     20)
+        self.assertEqual(block["pending_count"],       0)
+
+    def test_by_worksheet_breakdown_per_csv(self) -> None:
+        with _Artifacts(
+            worksheet_top10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_next10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_final8={"yes": 0, "no": 8, "pending": 0},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        by_ws = report["short_horizon_review_completion"]["by_worksheet"]
+        for label, expected in (
+            ("short_horizon_review_top10",
+             {"total_rows": 10, "included_count": 4,
+              "excluded_count": 6, "pending_count": 0}),
+            ("short_horizon_review_next10",
+             {"total_rows": 10, "included_count": 4,
+              "excluded_count": 6, "pending_count": 0}),
+            ("short_horizon_review_final8",
+             {"total_rows": 8, "included_count": 0,
+              "excluded_count": 8, "pending_count": 0}),
+        ):
+            block = by_ws[label]
+            for k, v in expected.items():
+                self.assertEqual(
+                    block[k], v,
+                    f"{label}.{k} expected {v} got {block[k]}",
+                )
+
+    def test_pending_rows_counted_separately(self) -> None:
+        with _Artifacts(
+            worksheet_top10={"yes": 1, "no": 2, "pending": 3},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        block = report["short_horizon_review_completion"]
+        self.assertEqual(block["pending_count"], 3)
+        self.assertEqual(block["included_count"], 1)
+        self.assertEqual(block["excluded_count"], 2)
+        self.assertEqual(block["total_reviewed_rows"], 6)
+
+    def test_missing_worksheets_yield_zero_counts_and_warnings(self) -> None:
+        # No worksheet paths supplied at all → completion block has
+        # zero counts and the warnings list mentions each missing
+        # worksheet.  ok stays True because worksheets are optional.
+        with _Artifacts() as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        block = report["short_horizon_review_completion"]
+        self.assertEqual(block["total_reviewed_rows"], 0)
+        self.assertEqual(block["included_count"], 0)
+        self.assertEqual(block["excluded_count"], 0)
+        self.assertEqual(block["pending_count"], 0)
+
+    def test_completion_block_uses_only_csv_data_not_validation(
+        self,
+    ) -> None:
+        # The completion block must come from the worksheet CSVs only.
+        # final8 validation JSON has 0 records — but the worksheet
+        # carries 8 no-rows, so excluded_count must reflect the
+        # worksheet, NOT the validation artifact.
+        with _Artifacts(
+            final8=[],
+            worksheet_final8={"yes": 0, "no": 8, "pending": 0},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        block = report["short_horizon_review_completion"]
+        self.assertEqual(block["excluded_count"], 8)
+
+
+# ---------------------------------------------------------------------------
 # Recommended next action — conservative when no FDR-significant
 # ---------------------------------------------------------------------------
 
@@ -725,6 +1013,58 @@ class TestRecommendedNextAction(unittest.TestCase):
         self.assertTrue("methodology" in action or "demo" in action,
                         f"action: {action!r}")
         self.assertIn("not", action)
+
+    def test_review_complete_recommends_freeze_candidate_or_xle_backfill(
+        self,
+    ) -> None:
+        # Live scenario: three worksheets fully reviewed (0 pending),
+        # final8 validation present but 0 records, no FDR-significant
+        # signal.  The recommendation must call out that short-horizon
+        # review is complete AND offer the two next-step options the
+        # spec mandates: archive a freeze-candidate evidence artifact,
+        # or proceed with the XLE online backfill.
+        with _Artifacts(
+            curated=[_curated_example(
+                source_event_id=1, p_value=0.50, fdr_q=0.60,
+            )],
+            top10=[], next10=[], final8=[],
+            worksheet_top10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_next10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_final8={"yes": 0, "no": 8, "pending": 0},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        action = report["recommended_next_action"].lower()
+        # "Short-horizon review is complete" — surfaces the completion
+        # state without re-using the older "fully reviewed" wording.
+        self.assertIn("short-horizon review is complete", action,
+                      f"action: {action!r}")
+        # Both next-step options must be named verbatim so an operator
+        # can grep for them.
+        self.assertIn("freeze-candidate", action,
+                      f"action: {action!r}")
+        self.assertIn("xle online backfill", action,
+                      f"action: {action!r}")
+
+    def test_pending_rows_block_review_complete_recommendation(
+        self,
+    ) -> None:
+        # When ANY worksheet still has pending rows, the recommendation
+        # must NOT claim review is complete and must NOT name the
+        # freeze-candidate / XLE backfill next-step options (those
+        # only apply when the queue is finished).
+        with _Artifacts(
+            worksheet_top10={"yes": 4, "no": 5, "pending": 1},
+            worksheet_next10={"yes": 4, "no": 6, "pending": 0},
+            worksheet_final8={"yes": 0, "no": 8, "pending": 0},
+        ) as art:
+            report = cli.build_combined_evidence_report(**art.kwargs())
+        action = report["recommended_next_action"].lower()
+        self.assertNotIn("short-horizon review is complete", action,
+                         f"premature completion claim: {action!r}")
+        self.assertNotIn("freeze-candidate", action,
+                         f"premature freeze offer: {action!r}")
+        self.assertNotIn("xle online backfill", action,
+                         f"premature backfill offer: {action!r}")
 
 
 # ---------------------------------------------------------------------------

@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
 """Read-only combined reviewed-evidence report.
 
-Stitches three on-disk JSON artifacts into a single operator-facing
-inspection view so we can look at the current evidence state in one
-place before reviewing more candidates:
+Stitches four on-disk JSON validation artifacts plus the three
+short-horizon worksheet CSVs into a single operator-facing
+inspection view so we can look at the current evidence state and
+review-cycle completion in one place:
 
-  * ``artifacts/curated_stage_validation_evidence.json``
-  * ``artifacts/short_horizon_review_validation_top10.json``
-  * ``artifacts/short_horizon_review_validation_next10.json``
+Validation artifacts (one source each):
+
+  * ``artifacts/curated_stage_validation_evidence.json``           (required)
+  * ``artifacts/short_horizon_review_validation_top10.json``       (required)
+  * ``artifacts/short_horizon_review_validation_next10.json``      (required)
+  * ``artifacts/short_horizon_review_validation_final8.json``      (OPTIONAL)
+
+Review worksheet CSVs (feed the ``short_horizon_review_completion``
+block; all three are optional and contribute zero counts when
+missing):
+
+  * ``artifacts/short_horizon_review_top10.csv``
+  * ``artifacts/short_horizon_review_next10.csv``
+  * ``artifacts/short_horizon_review_final8.csv``
 
 The report is intentionally conservative — it never silently
 deduplicates, never recomputes statistics differently, and never
 permits a ``validated`` claim unless at least one record cleared the
-FDR bar.
+FDR bar.  A missing ``final8`` validation artifact (or a missing
+worksheet CSV) lands in ``warnings`` and never flips ``ok`` to
+False.
 
 Read-only by construction
 -------------------------
@@ -85,6 +99,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime as _dt
 import json
 import math
@@ -100,6 +115,11 @@ if str(ROOT) not in sys.path:
 _DEFAULT_CURATED_PATH: str = "artifacts/curated_stage_validation_evidence.json"
 _DEFAULT_TOP10_PATH:   str = "artifacts/short_horizon_review_validation_top10.json"
 _DEFAULT_NEXT10_PATH:  str = "artifacts/short_horizon_review_validation_next10.json"
+_DEFAULT_FINAL8_PATH:  str = "artifacts/short_horizon_review_validation_final8.json"
+
+_DEFAULT_WORKSHEET_TOP10_PATH:  str = "artifacts/short_horizon_review_top10.csv"
+_DEFAULT_WORKSHEET_NEXT10_PATH: str = "artifacts/short_horizon_review_next10.csv"
+_DEFAULT_WORKSHEET_FINAL8_PATH: str = "artifacts/short_horizon_review_final8.csv"
 
 
 _STRONGEST_DEFAULT_LIMIT:    int = 10
@@ -127,6 +147,18 @@ _VERDICT_VALUES: tuple[str, ...] = (
 _SOURCE_CURATED: str = "curated_stage_validation_evidence"
 _SOURCE_TOP10:   str = "short_horizon_review_validation_top10"
 _SOURCE_NEXT10:  str = "short_horizon_review_validation_next10"
+_SOURCE_FINAL8:  str = "short_horizon_review_validation_final8"
+
+
+# Worksheet labels — stable identifiers for the
+# ``short_horizon_review_completion.by_worksheet`` block.
+_WS_TOP10:  str = "short_horizon_review_top10"
+_WS_NEXT10: str = "short_horizon_review_next10"
+_WS_FINAL8: str = "short_horizon_review_final8"
+
+# Canonical worksheet gate column — same name used across the
+# validator / apply / validate triple.
+_WORKSHEET_GATE_COLUMN: str = "include_in_short_horizon_validation"
 
 
 # Conservative phrasing for evidence-claim guards.  Both lists are
@@ -166,6 +198,32 @@ _RECOMMENDED_HAS_FDR: str = (
     "strongest_raw_p_candidates and the source-specific breakdown "
     "before promoting any claim beyond a record-level observation."
 )
+# Live state: short-horizon review is complete (no pending rows)
+# across all three worksheets, no record cleared the FDR bar.  The
+# recommendation surfaces the two next-step options the operator
+# now has to choose between.
+_RECOMMENDED_QUEUE_FULLY_REVIEWED_NO_FDR: str = (
+    "Short-horizon review is complete "
+    "({total} rows reviewed across top10/next10/final8; "
+    "{included} included, {excluded} excluded; 0 pending).  Zero "
+    "records cleared the FDR bar.  Next choice: archive the current "
+    "state as a freeze-candidate evidence artifact, or proceed with "
+    "the XLE online backfill before any further review."
+)
+# Less common: short-horizon review complete AND at least one
+# FDR-significant record present.  Still call out the review
+# completion while making clear the FDR signal needs record-level
+# inspection before any cohort claim.
+_RECOMMENDED_QUEUE_FULLY_REVIEWED_HAS_FDR: str = (
+    "Short-horizon review is complete "
+    "({total} rows reviewed across top10/next10/final8; "
+    "{included} included, {excluded} excluded; 0 pending).  "
+    "{n} record(s) cleared the FDR bar — inspect each row in "
+    "strongest_raw_p_candidates before promoting any claim beyond "
+    "a record-level observation.  Next choice: archive the current "
+    "state as a freeze-candidate evidence artifact, or proceed with "
+    "the XLE online backfill before any further review."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -178,12 +236,22 @@ def build_combined_evidence_report(
     curated_stage_path: str | None,
     review_top10_path:  str | None,
     review_next10_path: str | None,
+    review_final8_path: str | None = None,
+    worksheet_top10_path:  str | None = None,
+    worksheet_next10_path: str | None = None,
+    worksheet_final8_path: str | None = None,
     strongest_limit:    int = _STRONGEST_DEFAULT_LIMIT,
     inconclusive_limit: int = _INCONCLUSIVE_DEFAULT_LIMIT,
     now_iso:            str | None = None,
 ) -> dict[str, Any]:
     """Build the combined reviewed-evidence JSON report.  See the
     module docstring for the full output contract.
+
+    The first three validation artifacts (``curated_stage``, ``top10``,
+    ``next10``) are required — missing artifact paths land in
+    ``errors`` and flip ``ok`` to False.  The fourth validation
+    artifact (``final8``) and all three worksheet CSVs are optional —
+    missing inputs surface in ``warnings`` only.
     """
     from stats.stat_validation import DEFAULT_ALPHA
 
@@ -191,30 +259,36 @@ def build_combined_evidence_report(
     warnings: list[str] = []
 
     source_specs = (
-        (_SOURCE_CURATED, curated_stage_path),
-        (_SOURCE_TOP10,   review_top10_path),
-        (_SOURCE_NEXT10,  review_next10_path),
+        (_SOURCE_CURATED, curated_stage_path, False),
+        (_SOURCE_TOP10,   review_top10_path,  False),
+        (_SOURCE_NEXT10,  review_next10_path, False),
+        (_SOURCE_FINAL8,  review_final8_path, True),
     )
 
     sources_meta: list[dict[str, Any]] = []
     all_records: list[dict[str, Any]] = []
 
-    for label, path in source_specs:
-        records, load_error = _load_source_records(path, label=label)
+    for label, path, optional in source_specs:
+        records, load_error, load_warning = _load_source_records(
+            path, label=label, optional=optional,
+        )
         sources_meta.append({
             "label":   label,
             "path":    str(path) if path is not None else None,
-            "loaded":  load_error is None,
+            "loaded":  load_error is None and load_warning is None,
             "records_loaded": len(records),
             "error":   load_error,
+            "warning": load_warning,
         })
         if load_error is not None:
             errors.append(load_error)
-            continue
-        all_records.extend(
-            _normalise_record(r, source=label, alpha=DEFAULT_ALPHA)
-            for r in records
-        )
+        if load_warning is not None:
+            warnings.append(load_warning)
+        if records:
+            all_records.extend(
+                _normalise_record(r, source=label, alpha=DEFAULT_ALPHA)
+                for r in records
+            )
 
     # ---- aggregates ----
     fdr_significant_count = sum(
@@ -231,7 +305,12 @@ def build_combined_evidence_report(
         if v in verdict_counts:
             verdict_counts[v] += 1
 
-    by_source = _aggregate_by_source(all_records)
+    loaded_source_labels = [
+        meta["label"] for meta in sources_meta if meta["loaded"]
+    ]
+    by_source = _aggregate_by_source(
+        all_records, loaded_labels=loaded_source_labels,
+    )
     by_horizon = _aggregate_by_horizon(all_records)
     by_mechanism_family = _aggregate_by_mechanism_family(all_records)
     duplicate_event_ids = _build_duplicate_event_ids(all_records)
@@ -243,15 +322,39 @@ def build_combined_evidence_report(
         all_records, limit=max(int(inconclusive_limit), 0),
     )
 
+    # ---- short-horizon review completion (from worksheet CSVs) ----
+    completion, completion_warnings = _build_review_completion(
+        worksheet_top10_path=worksheet_top10_path,
+        worksheet_next10_path=worksheet_next10_path,
+        worksheet_final8_path=worksheet_final8_path,
+    )
+    warnings.extend(completion_warnings)
+
     # ---- claim guard + recommendation ----
+    queue_fully_reviewed = _queue_fully_reviewed(completion)
     if fdr_significant_count > 0:
         evidence_claim_allowed = list(_CLAIM_ALLOWED_HAS_FDR)
         evidence_claim_not_allowed = list(_CLAIM_NOT_ALLOWED_HAS_FDR)
-        recommended = _RECOMMENDED_HAS_FDR.format(n=fdr_significant_count)
+        if queue_fully_reviewed:
+            recommended = _RECOMMENDED_QUEUE_FULLY_REVIEWED_HAS_FDR.format(
+                n=fdr_significant_count,
+                total=completion["total_reviewed_rows"],
+                included=completion["included_count"],
+                excluded=completion["excluded_count"],
+            )
+        else:
+            recommended = _RECOMMENDED_HAS_FDR.format(n=fdr_significant_count)
     else:
         evidence_claim_allowed = list(_CLAIM_ALLOWED_NO_FDR)
         evidence_claim_not_allowed = list(_CLAIM_NOT_ALLOWED_NO_FDR)
-        recommended = _RECOMMENDED_EMPTY_FDR
+        if queue_fully_reviewed:
+            recommended = _RECOMMENDED_QUEUE_FULLY_REVIEWED_NO_FDR.format(
+                total=completion["total_reviewed_rows"],
+                included=completion["included_count"],
+                excluded=completion["excluded_count"],
+            )
+        else:
+            recommended = _RECOMMENDED_EMPTY_FDR
 
     generated_at = now_iso if now_iso is not None else (
         _dt.datetime.now(tz=_dt.timezone.utc).isoformat()
@@ -272,6 +375,7 @@ def build_combined_evidence_report(
         "duplicate_event_ids":             duplicate_event_ids,
         "strongest_raw_p_candidates":      strongest,
         "null_or_inconclusive_examples":   inconclusive,
+        "short_horizon_review_completion": completion,
         "evidence_claim_allowed":          evidence_claim_allowed,
         "evidence_claim_not_allowed":      evidence_claim_not_allowed,
         "recommended_next_action":         recommended,
@@ -280,37 +384,181 @@ def build_combined_evidence_report(
     }
 
 
+def _queue_fully_reviewed(completion: dict[str, Any]) -> bool:
+    """True iff all three worksheets loaded, at least one row was
+    surfaced, and no row remains pending.  Conservative — when any
+    worksheet is missing or any row is still pending we never claim
+    the queue is fully reviewed.
+    """
+    if completion.get("total_reviewed_rows", 0) <= 0:
+        return False
+    if completion.get("pending_count", 0) > 0:
+        return False
+    by_ws = completion.get("by_worksheet") or {}
+    for label in (_WS_TOP10, _WS_NEXT10, _WS_FINAL8):
+        entry = by_ws.get(label)
+        if not isinstance(entry, dict) or not entry.get("loaded"):
+            return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Source loading
 # ---------------------------------------------------------------------------
 
 
 def _load_source_records(
-    path: str | None, *, label: str,
-) -> tuple[list[dict[str, Any]], str | None]:
-    """Load a single artifact's ``examples`` list.  Returns
-    ``(records, error)`` where ``error`` is None on success and a
-    one-line string on failure (so the caller can surface it in
-    ``errors`` while still listing the source under ``sources``).
+    path: str | None, *, label: str, optional: bool = False,
+) -> tuple[list[dict[str, Any]], str | None, str | None]:
+    """Load a single artifact's ``examples`` list.
+
+    Returns ``(records, error, warning)``.  Missing / unreadable
+    artifacts land in ``error`` when ``optional=False`` and in
+    ``warning`` when ``optional=True``; the caller surfaces each in
+    the appropriate envelope list.  Parse failures on an existing but
+    malformed file always go to ``error`` regardless of ``optional``
+    — a present-but-broken artifact is a real fault.
     """
     if path is None or not str(path).strip():
-        return [], f"{label}: no path supplied"
+        msg = f"{label}: no path supplied"
+        return [], (None if optional else msg), (msg if optional else None)
     p = Path(path)
     if not p.exists():
-        return [], f"{label} artifact does not exist: {path}"
+        msg = f"{label} artifact does not exist: {path}"
+        return [], (None if optional else msg), (msg if optional else None)
     try:
         blob = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return [], f"{label} artifact unreadable: {exc}"
+        return [], f"{label} artifact unreadable: {exc}", None
     if not isinstance(blob, dict):
-        return [], f"{label} artifact root is not an object"
+        return [], f"{label} artifact root is not an object", None
     examples = blob.get("examples")
     if not isinstance(examples, list):
         return [], (
             f"{label} artifact has no ``examples`` list "
             f"(got {type(examples).__name__})"
+        ), None
+    return [ex for ex in examples if isinstance(ex, dict)], None, None
+
+
+# ---------------------------------------------------------------------------
+# Short-horizon review completion — read directly from the worksheet
+# CSVs.  No DB, no LLM, no provider; the CSVs are the operator's
+# source of truth for the yes / no / pending split.
+# ---------------------------------------------------------------------------
+
+
+def _build_review_completion(
+    *,
+    worksheet_top10_path:  str | None,
+    worksheet_next10_path: str | None,
+    worksheet_final8_path: str | None,
+) -> tuple[dict[str, Any], list[str]]:
+    """Build the ``short_horizon_review_completion`` envelope block
+    from the three worksheet CSVs.  Returns ``(block, warnings)``.
+
+    Each worksheet is optional — a missing path surfaces a warning
+    (never an error) and contributes zero counts to the aggregate.
+    """
+    warnings: list[str] = []
+    by_worksheet: dict[str, dict[str, Any]] = {}
+    total_rows = 0
+    total_included = 0
+    total_excluded = 0
+    total_pending = 0
+
+    specs = (
+        (_WS_TOP10,  worksheet_top10_path),
+        (_WS_NEXT10, worksheet_next10_path),
+        (_WS_FINAL8, worksheet_final8_path),
+    )
+    for label, path in specs:
+        block, warning = _load_worksheet_counts(path, label=label)
+        by_worksheet[label] = block
+        if warning is not None:
+            warnings.append(warning)
+        if block["loaded"]:
+            total_rows     += block["total_rows"]
+            total_included += block["included_count"]
+            total_excluded += block["excluded_count"]
+            total_pending  += block["pending_count"]
+
+    return {
+        "total_reviewed_rows": total_rows,
+        "included_count":      total_included,
+        "excluded_count":      total_excluded,
+        "pending_count":       total_pending,
+        "by_worksheet":        by_worksheet,
+    }, warnings
+
+
+def _load_worksheet_counts(
+    path: str | None, *, label: str,
+) -> tuple[dict[str, Any], str | None]:
+    """Count yes / no / pending rows in a single worksheet CSV.
+
+    Returns ``(block, warning)``.  Missing path / file produces a
+    warning; the block carries zero counts and ``loaded=False`` so
+    aggregate code can skip it without a special case.  Present-but-
+    malformed CSVs (missing required columns / unreadable) also
+    surface as warnings rather than errors — the completion block is
+    informational, not gating.
+    """
+    empty_block: dict[str, Any] = {
+        "path":            str(path) if path is not None else None,
+        "loaded":          False,
+        "total_rows":      0,
+        "included_count":  0,
+        "excluded_count":  0,
+        "pending_count":   0,
+    }
+    if path is None or not str(path).strip():
+        return empty_block, f"worksheet {label}: no path supplied"
+    p = Path(path)
+    if not p.exists():
+        return empty_block, (
+            f"worksheet {label} does not exist: {path}"
         )
-    return [ex for ex in examples if isinstance(ex, dict)], None
+    try:
+        with open(p, "r", newline="", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            fieldnames = reader.fieldnames or []
+            if _WORKSHEET_GATE_COLUMN not in fieldnames:
+                return empty_block, (
+                    f"worksheet {label} missing required column "
+                    f"{_WORKSHEET_GATE_COLUMN!r}"
+                )
+            rows = list(reader)
+    except OSError as exc:
+        return empty_block, f"worksheet {label} unreadable: {exc}"
+    included = excluded = pending = 0
+    for r in rows:
+        gate = _normalise_gate(r.get(_WORKSHEET_GATE_COLUMN))
+        if gate == "yes":
+            included += 1
+        elif gate == "no":
+            excluded += 1
+        else:
+            # Blank or unrecognised → pending.  No banned-token
+            # over-claim here; the report's downstream wording test
+            # passes the warnings list through the banned-token guard.
+            pending += 1
+    return {
+        "path":            str(p),
+        "loaded":          True,
+        "total_rows":      len(rows),
+        "included_count":  included,
+        "excluded_count":  excluded,
+        "pending_count":   pending,
+    }, None
+
+
+def _normalise_gate(raw: Any) -> str:
+    if raw is None:
+        return ""
+    if isinstance(raw, str):
+        return raw.strip().lower()
+    return str(raw).strip().lower()
 
 
 # ---------------------------------------------------------------------------
@@ -415,8 +663,21 @@ def _classify_verdict(
 
 def _aggregate_by_source(
     records: list[dict[str, Any]],
+    *,
+    loaded_labels: Sequence[str] = (),
 ) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
+    # Seed an entry for every loaded source so a loaded-but-empty
+    # source (e.g., the final8 validation artifact with zero records)
+    # is still visible in the breakdown rather than silently absent.
+    for label in loaded_labels:
+        out[label] = {
+            "records_count":         0,
+            "fdr_significant_count": 0,
+            "raw_p_candidate_count": 0,
+            "verdict_counts":        {v: 0 for v in _VERDICT_VALUES},
+            "unique_event_ids":      0,
+        }
     seen_events: dict[str, set[Any]] = {}
     for r in records:
         block = out.setdefault(r["source"], {
@@ -678,6 +939,40 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--review-final8", dest="review_final8",
+        default=_DEFAULT_FINAL8_PATH,
+        help=(
+            f"Path to the short-horizon review final8 validation JSON.  "
+            f"OPTIONAL — missing file produces a warning, not an "
+            f"error.  Defaults to {_DEFAULT_FINAL8_PATH}."
+        ),
+    )
+    parser.add_argument(
+        "--worksheet-top10", dest="worksheet_top10",
+        default=_DEFAULT_WORKSHEET_TOP10_PATH,
+        help=(
+            f"Path to the top10 review worksheet CSV (feeds the "
+            f"short_horizon_review_completion block).  Defaults to "
+            f"{_DEFAULT_WORKSHEET_TOP10_PATH}."
+        ),
+    )
+    parser.add_argument(
+        "--worksheet-next10", dest="worksheet_next10",
+        default=_DEFAULT_WORKSHEET_NEXT10_PATH,
+        help=(
+            f"Path to the next10 review worksheet CSV.  Defaults to "
+            f"{_DEFAULT_WORKSHEET_NEXT10_PATH}."
+        ),
+    )
+    parser.add_argument(
+        "--worksheet-final8", dest="worksheet_final8",
+        default=_DEFAULT_WORKSHEET_FINAL8_PATH,
+        help=(
+            f"Path to the final8 review worksheet CSV.  Defaults to "
+            f"{_DEFAULT_WORKSHEET_FINAL8_PATH}."
+        ),
+    )
+    parser.add_argument(
         "--strongest-limit", type=int,
         default=_STRONGEST_DEFAULT_LIMIT,
         help=(
@@ -710,6 +1005,10 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
         curated_stage_path=args.curated_stage,
         review_top10_path=args.review_top10,
         review_next10_path=args.review_next10,
+        review_final8_path=args.review_final8,
+        worksheet_top10_path=args.worksheet_top10,
+        worksheet_next10_path=args.worksheet_next10,
+        worksheet_final8_path=args.worksheet_final8,
         strongest_limit=int(args.strongest_limit),
         inconclusive_limit=int(args.inconclusive_limit),
     )
