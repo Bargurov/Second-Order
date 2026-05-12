@@ -617,6 +617,136 @@ class TestMustNotSay(unittest.TestCase):
         self.assertIn("xle", blob)
         self.assertIn("generalises", blob)
 
+    # -- comparison_uncomputable branch (the legacy default) ------------------
+
+    def test_must_not_say_retains_null_warning_when_uncomputable(self) -> None:
+        # Fixture defaults to comparison_uncomputable.  The legacy
+        # null-comparison wording must be present verbatim so a
+        # downstream consumer can still pin it as a substring.
+        with _patch_load(_fixture_bundle()), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        blob = " | ".join(report["must_not_say"]).lower()
+        # The legacy XLE-vs-SPY null-result line, fragment-pinned.
+        self.assertIn(
+            "currently returns null spy_result/xle_result", blob,
+            "uncomputable branch must keep the legacy null-result "
+            "warning verbatim",
+        )
+        self.assertIn("no directional inference is supported", blob)
+
+    def test_must_not_say_does_not_emit_causality_warning_when_uncomputable(
+        self,
+    ) -> None:
+        # Conversely, the new comparison_available-only warnings must
+        # NOT appear when the comparison legs are still null.
+        with _patch_load(_fixture_bundle()), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        blob = " | ".join(report["must_not_say"]).lower()
+        for forbidden in (
+            "proves mechanism causality",
+            "validates or invalidates",
+            "per-event interpretation rollup can be ignored",
+        ):
+            self.assertNotIn(
+                forbidden, blob,
+                f"uncomputable branch must not surface the "
+                f"comparison_available wording {forbidden!r}",
+            )
+
+    # -- comparison_available + rollup branch ---------------------------------
+
+    def _build_complete(self) -> dict[str, Any]:
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block_with_rollup()
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            return cli.build_rehearsal_report()
+
+    def test_must_not_say_drops_null_warning_when_comparison_complete(
+        self,
+    ) -> None:
+        # When the freeze block reports comparison_available AND the
+        # comparison_summary rows carry computed SPY/XLE legs, the
+        # stale "currently returns null" wording must NOT appear.
+        report = self._build_complete()
+        blob = " | ".join(report["must_not_say"]).lower()
+        self.assertNotIn(
+            "currently returns null spy_result/xle_result", blob,
+            "comparison_available branch must drop the stale null-"
+            "result warning",
+        )
+
+    def test_must_not_say_emits_causality_warning_when_complete(self) -> None:
+        # And the three replacement warnings the task pins must be
+        # present so the speaker is reminded NOT to claim causality,
+        # NOT to read XLE as a validate/invalidate verdict, and NOT
+        # to gloss over the per-event flip.
+        report = self._build_complete()
+        blob = " | ".join(report["must_not_say"]).lower()
+        self.assertIn("proves mechanism causality", blob)
+        self.assertIn("validates or invalidates", blob)
+        self.assertIn("per-event interpretation rollup can be ignored", blob)
+
+    def test_must_not_say_names_event_60_under_comparison_complete(
+        self,
+    ) -> None:
+        # The rehearsal warning must name event 60 (the descriptive
+        # flip) so the speaker knows which event to cite when
+        # describing the change.
+        report = self._build_complete()
+        blob = " | ".join(report["must_not_say"])
+        self.assertIn("60", blob)
+
+    def test_must_not_say_preserves_raw_p_vs_fdr_distinction(self) -> None:
+        # Under the comparison_available branch the warning about
+        # event 60's interpretation flip must call out both axes
+        # separately — raw-p and FDR — so the listener cannot collapse
+        # them into one threshold.
+        report = self._build_complete()
+        blob = " | ".join(report["must_not_say"]).lower()
+        self.assertIn("raw-p", blob)
+        self.assertIn("fdr", blob)
+
+    def test_must_not_say_does_not_claim_event_60_proves_mechanism(
+        self,
+    ) -> None:
+        # The warning is the negation: it says "do not claim
+        # mechanism causality".  The text must therefore not, in any
+        # branch, positively assert that event 60 proves the
+        # mechanism or carries a causal reading.
+        report = self._build_complete()
+        blob = " | ".join(report["must_not_say"]).lower()
+        for forbidden in (
+            "event 60 proves the mechanism",
+            "event 60 is a finding",
+            "event_id(s) [60] establishes",
+            "event 60 validates significance",
+        ):
+            self.assertNotIn(forbidden, blob)
+
+    def test_must_not_say_under_complete_branch_avoids_banned_tokens(
+        self,
+    ) -> None:
+        # The new wording must pass the same banned-token bar as the
+        # rest of the report.  Strip the literal pipeline label first
+        # so the carve-out is honoured.
+        report = self._build_complete()
+        blob = " | ".join(report["must_not_say"]).lower()
+        sanitised = blob.replace("validated_raw_only", "")
+        for token in _BANNED_WORDS:
+            self.assertNotIn(
+                token, sanitised,
+                f"banned token {token!r} in must_not_say (complete branch)",
+            )
+        # And the bare ``validated`` word never appears outside the
+        # literal pipeline label even in the new wording.
+        sentinel = blob.replace("validated_raw_only", "@@LABEL@@")
+        self.assertIsNone(
+            re.search(r"\bvalidated\b", sentinel),
+            "bare 'validated' word leaked into must_not_say",
+        )
+
 
 # ---------------------------------------------------------------------------
 # Conservative wording

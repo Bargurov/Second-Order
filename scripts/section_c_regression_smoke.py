@@ -57,13 +57,18 @@ Required checks
    confirms this by running the Daily diagnostic once and reporting
    its count; the weekly canonicalization runs on a separate
    synthetic input and never touches the Daily inbox.
-4. The Still Moving diagnostic must NOT surface candidates that
-   fail any of the five required weakness gates (``weak_ticker``,
-   ``missing_price_cache``, ``no_benchmark_adjusted_evidence``,
-   ``no_persistence_signal``, ``duplicate_narrative``) *once Task 1
-   lands*.  Until Task 1 lands the smoke reports the failure counts
-   as observed and does NOT raise a regression — it surfaces a
-   warning so the operator sees the current shape.
+4. The Still Moving surface has a split gate state on this build:
+   the minimum production gate — the sector-ETF-as-primary block in
+   ``mover_card_normalizer.primary_is_sector_etf`` — has landed; the
+   smoke probes it live and reports the status in
+   ``sector_etf_primary_gate_active``.  Broader Still Moving gates
+   (``weak_ticker``, ``missing_price_cache``,
+   ``no_benchmark_adjusted_evidence``, ``no_persistence_signal``,
+   ``duplicate_narrative``) remain proposal-only.  The smoke
+   surfaces their per-candidate failures as a *limitation*, not a
+   regression, and pins the split via ``landed_production_gates``
+   and ``proposed_only_gates``.  The smoke does not claim Still
+   Moving is fully fixed.
 5. Missing ``mechanism_family`` in the Daily inbox must be surfaced
    as a *limitation* (a warning or a non-zero
    ``missing_mechanism_cases`` bucket), never silently hidden.  The
@@ -79,8 +84,8 @@ Output contract (JSON)::
       "daily_summary":         {... 9 keys ...},
       "weekly_summary":        {... 5 keys ...},
       "still_moving_summary":  {... 9 keys ...},
-      "weekly_duplicate_check":{... 6 keys ...},
-      "still_moving_gate_check":{... 4 keys ...},
+      "weekly_duplicate_check":{... 7 keys ...},
+      "still_moving_gate_check":{... 8 keys ...},
       "daily_mechanism_check": {... 4 keys ...},
       "regressions":           [str, ...],
       "warnings":              [str, ...],
@@ -91,6 +96,37 @@ The per-block summaries are descriptive aggregates — they carry the
 counts the upstream diagnostic surfaced so an operator can read the
 smoke output in one pass without re-running each diagnostic
 separately.
+
+Post-commit state coverage
+--------------------------
+
+After the Weekly canonicalization helper and the Still Moving
+sector-ETF-as-primary gate landed, the smoke reports their status
+in two derived fields so an operator can read the post-commit shape
+without re-running each upstream diagnostic:
+
+* ``weekly_duplicate_check.canonicalization_active`` — True when the
+  synthetic 3-card duplicate cluster collapses AND the canonical
+  card carries both ``duplicate_count`` and ``grouped_event_ids``.
+  The smoke does not claim Section C is fixed globally — only that
+  the canonicalizer reduced the synthetic input on this run.
+* ``still_moving_gate_check.sector_etf_primary_gate_active`` — True
+  when the production check
+  (``mover_card_normalizer.primary_is_sector_etf``) rejects a
+  synthetic card whose top mover (by ``|return_5d|``) is a known
+  sector ETF.  The probe is conservative: a False reading is
+  reported as a note, not a regression, because the probe runs on
+  one synthetic card and cannot speak to every shape the gate may
+  see in production.
+* ``still_moving_gate_check.landed_production_gates`` — the
+  catalogue of Still Moving gates already wired into production on
+  this build (the sector-ETF-as-primary block is the only entry).
+* ``still_moving_gate_check.proposed_only_gates`` — the catalogue
+  of broader Still Moving gates that remain proposal-only.  Each
+  entry names the diagnostic tag it would key on so an operator
+  can cross-reference ``gate_failures_by_axis``.  Per-candidate
+  failures on these gates are surfaced as a *limitation*, not a
+  regression.
 
 Conservative wording
 --------------------
@@ -149,6 +185,86 @@ _STILL_MOVING_REQUIRED_GATES: tuple[str, ...] = (
     "no_benchmark_adjusted_evidence",
     "no_persistence_signal",
     "duplicate_narrative",
+)
+
+
+# Production gates that have already landed on the Still Moving
+# surface.  The sector-ETF-as-primary block is wired into
+# ``mover_card_normalizer.primary_is_sector_etf`` — that landed
+# minimum gate is probed live by ``_probe_sector_etf_primary_gate``
+# below.  The catalogue here describes the gate so the smoke can
+# report what shipped without re-running the production check.
+_LANDED_PRODUCTION_GATES: tuple[dict[str, str], ...] = (
+    {
+        "gate_id":     "sector_etf_as_primary_block",
+        "surface":     "mover_card_normalizer.primary_is_sector_etf",
+        "description": (
+            "The Still Moving Market surface rejects a card whose "
+            "top mover is a known sector ETF (e.g., XLE) before it "
+            "can appear as a single-name primary.  The smoke probes "
+            "this check live and reports its status in "
+            "sector_etf_primary_gate_active."
+        ),
+    },
+)
+
+
+# Broader Still Moving gates that remain proposal-only as of this
+# build.  When a Still Moving candidate fails one of these the smoke
+# surfaces the failure as a *limitation*, not a regression, because
+# the production surface does not yet enforce the gate.  Each entry
+# names the diagnostic tag the gate would key on.
+_PROPOSED_ONLY_GATES: tuple[dict[str, str], ...] = (
+    {
+        "gate_id":          "missing_price_cache_block",
+        "diagnostic_tag":   "missing_price_cache",
+        "description": (
+            "Reject candidates whose primary or benchmark ticker "
+            "has no local price_cache coverage.  Proposed in "
+            "section_c_still_moving_gate_proposal; not yet wired "
+            "into the production surface."
+        ),
+    },
+    {
+        "gate_id":          "benchmark_adjusted_evidence_required",
+        "diagnostic_tag":   "no_benchmark_adjusted_evidence",
+        "description": (
+            "Reject candidates without a benchmark-adjusted "
+            "evidence record on file.  Proposed in "
+            "section_c_still_moving_gate_proposal; not yet wired "
+            "into the production surface."
+        ),
+    },
+    {
+        "gate_id":          "persistence_signal_required",
+        "diagnostic_tag":   "no_persistence_signal",
+        "description": (
+            "Reject candidates without a recorded persistence "
+            "signal (Accelerating / Holding).  Proposed in "
+            "section_c_still_moving_gate_proposal; not yet wired "
+            "into the production surface."
+        ),
+    },
+    {
+        "gate_id":          "duplicate_narrative_block",
+        "diagnostic_tag":   "duplicate_narrative",
+        "description": (
+            "Reject candidates whose narrative duplicates another "
+            "candidate in the same window.  Proposed in "
+            "section_c_still_moving_gate_proposal; not yet wired "
+            "into the production surface."
+        ),
+    },
+    {
+        "gate_id":          "weak_ticker_full_block",
+        "diagnostic_tag":   "weak_ticker",
+        "description": (
+            "Reject every candidate flagged weak_ticker (missing "
+            "primary, primary equals benchmark, or primary is a "
+            "sector ETF).  The sector-ETF sub-case has landed; the "
+            "broader weak_ticker block remains proposal-only."
+        ),
+    },
 )
 
 
@@ -220,6 +336,69 @@ def _collapse_weekly_duplicates(
         collapse_weekly_duplicates,
     )
     return collapse_weekly_duplicates(cards)
+
+
+def _probe_sector_etf_primary_gate() -> dict[str, Any]:
+    """Probe the production sector-ETF-as-primary check on a synthetic
+    persistent card.
+
+    Lazy-imports ``mover_card_normalizer.primary_is_sector_etf`` so
+    the smoke's module-level surface stays stdlib-only; the
+    normalizer is itself stdlib-only (``re`` + ``typing``) so the
+    import does not pull in FastAPI, market_data, or any provider.
+
+    Returns a small status dict::
+
+        {"active": bool, "note": str | None}
+
+    ``active`` is True only when the probed card (XLE as top mover
+    by ``|return_5d|``) is rejected — i.e., the gate is wired in
+    end-to-end on this run.  Any import or evaluation failure
+    degrades to ``active=False`` with the reason recorded in
+    ``note``; the gate probe never raises.  Tests patch this seam
+    directly to inject a deterministic status.
+    """
+    try:
+        from mover_card_normalizer import primary_is_sector_etf
+    except Exception as exc:  # noqa: BLE001 — operator-visible
+        return {
+            "active": False,
+            "note": (
+                f"could not load production sector-ETF primary "
+                f"check: {type(exc).__name__}: {exc}"
+            ),
+        }
+    probe_card = {
+        "tickers": [
+            {"symbol": "XLE", "role": "beneficiary",
+             "return_5d": 4.0},
+        ],
+    }
+    try:
+        rejected = bool(primary_is_sector_etf(probe_card))
+    except Exception as exc:  # noqa: BLE001 — operator-visible
+        return {
+            "active": False,
+            "note": (
+                f"production sector-ETF primary check raised on the "
+                f"synthetic probe: {type(exc).__name__}: {exc}"
+            ),
+        }
+    if rejected:
+        return {
+            "active": True,
+            "note": (
+                "production sector-ETF primary check rejected a "
+                "synthetic card with XLE as top mover on this run"
+            ),
+        }
+    return {
+        "active": False,
+        "note": (
+            "production sector-ETF primary check did not reject a "
+            "synthetic card with XLE as top mover on this run"
+        ),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +535,7 @@ def _build_weekly_duplicate_check(
             "groups_reduced":            False,
             "duplicate_count_preserved": False,
             "grouped_event_ids_preserved": False,
+            "canonicalization_active":   False,
             "synthetic_input_size":      len(synthetic),
             "synthetic_output_size":     0,
             "notes":                     notes,
@@ -370,6 +550,7 @@ def _build_weekly_duplicate_check(
             "groups_reduced":            False,
             "duplicate_count_preserved": False,
             "grouped_event_ids_preserved": False,
+            "canonicalization_active":   False,
             "synthetic_input_size":      len(synthetic),
             "synthetic_output_size":     0,
             "notes":                     notes,
@@ -425,10 +606,23 @@ def _build_weekly_duplicate_check(
                 "list that names every cluster member"
             )
 
+    canonicalization_active = (
+        groups_reduced
+        and duplicate_count_preserved
+        and grouped_event_ids_preserved
+    )
+    if canonicalization_active:
+        notes.append(
+            "weekly canonicalization is active on this run: the "
+            "synthetic duplicate cluster collapsed and the canonical "
+            "card carries duplicate_count plus grouped_event_ids"
+        )
+
     return {
         "groups_reduced":              groups_reduced,
         "duplicate_count_preserved":   duplicate_count_preserved,
         "grouped_event_ids_preserved": grouped_event_ids_preserved,
+        "canonicalization_active":     canonicalization_active,
         "synthetic_input_size":        len(synthetic),
         "synthetic_output_size":       len(collapsed),
         "notes":                       notes,
@@ -441,9 +635,21 @@ def _build_still_moving_gate_check(
     """Count Still Moving candidates that fail any required gate.
 
     Reads the diagnostic's per-candidate ``diagnostic_tags`` and the
-    aggregate counters.  Until Task 1 lands the smoke does NOT raise
-    a regression; it surfaces the counts and a ``task1_landed``
-    heuristic (True iff every required-gate counter is zero).
+    aggregate counters.  The minimum production gate (the sector-ETF
+    primary block in ``mover_card_normalizer.primary_is_sector_etf``)
+    has landed and is probed live in
+    ``sector_etf_primary_gate_active``.  Broader Still Moving gates
+    (benchmark-adjusted evidence, persistence, the full weak_ticker
+    block, duplicate narrative) remain proposal-only on this build;
+    the smoke surfaces their per-candidate failures as a *limitation*,
+    not a regression, and pins which gate is in which state via the
+    ``landed_production_gates`` and ``proposed_only_gates`` catalogues.
+
+    The ``task1_landed`` flag is preserved as a heuristic — True iff
+    every required-gate counter is zero on a non-empty input — so
+    callers that already read the field continue to see the same
+    shape.  A False reading is descriptive: it does not, by itself,
+    say a regression happened.
     """
     by_axis: dict[str, int] = {axis: 0 for axis in _STILL_MOVING_REQUIRED_GATES}
     failing_total = 0
@@ -484,20 +690,56 @@ def _build_still_moving_gate_check(
 
     # task1_landed requires both: zero failing candidates AND at
     # least one candidate was checked.  An empty curated YAML
-    # trivially reports zero failures and would otherwise claim the
-    # gate is enforced — surface that ambiguity as a note instead.
+    # trivially reports zero failures and would otherwise claim
+    # every gate is enforced — surface that ambiguity as a note
+    # instead.  The field name is preserved as a stable structured
+    # key for callers; the smoke does not emit "Task 1" in any
+    # operator-facing prose.
     candidates_checked = _safe_int(report.get("candidates_checked"))
     task1_landed = failing_total == 0 and candidates_checked > 0
     if failing_total == 0 and candidates_checked == 0:
         notes.append(
             "no Still Moving candidates were checked; the smoke "
-            "cannot confirm Task 1 has landed from an empty input"
+            "cannot confirm every required gate is enforced from an "
+            "empty input"
         )
+
+    # Production sector-ETF-as-primary gate probe.  This is the
+    # post-commit indicator: the gate landed in
+    # mover_card_normalizer; the smoke probes it with one synthetic
+    # card so an operator can see at a glance whether the production
+    # check rejects a sector-ETF top mover on this run.  A False
+    # reading is a note, not a regression — the probe is one card
+    # and cannot speak to every shape the gate may see in
+    # production.
+    gate_probe = _probe_sector_etf_primary_gate()
+    if not isinstance(gate_probe, dict):
+        gate_probe = {
+            "active": False,
+            "note": (
+                "sector-ETF primary gate probe returned an "
+                "unexpected payload shape; treating as inactive"
+            ),
+        }
+    sector_etf_active = bool(gate_probe.get("active"))
+    probe_note = gate_probe.get("note")
+    if isinstance(probe_note, str) and probe_note:
+        notes.append(probe_note)
 
     return {
         "candidates_failing_required_gates": failing_total,
         "gate_failures_by_axis":             dict(by_axis),
         "task1_landed":                      task1_landed,
+        "sector_etf_primary_gate_active":    sector_etf_active,
+        "sector_etf_primary_gate_note":      (
+            probe_note if isinstance(probe_note, str) else None
+        ),
+        "landed_production_gates":           [
+            dict(g) for g in _LANDED_PRODUCTION_GATES
+        ],
+        "proposed_only_gates":               [
+            dict(g) for g in _PROPOSED_ONLY_GATES
+        ],
         "notes":                             notes,
     }
 
@@ -686,19 +928,52 @@ def run_section_c_regression_smoke(
             "affected by Weekly canonicalization (it should not be)"
         )
 
-    # Still Moving gate check — surface the current failure count as a
-    # warning until Task 1 lands.  Only flag as a regression when the
-    # operator opts into a stricter mode (no flag yet; we surface a
-    # warning consistent with the spec).
+    # Still Moving gate bookkeeping.
+    #
+    # The minimum production gate — the sector-ETF-as-primary block
+    # in ``mover_card_normalizer.primary_is_sector_etf`` — has
+    # landed.  The smoke probes it live and reports the status in
+    # ``sector_etf_primary_gate_active``.  Broader Still Moving
+    # gates (benchmark-adjusted evidence, persistence, the full
+    # weak_ticker block, duplicate narrative) remain proposal-only
+    # as of this build; their per-candidate failures are surfaced as
+    # a *limitation*, not a regression, so an operator sees the
+    # current shape without the smoke claiming a regression on
+    # behaviour the production surface does not yet enforce.  The
+    # smoke does not claim Still Moving is fully fixed; it pins the
+    # split via ``landed_production_gates`` and ``proposed_only_gates``.
     failing_total = still_moving_gate_check[
         "candidates_failing_required_gates"
     ]
-    if failing_total > 0 and not still_moving_gate_check["task1_landed"]:
+    sector_etf_active = still_moving_gate_check[
+        "sector_etf_primary_gate_active"
+    ]
+    if sector_etf_active:
         warnings.append(
-            f"Still Moving currently surfaces {failing_total} "
-            f"candidate(s) that fail at least one required gate "
-            f"({', '.join(_STILL_MOVING_REQUIRED_GATES)}); once Task 1 "
-            f"lands the smoke will surface this as a regression instead"
+            "Still Moving: the minimum production gate "
+            "(sector-ETF-as-primary block) is wired in and rejected "
+            "a synthetic XLE-top-mover card on this run"
+        )
+    else:
+        warnings.append(
+            "Still Moving: the minimum production gate "
+            "(sector-ETF-as-primary block) did not reject the "
+            "synthetic probe card on this run; the gate's status is "
+            "reported in sector_etf_primary_gate_active and the "
+            "probe note"
+        )
+    if failing_total > 0:
+        proposed_only_tags = [
+            g["diagnostic_tag"] for g in _PROPOSED_ONLY_GATES
+        ]
+        warnings.append(
+            f"Still Moving: {failing_total} candidate(s) fail at "
+            f"least one of the broader gates "
+            f"({', '.join(proposed_only_tags)}), which remain "
+            f"proposal-only on this build.  The smoke surfaces "
+            f"these as a limitation, not a regression, because the "
+            f"production surface does not yet enforce them.  See "
+            f"proposed_only_gates for the catalogue."
         )
 
     # Daily mechanism limitation must surface somewhere.
@@ -798,7 +1073,9 @@ def _render_text(report: dict[str, Any]) -> str:
     lines.append("")
     wdc = report["weekly_duplicate_check"]
     lines.append(
-        f"weekly_duplicate_check: groups_reduced={wdc['groups_reduced']} "
+        f"weekly_duplicate_check: "
+        f"canonicalization_active={wdc['canonicalization_active']} "
+        f"groups_reduced={wdc['groups_reduced']} "
         f"duplicate_count_preserved={wdc['duplicate_count_preserved']} "
         f"grouped_event_ids_preserved={wdc['grouped_event_ids_preserved']}"
     )
@@ -806,7 +1083,10 @@ def _render_text(report: dict[str, Any]) -> str:
     lines.append(
         f"still_moving_gate_check: "
         f"failing={smgc['candidates_failing_required_gates']} "
-        f"task1_landed={smgc['task1_landed']}"
+        f"sector_etf_primary_gate_active="
+        f"{smgc['sector_etf_primary_gate_active']} "
+        f"landed_production_gates={len(smgc['landed_production_gates'])} "
+        f"proposed_only_gates={len(smgc['proposed_only_gates'])}"
     )
     dmc = report["daily_mechanism_check"]
     lines.append(

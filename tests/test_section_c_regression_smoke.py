@@ -103,6 +103,7 @@ _WEEKLY_DUPLICATE_CHECK_KEYS = (
     "groups_reduced",
     "duplicate_count_preserved",
     "grouped_event_ids_preserved",
+    "canonicalization_active",
     "synthetic_input_size",
     "synthetic_output_size",
     "notes",
@@ -113,6 +114,10 @@ _STILL_MOVING_GATE_CHECK_KEYS = (
     "candidates_failing_required_gates",
     "gate_failures_by_axis",
     "task1_landed",
+    "sector_etf_primary_gate_active",
+    "sector_etf_primary_gate_note",
+    "landed_production_gates",
+    "proposed_only_gates",
     "notes",
 )
 
@@ -303,8 +308,9 @@ def _patch_all(
     weekly:              dict[str, Any] | None = None,
     still_moving:        dict[str, Any] | None = None,
     collapsed:           list[dict[str, Any]] | None = None,
+    sector_etf_probe:    dict[str, Any] | None = None,
 ):
-    """Patch the four seams with deterministic synthetic payloads."""
+    """Patch the five seams with deterministic synthetic payloads."""
     def _daily_seam(*, input_path):  # noqa: ANN001
         return daily if daily is not None else _daily_report()
 
@@ -344,12 +350,28 @@ def _patch_all(
             },
         ]
 
+    def _sector_etf_seam():
+        if sector_etf_probe is not None:
+            return dict(sector_etf_probe)
+        # Default: the gate is wired in on this run.  Tests that want
+        # to exercise the inactive path pass ``sector_etf_probe``
+        # explicitly.
+        return {
+            "active": True,
+            "note": (
+                "production sector-ETF primary check rejected a "
+                "synthetic card with XLE as top mover on this run"
+            ),
+        }
+
     return _PatchStack([
         patch.object(cli, "_run_daily",         side_effect=_daily_seam),
         patch.object(cli, "_run_weekly",        side_effect=_weekly_seam),
         patch.object(cli, "_run_still_moving",  side_effect=_sm_seam),
         patch.object(cli, "_collapse_weekly_duplicates",
                      side_effect=_collapse_seam),
+        patch.object(cli, "_probe_sector_etf_primary_gate",
+                     side_effect=_sector_etf_seam),
     ])
 
 
@@ -478,6 +500,51 @@ class TestWeeklyDuplicateCheck(unittest.TestCase):
         wdc = report["weekly_duplicate_check"]
         self.assertTrue(wdc["duplicate_count_preserved"])
         self.assertTrue(wdc["grouped_event_ids_preserved"])
+
+    def test_canonicalization_active_true_on_happy_path(self) -> None:
+        # All three sub-checks pass → the post-commit summary field
+        # canonicalization_active reads True so an operator can see
+        # the canonicalizer is wired in on this run without parsing
+        # the three sub-checks individually.
+        with _patch_all():
+            report = cli.run_section_c_regression_smoke()
+        wdc = report["weekly_duplicate_check"]
+        self.assertTrue(wdc["canonicalization_active"])
+
+    def test_canonicalization_active_false_when_no_reduction(self) -> None:
+        passthrough = cli._build_weekly_synthetic_input()
+        with _patch_all(collapsed=passthrough):
+            report = cli.run_section_c_regression_smoke()
+        wdc = report["weekly_duplicate_check"]
+        self.assertFalse(wdc["canonicalization_active"])
+
+    def test_canonicalization_active_false_when_metadata_missing(self) -> None:
+        # groups_reduced True but duplicate_count missing → not
+        # canonicalization_active.
+        collapsed = [
+            {
+                "event_id":          11,
+                "headline":          (
+                    "Turkey lira weakens as reserves slip further"
+                ),
+                "event_date":        "2026-05-08",
+                "primary_ticker":    "TUR",
+                "grouped_event_ids": [11, 12, 13],
+                # duplicate_count missing
+            },
+            {
+                "event_id":         20,
+                "headline":         "Fed minutes show divided committee",
+                "event_date":       "2026-05-09",
+                "primary_ticker":   "SPY",
+            },
+        ]
+        with _patch_all(collapsed=collapsed):
+            report = cli.run_section_c_regression_smoke()
+        wdc = report["weekly_duplicate_check"]
+        self.assertTrue(wdc["groups_reduced"])
+        self.assertFalse(wdc["duplicate_count_preserved"])
+        self.assertFalse(wdc["canonicalization_active"])
 
     def test_no_reduction_triggers_regression(self) -> None:
         # Canonicalizer returns the input unchanged — same number of
@@ -648,7 +715,58 @@ class TestStillMovingGateCheck(unittest.TestCase):
         joined = " | ".join(gate["notes"]).lower()
         self.assertIn("no still moving candidates", joined)
 
-    def test_failures_marks_task1_landed_false_and_warns(self) -> None:
+    def test_sector_etf_primary_gate_active_when_probe_rejects(self) -> None:
+        # Default probe seam reports active=True; the smoke must
+        # surface that status field plus the probe's note.
+        with _patch_all():
+            report = cli.run_section_c_regression_smoke()
+        gate = report["still_moving_gate_check"]
+        self.assertTrue(gate["sector_etf_primary_gate_active"])
+        self.assertIsInstance(gate["sector_etf_primary_gate_note"], str)
+        self.assertIn("xle", gate["sector_etf_primary_gate_note"].lower())
+
+    def test_sector_etf_primary_gate_inactive_when_probe_passes(self) -> None:
+        # Probe seam reports active=False — the production check did
+        # not reject the synthetic card.  The smoke must surface the
+        # status as inactive and propagate the probe's note.  A False
+        # reading is NOT a regression; it is descriptive only.
+        probe = {
+            "active": False,
+            "note": (
+                "production sector-ETF primary check did not reject "
+                "a synthetic card with XLE as top mover on this run"
+            ),
+        }
+        with _patch_all(sector_etf_probe=probe):
+            report = cli.run_section_c_regression_smoke()
+        gate = report["still_moving_gate_check"]
+        self.assertFalse(gate["sector_etf_primary_gate_active"])
+        self.assertEqual(
+            gate["sector_etf_primary_gate_note"], probe["note"],
+        )
+        joined_regs = " | ".join(report["regressions"]).lower()
+        self.assertNotIn("sector-etf", joined_regs)
+
+    def test_sector_etf_primary_gate_probe_failure_is_descriptive(self) -> None:
+        # Probe seam returns an import-failure shape — the smoke must
+        # surface active=False and the diagnostic note without
+        # raising or flagging a regression.
+        probe = {
+            "active": False,
+            "note": (
+                "could not load production sector-ETF primary "
+                "check: ImportError: simulated"
+            ),
+        }
+        with _patch_all(sector_etf_probe=probe):
+            report = cli.run_section_c_regression_smoke()
+        gate = report["still_moving_gate_check"]
+        self.assertFalse(gate["sector_etf_primary_gate_active"])
+        self.assertIn("could not load", gate["sector_etf_primary_gate_note"])
+        joined_regs = " | ".join(report["regressions"]).lower()
+        self.assertNotIn("sector-etf", joined_regs)
+
+    def test_failures_marks_broader_gates_as_limitation(self) -> None:
         sm = _still_moving_report(candidates=[
             _sm_candidate(event_id=1, tags=["weak_ticker", "bad_proxy"]),
             _sm_candidate(event_id=2, tags=["missing_price_cache"]),
@@ -666,11 +784,129 @@ class TestStillMovingGateCheck(unittest.TestCase):
         self.assertEqual(
             gate["gate_failures_by_axis"]["missing_price_cache"], 1,
         )
-        # Surface as a warning, NOT a regression, until Task 1 lands.
+        # Broader-gate failures surface as a warning, NOT a regression.
         joined_warn = " | ".join(report["warnings"]).lower()
         self.assertIn("still moving", joined_warn)
         joined_regs = " | ".join(report["regressions"]).lower()
         self.assertNotIn("still moving", joined_regs)
+        # The warning must frame the broader gates as proposal-only,
+        # not as a pending Task-1 rollout.
+        self.assertIn("proposal-only", joined_warn)
+        self.assertIn("limitation", joined_warn)
+        # ok stays True — broader-gate failures do not flag a regression.
+        self.assertTrue(report["ok"])
+
+    def test_warning_does_not_mention_task_1_lands(self) -> None:
+        # Drive the failure path so the broader-gate warning lands in
+        # the envelope; then confirm the script does NOT emit the
+        # old "until Task 1 lands" wording.
+        sm = _still_moving_report(candidates=[
+            _sm_candidate(event_id=1, tags=["weak_ticker"]),
+            _sm_candidate(event_id=2, tags=["missing_price_cache"]),
+        ])
+        with _patch_all(still_moving=sm):
+            report = cli.run_section_c_regression_smoke()
+        all_prose = " | ".join(
+            list(report.get("warnings") or [])
+            + list(report.get("regressions") or [])
+            + list(report.get("errors") or [])
+            + list(report["still_moving_gate_check"].get("notes") or [])
+        ).lower()
+        self.assertNotIn("until task 1 lands", all_prose)
+        self.assertNotIn("once task 1 lands", all_prose)
+        self.assertNotIn("task 1 lands", all_prose)
+
+    def test_warning_reports_minimum_production_gate_landed(self) -> None:
+        # Default probe seam reports active=True; the smoke must add a
+        # warning naming the minimum production gate that landed.
+        with _patch_all():
+            report = cli.run_section_c_regression_smoke()
+        joined_warn = " | ".join(report["warnings"]).lower()
+        self.assertIn("sector-etf", joined_warn)
+        self.assertIn("wired in", joined_warn)
+        # The minimum-gate warning is a status note, NOT a regression.
+        joined_regs = " | ".join(report["regressions"]).lower()
+        self.assertNotIn("sector-etf", joined_regs)
+
+    def test_landed_production_gates_includes_sector_etf_block(self) -> None:
+        with _patch_all():
+            report = cli.run_section_c_regression_smoke()
+        landed = report["still_moving_gate_check"]["landed_production_gates"]
+        self.assertIsInstance(landed, list)
+        self.assertGreater(len(landed), 0)
+        gate_ids = {g.get("gate_id") for g in landed if isinstance(g, dict)}
+        self.assertIn("sector_etf_as_primary_block", gate_ids)
+        for g in landed:
+            self.assertIn("description", g)
+            self.assertIn("surface", g)
+            self.assertTrue(g["description"])
+
+    def test_proposed_only_gates_catalogue_covers_broader_axes(self) -> None:
+        with _patch_all():
+            report = cli.run_section_c_regression_smoke()
+        proposed = report["still_moving_gate_check"]["proposed_only_gates"]
+        self.assertIsInstance(proposed, list)
+        self.assertGreater(len(proposed), 0)
+        tags = {
+            g.get("diagnostic_tag") for g in proposed
+            if isinstance(g, dict)
+        }
+        # The four proposal-only broader axes must each have an entry
+        # so the smoke's distinction is structurally complete.
+        for expected_tag in (
+            "missing_price_cache",
+            "no_benchmark_adjusted_evidence",
+            "no_persistence_signal",
+            "duplicate_narrative",
+        ):
+            self.assertIn(
+                expected_tag, tags,
+                f"proposed_only_gates missing entry for {expected_tag!r}",
+            )
+        for g in proposed:
+            self.assertIn("description", g)
+            self.assertTrue(g["description"])
+
+    def test_smoke_does_not_claim_still_moving_fully_fixed(self) -> None:
+        # No prose the smoke emits may claim Still Moving is fully
+        # fixed or that every gate is enforced.
+        with _patch_all():
+            report = cli.run_section_c_regression_smoke()
+        all_prose = " | ".join(
+            list(report.get("warnings") or [])
+            + list(report.get("regressions") or [])
+            + list(report.get("errors") or [])
+            + list(report["still_moving_gate_check"].get("notes") or [])
+        ).lower()
+        for phrase in (
+            "fully fixed",
+            "every gate is enforced",
+            "all gates are enforced",
+            "still moving is fixed",
+            "section c is fixed",
+        ):
+            self.assertNotIn(phrase, all_prose)
+
+
+# ---------------------------------------------------------------------------
+# Live production sector-ETF primary gate probe
+# ---------------------------------------------------------------------------
+
+
+class TestSectorEtfPrimaryGateLiveProbe(unittest.TestCase):
+    """The probe seam is patchable for determinism, but the underlying
+    production check must also be wired in.  Confirm the unpatched
+    probe loads ``mover_card_normalizer.primary_is_sector_etf`` and
+    rejects a card whose top mover is XLE."""
+
+    def test_live_probe_reports_active(self) -> None:
+        result = cli._probe_sector_etf_primary_gate()
+        self.assertIsInstance(result, dict)
+        self.assertTrue(
+            result.get("active"),
+            f"expected gate active; got {result!r}",
+        )
+        self.assertIsInstance(result.get("note"), str)
 
 
 # ---------------------------------------------------------------------------

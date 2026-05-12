@@ -160,18 +160,22 @@ _QUESTION_ORDER: tuple[tuple[str, str], ...] = (
 
 
 # Canonical "do not say" list — explicit so a downstream verification
-# harness can pin each item as a substring assertion.
-_MUST_NOT_SAY: tuple[str, ...] = (
+# harness can pin each item as a substring assertion.  The benchmark-
+# sensitivity items are computed at build time via
+# :func:`_build_benchmark_must_not_say` so the rehearsal report does
+# not carry stale "null spy_result / xle_result" wording after the
+# comparison has produced computed legs.
+_MUST_NOT_SAY_PRELUDE: tuple[str, ...] = (
     "any record is FDR-significant when the cohort has zero such "
     "records",
     "'validated_raw_only' means the record cleared the FDR bar — it "
     "does not",
     "the cohort predicts future returns, future signals, or any "
     "forward-looking outcome",
-    "XLE-vs-SPY benchmark sensitivity is interpretable today — even "
-    "with preflight clear, the comparison diagnostic currently returns "
-    "null spy_result/xle_result for every checked event, so no "
-    "directional inference is supported",
+)
+
+
+_MUST_NOT_SAY_TAIL: tuple[str, ...] = (
     "the small, operator-curated cohort generalises to a broader "
     "universe",
     "FDR-adjusted means the records are corrected for every possible "
@@ -180,6 +184,18 @@ _MUST_NOT_SAY: tuple[str, ...] = (
     "vocabulary flag, not a result",
     "the rehearsal report itself authorises any downstream demo "
     "claim — it is a study aid, not approval",
+)
+
+
+# The legacy XLE-vs-SPY warning — kept verbatim and emitted whenever
+# the comparison legs are not currently computable.  This is the
+# "comparison_uncomputable" / preview-only / blocked / unknown
+# branch.  Pinned by a substring assertion in the tests.
+_MUST_NOT_SAY_XLE_UNCOMPUTABLE: str = (
+    "XLE-vs-SPY benchmark sensitivity is interpretable today — even "
+    "with preflight clear, the comparison diagnostic currently returns "
+    "null spy_result/xle_result for every checked event, so no "
+    "directional inference is supported"
 )
 
 
@@ -287,7 +303,7 @@ def build_rehearsal_report(
         "hard_questions":           hard_questions,
         "suggested_answers":        suggested_answers,
         "weak_points":              weak_points,
-        "must_not_say":             list(_MUST_NOT_SAY),
+        "must_not_say":             _build_must_not_say(summary),
         "warnings":                 warnings,
         "errors":                   errors,
     }
@@ -812,6 +828,90 @@ def _compose_xle_benchmark_status_answer(bench: dict[str, Any]) -> str:
         + null_explanation
         + per_event_rollup
     )
+
+
+# ---------------------------------------------------------------------------
+# Must-not-say composition
+# ---------------------------------------------------------------------------
+
+
+def _build_must_not_say(summary: dict[str, Any]) -> list[str]:
+    """Compose the rehearsal report's "do not say" list.
+
+    The benchmark-sensitivity warning is conditional on the freeze
+    artifact's current state so the rehearsal does not carry stale
+    "null spy_result / xle_result" wording after the comparison has
+    produced computed legs.  Two branches:
+
+    * ``comparison_complete`` (status == ``comparison_available`` AND
+      at least one event has both SPY and XLE legs computed):  emit
+      the three benchmark warnings about causality, validation
+      framing, and the per-event interpretation rollup.
+    * Otherwise (``comparison_uncomputable`` / blocked / preview-only
+      / unknown):  keep the legacy null-comparison warning verbatim.
+
+    The non-benchmark items are unchanged in both branches.
+    """
+    bench = _safe_dict(summary.get("benchmark_sensitivity"))
+    items: list[str] = list(_MUST_NOT_SAY_PRELUDE)
+    items.extend(_build_benchmark_must_not_say(bench))
+    items.extend(_MUST_NOT_SAY_TAIL)
+    return items
+
+
+def _build_benchmark_must_not_say(bench: dict[str, Any]) -> list[str]:
+    """Return the benchmark-sensitivity items for the must-not-say list.
+
+    When the freeze artifact's ``benchmark_sensitivity_status`` block
+    reads ``comparison_available`` AND at least one event carries both
+    SPY and XLE computed legs (``comparison_complete=True``), the
+    rehearsal emits three replacement warnings that match the
+    currently computed state.  Otherwise the legacy null-comparison
+    wording is retained.
+
+    The wording is conservative — banned tokens are avoided, the
+    raw-p vs FDR axes are named separately, and no claim is made
+    that a benchmark-flipped event proves the underlying mechanism.
+    """
+    if bool(bench.get("comparison_complete")):
+        changed = sorted(int(v) for v in (bench.get("changed_event_ids") or []) if isinstance(v, int))
+        unchanged = sorted(int(v) for v in (bench.get("unchanged_event_ids") or []) if isinstance(v, int))
+        # Name the changed event(s) verbatim so the rehearsal warning
+        # tracks the current rollup rather than a generic placeholder.
+        # When no event flipped interpretation, the second-axis
+        # warning still applies but no event id is named.
+        changed_phrase = (
+            f"event_id(s) {changed}"
+            if changed else "any benchmark-flipped event"
+        )
+        unchanged_phrase = (
+            f"event_id(s) {unchanged}"
+            if unchanged else "events that did not flip"
+        )
+        return [
+            (
+                "the SPY-vs-XLE comparison proves mechanism causality "
+                "for any event — the comparison rollup is descriptive "
+                "only and names which benchmark frames each event's "
+                "abnormal-return result, not what caused the result"
+            ),
+            (
+                "XLE validates or invalidates an event significance "
+                "flag — the comparison reports which benchmark frames "
+                "each event's raw-p threshold and FDR threshold "
+                "separately, not which framing is the right one; "
+                f"{unchanged_phrase} remain not significant under both "
+                "SPY and XLE"
+            ),
+            (
+                "the per-event interpretation rollup can be ignored or "
+                f"glossed over — {changed_phrase} change descriptive "
+                "interpretation between SPY and XLE on both the raw-p "
+                "axis and the FDR axis, and that flip must be cited "
+                "with the raw-p vs FDR distinction preserved"
+            ),
+        ]
+    return [_MUST_NOT_SAY_XLE_UNCOMPUTABLE]
 
 
 # ---------------------------------------------------------------------------
