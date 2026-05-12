@@ -115,6 +115,101 @@ _BLOCKER_NO_PRIMARY:    str = "missing_primary_ticker"
 _BLOCKER_READY:         str = "ready"
 
 
+# NYSE observed-closure calendar.  Inlined here (not imported from
+# ``market_check``) so the default code path keeps the no-provider /
+# no-fastapi import invariants pinned by ``TestImportIsolation``.
+#
+# Why this matters: the forward-horizon and estimation-window checks
+# both compare ``price_cache`` rows against a date math that historically
+# used weekday-only offsets (Mon-Fri).  That treats every NYSE-closed
+# weekday — for example, 2026-01-01 — as a required trading day, so a
+# row that can never exist would keep an event blocked.  This set lets
+# the missing-range logic distinguish "the market was closed" from
+# "the cache is short a real trading day".
+#
+# Coverage: 2024-2030, mirroring ``market_check._US_MARKET_HOLIDAYS``.
+# A year missing from this set degrades to weekday-only behavior for
+# that year (the conservative direction — never a false-clear).
+_MARKET_HOLIDAYS: frozenset[_date] = frozenset({
+    # 2024
+    _date(2024, 1, 1),    # New Year's Day
+    _date(2024, 1, 15),   # MLK Day
+    _date(2024, 2, 19),   # Presidents' Day
+    _date(2024, 3, 29),   # Good Friday
+    _date(2024, 5, 27),   # Memorial Day
+    _date(2024, 6, 19),   # Juneteenth
+    _date(2024, 7, 4),    # Independence Day
+    _date(2024, 9, 2),    # Labor Day
+    _date(2024, 11, 28),  # Thanksgiving
+    _date(2024, 12, 25),  # Christmas
+    # 2025
+    _date(2025, 1, 1),    # New Year's Day
+    _date(2025, 1, 20),   # MLK Day
+    _date(2025, 2, 17),   # Presidents' Day
+    _date(2025, 4, 18),   # Good Friday
+    _date(2025, 5, 26),   # Memorial Day
+    _date(2025, 6, 19),   # Juneteenth
+    _date(2025, 7, 4),    # Independence Day
+    _date(2025, 9, 1),    # Labor Day
+    _date(2025, 11, 27),  # Thanksgiving
+    _date(2025, 12, 25),  # Christmas
+    # 2026
+    _date(2026, 1, 1),    # New Year's Day
+    _date(2026, 1, 19),   # MLK Day
+    _date(2026, 2, 16),   # Presidents' Day
+    _date(2026, 4, 3),    # Good Friday
+    _date(2026, 5, 25),   # Memorial Day
+    _date(2026, 6, 19),   # Juneteenth
+    _date(2026, 7, 3),    # Independence Day (obs. Fri)
+    _date(2026, 9, 7),    # Labor Day
+    _date(2026, 11, 26),  # Thanksgiving
+    _date(2026, 12, 25),  # Christmas
+    # 2027
+    _date(2027, 1, 1),    # New Year's Day
+    _date(2027, 1, 18),   # MLK Day
+    _date(2027, 2, 15),   # Presidents' Day
+    _date(2027, 3, 26),   # Good Friday
+    _date(2027, 5, 31),   # Memorial Day
+    _date(2027, 6, 18),   # Juneteenth (obs. Fri)
+    _date(2027, 7, 5),    # Independence Day (obs. Mon)
+    _date(2027, 9, 6),    # Labor Day
+    _date(2027, 11, 25),  # Thanksgiving
+    _date(2027, 12, 24),  # Christmas (obs. Fri)
+    # 2028
+    _date(2028, 1, 17),   # MLK Day
+    _date(2028, 2, 21),   # Presidents' Day
+    _date(2028, 4, 14),   # Good Friday
+    _date(2028, 5, 29),   # Memorial Day
+    _date(2028, 6, 19),   # Juneteenth
+    _date(2028, 7, 4),    # Independence Day
+    _date(2028, 9, 4),    # Labor Day
+    _date(2028, 11, 23),  # Thanksgiving
+    _date(2028, 12, 25),  # Christmas
+    # 2029
+    _date(2029, 1, 1),    # New Year's Day
+    _date(2029, 1, 15),   # MLK Day
+    _date(2029, 2, 19),   # Presidents' Day
+    _date(2029, 3, 30),   # Good Friday
+    _date(2029, 5, 28),   # Memorial Day
+    _date(2029, 6, 19),   # Juneteenth
+    _date(2029, 7, 4),    # Independence Day
+    _date(2029, 9, 3),    # Labor Day
+    _date(2029, 11, 22),  # Thanksgiving
+    _date(2029, 12, 25),  # Christmas
+    # 2030
+    _date(2030, 1, 1),    # New Year's Day
+    _date(2030, 1, 21),   # MLK Day
+    _date(2030, 2, 18),   # Presidents' Day
+    _date(2030, 4, 19),   # Good Friday
+    _date(2030, 5, 27),   # Memorial Day
+    _date(2030, 6, 19),   # Juneteenth
+    _date(2030, 7, 4),    # Independence Day
+    _date(2030, 9, 2),    # Labor Day
+    _date(2030, 11, 28),  # Thanksgiving
+    _date(2030, 12, 25),  # Christmas
+})
+
+
 _RECOMMENDED_NO_EVENTS = (
     "No events were checked — supply --event-ids and re-run."
 )
@@ -416,6 +511,13 @@ def _check_ticker_cache(
     separate range entries so an operator can address them independently.
     Empty cache surfaces both gaps with reason ``no_cache_for_ticker``
     instead.
+
+    Both checks use ``_trading_day_offset`` / ``_trading_days_before`` so
+    a known NYSE-closed weekday (for example ``2026-01-01``) is never
+    flagged as a missing row.  Forward-horizon targets shift to the
+    N-th *trading day* after the event, which is strictly stronger than
+    the prior weekday-only target — it never silently clears a real
+    missing trading day.
     """
     missing: list[dict[str, str]] = []
 
@@ -424,10 +526,10 @@ def _check_ticker_cache(
         # spans the entire window the operator would need to backfill
         # for THIS event (estimation window through max forward horizon).
         max_h = max(horizons) if horizons else 0
-        range_start = _business_day_offset(
+        range_start = _trading_day_offset(
             event_d, -max(estimation_window, 1),
         ).isoformat()
-        range_end = _business_day_offset(event_d, max_h).isoformat() \
+        range_end = _trading_day_offset(event_d, max_h).isoformat() \
             if max_h > 0 else event_d.isoformat()
         missing.append({
             "start":  range_start,
@@ -437,24 +539,29 @@ def _check_ticker_cache(
         return False, missing
 
     cache_max_iso = cache_dates[-1]
+    cache_set = set(cache_dates)
     event_iso = event_d.isoformat()
 
     # Forward-horizon gap ----------------------------------------------------
+    # The target is the N-th *trading day* after the event, where
+    # N = max(horizons).  A holiday between event and horizon shifts
+    # the target one calendar day further out; the cache must still
+    # carry a real row at or past that trading date.
     forward_ok = True
     if horizons:
         target_max_h = max(horizons)
-        target_max_d = _business_day_offset(event_d, target_max_h)
+        target_max_d = _trading_day_offset(event_d, target_max_h)
         target_max_iso = target_max_d.isoformat()
         if cache_max_iso < target_max_iso:
             forward_ok = False
             if cache_max_iso < event_iso:
                 # Cache doesn't even reach the event date; start the
-                # missing range at +1bd, which is the earliest forward
-                # observation we'd actually use.
-                range_start_d = _business_day_offset(event_d, 1)
+                # missing range at the next trading day, which is the
+                # earliest forward observation we'd actually use.
+                range_start_d = _trading_day_offset(event_d, 1)
             else:
                 cmax_d = _date.fromisoformat(cache_max_iso)
-                range_start_d = cmax_d + _timedelta(days=1)
+                range_start_d = _next_trading_day(cmax_d)
             missing.append({
                 "start":  range_start_d.isoformat(),
                 "end":    target_max_iso,
@@ -462,25 +569,26 @@ def _check_ticker_cache(
             })
 
     # Estimation-window short -----------------------------------------------
-    pre_event_dates = [d for d in cache_dates if d < event_iso]
-    pre_count = len(pre_event_dates)
-    est_ok = (estimation_window <= 0) or (pre_count >= estimation_window)
-    if not est_ok:
-        needed_more = estimation_window - pre_count
-        cache_pre_min = pre_event_dates[0] if pre_event_dates else None
-        if cache_pre_min is not None:
-            anchor = _date.fromisoformat(cache_pre_min)
-        else:
-            anchor = event_d
-        range_end_d   = _business_day_offset(anchor, -1)
-        range_start_d = _business_day_offset(anchor, -needed_more)
-        if range_start_d > range_end_d:
-            range_start_d = range_end_d
-        missing.append({
-            "start":  range_start_d.isoformat(),
-            "end":    range_end_d.isoformat(),
-            "reason": _REASON_ESTIMATION,
-        })
+    # Resolve the estimation window to the concrete set of the
+    # ``estimation_window`` most-recent trading days strictly before
+    # ``event_d``.  The cache must contain a row for each of them.  Any
+    # NYSE-closed weekday in the lookback range is dropped from the
+    # required set, so a missing holiday row never blocks; any real
+    # trading day missing from the cache still does.
+    est_ok = True
+    if estimation_window > 0:
+        required_pre_dates = _trading_days_before(event_d, estimation_window)
+        missing_pre_dates = [
+            d for d in required_pre_dates
+            if d.isoformat() not in cache_set
+        ]
+        if missing_pre_dates:
+            est_ok = False
+            missing.append({
+                "start":  missing_pre_dates[0].isoformat(),
+                "end":    missing_pre_dates[-1].isoformat(),
+                "reason": _REASON_ESTIMATION,
+            })
 
     return forward_ok and est_ok, missing
 
@@ -537,6 +645,9 @@ def _business_day_offset(start: _date, n: int) -> _date:
     Mirrors ``stat_validation_readiness_report._business_day_offset`` for
     positive ``n`` and extends to negative ``n`` so the preflight can
     back-project an estimation-window backfill range.
+
+    Note: weekday-only.  See ``_trading_day_offset`` for the NYSE
+    holiday-aware variant used by the missing-range logic.
     """
     if n == 0:
         return start
@@ -549,6 +660,62 @@ def _business_day_offset(start: _date, n: int) -> _date:
         if out.weekday() < 5:
             remaining -= 1
     return out
+
+
+def _is_trading_day(d: _date) -> bool:
+    """Return True if ``d`` is a NYSE trading day (weekday and not a
+    known US market holiday)."""
+    return d.weekday() < 5 and d not in _MARKET_HOLIDAYS
+
+
+def _trading_day_offset(start: _date, n: int) -> _date:
+    """Shift ``start`` by ``n`` trading days, skipping weekends AND
+    known US market holidays.  Positive = forward, negative = backward,
+    zero = unchanged.
+
+    Used by ``_check_ticker_cache`` so that the forward-horizon target
+    and the estimation-window anchor line up with dates that could
+    actually have a row in ``price_cache``.
+    """
+    if n == 0:
+        return start
+    out = start
+    direction = 1 if n > 0 else -1
+    remaining = abs(n)
+    one_day = _timedelta(days=1)
+    while remaining > 0:
+        out = out + (one_day if direction > 0 else -one_day)
+        if _is_trading_day(out):
+            remaining -= 1
+    return out
+
+
+def _trading_days_before(event_d: _date, n: int) -> list[_date]:
+    """Return the ``n`` most-recent trading days strictly before
+    ``event_d``, in ascending date order.
+
+    Anchors the estimation-window check to concrete dates so the
+    missing-range output names real trading days an operator can
+    backfill, rather than a count that drifts as the cache shifts.
+    """
+    if n <= 0:
+        return []
+    out: list[_date] = []
+    cur = event_d - _timedelta(days=1)
+    while len(out) < n:
+        if _is_trading_day(cur):
+            out.append(cur)
+        cur = cur - _timedelta(days=1)
+    out.reverse()
+    return out
+
+
+def _next_trading_day(after: _date) -> _date:
+    """Return the next trading day strictly after ``after``."""
+    cur = after + _timedelta(days=1)
+    while not _is_trading_day(cur):
+        cur = cur + _timedelta(days=1)
+    return cur
 
 
 def _parse_iso_date(value: Any) -> _date | None:
