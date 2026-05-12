@@ -250,6 +250,38 @@ class TestHighConvictionPersistentGate(unittest.TestCase):
         self.assertFalse(is_high_conviction_persistent("nope"))
         self.assertFalse(is_high_conviction_persistent(42))
 
+    def test_rejects_when_top_mover_is_sector_etf(self):
+        # Top mover by |return_5d| is XLE (sector ETF) — the gate must
+        # reject so the Still Moving surface reads as a single-name
+        # story, not a sector-wide tape.
+        card = _high_conviction_card(tickers=[
+            {"symbol": "XLE", "role": "beneficiary", "return_5d": 4.0},
+            {"symbol": "XOM", "role": "beneficiary", "return_5d": 2.0},
+        ])
+        self.assertFalse(is_high_conviction_persistent(card))
+
+    def test_rejects_when_top_mover_is_spy(self):
+        card = _high_conviction_card(tickers=[
+            {"symbol": "SPY", "role": "beneficiary", "return_5d": 3.5},
+        ])
+        self.assertFalse(is_high_conviction_persistent(card))
+
+    def test_passes_when_sector_etf_is_not_top_mover(self):
+        # XLE is on the card but ranked second by |return_5d| — the
+        # primary read is XOM, which is a single name.
+        card = _high_conviction_card(tickers=[
+            {"symbol": "XOM", "role": "beneficiary", "return_5d": 5.0},
+            {"symbol": "XLE", "role": "beneficiary", "return_5d": 4.0},
+        ])
+        self.assertTrue(is_high_conviction_persistent(card))
+
+    def test_rejects_when_top_mover_symbol_lowercase(self):
+        # Case-insensitive: a lowercase 'xle' must still be caught.
+        card = _high_conviction_card(tickers=[
+            {"symbol": "xle", "role": "beneficiary", "return_5d": 4.0},
+        ])
+        self.assertFalse(is_high_conviction_persistent(card))
+
 
 # ---------------------------------------------------------------------------
 # /market-movers cluster-best representative

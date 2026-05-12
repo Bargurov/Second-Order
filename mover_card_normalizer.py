@@ -261,6 +261,51 @@ def _is_persistent_eligible(card: dict) -> bool:
 _PERSISTENT_THESIS_STATES: frozenset[str] = frozenset({"confirming", "partial"})
 
 
+# Sector-ETF symbols that are too broad to serve as a single-name
+# "primary" read on the Still Moving Market surface.  Mirrors the
+# blocklist in scripts/section_c_still_moving_quality_diagnostic.py
+# (``_SECTOR_ETFS_AS_PRIMARY_BLOCKLIST``) so the production gate and
+# the curated-archive diagnostic flag the same proxies.  A persistent
+# card whose top mover (by |return_5d|) sits in this set is rejected
+# so the surface reads as a single-name story, not a sector-wide
+# tape.
+_SECTOR_ETFS_AS_PRIMARY: frozenset[str] = frozenset({
+    "SPY",
+    "XLE", "XLF", "XLK", "XLV", "XLI", "XLB",
+    "XLU", "XLY", "XLP", "XLRE",
+    "SMH", "XAR",
+})
+
+
+def _persistent_top_mover_symbol(card: dict) -> str | None:
+    """Return the upper-cased symbol of the card's strongest |return_5d|
+    mover, or ``None`` when no usable ticker is present.
+
+    Reuses ``_top_moved_tickers`` so the "primary" the gate inspects
+    matches what the surface would actually render at the top of the
+    card preview.
+    """
+    if not isinstance(card, dict):
+        return None
+    moved = _top_moved_tickers(card.get("tickers"))
+    if not moved:
+        return None
+    sym = moved[0].get("symbol")
+    if not isinstance(sym, str):
+        return None
+    sym = sym.strip().upper()
+    return sym or None
+
+
+def primary_is_sector_etf(card: dict) -> bool:
+    """True when the persistent card's top mover is in the sector-ETF
+    blocklist.  Used by both the route-level gate and the diagnostic
+    rejection-reason attributor so the two stay aligned.
+    """
+    sym = _persistent_top_mover_symbol(card)
+    return sym is not None and sym in _SECTOR_ETFS_AS_PRIMARY
+
+
 def _conviction_class(card: dict) -> str | None:
     block = card.get("conviction")
     if isinstance(block, dict):
@@ -292,7 +337,10 @@ def is_high_conviction_persistent(card: dict) -> bool:
       * ``conviction.conviction_class == "conviction"`` — the
         primary-confirmation × durable-follow-through bucket from
         :mod:`movers_ranking`,
-      * ``conviction.impact_level == "high"``.
+      * ``conviction.impact_level == "high"``,
+      * the top mover (by ``|return_5d|``) is NOT a sector ETF from
+        :data:`_SECTOR_ETFS_AS_PRIMARY` — a sector-ETF primary cannot
+        carry the single-name read this surface promises.
 
     The conviction-class condition already requires
     ``persistence_quality >= 0.15`` (i.e. a ``grind`` / ``gap_and_hold``
@@ -316,6 +364,8 @@ def is_high_conviction_persistent(card: dict) -> bool:
     if not isinstance(conviction, dict):
         return False
     if conviction.get("impact_level") != "high":
+        return False
+    if primary_is_sector_etf(card):
         return False
     return True
 

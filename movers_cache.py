@@ -665,6 +665,14 @@ def _persistent_card_rejection_reason(card: dict) -> str:
         return "not_conviction_class"
     if conviction.get("impact_level") != "high":
         return "not_high_impact"
+    # Sector-ETF-as-primary gate — kept after the conviction / impact
+    # checks so its order matches ``is_high_conviction_persistent``.
+    # Lazy import: the normalizer is a sibling module the route layer
+    # already pairs with this one, but keeping the import inside the
+    # function avoids any module-load coupling.
+    from mover_card_normalizer import primary_is_sector_etf
+    if primary_is_sector_etf(card):
+        return "sector_etf_as_primary"
     return "filtered_by_persistent_gate"
 
 
