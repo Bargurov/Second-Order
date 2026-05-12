@@ -59,7 +59,21 @@ _REQUIRED_BENCHMARK_SENSITIVITY_FIELDS = (
     "local_backfill_available",
     "online_backfill_required",
     "comparison_summary",
+    "changed_interpretation_count",
+    "changed_event_ids",
+    "unchanged_event_ids",
+    "per_event_summary",
     "limitations",
+)
+
+
+_REQUIRED_PER_EVENT_SUMMARY_FIELDS = (
+    "event_id",
+    "event_date",
+    "primary_ticker",
+    "changed_interpretation",
+    "changed_fields",
+    "note",
 )
 
 
@@ -227,15 +241,35 @@ def _xle_preview_payload(
     }
 
 
-def _xle_comparison_payload() -> dict[str, Any]:
+def _xle_comparison_payload(*, computable: bool = True) -> dict[str, Any]:
     """Synthetic comparison artifact carrying a small summary payload.
     The script copies this through to ``comparison_summary`` (with
     bulky list fields trimmed).
     """
+    comparison_row = {
+        "event_id":        60,
+        "event_date":      "2026-04-08",
+        "primary_ticker":  "XOM",
+        "changed_interpretation": False,
+        "note":            "synthetic test fixture",
+    }
+    if computable:
+        comparison_row["spy_result"] = {
+            "p_value": 0.4,
+            "fdr_q":   0.8,
+        }
+        comparison_row["xle_result"] = {
+            "p_value": 0.5,
+            "fdr_q":   0.9,
+        }
+    else:
+        comparison_row["spy_result"] = None
+        comparison_row["xle_result"] = None
     return {
         "ok":            True,
         "benchmark_a":   "SPY",
         "benchmark_b":   "XLE",
+        "comparisons":   [comparison_row],
         "summary": {
             "events_evaluated":     2,
             "horizons_evaluated":   3,
@@ -959,7 +993,7 @@ class TestBenchmarkSensitivityStatus(unittest.TestCase):
         finally:
             ws.cleanup()
 
-    def test_block_has_all_seven_required_fields(self) -> None:
+    def test_block_has_all_required_fields(self) -> None:
         ws = _Workspace()
         try:
             ws.write_curated([])
@@ -1061,8 +1095,8 @@ class TestBenchmarkSensitivityStatus(unittest.TestCase):
     def test_status_comparison_available_takes_priority(self) -> None:
         # Even when a request packet documents blocked events AND a
         # preview shows ready_after=2 / blocked_after=0, a comparison
-        # artifact dominates and lands the status at
-        # 'comparison_available'.
+        # artifact with computed SPY/XLE pairs dominates and lands the
+        # status at 'comparison_available'.
         ws = _Workspace()
         try:
             ws.write_curated([])
@@ -1084,6 +1118,48 @@ class TestBenchmarkSensitivityStatus(unittest.TestCase):
                 report["benchmark_sensitivity_status"]["status"],
                 "comparison_available",
             )
+        finally:
+            ws.cleanup()
+
+    def test_null_comparison_results_are_not_meaningfully_complete(
+        self,
+    ) -> None:
+        # A comparison artifact can exist after the data gates clear,
+        # but if the seam returns null results for both benchmarks the
+        # freeze artifact must not describe benchmark sensitivity as
+        # meaningfully complete.
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            prev = self._write(
+                ws, "preview.json",
+                _xle_preview_payload(ready_after=2, blocked_after=0),
+            )
+            cmp_ = self._write(
+                ws, "cmp.json",
+                _xle_comparison_payload(computable=False),
+            )
+            report = cli.build_freeze_candidate_evidence_artifact(
+                curated_path=str(ws.curated_path),
+                short_horizon_batches=[],
+                xle_request_packet_path=self._nope(ws, "no_req.json"),
+                xle_preview_path=prev,
+                xle_comparison_path=cmp_,
+                generated_at="2026-05-12T00:00:00Z",
+            )
+            block = report["benchmark_sensitivity_status"]
+            self.assertEqual(block["status"], "comparison_uncomputable")
+            self.assertEqual(
+                block["comparison_summary"]["comparisons"][0]["spy_result"],
+                None,
+            )
+            self.assertEqual(
+                block["comparison_summary"]["comparisons"][0]["xle_result"],
+                None,
+            )
+            joined = " ".join(block["limitations"]).lower()
+            self.assertIn("not meaningfully complete", joined)
+            self.assertIn("no spy-vs-xle inference", joined)
         finally:
             ws.cleanup()
 
@@ -1394,6 +1470,7 @@ class TestCliBenchmarkSensitivityFlags(unittest.TestCase):
                 "--json",
                 "--xle-request-packet", str(req_p),
                 "--xle-preview",        str(tmp_p / "missing.json"),
+                "--xle-comparison",     str(tmp_p / "missing.json"),
             ])
             self.assertEqual(rc, 0)
             parsed = json.loads(output)
@@ -1412,6 +1489,7 @@ class TestCliBenchmarkSensitivityFlags(unittest.TestCase):
                 "--json",
                 "--xle-request-packet", str(tmp_p / "missing.json"),
                 "--xle-preview",        str(prev_p),
+                "--xle-comparison",     str(tmp_p / "missing.json"),
             ])
             self.assertEqual(rc, 0)
             parsed = json.loads(output)
@@ -1437,6 +1515,365 @@ class TestCliBenchmarkSensitivityFlags(unittest.TestCase):
                 parsed["benchmark_sensitivity_status"]["status"],
                 "comparison_available",
             )
+
+
+# ---------------------------------------------------------------------------
+# Benchmark sensitivity — per-event interpretation rollup
+# ---------------------------------------------------------------------------
+
+
+def _xle_comparison_payload_60_73() -> dict[str, Any]:
+    """Mirror the live SPY-vs-XLE comparison artifact's shape: events
+    60 (interpretation changed) and 73 (interpretation unchanged).
+    Numeric values match the orders of magnitude actually observed
+    against ``events.db`` so the changed-fields detection exercises
+    the real distinction (raw-p / fdr-q both cross alpha=0.05 for
+    event 60; sar signs agree on both events)."""
+    return {
+        "ok":             True,
+        "checked_events": 2,
+        "blocked_count":  0,
+        "comparisons": [
+            {
+                "event_id":               60,
+                "event_date":             "2026-04-08",
+                "primary_ticker":         "XOM",
+                "spy_result": {
+                    "raw_p":       0.028,
+                    "fdr_q":       0.028,
+                    "significant": True,
+                    "sar":        -0.205,
+                },
+                "xle_result": {
+                    "raw_p":       0.268,
+                    "fdr_q":       0.268,
+                    "significant": False,
+                    "sar":        -0.039,
+                },
+                "spy_blocker":            None,
+                "xle_blocker":            None,
+                "changed_interpretation": True,
+                "note":                   "synthetic: differ on raw-p and FDR",
+            },
+            {
+                "event_id":               73,
+                "event_date":             "2026-04-06",
+                "primary_ticker":         "XOM",
+                "spy_result": {
+                    "raw_p":       0.145,
+                    "fdr_q":       0.145,
+                    "significant": False,
+                    "sar":        -0.138,
+                },
+                "xle_result": {
+                    "raw_p":       0.198,
+                    "fdr_q":       0.198,
+                    "significant": False,
+                    "sar":        -0.046,
+                },
+                "spy_blocker":            None,
+                "xle_blocker":            None,
+                "changed_interpretation": False,
+                "note":                   "synthetic: agree on both axes",
+            },
+        ],
+        "errors":   [],
+        "warnings": [],
+    }
+
+
+class TestBenchmarkSensitivityPerEventSummary(unittest.TestCase):
+    """When ``status == 'comparison_available'`` the block must
+    summarise which events changed interpretation under XLE-vs-SPY and
+    what specifically changed for each, without claiming causality."""
+
+    def _write(self, ws: "_Workspace", name: str,
+               payload: dict[str, Any]) -> str:
+        path = ws.root / name
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return str(path)
+
+    def _nope(self, ws: "_Workspace", name: str) -> str:
+        return str(ws.root / name)
+
+    def _build(self, ws: "_Workspace", *,
+               comparison: dict[str, Any]) -> dict[str, Any]:
+        cmp_p = self._write(ws, "cmp.json", comparison)
+        return cli.build_freeze_candidate_evidence_artifact(
+            curated_path=str(ws.curated_path),
+            short_horizon_batches=[],
+            xle_request_packet_path=self._nope(ws, "no_req.json"),
+            xle_preview_path=self._nope(ws, "no_prev.json"),
+            xle_comparison_path=cmp_p,
+            generated_at="2026-05-12T00:00:00Z",
+        )
+
+    # ----- schema -----------------------------------------------------------
+
+    def test_block_carries_rollup_keys_when_comparison_available(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            block = report["benchmark_sensitivity_status"]
+            self.assertEqual(block["status"], "comparison_available")
+            self.assertIn("changed_interpretation_count", block)
+            self.assertIn("changed_event_ids",            block)
+            self.assertIn("unchanged_event_ids",          block)
+            self.assertIn("per_event_summary",            block)
+        finally:
+            ws.cleanup()
+
+    def test_rollup_defaults_when_no_comparison(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = cli.build_freeze_candidate_evidence_artifact(
+                curated_path=str(ws.curated_path),
+                short_horizon_batches=[],
+                xle_request_packet_path=self._nope(ws, "no_req.json"),
+                xle_preview_path=self._nope(ws, "no_prev.json"),
+                generated_at="2026-05-12T00:00:00Z",
+            )
+            block = report["benchmark_sensitivity_status"]
+            self.assertEqual(block["status"], "unknown")
+            self.assertEqual(block["changed_interpretation_count"], 0)
+            self.assertEqual(block["changed_event_ids"],            [])
+            self.assertEqual(block["unchanged_event_ids"],          [])
+            self.assertEqual(block["per_event_summary"],            [])
+        finally:
+            ws.cleanup()
+
+    def test_rollup_defaults_when_comparison_uncomputable(self) -> None:
+        # When the comparison artifact exists but every event has
+        # null SPY/XLE results, status is 'comparison_uncomputable'
+        # and the per-event rollup stays at defaults — no interpretation
+        # change can be reported because no interpretation was computed.
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            cmp_payload = _xle_comparison_payload(computable=False)
+            report = self._build(ws, comparison=cmp_payload)
+            block = report["benchmark_sensitivity_status"]
+            self.assertEqual(block["status"], "comparison_uncomputable")
+            self.assertEqual(block["changed_interpretation_count"], 0)
+            self.assertEqual(block["changed_event_ids"],            [])
+            self.assertEqual(block["unchanged_event_ids"],          [])
+            self.assertEqual(block["per_event_summary"],            [])
+        finally:
+            ws.cleanup()
+
+    # ----- counts & partitions ---------------------------------------------
+
+    def test_changed_count_and_event_id_partitions(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            block = report["benchmark_sensitivity_status"]
+            self.assertEqual(block["changed_interpretation_count"], 1)
+            self.assertEqual(block["changed_event_ids"],   [60])
+            self.assertEqual(block["unchanged_event_ids"], [73])
+        finally:
+            ws.cleanup()
+
+    def test_per_event_summary_one_row_per_comparison(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            per_event = report["benchmark_sensitivity_status"]["per_event_summary"]
+            self.assertEqual(len(per_event), 2)
+            ids = sorted(int(e["event_id"]) for e in per_event)
+            self.assertEqual(ids, [60, 73])
+            for entry in per_event:
+                self.assertEqual(
+                    set(entry.keys()),
+                    set(_REQUIRED_PER_EVENT_SUMMARY_FIELDS),
+                )
+        finally:
+            ws.cleanup()
+
+    # ----- event 60: changed interpretation, with changed_fields -----------
+
+    def test_event_60_changed_fields_surface_raw_p_fdr_and_significance(
+        self,
+    ) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            per_event = report["benchmark_sensitivity_status"]["per_event_summary"]
+            ev60 = next(e for e in per_event if e["event_id"] == 60)
+
+            self.assertTrue(ev60["changed_interpretation"])
+            fields = {f["field"] for f in ev60["changed_fields"]}
+            # raw-p / FDR distinction is preserved: both surface as
+            # separate threshold fields.
+            self.assertIn("raw_p_threshold",  fields)
+            self.assertIn("fdr_q_threshold",  fields)
+            self.assertIn("significant_flag", fields)
+
+            # SAR signs agree (both negative) — sar_sign must NOT be
+            # in the changed_fields list.
+            self.assertNotIn("sar_sign", fields)
+        finally:
+            ws.cleanup()
+
+    def test_event_60_changed_fields_echo_spy_and_xle_values(self) -> None:
+        # Each changed field carries the SPY and XLE values that
+        # produced the disagreement, so a downstream reader doesn't
+        # have to cross-reference comparison_summary by hand.
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            per_event = report["benchmark_sensitivity_status"]["per_event_summary"]
+            ev60 = next(e for e in per_event if e["event_id"] == 60)
+            by_field = {f["field"]: f for f in ev60["changed_fields"]}
+            raw_p = by_field["raw_p_threshold"]
+            self.assertAlmostEqual(raw_p["spy"],   0.028, places=6)
+            self.assertAlmostEqual(raw_p["xle"],   0.268, places=6)
+            self.assertAlmostEqual(raw_p["alpha"], 0.05,  places=6)
+            sig = by_field["significant_flag"]
+            self.assertIs(sig["spy"], True)
+            self.assertIs(sig["xle"], False)
+        finally:
+            ws.cleanup()
+
+    # ----- event 73: unchanged interpretation ------------------------------
+
+    def test_event_73_surfaces_unchanged_with_empty_changed_fields(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            per_event = report["benchmark_sensitivity_status"]["per_event_summary"]
+            ev73 = next(e for e in per_event if e["event_id"] == 73)
+            self.assertFalse(ev73["changed_interpretation"])
+            self.assertEqual(ev73["changed_fields"], [])
+            # ev73 lands in the unchanged partition.
+            block = report["benchmark_sensitivity_status"]
+            self.assertIn(73, block["unchanged_event_ids"])
+            self.assertNotIn(73, block["changed_event_ids"])
+        finally:
+            ws.cleanup()
+
+    # ----- raw-p vs FDR distinction preservation ---------------------------
+
+    def test_raw_p_only_flip_does_not_surface_fdr_field(self) -> None:
+        # An event where raw-p crosses alpha on one side but fdr_q
+        # doesn't cross on either side — the raw-p axis flips, the
+        # FDR axis does not.  changed_fields must carry only the
+        # raw-p threshold entry; surfacing an FDR threshold entry
+        # would conflate the two axes.
+        payload = {
+            "ok":             True,
+            "checked_events": 1,
+            "blocked_count":  0,
+            "comparisons": [
+                {
+                    "event_id":               99,
+                    "event_date":             "2026-05-10",
+                    "primary_ticker":         "XOM",
+                    "spy_result": {
+                        "raw_p":       0.02,
+                        "fdr_q":       0.40,
+                        "significant": False,
+                        "sar":         0.01,
+                    },
+                    "xle_result": {
+                        "raw_p":       0.20,
+                        "fdr_q":       0.40,
+                        "significant": False,
+                        "sar":         0.02,
+                    },
+                    "spy_blocker":            None,
+                    "xle_blocker":            None,
+                    "changed_interpretation": True,
+                    "note":                   "synthetic raw-p-only flip",
+                },
+            ],
+            "errors": [], "warnings": [],
+        }
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=payload)
+            per_event = report["benchmark_sensitivity_status"]["per_event_summary"]
+            ev99 = next(e for e in per_event if e["event_id"] == 99)
+            fields = {f["field"] for f in ev99["changed_fields"]}
+            self.assertIn("raw_p_threshold", fields)
+            self.assertNotIn("fdr_q_threshold", fields,
+                             "FDR axis did not flip — must not appear")
+            self.assertNotIn("significant_flag", fields)
+        finally:
+            ws.cleanup()
+
+    # ----- descriptive / no-causality limitation ---------------------------
+
+    def test_block_limitations_say_descriptive_no_causality(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            block = report["benchmark_sensitivity_status"]
+            joined = " ".join(block["limitations"]).lower()
+            self.assertIn("descriptive", joined)
+            self.assertIn("does not prove mechanism causality", joined)
+        finally:
+            ws.cleanup()
+
+    def test_block_limitations_keep_comparison_pointer(self) -> None:
+        # The existing "consult the source artifact" pointer must
+        # remain present alongside the new descriptive / no-causality
+        # framing.
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            joined = " ".join(
+                report["benchmark_sensitivity_status"]["limitations"]
+            ).lower()
+            self.assertIn("comparison_summary", joined)
+        finally:
+            ws.cleanup()
+
+    # ----- conservative wording --------------------------------------------
+
+    def test_per_event_summary_carries_no_banned_tokens(self) -> None:
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            blob = json.dumps(
+                report["benchmark_sensitivity_status"]["per_event_summary"]
+            ).lower()
+            for term in _BANNED_WORDS:
+                self.assertNotIn(term, blob)
+        finally:
+            ws.cleanup()
+
+    def test_block_does_not_claim_fdr_significant_without_comparison_flag(
+        self,
+    ) -> None:
+        # The synthetic event 60 has spy.significant=True / xle.significant=
+        # False — the block must surface this as a *flag flip* observation,
+        # never as a top-level "this event is FDR-significant" claim.  The
+        # block's prose may mention the threshold tokens but must not say
+        # "is fdr-significant" or "validates significance".
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            report = self._build(ws, comparison=_xle_comparison_payload_60_73())
+            block = report["benchmark_sensitivity_status"]
+            joined = " ".join(block["limitations"]).lower()
+            # No assertion of validation.
+            self.assertNotIn("validates",            joined)
+            self.assertNotIn("is fdr-significant",   joined)
+            self.assertNotIn("confirms significance", joined)
+        finally:
+            ws.cleanup()
 
 
 if __name__ == "__main__":

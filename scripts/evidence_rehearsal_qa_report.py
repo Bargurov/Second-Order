@@ -113,6 +113,16 @@ if str(ROOT) not in sys.path:
 _DEFAULT_ARTIFACTS_DIR: Path = ROOT / "artifacts"
 
 
+# Mirrors the freeze script's benchmark_sensitivity_status vocabulary.
+# Kept verbatim here so the rehearsal report can switch on the same
+# strings the freeze artifact writes without importing the producer.
+_BENCH_STATUS_UNKNOWN:                str = "unknown"
+_BENCH_STATUS_BLOCKED:                str = "blocked"
+_BENCH_STATUS_PREVIEW_READY:          str = "preview_ready"
+_BENCH_STATUS_COMPARISON_UNCOMPUTABLE: str = "comparison_uncomputable"
+_BENCH_STATUS_COMPARISON_AVAILABLE:   str = "comparison_available"
+
+
 _ARTIFACT_FREEZE:     str = "freeze_candidate_evidence.json"
 _ARTIFACT_CURATED:    str = "curated_stage_validation_evidence.json"
 _ARTIFACT_SH_TOP10:   str = "short_horizon_review_validation_top10.json"
@@ -140,8 +150,8 @@ _QUESTION_ORDER: tuple[tuple[str, str], ...] = (
     ("q_benchmark_sensitivity",
      "What does benchmark sensitivity test, and what does a "
      "different benchmark prove?"),
-    ("q_xle_blocked",
-     "Why is XLE benchmark sensitivity blocked?"),
+    ("q_xle_benchmark_status",
+     "What happened with XLE benchmark sensitivity?"),
     ("q_next_evidence",
      "What would improve the evidence set next?"),
     ("q_what_not_to_claim",
@@ -158,8 +168,10 @@ _MUST_NOT_SAY: tuple[str, ...] = (
     "does not",
     "the cohort predicts future returns, future signals, or any "
     "forward-looking outcome",
-    "XLE-vs-SPY benchmark sensitivity is interpretable today — the "
-    "estimation-window dates are still missing",
+    "XLE-vs-SPY benchmark sensitivity is interpretable today — even "
+    "with preflight clear, the comparison diagnostic currently returns "
+    "null spy_result/xle_result for every checked event, so no "
+    "directional inference is supported",
     "the small, operator-curated cohort generalises to a broader "
     "universe",
     "FDR-adjusted means the records are corrected for every possible "
@@ -348,6 +360,10 @@ def _build_summary(bundle: dict[str, Any]) -> dict[str, Any]:
         excluded_total  += excluded
         candidate_total += worksheet_total
 
+    benchmark_sensitivity = _build_benchmark_sensitivity_summary(
+        _safe_dict(freeze.get("benchmark_sensitivity_status")),
+    )
+
     return {
         "events_evaluated":      events_evaluated,
         "total_records":         total_records,
@@ -363,6 +379,115 @@ def _build_summary(bundle: dict[str, Any]) -> dict[str, Any]:
             "candidate_total":  candidate_total,
             "by_batch":         by_batch,
         },
+        "benchmark_sensitivity": benchmark_sensitivity,
+    }
+
+
+def _build_benchmark_sensitivity_summary(
+    block: dict[str, Any],
+) -> dict[str, Any]:
+    """Distil the freeze artifact's ``benchmark_sensitivity_status``
+    block into the flags the rehearsal answer composer needs.  Missing
+    or shape-degraded blocks yield a coherent "unknown" summary rather
+    than a crash so older fixtures and partial bundles still produce a
+    valid report.
+    """
+    status = block.get("status") if isinstance(block, dict) else None
+    if not isinstance(status, str) or not status:
+        status = _BENCH_STATUS_UNKNOWN
+
+    comparison_summary = block.get("comparison_summary") \
+        if isinstance(block, dict) else None
+    comparison_summary = (
+        comparison_summary if isinstance(comparison_summary, dict) else None
+    )
+
+    # Inspect inner comparison rows for null SPY/XLE results.  The
+    # freeze script trims bulky keys but keeps small inner arrays; the
+    # SPY-vs-XLE comparison artifact carries either ``comparisons`` or
+    # ``rows`` per its own contract — accept either.
+    null_events: list[int] = []
+    computable_events: list[int] = []
+    rows = []
+    if comparison_summary is not None:
+        for k in ("comparisons", "rows"):
+            v = comparison_summary.get(k)
+            if isinstance(v, list):
+                rows = v
+                break
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        ev_id = row.get("event_id")
+        ev_id_int = _safe_int(ev_id) if ev_id is not None else 0
+        if not isinstance(ev_id, (int, str)) or ev_id_int == 0:
+            continue
+        spy = row.get("spy_result")
+        xle = row.get("xle_result")
+        if spy is None or xle is None:
+            null_events.append(ev_id_int)
+        else:
+            computable_events.append(ev_id_int)
+
+    # Source-of-truth flags.
+    preflight_ready = status in (
+        _BENCH_STATUS_PREVIEW_READY,
+        _BENCH_STATUS_COMPARISON_AVAILABLE,
+        _BENCH_STATUS_COMPARISON_UNCOMPUTABLE,
+    )
+    comparison_attempted = status in (
+        _BENCH_STATUS_COMPARISON_AVAILABLE,
+        _BENCH_STATUS_COMPARISON_UNCOMPUTABLE,
+    )
+    comparison_complete = (
+        status == _BENCH_STATUS_COMPARISON_AVAILABLE
+        and len(computable_events) > 0
+    )
+    comparison_uncomputable = (
+        status == _BENCH_STATUS_COMPARISON_UNCOMPUTABLE
+        or (comparison_attempted and not comparison_complete)
+    )
+
+    # Per-event interpretation rollup — surfaced verbatim from the
+    # freeze block when present so the rehearsal answer can name which
+    # events flipped interpretation under XLE without re-deriving the
+    # diff locally.  Defaults preserve graceful degradation for older
+    # bundles that pre-date the rollup keys.
+    changed_event_ids: list[int] = []
+    unchanged_event_ids: list[int] = []
+    changed_interpretation_count: int = 0
+    per_event_summary: list[dict[str, Any]] = []
+    if isinstance(block, dict):
+        c_in = block.get("changed_event_ids")
+        if isinstance(c_in, list):
+            changed_event_ids = [
+                _safe_int(v) for v in c_in if _safe_int(v) != 0
+            ]
+        u_in = block.get("unchanged_event_ids")
+        if isinstance(u_in, list):
+            unchanged_event_ids = [
+                _safe_int(v) for v in u_in if _safe_int(v) != 0
+            ]
+        changed_interpretation_count = _safe_int(
+            block.get("changed_interpretation_count")
+        )
+        p_in = block.get("per_event_summary")
+        if isinstance(p_in, list):
+            per_event_summary = [e for e in p_in if isinstance(e, dict)]
+
+    return {
+        "status":                       status,
+        "preflight_ready":              preflight_ready,
+        "comparison_attempted":         comparison_attempted,
+        "comparison_complete":          comparison_complete,
+        "comparison_uncomputable":      comparison_uncomputable,
+        "null_event_ids":               sorted(set(null_events)),
+        "computable_event_ids":         sorted(set(computable_events)),
+        "changed_event_ids":            sorted(set(changed_event_ids)),
+        "unchanged_event_ids":          sorted(set(unchanged_event_ids)),
+        "changed_interpretation_count": changed_interpretation_count,
+        "per_event_summary":            per_event_summary,
+        "block_present":                isinstance(block, dict) and bool(block),
     }
 
 
@@ -488,21 +613,10 @@ def _suggested_answers(
         "not evidence of a finding."
     )
 
-    # ---- Q6: XLE blocked ---------------------------------------------------
-    q_xle_blocked = (
-        "The local price_cache currently has no XLE rows for the "
-        "estimation-window dates immediately before events 60 and 73 "
-        "(late December 2025 through early January 2026).  The "
-        "benchmark-sensitivity preflight gates on a {n}-business-day "
-        "pre-event estimation window, and the XLE rows for those "
-        "exact dates are missing.  The local-cache lookup in the "
-        "xle_benchmark_sensitivity_backfill_smoke confirms zero "
-        "candidate rows for those dates, so an online backfill — "
-        "which requires explicit operator approval and lives outside "
-        "the read-only smoke surface — is the only path to unblock "
-        "the preflight.  Until those rows exist, XLE-vs-SPY "
-        "sensitivity for events 60 and 73 cannot be interpreted."
-    ).format(n=60)
+    # ---- Q6: XLE benchmark sensitivity status -----------------------------
+    q_xle_benchmark_status = _compose_xle_benchmark_status_answer(
+        summary.get("benchmark_sensitivity") or {},
+    )
 
     # ---- Q7: what would improve the evidence next --------------------------
     q_next_evidence = (
@@ -527,10 +641,13 @@ def _suggested_answers(
         "Do not claim 'validated_raw_only' records are findings — the "
         "label is the pipeline's vocabulary tag for the exact failure "
         "mode the FDR adjustment is designed to catch.  Do not claim "
-        "XLE-vs-SPY sensitivity for events 60 and 73 until the "
-        "estimation-window rows exist.  Do not claim the cohort "
-        "generalises to any broader universe; it is operator-curated "
-        f"with {len(duplicates)} known duplicate event_id(s) "
+        "the XLE-vs-SPY comparison has produced an interpretable "
+        "sensitivity result — preflight readiness is not the same as "
+        "a computable comparison, and any null spy_result / xle_result "
+        "pair means no SPY-vs-XLE inference is supported for that "
+        "event.  Do not claim the cohort generalises to any broader "
+        f"universe; it is operator-curated with {len(duplicates)} known "
+        f"duplicate event_id(s) "
         f"({sorted(duplicates) if duplicates else 'none'}) carried "
         f"forward.  Do not describe the {accepted}-of-{candidates} "
         "short-horizon accept rate as a discovery — every exclusion "
@@ -547,10 +664,154 @@ def _suggested_answers(
         "q_events_vs_records":     q_events_vs_records,
         "q_manual_exclusions":     q_manual_exclusions,
         "q_benchmark_sensitivity": q_benchmark_sensitivity,
-        "q_xle_blocked":           q_xle_blocked,
+        "q_xle_benchmark_status":  q_xle_benchmark_status,
         "q_next_evidence":         q_next_evidence,
         "q_what_not_to_claim":     q_what_not_to_claim,
     }
+
+
+def _compose_xle_benchmark_status_answer(bench: dict[str, Any]) -> str:
+    """Compose the Q6 answer about XLE benchmark sensitivity.
+
+    Always surfaces three pillars so the operator can defend the
+    distinction in an interview:
+      * preflight / data readiness state
+      * the SPY-vs-XLE comparison result state
+      * why null comparison payloads mean no inference
+
+    Wording is conservative regardless of branch.  Banned tokens are
+    avoided; no directional ("XLE outperforms SPY") language ever
+    appears.
+    """
+    status = bench.get("status") or _BENCH_STATUS_UNKNOWN
+    null_event_ids = bench.get("null_event_ids") or []
+    computable_event_ids = bench.get("computable_event_ids") or []
+    changed_event_ids = bench.get("changed_event_ids") or []
+    unchanged_event_ids = bench.get("unchanged_event_ids") or []
+
+    # Pillar 1 — preflight / data readiness.
+    if status == _BENCH_STATUS_BLOCKED:
+        preflight = (
+            "Preflight and data readiness: the XLE preflight is still "
+            "blocked — the local price_cache is missing the required "
+            "estimation-window rows, so the comparison gate is closed."
+        )
+    elif status in (
+        _BENCH_STATUS_PREVIEW_READY,
+        _BENCH_STATUS_COMPARISON_AVAILABLE,
+        _BENCH_STATUS_COMPARISON_UNCOMPUTABLE,
+    ):
+        preflight = (
+            "Preflight and data readiness: the XLE preflight now "
+            "clears — the local price_cache holds the estimation-"
+            "window rows the sensitivity gate requires, so the "
+            "comparison gate is open."
+        )
+    else:
+        preflight = (
+            "Preflight and data readiness: the current artifact set "
+            "does not surface a benchmark-sensitivity preflight signal, "
+            "so the preflight state is unknown from the rehearsal "
+            "report's inputs alone."
+        )
+
+    # Pillar 2 — SPY-vs-XLE comparison result.
+    if status == _BENCH_STATUS_COMPARISON_AVAILABLE:
+        comparison = (
+            f"SPY-vs-XLE comparison result: the comparison ran and "
+            f"produced at least one event with both legs computed "
+            f"(event_id(s) {sorted(computable_event_ids)} carry "
+            f"non-null spy_result and xle_result); the source "
+            f"comparison artifact is the place to read the "
+            f"per-event detail before any directional reading."
+        )
+    elif status == _BENCH_STATUS_COMPARISON_UNCOMPUTABLE:
+        comparison = (
+            f"SPY-vs-XLE comparison result: the comparison ran but "
+            f"every checked event came back uncomputable on at least "
+            f"one leg — event_id(s) "
+            f"{sorted(null_event_ids) if null_event_ids else '[]'} "
+            f"carry null spy_result and null xle_result; the "
+            f"comparison diagnostic refused to compute a descriptive "
+            f"sensitivity on at least one side, so no SPY-vs-XLE "
+            f"interpretation comparison was made."
+        )
+    elif status == _BENCH_STATUS_PREVIEW_READY:
+        comparison = (
+            "SPY-vs-XLE comparison result: the SPY-vs-XLE comparison "
+            "itself has not yet been executed against the now-ready "
+            "cache — preflight readiness alone does NOT mean the "
+            "sensitivity test was performed."
+        )
+    elif status == _BENCH_STATUS_BLOCKED:
+        comparison = (
+            "SPY-vs-XLE comparison result: the comparison has not run "
+            "and cannot run until preflight clears."
+        )
+    else:
+        comparison = (
+            "SPY-vs-XLE comparison result: the rehearsal report's "
+            "inputs do not surface a comparison artifact summary, so "
+            "the comparison result is unknown from this evidence set."
+        )
+
+    # Pillar 3 — what null comparison payloads mean.
+    null_explanation = (
+        "What null comparison payloads mean: a null spy_result or "
+        "null xle_result is the sensitivity diagnostic refusing to "
+        "claim a number, not a benign empty value.  When either leg "
+        "is null for an event, the SPY-vs-XLE interpretation cannot "
+        "be drawn for that event, and the only honest reading is "
+        "that no inference is supported until the comparison "
+        "diagnostics are fixed."
+    )
+
+    # Pillar 4 — per-event interpretation rollup.  Only appears when
+    # the freeze block surfaced the rollup *and* at least one event
+    # flipped interpretation between SPY and XLE; otherwise the answer
+    # has no per-event detail to honestly surface and the rollup line
+    # is omitted.  This preserves graceful degradation for older
+    # comparison_available fixtures that don't carry the rollup.
+    if (
+        status == _BENCH_STATUS_COMPARISON_AVAILABLE
+        and isinstance(changed_event_ids, list)
+        and len(changed_event_ids) > 0
+    ):
+        changed_sorted = sorted(int(v) for v in changed_event_ids)
+        unchanged_sorted = sorted(int(v) for v in unchanged_event_ids)
+        per_event_rollup = (
+            f"  Per-event interpretation rollup: benchmark choice "
+            f"materially changes the descriptive interpretation for "
+            f"event_id(s) {changed_sorted} — under SPY the raw-p and "
+            f"FDR thresholds clear and the significance flag is True, "
+            f"under XLE neither threshold clears and the significance "
+            f"flag is False; the raw-p vs FDR distinction is preserved "
+            f"because the rollup reports each axis separately."
+        )
+        if unchanged_sorted:
+            per_event_rollup += (
+                f"  Event_id(s) {unchanged_sorted} remain not "
+                f"significant under both SPY and XLE benchmarks, so "
+                f"benchmark choice did not change the descriptive "
+                f"interpretation for those events."
+            )
+        per_event_rollup += (
+            "  This rollup is a descriptive observation about which "
+            "benchmark frames each event's abnormal-return result "
+            "differently; it does not prove mechanism causality for "
+            "any one event."
+        )
+    else:
+        per_event_rollup = ""
+
+    return (
+        "The XLE benchmark sensitivity story has three checkpoints "
+        "that are easy to conflate.  "
+        + preflight + "  "
+        + comparison + "  "
+        + null_explanation
+        + per_event_rollup
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -624,15 +885,68 @@ def _weak_points(*, summary: dict[str, Any]) -> list[dict[str, str]]:
                 "batch (or expanding it) is the next improvement."
             ),
         })
+    bench = _safe_dict(summary.get("benchmark_sensitivity"))
+    bench_status = bench.get("status") or _BENCH_STATUS_UNKNOWN
+    null_event_ids = bench.get("null_event_ids") or []
+    computable_event_ids = bench.get("computable_event_ids") or []
+
+    if bench_status == _BENCH_STATUS_BLOCKED:
+        bench_detail = (
+            "The XLE benchmark sensitivity preflight is blocked on "
+            "missing local price_cache rows; the SPY-vs-XLE comparison "
+            "has not run and cannot run until the required estimation-"
+            "window dates are present in price_cache."
+        )
+    elif bench_status == _BENCH_STATUS_PREVIEW_READY:
+        bench_detail = (
+            "Preflight readiness has improved — the XLE preflight now "
+            "clears — but the SPY-vs-XLE comparison itself has not yet "
+            "been executed, so no sensitivity interpretation can be "
+            "drawn from this state."
+        )
+    elif bench_status == _BENCH_STATUS_COMPARISON_UNCOMPUTABLE:
+        bench_detail = (
+            "Preflight clears, but the SPY-vs-XLE comparison returned "
+            f"null spy_result and null xle_result for every checked "
+            f"event (event_id(s) "
+            f"{sorted(null_event_ids) if null_event_ids else '[]'}); "
+            "the comparison diagnostic is uncomputable on at least one "
+            "side, so no SPY-vs-XLE interpretation is supported until "
+            "those diagnostics are fixed."
+        )
+    elif bench_status == _BENCH_STATUS_COMPARISON_AVAILABLE:
+        bench_detail = (
+            f"The SPY-vs-XLE comparison ran and produced at least one "
+            f"event with both legs computed "
+            f"(event_id(s) {sorted(computable_event_ids)}); readers "
+            f"should consult the source comparison artifact before "
+            f"drawing any sensitivity reading and treat any null-"
+            f"result rows the same way they would treat any other "
+            f"missing measurement."
+        )
+    else:
+        bench_detail = (
+            "The XLE benchmark sensitivity state cannot be determined "
+            "from the current artifact set; the rehearsal report makes "
+            "no SPY-vs-XLE claim."
+        )
+
     points.append({
-        "name":   "xle_benchmark_sensitivity_blocked",
-        "detail": (
-            "Events 60 and 73 cannot run XLE benchmark sensitivity "
-            "until the missing estimation-window XLE rows (late Dec "
-            "2025 / early Jan 2026) are backfilled.  An online backfill "
-            "requires explicit operator approval."
-        ),
+        "name":   "xle_benchmark_sensitivity_status",
+        "detail": bench_detail,
     })
+    if bench.get("comparison_uncomputable"):
+        points.append({
+            "name":   "xle_benchmark_sensitivity_comparison_uncomputable",
+            "detail": (
+                "The benchmark-sensitivity comparison artifact is "
+                "present but currently produces null spy_result and "
+                "null xle_result for every checked event; the "
+                "uncomputable comparison is the rate-limiting weakness "
+                "for benchmark sensitivity until the comparison "
+                "diagnostics are repaired."
+            ),
+        })
     points.append({
         "name":   "single_reviewer_workflow",
         "detail": (

@@ -71,7 +71,7 @@ _REQUIRED_QUESTION_IDS = (
     "q_events_vs_records",
     "q_manual_exclusions",
     "q_benchmark_sensitivity",
-    "q_xle_blocked",
+    "q_xle_benchmark_status",
     "q_next_evidence",
     "q_what_not_to_claim",
 )
@@ -83,7 +83,7 @@ _REQUIRED_QUESTION_SUBSTRINGS = {
     "q_events_vs_records":     "event-sources and records",
     "q_manual_exclusions":     "20 of 28",
     "q_benchmark_sensitivity": "benchmark sensitivity test",
-    "q_xle_blocked":           "XLE",
+    "q_xle_benchmark_status":  "what happened with xle benchmark sensitivity",
     "q_next_evidence":         "improve the evidence",
     "q_what_not_to_claim":     "should not be claimed",
 }
@@ -146,11 +146,80 @@ def _fixture_bundle() -> dict[str, Any]:
                 },
             ],
             "duplicate_event_ids": [30],
+            "benchmark_sensitivity_status": {
+                "status":                   "comparison_uncomputable",
+                "blocked_events":           [],
+                "required_dates":           [],
+                "local_backfill_available": False,
+                "online_backfill_required": False,
+                "limitations": [
+                    "comparison artifact is present, but no event has "
+                    "both SPY and XLE results computed; benchmark "
+                    "sensitivity is not meaningfully complete and no "
+                    "SPY-vs-XLE inference is supported."
+                ],
+                "comparison_summary": {
+                    "ok":             True,
+                    "checked_events": 2,
+                    "blocked_count":  0,
+                    "comparisons": [
+                        {
+                            "event_id":               60,
+                            "event_date":             "2026-04-08",
+                            "primary_ticker":         "XOM",
+                            "spy_result":             None,
+                            "xle_result":             None,
+                            "changed_interpretation": False,
+                            "note": (
+                                "Descriptive sensitivity uncomputable "
+                                "on one side; interpretation "
+                                "comparison not made."
+                            ),
+                        },
+                        {
+                            "event_id":               73,
+                            "event_date":             "2026-04-06",
+                            "primary_ticker":         "XOM",
+                            "spy_result":             None,
+                            "xle_result":             None,
+                            "changed_interpretation": False,
+                            "note": (
+                                "Descriptive sensitivity uncomputable "
+                                "on one side; interpretation "
+                                "comparison not made."
+                            ),
+                        },
+                    ],
+                    "interpretation_changes": 0,
+                },
+            },
         },
         "curated": {},
         "top10":   {},
         "next10":  {},
         "final8":  {},
+    }
+
+
+def _bench_status_block(
+    *,
+    status: str = "comparison_uncomputable",
+    comparison_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Construct a synthetic ``benchmark_sensitivity_status`` block for
+    use by the status-branch tests below.  Defaults reflect the
+    "preflight clear, comparison uncomputable" steady state."""
+    return {
+        "status":                   status,
+        "blocked_events":           [],
+        "required_dates":           [],
+        "local_backfill_available": False,
+        "online_backfill_required": status == "blocked",
+        "limitations":              [],
+        "comparison_summary": (
+            {"comparisons": comparison_rows}
+            if comparison_rows is not None else None
+        ),
     }
 
 
@@ -282,13 +351,95 @@ class TestAnswerContent(unittest.TestCase):
         self.assertIn("20", answer)
         self.assertIn("28", answer)
 
-    def test_q_xle_blocked_mentions_events_60_and_73(self) -> None:
+    def test_q_xle_benchmark_status_surfaces_three_pillars(self) -> None:
+        # Required behavior: the answer distinguishes preflight/data
+        # readiness, the SPY-vs-XLE comparison result, and what null
+        # comparison payloads mean.
         with _patch_load(_fixture_bundle()), _patch_methodology_missing():
             report = cli.build_rehearsal_report()
-        answer = report["suggested_answers"]["q_xle_blocked"]
-        self.assertIn("60", answer)
-        self.assertIn("73", answer)
-        self.assertIn("operator approval", answer.lower())
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        lowered = answer.lower()
+        # Pillar 1 — preflight / data readiness is named.
+        self.assertIn("preflight", lowered)
+        # Pillar 2 — SPY-vs-XLE comparison result is named.
+        self.assertIn("spy-vs-xle comparison", lowered)
+        # Pillar 3 — null comparison payloads explained.
+        self.assertIn("null", lowered)
+        self.assertIn("no inference", lowered)
+
+    def test_q_xle_benchmark_status_reports_preflight_clear_when_uncomputable(
+        self,
+    ) -> None:
+        # Fixture default is the comparison_uncomputable steady state:
+        # preflight clears, but the comparison legs returned null.  The
+        # answer must say preflight clears AND that the comparison
+        # produced null spy_result / xle_result.
+        with _patch_load(_fixture_bundle()), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        lowered = answer.lower()
+        self.assertIn("preflight now clears", lowered)
+        self.assertIn("spy_result", lowered)
+        self.assertIn("xle_result", lowered)
+        # And the answer never claims the comparison itself succeeded.
+        for forbidden in (
+            "comparison succeeded",
+            "spy-vs-xle interpretation is supported",
+            "spy outperforms",
+            "xle outperforms",
+        ):
+            self.assertNotIn(forbidden, lowered)
+
+    def test_q_xle_benchmark_status_blocked_branch_says_preflight_blocked(
+        self,
+    ) -> None:
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block(status="blocked", comparison_rows=None)
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        lowered = answer.lower()
+        self.assertIn("preflight is still blocked", lowered)
+        # The comparison has not run.
+        self.assertIn("has not run", lowered)
+
+    def test_q_xle_benchmark_status_preview_ready_branch_distinguishes(
+        self,
+    ) -> None:
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block(status="preview_ready", comparison_rows=None)
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        lowered = answer.lower()
+        # Preflight is ready but the comparison has not yet executed.
+        self.assertIn("preflight now clears", lowered)
+        self.assertIn("has not yet been executed", lowered)
+
+    def test_q_xle_benchmark_status_comparison_available_uses_event_ids(
+        self,
+    ) -> None:
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block(
+                status="comparison_available",
+                comparison_rows=[{
+                    "event_id":   77,
+                    "spy_result": {"abnormal_return": 0.01},
+                    "xle_result": {"abnormal_return": 0.02},
+                }],
+            )
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        # The computable event_id should appear so the operator can
+        # find the per-event detail in the source artifact.
+        self.assertIn("77", answer)
 
     def test_q_benchmark_sensitivity_does_not_claim_proof(self) -> None:
         with _patch_load(_fixture_bundle()), _patch_methodology_missing():
@@ -402,7 +553,7 @@ class TestWeakPoints(unittest.TestCase):
             "small_operator_curated_cohort",
             "manual_exclusion_rate",
             "duplicate_event_ids",
-            "xle_benchmark_sensitivity_blocked",
+            "xle_benchmark_sensitivity_status",
             "single_reviewer_workflow",
             "raw_p_only_label_misread_risk",
         ):
@@ -410,6 +561,38 @@ class TestWeakPoints(unittest.TestCase):
                 required, names,
                 f"weak point {required!r} must appear",
             )
+
+    def test_uncomputable_weak_point_only_when_status_warrants_it(
+        self,
+    ) -> None:
+        # When the freeze artifact reports comparison_uncomputable,
+        # the rehearsal report must surface a dedicated weak point so
+        # the operator does not gloss over the null comparison legs.
+        with _patch_load(_fixture_bundle()), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        names = {wp["name"] for wp in report["weak_points"]}
+        self.assertIn(
+            "xle_benchmark_sensitivity_comparison_uncomputable", names,
+            "uncomputable weak point must appear when fixture status "
+            "is comparison_uncomputable",
+        )
+
+        # When the freeze artifact reports a clean preflight with no
+        # comparison run, the uncomputable weak point must NOT appear.
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block(
+                status="preview_ready", comparison_rows=None,
+            )
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        names = {wp["name"] for wp in report["weak_points"]}
+        self.assertNotIn(
+            "xle_benchmark_sensitivity_comparison_uncomputable", names,
+            "uncomputable weak point must not appear when comparison "
+            "has not been attempted",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -637,6 +820,222 @@ class TestCLIEntryPoint(unittest.TestCase):
         for n in range(1, 9):
             self.assertIn(f"Q{n}.", text,
                           f"text render missing question marker Q{n}.")
+
+
+# ---------------------------------------------------------------------------
+# Per-event interpretation rollup — comparison_available + rollup branch.
+#
+# Pins the rehearsal Q&A's behaviour when the freeze artifact's
+# benchmark_sensitivity_status block surfaces a populated per-event
+# rollup (changed_event_ids, unchanged_event_ids, per_event_summary).
+# Mirrors the live SPY-vs-XLE comparison artifact's shape: event 60
+# flipped interpretation under XLE, event 73 did not.
+# ---------------------------------------------------------------------------
+
+
+def _bench_status_block_with_rollup() -> dict[str, Any]:
+    """Freeze ``benchmark_sensitivity_status`` block with the per-event
+    rollup populated.  Event 60 flips interpretation under XLE; event
+    73 is unchanged."""
+    return {
+        "status":                       "comparison_available",
+        "blocked_events":               [],
+        "required_dates":               [],
+        "local_backfill_available":     False,
+        "online_backfill_required":     False,
+        "limitations":                  [],
+        "changed_interpretation_count": 1,
+        "changed_event_ids":             [60],
+        "unchanged_event_ids":           [73],
+        "per_event_summary": [
+            {
+                "event_id":               60,
+                "event_date":             "2026-04-08",
+                "primary_ticker":         "XOM",
+                "changed_interpretation": True,
+                "changed_fields": [
+                    {"field": "raw_p_threshold",
+                     "spy": 0.028, "xle": 0.268, "alpha": 0.05},
+                    {"field": "fdr_q_threshold",
+                     "spy": 0.028, "xle": 0.268, "alpha": 0.05},
+                    {"field": "significant_flag",
+                     "spy": True,  "xle": False},
+                ],
+                "note": (
+                    "SPY and XLE differ on both raw-p threshold and "
+                    "FDR significance for this event."
+                ),
+            },
+            {
+                "event_id":               73,
+                "event_date":             "2026-04-06",
+                "primary_ticker":         "XOM",
+                "changed_interpretation": False,
+                "changed_fields":         [],
+                "note": (
+                    "SPY and XLE agree on both raw-p threshold and "
+                    "FDR significance."
+                ),
+            },
+        ],
+        "comparison_summary": {
+            "ok":             True,
+            "checked_events": 2,
+            "blocked_count":  0,
+            "comparisons": [
+                {
+                    "event_id":   60,
+                    "spy_result": {
+                        "raw_p": 0.028, "fdr_q": 0.028,
+                        "significant": True,  "sar": -0.205,
+                    },
+                    "xle_result": {
+                        "raw_p": 0.268, "fdr_q": 0.268,
+                        "significant": False, "sar": -0.039,
+                    },
+                    "changed_interpretation": True,
+                },
+                {
+                    "event_id":   73,
+                    "spy_result": {
+                        "raw_p": 0.145, "fdr_q": 0.145,
+                        "significant": False, "sar": -0.138,
+                    },
+                    "xle_result": {
+                        "raw_p": 0.198, "fdr_q": 0.198,
+                        "significant": False, "sar": -0.046,
+                    },
+                    "changed_interpretation": False,
+                },
+            ],
+        },
+    }
+
+
+class TestPerEventInterpretationInRehearsalAnswer(unittest.TestCase):
+    def _build(self) -> dict[str, Any]:
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block_with_rollup()
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            return cli.build_rehearsal_report()
+
+    def test_answer_names_changed_event_60(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        # Event 60 (the changed one) is named explicitly so the
+        # operator can point to the specific event whose descriptive
+        # interpretation flips.
+        self.assertIn("60", answer)
+
+    def test_answer_names_unchanged_event_73(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        self.assertIn("73", answer)
+
+    def test_answer_says_benchmark_choice_materially_changes(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        self.assertIn("materially changes", answer.lower())
+
+    def test_answer_says_not_significant_under_both(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        # Event 73 must be described as not significant under both
+        # benchmarks so the operator does not infer that XLE rescues
+        # the event from non-significance.
+        self.assertIn("not significant under both", answer.lower())
+
+    def test_answer_says_does_not_prove_mechanism_causality(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        # Mirrors the freeze artifact's descriptive / no-causality
+        # framing verbatim so the two reports stay in lockstep.
+        self.assertIn(
+            "does not prove mechanism causality", answer.lower(),
+        )
+
+    def test_answer_preserves_raw_p_vs_fdr_distinction(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        lowered = answer.lower()
+        # The raw-p vs FDR distinction must be preserved — surfacing
+        # both axes shows the operator that benchmark choice changes
+        # event 60 on both axes, not just one.
+        self.assertIn("raw-p", lowered)
+        self.assertIn("fdr", lowered)
+
+    def test_answer_does_not_claim_event_60_is_a_finding(self) -> None:
+        report = self._build()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        lowered = answer.lower()
+        # The block surfacing "spy.significant=True / xle.significant=
+        # False" must not be read as a top-level FDR-significance
+        # claim for event 60.
+        for forbidden in (
+            "event 60 is fdr-significant",
+            "event 60 is a finding",
+            "validates significance",
+            "confirms significance",
+        ):
+            self.assertNotIn(forbidden, lowered)
+
+    def test_changed_event_ids_flow_into_summary(self) -> None:
+        # The summary surface that drives the answer must carry the
+        # rollup so a downstream consumer can introspect it without
+        # re-parsing the freeze block.
+        report = self._build()
+        bench = report["current_evidence_summary"]["benchmark_sensitivity"]
+        self.assertEqual(bench["changed_event_ids"],   [60])
+        self.assertEqual(bench["unchanged_event_ids"], [73])
+        self.assertEqual(bench["changed_interpretation_count"], 1)
+
+    def test_comparison_available_without_rollup_still_names_event(self) -> None:
+        # Graceful degradation: when the freeze block does not surface
+        # the rollup keys (older fixture / partial bundle), the answer
+        # still names the computable event from the comparison_summary
+        # so the existing comparison_available behaviour is preserved.
+        bundle = _fixture_bundle()
+        bundle["freeze"]["benchmark_sensitivity_status"] = (
+            _bench_status_block(
+                status="comparison_available",
+                comparison_rows=[{
+                    "event_id":   77,
+                    "spy_result": {"abnormal_return": 0.01},
+                    "xle_result": {"abnormal_return": 0.02},
+                }],
+            )
+        )
+        with _patch_load(bundle), _patch_methodology_missing():
+            report = cli.build_rehearsal_report()
+        answer = report["suggested_answers"]["q_xle_benchmark_status"]
+        self.assertIn("77", answer)
+        # And without a populated rollup, the answer does not
+        # fabricate a "materially changes" claim.
+        self.assertNotIn(
+            "materially changes", answer.lower(),
+            "answer must not invent an interpretation change when "
+            "the freeze block does not surface one",
+        )
+
+    def test_rendered_blob_has_no_banned_tokens(self) -> None:
+        report = self._build()
+        for renderer in (cli._render_json, cli._render_text):
+            blob = renderer(report).lower()
+            sanitised = blob.replace("validated_raw_only", "")
+            for token in _BANNED_WORDS:
+                self.assertNotIn(
+                    token, sanitised,
+                    f"banned token {token!r} in {renderer.__name__}",
+                )
+            # And the bare ``validated`` word never appears outside
+            # the literal pipeline label.
+            sentinel = blob.replace("validated_raw_only", "@@LABEL@@")
+            self.assertIsNone(
+                re.search(r"\bvalidated\b", sentinel),
+                "bare 'validated' word leaked into rendered output",
+            )
 
 
 if __name__ == "__main__":

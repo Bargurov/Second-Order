@@ -194,7 +194,8 @@ _CLAIM_NOT_ALLOWED: tuple[str, ...] = (
     "renaming this artifact as 'frozen' before operator approval",
     "merging records across event_ids before deduplication review",
     "SPY-vs-XLE benchmark sensitivity inference when "
-    "benchmark_sensitivity_status.status is not 'comparison_available'",
+    "benchmark_sensitivity_status.status is not 'comparison_available' "
+    "or when comparison results are null/uncomputable",
 )
 
 
@@ -202,11 +203,31 @@ _CLAIM_NOT_ALLOWED: tuple[str, ...] = (
 # Benchmark sensitivity appendix — surfaces the current XLE preflight
 # state in the freeze-candidate envelope so a downstream reader can see
 # whether SPY-vs-XLE sensitivity is even runnable yet.
+#
+# The block carries these 11 keys::
+#
+#     status, blocked_events, required_dates,
+#     local_backfill_available, online_backfill_required,
+#     comparison_summary,
+#     changed_interpretation_count,
+#     changed_event_ids,
+#     unchanged_event_ids,
+#     per_event_summary,
+#     limitations
+#
+# When ``status == 'comparison_available'`` the per-event rollup is
+# populated from the comparison artifact's ``comparisons`` list; for
+# every other status the four rollup keys stay at schema-stable
+# defaults (0, [], [], []).  No causal inference is drawn — entries
+# in ``per_event_summary.changed_fields`` are observations about
+# which axis the SPY and XLE results disagree on, not validation
+# claims about the underlying event.
 # ---------------------------------------------------------------------------
 
 _BENCH_STATUS_UNKNOWN:              str = "unknown"
 _BENCH_STATUS_BLOCKED:              str = "blocked"
 _BENCH_STATUS_PREVIEW_READY:        str = "preview_ready"
+_BENCH_STATUS_COMPARISON_UNCOMPUTABLE: str = "comparison_uncomputable"
 _BENCH_STATUS_COMPARISON_AVAILABLE: str = "comparison_available"
 
 # Keys we strip from a comparison artifact when copying into the
@@ -233,6 +254,17 @@ _BENCH_LIMITATION_COMPARISON: str = (
     "comparison_summary is copied from the input comparison "
     "artifact; readers should consult the source artifact for the "
     "full statistical context."
+)
+_BENCH_LIMITATION_DESCRIPTIVE_NO_CAUSALITY: str = (
+    "benchmark sensitivity is descriptive and does not prove "
+    "mechanism causality; SPY-vs-XLE differences are observations "
+    "about which benchmark frames the descriptive result "
+    "differently, not evidence of a mechanism for any one event."
+)
+_BENCH_LIMITATION_COMPARISON_UNCOMPUTABLE: str = (
+    "comparison artifact is present, but no event has both SPY and "
+    "XLE results computed; benchmark sensitivity is not meaningfully "
+    "complete and no SPY-vs-XLE inference is supported."
 )
 _BENCH_LIMITATION_UNKNOWN: str = (
     "benchmark sensitivity status could not be determined: no XLE "
@@ -814,11 +846,14 @@ def _build_benchmark_sensitivity_status(
 
     Status decision priority:
 
-      1. comparison artifact present   -> 'comparison_available'
-      2. preview present AND blocked_after == 0  -> 'preview_ready'
-      3. request packet present OR preview with blocked_after > 0
+      1. comparison artifact present with at least one computed
+         SPY/XLE pair -> 'comparison_available'
+      2. comparison artifact present but no computed pair ->
+         'comparison_uncomputable'
+      3. preview present AND blocked_after == 0  -> 'preview_ready'
+      4. request packet present OR preview with blocked_after > 0
          -> 'blocked'
-      4. otherwise -> 'unknown'
+      5. otherwise -> 'unknown'
 
     Inputs are all read-only.  Missing files become warnings, not
     errors — the freeze-candidate keeps building.
@@ -854,8 +889,10 @@ def _build_benchmark_sensitivity_status(
             blocked_after = ba
 
     # Determine status.
-    if isinstance(comparison, dict):
+    if _comparison_has_computable_pair(comparison):
         status = _BENCH_STATUS_COMPARISON_AVAILABLE
+    elif isinstance(comparison, dict):
+        status = _BENCH_STATUS_COMPARISON_UNCOMPUTABLE
     elif isinstance(preview, dict) and blocked_after == 0:
         status = _BENCH_STATUS_PREVIEW_READY
     elif isinstance(request, dict) or isinstance(preview, dict):
@@ -874,24 +911,241 @@ def _build_benchmark_sensitivity_status(
             if k not in _BENCH_COMPARISON_BULK_KEYS
         }
 
+    # Per-event interpretation rollup — only populated when the
+    # comparison artifact is *meaningfully complete* (status ==
+    # comparison_available).  For every other status the four keys
+    # remain at their schema-stable defaults so a downstream reader
+    # can introspect them without a key check.
+    per_event_rollup = _default_per_event_rollup()
+    if status == _BENCH_STATUS_COMPARISON_AVAILABLE and \
+            isinstance(comparison, dict):
+        per_event_rollup = _summarize_comparison_per_event(
+            comparison=comparison, alpha=_DEFAULT_ALPHA,
+        )
+
     if status == _BENCH_STATUS_BLOCKED:
         limitations = [_BENCH_LIMITATION_BLOCKED]
     elif status == _BENCH_STATUS_PREVIEW_READY:
         limitations = [_BENCH_LIMITATION_PREVIEW_READY]
+    elif status == _BENCH_STATUS_COMPARISON_UNCOMPUTABLE:
+        limitations = [_BENCH_LIMITATION_COMPARISON_UNCOMPUTABLE]
     elif status == _BENCH_STATUS_COMPARISON_AVAILABLE:
-        limitations = [_BENCH_LIMITATION_COMPARISON]
+        # Two limitations when comparison_available: the existing
+        # "consult the source artifact" pointer and the explicit
+        # descriptive / no-causality framing required by the spec.
+        limitations = [
+            _BENCH_LIMITATION_COMPARISON,
+            _BENCH_LIMITATION_DESCRIPTIVE_NO_CAUSALITY,
+        ]
     else:
         limitations = [_BENCH_LIMITATION_UNKNOWN]
 
     return {
-        "status":                   status,
-        "blocked_events":           blocked_events,
-        "required_dates":           required_dates,
-        "local_backfill_available": local_backfill_available,
-        "online_backfill_required": online_backfill_required,
-        "comparison_summary":       comparison_summary,
-        "limitations":              limitations,
+        "status":                       status,
+        "blocked_events":               blocked_events,
+        "required_dates":               required_dates,
+        "local_backfill_available":     local_backfill_available,
+        "online_backfill_required":     online_backfill_required,
+        "comparison_summary":           comparison_summary,
+        "changed_interpretation_count":
+            per_event_rollup["changed_interpretation_count"],
+        "changed_event_ids":            per_event_rollup["changed_event_ids"],
+        "unchanged_event_ids":          per_event_rollup["unchanged_event_ids"],
+        "per_event_summary":            per_event_rollup["per_event_summary"],
+        "limitations":                  limitations,
     }
+
+
+def _comparison_has_computable_pair(comparison: Any) -> bool:
+    """Return True only when a comparison artifact has at least one
+    event with both benchmark result payloads present.
+    """
+    if not isinstance(comparison, dict):
+        return False
+    if comparison.get("ok") is not True:
+        return False
+    comparisons = comparison.get("comparisons")
+    if not isinstance(comparisons, list):
+        return False
+    for row in comparisons:
+        if not isinstance(row, dict):
+            continue
+        if (
+            row.get("spy_result") is not None
+            and row.get("xle_result") is not None
+        ):
+            return True
+    return False
+
+
+def _default_per_event_rollup() -> dict[str, Any]:
+    """Schema-stable empty rollup used when comparison is not yet
+    available (or not meaningfully complete)."""
+    return {
+        "changed_interpretation_count": 0,
+        "changed_event_ids":             [],
+        "unchanged_event_ids":           [],
+        "per_event_summary":             [],
+    }
+
+
+def _summarize_comparison_per_event(
+    *, comparison: dict[str, Any], alpha: float,
+) -> dict[str, Any]:
+    """Build the per-event interpretation rollup from a comparison
+    artifact's ``comparisons`` list.
+
+    Returns a dict with::
+
+        {
+          "changed_interpretation_count": int,
+          "changed_event_ids":            list[int],
+          "unchanged_event_ids":          list[int],
+          "per_event_summary": [
+            {
+              "event_id":               int,
+              "event_date":             str | None,
+              "primary_ticker":         str | None,
+              "changed_interpretation": bool,
+              "changed_fields":         list[dict],
+              "note":                   str,
+            },
+            ...
+          ],
+        }
+
+    The ``changed_fields`` list carries one entry per axis that
+    differs between SPY and XLE descriptive sensitivity results
+    (raw-p threshold, FDR-q threshold, ``significant`` flag, sar
+    sign).  Raw-p and FDR-q are reported as separate fields so the
+    raw-p / FDR distinction is preserved.  An event with both result
+    payloads is read off the upstream ``changed_interpretation``
+    flag; an event with either side ``None`` is treated as
+    descriptively uncomputable and contributes no ``changed_fields``
+    entries.
+    """
+    rows = comparison.get("comparisons")
+    if not isinstance(rows, list):
+        return _default_per_event_rollup()
+
+    per_event:    list[dict[str, Any]] = []
+    changed_ids:  list[int] = []
+    unchanged_ids: list[int] = []
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        ev_id = _safe_int(row.get("event_id"))
+        if ev_id is None:
+            continue
+
+        spy = row.get("spy_result") if isinstance(row.get("spy_result"), dict) else None
+        xle = row.get("xle_result") if isinstance(row.get("xle_result"), dict) else None
+
+        # ``changed_interpretation`` is read off the upstream flag
+        # rather than re-derived locally — the comparison artifact is
+        # the single source of truth on whether the descriptive
+        # interpretation changed.  Defensive bool() so a missing flag
+        # degrades to False rather than raising.
+        changed_interp = bool(row.get("changed_interpretation"))
+
+        changed_fields: list[dict[str, Any]] = []
+        if spy is not None and xle is not None:
+            changed_fields = _diff_result_fields(
+                spy=spy, xle=xle, alpha=alpha,
+            )
+
+        per_event.append({
+            "event_id":               ev_id,
+            "event_date":             _safe_str(row.get("event_date")),
+            "primary_ticker":         _safe_str(row.get("primary_ticker")),
+            "changed_interpretation": changed_interp,
+            "changed_fields":         changed_fields,
+            "note":                   _safe_str(row.get("note")) or "",
+        })
+        if changed_interp:
+            changed_ids.append(ev_id)
+        else:
+            unchanged_ids.append(ev_id)
+
+    return {
+        "changed_interpretation_count": len(changed_ids),
+        "changed_event_ids":             sorted(set(changed_ids)),
+        "unchanged_event_ids":           sorted(set(unchanged_ids)),
+        "per_event_summary":             per_event,
+    }
+
+
+def _diff_result_fields(
+    *, spy: dict[str, Any], xle: dict[str, Any], alpha: float,
+) -> list[dict[str, Any]]:
+    """Identify which descriptive fields differ between SPY and XLE
+    result payloads.
+
+    Each entry names the differing field, echoes the SPY and XLE
+    values, and (for threshold-style fields) carries the alpha used
+    for the threshold judgment.  Conservative: only emits an entry
+    when the comparison result itself shows a difference.  Order is
+    deterministic: raw-p threshold, FDR-q threshold, significance
+    flag, sar sign.
+    """
+    out: list[dict[str, Any]] = []
+
+    spy_raw = _coerce_p_value(spy)
+    xle_raw = _coerce_p_value(xle)
+    if spy_raw is not None and xle_raw is not None \
+            and (spy_raw <= alpha) != (xle_raw <= alpha):
+        out.append({
+            "field": "raw_p_threshold",
+            "spy":   spy_raw,
+            "xle":   xle_raw,
+            "alpha": alpha,
+        })
+
+    spy_fdr = _safe_float(spy.get("fdr_q"))
+    xle_fdr = _safe_float(xle.get("fdr_q"))
+    if spy_fdr is not None and xle_fdr is not None \
+            and (spy_fdr <= alpha) != (xle_fdr <= alpha):
+        out.append({
+            "field": "fdr_q_threshold",
+            "spy":   spy_fdr,
+            "xle":   xle_fdr,
+            "alpha": alpha,
+        })
+
+    spy_sig = spy.get("significant")
+    xle_sig = xle.get("significant")
+    if isinstance(spy_sig, bool) and isinstance(xle_sig, bool) \
+            and spy_sig != xle_sig:
+        out.append({
+            "field": "significant_flag",
+            "spy":   spy_sig,
+            "xle":   xle_sig,
+        })
+
+    spy_sar = _safe_float(spy.get("sar"))
+    xle_sar = _safe_float(xle.get("sar"))
+    if spy_sar is not None and xle_sar is not None:
+        spy_sign = (spy_sar > 0) - (spy_sar < 0)
+        xle_sign = (xle_sar > 0) - (xle_sar < 0)
+        if spy_sign != xle_sign:
+            out.append({
+                "field": "sar_sign",
+                "spy":   spy_sar,
+                "xle":   xle_sar,
+            })
+
+    return out
+
+
+def _coerce_p_value(payload: dict[str, Any]) -> float | None:
+    """Read a raw-p value from a result payload.  Prefers ``raw_p``
+    (the SPY-vs-XLE comparison smoke's key), falls back to ``p_value``
+    (curated stage validation's key)."""
+    v = _safe_float(payload.get("raw_p"))
+    if v is None:
+        v = _safe_float(payload.get("p_value"))
+    return v
 
 
 def _safe_load_json_dict(
@@ -1063,11 +1317,11 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help=(
             "Optional path to a saved SPY-vs-XLE comparison artifact "
             "(default artifacts/xle_benchmark_sensitivity_comparison"
-            ".json).  When supplied and readable, the "
-            "freeze-candidate's benchmark_sensitivity_status.status "
-            "becomes 'comparison_available' and comparison_summary "
-            "surfaces a trimmed copy of the artifact.  Missing files "
-            "are treated as absent, not as errors."
+            ".json).  When supplied and readable, comparison_summary "
+            "surfaces a trimmed copy of the artifact; status becomes "
+            "'comparison_available' only when at least one event has "
+            "both SPY and XLE result payloads.  Missing files are "
+            "treated as absent, not as errors."
         ),
     )
     return parser.parse_args(list(argv) if argv is not None else None)
