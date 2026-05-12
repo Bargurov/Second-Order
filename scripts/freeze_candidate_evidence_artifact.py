@@ -217,15 +217,17 @@ _BENCH_COMPARISON_BULK_KEYS: frozenset[str] = frozenset({
 })
 
 _BENCH_LIMITATION_BLOCKED: str = (
-    "benchmark sensitivity is unavailable: the XLE benchmark "
+    "benchmark sensitivity remains unavailable: the XLE benchmark "
     "preflight is blocked on missing local price_cache rows; no "
     "SPY-vs-XLE comparison can be inferred until the required dates "
     "are present in price_cache."
 )
 _BENCH_LIMITATION_PREVIEW_READY: str = (
-    "preview indicates the XLE preflight clears once the listed "
-    "rows are staged; the SPY-vs-XLE comparison itself has not yet "
-    "run, so directional conclusions are not supported."
+    "benchmark data readiness improved but the SPY-vs-XLE "
+    "interpretation has not yet been run: the preview indicates the "
+    "XLE preflight clears once the listed rows are staged; no "
+    "directional conclusions are supported until the comparison "
+    "itself executes."
 )
 _BENCH_LIMITATION_COMPARISON: str = (
     "comparison_summary is copied from the input comparison "
@@ -1045,23 +1047,27 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--xle-preview", dest="xle_preview_path",
-        default="artifacts/xle_backfill_smoke.json",
+        default=(
+            "artifacts/xle_online_backfill_preview_post_calendar_fix.json"
+        ),
         help=(
-            "Optional path to a saved JSON output of "
-            "scripts/xle_benchmark_sensitivity_backfill_smoke.py "
-            "(default artifacts/xle_backfill_smoke.json).  Missing "
-            "files are treated as absent, not as errors."
+            "Optional path to a saved XLE preview JSON (default "
+            "artifacts/xle_online_backfill_preview_post_calendar_fix"
+            ".json).  Missing files are treated as absent, not as "
+            "errors."
         ),
     )
     parser.add_argument(
         "--xle-comparison", dest="xle_comparison_path",
-        default=None,
+        default="artifacts/xle_benchmark_sensitivity_comparison.json",
         help=(
-            "Optional path to a saved SPY-vs-XLE comparison artifact. "
-            "When supplied and readable, the freeze-candidate's "
-            "benchmark_sensitivity_status.status becomes "
-            "'comparison_available' and comparison_summary surfaces a "
-            "trimmed copy of the artifact."
+            "Optional path to a saved SPY-vs-XLE comparison artifact "
+            "(default artifacts/xle_benchmark_sensitivity_comparison"
+            ".json).  When supplied and readable, the "
+            "freeze-candidate's benchmark_sensitivity_status.status "
+            "becomes 'comparison_available' and comparison_summary "
+            "surfaces a trimmed copy of the artifact.  Missing files "
+            "are treated as absent, not as errors."
         ),
     )
     return parser.parse_args(list(argv) if argv is not None else None)

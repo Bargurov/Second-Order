@@ -158,13 +158,18 @@ _RECOMMENDED_ONLINE_CLEARED: str = (
     "Online fetch returned {fetched} row(s); {inserted} new row(s) "
     "staged into the temp DB.  All {checked} checked event(s) now "
     "become benchmark-ready against {bench} in the temp preview.  "
-    "The live DB is unchanged."
+    "The live DB is unchanged.  Live promotion may be considered "
+    "ONLY after taking a backup of the live events DB and supplying "
+    "an explicit, separate live-confirmation flag — do not promote "
+    "without both.  This preview reports cache geometry only and "
+    "does not infer any benchmark-sensitivity conclusion."
 )
 _RECOMMENDED_ONLINE_PARTIAL: str = (
     "Online fetch returned {fetched} row(s); {inserted} new row(s) "
-    "staged into the temp DB.  {blocked} of {checked} event(s) still "
-    "blocked.  Inspect 'still_missing_dates' for the dates the "
-    "provider did not cover."
+    "staged into the temp DB.  {blocked} of {checked} event(s) "
+    "still blocked.  Do NOT promote to live.  Inspect "
+    "'still_missing_dates' and each blocked event's per-row "
+    "blockers before any further action."
 )
 
 

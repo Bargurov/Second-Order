@@ -682,6 +682,112 @@ class TestConservativeWording(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Promotion-gate wording (post calendar fix)
+# ---------------------------------------------------------------------------
+
+
+class TestPromotionGateWording(unittest.TestCase):
+    """The preview is a *temp-only* exercise.  Whether it cleared or
+    not, the recommendation must steer the operator unambiguously
+    toward (or away from) live promotion.
+
+    * All cleared (ready_after = checked, blocked_after = 0):
+      mention live promotion AND a backup AND an explicit, separate
+      live-confirmation step.  Conservative language — no claims
+      that the preview "proves" anything.
+
+    * Still blocked (blocked_after > 0): explicit do-not-promote
+      direction and a pointer to inspect the per-event blockers.
+    """
+
+    def _run_all_cleared(self) -> dict[str, Any]:
+        fixture = _make_fixture_db()
+        try:
+            with patch.object(
+                cli, "_build_request_packet",
+                return_value=_packet(required_dates=["2026-01-12"]),
+            ), patch.object(
+                cli, "_fetch_xle_rows_online",
+                return_value=([_provider_row(date="2026-01-12")], []),
+            ), patch.object(
+                cli, "_run_preflight",
+                side_effect=_PreflightSeam([
+                    _preflight_report(ready=0, blocked=2),
+                    _preflight_report(ready=2, blocked=0),
+                ]),
+            ):
+                return cli.run_xle_online_backfill_preview(
+                    confirm_online=True, db_path=fixture,
+                )
+        finally:
+            os.unlink(fixture)
+
+    def _run_still_blocked(self) -> dict[str, Any]:
+        fixture = _make_fixture_db()
+        try:
+            with patch.object(
+                cli, "_build_request_packet",
+                return_value=_packet(
+                    required_dates=["2026-01-12", "2026-01-13"],
+                ),
+            ), patch.object(
+                cli, "_fetch_xle_rows_online",
+                return_value=([_provider_row(date="2026-01-12")], []),
+            ), patch.object(
+                cli, "_run_preflight",
+                side_effect=_PreflightSeam([
+                    _preflight_report(ready=0, blocked=2),
+                    _preflight_report(ready=1, blocked=1),
+                ]),
+            ):
+                return cli.run_xle_online_backfill_preview(
+                    confirm_online=True, db_path=fixture,
+                )
+        finally:
+            os.unlink(fixture)
+
+    def test_all_cleared_mentions_live_promotion(self) -> None:
+        report = self._run_all_cleared()
+        self.assertEqual(report["ready_after"],   2)
+        self.assertEqual(report["blocked_after"], 0)
+        action = report["recommended_next_action"].lower()
+        self.assertIn("live promotion", action, f"action: {action!r}")
+
+    def test_all_cleared_mentions_backup(self) -> None:
+        report = self._run_all_cleared()
+        action = report["recommended_next_action"].lower()
+        self.assertIn("backup", action, f"action: {action!r}")
+
+    def test_all_cleared_mentions_explicit_live_confirmation(self) -> None:
+        # An explicit live-confirmation flag must be flagged as a
+        # separate gate so a casual rerun cannot promote by accident.
+        report = self._run_all_cleared()
+        action = report["recommended_next_action"].lower()
+        self.assertIn("live-confirmation", action, f"action: {action!r}")
+
+    def test_all_cleared_does_not_assert_proof(self) -> None:
+        # Conservative language guard, restated here so the intent
+        # behind the new wording is pinned alongside the wording itself.
+        report = self._run_all_cleared()
+        action = report["recommended_next_action"].lower()
+        for banned in ("proof", "proves", "proven"):
+            self.assertNotIn(banned, action, f"action: {action!r}")
+
+    def test_still_blocked_explicitly_forbids_live_promotion(self) -> None:
+        report = self._run_still_blocked()
+        self.assertGreater(report["blocked_after"], 0)
+        action = report["recommended_next_action"].lower()
+        self.assertIn("do not promote", action, f"action: {action!r}")
+
+    def test_still_blocked_points_at_blockers(self) -> None:
+        report = self._run_still_blocked()
+        action = report["recommended_next_action"].lower()
+        self.assertIn("blocker", action, f"action: {action!r}")
+        # And the existing 'still_missing_dates' pointer is preserved.
+        self.assertIn("still_missing_dates", action, f"action: {action!r}")
+
+
+# ---------------------------------------------------------------------------
 # Import isolation — no provider / FastAPI by default
 # ---------------------------------------------------------------------------
 

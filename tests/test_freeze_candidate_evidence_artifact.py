@@ -1264,9 +1264,39 @@ class TestBenchmarkSensitivityStatus(unittest.TestCase):
             self.assertEqual(block["status"], "blocked")
             joined = " ".join(block["limitations"]).lower()
             # Task: "If status=blocked, limitations must say benchmark
-            # sensitivity is unavailable."
+            # sensitivity remains unavailable."
             self.assertIn("benchmark sensitivity", joined)
-            self.assertIn("unavailable", joined)
+            self.assertIn("remains unavailable", joined)
+        finally:
+            ws.cleanup()
+
+    def test_limitations_say_readiness_improved_when_preview_ready(
+        self,
+    ) -> None:
+        # Task: "If status is preview_ready but no comparison exists,
+        # limitations must say benchmark data readiness improved but
+        # SPY-vs-XLE interpretation has not yet been run."
+        ws = _Workspace()
+        try:
+            ws.write_curated([])
+            prev = self._write(
+                ws, "preview.json",
+                _xle_preview_payload(ready_after=2, blocked_after=0),
+            )
+            report = cli.build_freeze_candidate_evidence_artifact(
+                curated_path=str(ws.curated_path),
+                short_horizon_batches=[],
+                xle_request_packet_path=self._nope(ws, "no_req.json"),
+                xle_preview_path=prev,
+                generated_at="2026-05-12T00:00:00Z",
+            )
+            block = report["benchmark_sensitivity_status"]
+            self.assertEqual(block["status"], "preview_ready")
+            joined = " ".join(block["limitations"]).lower()
+            self.assertIn("benchmark data readiness improved", joined)
+            self.assertIn(
+                "spy-vs-xle interpretation has not yet been run", joined,
+            )
         finally:
             ws.cleanup()
 
