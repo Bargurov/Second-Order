@@ -1167,14 +1167,17 @@ class TestImportIsolation(unittest.TestCase):
     _BLOCKED = ("yfinance", "fastapi", "api")
 
     def test_module_does_not_pull_provider_or_fastapi(self) -> None:
-        leaked = {
-            k for k in sys.modules.keys()
-            if k in self._BLOCKED
-            or k.startswith("routes.")
-            or any(k.startswith(b + ".") for b in self._BLOCKED)
-        }
-        self.assertEqual(leaked, set(),
-                         f"unexpected provider/fastapi imports: {leaked}")
+        # Run the check in a fresh subprocess so prior tests in the
+        # same discovery process cannot pollute sys.modules with
+        # ``routes.movers`` / FastAPI and trick this assertion.
+        from tests._import_isolation_check import (
+            assert_module_import_does_not_leak,
+        )
+        assert_module_import_does_not_leak(
+            self,
+            module_name="scripts.combined_reviewed_evidence_report",
+            blocked=self._BLOCKED,
+        )
 
 
 if __name__ == "__main__":

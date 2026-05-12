@@ -1270,14 +1270,18 @@ class TestImportIsolation(unittest.TestCase):
     _BLOCKED = ("yfinance", "fastapi", "api", "market_data")
 
     def test_module_import_does_not_pull_provider(self) -> None:
-        leaked = {
-            k for k in sys.modules.keys()
-            if k in self._BLOCKED
-            or k.startswith("routes.")
-            or any(k.startswith(b + ".") for b in self._BLOCKED)
-        }
-        self.assertEqual(leaked, set(),
-                         f"unexpected imports: {leaked}")
+        # Subprocess-isolated: an in-process scan reads sys.modules
+        # state polluted by prior tests in the same discovery run.
+        # Fresh subprocess measures only what importing the live
+        # promote script actually pulls in.
+        from tests._import_isolation_check import (
+            assert_module_import_does_not_leak,
+        )
+        assert_module_import_does_not_leak(
+            self,
+            module_name="scripts.xle_live_backfill_promote",
+            blocked=self._BLOCKED,
+        )
 
     def test_without_confirm_live_write_provider_seam_never_called(
         self,

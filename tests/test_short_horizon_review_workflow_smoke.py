@@ -675,15 +675,24 @@ class TestConservativeWording(unittest.TestCase):
 
 class TestNoPaidSurfaceImports(unittest.TestCase):
     def test_workflow_smoke_module_does_not_import_yfinance(self) -> None:
-        # Loaded by the test header; just confirm it didn't pull in
-        # yfinance / market_data / api / routes.
-        self.assertNotIn("yfinance", sys.modules,
-                         "workflow smoke should not import yfinance")
-        # market_data / api / routes may legitimately be loaded by
-        # other test files in the same process, so we don't assert
-        # their absence here — only the smoke's direct surface
-        # constraint.  Confirm the smoke module itself has no such
-        # references via attribute lookup.
+        # Subprocess-isolated yfinance check.  In a full discovery
+        # run a prior test (e.g. anything that touched market_check)
+        # can leave yfinance in sys.modules; we only care whether
+        # importing the workflow smoke itself pulls it in.
+        from tests._import_isolation_check import (
+            assert_module_import_does_not_leak,
+        )
+        assert_module_import_does_not_leak(
+            self,
+            module_name="scripts.short_horizon_review_workflow_smoke",
+            blocked=("yfinance",),
+            blocked_starts_with=(),
+        )
+        # The smoke module itself must also not BIND yfinance /
+        # anthropic / openai as a module attribute.  These checks
+        # remain in-process: they read attributes on a module that
+        # was already imported at test-file load time, so there is
+        # no sys.modules race involved.
         for attr in ("yfinance", "anthropic", "openai"):
             self.assertFalse(
                 hasattr(cli, attr),

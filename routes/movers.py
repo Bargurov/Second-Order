@@ -17,6 +17,7 @@ import movers_cache
 import api as _api
 import headline_registry as _hr
 from news_sources import _dedup_key as _hr_dedup_key
+from routes.weekly_canonicalization import collapse_weekly_duplicates
 
 # Windows that receive the diversity guardrail pass.  ``persistent``
 # is intentionally excluded — a follow-through surface orders by
@@ -2391,6 +2392,15 @@ def movers_weekly(
         window="weekly",
         diagnostics=_time_window_diagnostics("weekly"),
     )
+    # Weekly-only canonicalization: collapse same-headline duplicate
+    # clusters to one canonical card each, attaching duplicate_count
+    # and grouped_event_ids.  Daily and Still Moving never enter this
+    # branch — only the weekly route calls collapse_weekly_duplicates.
+    # The underlying events.db rows are untouched.
+    if isinstance(envelope, dict) and isinstance(envelope.get("items"), list):
+        envelope["items"] = collapse_weekly_duplicates(envelope["items"])
+        if isinstance(envelope.get("meta"), dict):
+            envelope["meta"]["surfaced_count"] = len(envelope["items"])
     return _project(envelope, include_meta=include_meta)
 
 

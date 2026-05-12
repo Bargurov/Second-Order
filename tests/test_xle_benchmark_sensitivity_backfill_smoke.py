@@ -326,26 +326,32 @@ class TestBeforeAfterCounts(unittest.TestCase):
             os.unlink(live)
 
     def test_seam_supplies_rows_clears_after(self) -> None:
-        # XLE pre-event cache is short by exactly the two business
+        # XLE pre-event cache is short by exactly the two trading
         # days the seam will supply.  The smoke inserts those rows
         # into the temp DB and the after-preflight clears.
         #
-        # estimation_window=5; XLE seeded with 3 pre-event business
-        # days starting from the third business day before anchor; the
-        # gap the preflight then reports is the two business days
-        # immediately before that earliest seeded date.
+        # estimation_window=5 trading days strictly before the
+        # event.  The preflight is NYSE-trading-day aware: walking
+        # backwards from Fri 2026-04-10 the 5 most-recent trading
+        # days are Thu 4-09, Wed 4-08, Tue 4-07, Mon 4-06 and
+        # Thu 4-02 — because Fri 2026-04-03 is Good Friday (NYSE
+        # closed) and is skipped, the window reaches one trading
+        # day further back to 4-02.  The seam therefore supplies
+        # {4-02, 4-06}, not {4-03, 4-06}, so the after-preflight
+        # clears under trading-day math.
         anchor = "2026-04-10"  # Friday
-        # 3 pre-event business days: Thu 4-09, Wed 4-08, Tue 4-07
+        # 3 pre-event trading days seeded: Thu 4-09, Wed 4-08, Tue 4-07.
         pre_event_xle = ["2026-04-07", "2026-04-08", "2026-04-09"]
         # Forward horizon coverage so the forward check passes.
         forward_xle = [
             "2026-04-13", "2026-04-14", "2026-04-15",
             "2026-04-16", "2026-04-17",
         ]
-        # The 2 business days immediately before the earliest seeded
-        # XLE row (Tue 4-07) are Fri 4-03 and Mon 4-06 — those are
-        # the dates the seam will supply.
-        seam_dates = {"2026-04-03", "2026-04-06"}
+        # The 2 trading days the preflight still needs after the
+        # 3 seeded pre-event rows: Mon 4-06 and Thu 4-02 (Fri 4-03
+        # is Good Friday, skipped).  These are what the seam will
+        # supply.
+        seam_dates = {"2026-04-02", "2026-04-06"}
 
         live = _make_live_db(
             event_id_to_date={60: anchor},

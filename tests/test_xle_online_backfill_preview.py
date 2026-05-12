@@ -796,14 +796,16 @@ class TestImportIsolation(unittest.TestCase):
     _BLOCKED = ("yfinance", "fastapi", "api", "market_data")
 
     def test_module_import_does_not_pull_provider(self) -> None:
-        leaked = {
-            k for k in sys.modules.keys()
-            if k in self._BLOCKED
-            or k.startswith("routes.")
-            or any(k.startswith(b + ".") for b in self._BLOCKED)
-        }
-        self.assertEqual(leaked, set(),
-                         f"unexpected provider/fastapi imports: {leaked}")
+        # Subprocess-isolated: an in-process scan reads sys.modules
+        # state polluted by prior tests in the same discovery run.
+        from tests._import_isolation_check import (
+            assert_module_import_does_not_leak,
+        )
+        assert_module_import_does_not_leak(
+            self,
+            module_name="scripts.xle_online_backfill_preview",
+            blocked=self._BLOCKED,
+        )
 
     def test_without_confirm_online_provider_seam_never_called(
         self,
