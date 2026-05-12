@@ -336,6 +336,264 @@ class TestLimit(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# --offset paging
+# ---------------------------------------------------------------------------
+
+
+class TestOffset(unittest.TestCase):
+    def test_offset_zero_matches_top_limit_behaviour(self) -> None:
+        rows = [
+            _queue_row(event_id=i, repair_priority="medium")
+            for i in range(1, 21)
+        ]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            baseline = cli.build_short_horizon_review_worksheet(
+                limit=10,
+            )
+            offset0 = cli.build_short_horizon_review_worksheet(
+                limit=10, offset=0,
+            )
+        self.assertEqual(baseline["worksheet"], offset0["worksheet"])
+        self.assertEqual(
+            [r["event_id"] for r in offset0["worksheet"]],
+            list(range(1, 11)),
+        )
+
+    def test_offset_pages_next_batch(self) -> None:
+        rows = [
+            _queue_row(event_id=i, repair_priority="medium")
+            for i in range(1, 21)
+        ]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=10, offset=10,
+            )
+        self.assertEqual(report["worksheet_count"], 10)
+        self.assertEqual(
+            [r["event_id"] for r in report["worksheet"]],
+            list(range(11, 21)),
+        )
+        # Aggregate counts are unaffected by offset.
+        self.assertEqual(report["total_review_queue_count"], 20)
+        self.assertEqual(report["medium_priority_count"], 20)
+
+    def test_offset_beyond_end_yields_empty_worksheet(self) -> None:
+        rows = [_queue_row(event_id=i) for i in range(1, 6)]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=10, offset=100,
+            )
+        self.assertEqual(report["worksheet"], [])
+        self.assertEqual(report["worksheet_count"], 0)
+        # The full upstream cohort is still surfaced via the count.
+        self.assertEqual(report["total_review_queue_count"], 5)
+
+    def test_offset_respects_priority_sort(self) -> None:
+        # Sort is (priority_rank, event_id asc) — offset must skip the
+        # first N rows of that sorted order, not the raw input order.
+        rows = [
+            _queue_row(event_id=20, repair_priority="low"),
+            _queue_row(event_id=10, repair_priority="high"),
+            _queue_row(event_id=15, repair_priority="medium"),
+            _queue_row(event_id=11, repair_priority="high"),
+        ]
+        # Sorted order: [10 (high), 11 (high), 15 (medium), 20 (low)].
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=2, offset=2,
+            )
+        self.assertEqual(
+            [r["event_id"] for r in report["worksheet"]],
+            [15, 20],
+        )
+
+    def test_envelope_carries_limit_and_offset(self) -> None:
+        rows = [_queue_row(event_id=i) for i in range(1, 6)]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=2, offset=3,
+            )
+        self.assertEqual(report["limit"], 2)
+        self.assertEqual(report["offset"], 3)
+
+    def test_negative_offset_is_clamped_to_zero(self) -> None:
+        rows = [
+            _queue_row(event_id=i, repair_priority="medium")
+            for i in range(1, 6)
+        ]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=3, offset=-7,
+            )
+        self.assertEqual(
+            [r["event_id"] for r in report["worksheet"]],
+            [1, 2, 3],
+        )
+        self.assertEqual(report["offset"], 0)
+
+    def test_offset_keeps_operator_columns_blank(self) -> None:
+        rows = [_queue_row(event_id=i) for i in range(1, 6)]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=2, offset=2,
+            )
+        for worksheet_row in report["worksheet"]:
+            for key in _BLANK_OPERATOR_FIELDS:
+                self.assertEqual(worksheet_row[key], "")
+
+
+# ---------------------------------------------------------------------------
+# CLI offset paging
+# ---------------------------------------------------------------------------
+
+
+class TestCliOffset(unittest.TestCase):
+    def test_cli_offset_pages_json(self) -> None:
+        rows = [
+            _queue_row(event_id=i, repair_priority="medium")
+            for i in range(1, 21)
+        ]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            out = io.StringIO()
+            rc = cli.main(["--json", "--limit", "10", "--offset", "10"], out=out)
+        self.assertEqual(rc, 0)
+        parsed = json.loads(out.getvalue())
+        self.assertEqual(parsed["limit"], 10)
+        self.assertEqual(parsed["offset"], 10)
+        self.assertEqual(
+            [r["event_id"] for r in parsed["worksheet"]],
+            list(range(11, 21)),
+        )
+
+    def test_cli_csv_carries_only_offset_batch(self) -> None:
+        rows = [
+            _queue_row(event_id=i, repair_priority="medium")
+            for i in range(1, 21)
+        ]
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            out = io.StringIO()
+            rc = cli.main(["--csv", "--limit", "10", "--offset", "10"], out=out)
+        self.assertEqual(rc, 0)
+        reader = csv.DictReader(io.StringIO(out.getvalue()))
+        csv_rows = list(reader)
+        self.assertEqual(len(csv_rows), 10)
+        self.assertEqual(
+            [int(r["event_id"]) for r in csv_rows],
+            list(range(11, 21)),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Final batch — operator's "remaining candidates after top10 and next10"
+# scenario.  Pins the partial-tail slice behaviour: a 28-row queue paged
+# with ``--limit 10 --offset 20`` returns 8 rows (event_ids 21-28 in the
+# sorted order), with aggregate counts still reporting the full cohort.
+# ---------------------------------------------------------------------------
+
+
+def _twenty_eight_row_queue() -> list[dict[str, Any]]:
+    """28 rows split across high / medium / low so the worksheet's
+    defensive sort exercises end-to-end.  After sort by
+    ``(priority_rank, event_id)`` ascending the queue is event_ids
+    1..28 in order, so ``offset=20`` lands on event_id 21.
+    """
+    rows: list[dict[str, Any]] = []
+    for i in range(1, 6):       # high  : event_ids 1-5   (5 rows)
+        rows.append(_queue_row(event_id=i, repair_priority="high"))
+    for i in range(6, 26):      # medium: event_ids 6-25  (20 rows)
+        rows.append(_queue_row(event_id=i, repair_priority="medium"))
+    for i in range(26, 29):     # low   : event_ids 26-28 (3 rows)
+        rows.append(_queue_row(event_id=i, repair_priority="low"))
+    return rows
+
+
+class TestFinalBatchPaging(unittest.TestCase):
+    def test_offset_20_limit_10_against_28_rows_yields_remaining_8(
+        self,
+    ) -> None:
+        rows = _twenty_eight_row_queue()
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=10, offset=20,
+            )
+        # Slice semantics: only 8 rows remain after offset 20 even
+        # though --limit is 10.  worksheet_count must reflect the
+        # partial tail, not the requested limit.
+        self.assertEqual(report["worksheet_count"], 8)
+        self.assertEqual(len(report["worksheet"]),  8)
+        self.assertEqual(report["total_review_queue_count"], 28)
+        # Aggregate priority counts always reflect the full upstream
+        # cohort, never the windowed batch.
+        self.assertEqual(report["high_priority_count"],   5)
+        self.assertEqual(report["medium_priority_count"], 20)
+        self.assertEqual(report["low_priority_count"],    3)
+
+    def test_offset_20_limit_10_returns_event_ids_21_through_28(
+        self,
+    ) -> None:
+        # Sorted order: high (1-5), then medium (6-25), then low
+        # (26-28).  Slice [20:30] of that 28-row list is event_ids
+        # 21..28.
+        rows = _twenty_eight_row_queue()
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=10, offset=20,
+            )
+        self.assertEqual(
+            [r["event_id"] for r in report["worksheet"]],
+            list(range(21, 29)),
+        )
+
+    def test_cli_final_batch_json_envelope_counts(self) -> None:
+        rows = _twenty_eight_row_queue()
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            out = io.StringIO()
+            rc = cli.main(
+                ["--json", "--limit", "10", "--offset", "20"], out=out,
+            )
+        self.assertEqual(rc, 0)
+        parsed = json.loads(out.getvalue())
+        self.assertEqual(parsed["worksheet_count"], 8)
+        self.assertEqual(parsed["total_review_queue_count"], 28)
+        self.assertEqual(parsed["limit"],  10)
+        self.assertEqual(parsed["offset"], 20)
+        self.assertEqual(
+            [r["event_id"] for r in parsed["worksheet"]],
+            list(range(21, 29)),
+        )
+
+    def test_cli_final_batch_csv_carries_only_remaining_rows(self) -> None:
+        rows = _twenty_eight_row_queue()
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            out = io.StringIO()
+            rc = cli.main(
+                ["--csv", "--limit", "10", "--offset", "20"], out=out,
+            )
+        self.assertEqual(rc, 0)
+        reader = csv.DictReader(io.StringIO(out.getvalue()))
+        csv_rows = list(reader)
+        self.assertEqual(len(csv_rows), 8)
+        self.assertEqual(
+            [int(r["event_id"]) for r in csv_rows],
+            list(range(21, 29)),
+        )
+
+    def test_final_batch_operator_columns_remain_blank(self) -> None:
+        rows = _twenty_eight_row_queue()
+        with _patch_queue(_queue_payload(review_queue=rows)):
+            report = cli.build_short_horizon_review_worksheet(
+                limit=10, offset=20,
+            )
+        for r in report["worksheet"]:
+            for key in _BLANK_OPERATOR_FIELDS:
+                self.assertEqual(
+                    r[key], "",
+                    f"{key} must remain blank on final-batch rows "
+                    "(operator hand-fills these)",
+                )
+
+
+# ---------------------------------------------------------------------------
 # Empty cohort
 # ---------------------------------------------------------------------------
 

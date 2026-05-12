@@ -199,10 +199,21 @@ def _run_short_horizon_review_queue(
 
 
 def build_short_horizon_review_worksheet(
-    *, db_path: str | None = None, limit: int = _DEFAULT_LIMIT,
+    *, db_path: str | None = None,
+    limit: int = _DEFAULT_LIMIT,
+    offset: int = 0,
 ) -> dict[str, Any]:
-    """Build the worksheet payload from the upstream review queue."""
+    """Build the worksheet payload from the upstream review queue.
+
+    ``--offset`` pages the surfaced worksheet through the sorted
+    review queue: ``offset=0`` returns the first ``limit`` rows
+    (matching the historical top-N behaviour), ``offset=N`` skips the
+    first N rows and surfaces the next ``limit``.  The aggregate
+    counts always reflect the full upstream queue regardless of
+    offset.
+    """
     capped_limit = max(int(limit), 0)
+    capped_offset = max(int(offset), 0)
 
     # Always ask the upstream queue for an effectively unlimited cohort
     # so our --limit only truncates the surfaced worksheet, not the
@@ -234,12 +245,14 @@ def build_short_horizon_review_worksheet(
     )
 
     # When --limit is non-positive, emit an empty worksheet but keep
-    # the aggregate counts intact.  Any positive limit truncates the
-    # surfaced list without touching total_review_queue_count.
+    # the aggregate counts intact.  Otherwise slice the sorted list
+    # at ``[offset : offset + limit]`` — an offset past the end of the
+    # list yields an empty worksheet (Python slice semantics) without
+    # changing total_review_queue_count.
     if capped_limit <= 0:
         truncated: list[dict[str, Any]] = []
     else:
-        truncated = worksheet_rows[:capped_limit]
+        truncated = worksheet_rows[capped_offset : capped_offset + capped_limit]
 
     excluded_or_deferred = _build_excluded_or_deferred(queue)
 
@@ -252,6 +265,8 @@ def build_short_horizon_review_worksheet(
         "ok":                       True,
         "worksheet_count":          len(truncated),
         "total_review_queue_count": len(worksheet_rows),
+        "limit":                    capped_limit,
+        "offset":                   capped_offset,
         "high_priority_count":      _safe_int(queue.get("high_priority_count")),
         "medium_priority_count":    _safe_int(queue.get("medium_priority_count")),
         "low_priority_count":       _safe_int(queue.get("low_priority_count")),
@@ -383,6 +398,14 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--offset", type=int, default=0,
+        help=(
+            "Skip the first N rows of the sorted review queue before "
+            "applying --limit (default 0).  --limit 10 --offset 10 "
+            "surfaces rows 11-20 of the same sort order."
+        ),
+    )
+    parser.add_argument(
         "--db-path", dest="db_path", default=None,
         help="Optional events DB path.  Read-only.",
     )
@@ -394,7 +417,9 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
     output = out if out is not None else sys.stdout
 
     report = build_short_horizon_review_worksheet(
-        db_path=args.db_path, limit=int(args.limit),
+        db_path=args.db_path,
+        limit=int(args.limit),
+        offset=int(args.offset),
     )
     if args.csv:
         # CSV writer already emits a trailing newline per row; write
