@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import os
 import re
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -18,6 +19,48 @@ import api as _api
 import headline_registry as _hr
 from news_sources import _dedup_key as _hr_dedup_key
 from routes.weekly_canonicalization import collapse_weekly_duplicates
+# Daily Section C analyzed_event_artifact gate — admit a card into
+# Section C only when a reviewed analyzed_event_artifact_<cid>.json
+# is on disk and carries the three required fields.  The gate runs
+# on /movers/today ONLY; weekly canonicalization and Still Moving's
+# persistent gate are left untouched.  See
+# scripts/section_c_daily_artifact_gate_plan.py for the design.
+from routes.daily_artifact_gate import filter_daily_section_c_cards
+
+# Filesystem location of the analyzed_event_artifact files the gate
+# reads.  Operator-owned: the route does not create or mutate this
+# directory; the gate only reads it.
+_DAILY_ARTIFACT_DIR: Path = (
+    Path(__file__).resolve().parents[1] / "artifacts"
+)
+
+
+def _propagate_daily_candidate_id(cards):
+    """Surface a normalized ``candidate_id`` on each Daily card when one
+    is already available from the source event/card.
+
+    Read-only seam between the upstream mover-builder and the Daily
+    artifact gate.  Returns a new list; never mutates the cached source
+    dicts.  The helper does not invent or derive a ``candidate_id`` —
+    when the source carries no non-empty string value the field is
+    left absent and the gate would hold the card for review.
+
+    Used by ``/movers/today`` only.  Weekly canonicalization and the
+    Still Moving persistent gate do not call this helper.
+    """
+    out: list = []
+    for c in cards or []:
+        if not isinstance(c, dict):
+            out.append(c)
+            continue
+        cid = c.get("candidate_id")
+        if isinstance(cid, str):
+            stripped = cid.strip()
+            if stripped and stripped != cid:
+                out.append({**c, "candidate_id": stripped})
+                continue
+        out.append(c)
+    return out
 
 # Windows that receive the diversity guardrail pass.  ``persistent``
 # is intentionally excluded — a follow-through surface orders by
@@ -2353,22 +2396,56 @@ def market_movers(
 def movers_today(
     limit: int = Query(10, ge=1, le=100),
     include_meta: bool = Query(False),
+    artifact_gate: bool = Query(False),
 ):
     """Return analyzed events from the last 24 hours with any confirmed ticker move.
 
     Default response is a bare list; ``?include_meta=true`` returns the
     diagnostics envelope.
+
+    The Daily Section C analyzed_event_artifact gate is opt-in via
+    ``?artifact_gate=true``.  When the flag is omitted the legacy
+    today-movers contract is preserved (no candidate_id propagation,
+    no per-card artifact filtering, no ``daily_artifact_gate`` block
+    on ``meta``).  Demo / Section C callers pass ``artifact_gate=true``
+    to admit only cards whose ``candidate_id`` points at a reviewed
+    ``analyzed_event_artifact_<cid>.json`` file.
     """
     raw = _api.movers_today(limit=limit)
     # Read-time expiry filter — runs every call, NOT inside the
     # _TODAYS_MOVERS_CACHE build, so rows can't expire mid-TTL invisibly.
     # See docs/superpowers/specs/2026-05-03-headline-registry-design.md.
     filtered = _hr.filter_expired_low_impact(raw or [])
+    if artifact_gate:
+        # Propagate ``candidate_id`` from the source card (when available)
+        # before the artifact gate runs.  Pure pass-through: a card with
+        # no source candidate_id stays without one and the gate would
+        # hold it for review.
+        with_cid = _propagate_daily_candidate_id(filtered)
+        # Daily Section C analyzed_event_artifact gate — admit only cards
+        # whose candidate_id points at a reviewed analyzed_event_artifact
+        # JSON file carrying mechanism_family / primary_ticker /
+        # benchmark_ticker.  Rows without an artifact-backed label are
+        # held for review and surfaced as ineligible metadata under
+        # envelope.meta.daily_artifact_gate, not as accepted Section C
+        # items.  See scripts/section_c_daily_artifact_gate_plan.py.
+        items, _daily_gate_meta = filter_daily_section_c_cards(
+            with_cid, artifact_dir=_DAILY_ARTIFACT_DIR,
+        )
+    else:
+        items = filtered
+        _daily_gate_meta = None
     envelope = _sanitize_movers_with_meta(
-        filtered,
+        items,
         window="today",
         diagnostics=_time_window_diagnostics("today"),
     )
+    if (
+        _daily_gate_meta is not None
+        and isinstance(envelope, dict)
+        and isinstance(envelope.get("meta"), dict)
+    ):
+        envelope["meta"]["daily_artifact_gate"] = _daily_gate_meta
     # Surface which today-window cutoff actually produced the items
     # (24h preferred, 48h fallback when 24h is empty).  Lifted onto
     # ``meta`` directly so the field is visible whether or not the
