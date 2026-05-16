@@ -16,6 +16,25 @@ SCHEMA_VERSION = 3
 _db_ready: bool = False
 
 
+def get_db_path() -> str:
+    """Return the active SQLite events DB path.
+
+    Tests and local tooling rebind ``DB_FILE`` to redirect writes away
+    from the live archive.  Keep all DB access behind this resolver so
+    call sites read the current value instead of a stale module import.
+    """
+    return os.fspath(DB_FILE)
+
+
+def connect_db(*args, **kwargs) -> sqlite3.Connection:
+    """Open a SQLite connection to the active events DB path."""
+    return sqlite3.connect(get_db_path(), *args, **kwargs)
+
+
+def _connect_db(*args, **kwargs) -> sqlite3.Connection:
+    return connect_db(*args, **kwargs)
+
+
 def init_db() -> None:
     """Create the events table if it doesn't exist yet.
 
@@ -33,7 +52,7 @@ def init_db() -> None:
         # Do NOT stamp the old schema or set _db_ready — the DB is unusable.
         return
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS events (
                 id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -505,7 +524,7 @@ def _handle_outdated_db() -> bool:
     successfully renamed).  Returns False if the DB is outdated and the rename
     failed — init_db must NOT stamp or use the broken schema.
     """
-    if not os.path.exists(DB_FILE):
+    if not os.path.exists(get_db_path()):
         return True
 
     # Probe the version.  Must fully close the connection before any rename
@@ -513,7 +532,7 @@ def _handle_outdated_db() -> bool:
     # is called.  The ``with`` statement only commits; it does NOT close.
     needs_rename = False
     current_version = 0
-    conn = sqlite3.connect(DB_FILE)
+    conn = _connect_db()
     try:
         current_version = conn.execute("PRAGMA user_version").fetchone()[0]
 
@@ -535,9 +554,9 @@ def _handle_outdated_db() -> bool:
         return True
 
     # If we reach here the DB is outdated or mismatched — rename it.
-    backup_path = DB_FILE + ".bak"
+    backup_path = get_db_path() + ".bak"
     try:
-        os.replace(DB_FILE, backup_path)
+        os.replace(get_db_path(), backup_path)
         print(
             f"[db] Outdated database renamed to {backup_path} "
             f"(had schema version {current_version}, need {SCHEMA_VERSION})."
@@ -545,7 +564,7 @@ def _handle_outdated_db() -> bool:
         return True
     except OSError as e:
         print(
-            f"[db] WARNING: could not rename outdated {DB_FILE}: {e}\n"
+            f"[db] WARNING: could not rename outdated {get_db_path()}: {e}\n"
             f"[db] Delete or rename it manually to avoid errors."
         )
         return False
@@ -630,7 +649,7 @@ def save_event(event: dict) -> None:
             "Database not initialised. Call init_db() before save_event()."
         )
 
-    conn = sqlite3.connect(DB_FILE, isolation_level=None, timeout=30.0)
+    conn = _connect_db(isolation_level=None, timeout=30.0)
     try:
         # BEGIN IMMEDIATE acquires the SQLite write lock right now —
         # any concurrent save_event call will block here until this
@@ -780,7 +799,7 @@ def save_event(event: dict) -> None:
             raise
     finally:
         conn.close()
-    print(f"Saved to {DB_FILE}.")
+    print(f"Saved to {get_db_path()}.")
 
 
 def update_event_market_refresh(
@@ -811,7 +830,7 @@ def update_event_market_refresh(
     """
     if not _db_ready:
         return False
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         # Pull the proof-structure fields so we can recompute the
         # derived proof / falsifier verdicts against the refreshed
         # tickers.  No new fetches — just re-running the classifier on
@@ -914,7 +933,7 @@ def update_event_overlays(
         for (_, v) in writes
     ]
     params.append(event_id)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             f"UPDATE events SET {set_clauses} WHERE id = ?",
             params,
@@ -940,7 +959,7 @@ def update_event_country_vulnerability_context(
     if not isinstance(block, dict):
         raise ValueError("country_vulnerability_context must be a dict")
     payload = json.dumps(block)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             "UPDATE events SET country_vulnerability_context = ? WHERE id = ?",
             (payload, event_id),
@@ -967,7 +986,7 @@ def update_event_policy_timing_context(
     if not isinstance(block, dict):
         raise ValueError("policy_timing_context must be a dict")
     payload = json.dumps(block)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             "UPDATE events SET policy_timing_context = ? WHERE id = ?",
             (payload, event_id),
@@ -995,7 +1014,7 @@ def update_event_macro_release_context(
     if not isinstance(block, dict):
         raise ValueError("macro_release_context must be a dict")
     payload = json.dumps(block)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             "UPDATE events SET macro_release_context = ? WHERE id = ?",
             (payload, event_id),
@@ -1023,7 +1042,7 @@ def append_revisit_snapshot(event_id: int, snapshot: dict) -> bool:
     """
     if not _db_ready:
         return False
-    conn = sqlite3.connect(DB_FILE, isolation_level=None, timeout=30.0)
+    conn = _connect_db(isolation_level=None, timeout=30.0)
     try:
         conn.execute("BEGIN IMMEDIATE")
         try:
@@ -1102,7 +1121,7 @@ def load_revisit_snapshots(event_id: int) -> list[dict]:
     """
     if not _db_ready:
         return []
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT revisit_snapshots FROM events WHERE id = ?",
@@ -1129,7 +1148,7 @@ def update_review(event_id: int, rating: str = None, notes: str = None) -> bool:
         raise RuntimeError(
             "Database not initialised. Call init_db() before update_review()."
         )
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         # Build SET clause dynamically so we only touch supplied fields.
         sets = []
         params = []
@@ -1159,7 +1178,7 @@ def delete_event(event_id: int) -> bool:
         raise RuntimeError(
             "Database not initialised. Call init_db() before delete_event()."
         )
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute("DELETE FROM events WHERE id = ?", (event_id,))
         return cur.rowcount > 0
 
@@ -1246,7 +1265,7 @@ def compute_track_record() -> dict:
             "rated_good": 0, "rated_mixed": 0, "rated_poor": 0,
         }
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         # Include revisit_snapshots in the query.
         try:
             rows = conn.execute(
@@ -1353,7 +1372,7 @@ def get_confidence_calibration_stats(min_events: int = 3) -> dict:
     if not _db_ready:
         return {}
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         try:
             rows = conn.execute(
                 "SELECT confidence, market_tickers, revisit_snapshots FROM events "
@@ -1440,7 +1459,7 @@ def collect_calibration_samples() -> list[dict]:
     if not _db_ready:
         return []
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         # ``regime_snapshot`` and ``mechanism_family`` are both optional
         # on legacy rows.  Try the full query first; fall back when the
         # columns aren't present yet on a just-migrated archive.
@@ -1555,7 +1574,7 @@ def load_low_signal_headlines() -> set[str]:
     """Return a set of headlines that were analyzed and tagged as low_signal."""
     if not _db_ready:
         return set()
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         rows = conn.execute(
             "SELECT headline FROM events WHERE low_signal = 1"
         ).fetchall()
@@ -1573,7 +1592,7 @@ def find_related_events(event_id: int, headline: str,
     if not _db_ready:
         return []
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT id, headline, stage, persistence, confidence, "
@@ -1661,7 +1680,7 @@ def find_similar_events(
     """
     if not _db_ready:
         return []
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         target = conn.execute(
             "SELECT id, headline, mechanism_summary, stage, persistence, "
@@ -1759,7 +1778,7 @@ def get_event_cascade(
         "timestamp, event_date, mechanism_summary"
     )
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         root_row = conn.execute(
             f"SELECT {_COLS} FROM events WHERE id = ?", (event_id,)
@@ -1946,7 +1965,7 @@ def find_historical_analogs(
     )
     candidate_limit = max(limit * 3, limit) if regime_active else limit
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         # mechanism_family is carried forward so the analog explainer can
         # compare families directly; older rows default to 'none'.
@@ -2310,7 +2329,7 @@ def load_recent_events(limit: int = 10) -> list[dict]:
     if not _db_ready:
         return []
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT * FROM events ORDER BY id DESC LIMIT ?
@@ -2333,7 +2352,7 @@ def load_events_since(since_ts: str) -> list[dict]:
     if not _db_ready:
         return []
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT * FROM events WHERE timestamp >= ? ORDER BY id DESC",
@@ -2356,7 +2375,7 @@ def load_events_market_checked_since(since_ts: str) -> list[dict]:
     if not _db_ready:
         return []
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT * FROM events "
@@ -2426,7 +2445,7 @@ def query_events_filtered(
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     sql = f"SELECT * FROM events {where} ORDER BY id DESC"
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(sql, params).fetchall()
 
@@ -2441,7 +2460,7 @@ def load_event_by_id(event_id: int) -> dict | None:
     if not _db_ready:
         return None
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT * FROM events WHERE id = ?", (event_id,),
@@ -2511,7 +2530,7 @@ def find_cached_analysis(
             f"WHERE id = ? AND timestamp >= ? AND {mock_guard} "
             "LIMIT 1"
         )
-        with sqlite3.connect(DB_FILE) as conn:
+        with _connect_db() as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute(sql, [event_id, cutoff]).fetchone()
         if row is None:
@@ -2537,7 +2556,7 @@ def find_cached_analysis(
 
     sql = f"SELECT * FROM events WHERE {' AND '.join(conditions)} ORDER BY id DESC LIMIT 1"
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(sql, params).fetchone()
 
@@ -2558,7 +2577,7 @@ def load_news_cache(max_age_seconds: int = 300) -> dict | None:
     if not _db_ready:
         return None
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT payload, fetched_at FROM news_cache WHERE id = 1"
         ).fetchone()
@@ -2593,7 +2612,7 @@ def save_news_cache(payload: dict) -> None:
     now = datetime.now().isoformat(timespec="seconds")
     payload_json = json.dumps(payload)
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.execute(
             "INSERT OR REPLACE INTO news_cache (id, payload, fetched_at) VALUES (1, ?, ?)",
             (payload_json, now),
@@ -2615,7 +2634,7 @@ def get_events_fingerprint() -> tuple[int, int]:
     """
     if not _db_ready:
         return (0, 0)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT COUNT(*), COALESCE(MAX(id), 0) FROM events"
         ).fetchone()
@@ -2640,7 +2659,7 @@ def load_movers_cache(slice_name: str) -> dict | None:
     if not _db_ready:
         return None
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT payload, built_at, event_count, max_event_id, compute_version "
             "FROM movers_cache WHERE slice = ?",
@@ -2679,7 +2698,7 @@ def save_movers_cache(
         return
 
     payload_json = json.dumps(payload or [])
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.execute(
             "INSERT OR REPLACE INTO movers_cache "
             "(slice, payload, built_at, event_count, max_event_id, compute_version) "
@@ -2697,7 +2716,7 @@ def clear_movers_cache(slice_name: str | None = None) -> None:
     """
     if not _db_ready:
         return
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         if slice_name is None:
             conn.execute("DELETE FROM movers_cache")
         else:
@@ -2730,7 +2749,7 @@ def load_news_clusters(recency_cutoff: str | None = None) -> list[dict]:
     """
     if not _db_ready:
         return []
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         if recency_cutoff:
             rows = conn.execute(
@@ -2780,7 +2799,7 @@ def insert_news_cluster(
     """Insert a brand-new cluster row.  Returns the assigned cluster id."""
     if not _db_ready:
         return None
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             "INSERT INTO news_clusters "
             "(headline, payload_json, records_json, latest_published_at, updated_at) "
@@ -2807,7 +2826,7 @@ def update_news_cluster(
     """Replace an existing cluster row by id."""
     if not _db_ready:
         return False
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             "UPDATE news_clusters SET "
             "  headline = ?, payload_json = ?, records_json = ?, "
@@ -2828,7 +2847,7 @@ def update_news_cluster(
 def delete_news_cluster(cluster_id: int) -> bool:
     if not _db_ready:
         return False
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         cur = conn.execute(
             "DELETE FROM news_clusters WHERE id = ?", (int(cluster_id),),
         )
@@ -2849,7 +2868,7 @@ def get_trending_clusters(
         return []
     import math
     cutoff = (datetime.now() - timedelta(hours=window_hours)).isoformat(timespec="seconds")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT headline, payload_json, records_json, latest_published_at "
@@ -2887,7 +2906,7 @@ def load_news_headline_assignments() -> dict[tuple[str, str], int]:
     """Return { (source, title_key): cluster_id } for every stored headline."""
     if not _db_ready:
         return {}
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         rows = conn.execute(
             "SELECT source, title_key, cluster_id "
             "FROM news_headline_assignments"
@@ -2902,7 +2921,7 @@ def upsert_news_headline_assignments(
     """Insert-or-replace a batch of (source, title_key, cluster_id) rows."""
     if not _db_ready or not assignments:
         return
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.executemany(
             "INSERT OR REPLACE INTO news_headline_assignments "
             "(source, title_key, cluster_id, assigned_at) "
@@ -2941,7 +2960,7 @@ def upsert_headline_registry_seen(
         (src, key, cluster_id, now_iso, now_iso)
         for (src, key, cluster_id) in rows
     ]
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.executemany(
             "INSERT INTO headline_registry "
             "(source, title_key, cluster_id, state, "
@@ -3017,7 +3036,7 @@ def update_registry_state(
         return
 
     params.append(title_key)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.execute(
             f"UPDATE headline_registry SET {', '.join(sets)} "
             f"WHERE title_key = ?",
@@ -3029,7 +3048,7 @@ def load_registry_state_counts() -> dict[str, int]:
     """Return ``{state: count}`` for every distinct ``state`` value."""
     if not _db_ready:
         return {}
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         rows = conn.execute(
             "SELECT state, COUNT(*) FROM headline_registry GROUP BY state"
         ).fetchall()
@@ -3040,7 +3059,7 @@ def load_registry_skip_reason_counts() -> dict[str, int]:
     """Return ``{last_skip_reason: count}`` for non-null reasons only."""
     if not _db_ready:
         return {}
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         rows = conn.execute(
             "SELECT last_skip_reason, COUNT(*) FROM headline_registry "
             "WHERE last_skip_reason IS NOT NULL "
@@ -3052,7 +3071,7 @@ def load_registry_skip_reason_counts() -> dict[str, int]:
 def load_registry_last_analyzed_at() -> str | None:
     if not _db_ready:
         return None
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT MAX(analyzed_at) FROM headline_registry"
         ).fetchone()
@@ -3062,7 +3081,7 @@ def load_registry_last_analyzed_at() -> str | None:
 def load_registry_expired_count_since(since_iso: str) -> int:
     if not _db_ready:
         return 0
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT COUNT(*) FROM headline_registry "
             "WHERE state = 'expired_low_impact' AND expired_at >= ?",
@@ -3080,7 +3099,7 @@ def load_registry_eligible_unanalyzed_count() -> int:
     """
     if not _db_ready:
         return 0
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT COUNT(*) FROM headline_registry "
             "WHERE state IN ('seen', 'eligible') AND event_id IS NULL"
@@ -3100,7 +3119,7 @@ def load_registry_analyzed_count_since(since_iso: str) -> int:
     """
     if not _db_ready:
         return 0
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT COUNT(*) FROM headline_registry "
             "WHERE analyzed_at IS NOT NULL "
@@ -3121,7 +3140,7 @@ def load_registry_surfaced_count_since(since_iso: str) -> int:
     """
     if not _db_ready:
         return 0
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT COUNT(*) FROM headline_registry "
             "WHERE state = 'surfaced' AND last_seen_at >= ?",
@@ -3134,7 +3153,7 @@ def load_registry_expired_low_impact_count() -> int:
     """Total count of rows currently in ``expired_low_impact`` state."""
     if not _db_ready:
         return 0
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT COUNT(*) FROM headline_registry "
             "WHERE state = 'expired_low_impact'"
@@ -3151,7 +3170,7 @@ def load_registry_last_surfaced_at() -> str | None:
     """
     if not _db_ready:
         return None
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         row = conn.execute(
             "SELECT MAX(last_seen_at) FROM headline_registry "
             "WHERE state = 'surfaced'"
@@ -3175,7 +3194,7 @@ def load_registry_anchors_for_keys(
         return {}
     placeholders = ",".join("?" * len(title_keys))
     out: dict[str, dict[str, str | None]] = {}
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         rows = conn.execute(
             f"SELECT title_key, analyzed_at, impact_level "
             f"FROM headline_registry "
@@ -3204,7 +3223,7 @@ def load_eligible_unanalyzed_candidates(
     """
     if not _db_ready:
         return []
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT hr.cluster_id, "
@@ -3247,6 +3266,6 @@ def clear_news_cluster_store() -> None:
     """Drop everything from both cluster tables.  Test-only."""
     if not _db_ready:
         return
-    with sqlite3.connect(DB_FILE) as conn:
+    with _connect_db() as conn:
         conn.execute("DELETE FROM news_headline_assignments")
         conn.execute("DELETE FROM news_clusters")

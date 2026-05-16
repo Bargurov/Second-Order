@@ -116,7 +116,7 @@ def _purge_corrupt_rows() -> int:
     if not _ensure_table():
         return 0
     try:
-        with sqlite3.connect(_db.DB_FILE) as conn:
+        with _db.connect_db() as conn:
             deleted = conn.execute(
                 "DELETE FROM price_cache "
                 "WHERE close IS NOT NULL AND close < 10.0 "
@@ -156,7 +156,7 @@ def _ensure_table() -> bool:
         if _table_ready:
             return True
         try:
-            with sqlite3.connect(_db.DB_FILE) as conn:
+            with _db.connect_db() as conn:
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS price_cache (
                         ticker      TEXT NOT NULL,
@@ -200,7 +200,7 @@ def _clear_table_for_tests() -> None:
     if not _ensure_table():
         return
     try:
-        with sqlite3.connect(_db.DB_FILE) as conn:
+        with _db.connect_db() as conn:
             conn.execute("DELETE FROM price_cache")
     except sqlite3.Error as e:
         _log.warning("price_cache._clear_table_for_tests: %s", e)
@@ -334,7 +334,7 @@ def _read_range(
     if not _ensure_table():
         return pd.DataFrame(columns=["Close", "Volume"])
     try:
-        with sqlite3.connect(_db.DB_FILE) as conn:
+        with _db.connect_db() as conn:
             cur = conn.execute(
                 """
                 SELECT date, close, volume
@@ -411,7 +411,7 @@ def _write_rows(ticker: str, df: pd.DataFrame, auto_adjust: bool) -> None:
     if not rows:
         return
     try:
-        with sqlite3.connect(_db.DB_FILE) as conn:
+        with _db.connect_db() as conn:
             conn.executemany(
                 """
                 INSERT INTO price_cache

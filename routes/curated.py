@@ -382,7 +382,7 @@ def _safe_dict(value: Any) -> dict[str, Any]:
 
 
 def _connect() -> sqlite3.Connection:
-    return sqlite3.connect(db.DB_FILE)
+    return db.connect_db()
 
 
 def _ensure_table() -> None:

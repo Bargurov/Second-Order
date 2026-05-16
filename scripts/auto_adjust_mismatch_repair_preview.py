@@ -152,7 +152,7 @@ def _load_in_window_cache_rows(
     )
 
     try:
-        conn = sqlite3.connect(_db.DB_FILE)
+        conn = _db.connect_db()
     except sqlite3.Error:
         return {}
 

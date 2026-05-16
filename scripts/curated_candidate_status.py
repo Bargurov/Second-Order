@@ -58,7 +58,7 @@ _REQUIRED_FIELDS: tuple[str, ...] = (
 
 def _connect() -> sqlite3.Connection:
     import db as _db
-    return sqlite3.connect(_db.DB_FILE)
+    return _db.connect_db()
 
 
 def compute_status() -> dict[str, Any]:

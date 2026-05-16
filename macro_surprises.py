@@ -54,7 +54,9 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from db import DB_FILE
+import db as _db
+
+DB_FILE = _db.DB_FILE
 
 
 # ---------------------------------------------------------------------------
@@ -383,7 +385,7 @@ def upsert_release(
     category = SERIES_CATEGORY[series]
     now = _utcnow_iso()
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         priors = _get_prior_surprises(conn, series, release_time)
         block = compute_surprise(
             expected=expected,
@@ -443,7 +445,7 @@ def get_release(row_id: int) -> Optional[dict[str, Any]]:
     """Load a single release by primary key."""
     if not isinstance(row_id, int) or isinstance(row_id, bool):
         raise ValueError("row_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         row = conn.execute(
             f"SELECT {_SELECT_COLUMNS} FROM macro_releases WHERE id = ?",
             (row_id,),
@@ -455,7 +457,7 @@ def get_release_by_key(
     series: str, release_time: str,
 ) -> Optional[dict[str, Any]]:
     """Load a release by its natural key ``(series, release_time)``."""
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         row = conn.execute(
             f"SELECT {_SELECT_COLUMNS} FROM macro_releases "
             f"WHERE series = ? AND release_time = ?",
@@ -500,7 +502,7 @@ def list_releases(
         params.append(until)
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         rows = conn.execute(
             f"SELECT {_SELECT_COLUMNS} FROM macro_releases {where} "
             f"ORDER BY release_time DESC, id DESC LIMIT ?",
@@ -513,7 +515,7 @@ def delete_release(row_id: int) -> bool:
     """Delete by id.  Returns True when a row was removed."""
     if not isinstance(row_id, int) or isinstance(row_id, bool):
         raise ValueError("row_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         # Null out the pointer on any events that referenced this row so
         # we don't leave dangling FKs.
         conn.execute(
@@ -543,7 +545,7 @@ def link_event_to_release(event_id: int, release_id: int) -> None:
         raise ValueError("event_id must be an int")
     if not isinstance(release_id, int) or isinstance(release_id, bool):
         raise ValueError("release_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         exists_release = conn.execute(
             "SELECT 1 FROM macro_releases WHERE id = ?", (release_id,)
         ).fetchone()
@@ -564,7 +566,7 @@ def unlink_event(event_id: int) -> None:
     """Clear the macro_release_id pointer on one event."""
     if not isinstance(event_id, int) or isinstance(event_id, bool):
         raise ValueError("event_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.execute(
             "UPDATE events SET macro_release_id = NULL WHERE id = ?",
             (event_id,),
@@ -575,7 +577,7 @@ def list_events_for_release(release_id: int) -> list[int]:
     """Return every event_id that points at the given release."""
     if not isinstance(release_id, int) or isinstance(release_id, bool):
         raise ValueError("release_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         rows = conn.execute(
             "SELECT id FROM events WHERE macro_release_id = ? ORDER BY id",
             (release_id,),

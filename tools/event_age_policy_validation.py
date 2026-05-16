@@ -71,7 +71,7 @@ def _load_live_ages(now: datetime) -> list[int]:
     if not os.path.exists(db.DB_FILE):
         return ages
     try:
-        with sqlite3.connect(db.DB_FILE) as conn:
+        with db.connect_db() as conn:
             rows = conn.execute(
                 "SELECT event_date, timestamp FROM events"
             ).fetchall()

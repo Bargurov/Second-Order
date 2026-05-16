@@ -163,10 +163,23 @@ def _resolve_yfinance_cache_dir() -> Optional[str]:
     layout has shifted — the preflight then skips the yfinance probe
     rather than raising.  Pure: no network, no SQLite.
     """
+    override = (
+        os.environ.get("SECOND_ORDER_YFINANCE_CACHE_DIR")
+        or os.environ.get("YFINANCE_CACHE_DIR")
+        or ""
+    ).strip()
     try:
-        from yfinance.cache import _TzDBManager  # type: ignore[import-not-found]
+        from yfinance.cache import (  # type: ignore[import-not-found]
+            _TzDBManager,
+            set_cache_location,
+        )
     except Exception:
         return None
+    if override:
+        try:
+            set_cache_location(override)
+        except Exception:
+            return None
     try:
         loc = _TzDBManager.get_location()
     except Exception:
@@ -288,8 +301,8 @@ def _default_db_path() -> str:
     :data:`load_inputs` directly so this helper never runs in the
     hermetic suite.
     """
-    from db import DB_FILE
-    return DB_FILE
+    from db import get_db_path
+    return get_db_path()
 
 
 # ---------------------------------------------------------------------------

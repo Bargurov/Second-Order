@@ -26,7 +26,9 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from db import DB_FILE
+import db as _db
+
+DB_FILE = _db.DB_FILE
 
 
 # ---------------------------------------------------------------------------
@@ -362,7 +364,7 @@ def save_study(
     now = _utcnow_iso()
     payload = json.dumps(normalised, sort_keys=True)
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         existing = conn.execute(
             "SELECT id, created_at FROM saved_studies "
             "WHERE study_type = ? AND name = ?",
@@ -397,7 +399,7 @@ def load_study(study_id: int) -> Optional[dict[str, Any]]:
     """Return the stored study row by id, or ``None`` when missing."""
     if not isinstance(study_id, int) or isinstance(study_id, bool):
         raise ValueError("study_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         row = conn.execute(
             "SELECT id, study_type, name, description, config_json, "
             "       created_at, updated_at "
@@ -414,7 +416,7 @@ def list_studies(study_type: Optional[str] = None) -> list[dict[str, Any]]:
             f"unknown study_type={study_type!r}; "
             f"allowed: {sorted(STUDY_TYPE_IDS)}"
         )
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         if study_type is None:
             rows = conn.execute(
                 "SELECT id, study_type, name, description, config_json, "
@@ -436,7 +438,7 @@ def delete_study(study_id: int) -> bool:
     """Delete by id.  Returns True when a row was removed, else False."""
     if not isinstance(study_id, int) or isinstance(study_id, bool):
         raise ValueError("study_id must be an int")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         cur = conn.execute(
             "DELETE FROM saved_studies WHERE id = ?", (study_id,)
         )
@@ -497,7 +499,7 @@ def update_study(
 
     payload = json.dumps(normalised, sort_keys=True)
     now = _utcnow_iso()
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.execute(
             "UPDATE saved_studies "
             "SET name = ?, description = ?, config_json = ?, updated_at = ? "

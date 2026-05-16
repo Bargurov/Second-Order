@@ -105,11 +105,10 @@ def stamp_expired_if_observed(
     if not title_key:
         return
     try:
-        from db import DB_FILE, _db_ready, update_registry_state
-        if not _db_ready:
+        import db as _db
+        if not _db._db_ready:
             return
-        import sqlite3
-        with sqlite3.connect(DB_FILE) as conn:
+        with _db.connect_db() as conn:
             row = conn.execute(
                 "SELECT 1 FROM headline_registry "
                 "WHERE title_key = ? AND state = 'expired_low_impact' "
@@ -119,7 +118,9 @@ def stamp_expired_if_observed(
         if row:
             return  # already stamped
         now_iso = (now or datetime.now()).replace(microsecond=0).isoformat()
-        update_registry_state(
+        _db.update_registry_state(
+            # Keep the write path behind db.update_registry_state; it
+            # uses the same active DB resolver as the read above.
             title_key=title_key,
             new_state="expired_low_impact",
             expired_at=now_iso,

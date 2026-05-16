@@ -250,7 +250,7 @@ def _section_confidence_buckets(buf: io.StringIO) -> None:
     import sqlite3
     raw_totals: dict[str, int] = {"low": 0, "medium": 0, "high": 0}
     try:
-        with sqlite3.connect(db.DB_FILE) as conn:
+        with db.connect_db() as conn:
             for conf, n in conn.execute(
                 "SELECT confidence, COUNT(*) FROM events "
                 "WHERE confidence IN ('low','medium','high') "
@@ -260,7 +260,7 @@ def _section_confidence_buckets(buf: io.StringIO) -> None:
     except Exception:
         pass
 
-    _md_line(buf, f"DB file: `{db.DB_FILE}`")
+    _md_line(buf, f"DB file: `{db.get_db_path()}`")
     _md_line(buf)
     _md_line(buf, "| bucket | total events | with directional outcome | hit rate | depth verdict |")
     _md_line(buf, "|---|---:|---:|---:|---|")

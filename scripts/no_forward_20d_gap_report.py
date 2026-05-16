@@ -169,7 +169,7 @@ def _load_auto_adjust_mismatch_details() -> list[dict[str, Any]]:
         return []
 
     try:
-        conn = sqlite3.connect(_db.DB_FILE)
+        conn = _db.connect_db()
     except sqlite3.Error:
         return []
 

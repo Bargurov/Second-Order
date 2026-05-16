@@ -211,11 +211,11 @@ def _last_skip_reason_for_title_key(title_key: str) -> str | None:
     writes, no LLM, no provider calls.
     """
     import sqlite3
-    from db import DB_FILE, _db_ready
-    if not _db_ready:
+    import db as _db
+    if not _db._db_ready:
         return None
     try:
-        with sqlite3.connect(DB_FILE) as conn:
+        with _db.connect_db() as conn:
             row = conn.execute(
                 "SELECT last_skip_reason "
                 "FROM headline_registry "
@@ -502,7 +502,7 @@ def _compute_archive_aggregates() -> dict:
         import db as _db
         if not _db._db_ready:
             return blocks
-        with sqlite3.connect(_db.DB_FILE) as conn:
+        with _db.connect_db() as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute("SELECT * FROM events").fetchall()
     except Exception:
@@ -631,7 +631,7 @@ def _compute_validation_status_stats() -> dict:
     if not _db._db_ready:
         return _validation_status_unavailable()
 
-    with sqlite3.connect(_db.DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
 
@@ -1024,7 +1024,7 @@ def _compute_reaction_profile_stats() -> dict:
     if not _db._db_ready:
         return _reaction_profile_unavailable()
 
-    with sqlite3.connect(_db.DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
 
@@ -1162,7 +1162,7 @@ def _compute_track_record() -> dict:
     if not _db._db_ready:
         return _track_record_unavailable()
 
-    with sqlite3.connect(_db.DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
 
@@ -1422,7 +1422,7 @@ def _compute_reaction_profile_blockers() -> dict:
     if not _db._db_ready:
         return _reaction_profile_blockers_unavailable()
 
-    with sqlite3.connect(_db.DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
 
@@ -1619,7 +1619,7 @@ def _compute_no_forward_20d_breakdown() -> dict:
     if not _db._db_ready:
         return _no_forward_20d_blockers_unavailable()
 
-    with sqlite3.connect(_db.DB_FILE) as conn:
+    with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
         try:
@@ -2489,7 +2489,7 @@ def price_cache_coverage():
     }
 
     try:
-        conn = sqlite3.connect(_db.DB_FILE)
+        conn = _db.connect_db()
     except sqlite3.Error:
         return _api._sanitize_floats(empty)
 
@@ -2720,7 +2720,7 @@ def event_date_backfill_candidates():
     }
 
     try:
-        conn = sqlite3.connect(_db.DB_FILE)
+        conn = _db.connect_db()
     except sqlite3.Error:
         return _api._sanitize_floats(empty)
 

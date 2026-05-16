@@ -1263,11 +1263,10 @@ def _registry_state_for_title_key(title_key: str) -> tuple[str | None, int | Non
     """
     if not title_key:
         return None, None
-    import sqlite3
-    from db import DB_FILE, _db_ready
-    if not _db_ready:
+    import db as _db
+    if not _db._db_ready:
         return None, None
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         rows = conn.execute(
             "SELECT state, event_id FROM headline_registry "
             "WHERE title_key = ?",
@@ -1482,6 +1481,22 @@ def movers_backfill_recent(
     # collapsed to a small working set.
     eligible_clusters: list[dict] = []
     for cluster in raw_clusters:
+        # Preserve the registry short-circuit contract for known expired
+        # low-impact rows even if the source headline has drifted outside
+        # the current recency window.  This keeps diagnostics explicit:
+        # a registry-expired hit is a no-LLM skip with a named count.
+        headline_for_registry = _cluster_headline(cluster)
+        if headline_for_registry and not force_reanalyze:
+            registry_title_key = _hr_dedup_key(headline_for_registry)
+            registry_state, _registry_event_id = _registry_state_for_title_key(
+                registry_title_key,
+            )
+            if registry_state == "expired_low_impact":
+                _bump_skip(skipped, "registry_expired_low_impact")
+                _stamp_skip_reason_for_cluster(
+                    cluster, "registry_expired_low_impact",
+                )
+                continue
         if not _cluster_is_recent(cluster, since=since_dt):
             _bump_skip(skipped, "outside_recency_window")
             _stamp_skip_reason_for_cluster(cluster, "outside_recency_window")

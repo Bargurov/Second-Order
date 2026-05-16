@@ -33,7 +33,9 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from db import DB_FILE
+import db as _db
+
+DB_FILE = _db.DB_FILE
 
 
 def make_release_key(indicator: str, release_date: str) -> str:
@@ -116,7 +118,7 @@ def upsert_release_facts(
     release_time = release_time.strip()
     now = _utcnow_iso()
 
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         existing = conn.execute(
             "SELECT created_at FROM macro_release_facts "
             "WHERE release_key = ?",
@@ -155,7 +157,7 @@ def get_release_facts(release_key: str) -> Optional[dict[str, Any]]:
     """Return the row for ``release_key`` or ``None`` when missing."""
     if not isinstance(release_key, str) or not release_key.strip():
         raise ValueError("release_key must be a non-empty string")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         row = conn.execute(
             f"SELECT {_SELECT_COLUMNS} FROM macro_release_facts "
             f"WHERE release_key = ?",
@@ -181,7 +183,7 @@ def get_release_facts_map(
     if not keys:
         return {}
     placeholders = ",".join("?" for _ in keys)
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         rows = conn.execute(
             f"SELECT {_SELECT_COLUMNS} FROM macro_release_facts "
             f"WHERE release_key IN ({placeholders})",
@@ -194,7 +196,7 @@ def delete_release_facts(release_key: str) -> bool:
     """Delete one row.  Returns True when a row was removed."""
     if not isinstance(release_key, str) or not release_key.strip():
         raise ValueError("release_key must be a non-empty string")
-    with sqlite3.connect(DB_FILE) as conn:
+    with _db.connect_db() as conn:
         cur = conn.execute(
             "DELETE FROM macro_release_facts WHERE release_key = ?",
             (release_key.strip(),),

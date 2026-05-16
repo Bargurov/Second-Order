@@ -482,7 +482,7 @@ def clear_demo_rows() -> int:
     if not os.path.exists(db.DB_FILE):
         print(f"[seed] no DB at {db.DB_FILE} — nothing to clear")
         return 0
-    with sqlite3.connect(db.DB_FILE) as conn:
+    with db.connect_db() as conn:
         cur = conn.execute(
             "DELETE FROM events WHERE model = ?", (DEMO_MODEL_TAG,),
         )
