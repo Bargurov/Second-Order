@@ -30,19 +30,35 @@ export interface DailyMarketItem {
 
 export interface DailyMarketPanelProps {
   items: ReadonlyArray<DailyMarketItem>;
+  /**
+   * Number of artifact files the source skipped during review (e.g.
+   * missing required fields, unreadable JSON).  When ``undefined`` the
+   * panel falls back to count-free gate-status phrasing.  Skipped
+   * artifacts are artifact-level review skips — they are not failed,
+   * rejected, or "bad" candidates.
+   */
+  skippedArtifactsCount?: number;
   className?: string;
 }
 
 const EMPTY_COPY =
   "No operator-reviewed, artifact-backed Daily candidates yet.";
 
-export function DailyMarketPanel({ items, className }: DailyMarketPanelProps) {
+export function DailyMarketPanel({
+  items,
+  skippedArtifactsCount,
+  className,
+}: DailyMarketPanelProps) {
   if (items.length === 0) {
     return (
       <section className={cn("space-y-2", className)} aria-labelledby="demo-daily-empty">
         <h2 id="demo-daily-empty" className="sr-only">
           Daily Market — empty
         </h2>
+        <GateStatus
+          admittedCount={0}
+          skippedCount={skippedArtifactsCount}
+        />
         <p className="text-sm text-on-surface-variant/80">{EMPTY_COPY}</p>
       </section>
     );
@@ -50,6 +66,10 @@ export function DailyMarketPanel({ items, className }: DailyMarketPanelProps) {
 
   return (
     <section className={cn("space-y-2", className)} aria-label="Daily Market demo items">
+      <GateStatus
+        admittedCount={items.length}
+        skippedCount={skippedArtifactsCount}
+      />
       <ul className="grid gap-2">
         {items.map((item) => (
           <li key={item.candidate_id}>
@@ -75,6 +95,49 @@ export function DailyMarketPanel({ items, className }: DailyMarketPanelProps) {
         ))}
       </ul>
     </section>
+  );
+}
+
+function GateStatus({
+  admittedCount,
+  skippedCount,
+}: {
+  admittedCount: number;
+  skippedCount: number | undefined;
+}) {
+  if (skippedCount === undefined) {
+    return (
+      <p
+        className="text-[11px] leading-5 text-on-surface-variant/70"
+        data-testid="daily-gate-status"
+      >
+        Showing reviewed artifact-backed Daily items.
+      </p>
+    );
+  }
+  const itemLabel = admittedCount === 1 ? "item" : "items";
+  const artifactLabel = skippedCount === 1 ? "artifact" : "artifacts";
+  return (
+    <p
+      className="text-[11px] leading-5 text-on-surface-variant/70"
+      data-testid="daily-gate-status"
+    >
+      Showing{" "}
+      <span className="font-mono tabular-nums text-on-surface-variant">
+        {admittedCount}
+      </span>{" "}
+      reviewed artifact-backed Daily {itemLabel}
+      {skippedCount > 0 && (
+        <>
+          ;{" "}
+          <span className="font-mono tabular-nums text-on-surface-variant">
+            {skippedCount}
+          </span>{" "}
+          {artifactLabel} skipped during artifact review
+        </>
+      )}
+      .
+    </p>
   );
 }
 

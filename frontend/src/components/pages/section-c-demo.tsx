@@ -175,7 +175,10 @@ export function SectionCDemo() {
           ) : dailyQuery.isError ? (
             <PanelErrorNotice error={dailyQuery.error} />
           ) : (
-            <DailyMarketPanel items={dailyQuery.data.items} />
+            <DailyMarketPanel
+              items={dailyQuery.data.items}
+              skippedArtifactsCount={dailyQuery.data.skipped_artifacts.length}
+            />
           )}
         </PanelCard>
 

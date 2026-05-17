@@ -212,6 +212,46 @@ describe("SectionCDemo — Daily panel", () => {
     expect(html).toContain("daily-demo-002");
     expect(html).toContain("daily-demo-003");
   });
+
+  it("surfaces the admitted artifact-backed Daily item count", () => {
+    const html = renderPage({ daily: dailyFixture });
+    expect(html).toContain("reviewed artifact-backed Daily");
+    expect(html).toContain(">3<");
+  });
+
+  it("surfaces skipped_artifacts count when the API reports skips", () => {
+    const fixtureWithSkips: DemoDailyMarketResponse = {
+      ...dailyFixture,
+      skipped_artifacts: [
+        { path: "/tmp/a.json", reason: "missing field: mechanism_family" },
+        { path: "/tmp/b.json", reason: "unreadable JSON" },
+      ],
+    };
+    const html = renderPage({ daily: fixtureWithSkips });
+    expect(html).toContain("skipped during artifact review");
+    expect(html).toContain(">2<");
+  });
+
+  it("does not display held_for_review_count anywhere", () => {
+    const html = renderPage({ daily: dailyFixture });
+    expect(html.toLowerCase()).not.toContain("held_for_review");
+    expect(html.toLowerCase()).not.toContain("held for review");
+  });
+
+  it("renders the empty-state gate-status row with admitted count of 0", () => {
+    const emptyDaily: DemoDailyMarketResponse = {
+      ...dailyFixture,
+      count: 0,
+      items: [],
+      skipped_artifacts: [
+        { path: "/tmp/c.json", reason: "missing field: primary_ticker" },
+      ],
+    };
+    const html = renderPage({ daily: emptyDaily });
+    expect(html).toContain("No operator-reviewed, artifact-backed Daily candidates yet.");
+    expect(html).toContain("reviewed artifact-backed Daily");
+    expect(html).toContain("skipped during artifact review");
+  });
 });
 
 // ---------------------------------------------------------------------------
