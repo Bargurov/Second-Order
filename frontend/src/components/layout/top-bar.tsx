@@ -20,6 +20,7 @@ const PAGE_META: Record<Page, { group: string; title: string }> = {
   analyze:   { group: "Workspace", title: "Analyze"        },
   events:    { group: "Research",  title: "Archive"        },
   backtest:  { group: "Research",  title: "Backtest"       },
+  demo:      { group: "Demo",      title: "Section C Demo" },
 };
 
 interface TopBarProps {

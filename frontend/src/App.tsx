@@ -10,6 +10,7 @@ import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
 import { Backtest } from "@/components/pages/backtest";
 import { PortfolioPage } from "@/components/pages/portfolio-page";
+import { SectionCDemo } from "@/components/pages/section-c-demo";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const queryClient = new QueryClient({
@@ -164,6 +165,7 @@ export default function App() {
                   {page === "events" && <RecentEvents />}
                   {page === "backtest" && <Backtest />}
                   {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
+                  {page === "demo" && <SectionCDemo />}
                 </ErrorBoundary>
               </div>
             </main>

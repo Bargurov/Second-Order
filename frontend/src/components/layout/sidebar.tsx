@@ -13,6 +13,7 @@ import {
   Clock,
   Target,
   BookOpen,
+  LayoutGrid,
   Zap,
 } from "lucide-react";
 
@@ -21,7 +22,7 @@ import {
  *  ``market`` to ``<MarketOverview>`` so older deep links and any
  *  ``setPage("overview")`` callers still resolve.  ``"market"`` is the
  *  current default workspace landing. */
-export type Page = "overview" | "market" | "headlines" | "analyze" | "events" | "backtest" | "portfolio";
+export type Page = "overview" | "market" | "headlines" | "analyze" | "events" | "backtest" | "portfolio" | "demo";
 
 type NavItem = { id: Page; label: string; icon: React.ElementType };
 type NavGroup = { group: string; items: NavItem[] };
@@ -47,6 +48,15 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "events",   label: "Archive",  icon: Clock },
       { id: "backtest", label: "Backtest", icon: Target },
+    ],
+  },
+  {
+    // Section C Demo — artifact-backed market headlines and conservative
+    // evidence summary.  Hosts four panels (Daily / Weekly / Still Moving /
+    // Evidence Summary) and reads only from reviewed artifacts on disk.
+    group: "Demo",
+    items: [
+      { id: "demo", label: "Section C Demo", icon: LayoutGrid },
     ],
   },
 ];

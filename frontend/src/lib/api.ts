@@ -2722,6 +2722,171 @@ export function _buildPortfolioPath(
   return `/portfolio?${params.toString()}`;
 }
 
+// ---------------------------------------------------------------------------
+// Demo Section C endpoints — typed accessors for the four /demo/* surfaces.
+// Each helper is a thin wrapper around request<T> that returns the backend
+// envelope verbatim, so an ``ok=false`` response still carries its
+// ``errors`` and ``warnings`` arrays for the caller to render.
+// ---------------------------------------------------------------------------
+
+/** One artifact-backed Daily item.  Fields come verbatim from a
+ *  reviewed ``analyzed_event_artifact_<candidate_id>.json`` file.
+ *  Operator review fields (``market_relevance`` / ``inclusion_reason``
+ *  / ``operator_notes``) are surfaced as ``""`` when absent — never
+ *  inferred.  ``caution_label`` is a pinned demo qualifier; it is not
+ *  a recommendation or validation label. */
+export interface DemoDailyMarketItem {
+  candidate_id:     string;
+  headline:         string;
+  event_date:       string;
+  mechanism_family: string;
+  primary_ticker:   string;
+  benchmark_ticker: string;
+  market_relevance: string;
+  inclusion_reason: string;
+  operator_notes:   string;
+  caution_label:    string;
+}
+
+/** Skipped-artifact entry — surfaces why an artifact file did not
+ *  produce an item (missing required field, unreadable JSON, etc.). */
+export interface DemoSkippedArtifact {
+  path:   string;
+  reason: string;
+}
+
+/** Envelope returned by ``GET /demo/daily-market``.  Mirrors the
+ *  backend's pinned 7-key contract.  ``ok=false`` envelopes still
+ *  carry ``errors`` and ``warnings`` for the caller to render. */
+export interface DemoDailyMarketResponse {
+  ok:                boolean;
+  section:           "daily";
+  items:             DemoDailyMarketItem[];
+  count:             number;
+  skipped_artifacts: DemoSkippedArtifact[];
+  warnings:          string[];
+  errors:            string[];
+}
+
+/** One demo Weekly item.  Optional fields (``tickers`` /
+ *  ``primary_ticker`` / ``mechanism_family``) are present only when
+ *  the source card carried a non-empty value of the expected type;
+ *  the demo source never invents them. */
+export interface DemoWeeklyMarketItem {
+  event_id:          number | null;
+  headline:          string;
+  event_date:        string;
+  duplicate_count:   number;
+  grouped_event_ids: number[];
+  caution_label:     string;
+  tickers?:          string[];
+  primary_ticker?:   string;
+  mechanism_family?: string;
+}
+
+/** Envelope returned by ``GET /demo/weekly-market``.
+ *  ``duplicate_groups_collapsed`` reports how many duplicate-shaped
+ *  story groups were collapsed into a single canonical item. */
+export interface DemoWeeklyMarketResponse {
+  ok:                         boolean;
+  section:                    "weekly";
+  items:                      DemoWeeklyMarketItem[];
+  count:                      number;
+  duplicate_groups_collapsed: number;
+  warnings:                   string[];
+  errors:                     string[];
+}
+
+/** One demo Still Moving item — only candidates that pass the strict
+ *  persistent gate appear.  ``persistence_signal`` is forwarded
+ *  verbatim from the source card (or ``null`` when absent / blank);
+ *  the demo source never invents a persistence read. */
+export interface DemoStillMovingMarketItem {
+  event_id:           number | null;
+  headline:           string;
+  event_date:         string | null;
+  primary_ticker:     string | null;
+  persistence_signal: PersistenceSignal | null;
+  evidence_reason:    string;
+  caution_label:      string;
+}
+
+/** Envelope returned by ``GET /demo/still-moving-market``.
+ *  ``rejection_summary`` maps each gate-defined reason bucket
+ *  (e.g. ``"sector_etf_as_primary"``) to the number of candidates
+ *  that landed in it; ``rejected_count`` is the sum across buckets. */
+export interface DemoStillMovingMarketResponse {
+  ok:                boolean;
+  section:           "still_moving";
+  items:             DemoStillMovingMarketItem[];
+  count:             number;
+  rejected_count:    number;
+  rejection_summary: Record<string, number>;
+  warnings:          string[];
+  errors:            string[];
+}
+
+/** Envelope returned by ``GET /demo/evidence-summary``.
+ *
+ *  ``fdr_significant_count`` and ``raw_p_candidate_count`` are kept
+ *  as separate fields by design: a raw-p candidate is not
+ *  FDR-significant, and downstream consumers must not merge or
+ *  reframe one as the other.  Sub-blocks (``cohort_summary`` /
+ *  ``verdict_counts`` / ``benchmark_sensitivity_status``) are
+ *  surfaced verbatim from the freeze-candidate artifact; the demo
+ *  source does not re-derive their contents. */
+export interface DemoEvidenceSummaryResponse {
+  ok:                           boolean;
+  section:                      "evidence_summary";
+  cohort_summary:               Record<string, unknown>;
+  verdict_counts:               Record<string, unknown>;
+  fdr_significant_count:        number;
+  raw_p_candidate_count:        number;
+  benchmark_sensitivity_status: Record<string, unknown>;
+  limitations:                  string[];
+  warnings:                     string[];
+  errors:                       string[];
+}
+
+/** ``GET /demo/daily-market`` — artifact-backed Daily items. */
+export function getDemoDailyMarket(): Promise<DemoDailyMarketResponse> {
+  return request<DemoDailyMarketResponse>("/demo/daily-market");
+}
+
+/** ``GET /demo/weekly-market`` — Weekly mover cache through the
+ *  demo source's canonicalization helper.  ``limit`` is forwarded as
+ *  a query param when supplied; the backend default applies otherwise. */
+export function getDemoWeeklyMarket(
+  opts: { limit?: number } = {},
+): Promise<DemoWeeklyMarketResponse> {
+  const params = new URLSearchParams();
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return request<DemoWeeklyMarketResponse>(
+    qs ? `/demo/weekly-market?${qs}` : "/demo/weekly-market",
+  );
+}
+
+/** ``GET /demo/still-moving-market`` — persistent slice filtered
+ *  through the strict Still Moving gate.  ``limit`` is forwarded as
+ *  a query param when supplied; the backend default applies otherwise. */
+export function getDemoStillMovingMarket(
+  opts: { limit?: number } = {},
+): Promise<DemoStillMovingMarketResponse> {
+  const params = new URLSearchParams();
+  if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return request<DemoStillMovingMarketResponse>(
+    qs ? `/demo/still-moving-market?${qs}` : "/demo/still-moving-market",
+  );
+}
+
+/** ``GET /demo/evidence-summary`` — freeze-candidate evidence summary
+ *  read from the default artifact path on the backend. */
+export function getDemoEvidenceSummary(): Promise<DemoEvidenceSummaryResponse> {
+  return request<DemoEvidenceSummaryResponse>("/demo/evidence-summary");
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDetail: () => request<HealthDetail>("/health/detail"),
