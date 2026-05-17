@@ -6,6 +6,7 @@ import {
   Clock,
   Target,
   BookOpen,
+  LayoutGrid,
 } from "lucide-react";
 import type { Page } from "./sidebar";
 
@@ -21,6 +22,7 @@ const TABS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "analyze",   label: "Analyze",   icon: FlaskConical },
   { id: "events",    label: "Archive",   icon: Clock },
   { id: "backtest",  label: "Backtest",  icon: Target },
+  { id: "demo",      label: "Section C Demo", icon: LayoutGrid },
 ];
 
 interface BottomNavProps {
