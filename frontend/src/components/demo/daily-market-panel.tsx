@@ -33,7 +33,8 @@ export interface DailyMarketPanelProps {
   className?: string;
 }
 
-const EMPTY_COPY = "No artifact-backed Daily items yet.";
+const EMPTY_COPY =
+  "No operator-reviewed, artifact-backed Daily candidates yet.";
 
 export function DailyMarketPanel({ items, className }: DailyMarketPanelProps) {
   if (items.length === 0) {

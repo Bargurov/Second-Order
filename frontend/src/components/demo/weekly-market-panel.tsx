@@ -31,6 +31,8 @@ export interface WeeklyMarketPanelProps {
 }
 
 const EMPTY_COPY = "No weekly demo items currently.";
+const EMPTY_DETAIL =
+  "This is expected when the source has no canonicalized cards to surface — not an error.";
 
 export function WeeklyMarketPanel({ items, className }: WeeklyMarketPanelProps) {
   if (items.length === 0) {
@@ -40,6 +42,7 @@ export function WeeklyMarketPanel({ items, className }: WeeklyMarketPanelProps) 
           Weekly Market — empty
         </h2>
         <p className="text-sm text-on-surface-variant/80">{EMPTY_COPY}</p>
+        <p className="text-xs leading-5 text-on-surface-variant/60">{EMPTY_DETAIL}</p>
       </section>
     );
   }

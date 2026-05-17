@@ -40,6 +40,8 @@ export interface StillMovingMarketPanelProps {
 }
 
 const EMPTY_COPY = "No eligible Still Moving items currently.";
+const EMPTY_DETAIL =
+  "This is expected when no candidates meet the strict Accelerating / Holding gate — not an error.";
 
 export function StillMovingMarketPanel({ items, className }: StillMovingMarketPanelProps) {
   if (items.length === 0) {
@@ -49,6 +51,7 @@ export function StillMovingMarketPanel({ items, className }: StillMovingMarketPa
           Still Moving Market — empty
         </h2>
         <p className="text-sm text-on-surface-variant/80">{EMPTY_COPY}</p>
+        <p className="text-xs leading-5 text-on-surface-variant/60">{EMPTY_DETAIL}</p>
       </section>
     );
   }

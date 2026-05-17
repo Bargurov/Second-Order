@@ -153,14 +153,14 @@ export function SectionCDemo() {
           Section C Demo
         </h1>
         <p className="text-sm leading-6 text-muted-foreground">
-          Artifact-backed market headlines and conservative evidence summary.
+          Operator-reviewed Daily, Weekly, and Still Moving candidates,
+          plus the pilot-cohort evidence summary.
         </p>
         <p className="text-xs leading-5 text-muted-foreground/80">
-          Every panel below reads from a reviewed artifact on disk.
-          Record counts and verdict tallies are surfaced as the
-          artifact records them — raw-p candidates are never reframed
-          as FDR-significant. Nothing on this page constitutes a
-          forecast or a trade signal.
+          Every panel reads from an operator-reviewed artifact on disk.
+          Counts and verdicts surface as the artifact recorded them;
+          raw-p candidates are never reframed as FDR-significant.
+          Nothing here is a forecast or a trade signal.
         </p>
       </header>
 
@@ -168,7 +168,7 @@ export function SectionCDemo() {
         <PanelCard
           kicker="Daily"
           title="Daily Market"
-          blurb="Artifact-backed Daily items read from reviewed analyzed_event_artifact files."
+          blurb="Operator-reviewed, artifact-backed Daily candidates. Each row points to an analyzed_event_artifact file the operator approved."
         >
           {dailyQuery.isPending ? (
             <PanelSkeleton />
@@ -182,7 +182,7 @@ export function SectionCDemo() {
         <PanelCard
           kicker="Weekly"
           title="Weekly Market"
-          blurb="Weekly mover items collapsed by the canonicalization helper."
+          blurb="Weekly candidates with duplicate stories collapsed into one canonical row each."
         >
           {weeklyQuery.isPending ? (
             <PanelSkeleton />
@@ -196,7 +196,7 @@ export function SectionCDemo() {
         <PanelCard
           kicker="Still Moving"
           title="Still Moving Market"
-          blurb="Persistent candidates that pass the strict Still Moving gate."
+          blurb="Persistent-mover candidates that meet the strict Accelerating / Holding gate."
         >
           {stillMovingQuery.isPending ? (
             <PanelSkeleton />
@@ -210,7 +210,7 @@ export function SectionCDemo() {
         <PanelCard
           kicker="Evidence"
           title="Evidence Summary"
-          blurb="Cohort summary and verdict tallies from the freeze-candidate evidence artifact."
+          blurb="Pilot-cohort statistics and verdict tallies from the freeze-candidate evidence artifact."
         >
           {evidenceQuery.isPending ? (
             <PanelSkeleton />
