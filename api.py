@@ -3436,3 +3436,75 @@ app.include_router(_movers_router)
 app.include_router(_news_router)
 app.include_router(_portfolio_router)
 app.include_router(_playbook_router)
+
+
+# ---------------------------------------------------------------------------
+# Demo Section C endpoints — read-only surfaces that wire the four
+# ``routes/demo_*`` source modules under ``/demo/*``.  No DB writes,
+# no provider / yfinance / LLM call, no artifact mutation.  Production
+# ``/movers/*`` and ``/health`` endpoints are untouched.
+# ---------------------------------------------------------------------------
+
+from pathlib import Path as _Path
+
+from routes import (
+    demo_daily as _demo_daily_mod,
+    demo_evidence_summary as _demo_evidence_summary_mod,
+    demo_still_moving as _demo_still_moving_mod,
+    demo_weekly as _demo_weekly_mod,
+)
+
+_DEMO_ARTIFACT_DIR: _Path = _Path(__file__).resolve().parent / "artifacts"
+
+
+@app.get("/demo/daily-market")
+def _demo_daily_market_endpoint():
+    """Demo Daily Market — artifact-backed items only.
+
+    Reads ``analyzed_event_artifact_*.json`` files from the repo
+    ``artifacts/`` directory through the demo Daily source.  No DB
+    write, no provider call, no LLM call, no artifact mutation.
+    """
+    return _demo_daily_mod.build_demo_daily_market(
+        artifact_dir=_DEMO_ARTIFACT_DIR,
+    )
+
+
+@app.get("/demo/weekly-market")
+def _demo_weekly_market_endpoint(
+    limit: int = Query(10, ge=1, le=100),
+):
+    """Demo Weekly Market — production canonicalization helper.
+
+    Reads the existing Weekly mover cache through the demo Weekly
+    source's default loader.  Returns an ``ok=True`` envelope with
+    ``count=0`` when no Weekly items are available.
+    """
+    return _demo_weekly_mod.build_demo_weekly_market(limit=limit)
+
+
+@app.get("/demo/still-moving-market")
+def _demo_still_moving_market_endpoint(
+    limit: int = Query(12, ge=1, le=100),
+):
+    """Demo Still Moving Market — strict eligible items only.
+
+    Reads the existing ``persistent`` slice from ``movers_cache``
+    and applies the demo Still Moving source's strict gate.  Returns
+    an ``ok=True`` envelope with ``count=0`` when no eligible
+    candidates remain.
+    """
+    candidates = movers_cache.get_slice("persistent", limit=limit)
+    return _demo_still_moving_mod.build_demo_still_moving_market(
+        candidates=candidates,
+    )
+
+
+@app.get("/demo/evidence-summary")
+def _demo_evidence_summary_endpoint():
+    """Demo Evidence Summary — freeze-candidate evidence summary.
+
+    Reads ``artifacts/freeze_candidate_evidence.json`` through the
+    demo Evidence Summary source's default artifact path.
+    """
+    return _demo_evidence_summary_mod.build_demo_evidence_summary()
