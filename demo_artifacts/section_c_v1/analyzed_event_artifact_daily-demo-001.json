@@ -1,0 +1,12 @@
+{
+  "artifact_type": "analyzed_event_artifact",
+  "benchmark_ticker": "SPY",
+  "candidate_id": "daily-demo-001",
+  "event_date": "2026-04-15",
+  "headline": "OPEC extends voluntary oil output cuts through next quarter",
+  "inclusion_reason": "OPEC output cuts reduce expected supply and can support broad energy-sector exposure versus SPY.",
+  "market_relevance": "high",
+  "mechanism_family": "supply_shock",
+  "operator_notes": "Reviewed demo Daily candidate; operator-chosen ID.",
+  "primary_ticker": "XLE"
+}

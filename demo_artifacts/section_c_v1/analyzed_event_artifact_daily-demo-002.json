@@ -1,0 +1,12 @@
+{
+  "artifact_type": "analyzed_event_artifact",
+  "benchmark_ticker": "SPY",
+  "candidate_id": "daily-demo-002",
+  "event_date": "2026-04-28",
+  "headline": "Saudi Arabia signals deeper voluntary oil export cuts in May",
+  "inclusion_reason": "Saudi export cuts reduce expected crude availability and can support energy-sector pricing versus broad market.",
+  "market_relevance": "high",
+  "mechanism_family": "supply_shock",
+  "operator_notes": "Reviewed Daily demo candidate; operator-chosen ID.",
+  "primary_ticker": "XLE"
+}

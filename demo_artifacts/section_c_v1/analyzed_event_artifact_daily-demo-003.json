@@ -1,0 +1,12 @@
+{
+  "artifact_type": "analyzed_event_artifact",
+  "benchmark_ticker": "SPY",
+  "candidate_id": "daily-demo-003",
+  "event_date": "2026-04-06",
+  "headline": "Fuel reservoir hit at Russia's Primorsk, NORSI refinery on fire after drone attacks - Reuters",
+  "inclusion_reason": "Refinery and fuel-storage disruption may affect refined product supply and refiner exposure versus broad market.",
+  "market_relevance": "medium",
+  "mechanism_family": "refined_product_supply_disruption",
+  "operator_notes": "Reviewed Daily demo candidate; operator-chosen ID.",
+  "primary_ticker": "VLO"
+}

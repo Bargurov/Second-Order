@@ -3443,8 +3443,20 @@ app.include_router(_playbook_router)
 # ``routes/demo_*`` source modules under ``/demo/*``.  No DB writes,
 # no provider / yfinance / LLM call, no artifact mutation.  Production
 # ``/movers/*`` and ``/health`` endpoints are untouched.
+#
+# The demo Daily and Evidence Summary endpoints load from a stable
+# on-disk demo artifact bundle.  By default the bundle is
+# ``demo_artifacts/section_c_v1/`` — a tracked input the operator can
+# rely on even when the local ``artifacts/`` directory is empty.  An
+# operator can point the demo backend at a different bundle (e.g. a
+# local experiment) by exporting the ``SECOND_ORDER_DEMO_ARTIFACT_DIR``
+# environment variable; the resolver reads the env var per request so
+# a fresh export takes effect on the next call without a server
+# restart.  Weekly and Still Moving do not consult this bundle — they
+# read the production mover cache through their own source modules.
 # ---------------------------------------------------------------------------
 
+import os as _os
 from pathlib import Path as _Path
 
 from routes import (
@@ -3454,19 +3466,40 @@ from routes import (
     demo_weekly as _demo_weekly_mod,
 )
 
-_DEMO_ARTIFACT_DIR: _Path = _Path(__file__).resolve().parent / "artifacts"
+_DEMO_ARTIFACT_DIR_ENV_VAR: str = "SECOND_ORDER_DEMO_ARTIFACT_DIR"
+_DEMO_ARTIFACT_DIR_DEFAULT: _Path = (
+    _Path(__file__).resolve().parent / "demo_artifacts" / "section_c_v1"
+)
+_DEMO_FREEZE_ARTIFACT_FILENAME: str = "freeze_candidate_evidence.json"
+
+
+def _resolve_demo_artifact_dir() -> _Path:
+    """Return the on-disk directory the demo Section C endpoints
+    should load from.
+
+    Default: ``demo_artifacts/section_c_v1`` under the repo root.
+    Override: the value of ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` when
+    set to a non-blank string.  Read at call time so an operator can
+    swap bundles between requests; never cached at import time.
+    """
+    override = _os.environ.get(_DEMO_ARTIFACT_DIR_ENV_VAR, "")
+    if isinstance(override, str) and override.strip():
+        return _Path(override.strip())
+    return _DEMO_ARTIFACT_DIR_DEFAULT
 
 
 @app.get("/demo/daily-market")
 def _demo_daily_market_endpoint():
     """Demo Daily Market — artifact-backed items only.
 
-    Reads ``analyzed_event_artifact_*.json`` files from the repo
-    ``artifacts/`` directory through the demo Daily source.  No DB
+    Reads ``analyzed_event_artifact_*.json`` files from the demo
+    artifact bundle resolved by :func:`_resolve_demo_artifact_dir`
+    (default ``demo_artifacts/section_c_v1``; honors the
+    ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` env var when set).  No DB
     write, no provider call, no LLM call, no artifact mutation.
     """
     return _demo_daily_mod.build_demo_daily_market(
-        artifact_dir=_DEMO_ARTIFACT_DIR,
+        artifact_dir=_resolve_demo_artifact_dir(),
     )
 
 
@@ -3504,7 +3537,13 @@ def _demo_still_moving_market_endpoint(
 def _demo_evidence_summary_endpoint():
     """Demo Evidence Summary — freeze-candidate evidence summary.
 
-    Reads ``artifacts/freeze_candidate_evidence.json`` through the
-    demo Evidence Summary source's default artifact path.
+    Reads ``freeze_candidate_evidence.json`` from the demo artifact
+    bundle resolved by :func:`_resolve_demo_artifact_dir` (default
+    ``demo_artifacts/section_c_v1``; honors the
+    ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` env var when set).
     """
-    return _demo_evidence_summary_mod.build_demo_evidence_summary()
+    return _demo_evidence_summary_mod.build_demo_evidence_summary(
+        artifact_path=(
+            _resolve_demo_artifact_dir() / _DEMO_FREEZE_ARTIFACT_FILENAME
+        ),
+    )

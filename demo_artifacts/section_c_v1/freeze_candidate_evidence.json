@@ -1,0 +1,726 @@
+{
+  "artifact_type": "freeze_candidate_evidence",
+  "benchmark_sensitivity_status": {
+    "blocked_events": [],
+    "changed_event_ids": [
+      60
+    ],
+    "changed_interpretation_count": 1,
+    "comparison_summary": {
+      "blocked_count": 0,
+      "checked_events": 2,
+      "comparisons": [
+        {
+          "changed_interpretation": true,
+          "event_date": "2026-04-08",
+          "event_id": 60,
+          "note": "SPY and XLE descriptive sensitivity results differ on both raw-p threshold and FDR significance for this event; benchmark choice changes the descriptive interpretation on both axes.",
+          "primary_ticker": "XOM",
+          "spy_blocker": null,
+          "spy_result": {
+            "fdr_q": 0.027910829147723876,
+            "raw_p": 0.027910829147723876,
+            "sar": -0.20505896031793847,
+            "significant": true
+          },
+          "xle_blocker": null,
+          "xle_result": {
+            "fdr_q": 0.2678954522763689,
+            "raw_p": 0.2678954522763689,
+            "sar": -0.03935307978469016,
+            "significant": false
+          }
+        },
+        {
+          "changed_interpretation": false,
+          "event_date": "2026-04-06",
+          "event_id": 73,
+          "note": "SPY and XLE descriptive sensitivity results agree on both raw-p threshold and FDR significance; benchmark choice did not change the current descriptive conclusion.",
+          "primary_ticker": "XOM",
+          "spy_blocker": null,
+          "spy_result": {
+            "fdr_q": 0.14524516542499477,
+            "raw_p": 0.14524516542499477,
+            "sar": -0.1383732793082264,
+            "significant": false
+          },
+          "xle_blocker": null,
+          "xle_result": {
+            "fdr_q": 0.19826949951330963,
+            "raw_p": 0.19826949951330963,
+            "sar": -0.04592499651384219,
+            "significant": false
+          }
+        }
+      ],
+      "db_path": "events.db",
+      "errors": [],
+      "interpretation_changes": 1,
+      "ok": true,
+      "recommended_next_action": "1 of 2 compared event(s) show a descriptive interpretation change between SPY and XLE.  This is a sensitivity observation, not a validation; inspect each comparison's 'note' for the axis that differs.",
+      "warnings": []
+    },
+    "limitations": [
+      "comparison_summary is copied from the input comparison artifact; readers should consult the source artifact for the full statistical context.",
+      "benchmark sensitivity is descriptive and does not prove mechanism causality; SPY-vs-XLE differences are observations about which benchmark frames the descriptive result differently, not evidence of a mechanism for any one event."
+    ],
+    "local_backfill_available": false,
+    "online_backfill_required": false,
+    "per_event_summary": [
+      {
+        "changed_fields": [
+          {
+            "alpha": 0.05,
+            "field": "raw_p_threshold",
+            "spy": 0.027910829147723876,
+            "xle": 0.2678954522763689
+          },
+          {
+            "alpha": 0.05,
+            "field": "fdr_q_threshold",
+            "spy": 0.027910829147723876,
+            "xle": 0.2678954522763689
+          },
+          {
+            "field": "significant_flag",
+            "spy": true,
+            "xle": false
+          }
+        ],
+        "changed_interpretation": true,
+        "event_date": "2026-04-08",
+        "event_id": 60,
+        "note": "SPY and XLE descriptive sensitivity results differ on both raw-p threshold and FDR significance for this event; benchmark choice changes the descriptive interpretation on both axes.",
+        "primary_ticker": "XOM"
+      },
+      {
+        "changed_fields": [],
+        "changed_interpretation": false,
+        "event_date": "2026-04-06",
+        "event_id": 73,
+        "note": "SPY and XLE descriptive sensitivity results agree on both raw-p threshold and FDR significance; benchmark choice did not change the current descriptive conclusion.",
+        "primary_ticker": "XOM"
+      }
+    ],
+    "required_dates": [],
+    "status": "comparison_available",
+    "unchanged_event_ids": [
+      73
+    ]
+  },
+  "by_horizon": {
+    "1": {
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 0,
+      "records_count": 13
+    },
+    "20": {
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 1,
+      "records_count": 5
+    },
+    "5": {
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 3,
+      "records_count": 13
+    }
+  },
+  "by_mechanism_family": {
+    "bank_regulatory_capital_relief": {
+      "events_evaluated": 1,
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 1,
+      "records_count": 3
+    },
+    "chokepoint_relief": {
+      "events_evaluated": 1,
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 1,
+      "records_count": 2
+    },
+    "commodity_squeeze": {
+      "events_evaluated": 1,
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 0,
+      "records_count": 3
+    },
+    "opec_coordination_breakdown": {
+      "events_evaluated": 2,
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 1,
+      "records_count": 4
+    },
+    "refined_product_supply_disruption": {
+      "events_evaluated": 1,
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 0,
+      "records_count": 2
+    },
+    "supply_shock": {
+      "events_evaluated": 6,
+      "fdr_significant_count": 0,
+      "raw_p_candidate_count": 1,
+      "records_count": 17
+    }
+  },
+  "cohort_summary": {
+    "events_evaluated": 12,
+    "fdr_significant_count": 0,
+    "horizons_covered": [
+      1,
+      5,
+      20
+    ],
+    "mechanism_families_covered": [
+      "bank_regulatory_capital_relief",
+      "chokepoint_relief",
+      "commodity_squeeze",
+      "opec_coordination_breakdown",
+      "refined_product_supply_disruption",
+      "supply_shock"
+    ],
+    "raw_p_candidate_count": 4,
+    "total_records": 31
+  },
+  "duplicate_event_ids": [
+    30
+  ],
+  "errors": [],
+  "evidence_claim_allowed": [
+    "freeze-candidate cohort summary \u2014 record counts, horizons, mechanism-family geometry",
+    "raw-p candidate signals that did not clear FDR",
+    "review-completion bookkeeping per worksheet batch",
+    "per-record (event_id, horizon) statistical-summary fields the upstream pipeline already produced"
+  ],
+  "evidence_claim_not_allowed": [
+    "FDR-significant validation claim when fdr_significant_count is 0",
+    "any statement of certainty about future market direction",
+    "renaming this artifact as 'frozen' before operator approval",
+    "merging records across event_ids before deduplication review",
+    "SPY-vs-XLE benchmark sensitivity inference when benchmark_sensitivity_status.status is not 'comparison_available' or when comparison results are null/uncomputable"
+  ],
+  "generated_at": "2026-05-12T14:58:02Z",
+  "limitations": [
+    "freeze-candidate only \u2014 awaiting operator approval before any downstream demo backend may consume this artifact.",
+    "no FDR-significant validation claim is supported by this evidence set; every surfaced record is either raw-p-only candidate, inconclusive_fdr, or insufficient."
+  ],
+  "ok": true,
+  "records": [
+    {
+      "benchmark": "SPY",
+      "event_id": 30,
+      "fdr_q": 0.7604753612875342,
+      "fdr_significant": false,
+      "headline": "US fighter jet shot down over Iran, search underway for crew member, US officials say - Reuters",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.5745813840839148,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 30,
+      "fdr_q": 0.2560403945348443,
+      "fdr_significant": false,
+      "headline": "US fighter jet shot down over Iran, search underway for crew member, US officials say - Reuters",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.06784362891979828,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 30,
+      "fdr_q": 0.2560403945348443,
+      "fdr_significant": false,
+      "headline": "US fighter jet shot down over Iran, search underway for crew member, US officials say - Reuters",
+      "horizon": 20,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.11948551744959401,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 40,
+      "fdr_q": 0.2560403945348443,
+      "fdr_significant": false,
+      "headline": "Petronas-chartered tanker loaded with Iraqi crude passes through Hormuz",
+      "horizon": 1,
+      "mechanism_family": "commodity_squeeze",
+      "p_value": 0.07221544747945823,
+      "primary_ticker": "BDRY",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 40,
+      "fdr_q": 0.9105522208321523,
+      "fdr_significant": false,
+      "headline": "Petronas-chartered tanker loaded with Iraqi crude passes through Hormuz",
+      "horizon": 5,
+      "mechanism_family": "commodity_squeeze",
+      "p_value": 0.8557085144062958,
+      "primary_ticker": "BDRY",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 40,
+      "fdr_q": 0.9105522208321523,
+      "fdr_significant": false,
+      "headline": "Petronas-chartered tanker loaded with Iraqi crude passes through Hormuz",
+      "horizon": 20,
+      "mechanism_family": "commodity_squeeze",
+      "p_value": 0.8590281880571261,
+      "primary_ticker": "BDRY",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 46,
+      "fdr_q": 0.9105522208321523,
+      "fdr_significant": false,
+      "headline": "Federal Reserve Board announces section 23A exemption for Morgan Stanley Bank, N.A.",
+      "horizon": 1,
+      "mechanism_family": "bank_regulatory_capital_relief",
+      "p_value": 0.8727093681725503,
+      "primary_ticker": "MS",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 46,
+      "fdr_q": 0.2560403945348443,
+      "fdr_significant": false,
+      "headline": "Federal Reserve Board announces section 23A exemption for Morgan Stanley Bank, N.A.",
+      "horizon": 5,
+      "mechanism_family": "bank_regulatory_capital_relief",
+      "p_value": 0.11373788416546175,
+      "primary_ticker": "MS",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 46,
+      "fdr_q": 0.1241128786395683,
+      "fdr_significant": false,
+      "headline": "Federal Reserve Board announces section 23A exemption for Morgan Stanley Bank, N.A.",
+      "horizon": 20,
+      "mechanism_family": "bank_regulatory_capital_relief",
+      "p_value": 0.02482257572791366,
+      "primary_ticker": "MS",
+      "raw_p_candidate": true,
+      "source": "curated_stage_validation",
+      "verdict": "raw_p_only_candidate"
+    },
+    {
+      "benchmark": "XLE",
+      "event_id": 60,
+      "fdr_q": 0.7604753612875342,
+      "fdr_significant": false,
+      "headline": "FirstFT: Trump threatens to attack Iran's power plants and bridges unless it reopens Strait of Hormuz",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.562508311063215,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "XLE",
+      "event_id": 60,
+      "fdr_q": 0.2560403945348443,
+      "fdr_significant": false,
+      "headline": "FirstFT: Trump threatens to attack Iran's power plants and bridges unless it reopens Strait of Hormuz",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.11288436094786902,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "XLE",
+      "event_id": 60,
+      "fdr_q": 0.3695219235808814,
+      "fdr_significant": false,
+      "headline": "FirstFT: Trump threatens to attack Iran's power plants and bridges unless it reopens Strait of Hormuz",
+      "horizon": 20,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.19707835924313674,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "XLE",
+      "event_id": 73,
+      "fdr_q": 0.9105522208321523,
+      "fdr_significant": false,
+      "headline": "OPEC members agree to extend voluntary oil output cuts through next quarter",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.8918543625224944,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "XLE",
+      "event_id": 73,
+      "fdr_q": 0.1241128786395683,
+      "fdr_significant": false,
+      "headline": "OPEC members agree to extend voluntary oil output cuts through next quarter",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.02328877899598821,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": true,
+      "source": "curated_stage_validation",
+      "verdict": "raw_p_only_candidate"
+    },
+    {
+      "benchmark": "XLE",
+      "event_id": 73,
+      "fdr_q": 0.2560403945348443,
+      "fdr_significant": false,
+      "headline": "OPEC members agree to extend voluntary oil output cuts through next quarter",
+      "horizon": 20,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.11411909484131424,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "curated_stage_validation",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 30,
+      "fdr_q": 0.8963469591709071,
+      "fdr_significant": false,
+      "headline": "US fighter jet shot down over Iran, search underway for crew member, US officials say - Reuters",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.5745813840839148,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 30,
+      "fdr_q": 0.5218561744062362,
+      "fdr_significant": false,
+      "headline": "US fighter jet shot down over Iran, search underway for crew member, US officials say - Reuters",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.06784362891979828,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 52,
+      "fdr_q": 0.7209959577988123,
+      "fdr_significant": false,
+      "headline": "Fuel reservoir hit at Russia's Primorsk, NORSI refinery on fire after drone attacks - Reuters",
+      "horizon": 1,
+      "mechanism_family": "refined_product_supply_disruption",
+      "p_value": 0.36974151681990375,
+      "primary_ticker": "VLO",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 52,
+      "fdr_q": 0.7105244534664013,
+      "fdr_significant": false,
+      "headline": "Fuel reservoir hit at Russia's Primorsk, NORSI refinery on fire after drone attacks - Reuters",
+      "horizon": 5,
+      "mechanism_family": "refined_product_supply_disruption",
+      "p_value": 0.3461529388682467,
+      "primary_ticker": "VLO",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 70,
+      "fdr_q": 0.8819606617038059,
+      "fdr_significant": false,
+      "headline": "AP News: OPEC members discuss extending output cuts through next quarter",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.49751627070471105,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 70,
+      "fdr_q": 0.7105244534664013,
+      "fdr_significant": false,
+      "headline": "AP News: OPEC members discuss extending output cuts through next quarter",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.31617654612140866,
+      "primary_ticker": "XOM",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 85,
+      "fdr_q": 0.9711349163963188,
+      "fdr_significant": false,
+      "headline": "Saudi Arabia restores full capacity on East-West oil pipeline to 7 million bpd after attacks",
+      "horizon": 1,
+      "mechanism_family": "chokepoint_relief",
+      "p_value": 0.6919142777725424,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_top10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 85,
+      "fdr_q": 0.5218561744062362,
+      "fdr_significant": false,
+      "headline": "Saudi Arabia restores full capacity on East-West oil pipeline to 7 million bpd after attacks",
+      "horizon": 5,
+      "mechanism_family": "chokepoint_relief",
+      "p_value": 0.03944708743982202,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": true,
+      "source": "short_horizon_top10",
+      "verdict": "raw_p_only_candidate"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 105,
+      "fdr_q": 0.8459249960247803,
+      "fdr_significant": false,
+      "headline": "OPEC extends voluntary oil output cuts through next quarter",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.466343267039302,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 105,
+      "fdr_q": 0.9711349163963188,
+      "fdr_significant": false,
+      "headline": "OPEC extends voluntary oil output cuts through next quarter",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.9551874127358474,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 215,
+      "fdr_q": 0.9749784316231114,
+      "fdr_significant": false,
+      "headline": "The UAE\u2019s departure from OPEC shakes up the alliance that influences oil prices worldwide",
+      "horizon": 1,
+      "mechanism_family": "opec_coordination_breakdown",
+      "p_value": 0.9749784316231114,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 215,
+      "fdr_q": 0.5218561744062362,
+      "fdr_significant": false,
+      "headline": "The UAE\u2019s departure from OPEC shakes up the alliance that influences oil prices worldwide",
+      "horizon": 5,
+      "mechanism_family": "opec_coordination_breakdown",
+      "p_value": 0.09616322477435053,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 217,
+      "fdr_q": 0.7172552981116233,
+      "fdr_significant": false,
+      "headline": "UAE exit weakens OPEC+ power over oil market but group to stay together, sources say",
+      "horizon": 1,
+      "mechanism_family": "opec_coordination_breakdown",
+      "p_value": 0.3586276490558116,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 217,
+      "fdr_q": 0.5218561744062362,
+      "fdr_significant": false,
+      "headline": "UAE exit weakens OPEC+ power over oil market but group to stay together, sources say",
+      "horizon": 5,
+      "mechanism_family": "opec_coordination_breakdown",
+      "p_value": 0.042365720581504694,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": true,
+      "source": "short_horizon_next10",
+      "verdict": "raw_p_only_candidate"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 219,
+      "fdr_q": 0.7105244534664013,
+      "fdr_significant": false,
+      "headline": "Saudi Arabia signals deeper voluntary oil export cuts in May",
+      "horizon": 1,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.18693264389139022,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    },
+    {
+      "benchmark": "SPY",
+      "event_id": 219,
+      "fdr_q": 0.9711349163963188,
+      "fdr_significant": false,
+      "headline": "Saudi Arabia signals deeper voluntary oil export cuts in May",
+      "horizon": 5,
+      "mechanism_family": "supply_shock",
+      "p_value": 0.6854380214030904,
+      "primary_ticker": "XLE",
+      "raw_p_candidate": false,
+      "source": "short_horizon_next10",
+      "verdict": "inconclusive_fdr"
+    }
+  ],
+  "review_completion": [
+    {
+      "accepted_count": 4,
+      "events_evaluated": 4,
+      "excluded_count": 6,
+      "name": "top10",
+      "pending_count": 0,
+      "records_count": 8,
+      "significant_count": 0,
+      "validation_path": "artifacts/short_horizon_review_validation_top10.json",
+      "worksheet_path": "artifacts/short_horizon_review_top10.csv",
+      "worksheet_total_rows": 10
+    },
+    {
+      "accepted_count": 4,
+      "events_evaluated": 4,
+      "excluded_count": 6,
+      "name": "next10",
+      "pending_count": 0,
+      "records_count": 8,
+      "significant_count": 0,
+      "validation_path": "artifacts/short_horizon_review_validation_next10.json",
+      "worksheet_path": "artifacts/short_horizon_review_next10.csv",
+      "worksheet_total_rows": 10
+    },
+    {
+      "accepted_count": 0,
+      "events_evaluated": 0,
+      "excluded_count": 8,
+      "name": "final8",
+      "pending_count": 0,
+      "records_count": 0,
+      "significant_count": 0,
+      "validation_path": "artifacts/short_horizon_review_validation_final8.json",
+      "worksheet_path": "artifacts/short_horizon_review_final8.csv",
+      "worksheet_total_rows": 8
+    }
+  ],
+  "source_files": [
+    {
+      "kind": "curated_stage_validation",
+      "path": "artifacts/curated_stage_validation_evidence.json",
+      "present": true
+    },
+    {
+      "kind": "short_horizon_worksheet_top10",
+      "path": "artifacts/short_horizon_review_top10.csv",
+      "present": true
+    },
+    {
+      "kind": "short_horizon_validation_top10",
+      "path": "artifacts/short_horizon_review_validation_top10.json",
+      "present": true
+    },
+    {
+      "kind": "short_horizon_worksheet_next10",
+      "path": "artifacts/short_horizon_review_next10.csv",
+      "present": true
+    },
+    {
+      "kind": "short_horizon_validation_next10",
+      "path": "artifacts/short_horizon_review_validation_next10.json",
+      "present": true
+    },
+    {
+      "kind": "short_horizon_worksheet_final8",
+      "path": "artifacts/short_horizon_review_final8.csv",
+      "present": true
+    },
+    {
+      "kind": "short_horizon_validation_final8",
+      "path": "artifacts/short_horizon_review_validation_final8.json",
+      "present": true
+    }
+  ],
+  "verdict_counts": {
+    "fdr_significant": 0,
+    "inconclusive_fdr": 27,
+    "insufficient": 0,
+    "raw_p_only_candidate": 4
+  },
+  "warnings": []
+}

@@ -330,5 +330,214 @@ class TestNoProviderOrLlmCoupling(unittest.TestCase):
         self.assertEqual(args[0], "persistent")
 
 
+# ---------------------------------------------------------------------------
+# Stable demo artifact bundle — default dir + env override
+# ---------------------------------------------------------------------------
+
+
+_ENV_VAR_NAME = "SECOND_ORDER_DEMO_ARTIFACT_DIR"
+_EXPECTED_DEFAULT_RELATIVE = ("demo_artifacts", "section_c_v1")
+
+
+def _clear_demo_env():
+    """Return a ``patch.dict`` ctx manager that removes the env var so
+    the resolver falls back to its default.
+    """
+    import os as _os
+    from unittest.mock import patch as _patch
+    env = dict(_os.environ)
+    env.pop(_ENV_VAR_NAME, None)
+    return _patch.dict(_os.environ, env, clear=True)
+
+
+class TestDemoArtifactDirResolver(unittest.TestCase):
+    """Pin the resolver's contract: default lands on the stable
+    ``demo_artifacts/section_c_v1`` bundle; the env override wins
+    when present.  The resolver must read the env var at call time
+    so a test setting the variable after ``import api`` sees the
+    override.
+    """
+
+    def test_resolver_is_exposed_on_api_module(self) -> None:
+        self.assertTrue(
+            hasattr(api, "_resolve_demo_artifact_dir"),
+            "api._resolve_demo_artifact_dir not exposed",
+        )
+
+    def test_default_dir_is_demo_artifacts_section_c_v1(self) -> None:
+        with _clear_demo_env():
+            resolved = api._resolve_demo_artifact_dir()
+        resolved_parts = tuple(str(p) for p in resolved.parts[-2:])
+        self.assertEqual(resolved_parts, _EXPECTED_DEFAULT_RELATIVE)
+
+    def test_default_dir_exists_on_disk(self) -> None:
+        with _clear_demo_env():
+            resolved = api._resolve_demo_artifact_dir()
+        self.assertTrue(
+            resolved.is_dir(),
+            f"default demo artifact dir missing: {resolved}",
+        )
+
+    def test_env_override_is_honored(self) -> None:
+        import os as _os
+        import tempfile as _tempfile
+        from unittest.mock import patch as _patch
+        with _tempfile.TemporaryDirectory() as tmp:
+            with _patch.dict(_os.environ, {_ENV_VAR_NAME: tmp}, clear=False):
+                resolved = api._resolve_demo_artifact_dir()
+            self.assertEqual(str(resolved), str(tmp))
+
+    def test_empty_env_value_falls_back_to_default(self) -> None:
+        """An env var set to the empty string (or whitespace) is treated
+        as not-set — the resolver does not return a useless empty path.
+        """
+        import os as _os
+        from unittest.mock import patch as _patch
+        with _patch.dict(_os.environ, {_ENV_VAR_NAME: "   "}, clear=False):
+            resolved = api._resolve_demo_artifact_dir()
+        resolved_parts = tuple(str(p) for p in resolved.parts[-2:])
+        self.assertEqual(resolved_parts, _EXPECTED_DEFAULT_RELATIVE)
+
+
+class TestDemoArtifactDirWiring(unittest.TestCase):
+    """Pin the wiring: ``/demo/daily-market`` and ``/demo/evidence-summary``
+    forward the resolver's output to their source modules.  Weekly and
+    Still Moving never consult the resolver.
+    """
+
+    def setUp(self) -> None:
+        self.client = TestClient(api.app)
+
+    def test_daily_forwards_resolved_dir_to_source(self) -> None:
+        import tempfile as _tempfile
+        from pathlib import Path as _PPath
+        with _tempfile.TemporaryDirectory() as tmp:
+            resolved = _PPath(tmp)
+            with patch.object(
+                api, "_resolve_demo_artifact_dir",
+                return_value=resolved,
+            ), patch.object(
+                api._demo_daily_mod, "build_demo_daily_market",
+                return_value=_DAILY_FIXTURE,
+            ) as daily_mock:
+                response = self.client.get("/demo/daily-market")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(daily_mock.call_count, 1)
+            kwargs = daily_mock.call_args.kwargs
+            self.assertEqual(kwargs.get("artifact_dir"), resolved)
+
+    def test_evidence_summary_forwards_resolved_freeze_artifact_path(self) -> None:
+        import tempfile as _tempfile
+        from pathlib import Path as _PPath
+        with _tempfile.TemporaryDirectory() as tmp:
+            resolved = _PPath(tmp)
+            with patch.object(
+                api, "_resolve_demo_artifact_dir",
+                return_value=resolved,
+            ), patch.object(
+                api._demo_evidence_summary_mod, "build_demo_evidence_summary",
+                return_value=_EVIDENCE_FIXTURE,
+            ) as evidence_mock:
+                response = self.client.get("/demo/evidence-summary")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(evidence_mock.call_count, 1)
+            kwargs = evidence_mock.call_args.kwargs
+            self.assertEqual(
+                kwargs.get("artifact_path"),
+                resolved / "freeze_candidate_evidence.json",
+            )
+
+    def test_weekly_does_not_consult_resolver(self) -> None:
+        """Weekly's data path is the production mover cache; it must
+        not call the demo artifact resolver."""
+        with patch.object(
+            api, "_resolve_demo_artifact_dir",
+        ) as resolver_mock, patch.object(
+            api._demo_weekly_mod, "build_demo_weekly_market",
+            return_value=_WEEKLY_FIXTURE,
+        ):
+            response = self.client.get("/demo/weekly-market")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(resolver_mock.call_count, 0)
+
+    def test_still_moving_does_not_consult_resolver(self) -> None:
+        """Still Moving reads ``movers_cache.get_slice('persistent')``;
+        it must not call the demo artifact resolver."""
+        with patch.object(
+            api, "_resolve_demo_artifact_dir",
+        ) as resolver_mock, patch.object(
+            api._demo_still_moving_mod, "build_demo_still_moving_market",
+            return_value=_STILL_MOVING_FIXTURE,
+        ), patch.object(
+            api.movers_cache, "get_slice", return_value=[],
+        ):
+            response = self.client.get("/demo/still-moving-market")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(resolver_mock.call_count, 0)
+
+
+class TestDemoArtifactBundleEndToEnd(unittest.TestCase):
+    """With no env override, the live ``/demo/daily-market`` and
+    ``/demo/evidence-summary`` endpoints surface artifacts from the
+    stable bundle.  Bundle contents are pinned by
+    ``test_section_c_demo_artifacts.py`` so this test does not need
+    to introspect their exact body — only that the bundle drives the
+    endpoint when no override is set.
+    """
+
+    def setUp(self) -> None:
+        self.client = TestClient(api.app)
+
+    def test_daily_endpoint_surfaces_bundle_candidates_by_default(self) -> None:
+        with _clear_demo_env():
+            response = self.client.get("/demo/daily-market")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["section"], "daily")
+        # The tracked bundle ships three daily-demo-* artifacts; pin
+        # that they reach the endpoint surface (count >= 3 leaves
+        # headroom for future bundle additions without churn).
+        self.assertGreaterEqual(body["count"], 3)
+        cids = {it["candidate_id"] for it in body["items"]}
+        for expected in (
+            "daily-demo-001",
+            "daily-demo-002",
+            "daily-demo-003",
+        ):
+            self.assertIn(expected, cids)
+
+    def test_evidence_summary_endpoint_loads_bundle_artifact_by_default(self) -> None:
+        with _clear_demo_env():
+            response = self.client.get("/demo/evidence-summary")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["section"], "evidence_summary")
+        # The bundle's freeze_candidate_evidence.json must parse
+        # cleanly through the source — i.e., no error envelope.
+        self.assertTrue(
+            body["ok"],
+            f"evidence-summary endpoint failed with errors: "
+            f"{body.get('errors')}",
+        )
+
+    def test_env_override_redirects_daily_to_empty_dir(self) -> None:
+        """When the env override points at an empty (but existing)
+        directory, the endpoint surfaces zero items — proving the
+        override actually steered the source away from the bundle.
+        """
+        import os as _os
+        import tempfile as _tempfile
+        from unittest.mock import patch as _patch
+        with _tempfile.TemporaryDirectory() as tmp:
+            with _patch.dict(
+                _os.environ, {_ENV_VAR_NAME: tmp}, clear=False,
+            ):
+                response = self.client.get("/demo/daily-market")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["section"], "daily")
+        self.assertEqual(body["count"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()
