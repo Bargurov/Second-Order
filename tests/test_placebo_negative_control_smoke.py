@@ -906,5 +906,243 @@ class TestDefaultEvidencePath(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# --input-csv mode (operator-curated batch)
+# ---------------------------------------------------------------------------
+
+
+class TestInputCsv(unittest.TestCase):
+    """Pin the --input-csv path: an operator-supplied CSV drives both
+    real-side and placebo-side computation; the freeze-candidate
+    evidence artifact and events.db are NOT consulted in this mode.
+    """
+
+    @staticmethod
+    def _write_csv(tmp: Path, rows: list[dict[str, str]]) -> Path:
+        import csv as _csv
+        path = tmp / "batch.csv"
+        if not rows:
+            path.write_text(
+                "event_date,primary_ticker,benchmark_ticker\n",
+                encoding="utf-8",
+            )
+            return path
+        fieldnames = sorted({k for row in rows for k in row})
+        with path.open("w", encoding="utf-8", newline="") as fh:
+            writer = _csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow(row)
+        return path
+
+    def test_csv_mode_populates_real_and_placebo_summaries(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            base = date(2026, 4, 6)
+            csv_path = self._write_csv(tmp, [
+                {
+                    "event_date":       base.isoformat(),
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "SPY",
+                },
+                {
+                    "event_date":       (base - timedelta(days=14)).isoformat(),
+                    "primary_ticker":   "VLO",
+                    "benchmark_ticker": "SPY",
+                },
+            ])
+            payload = smoke.run_placebo_smoke(
+                input_csv=csv_path,
+                offsets=(-10, 10), horizons=(1, 5, 20),
+                price_reader=_build_price_reader(
+                    base_date=base, span_days=300,
+                ),
+            )
+        for key in _TOP_LEVEL_KEYS:
+            self.assertIn(key, payload, f"missing top-level key: {key}")
+        for side in ("event_signal_summary", "placebo_signal_summary"):
+            with self.subTest(side=side):
+                summary = payload[side]
+                for key in _SUMMARY_REQUIRED_KEYS:
+                    self.assertIn(key, summary, f"{side} missing {key}")
+                self.assertIsInstance(summary["raw_p_candidate_count"], int)
+                self.assertIsInstance(summary["fdr_significant_count"], int)
+        ev = payload["event_signal_summary"]
+        # 2 events × 3 horizons = 6 real-side records when coverage is full.
+        self.assertEqual(ev["records_count"], 6)
+        # Placebo side must produce at least one draw on the synthetic
+        # 300-day series.
+        self.assertGreater(payload["placebo_dates_tested"], 0)
+        # CSV-mode limitation surfaced.
+        joined = " ".join(payload["warnings"]).lower()
+        self.assertIn("computed in-session", joined)
+
+    def test_csv_mode_does_not_read_evidence_or_db(self) -> None:
+        """In CSV mode, evidence_path / db_path arguments are ignored —
+        nonsense paths must not surface artifact/DB error or warning."""
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            base = date(2026, 4, 6)
+            csv_path = self._write_csv(tmp, [
+                {
+                    "event_date":       base.isoformat(),
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "SPY",
+                },
+            ])
+            payload = smoke.run_placebo_smoke(
+                input_csv=csv_path,
+                evidence_path=tmp / "does_not_exist.json",
+                db_path=tmp / "no_db.db",
+                offsets=(-5, 5), horizons=(1,),
+                price_reader=_build_price_reader(
+                    base_date=base, span_days=300,
+                ),
+            )
+        joined_errs  = " ".join(payload["errors"]).lower()
+        joined_warns = " ".join(payload["warnings"]).lower()
+        self.assertNotIn(
+            "freeze-candidate evidence file not found", joined_errs,
+        )
+        self.assertNotIn("events db not found", joined_warns)
+
+    def test_missing_csv_yields_error_with_well_formed_envelope(
+        self,
+    ) -> None:
+        payload = smoke.run_placebo_smoke(
+            input_csv=Path("does/not/exist.csv"),
+            offsets=(-5, 5), horizons=(1,),
+        )
+        self.assertFalse(payload["ok"])
+        self.assertTrue(
+            any("input CSV not found" in e for e in payload["errors"]),
+        )
+        for key in _TOP_LEVEL_KEYS:
+            self.assertIn(key, payload)
+
+    def test_csv_missing_required_column_yields_error(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            path = tmp / "bad.csv"
+            path.write_text(
+                "event_date,primary_ticker\n2024-01-01,SPY\n",
+                encoding="utf-8",
+            )
+            payload = smoke.run_placebo_smoke(
+                input_csv=path,
+                offsets=(-5, 5), horizons=(1,),
+            )
+        self.assertFalse(payload["ok"])
+        self.assertTrue(
+            any("benchmark_ticker" in e for e in payload["errors"]),
+        )
+
+    def test_csv_predicted_direction_propagated_without_gating(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            base = date(2026, 4, 6)
+            csv_path = self._write_csv(tmp, [
+                {
+                    "event_date":           base.isoformat(),
+                    "primary_ticker":       "XOM",
+                    "benchmark_ticker":     "SPY",
+                    "predicted_direction":  "positive",
+                },
+            ])
+            payload = smoke.run_placebo_smoke(
+                input_csv=csv_path,
+                offsets=(-5, 5), horizons=(1,),
+                price_reader=_build_price_reader(
+                    base_date=base, span_days=300,
+                ),
+            )
+        for key in _TOP_LEVEL_KEYS:
+            self.assertIn(key, payload)
+        # Direction is documentation only — no direction-related warning
+        # or skip reason from CSV mode itself.
+        joined = " ".join(payload["warnings"]).lower()
+        self.assertNotIn("direction", joined)
+        self.assertNotIn("direction", " ".join(payload["errors"]).lower())
+
+    def test_csv_main_flag_routes_through_new_path(self) -> None:
+        """The CLI --input-csv flag must route through run_placebo_smoke's
+        CSV branch and emit a well-formed JSON envelope."""
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            base = date(2026, 4, 6)
+            csv_path = self._write_csv(tmp, [
+                {
+                    "event_date":       base.isoformat(),
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "SPY",
+                },
+            ])
+            buf = StringIO()
+            rc = smoke.main(
+                argv=[
+                    "--json",
+                    "--input-csv", str(csv_path),
+                    "--evidence-path", str(tmp / "does_not_exist.json"),
+                    "--db-path",       str(tmp / "no_db.db"),
+                    "--offsets",       "-5", "5",
+                    "--horizons",      "1",
+                ],
+                out=buf,
+            )
+        payload = json.loads(buf.getvalue())
+        for key in _TOP_LEVEL_KEYS:
+            self.assertIn(key, payload)
+        self.assertIn(rc, (0, 1))
+        # Confirm the run actually used the CSV branch.
+        joined = " ".join(payload["warnings"]).lower()
+        self.assertIn("computed in-session", joined)
+
+    def test_csv_real_side_records_carry_per_horizon_shape(self) -> None:
+        """The CSV-mode real-side compute must produce one record per
+        (event, horizon) when coverage is full, with well-formed
+        non-negative counts.  Pins that the pipeline actually runs
+        event-study against the CSV rather than silently returning
+        zeros, without relying on the synthetic fixture's
+        weekend-aware shock alignment.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            base = date(2026, 4, 6)
+            csv_path = self._write_csv(tmp, [
+                {
+                    "event_date":       base.isoformat(),
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "SPY",
+                },
+                {
+                    "event_date":       (base - timedelta(days=21)).isoformat(),
+                    "primary_ticker":   "VLO",
+                    "benchmark_ticker": "SPY",
+                },
+            ])
+            payload = smoke.run_placebo_smoke(
+                input_csv=csv_path,
+                offsets=(-10, 10), horizons=(1, 5, 20),
+                price_reader=_build_price_reader(
+                    base_date=base, span_days=300,
+                ),
+            )
+        ev = payload["event_signal_summary"]
+        # 2 events × 3 horizons = 6 records with full synthetic coverage.
+        self.assertEqual(ev["records_count"], 6)
+        # by_horizon breakdown is well-formed and sums to records_count.
+        by_h = ev["by_horizon"]
+        for h in ("1", "5", "20"):
+            self.assertIn(h, by_h)
+            self.assertEqual(by_h[h]["records_count"], 2)
+        rawp = ev["raw_p_candidate_count"]
+        fdrs = ev["fdr_significant_count"]
+        self.assertGreaterEqual(rawp, 0)
+        self.assertGreaterEqual(fdrs, 0)
+        # raw_p and fdr labels are disjoint by construction
+        # (raw_p_candidate ↔ p ≤ α AND NOT FDR-significant).
+        self.assertLessEqual(rawp + fdrs, ev["records_count"])
+
+
 if __name__ == "__main__":
     unittest.main()

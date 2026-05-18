@@ -152,10 +152,13 @@ Usage::
         --offsets -10 -5 5 10
     python scripts/placebo_negative_control_smoke.py --json \\
         --output artifacts/placebo_negative_control_report.json
+    python scripts/placebo_negative_control_smoke.py --json \\
+        --input-csv examples/<batch>.csv
 """
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import sqlite3
@@ -214,6 +217,25 @@ _CONTAMINATION_NOTE: str = (
     "specificity."
 )
 
+# Input-CSV mode (operator-curated batch).  When --input-csv is
+# supplied the smoke bypasses the freeze-artifact + events.db read
+# and drives both real-side and placebo-side computation from the
+# CSV rows.  Required columns mirror the manual-five batch schema;
+# ``predicted_direction`` is read when present and propagated as
+# documentation only — directional gating is the cohort-integration
+# rule's job (see docs/expansion_cohort_integration_rule.md), not
+# this smoke's.
+_CSV_REQUIRED_FIELDS: tuple[str, ...] = (
+    "event_date", "primary_ticker", "benchmark_ticker",
+)
+_CSV_REAL_SIDE_NOTE: str = (
+    "Input-CSV mode: real-side counts were computed in-session from "
+    "the supplied CSV using the same event-study + p-value + BH-FDR "
+    "primitives as the placebo side.  No precomputed validated "
+    "artifact exists for this batch; treat both real and placebo "
+    "counts as in-session probes, not as freeze-cohort evidence."
+)
+
 
 # ---------------------------------------------------------------------------
 # Top-level entry
@@ -224,6 +246,7 @@ def run_placebo_smoke(
     *,
     evidence_path:                 str | Path = _DEFAULT_EVIDENCE_PATH,
     db_path:                       str | Path = _DEFAULT_DB_PATH,
+    input_csv:                     Optional[str | Path] = None,
     offsets:                       Sequence[int] = _DEFAULT_OFFSETS,
     horizons:                      Sequence[int] = _DEFAULT_HORIZONS,
     alpha:                         float        = _DEFAULT_ALPHA,
@@ -265,37 +288,65 @@ def run_placebo_smoke(
     if not offsets_t:
         errors.append("no non-zero offsets supplied")
 
-    # 1. Read the freeze artifact.  Real-side counts come straight
-    #    from the artifact — we do not recompute them.
-    evidence = _read_evidence(Path(evidence_path), errors=errors)
-    if evidence is None:
-        return _empty_envelope(
-            warnings=warnings, errors=errors, notes=notes,
-            requested_placebo_draws=0,
+    from_csv: bool = input_csv is not None
+
+    if from_csv:
+        # 1-3. Input-CSV mode: build specs + event_dates directly
+        # from the operator-curated CSV.  No freeze-artifact read,
+        # no events.db read.  Real-side counts are computed in-
+        # session below (step 5a) using the same compute helpers
+        # as the placebo side.
+        event_specs, event_dates, csv_warnings = _build_specs_from_csv(
+            Path(input_csv), errors=errors,
+        )
+        warnings.extend(csv_warnings)
+        if errors:
+            return _empty_envelope(
+                warnings=warnings, errors=errors, notes=notes,
+                requested_placebo_draws=0,
+            )
+        cohort_event_count = len(event_specs)
+        if cohort_event_count == 0:
+            warnings.append(
+                "input CSV produced no usable (event_date, "
+                "primary_ticker, benchmark_ticker) rows",
+            )
+        # Placeholder: populated by the in-session real-side compute
+        # block below.  In CSV mode there is no precomputed artifact
+        # to read trusted counts from.
+        event_signal_summary: dict[str, Any] = _empty_summary()
+    else:
+        # 1. Read the freeze artifact.  Real-side counts come straight
+        #    from the artifact — we do not recompute them.
+        evidence = _read_evidence(Path(evidence_path), errors=errors)
+        if evidence is None:
+            return _empty_envelope(
+                warnings=warnings, errors=errors, notes=notes,
+                requested_placebo_draws=0,
+            )
+
+        event_signal_summary = _summarise_event_signals(
+            evidence, horizons=horizons_t, alpha=alpha_f,
         )
 
-    event_signal_summary = _summarise_event_signals(
-        evidence, horizons=horizons_t, alpha=alpha_f,
-    )
+        # 2. Build the per-event spec list (event_id, primary_ticker,
+        #    benchmark, headline).  Skip records with missing tickers —
+        #    we cannot draw a placebo without an asset / benchmark pair.
+        event_specs, spec_warnings = _build_event_specs(evidence)
+        warnings.extend(spec_warnings)
+        cohort_event_count = len(event_specs)
+        if cohort_event_count == 0:
+            warnings.append(
+                "no usable (event_id, primary_ticker, benchmark) tuples "
+                "found in the evidence artifact",
+            )
 
-    # 2. Build the per-event spec list (event_id, primary_ticker,
-    #    benchmark, headline).  Skip records with missing tickers —
-    #    we cannot draw a placebo without an asset / benchmark pair.
-    event_specs, spec_warnings = _build_event_specs(evidence)
-    warnings.extend(spec_warnings)
-    cohort_event_count = len(event_specs)
-    if cohort_event_count == 0:
-        warnings.append(
-            "no usable (event_id, primary_ticker, benchmark) tuples "
-            "found in the evidence artifact",
+        # 3. Resolve event_id → event_date via read-only sqlite3.
+        event_dates, date_warnings = _read_event_dates(
+            db_path=Path(db_path),
+            event_ids=[s["event_id"] for s in event_specs],
         )
-
-    # 3. Resolve event_id → event_date via read-only sqlite3.
-    event_dates, date_warnings = _read_event_dates(
-        db_path=Path(db_path),
-        event_ids=[s["event_id"] for s in event_specs],
-    )
-    warnings.extend(date_warnings)
+        warnings.extend(date_warnings)
 
     # 4. Resolve a price reader (real or injected).
     if price_reader is None:
@@ -309,6 +360,59 @@ def run_placebo_smoke(
         offsets_requested=offsets_t,
         price_reader=price_reader,
     )
+
+    # 5a. CSV mode: real-side compute via the same _compute_placebo_records
+    #     helper with per_event_offsets={eid: [0]} for each event so
+    #     placebo_date == event_date and event_index lands on the real
+    #     event-day bar.  The returned skip counter is intentionally
+    #     discarded — skip_reason_counts is accounting-balanced against
+    #     placebo-side draws; a real-side skip manifests as a smaller
+    #     event_signal_summary.records_count instead.  Methodology
+    #     adjustments DO accumulate into the global list because each
+    #     entry already self-identifies via "event_id=X offset=+0".
+    if from_csv and event_specs:
+        real_records, _real_skip_unused, real_adj = _compute_placebo_records(
+            event_specs=event_specs,
+            event_dates=event_dates,
+            offsets=None,
+            horizons=horizons_t,
+            aligned_series=aligned_series,
+            estimation_window=est_window,
+            min_estimation_window=min_window,
+            auto_shrink=auto_shrink,
+            per_event_offsets={
+                int(s["event_id"]): [0] for s in event_specs
+            },
+        )
+        methodology_adjustments.extend(real_adj)
+        real_p_pool: list[Any] = [r["p_value"] for r in real_records]
+        if real_p_pool:
+            try:
+                real_fdr_result = bh_adjust(real_p_pool, alpha=alpha_f)
+                real_q = (
+                    real_fdr_result.get("adjusted")
+                    or [None] * len(real_p_pool)
+                )
+            except Exception as exc:  # noqa: BLE001 — operator-visible
+                errors.append(
+                    f"bh_adjust raised on real-side records: "
+                    f"{type(exc).__name__}: {exc}",
+                )
+                real_q = [None] * len(real_p_pool)
+            for rec, q in zip(real_records, real_q):
+                rec["fdr_q"] = q
+                is_fdr = isinstance(q, (int, float)) and q <= alpha_f
+                is_rawp = (
+                    (not is_fdr)
+                    and isinstance(rec["p_value"], (int, float))
+                    and rec["p_value"] <= alpha_f
+                )
+                rec["fdr_significant"] = bool(is_fdr)
+                rec["raw_p_candidate"] = bool(is_rawp)
+        event_signal_summary = _summarise_placebo_records(
+            real_records, horizons=horizons_t,
+        )
+        warnings.append(_CSV_REAL_SIDE_NOTE)
 
     # 6. First pass: try the spec'd offsets.
     placebo_records, skip_counter_a, adj_a = _compute_placebo_records(
@@ -522,6 +626,114 @@ def _read_evidence(
             f"{type(exc).__name__}: {exc}",
         )
         return None
+
+
+def _build_specs_from_csv(
+    path: Path, *, errors: list[str],
+) -> tuple[list[dict[str, Any]], dict[int, str], list[str]]:
+    """Build event_specs + event_dates from an operator-curated CSV.
+
+    Returns ``(event_specs, event_dates, warnings)``.  Each spec
+    carries the same shape as :func:`_build_event_specs`'s artifact-
+    sourced output (``event_id``, ``primary_ticker``, ``benchmark``,
+    ``headline``, ``mechanism_family``) plus an optional
+    ``predicted_direction`` field propagated from the CSV when
+    present.  ``event_id`` is the 1-indexed CSV row number — a
+    synthetic id that is unique within the batch and never collides
+    with real ``events.db`` ids because the CSV path skips the DB
+    read entirely.
+
+    Required columns: ``event_date``, ``primary_ticker``,
+    ``benchmark_ticker``.  Missing file and missing required column
+    are fatal (appended to ``errors``).  Per-row issues (empty
+    event_date, malformed event_date, empty ticker) are surfaced as
+    warnings with skip counts so the operator can see exactly how
+    many rows did not survive ingestion.
+
+    The ``predicted_direction`` column is read when present and
+    propagated as documentation only — this smoke does not gate on
+    directional priors.  Direction-gating belongs to the cohort-
+    integration rule (see G3 in
+    ``docs/expansion_cohort_integration_rule.md``).
+    """
+    import csv as _csv          # noqa: PLC0415 — narrow top-level surface
+    warnings: list[str] = []
+    if not path.is_file():
+        errors.append(f"input CSV not found: {path}")
+        return [], {}, warnings
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        errors.append(
+            f"failed to read input CSV {path}: "
+            f"{type(exc).__name__}: {exc}",
+        )
+        return [], {}, warnings
+    reader = _csv.DictReader(text.splitlines())
+    header = reader.fieldnames or []
+    missing_fields = [f for f in _CSV_REQUIRED_FIELDS if f not in header]
+    if missing_fields:
+        errors.append(
+            f"input CSV missing required column(s): "
+            f"{', '.join(missing_fields)}",
+        )
+        return [], {}, warnings
+
+    event_specs: list[dict[str, Any]] = []
+    event_dates: dict[int, str] = {}
+    skipped_no_date:      int = 0
+    skipped_bad_date:     int = 0
+    skipped_no_primary:   int = 0
+    skipped_no_benchmark: int = 0
+    for idx, raw in enumerate(reader, start=1):
+        event_date = (raw.get("event_date") or "").strip()
+        primary    = (raw.get("primary_ticker") or "").strip().upper()
+        benchmark  = (raw.get("benchmark_ticker") or "").strip().upper()
+        predicted  = (raw.get("predicted_direction") or "").strip().lower()
+        if not event_date:
+            skipped_no_date += 1
+            continue
+        try:
+            date.fromisoformat(event_date[:10])
+        except ValueError:
+            skipped_bad_date += 1
+            continue
+        if not primary:
+            skipped_no_primary += 1
+            continue
+        if not benchmark:
+            skipped_no_benchmark += 1
+            continue
+        eid = int(idx)
+        event_specs.append({
+            "event_id":            eid,
+            "primary_ticker":      primary,
+            "benchmark":           benchmark,
+            "headline":            (raw.get("headline") or "").strip(),
+            "mechanism_family":    (raw.get("mechanism_family") or "").strip(),
+            "predicted_direction": predicted or None,
+        })
+        event_dates[eid] = event_date[:10]
+    if skipped_no_date:
+        warnings.append(
+            f"input CSV: skipped {skipped_no_date} row(s) with no event_date",
+        )
+    if skipped_bad_date:
+        warnings.append(
+            f"input CSV: skipped {skipped_bad_date} row(s) with "
+            "malformed event_date",
+        )
+    if skipped_no_primary:
+        warnings.append(
+            f"input CSV: skipped {skipped_no_primary} row(s) with "
+            "no primary_ticker",
+        )
+    if skipped_no_benchmark:
+        warnings.append(
+            f"input CSV: skipped {skipped_no_benchmark} row(s) with "
+            "no benchmark_ticker",
+        )
+    return event_specs, event_dates, warnings
 
 
 # ---------------------------------------------------------------------------
@@ -1239,6 +1451,19 @@ def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--input-csv", default=None, dest="input_csv",
+        help=(
+            "Operator-curated CSV with rows "
+            "(event_date, primary_ticker, benchmark_ticker[, "
+            "predicted_direction]).  When supplied, the smoke "
+            "bypasses --evidence-path and --db-path entirely and "
+            "computes real-side counts in-session from the CSV "
+            "using the same event-study + p-value + BH-FDR "
+            "primitives as the placebo side.  Default: read the "
+            "freeze-candidate evidence artifact."
+        ),
+    )
+    parser.add_argument(
         "--offsets", type=int, nargs="+", default=list(_DEFAULT_OFFSETS),
         help=(
             "Calendar-day offsets relative to event_date "
@@ -1302,6 +1527,7 @@ def main(
     payload = run_placebo_smoke(
         evidence_path=args.evidence_path,
         db_path=args.db_path,
+        input_csv=args.input_csv,
         offsets=tuple(args.offsets),
         horizons=tuple(args.horizons),
         alpha=float(args.alpha),
