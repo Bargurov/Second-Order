@@ -1,0 +1,398 @@
+# Selection funnel ledger for the v2 cohort workstream.
+#
+# Each entry is one distinct candidate consideration. Corrected
+# re-pre-registrations (CENX-Apr9, TXT-Dec6, RIO-Jan25) appear as
+# separate entries from their failed originals (CENX-Apr6, TXT-Dec5,
+# RIO-Jan28) so each temp-validation run is counted exactly once.
+#
+# Vocabularies:
+#
+#   gate_stage:
+#     planning              — never advanced past planning
+#     date_sanity           — rejected at source-date sanity gate
+#     provider_preview      — failed provider preview gate (delisted, etc.)
+#     temp_validation       — was tested via in-memory event study
+#     corrected_validation  — re-ran after correction of a temp_validation failure
+#     accepted_v2           — in the v2 cohort (carryover that did not re-validate
+#                             in this workstream)
+#
+#   outcome:
+#     accepted                    — in the final v2 cohort
+#     rejected                    — out, will not be re-considered as-is
+#     blocked                     — provider/delisting issue; row is unreachable
+#     backup                      — held in queue; not in v2 but defensible
+#     corrected_original_failed   — failed original of a row later corrected
+#                                   and accepted; included for honest disclosure
+#
+#   result_code (validation runs only; "N/A" for rows that never ran):
+#     PASS               — validation cleared p<0.05 in pre-registered direction
+#     FAIL_WRONG_SIGN    — validation produced wrong-sign result
+#     FAIL_DATE_ERROR    — first_trading_date was wrong; corrected version re-run
+#     N/A                — row was rejected before validation
+#
+# Consumed by: scripts/selection_funnel_summary.py
+# Not consumed by any other live pipeline; this is an operator audit trail.
+
+candidates:
+
+  # ============================================================
+  # ACCEPTED (5)
+  # ============================================================
+
+  - candidate_id: whr-xly-carryover
+    event_name: WHR Section 201 washer tariff
+    primary_ticker: WHR
+    benchmark_ticker: XLY
+    proposed_event_date: 2018-01-23
+    proposed_first_trading_date: 2018-01-23
+    mechanism_family: tariffs_industrial_policy
+    expected_direction: positive
+    gate_stage: accepted_v2
+    outcome: accepted
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Carryover from prior cohort; already cache-backed before this
+      workstream. Included verbatim in v2 with method updated from
+      v2.0 market-model OLS to v2.1 production BHAR (numbers drifted
+      but direction and FDR significance preserved).
+    notes: Did not run a temp_validation in this workstream.
+
+  - candidate_id: cenx-xme-apr9-corrected
+    event_name: CENX Rusal sanctions (corrected first_trading 2018-04-09)
+    primary_ticker: CENX
+    benchmark_ticker: XME
+    proposed_event_date: 2018-04-09
+    proposed_first_trading_date: 2018-04-09
+    mechanism_family: sanctions_or_forced_divestiture
+    expected_direction: positive
+    gate_stage: corrected_validation
+    outcome: accepted
+    result_code: PASS
+    rejection_or_acceptance_reason: >-
+      Production BHAR with first_trading=2018-04-09 reproduces the
+      v2.0 cohort claim within rounding (h=1 AR +11.1763%, SAR +3.8587,
+      p=1.14e-04).
+    notes: Validation run #8 in the artifact's complete_validation_run_log.
+
+  - candidate_id: fslr-spy-ira
+    event_name: FSLR Manchin-Schumer IRA reconciliation deal
+    primary_ticker: FSLR
+    benchmark_ticker: SPY
+    proposed_event_date: 2022-07-28
+    proposed_first_trading_date: 2022-07-28
+    mechanism_family: policy_driven_direct_beneficiary
+    expected_direction: positive
+    gate_stage: temp_validation
+    outcome: accepted
+    result_code: PASS
+    rejection_or_acceptance_reason: >-
+      True-surprise direct policy tailwind; h=1 AR +14.0402%, SAR
+      +4.9058, p=9.3e-07. h>1 horizons earnings-contaminated and
+      restricted out of the claim.
+    notes: Validation run #2.
+
+  - candidate_id: txt-lmt-dec6-corrected
+    event_name: TXT/LMT FLRAA award (corrected first_trading 2022-12-06)
+    primary_ticker: TXT
+    benchmark_ticker: LMT
+    proposed_event_date: 2022-12-06
+    proposed_first_trading_date: 2022-12-06
+    mechanism_family: defense_procurement_award
+    expected_direction: positive
+    gate_stage: corrected_validation
+    outcome: accepted
+    result_code: PASS
+    rejection_or_acceptance_reason: >-
+      Army announcement was post-close 2022-12-05; first true trading
+      session is 2022-12-06. Production BHAR h=1 AR +6.6097%, SAR
+      +3.3165, p=9.12e-04. Paired-loser caveat documented.
+    notes: Validation run #4.
+
+  - candidate_id: rio-spy-jan25-corrected
+    event_name: RIO/SPY Brumadinho (corrected first_trading 2019-01-25)
+    primary_ticker: RIO
+    benchmark_ticker: SPY
+    proposed_event_date: 2019-01-25
+    proposed_first_trading_date: 2019-01-25
+    mechanism_family: supply_shock
+    expected_direction: positive
+    gate_stage: corrected_validation
+    outcome: accepted
+    result_code: PASS
+    rejection_or_acceptance_reason: >-
+      Vale dam collapsed at ~09:28 ET on 2019-01-25 (intraday during
+      US session); first true trading session is the same day.
+      Production BHAR h=1 AR +3.9463%, SAR +2.5951, p=9.46e-03. h=5
+      strengthens to p=2.5e-03; h=20 plateau (not reversal).
+    notes: Validation run #6.
+
+  # ============================================================
+  # CORRECTED_ORIGINAL_FAILED (3) — failed originals of accepted rows
+  # ============================================================
+
+  - candidate_id: cenx-xme-apr6-original
+    event_name: CENX Rusal sanctions (original first_trading 2018-04-06)
+    primary_ticker: CENX
+    benchmark_ticker: XME
+    proposed_event_date: 2018-04-06
+    proposed_first_trading_date: 2018-04-06
+    mechanism_family: sanctions_or_forced_divestiture
+    expected_direction: positive
+    gate_stage: temp_validation
+    outcome: corrected_original_failed
+    result_code: FAIL_DATE_ERROR
+    rejection_or_acceptance_reason: >-
+      OFAC announcement was pre-market Friday 2018-04-06 but US equity
+      reaction occurred Monday 2018-04-09 after weekend LME aluminum
+      cash-market repricing. h=1 on the originally-recorded date is
+      +1.40% AR, p=0.628 (not significant). Originally undisclosed in
+      v2.0; surfaced by v2.1 reconciliation.
+    notes: Validation run #7. Corrected version is cenx-xme-apr9-corrected.
+
+  - candidate_id: txt-lmt-dec5-original
+    event_name: TXT/LMT FLRAA (original first_trading 2022-12-05)
+    primary_ticker: TXT
+    benchmark_ticker: LMT
+    proposed_event_date: 2022-12-05
+    proposed_first_trading_date: 2022-12-05
+    mechanism_family: defense_procurement_award
+    expected_direction: positive
+    gate_stage: temp_validation
+    outcome: corrected_original_failed
+    result_code: FAIL_DATE_ERROR
+    rejection_or_acceptance_reason: >-
+      Army FLRAA announcement was post-close 2022-12-05 (after 16:00
+      ET); first true trading session is 2022-12-06. h=1 on the
+      originally-recorded date is -1.40%, p=0.44 (insignificant).
+    notes: Validation run #3. Corrected version is txt-lmt-dec6-corrected.
+
+  - candidate_id: rio-spy-jan28-original
+    event_name: RIO/SPY Brumadinho (original first_trading 2019-01-28)
+    primary_ticker: RIO
+    benchmark_ticker: SPY
+    proposed_event_date: 2019-01-28
+    proposed_first_trading_date: 2019-01-28
+    mechanism_family: supply_shock
+    expected_direction: positive
+    gate_stage: temp_validation
+    outcome: corrected_original_failed
+    result_code: FAIL_DATE_ERROR
+    rejection_or_acceptance_reason: >-
+      Vale dam collapsed ~09:28 ET on 2019-01-25 during US session;
+      Friday Jan 25 was the first true trading session, not Monday
+      Jan 28. h=1 on the originally-recorded date is +1.25%, p=0.42
+      (insignificant).
+    notes: Validation run #5. Corrected version is rio-spy-jan25-corrected.
+
+  # ============================================================
+  # REJECTED at temp_validation (1)
+  # ============================================================
+
+  - candidate_id: wy-xlb-spy-softwood
+    event_name: WY Canadian softwood lumber CVD
+    primary_ticker: WY
+    benchmark_ticker: XLB (with SPY robustness check)
+    proposed_event_date: 2017-04-24
+    proposed_first_trading_date: 2017-04-25
+    mechanism_family: tariffs_industrial_policy
+    expected_direction: positive
+    gate_stage: temp_validation
+    outcome: rejected
+    result_code: FAIL_WRONG_SIGN
+    rejection_or_acceptance_reason: >-
+      Wrong-sign empirical result at p<0.001 (h=1 AR -3.67% vs XLB,
+      -3.36% vs SPY) — pre-registered direction was positive. Likely
+      mechanism failure: CVD rate came in below petitioner expectations
+      and WY's REIT structure muddies sawmill-margin flow-through.
+    notes: Validation run #1.
+
+  # ============================================================
+  # BLOCKED at provider_preview (2)
+  # ============================================================
+
+  - candidate_id: clr-xop-abqaiq
+    event_name: CLR/XOP Abqaiq drone strike (and other CLR-based rows)
+    primary_ticker: CLR
+    benchmark_ticker: XOP
+    proposed_event_date: 2019-09-16
+    proposed_first_trading_date: 2019-09-16
+    mechanism_family: supply_shock
+    expected_direction: positive
+    gate_stage: provider_preview
+    outcome: blocked
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Continental Resources delisted from NYSE 2022-12-15 (Harold Hamm
+      take-private); yfinance returns empty frame for historical
+      windows. Blocks all CLR-based candidates (Abqaiq, JCPOA, SPR
+      release).
+    notes: Substitute EOG was considered but never advanced past planning.
+
+  - candidate_id: agn-xlv-anti-inversion
+    event_name: AGN anti-inversion (Allergan / Pfizer deal)
+    primary_ticker: AGN
+    benchmark_ticker: XLV
+    proposed_event_date: 2016-04-04
+    proposed_first_trading_date: 2016-04-05
+    mechanism_family: regulatory_dealbreak
+    expected_direction: negative
+    gate_stage: provider_preview
+    outcome: blocked
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Allergan plc delisted 2020-05-08 (AbbVie acquisition); yfinance
+      returns empty frame for historical AGN windows.
+    notes: Mechanism was AGN-specific; no clean substitute ticker exists.
+
+  # ============================================================
+  # REJECTED at planning / date_sanity (5)
+  # ============================================================
+
+  - candidate_id: zte-qcom-export-ban
+    event_name: ZTE 7-year U.S. export denial order
+    primary_ticker: QCOM
+    benchmark_ticker: SMH
+    proposed_event_date: 2018-03-22
+    proposed_first_trading_date: 2018-03-22
+    mechanism_family: export_controls_sanctions
+    expected_direction: negative
+    gate_stage: date_sanity
+    outcome: rejected
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Original 2018-03-22 date was wrong (conflated with Section 301
+      China tariff memo); correct date is 2018-04-16. Even with date
+      corrected, QCOM ZTE-customer concentration was only ~3% of
+      revenue — exposure scale below WHR/CENX bar.
+    notes: Demoted to backup B1 in earlier planning passes; never advanced.
+
+  - candidate_id: jcpoa-clr-eog-iran-withdrawal
+    event_name: JCPOA U.S. withdrawal (Iran sanctions reinstatement)
+    primary_ticker: CLR or EOG
+    benchmark_ticker: XOP
+    proposed_event_date: 2018-05-08
+    proposed_first_trading_date: 2018-05-08
+    mechanism_family: sanctions_or_forced_divestiture
+    expected_direction: positive
+    gate_stage: planning
+    outcome: rejected
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Heavy pre-event leakage (Macron lobbying trip 4/24; Bloomberg
+      "decision made" reports 5/7) — h=1 reaction largely already in
+      the price by the May 7 close. CLR variant also blocked by
+      delisting; EOG variant not advanced.
+    notes: Lower-priority backup in earlier planning passes.
+
+  - candidate_id: softwood-wy-wood-original
+    event_name: Canadian softwood lumber CVD (original WY vs WOOD framing)
+    primary_ticker: WY
+    benchmark_ticker: WOOD
+    proposed_event_date: 2017-04-24
+    proposed_first_trading_date: 2017-04-25
+    mechanism_family: tariffs_industrial_policy
+    expected_direction: positive
+    gate_stage: planning
+    outcome: rejected
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      WOOD ETF contains both U.S. and Canadian timber/lumber producers,
+      so benchmark contamination on the opposite side of the duty.
+      Benchmark revised to XLB + SPY (which then advanced to
+      temp_validation and failed wrong-sign as wy-xlb-spy-softwood).
+    notes: Earlier formulation; revised before reaching provider preview.
+
+  - candidate_id: fslr-section-201-solar
+    event_name: FSLR Section 201 solar safeguard
+    primary_ticker: FSLR
+    benchmark_ticker: SPY
+    proposed_event_date: 2018-01-23
+    proposed_first_trading_date: 2018-01-23
+    mechanism_family: tariffs_industrial_policy
+    expected_direction: positive
+    gate_stage: date_sanity
+    outcome: rejected
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Wrong-sign mechanism risk caught at source-date sanity gate:
+      FSLR opposed the Section 201 solar safeguard (FSLR uses CdTe
+      thin-film, was not the petitioner class). Pre-registering
+      "positive" direction would have replicated the WY softwood
+      wrong-sign failure pattern. Rejected before any test.
+    notes: This row demonstrates the source-date sanity gate working as designed.
+
+  - candidate_id: ntr-moo-russia-ag
+    event_name: NTR/MOO Russia agricultural counter-sanctions
+    primary_ticker: NTR
+    benchmark_ticker: MOO
+    proposed_event_date: 2014-08-06
+    proposed_first_trading_date: 2014-08-06
+    mechanism_family: sanctions_or_forced_divestiture
+    expected_direction: positive
+    gate_stage: planning
+    outcome: rejected
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Wind-down timing makes the event-window AR difficult to attribute
+      cleanly to the sanctions vs the longer commodity cycle; potash
+      and fertilizer prices moved on multiple drivers in the same
+      window. Mechanism not isolated enough for a single-event study.
+    notes: Considered briefly; deferred.
+
+  # ============================================================
+  # BACKUP (3) — defensible but not in v2 cohort
+  # ============================================================
+
+  - candidate_id: noc-lmt-flraa-backup
+    event_name: NOC/LMT FLRAA backup pairing
+    primary_ticker: NOC
+    benchmark_ticker: LMT
+    proposed_event_date: 2022-12-06
+    proposed_first_trading_date: 2022-12-06
+    mechanism_family: defense_procurement_award
+    expected_direction: positive
+    gate_stage: planning
+    outcome: backup
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      NOC was not a participant in the FLRAA competition; pairing NOC
+      against the FLRAA-loser LMT does not test the FLRAA mechanism.
+      Considered as a "broader defense beneficiary" backup but the
+      paired-loser construction doesn't transfer to NOC.
+    notes: Backup only; not appropriate for the FLRAA event.
+
+  - candidate_id: lng-spy-nord-stream
+    event_name: LNG/SPY Nord Stream sabotage
+    primary_ticker: LNG
+    benchmark_ticker: SPY
+    proposed_event_date: 2022-09-27
+    proposed_first_trading_date: 2022-09-27
+    mechanism_family: supply_shock
+    expected_direction: positive
+    gate_stage: planning
+    outcome: backup
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      Cheniere LNG is an option-value extinction story (Russian gas
+      to Europe permanently off) rather than a fresh supply-loss story.
+      Thesis is softer than the in-cohort supply-shock rows; held as
+      backup pending stronger framing.
+    notes: Reached the merged top-5 shortlist but did not advance to validation.
+
+  - candidate_id: mu-soxx-fujian-jinhua
+    event_name: MU/SOXX Fujian Jinhua Entity List
+    primary_ticker: MU
+    benchmark_ticker: SOXX (with SPY robustness)
+    proposed_event_date: 2018-10-29
+    proposed_first_trading_date: 2018-10-29
+    mechanism_family: export_controls_sanctions
+    expected_direction: positive
+    gate_stage: planning
+    outcome: backup
+    result_code: N/A
+    rejection_or_acceptance_reason: >-
+      DRAM price cycle (downturn through 2018 H2) is a major confound
+      for the MU event-day AR; the Entity List action removes a
+      potential Chinese DRAM competitor but the same week saw
+      escalating cycle worry. Backup pending cycle-decomposition step.
+    notes: Reached the merged top-5 shortlist but not validated.
