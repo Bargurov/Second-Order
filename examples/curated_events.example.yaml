@@ -1,0 +1,75 @@
+# Curated-event archive — example.
+#
+# Each entry is one analyst-curated event.  Required fields:
+#   event_id, event_date, headline, source_url, primary_ticker,
+#   benchmark_ticker, mechanism_family, mechanism_description,
+#   predicted_direction, prediction_rationale.
+# Optional: curator_notes.
+#
+# predicted_direction must be one of: up | down | flat.
+# event_date must be ISO YYYY-MM-DD.
+#
+# This file is read by:
+#   scripts/curated_event_loader.py
+#   scripts/curated_event_validator.py
+#   scripts/curated_archive_status.py
+#
+# Conservative language only — these are analyst-selected candidates,
+# not proof and not an alpha claim.
+
+events:
+  - event_id: 1
+    event_date: 2026-04-06
+    headline: >-
+      Federal Reserve Board announces section 23A exemption for
+      Morgan Stanley Bank, N.A.
+    source_url: https://www.federalreserve.gov/newsevents/pressreleases/orders20260406a.htm
+    primary_ticker: MS
+    benchmark_ticker: SPY
+    mechanism_family: bank_regulatory_capital_relief
+    mechanism_description: >-
+      A section 23A exemption permits intra-affiliate transactions
+      that would otherwise hit the bank's regulatory capital limit;
+      operator expects equity to absorb a small positive surprise as
+      capital flexibility improves.
+    predicted_direction: up
+    prediction_rationale: >-
+      Capital relief at the bank subsidiary lifts dividend / buyback
+      capacity at the parent on a multi-day window.
+    curator_notes: Hand-reviewed against Fed press release.
+
+  - event_id: 2
+    event_date: 2026-04-06
+    headline: OPEC members agree to extend voluntary oil output cuts through next quarter
+    source_url: https://www.opec.org/opec_web/en/press_room/2026-04-06.htm
+    primary_ticker: XOM
+    benchmark_ticker: XLE
+    mechanism_family: supply_shock
+    mechanism_description: >-
+      OPEC voluntary output-cut extension is a textbook supply-side
+      shock for crude; XOM is a liquid US oil-major proxy and XLE is
+      the sector benchmark.
+    predicted_direction: up
+    prediction_rationale: >-
+      Tighter supply lifts crude prices and oil-major earnings
+      expectations in the days following the announcement.
+    curator_notes: Hand-reviewed against OPEC release.
+
+  - event_id: 3
+    event_date: 2026-04-08
+    headline: >-
+      Trump threatens to attack Iran's power plants and bridges
+      unless it reopens Strait of Hormuz
+    source_url: https://www.ft.com/content/firstft-2026-04-08
+    primary_ticker: XOM
+    benchmark_ticker: XLE
+    mechanism_family: supply_shock
+    mechanism_description: >-
+      Hormuz reopening threat is an oil-supply chokepoint risk;
+      operator expects the implied supply pressure to surface in the
+      US oil-major proxy over short event windows.
+    predicted_direction: up
+    prediction_rationale: >-
+      Chokepoint risk premium widens crude basis and lifts large-cap
+      US oil names.
+    curator_notes: Hand-reviewed against FirstFT briefing.
