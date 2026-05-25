@@ -154,6 +154,32 @@ _VAGUE_GENERIC_PHRASES: tuple[str, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Artifact-presence audit (optional, opt-in via --artifact-dir)
+# ---------------------------------------------------------------------------
+#
+# Daily Section C's promotion path keys on
+# ``analyzed_event_artifact_<candidate_id>.json`` files written by the
+# manual intake worksheet (or an equivalent operator-reviewed source).
+# When the operator supplies an ``artifact_dir``, the diagnostic walks
+# each candidate row, resolves its expected artifact file, and reports
+# whether the file is present and whether the gate's required fields
+# are populated.  The audit is descriptive only — it never writes,
+# never enforces, never imports ``routes.daily_artifact_gate``.  The
+# required-field rule mirrored here matches the gate exactly: each of
+# mechanism_family, primary_ticker, benchmark_ticker must be a
+# non-empty string, and the literal sentinel ``"none"`` is treated as
+# missing on mechanism_family.
+
+_REQUIRED_ARTIFACT_FIELDS: tuple[str, ...] = (
+    "mechanism_family",
+    "primary_ticker",
+    "benchmark_ticker",
+)
+
+_ARTIFACT_NONE_SENTINEL: str = "none"
+
+
 # Raw-legal-text detector — token counts of citation / docket vocabulary.
 _LEGAL_TOKENS_PATTERN: re.Pattern[str] = re.compile(
     r"\b(?:v\.|vs\.|case\s+no\.?|docket(?:\s+entry)?|petitioner|"
@@ -242,12 +268,24 @@ def _default_input_path() -> str:
 
 def run_section_c_daily_quality_diagnostic(
     *,
-    input_path:  str | None = None,
-    output_path: str | None = None,
+    input_path:   str | None = None,
+    output_path:  str | None = None,
+    artifact_dir: str | None = None,
 ) -> dict[str, Any]:
     """Run the Section C daily-quality diagnostic.
 
     See module docstring for the full output contract.
+
+    When ``artifact_dir`` is supplied, each candidate row is augmented
+    with an artifact-presence audit (``candidate_id``,
+    ``artifact_present``, ``artifact_fields_complete``, plus
+    ``artifact_filename`` when present or
+    ``artifact_missing_reason`` / ``artifact_incomplete_fields`` when
+    incomplete).  This is descriptive only — the diagnostic does not
+    write any artifact and does not import the live gate.  Default
+    behavior (``artifact_dir=None``) is unchanged: candidates keep
+    their existing 9-field shape and no envelope-level audit keys are
+    added.
     """
     errors:   list[str] = []
     warnings: list[str] = []
@@ -337,6 +375,26 @@ def run_section_c_daily_quality_diagnostic(
         # 7. Accepted-like.
         candidate["inclusion_reason"] = "passes_filters"
         accepted.append(candidate)
+
+    # Optional artifact-presence audit.  Each candidate dict is shared
+    # by reference with every category list it landed in, so a single
+    # in-place update propagates to all of them.  Default behavior
+    # (``artifact_dir=None``) leaves the 9-field candidate shape
+    # untouched.
+    if artifact_dir:
+        artifact_dir_path = Path(artifact_dir)
+        for idx, candidate in enumerate(candidates):
+            entry = raw_entries[idx] if idx < len(raw_entries) else {}
+            cid_raw = entry.get("candidate_id") if isinstance(entry, dict) else None
+            candidate_id = (
+                cid_raw.strip() if isinstance(cid_raw, str) and cid_raw.strip()
+                else None
+            )
+            audit = _audit_candidate_artifact(
+                candidate_id=candidate_id,
+                artifact_dir=artifact_dir_path,
+            )
+            candidate.update(audit)
 
     recommended_rules = _build_recommended_rules(
         junk_count=len(junk),
@@ -541,6 +599,118 @@ def _relevance_score(headline: str) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Helpers — artifact-presence audit
+# ---------------------------------------------------------------------------
+
+
+def _artifact_filename_for(candidate_id: str) -> str:
+    """Resolve the expected per-candidate artifact filename.
+
+    Mirrors the path convention used by
+    ``scripts/manual_event_intake_worksheet.py`` (the writer) and
+    ``routes/daily_artifact_gate.py`` (the reader).  Filename only —
+    the caller composes the full path against an operator-supplied
+    ``artifact_dir``.
+    """
+    return f"analyzed_event_artifact_{candidate_id}.json"
+
+
+def _artifact_has_required_field(field: str, value: Any) -> bool:
+    """Return True when ``value`` populates ``field`` per the gate rule.
+
+    Mirrors ``routes/daily_artifact_gate.py``'s required-field check
+    without importing the gate module: a valid value is a non-empty
+    string, and the literal sentinel ``"none"`` (case-insensitive,
+    post-strip) is treated as missing on ``mechanism_family``.
+    """
+    if not isinstance(value, str):
+        return False
+    stripped = value.strip()
+    if not stripped:
+        return False
+    if field == "mechanism_family":
+        if stripped.lower() == _ARTIFACT_NONE_SENTINEL:
+            return False
+    return True
+
+
+def _audit_candidate_artifact(
+    *,
+    candidate_id:  str | None,
+    artifact_dir:  Path,
+) -> dict[str, Any]:
+    """Build the per-row artifact-presence audit block.
+
+    Returns a dict that the caller merges into the candidate envelope.
+    Always carries ``candidate_id``, ``artifact_present``, and
+    ``artifact_fields_complete``.  When the artifact is present, adds
+    ``artifact_filename``; when it is absent or unreadable, adds
+    ``artifact_missing_reason``; when it is present but missing one or
+    more gate-required fields, adds ``artifact_incomplete_fields``.
+    Read-only: no filesystem mutation.
+    """
+    out: dict[str, Any] = {
+        "candidate_id":             candidate_id,
+        "artifact_present":         False,
+        "artifact_fields_complete": False,
+    }
+
+    if not candidate_id:
+        out["artifact_missing_reason"] = (
+            "missing candidate_id on inbox row; cannot resolve an "
+            "analyzed_event_artifact path"
+        )
+        return out
+
+    filename = _artifact_filename_for(candidate_id)
+    artifact_path = artifact_dir / filename
+    if not artifact_path.is_file():
+        out["artifact_missing_reason"] = (
+            f"no analyzed_event_artifact file found at {filename!r} "
+            f"under the supplied artifact_dir"
+        )
+        return out
+
+    try:
+        text = artifact_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        out["artifact_missing_reason"] = (
+            f"failed to read analyzed_event_artifact {filename!r}: "
+            f"{type(exc).__name__}: {exc}"
+        )
+        return out
+
+    try:
+        doc = json.loads(text)
+    except json.JSONDecodeError as exc:
+        out["artifact_missing_reason"] = (
+            f"failed to parse analyzed_event_artifact {filename!r} as "
+            f"JSON: {exc}"
+        )
+        return out
+
+    if not isinstance(doc, dict):
+        out["artifact_missing_reason"] = (
+            f"analyzed_event_artifact {filename!r} root is not a JSON "
+            f"object"
+        )
+        return out
+
+    out["artifact_present"] = True
+    out["artifact_filename"] = filename
+
+    incomplete: list[str] = [
+        field for field in _REQUIRED_ARTIFACT_FIELDS
+        if not _artifact_has_required_field(field, doc.get(field))
+    ]
+    if incomplete:
+        out["artifact_incomplete_fields"] = incomplete
+    else:
+        out["artifact_fields_complete"] = True
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Helpers — recommended rules
 # ---------------------------------------------------------------------------
 
@@ -699,6 +869,20 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "omitted, the diagnostic has no filesystem side effect."
         ),
     )
+    parser.add_argument(
+        "--artifact-dir", dest="artifact_dir", default=None,
+        help=(
+            "Directory to scan for "
+            "analyzed_event_artifact_<candidate_id>.json files.  When "
+            "supplied, every candidate row is augmented with the "
+            "fields candidate_id, artifact_present, "
+            "artifact_fields_complete, and (conditionally) "
+            "artifact_filename / artifact_missing_reason / "
+            "artifact_incomplete_fields.  Read-only — no file under "
+            "this directory is written or modified.  When omitted, "
+            "candidate rows keep their existing 9-field shape."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -708,6 +892,7 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
     report = run_section_c_daily_quality_diagnostic(
         input_path=args.input_path,
         output_path=args.output_path,
+        artifact_dir=args.artifact_dir,
     )
     if args.json:
         print(_render_json(report), file=output)

@@ -667,5 +667,433 @@ class TestLiveInboxSmoke(unittest.TestCase):
         self.assertIsInstance(report["errors"], list)
 
 
+# ---------------------------------------------------------------------------
+# Optional --artifact-dir audit — adds per-candidate artifact-presence
+# fields without altering default behavior.
+# ---------------------------------------------------------------------------
+
+
+def _write_artifact(
+    artifact_dir: Path, candidate_id: str, body: dict[str, Any],
+) -> Path:
+    """Write one analyzed_event_artifact_<candidate_id>.json under
+    ``artifact_dir`` for the tests below.  The file lives in pytest's
+    tmp_path / a tempfile dir — never under live ``artifacts/``."""
+    path = artifact_dir / f"analyzed_event_artifact_{candidate_id}.json"
+    path.write_text(json.dumps(body), encoding="utf-8")
+    return path
+
+
+def _flatten_candidates(report: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for key in _CATEGORY_LIST_KEYS:
+        out.extend(report.get(key) or [])
+    return out
+
+
+def _candidate_with_id(report: dict[str, Any], cid: str) -> dict[str, Any]:
+    for c in _flatten_candidates(report):
+        if c.get("candidate_id") == cid:
+            return c
+    raise AssertionError(
+        f"no candidate with candidate_id={cid!r} found in report; "
+        f"available={[c.get('candidate_id') for c in _flatten_candidates(report)]}",
+    )
+
+
+class TestArtifactAuditDefaultIsNoop(unittest.TestCase):
+    """Default behavior (no --artifact-dir) must remain byte-compatible."""
+
+    def test_no_artifact_dir_means_no_audit_fields(self) -> None:
+        path = _write_inbox([_entry(_GOOD_HEADLINE, candidate_id="abc123")])
+        try:
+            report = cli.run_section_c_daily_quality_diagnostic(
+                input_path=path,
+            )
+            for c in _flatten_candidates(report):
+                # 9-field invariant must hold — no artifact-audit
+                # fields when artifact_dir is not passed.
+                self.assertEqual(
+                    set(c.keys()), set(_CANDIDATE_FIELDS),
+                    f"default candidate dict gained an artifact-audit "
+                    f"field; got keys={sorted(c.keys())}",
+                )
+        finally:
+            os.unlink(path)
+
+    def test_no_artifact_dir_does_not_add_envelope_keys(self) -> None:
+        path = _write_inbox([_entry(_GOOD_HEADLINE)])
+        try:
+            report = cli.run_section_c_daily_quality_diagnostic(
+                input_path=path,
+            )
+            # Strict envelope-key invariant — no new top-level keys
+            # appear when artifact_dir is not passed.
+            self.assertEqual(set(report.keys()), set(_REQUIRED_KEYS))
+        finally:
+            os.unlink(path)
+
+
+class TestArtifactAuditComplete(unittest.TestCase):
+    """A row whose artifact is present and complete is reported as such."""
+
+    def test_present_and_complete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            cid = "fslr-ira-001"
+            _write_artifact(
+                artifact_dir, cid,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    "mechanism_family": "policy_driven_direct_beneficiary",
+                    "primary_ticker":   "FSLR",
+                    "benchmark_ticker": "SPY",
+                },
+            )
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id=cid)],
+            )
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                cand = _candidate_with_id(report, cid)
+                self.assertEqual(cand["candidate_id"], cid)
+                self.assertTrue(cand["artifact_present"])
+                self.assertTrue(cand["artifact_fields_complete"])
+                self.assertEqual(
+                    cand["artifact_filename"],
+                    f"analyzed_event_artifact_{cid}.json",
+                )
+                # Conditional fields absent on the happy path.
+                self.assertNotIn("artifact_missing_reason", cand)
+                self.assertNotIn("artifact_incomplete_fields", cand)
+            finally:
+                os.unlink(inbox_path)
+
+
+class TestArtifactAuditMissing(unittest.TestCase):
+    """A row with candidate_id but no on-disk artifact reports missing."""
+
+    def test_missing_artifact_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            cid = "no-artifact-on-disk-002"
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id=cid)],
+            )
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                cand = _candidate_with_id(report, cid)
+                self.assertEqual(cand["candidate_id"], cid)
+                self.assertFalse(cand["artifact_present"])
+                self.assertFalse(cand["artifact_fields_complete"])
+                reason = cand.get("artifact_missing_reason", "")
+                self.assertTrue(
+                    isinstance(reason, str) and reason,
+                    f"expected non-empty artifact_missing_reason; got {reason!r}",
+                )
+                # Filename + incomplete-fields keys absent when not on disk.
+                self.assertNotIn("artifact_filename", cand)
+                self.assertNotIn("artifact_incomplete_fields", cand)
+            finally:
+                os.unlink(inbox_path)
+
+
+class TestArtifactAuditIncomplete(unittest.TestCase):
+    """A present-but-incomplete artifact reports the missing field(s)."""
+
+    def test_missing_required_field_listed_in_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            cid = "incomplete-003"
+            _write_artifact(
+                artifact_dir, cid,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    # mechanism_family deliberately missing
+                    "primary_ticker":   "FSLR",
+                    "benchmark_ticker": "SPY",
+                },
+            )
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id=cid)],
+            )
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                cand = _candidate_with_id(report, cid)
+                self.assertTrue(cand["artifact_present"])
+                self.assertFalse(cand["artifact_fields_complete"])
+                self.assertIn("artifact_filename", cand)
+                incomplete = cand.get("artifact_incomplete_fields")
+                self.assertEqual(incomplete, ["mechanism_family"])
+                # missing_reason absent when the artifact is present.
+                self.assertNotIn("artifact_missing_reason", cand)
+            finally:
+                os.unlink(inbox_path)
+
+    def test_mechanism_family_none_sentinel_treated_as_incomplete(self) -> None:
+        # The gate treats mechanism_family == "none" as missing; the
+        # diagnostic mirrors that.
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            cid = "none-sentinel-004"
+            _write_artifact(
+                artifact_dir, cid,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    "mechanism_family": "none",
+                    "primary_ticker":   "FSLR",
+                    "benchmark_ticker": "SPY",
+                },
+            )
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id=cid)],
+            )
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                cand = _candidate_with_id(report, cid)
+                self.assertTrue(cand["artifact_present"])
+                self.assertFalse(cand["artifact_fields_complete"])
+                self.assertEqual(
+                    cand.get("artifact_incomplete_fields"),
+                    ["mechanism_family"],
+                )
+            finally:
+                os.unlink(inbox_path)
+
+
+class TestArtifactAuditNoCandidateId(unittest.TestCase):
+    """A row without a candidate_id can't resolve an artifact path."""
+
+    def test_no_candidate_id_reports_missing_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            inbox_path = _write_inbox(
+                # _entry helper doesn't set candidate_id by default.
+                [_entry(_GOOD_HEADLINE)],
+            )
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                # Flatten and grab the single candidate — there's only
+                # one entry in the inbox.
+                cands = _flatten_candidates(report)
+                self.assertEqual(len(cands), 1)
+                cand = cands[0]
+                self.assertIsNone(cand["candidate_id"])
+                self.assertFalse(cand["artifact_present"])
+                self.assertFalse(cand["artifact_fields_complete"])
+                reason = cand.get("artifact_missing_reason", "")
+                self.assertIn("candidate_id", reason)
+                self.assertNotIn("artifact_filename", cand)
+                self.assertNotIn("artifact_incomplete_fields", cand)
+            finally:
+                os.unlink(inbox_path)
+
+    def test_blank_candidate_id_string_treated_as_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id="   ")],
+            )
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                cand = _flatten_candidates(report)[0]
+                self.assertIsNone(cand["candidate_id"])
+                self.assertFalse(cand["artifact_present"])
+                self.assertIn(
+                    "candidate_id",
+                    cand.get("artifact_missing_reason", ""),
+                )
+            finally:
+                os.unlink(inbox_path)
+
+
+class TestArtifactAuditMultipleRows(unittest.TestCase):
+    """Each candidate is audited independently and shares dict identity
+    across category lists, so the in-place audit propagates cleanly."""
+
+    def test_three_rows_independent_audits(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            # Row A: full artifact present + complete
+            cid_a = "row-a-complete"
+            _write_artifact(
+                artifact_dir, cid_a,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid_a,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    "mechanism_family": "supply_shock",
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "XLE",
+                },
+            )
+            # Row B: artifact present but missing primary_ticker
+            cid_b = "row-b-incomplete"
+            _write_artifact(
+                artifact_dir, cid_b,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid_b,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    "mechanism_family": "supply_shock",
+                    # primary_ticker absent
+                    "benchmark_ticker": "XLE",
+                },
+            )
+            # Row C: no artifact file on disk
+            cid_c = "row-c-missing"
+            inbox_path = _write_inbox([
+                _entry(_GOOD_HEADLINE, candidate_id=cid_a),
+                _entry(_GOOD_HEADLINE + " (variant B)", candidate_id=cid_b),
+                _entry(_GOOD_HEADLINE + " (variant C)", candidate_id=cid_c),
+            ])
+            try:
+                report = cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                a = _candidate_with_id(report, cid_a)
+                b = _candidate_with_id(report, cid_b)
+                c = _candidate_with_id(report, cid_c)
+                # A: present + complete
+                self.assertTrue(a["artifact_present"])
+                self.assertTrue(a["artifact_fields_complete"])
+                # B: present but incomplete (primary_ticker)
+                self.assertTrue(b["artifact_present"])
+                self.assertFalse(b["artifact_fields_complete"])
+                self.assertEqual(
+                    b.get("artifact_incomplete_fields"),
+                    ["primary_ticker"],
+                )
+                # C: missing file
+                self.assertFalse(c["artifact_present"])
+                self.assertFalse(c["artifact_fields_complete"])
+                self.assertIn(
+                    "no analyzed_event_artifact",
+                    c.get("artifact_missing_reason", ""),
+                )
+            finally:
+                os.unlink(inbox_path)
+
+
+class TestArtifactAuditDoesNotWriteFiles(unittest.TestCase):
+    """The audit is read-only — no file under artifact_dir is created
+    or modified by the diagnostic."""
+
+    def test_artifact_dir_is_not_mutated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            cid = "readonly-check"
+            artifact_path = _write_artifact(
+                artifact_dir, cid,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    "mechanism_family": "supply_shock",
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "XLE",
+                },
+            )
+            before_hash = _sha256(str(artifact_path))
+            before_files = sorted(p.name for p in artifact_dir.iterdir())
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id=cid)],
+            )
+            try:
+                cli.run_section_c_daily_quality_diagnostic(
+                    input_path=inbox_path,
+                    artifact_dir=str(artifact_dir),
+                )
+                after_hash = _sha256(str(artifact_path))
+                after_files = sorted(p.name for p in artifact_dir.iterdir())
+                self.assertEqual(before_hash, after_hash,
+                                 "audit must not mutate artifact bytes")
+                self.assertEqual(before_files, after_files,
+                                 "audit must not create or remove files")
+            finally:
+                os.unlink(inbox_path)
+
+
+class TestArtifactAuditCLI(unittest.TestCase):
+    """The CLI exposes --artifact-dir and threads it through main."""
+
+    def _run(self, argv: list[str]) -> tuple[int, str]:
+        buf = StringIO()
+        try:
+            rc = cli.main(argv, out=buf)
+        except SystemExit as exc:
+            rc = exc.code if isinstance(exc.code, int) else 1
+        return rc, buf.getvalue()
+
+    def test_cli_with_artifact_dir_emits_audit_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            cid = "cli-test-005"
+            _write_artifact(
+                artifact_dir, cid,
+                {
+                    "artifact_type":    "analyzed_event_artifact",
+                    "candidate_id":     cid,
+                    "headline":         _GOOD_HEADLINE,
+                    "event_date":       "2022-07-28",
+                    "mechanism_family": "supply_shock",
+                    "primary_ticker":   "XOM",
+                    "benchmark_ticker": "XLE",
+                },
+            )
+            inbox_path = _write_inbox(
+                [_entry(_GOOD_HEADLINE, candidate_id=cid)],
+            )
+            try:
+                rc, output = self._run([
+                    "--input", inbox_path, "--json",
+                    "--artifact-dir", str(artifact_dir),
+                ])
+                self.assertEqual(rc, 0)
+                parsed = json.loads(output)
+                # Envelope still satisfies the strict key set; audit
+                # fields appear on candidates only.
+                self.assertEqual(set(parsed.keys()), set(_REQUIRED_KEYS))
+                cands = _flatten_candidates(parsed)
+                self.assertEqual(len(cands), 1)
+                cand = cands[0]
+                self.assertEqual(cand["candidate_id"], cid)
+                self.assertTrue(cand["artifact_present"])
+                self.assertTrue(cand["artifact_fields_complete"])
+            finally:
+                os.unlink(inbox_path)
+
+
 if __name__ == "__main__":
     unittest.main()
