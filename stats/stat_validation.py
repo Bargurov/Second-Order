@@ -22,12 +22,13 @@ relabeled "not significant" by this surface.
 
 Canonical fields
 ----------------
-The record exposes nine keys in a fixed order so a downstream renderer
+The record exposes ten keys in a fixed order so a downstream renderer
 can iterate :data:`STAT_VALIDATION_FIELDS` for stable layout::
 
     horizon                    int   >= 1, e.g. 1, 5, 20
-    abnormal_return            float | None
+    abnormal_return            float | None  (BHAR)
     sar                        float | None  (standardized AR)
+    car                        float | None  (cumulative AR, sum of daily ARs)
     ci_low                     float | None  (lower CI bound)
     ci_high                    float | None  (upper CI bound)
     p_value                    float | None  (raw p, in [0, 1])
@@ -81,6 +82,7 @@ STAT_VALIDATION_FIELDS: tuple[str, ...] = (
     "horizon",
     "abnormal_return",
     "sar",
+    "car",
     "ci_low",
     "ci_high",
     "p_value",
@@ -304,13 +306,14 @@ def make_stat_validation_record(
     horizon:         int,
     abnormal_return: Any,
     sar:             Any,
+    car:             Any = None,
     ci_low:          Any,
     ci_high:         Any,
     p_value:         Any,
     fdr_q:           Any,
     alpha:           float = DEFAULT_ALPHA,
 ) -> dict[str, Any]:
-    """Compose a full nine-field validation record.
+    """Compose a full ten-field validation record.
 
     Validates each input, derives ``statistically_significant`` from
     ``fdr_q`` vs ``alpha``, and labels ``interpretation`` from the
@@ -323,8 +326,6 @@ def make_stat_validation_record(
     ``Optional[float]`` (NaN → None) so the record is JSON-serializable
     with ``allow_nan=False``.
     """
-    # Validate alpha early so a bad alpha aborts before we build a
-    # half-formed record.
     alpha_f = _validate_alpha(alpha)
 
     es  = make_event_study_fields(
@@ -343,12 +344,11 @@ def make_stat_validation_record(
         statistically_significant=significant,
     )
 
-    # Insert in canonical order so iteration matches
-    # STAT_VALIDATION_FIELDS row-for-row.
     record: dict[str, Any] = {}
     record["horizon"]                   = es["horizon"]
     record["abnormal_return"]           = es["abnormal_return"]
     record["sar"]                       = es["sar"]
+    record["car"]                       = _coerce_optional_number(car, "car")
     record["ci_low"]                    = ci["ci_low"]
     record["ci_high"]                   = ci["ci_high"]
     record["p_value"]                   = fdr["p_value"]

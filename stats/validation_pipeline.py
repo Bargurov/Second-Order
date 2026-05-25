@@ -228,9 +228,14 @@ def _ingest_row(
                 fields.get("sar"),
                 label=f"horizons[{h}].sar",
             )
+            car = _coerce_optional_number(
+                fields.get("car"),
+                label=f"horizons[{h}].car",
+            )
             bucket = by_horizon[h]
             bucket["ar"].append(ar)   # type: ignore[arg-type]
             bucket["sar"].append(sar)  # type: ignore[arg-type]
+            bucket["car"].append(car)  # type: ignore[arg-type]
         return
 
     # Form 2: flat per-horizon row.
@@ -243,9 +248,11 @@ def _ingest_row(
         row.get("abnormal_return"), label="abnormal_return",
     )
     sar = _coerce_optional_number(row.get("sar"), label="sar")
+    car = _coerce_optional_number(row.get("car"), label="car")
     bucket = by_horizon[h]
     bucket["ar"].append(ar)   # type: ignore[arg-type]
     bucket["sar"].append(sar)  # type: ignore[arg-type]
+    bucket["car"].append(car)  # type: ignore[arg-type]
 
 
 def _mean_of_finite(values: list[Any]) -> float | None:
@@ -357,7 +364,7 @@ def run_validation_pipeline(
         ) from exc
 
     by_horizon: dict[int, dict[str, list[float]]] = defaultdict(
-        lambda: {"ar": [], "sar": []},
+        lambda: {"ar": [], "sar": [], "car": []},
     )
     for row in rows:
         _ingest_row(row, by_horizon=by_horizon)
@@ -375,8 +382,11 @@ def run_validation_pipeline(
         ar_obs  = by_horizon[h]["ar"]
         sar_obs = by_horizon[h]["sar"]
 
+        car_obs = by_horizon[h]["car"]
+
         mean_ar  = _mean_of_finite(ar_obs)
         mean_sar = _mean_of_finite(sar_obs)
+        mean_car = _mean_of_finite(car_obs)
 
         # Sort the AR sample before bootstrapping so the seeded percentile
         # bootstrap is order-invariant w.r.t. the input row order — same
@@ -403,6 +413,7 @@ def run_validation_pipeline(
             "horizon":         h,
             "abnormal_return": mean_ar,
             "sar":             mean_sar,
+            "car":             mean_car,
             "ci_low":          ci_low,
             "ci_high":         ci_high,
         })
@@ -421,6 +432,7 @@ def run_validation_pipeline(
             horizon=slot["horizon"],
             abnormal_return=slot["abnormal_return"],
             sar=slot["sar"],
+            car=slot["car"],
             ci_low=slot["ci_low"],
             ci_high=slot["ci_high"],
             p_value=raw_p,

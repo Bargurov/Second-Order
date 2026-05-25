@@ -53,6 +53,7 @@ class TestFieldShape(unittest.TestCase):
             "horizon",
             "abnormal_return",
             "sar",
+            "car",
             "ci_low",
             "ci_high",
             "p_value",
@@ -432,14 +433,41 @@ class TestComposedRecord(unittest.TestCase):
         )
         self.assertEqual(record["interpretation"], "insufficient_data")
 
+    def test_car_passes_through_when_provided(self) -> None:
+        record = sv.make_stat_validation_record(
+            **self._full_inputs(), car=0.045,
+        )
+        self.assertAlmostEqual(record["car"], 0.045)
+
+    def test_car_defaults_to_none_when_absent(self) -> None:
+        record = sv.make_stat_validation_record(**self._full_inputs())
+        self.assertIsNone(record["car"])
+
+    def test_car_does_not_affect_significance_or_interpretation(self) -> None:
+        base = self._full_inputs(fdr_q=0.03)
+        record_no_car = sv.make_stat_validation_record(**base)
+        record_with_car = sv.make_stat_validation_record(**base, car=0.12)
+        self.assertEqual(
+            record_no_car["statistically_significant"],
+            record_with_car["statistically_significant"],
+        )
+        self.assertEqual(
+            record_no_car["interpretation"],
+            record_with_car["interpretation"],
+        )
+
+    def test_car_nan_normalized_to_none(self) -> None:
+        record = sv.make_stat_validation_record(
+            **self._full_inputs(), car=float("nan"),
+        )
+        self.assertIsNone(record["car"])
+
     def test_record_is_json_serializable_with_nans_normalized(self) -> None:
-        # All optional numeric fields can be NaN at the input boundary
-        # but the composed record must round-trip through json.dumps
-        # without ``allow_nan=True`` — that's the no-NaN contract.
         record = sv.make_stat_validation_record(
             horizon=5,
             abnormal_return=float("nan"),
             sar=float("nan"),
+            car=float("nan"),
             ci_low=float("nan"),
             ci_high=float("nan"),
             p_value=float("nan"),
@@ -449,12 +477,10 @@ class TestComposedRecord(unittest.TestCase):
         decoded = json.loads(text)
         self.assertEqual(decoded["horizon"], 5)
         for k in (
-            "abnormal_return", "sar", "ci_low", "ci_high",
+            "abnormal_return", "sar", "car", "ci_low", "ci_high",
             "p_value", "fdr_q",
         ):
             self.assertIsNone(decoded[k])
-        # With every numeric input missing, significance defaults to
-        # False and interpretation to insufficient_data.
         self.assertFalse(decoded["statistically_significant"])
         self.assertEqual(decoded["interpretation"], "insufficient_data")
 

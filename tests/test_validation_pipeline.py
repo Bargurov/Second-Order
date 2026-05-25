@@ -96,11 +96,14 @@ def _flat_rows_from_outputs(outputs: list[dict]) -> list[dict]:
         if not es.get("available", False):
             continue
         for h, fields in es["horizons"].items():
-            rows.append({
+            row: dict = {
                 "horizon": int(h),
                 "abnormal_return": fields.get("abnormal_return"),
                 "sar": fields.get("sar"),
-            })
+            }
+            if "car" in fields:
+                row["car"] = fields.get("car")
+            rows.append(row)
     return rows
 
 
@@ -688,6 +691,52 @@ class TestEndToEnd(unittest.TestCase):
         c = vp.run_validation_pipeline(outputs, seed=0)
         self.assertEqual(a, b)
         self.assertEqual(b, c)
+
+
+# ---------------------------------------------------------------------------
+# CAR passthrough
+# ---------------------------------------------------------------------------
+
+
+class TestCARPassthrough(unittest.TestCase):
+
+    def test_car_from_event_study_output_reaches_record(self):
+        outputs = _build_event_study_outputs(n_events=1)
+        out = vp.run_validation_pipeline(outputs, seed=0, min_samples=1)
+        for rec in out:
+            self.assertIn("car", rec)
+
+    def test_car_is_none_when_input_lacks_car(self):
+        rows = [
+            {"horizon": 1, "abnormal_return": 0.05, "sar": 2.0},
+        ]
+        out = vp.run_validation_pipeline(rows, seed=0, min_samples=1)
+        self.assertIsNone(out[0]["car"])
+
+    def test_car_does_not_change_ar_or_significance(self):
+        rows_no_car = [
+            {"horizon": 1, "abnormal_return": 0.05, "sar": 2.0},
+        ]
+        rows_with_car = [
+            {"horizon": 1, "abnormal_return": 0.05, "sar": 2.0, "car": 0.048},
+        ]
+        out_no  = vp.run_validation_pipeline(rows_no_car,   seed=0, min_samples=1)
+        out_yes = vp.run_validation_pipeline(rows_with_car, seed=0, min_samples=1)
+        self.assertEqual(out_no[0]["abnormal_return"], out_yes[0]["abnormal_return"])
+        self.assertEqual(out_no[0]["sar"], out_yes[0]["sar"])
+        self.assertEqual(out_no[0]["p_value"], out_yes[0]["p_value"])
+        self.assertEqual(
+            out_no[0]["statistically_significant"],
+            out_yes[0]["statistically_significant"],
+        )
+
+    def test_car_mean_across_multiple_events(self):
+        rows = [
+            {"horizon": 1, "abnormal_return": 0.05, "sar": 2.0, "car": 0.04},
+            {"horizon": 1, "abnormal_return": 0.06, "sar": 2.2, "car": 0.06},
+        ]
+        out = vp.run_validation_pipeline(rows, seed=0, min_samples=1)
+        self.assertAlmostEqual(out[0]["car"], 0.05, places=10)
 
 
 if __name__ == "__main__":
