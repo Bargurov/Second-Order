@@ -34,6 +34,8 @@ export interface CohortSummary {
   raw_p_candidate_count?: number;
   horizons_covered?: number[];
   mechanism_families_covered?: string[];
+  method?: string;
+  all_pass_q_005?: boolean;
 }
 
 export interface VerdictCounts {
@@ -52,6 +54,27 @@ export interface BenchmarkSensitivityStatus {
   blocked_events?: number[];
 }
 
+export interface V2CandidateRecord {
+  rank_in_cohort?: number;
+  primary_ticker: string;
+  benchmark_ticker: string;
+  mechanism_family: string;
+  h1_AR_pct?: number | null;
+  h1_SAR?: number | null;
+  h1_q_bh?: number | null;
+  claim_horizon?: string;
+  method?: string;
+  cache_backed?: boolean;
+  fdr_significant?: boolean;
+  [key: string]: unknown;
+}
+
+export interface V2RobustnessEntry {
+  status: string;
+  row: string;
+  resolution_summary: string;
+}
+
 export interface EvidenceSummaryResponse {
   ok: boolean;
   section: string;
@@ -63,6 +86,13 @@ export interface EvidenceSummaryResponse {
   limitations: string[];
   warnings: string[];
   errors: string[];
+  artifact_schema_version?: string;
+  demo_bundle?: string;
+  source?: string;
+  records?: V2CandidateRecord[];
+  robustness_status?: Record<string, V2RobustnessEntry>;
+  methodology_notes?: Record<string, unknown>;
+  selection_bias_disclosure?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,6 +135,9 @@ export const LABELS = {
   emptyCohort:         "No cohort summary returned.",
   emptyBenchmark:      "No benchmark sensitivity status returned.",
   emptyLimitations:    "No limitations recorded by the source.",
+  v2RecordsHeading:    "Cohort candidates",
+  v2RobustnessHeading: "Robustness checks",
+  v2CaveatsHeading:    "Scope",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -239,6 +272,161 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
+// v2 formatting helpers
+// ---------------------------------------------------------------------------
+
+function fmtAR(v: number | null | undefined): string {
+  if (v == null) return "—";
+  return (v >= 0 ? "+" : "") + v.toFixed(2);
+}
+
+function fmtSAR(v: number | null | undefined): string {
+  if (v == null) return "—";
+  return v.toFixed(2);
+}
+
+function fmtQ(v: number | null | undefined): string {
+  if (v == null) return "—";
+  if (v < 0.001) return v.toExponential(2);
+  return v.toFixed(4);
+}
+
+// ---------------------------------------------------------------------------
+// v2 sub-views
+// ---------------------------------------------------------------------------
+
+function V2SourceBar({
+  method,
+  source,
+  bundle,
+}: {
+  method: string;
+  source: string;
+  bundle: string;
+}) {
+  const items = [
+    { label: "method", value: method.replace(/_/g, " ") },
+    { label: "source", value: source.replace(/_/g, " ") },
+    { label: "bundle", value: bundle },
+  ];
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((it) => (
+        <span
+          key={it.label}
+          className={cn(
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded",
+            "text-[9px] font-medium",
+            "bg-surface-container-highest/50",
+          )}
+        >
+          <span className="uppercase tracking-[0.08em] text-on-surface-variant/40">
+            {it.label}
+          </span>
+          <span className="text-on-surface-variant/70 tabular-nums">{it.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function V2RecordsTable({ records }: { records: V2CandidateRecord[] }) {
+  if (records.length === 0) return null;
+  return (
+    <div className="rounded-md bg-surface-container-highest/30 p-3">
+      <SectionHeading>{LABELS.v2RecordsHeading}</SectionHeading>
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-[10px]">
+          <thead>
+            <tr className="text-on-surface-variant/40 font-medium uppercase tracking-[0.06em]">
+              <th className="text-left py-1 px-1 font-medium">Pair</th>
+              <th className="text-left py-1 px-1 font-medium">Mechanism</th>
+              <th className="text-right py-1 px-1 font-medium">AR%</th>
+              <th className="text-right py-1 px-1 font-medium">SAR</th>
+              <th className="text-right py-1 px-1 font-medium">q(BH)</th>
+              <th className="text-left py-1 px-1 font-medium">Claim</th>
+            </tr>
+          </thead>
+          <tbody className="text-on-surface-variant/80">
+            {records.map((r, i) => (
+              <tr key={i} className="border-t border-outline-variant/8">
+                <td className="py-1 px-1 font-medium text-on-surface/90 whitespace-nowrap tabular-nums">
+                  {r.primary_ticker}/{r.benchmark_ticker}
+                </td>
+                <td className="py-1 px-1 text-on-surface-variant/60 max-w-[120px] truncate">
+                  {r.mechanism_family}
+                </td>
+                <td className="py-1 px-1 text-right tabular-nums">{fmtAR(r.h1_AR_pct)}</td>
+                <td className="py-1 px-1 text-right tabular-nums">{fmtSAR(r.h1_SAR)}</td>
+                <td className="py-1 px-1 text-right tabular-nums">{fmtQ(r.h1_q_bh)}</td>
+                <td className="py-1 px-1 text-on-surface-variant/60 whitespace-nowrap">
+                  {r.claim_horizon ?? "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function V2RobustnessStatus({
+  status,
+}: {
+  status: Record<string, V2RobustnessEntry>;
+}) {
+  const entries = Object.entries(status);
+  if (entries.length === 0) return null;
+  return (
+    <div className="rounded-md bg-surface-container-highest/30 p-3">
+      <SectionHeading>{LABELS.v2RobustnessHeading}</SectionHeading>
+      <div className="space-y-1.5">
+        {entries.map(([key, entry]) => (
+          <div key={key} className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] text-on-surface-variant/65 truncate min-w-0">
+              {entry.row}
+            </span>
+            <span
+              className={cn(
+                "ml-auto shrink-0 text-[9px] font-medium uppercase tracking-[0.06em]",
+                "px-1.5 py-px rounded",
+                "bg-primary/8 text-primary/70",
+              )}
+            >
+              {entry.status.replace(/_/g, " ")}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function V2Caveats() {
+  const lines = [
+    "FDR applies only inside the frozen five h=1 tests.",
+    "This is frozen historical evidence, not live archive output.",
+  ];
+  return (
+    <div className="rounded-md bg-surface-container-highest/30 p-3">
+      <SectionHeading>{LABELS.v2CaveatsHeading}</SectionHeading>
+      <div className="space-y-1">
+        {lines.map((text, i) => (
+          <p
+            key={i}
+            className="flex items-start gap-2 text-[10px] leading-relaxed text-on-surface-variant/55"
+          >
+            <span className="mt-1.5 h-1 w-1 rounded-full shrink-0 bg-on-surface-variant/20" />
+            {text}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Top-level panel
 // ---------------------------------------------------------------------------
 
@@ -262,6 +450,8 @@ export function EvidenceSummaryPanel({ data, className }: EvidenceSummaryPanelPr
     warnings,
     errors,
   } = data;
+
+  const isV2 = data.artifact_schema_version === "v2";
 
   const advisories = pickAdvisories({
     fdr_significant_count,
@@ -295,6 +485,15 @@ export function EvidenceSummaryPanel({ data, className }: EvidenceSummaryPanelPr
           </h2>
         </div>
       </header>
+
+      {/* v2 source bar */}
+      {isV2 && data.source && data.demo_bundle && (
+        <V2SourceBar
+          method={cohort_summary.method ?? ""}
+          source={data.source}
+          bundle={data.demo_bundle}
+        />
+      )}
 
       {/* Errors — preserved verbatim from API */}
       {errors.length > 0 && (
@@ -429,6 +628,19 @@ export function EvidenceSummaryPanel({ data, className }: EvidenceSummaryPanelPr
           />
         </div>
       </div>
+
+      {/* v2 cohort records table */}
+      {isV2 && data.records && data.records.length > 0 && (
+        <V2RecordsTable records={data.records} />
+      )}
+
+      {/* v2 robustness status */}
+      {isV2 && data.robustness_status && Object.keys(data.robustness_status).length > 0 && (
+        <V2RobustnessStatus status={data.robustness_status} />
+      )}
+
+      {/* v2 scope caveats */}
+      {isV2 && <V2Caveats />}
 
       {/* Benchmark sensitivity */}
       <div className="rounded-md bg-surface-container-highest/30 p-3">
