@@ -2,7 +2,7 @@
 
 Pure numpy compute path.  Given two aligned price arrays (asset +
 benchmark), an ``event_index``, and one or more horizons, returns
-four numbers per horizon:
+five numbers per horizon:
 
   * ``raw_return``       — buy-and-hold return of the asset over the
                            horizon: ``(P[t+h] - P[t]) / P[t]``.
@@ -16,6 +16,12 @@ four numbers per horizon:
                            the daily AR series over the estimation
                            window (``event_index - estimation_window
                            .. event_index``).
+  * ``car``              — cumulative abnormal return: the sum of the
+                           daily abnormal returns from ``event_index+1``
+                           through ``event_index+h``.  At ``h=1`` this
+                           equals the BHAR ``abnormal_return`` exactly;
+                           at larger horizons the two diverge because
+                           BHAR compounds while CAR sums.
 
 Convention notes
 ----------------
@@ -24,8 +30,10 @@ denominator come from two different return conventions (compounded
 vs additive).  At horizons ≤20 days the theoretical mismatch is
 small; the engine intentionally surfaces the buy-and-hold AR (what
 an investor would observe) and uses the additive-AR sigma scaling
-(what is computable cheaply from a daily AR series).  Callers who
-need the classical sum-of-daily-AR CAR should compute it separately.
+(what is computable cheaply from a daily AR series).  The ``car``
+field provides the classical sum-of-daily-AR measure alongside
+the BHAR ``abnormal_return`` so callers can compare both without
+re-deriving the daily AR series.
 
 Read-only / no I/O
 ------------------
@@ -70,6 +78,7 @@ def _empty_horizons(horizons: Sequence[int]) -> dict[int, dict]:
             "benchmark_return": None,
             "abnormal_return":  None,
             "sar":              None,
+            "car":              None,
         }
         for h in horizons
     }
@@ -204,7 +213,23 @@ def compute_event_study(
     else:
         sigma_ar_daily_value = sigma_ar_daily
 
-    # Per-horizon AR + SAR ---------------------------------------------------
+    # Event-window daily ARs for CAR computation -----------------------------
+    if horizons:
+        max_forward = max(horizons)
+        max_forward_idx = min(event_index + max_forward, n - 1)
+        if max_forward_idx > event_index:
+            asset_event = asset[event_index: max_forward_idx + 1]
+            bench_event = bench[event_index: max_forward_idx + 1]
+            asset_event_ret = (asset_event[1:] / asset_event[:-1]) - 1.0
+            bench_event_ret = (bench_event[1:] / bench_event[:-1]) - 1.0
+            daily_ar_event = asset_event_ret - bench_event_ret
+            cum_ar = np.cumsum(daily_ar_event)
+        else:
+            cum_ar = np.array([], dtype=float)
+    else:
+        cum_ar = np.array([], dtype=float)
+
+    # Per-horizon AR + SAR + CAR --------------------------------------------
     event_close_asset = float(asset[event_index])
     event_close_bench = float(bench[event_index])
     horizon_results: dict[int, dict] = {}
@@ -221,6 +246,7 @@ def compute_event_study(
                 "benchmark_return": None,
                 "abnormal_return":  None,
                 "sar":              None,
+                "car":              None,
             }
             continue
 
@@ -231,11 +257,13 @@ def compute_event_study(
             sar: float | None = ar / (sigma_ar_daily * math.sqrt(h))
         else:
             sar = None
+        car: float | None = float(cum_ar[h - 1]) if h <= cum_ar.size else None
         horizon_results[h] = {
             "raw_return":       raw,
             "benchmark_return": bench_ret,
             "abnormal_return":  ar,
             "sar":              sar,
+            "car":              car,
         }
 
     return {

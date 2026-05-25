@@ -144,6 +144,7 @@ _REQUIRED_HORIZON_FIELDS = (
     "benchmark_return",
     "abnormal_return",
     "sar",
+    "car",
 )
 
 
@@ -558,6 +559,177 @@ class TestNoForbiddenSideEffects(unittest.TestCase):
     def test_module_does_not_carry_app_or_router(self) -> None:
         self.assertFalse(hasattr(event_study, "app"))
         self.assertFalse(hasattr(event_study, "router"))
+
+
+# ---------------------------------------------------------------------------
+# CAR (cumulative abnormal return) output
+# ---------------------------------------------------------------------------
+
+
+def _build_known_car_fixture() -> dict:
+    """Fixture with constant daily ARs in the event window.
+
+    Estimation window: 5 daily returns (same alternating pattern as the
+    known-sigma fixture → sigma_ar_daily = 0.01).
+
+    Event window: 5 forward days.
+      * asset daily return:     +3% per day
+      * benchmark daily return: +1% per day
+      * daily AR:               +2% per day (constant)
+
+    Expected CAR:
+      * CAR_1 = 0.02
+      * CAR_5 = 5 × 0.02 = 0.10
+
+    Expected BHAR (for comparison):
+      * BHAR_1 = 0.03 − 0.01 = 0.02  (identical to CAR at h=1)
+      * BHAR_5 = (1.03^5 − 1) − (1.01^5 − 1) ≈ 0.108264  (differs)
+    """
+    asset_returns_est = [0.01, -0.01, 0.01, -0.01, 0.0]
+    asset_prices: list[float] = [100.0]
+    for r in asset_returns_est:
+        asset_prices.append(asset_prices[-1] * (1.0 + r))
+    event_close = asset_prices[-1]
+
+    bench_prices: list[float] = [100.0] * 6
+
+    n_forward = 5
+    for _ in range(n_forward):
+        asset_prices.append(asset_prices[-1] * 1.03)
+        bench_prices.append(bench_prices[-1] * 1.01)
+
+    bhar_5 = (1.03**5 - 1.0) - (1.01**5 - 1.0)
+    return {
+        "asset_prices":      asset_prices,
+        "benchmark_prices":  bench_prices,
+        "event_index":       5,
+        "estimation_window": 5,
+        "event_close":       event_close,
+        "daily_event_ar":    0.02,
+        "expected_car":      {1: 0.02, 5: 0.10},
+        "expected_bhar":     {1: 0.02, 5: bhar_5},
+    }
+
+
+class TestCAROutput(unittest.TestCase):
+
+    def test_car_h1_equals_first_daily_ar(self) -> None:
+        f = _build_known_car_fixture()
+        result = event_study.compute_event_study(
+            asset_prices=f["asset_prices"],
+            benchmark_prices=f["benchmark_prices"],
+            event_index=f["event_index"],
+            estimation_window=f["estimation_window"],
+            horizons=(1, 5),
+        )
+        self.assertAlmostEqual(
+            result["horizons"][1]["car"],
+            f["expected_car"][1],
+            places=10,
+            msg="CAR at h=1 must equal the first event-window daily AR",
+        )
+
+    def test_car_h5_equals_sum_of_five_daily_ars(self) -> None:
+        f = _build_known_car_fixture()
+        result = event_study.compute_event_study(
+            asset_prices=f["asset_prices"],
+            benchmark_prices=f["benchmark_prices"],
+            event_index=f["event_index"],
+            estimation_window=f["estimation_window"],
+            horizons=(1, 5),
+        )
+        self.assertAlmostEqual(
+            result["horizons"][5]["car"],
+            f["expected_car"][5],
+            places=10,
+            msg="CAR at h=5 must equal sum of 5 event-window daily ARs",
+        )
+
+    def test_car_equals_bhar_at_h1(self) -> None:
+        f = _build_known_car_fixture()
+        result = event_study.compute_event_study(
+            asset_prices=f["asset_prices"],
+            benchmark_prices=f["benchmark_prices"],
+            event_index=f["event_index"],
+            estimation_window=f["estimation_window"],
+            horizons=(1, 5),
+        )
+        h1 = result["horizons"][1]
+        self.assertAlmostEqual(
+            h1["car"], h1["abnormal_return"], places=10,
+            msg="At h=1 CAR and BHAR must be identical",
+        )
+
+    def test_car_differs_from_bhar_at_h5(self) -> None:
+        f = _build_known_car_fixture()
+        result = event_study.compute_event_study(
+            asset_prices=f["asset_prices"],
+            benchmark_prices=f["benchmark_prices"],
+            event_index=f["event_index"],
+            estimation_window=f["estimation_window"],
+            horizons=(1, 5),
+        )
+        h5 = result["horizons"][5]
+        car = h5["car"]
+        bhar = h5["abnormal_return"]
+        self.assertAlmostEqual(car,  f["expected_car"][5],  places=10)
+        self.assertAlmostEqual(bhar, f["expected_bhar"][5], places=8)
+        self.assertNotAlmostEqual(
+            car, bhar, places=3,
+            msg="CAR and BHAR must diverge at h=5 due to compounding",
+        )
+
+    def test_existing_bhar_sar_unchanged_with_car_present(self) -> None:
+        f = _build_known_sigma_fixture()
+        result = event_study.compute_event_study(
+            asset_prices=f["asset_prices"],
+            benchmark_prices=f["benchmark_prices"],
+            event_index=f["event_index"],
+            estimation_window=f["estimation_window"],
+        )
+        for h, expected in f["expected"].items():
+            entry = result["horizons"][h]
+            self.assertAlmostEqual(
+                entry["raw_return"], expected["raw_return"], places=10,
+                msg=f"h={h} raw_return must be unchanged",
+            )
+            self.assertAlmostEqual(
+                entry["abnormal_return"], expected["abnormal_return"],
+                places=10, msg=f"h={h} BHAR must be unchanged",
+            )
+            self.assertAlmostEqual(
+                entry["sar"], expected["sar"], places=10,
+                msg=f"h={h} SAR must be unchanged",
+            )
+            self.assertIn("car", entry, f"h={h} must carry car field")
+            self.assertIsNotNone(entry["car"], f"h={h} car must not be None")
+
+    def test_car_none_when_horizon_overflows(self) -> None:
+        f = _build_known_car_fixture()
+        result = event_study.compute_event_study(
+            asset_prices=f["asset_prices"],
+            benchmark_prices=f["benchmark_prices"],
+            event_index=f["event_index"],
+            estimation_window=f["estimation_window"],
+            horizons=(1, 5, 20),
+        )
+        self.assertIsNotNone(result["horizons"][1]["car"])
+        self.assertIsNotNone(result["horizons"][5]["car"])
+        self.assertIsNone(
+            result["horizons"][20]["car"],
+            "CAR must be None when horizon overflows the price array",
+        )
+
+    def test_car_none_when_estimation_window_insufficient(self) -> None:
+        result = event_study.compute_event_study(
+            asset_prices=[100.0 + i * 0.1 for i in range(50)],
+            benchmark_prices=[100.0 + i * 0.05 for i in range(50)],
+            event_index=5,
+            estimation_window=60,
+            horizons=(1,),
+        )
+        self.assertFalse(result["available"])
+        self.assertIsNone(result["horizons"][1]["car"])
 
 
 if __name__ == "__main__":
