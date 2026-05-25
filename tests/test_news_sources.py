@@ -306,7 +306,7 @@ class TestLoadRss(unittest.TestCase):
         self.assertEqual(socket.getdefaulttimeout(), original_timeout)
 
     def test_default_feeds_list_count(self):
-        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 35)
+        self.assertEqual(len(news_sources.DEFAULT_FEEDS), 37)
 
     def test_guardian_is_in_default_feeds(self):
         names = [f["name"] for f in news_sources.DEFAULT_FEEDS]
@@ -381,6 +381,8 @@ class TestLoadRss(unittest.TestCase):
                 "imf.org",            # IMF News direct RSS
                 "site:worldbank.org", # World Bank via Google News
                 "export+controls",    # Semiconductor Trade Google News
+                "fda.gov",            # FDA Press Releases direct RSS
+                "usda.gov",           # USDA News direct RSS
             ])
             self.assertTrue(
                 has_section,

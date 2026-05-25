@@ -202,5 +202,61 @@ class TestMetadataCoverage(unittest.TestCase):
         self.assertEqual(missing, [], f"Feeds without metadata: {missing}")
 
 
+class TestNewFeedCoverage(unittest.TestCase):
+    """Pin that the healthcare and agriculture feeds are correctly wired."""
+
+    def test_fda_feed_in_default_feeds(self) -> None:
+        from news_fetch import DEFAULT_FEEDS
+        names = [f["name"] for f in DEFAULT_FEEDS]
+        self.assertIn("FDA Press Releases", names)
+
+    def test_usda_feed_in_default_feeds(self) -> None:
+        from news_fetch import DEFAULT_FEEDS
+        names = [f["name"] for f in DEFAULT_FEEDS]
+        self.assertIn("USDA News", names)
+
+    def test_fda_feed_has_metadata(self) -> None:
+        self.assertIn("FDA Press Releases", FEED_METADATA)
+        meta = FEED_METADATA["FDA Press Releases"]
+        self.assertIn("healthcare", meta["sectors"])
+        self.assertIn("americas", meta["regions"])
+
+    def test_usda_feed_has_metadata(self) -> None:
+        self.assertIn("USDA News", FEED_METADATA)
+        meta = FEED_METADATA["USDA News"]
+        self.assertIn("agriculture", meta["sectors"])
+        self.assertIn("americas", meta["regions"])
+
+    def test_healthcare_sector_recognized(self) -> None:
+        self.assertIn("healthcare", ALL_SECTORS)
+
+    def test_agriculture_sector_recognized(self) -> None:
+        self.assertIn("agriculture", ALL_SECTORS)
+
+    def test_fda_passes_healthcare_sector_filter(self) -> None:
+        self.assertTrue(
+            _feed_passes("FDA Press Releases", frozenset({"healthcare"}), None))
+
+    def test_usda_passes_agriculture_sector_filter(self) -> None:
+        self.assertTrue(
+            _feed_passes("USDA News", frozenset({"agriculture"}), None))
+
+    def test_fda_excluded_by_energy_sector_filter(self) -> None:
+        self.assertFalse(
+            _feed_passes("FDA Press Releases", frozenset({"energy"}), None))
+
+    def test_no_duplicate_feed_names(self) -> None:
+        from news_fetch import DEFAULT_FEEDS
+        names = [f["name"] for f in DEFAULT_FEEDS]
+        self.assertEqual(len(names), len(set(names)),
+                         f"Duplicate names: {[n for n in names if names.count(n) > 1]}")
+
+    def test_no_duplicate_feed_urls(self) -> None:
+        from news_fetch import DEFAULT_FEEDS
+        urls = [f["url"] for f in DEFAULT_FEEDS]
+        self.assertEqual(len(urls), len(set(urls)),
+                         f"Duplicate URLs: {[u for u in urls if urls.count(u) > 1]}")
+
+
 if __name__ == "__main__":
     unittest.main()

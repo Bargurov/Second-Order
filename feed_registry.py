@@ -38,6 +38,8 @@ ALL_SECTORS: frozenset[str] = frozenset({
     "geopolitical", # Al Jazeera, AFP, BBC World, The Guardian World
     "commodities",  # Mining.com, freight/shipping, agricultural
     "tech",         # Semiconductor supply chain, export controls
+    "healthcare",   # FDA press releases, regulatory approvals
+    "agriculture",  # USDA news, crop reports, food policy
 })
 
 ALL_REGIONS: frozenset[str] = frozenset({
@@ -95,6 +97,9 @@ FEED_METADATA: dict[str, dict[str, list[str]]] = {
     "World Bank":             {"sectors": ["macro"],                    "regions": ["global"]},
     "Semiconductor Trade":    {"sectors": ["tech", "trade"],            "regions": ["global"]},
     "Africa Economy":         {"sectors": ["macro", "geopolitical"],    "regions": ["africa"]},
+    # Healthcare / agriculture — official agency feeds
+    "FDA Press Releases":     {"sectors": ["healthcare"],               "regions": ["americas"]},
+    "USDA News":              {"sectors": ["agriculture"],              "regions": ["americas"]},
 }
 
 

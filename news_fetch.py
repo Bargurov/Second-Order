@@ -65,6 +65,9 @@ _SOURCE_TIERS: dict[str, str] = {
     "USTR Trade Policy":      "high",
     "Fed Press Releases":     "high",
     "ECB Press Releases":     "high",
+    # Healthcare / agriculture — official agency feeds
+    "FDA Press Releases":     "high",
+    "USDA News":              "high",
     # Expanded coverage
     "Mining.com":             "medium",
     "Freight & Shipping":     "medium",
@@ -446,6 +449,16 @@ DEFAULT_FEEDS: list[dict] = [
     {
         "name": "Semiconductor Trade",
         "url":  "https://news.google.com/rss/search?q=semiconductor+chips+%22export+controls%22+OR+%22chip+ban%22+OR+%22supply+chain%22+trade&hl=en&gl=US&ceid=US:en",
+    },
+    # --- Healthcare / Regulatory ---
+    {
+        "name": "FDA Press Releases",
+        "url":  "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml",
+    },
+    # --- Agriculture / Food ---
+    {
+        "name": "USDA News",
+        "url":  "https://www.usda.gov/rss/latest-releases.xml",
     },
 ]
 
