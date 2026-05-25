@@ -2018,5 +2018,62 @@ class TestFeedSelection(unittest.TestCase):
                           f"{feed['name']} has unexpected tier '{tier}'")
 
 
+# ---------------------------------------------------------------------------
+# candidate_id — deterministic per-row identifier for artifact gate
+# ---------------------------------------------------------------------------
+
+
+class TestCandidateId(unittest.TestCase):
+
+    def test_record_carries_candidate_id(self):
+        rec = news_sources._make_record(
+            "BBC World", "OPEC extends output cuts", "2026-04-01", "http://ex.com",
+        )
+        self.assertIn("candidate_id", rec)
+        self.assertIsInstance(rec["candidate_id"], str)
+        self.assertEqual(len(rec["candidate_id"]), 16)
+
+    def test_candidate_id_is_deterministic(self):
+        a = news_sources._make_record("BBC World", "OPEC cuts", "2026-04-01", "http://a")
+        b = news_sources._make_record("BBC World", "OPEC cuts", "2026-04-01", "http://a")
+        self.assertEqual(a["candidate_id"], b["candidate_id"])
+
+    def test_different_inputs_yield_different_ids(self):
+        a = news_sources._make_record("BBC World", "OPEC cuts", "2026-04-01", "http://a")
+        b = news_sources._make_record("Reuters",   "Fed holds", "2026-04-02", "http://b")
+        self.assertNotEqual(a["candidate_id"], b["candidate_id"])
+
+    def test_candidate_id_hex_only(self):
+        rec = news_sources._make_record("local", "Trade sanctions", "2026-01-01", "")
+        self.assertTrue(all(c in "0123456789abcdef" for c in rec["candidate_id"]))
+
+    def test_local_load_rows_carry_candidate_id(self):
+        data = [{"title": "Trade war escalates", "source": "test", "published_at": "2026-01-01"}]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        try:
+            result = news_sources.load_local(path)
+            self.assertEqual(len(result), 1)
+            self.assertIn("candidate_id", result[0])
+            self.assertEqual(len(result[0]["candidate_id"]), 16)
+        finally:
+            os.remove(path)
+
+    def test_fetch_all_rows_carry_candidate_id(self):
+        data = [{"title": "OPEC oil supply cut announced", "source": "test"}]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        try:
+            result, _ = news_sources.fetch_all(local_path=path, feeds=[])
+            self.assertTrue(len(result) >= 1)
+            for row in result:
+                self.assertIn("candidate_id", row)
+                self.assertEqual(len(row["candidate_id"]), 16)
+        finally:
+            os.remove(path)
+
+
 if __name__ == "__main__":
     unittest.main()

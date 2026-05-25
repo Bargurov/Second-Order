@@ -7,6 +7,7 @@
 #
 # No database writes happen here — this module just collects and returns.
 
+import hashlib
 import json
 import logging
 import os
@@ -195,13 +196,41 @@ def normalize_headline(title: str) -> str:
     return _strip_attribution(t).strip()
 
 
+def _candidate_id(source: str, title: str, published_at: str, url: str) -> str:
+    """Deterministic candidate_id derived from (source, title, published_at, url).
+
+    The id is stable across runs given the same logical row, and stable
+    under cosmetic variants the normalizers already collapse: source
+    aliases (``normalize_source``) and prefix/attribution noise on the
+    headline (``normalize_headline``).  It lets the daily artifact gate
+    look up ``analyzed_event_artifact_<candidate_id>.json`` by id rather
+    than by headline string.
+
+    Returned as the first 16 hex characters of a SHA-256 digest — 64
+    bits of entropy, comfortable headroom for any plausible inbox
+    population.
+    """
+    parts = (
+        normalize_source(source or ""),
+        normalize_headline(title or ""),
+        (published_at or "").strip(),
+        (url or "").strip(),
+    )
+    joined = "\x1f".join(parts)  # ASCII unit-separator never appears in feed content
+    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:16]
+
+
 def _make_record(source: str, title: str, published_at: str, url: str = "") -> dict:
     """Build one normalized headline record."""
+    norm_title = normalize_headline(title)
+    norm_pub = _normalize_timestamp(published_at)
+    norm_url = url.strip()
     return {
         "source":       source,
-        "title":        normalize_headline(title),
-        "published_at": _normalize_timestamp(published_at),
-        "url":          url.strip(),
+        "title":        norm_title,
+        "published_at": norm_pub,
+        "url":          norm_url,
+        "candidate_id": _candidate_id(source, title, norm_pub, norm_url),
     }
 
 
