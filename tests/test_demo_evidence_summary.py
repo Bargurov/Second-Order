@@ -685,5 +685,183 @@ class TestImportIsolation(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# v2 schema — Section C v2 frozen evidence bundle
+# ---------------------------------------------------------------------------
+
+
+_V2_BUNDLE_PATH = os.path.join(
+    os.path.dirname(__file__), "..",
+    "demo_artifacts", "section_c_v2", "freeze_candidate_evidence.json",
+)
+
+_V1_DEMO_PATH = os.path.join(
+    os.path.dirname(__file__), "..",
+    "demo_artifacts", "section_c_v1", "freeze_candidate_evidence.json",
+)
+
+
+class TestV2SchemaDetection(unittest.TestCase):
+    """Verify the route detects v2 artifacts and returns a valid envelope."""
+
+    def setUp(self) -> None:
+        if not os.path.isfile(_V2_BUNDLE_PATH):
+            self.skipTest(
+                f"v2 demo bundle missing at {_V2_BUNDLE_PATH!r}; "
+                f"v2 tests are skipped"
+            )
+
+    def test_v2_returns_ok_true(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertTrue(
+            report["ok"],
+            f"v2 bundle must return ok=True; errors={report['errors']!r}",
+        )
+
+    def test_v2_has_no_errors(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertEqual(report["errors"], [])
+
+    def test_v2_returns_exactly_5_records(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertEqual(len(report.get("records", [])), 5)
+
+    def test_v2_carries_base_10_keys(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        for key in _REQUIRED_TOP_KEYS:
+            self.assertIn(key, report, f"missing base key: {key}")
+
+    def test_v2_carries_artifact_schema_version(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertEqual(report.get("artifact_schema_version"), "v2")
+
+    def test_v2_carries_demo_bundle_field(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertEqual(report.get("demo_bundle"), "section_c_v2")
+
+    def test_v2_carries_source_field(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertEqual(report.get("source"), "frozen_json_not_live_db")
+
+    def test_v2_includes_production_bhar_method(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        method = report.get("cohort_summary", {}).get("method", "")
+        self.assertEqual(method, "production_bhar")
+
+    def test_v2_all_records_are_fdr_significant(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        self.assertEqual(report["fdr_significant_count"], 5)
+        self.assertEqual(report["raw_p_candidate_count"], 0)
+
+    def test_v2_robustness_gaps_all_resolved(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        robustness = report.get("robustness_status", {})
+        self.assertTrue(
+            len(robustness) >= 3,
+            f"expected >= 3 robustness entries, got {len(robustness)}",
+        )
+        for gap_key, gap_val in robustness.items():
+            status = gap_val.get("status", "")
+            self.assertIn(
+                status, ("resolved", "resolved_cache_backed"),
+                f"robustness gap {gap_key!r} is not resolved: {status!r}",
+            )
+
+    def test_v2_records_carry_expected_tickers(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        tickers = sorted(r["primary_ticker"] for r in report.get("records", []))
+        self.assertEqual(tickers, ["CENX", "FSLR", "RIO", "TXT", "WHR"])
+
+    def test_v2_no_overclaim_tokens_in_prose(self) -> None:
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V2_BUNDLE_PATH,
+        )
+        joined = _collect_prose(report)
+        for token in _BANNED_OVERCLAIM_TOKENS:
+            self.assertNotIn(
+                token, joined,
+                f"banned overclaim token {token!r} in v2 prose: {joined!r}",
+            )
+
+    def test_v2_artifact_bytes_unchanged(self) -> None:
+        before = _sha256(_V2_BUNDLE_PATH)
+        src.build_demo_evidence_summary(artifact_path=_V2_BUNDLE_PATH)
+        after = _sha256(_V2_BUNDLE_PATH)
+        self.assertEqual(before, after)
+
+
+class TestV1StillWorksAfterV2Addition(unittest.TestCase):
+    """Confirm the v1 path is completely unchanged by the v2 addition."""
+
+    def test_v1_demo_bundle_returns_ok(self) -> None:
+        if not os.path.isfile(_V1_DEMO_PATH):
+            self.skipTest(f"v1 demo bundle missing at {_V1_DEMO_PATH!r}")
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V1_DEMO_PATH,
+        )
+        self.assertTrue(
+            report["ok"],
+            f"v1 demo bundle must still return ok=True; "
+            f"errors={report['errors']!r}",
+        )
+
+    def test_v1_demo_bundle_keys_exact(self) -> None:
+        if not os.path.isfile(_V1_DEMO_PATH):
+            self.skipTest(f"v1 demo bundle missing at {_V1_DEMO_PATH!r}")
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V1_DEMO_PATH,
+        )
+        self.assertEqual(set(report.keys()), set(_REQUIRED_TOP_KEYS))
+
+    def test_v1_does_not_carry_v2_fields(self) -> None:
+        if not os.path.isfile(_V1_DEMO_PATH):
+            self.skipTest(f"v1 demo bundle missing at {_V1_DEMO_PATH!r}")
+        report = src.build_demo_evidence_summary(
+            artifact_path=_V1_DEMO_PATH,
+        )
+        self.assertNotIn("artifact_schema_version", report)
+        self.assertNotIn("demo_bundle", report)
+        self.assertNotIn("records", report)
+
+    def test_v1_fixture_still_passes_exact_keys(self) -> None:
+        path = _write_artifact(_good_artifact())
+        try:
+            report = src.build_demo_evidence_summary(artifact_path=path)
+        finally:
+            os.remove(path)
+        self.assertEqual(set(report.keys()), set(_REQUIRED_TOP_KEYS))
+        self.assertTrue(report["ok"])
+
+    def test_v1_fixture_fdr_count_preserved(self) -> None:
+        path = _write_artifact(_good_artifact())
+        try:
+            report = src.build_demo_evidence_summary(artifact_path=path)
+        finally:
+            os.remove(path)
+        self.assertEqual(report["fdr_significant_count"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

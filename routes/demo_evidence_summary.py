@@ -19,6 +19,26 @@ path), walks the structure, and returns a single envelope that pins:
   own caveats with the source's read-only / freeze-candidate
   caveats.
 
+Schema versions
+---------------
+
+The source detects the artifact schema version at load time:
+
+* **v1** (default): the artifact carries ``records``,
+  ``cohort_summary``, ``verdict_counts``, and
+  ``benchmark_sensitivity_status`` at the top level.  The source reads
+  them directly.
+* **v2**: the artifact carries ``candidates``, ``cohort_statistics``,
+  ``robustness_gaps``, ``selection_bias_disclosure``, and
+  ``methodology_notes``.  The source maps these into the same 10-key
+  envelope the frontend expects, then adds non-breaking extra fields
+  (``artifact_schema_version``, ``demo_bundle``, ``source``,
+  ``records``, ``robustness_status``, ``methodology_notes``,
+  ``selection_bias_disclosure``).
+
+Detection: ``schema_version == "v2"`` OR the joint presence of
+``candidates`` and ``cohort_statistics``.
+
 Read-only by construction
 -------------------------
 
@@ -133,6 +153,15 @@ def build_demo_evidence_summary(
         )
         return _envelope(errors=errors, warnings=warnings)
 
+    # --- v2 schema detection and delegation --------------------------
+    schema_version = payload.get("schema_version")
+    if (
+        schema_version == "v2"
+        or ("candidates" in payload and "cohort_statistics" in payload)
+    ):
+        return _build_v2_envelope(payload, errors=errors, warnings=warnings)
+
+    # --- v1 schema (original path, unchanged) ------------------------
     cohort_summary = payload.get("cohort_summary")
     if not isinstance(cohort_summary, dict):
         cohort_summary = {}
@@ -178,6 +207,174 @@ def build_demo_evidence_summary(
         errors=errors,
         warnings=warnings,
     )
+
+
+def _build_v2_envelope(
+    payload: dict[str, Any],
+    *,
+    errors: list[str],
+    warnings: list[str],
+) -> dict[str, Any]:
+    """Build the Evidence Summary envelope from a v2-schema artifact.
+
+    Maps v2 keys (``candidates``, ``cohort_statistics``,
+    ``robustness_gaps``, ``selection_bias_disclosure``,
+    ``methodology_notes``) into the same 10-key base the frontend
+    expects, then adds non-breaking extra fields for v2-aware
+    consumers.
+    """
+    candidates_raw = payload.get("candidates") or []
+    cohort_stats = payload.get("cohort_statistics") or {}
+    robustness_raw = payload.get("robustness_gaps") or {}
+    selection_bias_raw = payload.get("selection_bias_disclosure") or {}
+    methodology_raw = payload.get("methodology_notes") or {}
+
+    alpha = cohort_stats.get("alpha", 0.05)
+    if not isinstance(alpha, (int, float)) or isinstance(alpha, bool):
+        alpha = 0.05
+
+    # -- Map candidates to record-like rows ---------------------------
+    records: list[dict[str, Any]] = []
+    for c in candidates_raw:
+        if not isinstance(c, dict):
+            continue
+        fdr_sig = _v2_is_fdr_significant(c, alpha)
+        raw_p = _v2_is_raw_p_only(c, alpha)
+        records.append({
+            "rank_in_cohort":    c.get("rank_in_cohort"),
+            "event_date":        c.get("event_date", ""),
+            "first_trading_date": c.get("first_trading_date", ""),
+            "primary_ticker":    c.get("primary_ticker", ""),
+            "benchmark_ticker":  c.get("benchmark_ticker", ""),
+            "benchmark_role":    c.get("benchmark_role", ""),
+            "expected_direction": c.get("expected_direction", ""),
+            "mechanism_family":  c.get("mechanism_family", ""),
+            "method":            c.get("method", ""),
+            "claim_horizon":     c.get("claim_horizon", ""),
+            "h1_AR_pct":         c.get("h1_AR_pct"),
+            "h1_SAR":            c.get("h1_SAR"),
+            "h1_p":              c.get("h1_p"),
+            "h1_q_bh":           c.get("h1_q_bh"),
+            "fdr_significant":   fdr_sig,
+            "raw_p_candidate":   raw_p,
+            "caveat":            c.get("caveat", ""),
+            "falsifier":         c.get("falsifier", ""),
+            "freeze_status":     c.get("freeze_status", ""),
+            "cache_backed":      bool(c.get("cache_backed", False)),
+        })
+
+    # -- Derive counts ------------------------------------------------
+    fdr_count = sum(1 for r in records if r.get("fdr_significant"))
+    raw_p_only_count = sum(
+        1 for r in records
+        if r.get("raw_p_candidate") and not r.get("fdr_significant")
+    )
+
+    # -- cohort_summary from cohort_statistics ------------------------
+    cohort_summary: dict[str, Any] = {
+        "total_records":         cohort_stats.get("n_candidates", len(records)),
+        "fdr_significant_count": fdr_count,
+        "raw_p_candidate_count": raw_p_only_count,
+        "method":                cohort_stats.get("method", ""),
+        "fdr_method":            cohort_stats.get("fdr_method", ""),
+        "alpha":                 alpha,
+        "test_count_for_fdr":    cohort_stats.get("test_count_for_fdr", len(records)),
+        "all_pass_q_005":        bool(cohort_stats.get("all_pass_q_005", False)),
+    }
+
+    # -- verdict_counts derived from records --------------------------
+    verdict_counts: dict[str, Any] = {
+        "fdr_significant":      fdr_count,
+        "raw_p_only_candidate": raw_p_only_count,
+        "inconclusive_fdr":     0,
+        "insufficient":         0,
+    }
+
+    # -- robustness_status from robustness_gaps -----------------------
+    robustness_status: dict[str, Any] = {}
+    if isinstance(robustness_raw, dict):
+        for gap_key, gap_val in robustness_raw.items():
+            if isinstance(gap_val, dict):
+                robustness_status[gap_key] = {
+                    "status":              gap_val.get("status", ""),
+                    "row":                 gap_val.get("row", ""),
+                    "resolution_summary":  gap_val.get("resolution_summary", ""),
+                }
+
+    # -- limitations (clean of banned tokens) -------------------------
+    limitations: list[str] = []
+    limitations.append(
+        "source artifact is a freeze candidate; the demo evidence summary "
+        "describes record counts and verdict tallies only, and does not "
+        "make any claim about market direction or mechanism causality"
+    )
+    fdr_scope = (
+        selection_bias_raw.get("fdr_scope_disclaimer")
+        if isinstance(selection_bias_raw, dict) else None
+    )
+    if isinstance(fdr_scope, str) and fdr_scope:
+        limitations.append(fdr_scope)
+    roundtrip_caveat = (
+        methodology_raw.get("cache_storage_roundtrip_caveat")
+        if isinstance(methodology_raw, dict) else None
+    )
+    if isinstance(roundtrip_caveat, str) and roundtrip_caveat:
+        limitations.append(roundtrip_caveat)
+    if fdr_count == 0:
+        limitations.append(
+            "no FDR-significant records are present in the source artifact; "
+            "raw-p candidate signals are not FDR-significant and must not "
+            "be reframed as such by downstream consumers"
+        )
+
+    # -- Base 10-key envelope -----------------------------------------
+    envelope = _envelope(
+        cohort_summary=cohort_summary,
+        verdict_counts=verdict_counts,
+        fdr_significant_count=fdr_count,
+        raw_p_candidate_count=raw_p_only_count,
+        benchmark_sensitivity_status={},
+        limitations=limitations,
+        errors=errors,
+        warnings=warnings,
+    )
+
+    # -- Non-breaking v2 additions ------------------------------------
+    envelope["artifact_schema_version"] = "v2"
+    envelope["demo_bundle"] = "section_c_v2"
+    envelope["source"] = "frozen_json_not_live_db"
+    envelope["records"] = copy.deepcopy(records)
+    envelope["robustness_status"] = copy.deepcopy(robustness_status)
+    envelope["methodology_notes"] = (
+        copy.deepcopy(methodology_raw) if isinstance(methodology_raw, dict)
+        else {}
+    )
+    envelope["selection_bias_disclosure"] = (
+        copy.deepcopy(selection_bias_raw) if isinstance(selection_bias_raw, dict)
+        else {}
+    )
+
+    return envelope
+
+
+def _v2_is_fdr_significant(candidate: dict[str, Any], alpha: float) -> bool:
+    q = candidate.get("h1_q_bh")
+    if not isinstance(q, (int, float)) or isinstance(q, bool):
+        return False
+    return q < alpha
+
+
+def _v2_is_raw_p_only(candidate: dict[str, Any], alpha: float) -> bool:
+    p = candidate.get("h1_p")
+    if not isinstance(p, (int, float)) or isinstance(p, bool):
+        return False
+    q = candidate.get("h1_q_bh")
+    q_passes = (
+        isinstance(q, (int, float))
+        and not isinstance(q, bool)
+        and q < alpha
+    )
+    return p < alpha and not q_passes
 
 
 def _int_field(container: dict[str, Any], key: str) -> int:
