@@ -95,16 +95,18 @@ class TestRunSmoke(unittest.TestCase):
 
     def test_records_carry_pipeline_outputs(self) -> None:
         # The smoke is wired end-to-end iff every numeric pipeline
-        # output (AR, SAR, CI bounds, p, q) is populated for at least
-        # one horizon.  Pure stub paths would leave them all None.
+        # output (AR, SAR, CAR, CI bounds, p, q) is populated for at
+        # least one horizon.  Pure stub paths would leave them all None.
         payload = smoke.run_smoke()
         any_ar    = any(r["abnormal_return"] is not None for r in payload["records"])
         any_sar   = any(r["sar"]             is not None for r in payload["records"])
+        any_car   = any(r.get("car")         is not None for r in payload["records"])
         any_ci    = any(r["ci_low"]          is not None for r in payload["records"])
         any_p     = any(r["p_value"]         is not None for r in payload["records"])
         any_fdr_q = any(r["fdr_q"]           is not None for r in payload["records"])
         self.assertTrue(any_ar)
         self.assertTrue(any_sar)
+        self.assertTrue(any_car)
         self.assertTrue(any_ci)
         self.assertTrue(any_p)
         self.assertTrue(any_fdr_q)
@@ -213,9 +215,14 @@ class TestCli(unittest.TestCase):
         rc = smoke.main([], out=out)
         self.assertEqual(rc, 0)
         text = out.getvalue()
-        # Tokens an operator would scan for in the text rendering.
         for token in ("records", "significant"):
             self.assertIn(token, text.lower())
+
+    def test_text_output_includes_car_line(self) -> None:
+        out = StringIO()
+        smoke.main([], out=out)
+        text = out.getvalue()
+        self.assertIn("car:", text.lower())
 
     def test_seed_flag_forwards_through_cli(self) -> None:
         a = StringIO()

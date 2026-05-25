@@ -20,7 +20,7 @@ Pipeline detail
    under a fixed seed.
 
 2. **Per-event event study.**  :func:`stats.event_study.compute_event_study`
-   returns ``(abnormal_return, sar)`` per horizon.  The cohort
+   returns ``(abnormal_return, sar, car)`` per horizon.  The cohort
    collects those numbers per horizon for downstream aggregation.
 
 3. **Bootstrap CI of mean AR.**  Per horizon we feed the cohort's AR
@@ -38,10 +38,10 @@ Pipeline detail
 5. **FDR adjustment.**  :func:`stats.fdr.bh_adjust` produces an
    adjusted q-value per horizon.
 
-6. **Schema composition.**  Each horizon's mean AR / mean SAR / CI
-   bounds / p-value / fdr_q feed
+6. **Schema composition.**  Each horizon's mean AR / mean SAR / mean
+   CAR / CI bounds / p-value / fdr_q feed
    :func:`stats.stat_validation.make_stat_validation_record` so every
-   record carries the canonical nine fields.
+   record carries the canonical ten fields.
 
 Read-only / no I/O
 ------------------
@@ -160,9 +160,9 @@ def _make_synthetic_pair(
 def _collect_per_horizon_samples(
     cohort_results: list[dict[str, Any]],
     horizons:       Sequence[int],
-) -> tuple[dict[int, list[float]], dict[int, list[float]]]:
+) -> tuple[dict[int, list[float]], dict[int, list[float]], dict[int, list[float]]]:
     """Pivot a list of per-event ``compute_event_study`` results into
-    ``{horizon: [ar_per_event, ...]}`` plus the matching SAR map.
+    ``{horizon: [ar_per_event, ...]}`` plus the matching SAR and CAR maps.
 
     Per-event missing values (insufficient estimation window, horizon
     overflow) are filtered out — those events simply don't contribute
@@ -170,17 +170,21 @@ def _collect_per_horizon_samples(
     """
     ar_by_h:  dict[int, list[float]] = {int(h): [] for h in horizons}
     sar_by_h: dict[int, list[float]] = {int(h): [] for h in horizons}
+    car_by_h: dict[int, list[float]] = {int(h): [] for h in horizons}
     for result in cohort_results:
         per_h = result.get("horizons") or {}
         for h in horizons:
             row = per_h.get(int(h)) or {}
             ar  = row.get("abnormal_return")
             sar = row.get("sar")
+            car = row.get("car")
             if isinstance(ar, (int, float)) and math.isfinite(float(ar)):
                 ar_by_h[int(h)].append(float(ar))
             if isinstance(sar, (int, float)) and math.isfinite(float(sar)):
                 sar_by_h[int(h)].append(float(sar))
-    return ar_by_h, sar_by_h
+            if isinstance(car, (int, float)) and math.isfinite(float(car)):
+                car_by_h[int(h)].append(float(car))
+    return ar_by_h, sar_by_h, car_by_h
 
 
 def _cohort_p_value(sar_samples: list[float]) -> Optional[float]:
@@ -269,7 +273,7 @@ def run_smoke(
         cohort_results.append(es_result)
 
     # 2. Pivot per-horizon samples.
-    ar_by_h, sar_by_h = _collect_per_horizon_samples(
+    ar_by_h, sar_by_h, car_by_h = _collect_per_horizon_samples(
         cohort_results, horizons_t,
     )
 
@@ -280,9 +284,11 @@ def run_smoke(
     p_values: list[Optional[float]] = []
     mean_ar_by_h:  dict[int, Optional[float]] = {}
     mean_sar_by_h: dict[int, Optional[float]] = {}
+    mean_car_by_h: dict[int, Optional[float]] = {}
     for h in horizons_t:
         ar_samples  = ar_by_h[h]
         sar_samples = sar_by_h[h]
+        car_samples = car_by_h[h]
         try:
             ci = bootstrap_ar_ci(
                 ar_samples,
@@ -303,6 +309,9 @@ def run_smoke(
         mean_sar_by_h[h] = (
             sum(sar_samples) / len(sar_samples) if sar_samples else None
         )
+        mean_car_by_h[h] = (
+            sum(car_samples) / len(car_samples) if car_samples else None
+        )
         p_values.append(_cohort_p_value(sar_samples))
 
     # 4. FDR adjustment over the per-horizon p-values.  ``bh_adjust``
@@ -319,6 +328,7 @@ def run_smoke(
                 horizon=h,
                 abnormal_return=mean_ar_by_h[h],
                 sar=mean_sar_by_h[h],
+                car=mean_car_by_h[h],
                 ci_low=ci.get("lower"),
                 ci_high=ci.get("upper"),
                 p_value=p_values[i],
@@ -379,6 +389,9 @@ def _render_text(payload: dict[str, Any]) -> str:
         )
         lines.append(
             f"      sar:                       {_fmt(record['sar'])}"
+        )
+        lines.append(
+            f"      car:                       {_fmt(record.get('car'))}"
         )
         lines.append(
             f"      ci:                        "
