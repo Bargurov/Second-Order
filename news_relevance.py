@@ -87,6 +87,25 @@ RELEVANCE_KEYWORDS: set[str] = {
     "lockheed", "raytheon", "northrop", "rheinmetall",
     "asml", "tsmc",
     "maersk", "frontline",
+    # Healthcare / regulatory
+    "drug approval", "clinical trial", "generic drug", "biosimilar",
+    "medicare", "medicaid", "drug price", "patent expiry",
+    # Agriculture / food
+    "soybean", "livestock", "fertilizer", "fertiliser",
+    "el nino", "el niño", "la nina", "la niña",
+    "harvest", "drought",
+    # Climate / energy transition
+    "carbon tax", "carbon border", "carbon credit",
+    "wind farm", "ev mandate", "renewable energy",
+    "emissions trading", "hydrogen",
+    # Credit / banking / insurance
+    "credit rating", "bank failure", "deposit outflow",
+    "reinsurance", "insurance loss", "downgrade",
+    # Consumer / housing / employment
+    "housing starts", "mortgage rate", "home price",
+    "retail sales", "consumer spending", "consumer confidence",
+    "job cuts", "unemployment claim",
+    "auto recall", "layoff", "recall",
 }
 
 # Short words that need word-boundary matching (\b...\b) to avoid false
@@ -103,6 +122,14 @@ _WORD_BOUNDARY_KW: set[str] = {
     "dollar", "euro", "yuan", "yen",
     "index",
     "beijing", "parliament",
+    # Healthcare / regulatory
+    "fda", "ema",
+    # Agriculture / food
+    "usda", "corn", "crop", "crops",
+    # Climate / energy transition
+    "solar", "battery",
+    # Credit / banking / insurance
+    "fdic",
 }
 
 _WB_PATTERN: _re.Pattern[str] = _re.compile(
