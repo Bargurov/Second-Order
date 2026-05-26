@@ -958,5 +958,249 @@ class TestNewsEndpointContract(unittest.TestCase):
         self.assertEqual(meta["freshness"], "fresh")
 
 
+# ---------------------------------------------------------------------------
+# 4. Payload/records consistency — inflated payload guard
+# ---------------------------------------------------------------------------
+
+
+class TestPayloadRecordsConsistency(unittest.TestCase):
+    """Payload source_count/sources/evidence must match records_json."""
+
+    def setUp(self):
+        self._orig = db.DB_FILE
+        self._tmp = os.path.join(
+            tempfile.gettempdir(), f"test_news_consistency_{uuid.uuid4().hex}.db",
+        )
+        db.DB_FILE = self._tmp
+        db.init_db()
+        self.cluster_calls: list[list[dict]] = []
+
+    def tearDown(self):
+        db.DB_FILE = self._orig
+        if os.path.exists(self._tmp):
+            try:
+                os.remove(self._tmp)
+            except PermissionError:
+                pass
+
+    def _mega_cluster_fn(self, records: list[dict]) -> list[dict]:
+        """A clusterer that inflates sources — simulates a mega-cluster.
+
+        Returns a single cluster claiming 30 sources even when only 2
+        records are passed.  This reproduces the observed production bug.
+        """
+        self.cluster_calls.append(list(records))
+        fake_sources = [
+            {"name": f"Feed_{i}", "tier": "high", "url": ""}
+            for i in range(30)
+        ]
+        for r in records:
+            fake_sources.append(
+                {"name": r["source"], "tier": "high", "url": r.get("url", "")}
+            )
+        pub_dates = [r["published_at"] for r in records if r.get("published_at")]
+        published_at = max(pub_dates) if pub_dates else ""
+        rep = records[0] if records else {"title": "?", "source": "?"}
+        return [{
+            "headline": rep["title"],
+            "summary": "stub",
+            "consensus": {},
+            "sources": fake_sources,
+            "published_at": published_at,
+            "source_count": len(fake_sources),
+            "agreement": "consistent",
+            "evidence": [
+                {"source": "Feed_0", "tier": "high", "title": "Unrelated A",
+                 "published_at": published_at, "note": ""},
+                {"source": "Feed_1", "tier": "high", "title": "Unrelated B",
+                 "published_at": published_at, "note": ""},
+                {"source": rep["source"], "tier": "high", "title": rep["title"],
+                 "published_at": published_at, "note": ""},
+            ],
+        }]
+
+    def test_insert_sanitizes_inflated_payload(self):
+        """INSERT: cluster_fn returns 30+ sources but only 2 records exist.
+
+        Stored and returned payload must reflect the 2 actual records.
+        """
+        records = [
+            _rec("BBC", "Tariffs imposed on EU steel"),
+            _rec("Reuters", "Tariffs imposed on EU steel imports"),
+        ]
+        out = news_cluster_store.refresh_clusters(
+            records,
+            cluster_fn=self._mega_cluster_fn,
+            now=_now(),
+        )
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["source_count"], 2)
+        source_names = {s["name"] for s in out[0]["sources"]}
+        self.assertEqual(source_names, {"BBC", "Reuters"})
+
+        stored = db.load_news_clusters()
+        self.assertEqual(len(stored), 1)
+        self.assertEqual(stored[0]["payload"]["source_count"], 2)
+        stored_names = {s["name"] for s in stored[0]["payload"]["sources"]}
+        self.assertEqual(stored_names, {"BBC", "Reuters"})
+
+    def test_load_sanitizes_corrupted_stored_cluster(self):
+        """LOAD: existing DB row has inflated payload_json. Return path
+        must sanitize it so source_count matches records."""
+        import sqlite3
+
+        inflated_payload = {
+            "headline": "Test corruption",
+            "summary": "s",
+            "sources": [{"name": f"Feed_{i}", "tier": "high", "url": ""} for i in range(30)],
+            "published_at": "2026-04-08T11:00:00",
+            "source_count": 30,
+            "agreement": "consistent",
+            "evidence": [
+                {"source": "Feed_0", "title": "Ghost evidence",
+                 "published_at": "2026-04-08T11:00:00", "note": "", "tier": "high"},
+            ],
+        }
+        real_records = [
+            {"source": "BBC", "title": "Test corruption",
+             "published_at": "2026-04-08T11:00:00", "url": ""},
+            {"source": "Reuters", "title": "Test corruption details",
+             "published_at": "2026-04-08T11:00:00", "url": ""},
+        ]
+        with sqlite3.connect(db.DB_FILE) as conn:
+            conn.execute(
+                "INSERT INTO news_clusters "
+                "(headline, payload_json, records_json, latest_published_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    "Test corruption",
+                    json.dumps(inflated_payload),
+                    json.dumps(real_records),
+                    "2026-04-08T11:00:00",
+                    "2026-04-08T11:00:00",
+                ),
+            )
+        db.upsert_news_headline_assignments(
+            [("BBC", "test corruption", 1), ("Reuters", "test corruption details", 1)],
+            "2026-04-08T11:00:00",
+        )
+
+        out = news_cluster_store.refresh_clusters(
+            [_rec("BBC", "Test corruption"), _rec("Reuters", "Test corruption details")],
+            cluster_fn=lambda recs: [],
+            now=_now(),
+        )
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["source_count"], 2)
+        source_names = {s["name"] for s in out[0]["sources"]}
+        self.assertEqual(source_names, {"BBC", "Reuters"})
+
+    def test_evidence_filtered_to_record_sources(self):
+        """Evidence entries from non-record sources must be removed."""
+        records = [
+            _rec("BBC", "Oil prices surge on Iran conflict"),
+        ]
+        out = news_cluster_store.refresh_clusters(
+            records,
+            cluster_fn=self._mega_cluster_fn,
+            now=_now(),
+        )
+        self.assertEqual(len(out), 1)
+        evidence = out[0].get("evidence", [])
+        for ev in evidence:
+            self.assertEqual(ev["source"], "BBC",
+                             f"Evidence from non-record source: {ev['source']}")
+        ev_titles = [e["title"] for e in evidence]
+        self.assertNotIn("Unrelated A", ev_titles)
+        self.assertNotIn("Unrelated B", ev_titles)
+
+    def test_evidence_same_source_wrong_title_filtered(self):
+        """Evidence from the correct source but a different title must be filtered.
+
+        Reproduces the production case where CNBC evidence cited
+        'self-defense strikes in Iran' while the actual CNBC record was
+        'I never heard of the Strait of Hormuz'.
+        """
+        payload = {
+            "headline": "Hormuz supply chain shock",
+            "sources": [{"name": "CNBC", "tier": "high", "url": ""}],
+            "source_count": 1,
+            "evidence": [
+                {"source": "CNBC", "tier": "high",
+                 "title": "Self-defense strikes in Iran",
+                 "published_at": "2026-05-26", "note": ""},
+            ],
+        }
+        records = [{"source": "CNBC", "title": "Hormuz supply chain shock",
+                    "published_at": "2026-05-26", "url": ""}]
+        result = news_cluster_store._sanitize_payload(payload, records)
+        self.assertEqual(result["evidence"], [],
+                         "Same-source evidence with a different title must be removed")
+
+    def test_inflated_payload_does_not_outrank_genuine(self):
+        """After sanitization, a 1-source cluster must not outrank a genuine 2-source."""
+
+        def _honest_cluster_fn(records: list[dict]) -> list[dict]:
+            groups: dict[str, list[dict]] = {}
+            for rec in records:
+                key = rec["title"].split()[0] if rec["title"] else "?"
+                groups.setdefault(key, []).append(rec)
+
+            out: list[dict] = []
+            for key, group in groups.items():
+                rep = max(group, key=lambda r: len(r["title"]))
+                sources = [
+                    {"name": r["source"], "tier": "high", "url": r.get("url", "")}
+                    for r in group
+                ]
+                pub_dates = [r["published_at"] for r in group if r["published_at"]]
+                published_at = max(pub_dates) if pub_dates else ""
+                out.append({
+                    "headline": rep["title"],
+                    "summary": f"stub for {key}",
+                    "consensus": {},
+                    "sources": sources,
+                    "published_at": published_at,
+                    "source_count": len(sources),
+                    "agreement": "consistent",
+                    "evidence": [],
+                })
+            return out
+
+        genuine_multi = [
+            _rec("BBC", "Genuine multi-source tariff story"),
+            _rec("Reuters", "Genuine multi-source tariff details"),
+        ]
+        out1 = news_cluster_store.refresh_clusters(
+            genuine_multi,
+            cluster_fn=_honest_cluster_fn,
+            now=_now(),
+        )
+        self.assertEqual(out1[0]["source_count"], 2)
+
+        single_inflated = _rec("FT", "Single inflated story about oil")
+        out2 = news_cluster_store.refresh_clusters(
+            genuine_multi + [single_inflated],
+            cluster_fn=self._mega_cluster_fn,
+            now=_now(),
+        )
+        top = out2[0]
+        self.assertEqual(top["source_count"], 2,
+                         "Genuine 2-source cluster must rank above sanitized 1-source")
+
+    def test_sanitize_payload_empty_records(self):
+        """Empty records -> source_count=0, no sources, no evidence."""
+        inflated = {
+            "headline": "Ghost",
+            "sources": [{"name": "Feed_0", "tier": "high", "url": ""}],
+            "source_count": 1,
+            "evidence": [{"source": "Feed_0", "title": "Ghost", "published_at": "", "note": ""}],
+        }
+        result = news_cluster_store._sanitize_payload(inflated, [])
+        self.assertEqual(result["source_count"], 0)
+        self.assertEqual(result["sources"], [])
+        self.assertEqual(result["evidence"], [])
+
+
 if __name__ == "__main__":
     unittest.main()

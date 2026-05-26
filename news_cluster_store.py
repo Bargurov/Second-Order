@@ -154,6 +154,47 @@ def _partition_records(
     return known, new
 
 
+def _sanitize_payload(payload: dict, records: list[dict]) -> dict:
+    """Ensure payload sources/source_count/evidence are derived from records.
+
+    Prevents inflated payloads where cluster_fn produced a mega-cluster
+    with many sources but only a fraction of those records were actually
+    stored.  records_json is the source of truth.
+    """
+    out = dict(payload)
+
+    from news_fetch import source_tier, normalize_source, _TIER_RANK
+
+    seen_publishers: set[str] = set()
+    sources: list[dict] = []
+    for r in records:
+        src = r.get("source", "")
+        canon = normalize_source(src)
+        if not src or canon in seen_publishers:
+            continue
+        seen_publishers.add(canon)
+        sources.append({
+            "name": src,
+            "tier": source_tier(src),
+            "url": r.get("url", ""),
+        })
+    sources.sort(key=lambda s: (_TIER_RANK.get(s.get("tier", "low"), 2), s.get("name", "")))
+
+    out["sources"] = sources
+    out["source_count"] = len(sources)
+
+    rec_keys = {
+        (r.get("source", ""), _dedup_key(r.get("title", "")))
+        for r in records
+    }
+    out["evidence"] = [
+        e for e in (payload.get("evidence") or [])
+        if (e.get("source", ""), _dedup_key(e.get("title", ""))) in rec_keys
+    ]
+
+    return out
+
+
 def _merge_records_unique(
     existing: list[dict], new: list[dict],
 ) -> list[dict]:
@@ -283,7 +324,7 @@ def refresh_clusters(
         # No new headlines — nothing to recluster.
         if active_clusters:
             _set_meta(merged=0, created=0, reused=len(active_clusters), source="stored")
-            return _sort_output([c["payload"] for c in active_clusters])
+            return _sort_output(_sanitized_payloads(active_clusters))
         # All records are known but their clusters fell outside the recency
         # window.  Reload those specific clusters so the response isn't
         # empty when the caller's feed still contains valid headlines.
@@ -298,7 +339,7 @@ def refresh_clusters(
                 matched = [c for c in all_clusters if c["id"] in needed_ids]
                 if matched:
                     _set_meta(merged=0, created=0, reused=len(matched), source="stored_fallback")
-                    return _sort_output([c["payload"] for c in matched])
+                    return _sort_output(_sanitized_payloads(matched))
         _set_meta(merged=0, created=0, reused=0, source="empty")
         return []
 
@@ -313,7 +354,7 @@ def refresh_clusters(
         # Degrade: return the existing active set unchanged so /news
         # never crashes on a transient clusterer bug.
         _set_meta(merged=0, created=0, reused=len(active_clusters), source="stored")
-        return _sort_output([c["payload"] for c in active_clusters])
+        return _sort_output(_sanitized_payloads(active_clusters))
 
     # Build an index of new-batch clusters by their representative
     # headline so we can match them to persisted clusters.
@@ -339,6 +380,7 @@ def refresh_clusters(
             rebuilt = _build_cluster_payload(merged_records, cluster_fn)
             if rebuilt is None:
                 rebuilt = existing["payload"]
+            rebuilt = _sanitize_payload(rebuilt, merged_records)
             latest = _max_published(rebuilt, existing["latest_published_at"])
             update_cluster_fn(
                 match_id,
@@ -361,10 +403,11 @@ def refresh_clusters(
             continue
 
         # 4b. No existing match — insert as a brand-new cluster row.
-        latest = _max_published(new_cluster, "")
+        sanitized = _sanitize_payload(new_cluster, new_records_in_cluster)
+        latest = _max_published(sanitized, "")
         cluster_id = insert_cluster_fn(
-            new_headline,
-            new_cluster,
+            sanitized.get("headline", new_headline) or new_headline,
+            sanitized,
             new_records_in_cluster,
             latest,
             now_iso,
@@ -383,8 +426,8 @@ def refresh_clusters(
         # creating a duplicate.
         active_clusters.append({
             "id":                  cluster_id,
-            "headline":            new_headline,
-            "payload":             new_cluster,
+            "headline":            sanitized.get("headline", new_headline) or new_headline,
+            "payload":             sanitized,
             "records":             new_records_in_cluster,
             "latest_published_at": latest,
             "updated_at":          now_iso,
@@ -406,7 +449,7 @@ def refresh_clusters(
     _set_meta(merged=len(touched_ids), created=len(created_ids),
               reused=len(active_clusters) - len(touched_ids) - len(created_ids),
               source="incremental")
-    return _sort_output([c["payload"] for c in active_clusters])
+    return _sort_output(_sanitized_payloads(active_clusters))
 
 
 # ---------------------------------------------------------------------------
@@ -501,6 +544,11 @@ def _max_published(cluster: dict, fallback: str) -> str:
     """Return the larger of cluster['published_at'] and the fallback."""
     pub = (cluster or {}).get("published_at", "") or ""
     return max(pub, fallback or "")
+
+
+def _sanitized_payloads(clusters: list[dict]) -> list[dict]:
+    """Extract payloads from cluster dicts, sanitizing each against its records."""
+    return [_sanitize_payload(c["payload"], c.get("records") or []) for c in clusters]
 
 
 def _sort_output(clusters: list[dict]) -> list[dict]:
