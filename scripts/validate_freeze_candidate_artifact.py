@@ -250,25 +250,31 @@ def _validate_v2_payload(
         _check_v2_candidate(cand, idx, ticker, errors, warnings)
 
     bundle_scope = payload.get("bundle_scope")
-    if bundle_scope == "whr_only":
-        if len(candidates) != 1:
-            errors.append(
-                f"v2: bundle_scope is 'whr_only' but candidates has "
-                f"{len(candidates)} entries (expected exactly 1)"
-            )
+    _KNOWN_SCOPES = {"whr_only", "whr_txt_two_row"}
+    _SCOPE_RULES: dict[str, tuple[list[str], list[str]]] = {
+        "whr_only":         (["WHR"],        ["CENX", "FSLR", "TXT", "RIO"]),
+        "whr_txt_two_row":  (["WHR", "TXT"], ["CENX", "FSLR", "RIO"]),
+    }
+    if bundle_scope is not None and bundle_scope not in _KNOWN_SCOPES:
+        errors.append(
+            f"v2: bundle_scope {bundle_scope!r} is not in the allowed "
+            f"values {sorted(_KNOWN_SCOPES)!r}"
+        )
+    elif bundle_scope in _SCOPE_RULES:
+        required_tickers, blocked_tickers = _SCOPE_RULES[bundle_scope]
         tickers = [
             c.get("primary_ticker") for c in candidates
             if isinstance(c, dict)
         ]
-        if tickers and tickers != ["WHR"]:
+        if sorted(tickers) != sorted(required_tickers):
             errors.append(
-                f"v2: bundle_scope is 'whr_only' but candidates contains "
-                f"{tickers!r} (expected ['WHR'] only)"
+                f"v2: bundle_scope is {bundle_scope!r} but candidates "
+                f"contains {tickers!r} (expected {required_tickers!r})"
             )
-        for blocked in ("CENX", "FSLR", "TXT", "RIO"):
+        for blocked in blocked_tickers:
             if blocked in tickers:
                 errors.append(
-                    f"v2: {blocked} must not appear in a whr_only bundle"
+                    f"v2: {blocked} must not appear in a {bundle_scope} bundle"
                 )
 
     limitations = payload.get("limitations")

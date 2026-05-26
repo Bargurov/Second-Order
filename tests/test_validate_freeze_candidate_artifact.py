@@ -1085,6 +1085,82 @@ class TestV2BundleScope(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_unknown_scope_fails(self) -> None:
+        artifact = _good_v2_artifact(bundle_scope="full_cohort")
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("bundle_scope" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_whr_txt_scope_accepts_whr_and_txt(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_two_row",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT",
+                                   announcement_date="2022-12-05",
+                                   event_anchor_close="2022-12-05",
+                                   first_tradable_reaction_date="2022-12-06",
+                                   benchmark_ticker="LMT",
+                                   benchmark_role="paired_loser"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertTrue(report["ok"], report["errors"])
+        finally:
+            os.unlink(path)
+
+    def test_whr_txt_scope_rejects_missing_txt(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_two_row",
+            candidates=[_good_v2_candidate(primary_ticker="WHR")],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("whr_txt_two_row" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_whr_txt_scope_rejects_extra_cenx(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_two_row",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT"),
+                _good_v2_candidate(primary_ticker="CENX"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("CENX" in e or "whr_txt_two_row" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_whr_only_still_rejects_txt(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_only",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("whr_only" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
 
 class TestV2DateStrictness(unittest.TestCase):
     def test_empty_date_string_fails(self) -> None:
@@ -1233,7 +1309,7 @@ _V2_LIVE_BUNDLE = str(
 )
 
 
-class TestV2LiveBundlePassesAndIsWHROnly(unittest.TestCase):
+class TestV2LiveBundle(unittest.TestCase):
     def test_v2_bundle_exists(self) -> None:
         self.assertTrue(
             Path(_V2_LIVE_BUNDLE).exists(),
@@ -1251,40 +1327,46 @@ class TestV2LiveBundlePassesAndIsWHROnly(unittest.TestCase):
             f"v2 live bundle rejected: {report['errors']}",
         )
 
-    def test_v2_bundle_is_whr_only(self) -> None:
+    def test_v2_bundle_contains_whr_and_txt(self) -> None:
         if not Path(_V2_LIVE_BUNDLE).exists():
             self.skipTest("v2 bundle not present")
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
-        candidates = data.get("candidates", [])
-        self.assertEqual(len(candidates), 1, "v2 bundle must contain exactly 1 candidate")
-        self.assertEqual(
-            candidates[0].get("primary_ticker"), "WHR",
-            "v2 bundle candidate must be WHR",
+        tickers = sorted(
+            c.get("primary_ticker") for c in data.get("candidates", [])
         )
+        self.assertEqual(tickers, ["TXT", "WHR"])
 
-    def test_v2_bundle_whr_is_freeze_ready(self) -> None:
+    def test_v2_bundle_both_freeze_ready(self) -> None:
         if not Path(_V2_LIVE_BUNDLE).exists():
             self.skipTest("v2 bundle not present")
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
-        whr = data["candidates"][0]
-        self.assertEqual(
-            whr.get("freeze_status"),
-            "freeze_ready_pending_operator_review",
-        )
+        for c in data["candidates"]:
+            self.assertEqual(
+                c.get("freeze_status"),
+                "freeze_ready_pending_operator_review",
+                f"{c.get('primary_ticker')} must be freeze_ready_pending_operator_review",
+            )
 
-    def test_v2_bundle_no_non_whr_promoted(self) -> None:
+    def test_v2_bundle_no_unpromoted_candidates(self) -> None:
         if not Path(_V2_LIVE_BUNDLE).exists():
             self.skipTest("v2 bundle not present")
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         tickers = [c.get("primary_ticker") for c in data.get("candidates", [])]
-        for blocked in ("CENX", "FSLR", "TXT", "RIO"):
+        for blocked in ("CENX", "FSLR", "RIO"):
             self.assertNotIn(
                 blocked, tickers,
-                f"{blocked} must not appear in the WHR-only v2 bundle",
+                f"{blocked} must not appear in the WHR+TXT v2 bundle",
             )
+
+    def test_v2_bundle_scope_is_whr_txt(self) -> None:
+        if not Path(_V2_LIVE_BUNDLE).exists():
+            self.skipTest("v2 bundle not present")
+        with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        self.assertEqual(data.get("bundle_scope"), "whr_txt_two_row")
 
 
 if __name__ == "__main__":

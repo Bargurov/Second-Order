@@ -1,12 +1,12 @@
 {
   "artifact_type": "freeze_candidate_evidence",
   "schema_version": "v2",
-  "cohort_name": "freeze_candidate_v2_whr_only",
+  "cohort_name": "freeze_candidate_v2_whr_txt",
   "source": "operator_curated_cache_backed",
-  "generated_at": "2026-05-26T00:00:00Z",
+  "generated_at": "2026-05-27T00:00:00Z",
   "demo_wiring_note": "Section C Demo v1 is unchanged; this artifact is not wired to demo.",
-  "bundle_scope": "whr_only",
-  "bundle_scope_note": "WHR-only tracked bundle. CENX, FSLR, TXT, and RIO remain in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json pending their own provenance closeouts. They are not promoted here.",
+  "bundle_scope": "whr_txt_two_row",
+  "bundle_scope_note": "WHR + TXT tracked bundle. CENX, FSLR, and RIO remain in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json pending their own provenance closeouts. They are not promoted here.",
   "candidates": [
     {
       "primary_ticker": "WHR",
@@ -23,7 +23,7 @@
       "announcement_date": "2018-01-22",
       "event_anchor_close": "2018-01-22",
       "first_tradable_reaction_date": "2018-01-23",
-      "anchor_convention_note": "Anchor is 2018-01-22 close, the last close before the first positive market reaction. WHR showed no positive intraday reaction on 2018-01-22 (WHR -0.53% while XLY +1.10%). The v2.0 market-model h=1 of +3.64% was computed under OLS alpha+beta adjustment from the same anchor; the v2.1 production BHAR h=1 of +2.36% is the canonical claim. Both are significant; the difference is methodological.",
+      "anchor_convention_note": "Anchor is 2018-01-22 close, the last close before the first positive market reaction. WHR showed no positive intraday reaction on 2018-01-22 (WHR -0.53% while XLY +1.10%). The v2.0 market-model h=1 of +3.64% was computed under OLS intercept+slope adjustment from the same anchor; the v2.1 production BHAR h=1 of +2.36% is the canonical claim. Both are significant; the difference is methodological.",
 
       "claimed_horizons": [1],
       "diagnostic_horizons": [2],
@@ -48,13 +48,51 @@
       "freeze_status": "freeze_ready_pending_operator_review",
       "cache_backed": true,
       "operator_writeup_reference": "WHR_CENX_operator_writeup.md"
+    },
+    {
+      "primary_ticker": "TXT",
+      "benchmark_ticker": "LMT",
+      "benchmark_role": "paired_loser",
+      "expected_direction": "positive",
+      "mechanism_family": "defense_procurement_award",
+      "method": "production_bhar",
+
+      "source_url": "https://www.army.mil/article/262523/army_announces_future_long_range_assault_aircraft_contract_award",
+      "source_type": "official_army_announcement",
+      "source_quality_note": "Official US Army press release dated 2022-12-05. The Army page does not expose an exact publication timestamp in the audited source. A contemporaneous Breaking Defense article was published at 17:29 ET on Dec 5, supporting an after-close announcement convention. TXT showed no positive Dec 5 reaction and first priced the award on Dec 6.",
+
+      "announcement_date": "2022-12-05",
+      "event_anchor_close": "2022-12-05",
+      "first_tradable_reaction_date": "2022-12-06",
+      "anchor_convention_note": "Anchor is 2022-12-05 close, the last close before the market could react. The Army FLRAA award page is dated Dec 5 but does not expose an exact publication timestamp in the audited source; a contemporaneous Breaking Defense article was published at 17:29 ET, supporting the after-close convention. First tradable reaction date is Dec 6.",
+
+      "claimed_horizons": [1],
+      "diagnostic_horizons": [5, 20],
+      "restricted_horizons": [],
+      "restricted_because": "No horizon-specific contamination identified. TXT Q4 2022 earnings were released 2023-01-25, outside the h=20 window. h=5 and h=20 are not statistically significant but are not restricted by a known confound.",
+
+      "h1_AR_pct": 6.6097,
+      "h1_SAR": 3.3165,
+      "h1_p": 0.000912,
+      "h1_q_bh": 0.001519,
+
+      "peer_check_status": "complete",
+      "peer_check_summary": "TXT-vs-ITA sibling event study softens the paired-loser concern: TXT/ITA h=1 AR +7.09%, SAR +6.65, p < 0.001, larger than TXT/LMT +6.61%. The TXT/LMT result does not appear upward-biased relative to the TXT/ITA cross-check on h=1.",
+
+      "caveat": "LMT is the PAIRED LOSER of the same news (Sikorsky/LMT lost FLRAA to Bell/TXT), not a neutral sector benchmark. Under production BHAR, AR_h1 = TXT_h1_return - LMT_h1_return = +5.25% - (-1.36%) = +6.61%; roughly +1.36% of that comes from LMT itself reacting in the opposite direction on the same news. A sector-ETF benchmark (e.g., ITA) would yield a smaller magnitude; conservative sector-equivalent AR point estimate is approximately TXT's own raw return of +5.25%. The h=5/h=20 flat reads (CAR ~+4%, both insignificant) are consistent with a contained one-time award option-value crystallization, not a weakness.",
+      "falsifier": "TXT does not outperform LMT on 2022-12-06.",
+      "persistence": "transient_h1_only",
+      "freeze_status": "freeze_ready_pending_operator_review",
+      "cache_backed": true,
+      "operator_writeup_reference": "TXT_LMT_operator_writeup.md"
     }
   ],
   "limitations": [
     "freeze-candidate only - awaiting operator review before any downstream demo backend may consume this artifact.",
-    "WHR-only bundle: CENX, FSLR, TXT, RIO provenance closeouts pending; they are not promoted here.",
+    "WHR + TXT bundle: CENX, FSLR, RIO provenance closeouts pending; they are not promoted here.",
     "WHR h=1 is significant at the 5% level (p=0.014) but not at the 1% level. The h=2 diagnostic (p < 0.00001) is stronger but is a non-standard horizon.",
-    "No cross-event statistical claims are possible from a single-candidate bundle."
+    "TXT uses LMT (the paired loser) as benchmark; TXT/ITA robustness check softens the concern but the paired-loser caveat must be disclosed.",
+    "No cross-event statistical claims are defensible from a two-candidate bundle with different mechanism families."
   ],
   "methodology_notes": {
     "event_study_form": "Production BHAR via stats.event_study.compute_event_study. AR_h = (P_asset[t+h]/P_asset[t] - 1) - (P_bench[t+h]/P_bench[t] - 1) where t = event_index = the trading day BEFORE first_tradable_reaction_date. sigma_ar_daily = sample stddev (ddof=1) over the 60-bar pre-event estimation window. SAR_h = AR_h / (sigma_ar_daily * sqrt(h)). Daily simple close-to-close returns; auto_adjust=False.",
