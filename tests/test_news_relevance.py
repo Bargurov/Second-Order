@@ -370,5 +370,144 @@ class TestExistingCoverageUnchanged(unittest.TestCase):
             "Police investigate robbery at downtown convenience store"))
 
 
+# ---------------------------------------------------------------------------
+# False-positive tightening — Inbox Workbench noise audit (2026-05-26)
+# ---------------------------------------------------------------------------
+# Headlines that triggered keyword matches but are contextually non-market.
+# Each was observed in the live Inbox and classified by root cause.
+
+
+class TestSportsTradeRejection(unittest.TestCase):
+    """Sports trades/sanctions match "trade"/"sanction" but are not market."""
+
+    def test_rejects_nfl_sanctions(self) -> None:
+        self.assertFalse(is_relevant(
+            "NFL sanctions Atlanta Falcons for violating Anti-Tampering Policy"))
+
+    def test_rejects_mlb_trade(self) -> None:
+        self.assertFalse(is_relevant(
+            "Dodgers acquire outfielder Alek Thomas in a trade with the Diamondbacks"))
+
+    def test_rejects_no_trade_clause(self) -> None:
+        self.assertFalse(is_relevant(
+            "Brandon Nimmo waived his no-trade clause in part due to conversation with Pete Alonso"))
+
+    def test_rejects_nba_sanctions(self) -> None:
+        self.assertFalse(is_relevant(
+            "NBA sanctions team for salary cap violations"))
+
+    def test_rejects_fifa_sanctions(self) -> None:
+        self.assertFalse(is_relevant(
+            "FIFA sanctions Russian football federation over doping"))
+
+    def test_rejects_mlb_draft_pick(self) -> None:
+        self.assertFalse(is_relevant(
+            "Blue Jays select pitcher with first draft pick in 2026 MLB draft"))
+
+    def test_rejects_premier_league(self) -> None:
+        self.assertFalse(is_relevant(
+            "Premier League club fined for breach of financial rules"))
+
+    def test_keeps_geopolitical_sanctions(self) -> None:
+        self.assertTrue(is_relevant(
+            "OFAC sanctions Russian oil tanker network"))
+
+    def test_keeps_trade_restrictions(self) -> None:
+        self.assertTrue(is_relevant(
+            "US imposes new trade restrictions on Chinese tech firms"))
+
+
+class TestDroneContextRejection(unittest.TestCase):
+    """Non-military drone events matched "drone" but are entertainment."""
+
+    def test_rejects_drone_light_show(self) -> None:
+        self.assertFalse(is_relevant(
+            "Dozens of drones crash into Sydney harbour after light show glitch"))
+
+    def test_keeps_military_drone_strike(self) -> None:
+        self.assertTrue(is_relevant(
+            "Drone strike disrupts oil production in Middle East"))
+
+
+class TestDefenseContextRejection(unittest.TestCase):
+    """Self-defense / martial arts matched "defense" but are non-market."""
+
+    def test_rejects_martial_arts(self) -> None:
+        self.assertFalse(is_relevant(
+            "In Beirut, refugee girls and women learn more than self-defense in martial arts class"))
+
+    def test_rejects_legal_defense(self) -> None:
+        self.assertFalse(is_relevant(
+            "Legal defense team files motion to dismiss corruption charges"))
+
+    def test_keeps_defense_spending(self) -> None:
+        self.assertTrue(is_relevant(
+            "NATO defense spending package lifts European defense contractors"))
+
+    def test_keeps_defense_contract(self) -> None:
+        self.assertTrue(is_relevant(
+            "Defense contract awarded to Lockheed for fighter jet program"))
+
+    def test_keeps_military_budget(self) -> None:
+        self.assertTrue(is_relevant(
+            "Military budget increase boosts defense stocks"))
+
+
+class TestTearGasRejection(unittest.TestCase):
+    """Tear gas matched "gas" but is not natural gas / energy."""
+
+    def test_rejects_tear_gas(self) -> None:
+        self.assertFalse(is_relevant(
+            "A photo captures tear gas drifting across a mountain road during Bolivia protests"))
+
+    def test_keeps_natural_gas(self) -> None:
+        self.assertTrue(is_relevant(
+            "US natural gas exports rise as LNG terminals restart"))
+
+
+class TestNandSubstringRejection(unittest.TestCase):
+    """'nand' substring matched Indian names like Anand."""
+
+    def test_rejects_anand_profile(self) -> None:
+        self.assertFalse(is_relevant(
+            "When Anand Mahindra met young Uday Kotak"))
+
+    def test_keeps_nand_flash(self) -> None:
+        self.assertTrue(is_relevant(
+            "NAND flash prices rise as supply tightens"))
+
+
+class TestNonMarketContextRejection(unittest.TestCase):
+    """Headlines with keyword matches but non-market context."""
+
+    def test_rejects_ufo_footage(self) -> None:
+        self.assertFalse(is_relevant(
+            "Pentagon releases second batch of UFO declassified footage"))
+
+    def test_rejects_cattle_market_cultural(self) -> None:
+        self.assertFalse(is_relevant(
+            "Cattle market empties as fear grips Eid preparations in India West Bengal"))
+
+    def test_rejects_celebrity_meeting(self) -> None:
+        self.assertFalse(is_relevant(
+            "When billionaire met the young entrepreneur for coffee"))
+
+    def test_keeps_pentagon_defense_contract(self) -> None:
+        self.assertTrue(is_relevant(
+            "Pentagon awards defense contract worth billions"))
+
+    def test_keeps_cattle_futures(self) -> None:
+        self.assertTrue(is_relevant(
+            "Global cattle futures rally as drought cuts herd size"))
+
+    def test_keeps_financial_market(self) -> None:
+        self.assertTrue(is_relevant(
+            "Housing market starts fall as mortgage rates rise"))
+
+    def test_keeps_gold_market(self) -> None:
+        self.assertTrue(is_relevant(
+            "Gold market rally extends as dollar weakens"))
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -19,13 +19,12 @@ import re as _re
 
 RELEVANCE_KEYWORDS: set[str] = {
     # Geopolitics & conflict
-    "geopolit", "sanction", "embargo", "tariff", "duties", "treaty",
+    "geopolit", "embargo", "tariff", "duties", "treaty",
     "ceasefire", "truce", "diplomacy", "diplomatic", "nato", "sovereignty",
-    "annex", "territorial", "missile", "military", "defense", "defence",
-    "weapons", "nuclear", "drone", "wartime",
+    "annex", "territorial", "missile", "wartime",
     "escalat", "de-escalat", "retaliat",
-    # Trade & industrial policy
-    "trade", "export", "subsid", "quota", "dumping",
+    # Trade & industrial policy — "trade" moved to word-boundary with guards
+    "export", "subsid", "quota", "dumping",
     "industrial policy", "supply chain", "reshoring", "nearshoring",
     "protectionism", "free trade", "trade war", "trade deal",
     # Industrial-policy specifics — large subsidy/capex mandates
@@ -71,7 +70,7 @@ RELEVANCE_KEYWORDS: set[str] = {
     "aerospace", "auto industry", "automotive",
     # Semiconductors — supply chain specifics
     "foundry", "lithograph", "euv", "wafer", "fabricat",
-    "hbm", "dram", "nand",
+    "hbm", "dram",
     "fab capacity", "chip fab", "advanced node", "trailing edge node",
     "chip export", "chip import", "gate-all-around", "high-na",
     # Rate-sensitive sectors (flagged so we don't drop rotation stories)
@@ -130,6 +129,17 @@ _WORD_BOUNDARY_KW: set[str] = {
     "solar", "battery",
     # Credit / banking / insurance
     "fdic",
+    # Moved from substring to word-boundary to prevent false positives:
+    # "nand" matched "Anand"; "trade" matched sports trades; "sanction"
+    # matched sports sanctions; "drone" matched light shows; "defense"/
+    # "defence" matched self-defense; "military" matched generic mentions;
+    # "weapons" matched non-market context; "nuclear" matched non-market.
+    "nand", "trade", "trades", "trading",
+    "sanction", "sanctions", "sanctioned",
+    "drone", "drones",
+    "defense", "defence",
+    "military",
+    "weapons", "nuclear",
 }
 
 _WB_PATTERN: _re.Pattern[str] = _re.compile(
@@ -228,19 +238,81 @@ _ECONOMIC_CHANNEL_KW: set[str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# False-positive patterns — contextual rejection for ambiguous keywords
+# ---------------------------------------------------------------------------
+# These fire AFTER a keyword match.  If the headline matched a keyword but
+# also matches one of these patterns, it is rejected UNLESS an economic
+# channel keyword co-occurs.  This catches sports trades, drone light shows,
+# self-defense martial arts, tear gas, non-market drones, etc.
+
+_FALSE_POSITIVE_PATTERNS: list[_re.Pattern[str]] = [
+    # Self-defense / martial arts / legal defense (not defense spending)
+    _re.compile(
+        r"\b(self[- ]defen[cs]e|martial arts?|karate|judo|taekwondo|"
+        r"boxing class|legal defen[cs]e|criminal defen[cs]e)\b", _re.I),
+    # Tear gas — not natural gas / LNG
+    _re.compile(r"\btear\s+gas\b", _re.I),
+    # Non-market drone usage — light shows, crashes into harbour, racing
+    _re.compile(
+        r"\bdrones?\b.*\b(light show|harbour|harbor|display|racing|"
+        r"crash(?:es|ed)?\s+into.*(?:harbour|harbor|building|bridge|"
+        r"crowd|stadium))\b", _re.I),
+    # UFO / paranormal — matched "pentagon" but not defense procurement
+    _re.compile(r"\b(ufo|unidentified flying|declassified footage|"
+                r"paranormal|extraterrestrial|alien bodies)\b", _re.I),
+    # Celebrity profiles / personal meetings — matched "nand" in Anand etc.
+    _re.compile(r"\b(met young|when .+ met .+|exclusive interview with|"
+                r"life story of|memoir|autobiography)\b", _re.I),
+    # Non-financial market — cattle market, flea market, farmers market
+    # without commodity/price/trade context
+    _re.compile(
+        r"\b(cattle market|flea market|farmers.? market|"
+        r"flower market|fish market|night market|street market)\b"
+        r"(?!.*\b(?:pric|futures|commodit|export|import|trade|tariff|"
+        r"supply|shortage|surplus|rally|slump|surge|crash|forecast))", _re.I),
+]
+
+
+# Hard-reject patterns — always rejected, no economic-channel rescue.
+# Sports leagues and roster vocabulary are unambiguous: "trade", "sanction"
+# etc. are used in their sports sense, not their financial sense.
+_HARD_REJECT_PATTERNS: list[_re.Pattern[str]] = [
+    # Sports league names — any headline mentioning a sports league is sports
+    _re.compile(
+        r"\b(nfl|nba|mlb|nhl|mls|fifa|uefa|ioc|ncaa|premier league|"
+        r"la liga|serie a|bundesliga|ligue 1|champions league|world cup|"
+        r"super bowl|grand slam|olympic|paralympic)\b", _re.I),
+    # Sports roster / trade vocabulary
+    _re.compile(
+        r"\b(outfielder|pitcher|quarterback|goalkeeper|shortstop|catcher|"
+        r"infielder|linebacker|wide receiver|draft pick|free agent|"
+        r"waived|no-trade clause|anti-tampering|roster move|"
+        r"minor league|major league|batting|home run|"
+        r"touchdown|field goal|penalty kick|season opener)\b", _re.I),
+]
+
+
 def is_relevant(title: str) -> bool:
     """Return True if the headline has an economic/policy transmission path.
 
-    Four-stage filter:
-    1. Check substring keywords (safe, unambiguous stems).
-    2. Check word-boundary keywords (short words needing exact match).
-    3. If the ONLY match is a context-dependent keyword (war, conflict),
-       require a co-occurring economic channel word.
-    4. Apply rejection patterns — if matched, require an economic channel
-       keyword to survive.
+    Five-stage filter:
+    1. Calendar guard — schedule/diary headlines always rejected.
+    2. Reject patterns — human-interest/casualty/religious → rejected
+       unless an economic channel keyword co-occurs.
+    3. Allowlist — substring + word-boundary keywords.
+    4. Context-dependent keywords (war, conflict) → require economic context.
+    5. False-positive guard — headline matched a keyword but falls into
+       a known non-market pattern → rejected unless economic channel saves it.
     """
     if _is_calendar_headline(title):
         return False
+
+    # Stage 0: hard-reject — sports leagues/roster vocabulary cannot be
+    # rescued by economic channel keywords.
+    for pat in _HARD_REJECT_PATTERNS:
+        if pat.search(title):
+            return False
 
     low = title.lower()
 
@@ -261,5 +333,13 @@ def is_relevant(title: str) -> bool:
         if _NEC_PATTERN.search(low):
             return any(ek in low for ek in _ECON_CONTEXT_KW)
         return False
+
+    # Stage 4: false-positive guard — keyword matched, but headline is
+    # contextually non-market.  Economic channel keywords can still rescue.
+    for pat in _FALSE_POSITIVE_PATTERNS:
+        if pat.search(title):
+            if any(ch in low for ch in _ECONOMIC_CHANNEL_KW):
+                return True
+            return False
 
     return True
