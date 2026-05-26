@@ -828,5 +828,464 @@ class TestCLI(unittest.TestCase):
             os.unlink(path)
 
 
+# ---------------------------------------------------------------------------
+# v2 schema — fixture helpers
+# ---------------------------------------------------------------------------
+
+
+def _good_v2_candidate(**overrides: Any) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "primary_ticker": "WHR",
+        "benchmark_ticker": "XLY",
+        "benchmark_role": "sector_etf",
+        "expected_direction": "positive",
+        "mechanism_family": "tariffs_industrial_policy",
+        "method": "production_bhar",
+        "source_url": "https://ustr.gov/example",
+        "source_type": "official_ustr_announcement",
+        "source_quality_note": "Official USTR press release.",
+        "announcement_date": "2018-01-22",
+        "event_anchor_close": "2018-01-22",
+        "first_tradable_reaction_date": "2018-01-23",
+        "claimed_horizons": [1],
+        "diagnostic_horizons": [2],
+        "restricted_horizons": [3, 5, 20],
+        "restricted_because": "Earnings contamination after 2018-01-24 close.",
+        "h1_AR_pct": 2.3554,
+        "h1_SAR": 2.4699,
+        "h1_p": 0.013514,
+        "h1_q_bh": 0.013514,
+        "peer_check_status": "not_applicable",
+        "peer_check_summary": "No peer check required.",
+        "caveat": "h=1 and h=2 are clean. h>=3 is earnings-contaminated.",
+        "falsifier": "WHR does not outperform XLY on 2018-01-23.",
+        "persistence": "transient_h1_only",
+        "freeze_status": "freeze_ready_pending_operator_review",
+        "cache_backed": True,
+    }
+    base.update(overrides)
+    return base
+
+
+def _good_v2_artifact(**overrides: Any) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "artifact_type": "freeze_candidate_evidence",
+        "schema_version": "v2",
+        "bundle_scope": "whr_only",
+        "candidates": [_good_v2_candidate()],
+        "limitations": [
+            "freeze-candidate only - awaiting operator review.",
+            "WHR-only bundle.",
+        ],
+    }
+    base.update(overrides)
+    return base
+
+
+# ---------------------------------------------------------------------------
+# v2 schema — validation tests
+# ---------------------------------------------------------------------------
+
+
+class TestV2TopLevelKeys(unittest.TestCase):
+    def test_good_v2_artifact_passes(self) -> None:
+        path = _write_artifact(_good_v2_artifact())
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertTrue(report["ok"], report["errors"])
+            self.assertEqual(report["records_count"], 1)
+        finally:
+            os.unlink(path)
+
+    def test_v2_missing_candidates_fails(self) -> None:
+        artifact = _good_v2_artifact()
+        artifact.pop("candidates")
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("candidates" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_v2_wrong_artifact_type_fails(self) -> None:
+        artifact = _good_v2_artifact()
+        artifact["artifact_type"] = "frozen_evidence"
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("artifact_type" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+
+class TestV2CandidateFields(unittest.TestCase):
+    def test_missing_required_field_fails(self) -> None:
+        for field in (
+            "source_url", "announcement_date", "event_anchor_close",
+            "claimed_horizons", "restricted_horizons", "restricted_because",
+            "caveat", "falsifier", "persistence", "freeze_status",
+            "h1_AR_pct", "h1_SAR", "h1_p", "h1_q_bh", "method",
+            "peer_check_status", "peer_check_summary",
+        ):
+            with self.subTest(missing=field):
+                cand = _good_v2_candidate()
+                cand.pop(field)
+                artifact = _good_v2_artifact(candidates=[cand])
+                path = _write_artifact(artifact)
+                try:
+                    report = cli.run_validate_freeze_candidate_artifact(
+                        artifact_path=path,
+                    )
+                    self.assertFalse(
+                        report["ok"],
+                        f"validator accepted candidate missing {field!r}",
+                    )
+                finally:
+                    os.unlink(path)
+
+
+class TestV2Enums(unittest.TestCase):
+    def test_invalid_freeze_status_fails(self) -> None:
+        cand = _good_v2_candidate(freeze_status="approved")
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("freeze_status" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_invalid_method_fails(self) -> None:
+        cand = _good_v2_candidate(method="market_model_ols")
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("method" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_invalid_benchmark_role_fails(self) -> None:
+        cand = _good_v2_candidate(benchmark_role="random_basket")
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("benchmark_role" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+
+class TestV2DateFields(unittest.TestCase):
+    def test_bad_date_format_fails(self) -> None:
+        cand = _good_v2_candidate(announcement_date="Jan 22, 2018")
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("YYYY-MM-DD" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+
+class TestV2HorizonSeparation(unittest.TestCase):
+    def test_claimed_and_restricted_overlap_fails(self) -> None:
+        cand = _good_v2_candidate(
+            claimed_horizons=[1, 5],
+            restricted_horizons=[5, 20],
+        )
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+            self.assertTrue(any(
+                "both claimed and restricted" in e for e in report["errors"]
+            ))
+        finally:
+            os.unlink(path)
+
+    def test_clean_separation_passes(self) -> None:
+        cand = _good_v2_candidate(
+            claimed_horizons=[1],
+            diagnostic_horizons=[2],
+            restricted_horizons=[3, 5, 20],
+        )
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertTrue(report["ok"], report["errors"])
+        finally:
+            os.unlink(path)
+
+
+class TestV2BundleScope(unittest.TestCase):
+    def test_whr_only_scope_rejects_two_candidates(self) -> None:
+        artifact = _good_v2_artifact(candidates=[
+            _good_v2_candidate(),
+            _good_v2_candidate(primary_ticker="CENX"),
+        ])
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("whr_only" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_whr_only_scope_rejects_non_whr_ticker(self) -> None:
+        artifact = _good_v2_artifact(candidates=[
+            _good_v2_candidate(primary_ticker="FSLR"),
+        ])
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("whr_only" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_whr_only_scope_accepts_single_whr(self) -> None:
+        path = _write_artifact(_good_v2_artifact())
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertTrue(report["ok"], report["errors"])
+        finally:
+            os.unlink(path)
+
+    def test_no_scope_accepts_multiple_candidates(self) -> None:
+        artifact = _good_v2_artifact(candidates=[
+            _good_v2_candidate(),
+            _good_v2_candidate(primary_ticker="CENX"),
+        ])
+        artifact.pop("bundle_scope")
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertTrue(report["ok"], report["errors"])
+        finally:
+            os.unlink(path)
+
+
+class TestV2DateStrictness(unittest.TestCase):
+    def test_empty_date_string_fails(self) -> None:
+        cand = _good_v2_candidate(announcement_date="")
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("non-empty" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_null_date_fails(self) -> None:
+        cand = _good_v2_candidate()
+        cand["event_anchor_close"] = None
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("non-empty" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+
+class TestV2HorizonIntOnly(unittest.TestCase):
+    def test_string_in_horizon_list_fails(self) -> None:
+        cand = _good_v2_candidate(claimed_horizons=["1"])
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("integers" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_diagnostic_restricted_overlap_fails(self) -> None:
+        cand = _good_v2_candidate(
+            diagnostic_horizons=[2, 5],
+            restricted_horizons=[5, 20],
+        )
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any(
+                "diagnostic" in e and "restricted" in e
+                for e in report["errors"]
+            ))
+        finally:
+            os.unlink(path)
+
+
+class TestV2FrozenStatusRejected(unittest.TestCase):
+    def test_frozen_status_not_allowed(self) -> None:
+        cand = _good_v2_candidate(freeze_status="frozen")
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("freeze_status" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+
+class TestV2BannedTokensExpanded(unittest.TestCase):
+    def test_banned_token_in_restricted_because_fails(self) -> None:
+        cand = _good_v2_candidate(
+            restricted_because="This is proof that earnings contaminate.",
+        )
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("restricted_because" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_banned_token_in_peer_check_summary_fails(self) -> None:
+        cand = _good_v2_candidate(
+            peer_check_summary="This prediction confirms the mechanism.",
+        )
+        path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("peer_check_summary" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+
+class TestV2BannedTokens(unittest.TestCase):
+    def test_banned_token_in_caveat_fails(self) -> None:
+        for token in ("proof", "proven", "prediction", "alpha generated"):
+            with self.subTest(token=token):
+                cand = _good_v2_candidate(
+                    caveat=f"This is {token} of the mechanism.",
+                )
+                path = _write_artifact(_good_v2_artifact(candidates=[cand]))
+                try:
+                    report = cli.run_validate_freeze_candidate_artifact(
+                        artifact_path=path,
+                    )
+                    self.assertFalse(
+                        report["ok"],
+                        f"banned token {token!r} accepted in caveat",
+                    )
+                finally:
+                    os.unlink(path)
+
+    def test_banned_token_in_limitations_fails(self) -> None:
+        artifact = _good_v2_artifact()
+        artifact["limitations"].append("This is proof of the mechanism.")
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(
+                artifact_path=path,
+            )
+            self.assertFalse(report["ok"])
+        finally:
+            os.unlink(path)
+
+
+class TestV2ReadOnly(unittest.TestCase):
+    def test_artifact_byte_identity_preserved(self) -> None:
+        artifact = _good_v2_artifact()
+        path = _write_artifact(artifact)
+        try:
+            before = _sha256(path)
+            cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            after = _sha256(path)
+            self.assertEqual(
+                before, after,
+                "validator must not mutate the v2 artifact file",
+            )
+        finally:
+            os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# v2 live bundle — WHR-only tracked artifact must exist and pass
+# ---------------------------------------------------------------------------
+
+_V2_LIVE_BUNDLE = str(
+    Path(__file__).resolve().parents[1]
+    / "demo_artifacts" / "section_c_v2" / "freeze_candidate_evidence.json"
+)
+
+
+class TestV2LiveBundlePassesAndIsWHROnly(unittest.TestCase):
+    def test_v2_bundle_exists(self) -> None:
+        self.assertTrue(
+            Path(_V2_LIVE_BUNDLE).exists(),
+            f"tracked v2 bundle missing at {_V2_LIVE_BUNDLE}",
+        )
+
+    def test_v2_bundle_validates(self) -> None:
+        if not Path(_V2_LIVE_BUNDLE).exists():
+            self.skipTest("v2 bundle not present")
+        report = cli.run_validate_freeze_candidate_artifact(
+            artifact_path=_V2_LIVE_BUNDLE,
+        )
+        self.assertTrue(
+            report["ok"],
+            f"v2 live bundle rejected: {report['errors']}",
+        )
+
+    def test_v2_bundle_is_whr_only(self) -> None:
+        if not Path(_V2_LIVE_BUNDLE).exists():
+            self.skipTest("v2 bundle not present")
+        with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        candidates = data.get("candidates", [])
+        self.assertEqual(len(candidates), 1, "v2 bundle must contain exactly 1 candidate")
+        self.assertEqual(
+            candidates[0].get("primary_ticker"), "WHR",
+            "v2 bundle candidate must be WHR",
+        )
+
+    def test_v2_bundle_whr_is_freeze_ready(self) -> None:
+        if not Path(_V2_LIVE_BUNDLE).exists():
+            self.skipTest("v2 bundle not present")
+        with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        whr = data["candidates"][0]
+        self.assertEqual(
+            whr.get("freeze_status"),
+            "freeze_ready_pending_operator_review",
+        )
+
+    def test_v2_bundle_no_non_whr_promoted(self) -> None:
+        if not Path(_V2_LIVE_BUNDLE).exists():
+            self.skipTest("v2 bundle not present")
+        with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        tickers = [c.get("primary_ticker") for c in data.get("candidates", [])]
+        for blocked in ("CENX", "FSLR", "TXT", "RIO"):
+            self.assertNotIn(
+                blocked, tickers,
+                f"{blocked} must not appear in the WHR-only v2 bundle",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

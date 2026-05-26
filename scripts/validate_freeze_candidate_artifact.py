@@ -162,6 +162,229 @@ _NO_FDR_CAVEAT_TOKEN: str = "no fdr-significant"
 
 
 # ---------------------------------------------------------------------------
+# v2 schema constants
+# ---------------------------------------------------------------------------
+
+_V2_REQUIRED_TOP_LEVEL_KEYS: tuple[str, ...] = (
+    "artifact_type",
+    "schema_version",
+    "candidates",
+    "limitations",
+)
+
+_V2_REQUIRED_CANDIDATE_FIELDS: tuple[str, ...] = (
+    "source_url", "source_type", "source_quality_note",
+    "announcement_date", "event_anchor_close", "first_tradable_reaction_date",
+    "primary_ticker", "benchmark_ticker", "benchmark_role",
+    "claimed_horizons", "diagnostic_horizons", "restricted_horizons",
+    "restricted_because",
+    "peer_check_status", "peer_check_summary",
+    "caveat", "falsifier", "persistence", "freeze_status",
+    "h1_AR_pct", "h1_SAR", "h1_p", "h1_q_bh", "method",
+)
+
+_V2_VALID_FREEZE_STATUSES: frozenset[str] = frozenset({
+    "queued_v2",
+    "freeze_ready_pending_operator_review",
+})
+
+_V2_VALID_METHODS: frozenset[str] = frozenset({
+    "production_bhar",
+})
+
+_V2_VALID_BENCHMARK_ROLES: frozenset[str] = frozenset({
+    "sector_etf", "broad_market", "paired_loser",
+})
+
+_V2_VALID_PEER_CHECK_STATUSES: frozenset[str] = frozenset({
+    "not_applicable", "none", "pending", "complete",
+})
+
+_V2_BANNED_TOKENS: tuple[str, ...] = (
+    "proof", "proven", "guaranteed", "alpha generated",
+    "correct ticker", "automatically", "validated",
+    "prediction", "predicted",
+)
+
+_V2_DATE_FIELDS: tuple[str, ...] = (
+    "announcement_date", "event_anchor_close", "first_tradable_reaction_date",
+)
+
+
+# ---------------------------------------------------------------------------
+# v2 validation
+# ---------------------------------------------------------------------------
+
+
+def _validate_v2_payload(
+    payload: dict, artifact_path: str,
+) -> dict[str, Any]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for key in _V2_REQUIRED_TOP_LEVEL_KEYS:
+        if key not in payload:
+            errors.append(f"v2: required top-level key missing: {key!r}")
+
+    artifact_type = payload.get("artifact_type")
+    if artifact_type is not None and artifact_type != _ARTIFACT_TYPE_EXPECTED:
+        errors.append(
+            f"v2: artifact_type must equal {_ARTIFACT_TYPE_EXPECTED!r}, "
+            f"got {artifact_type!r}"
+        )
+
+    candidates_raw = payload.get("candidates")
+    if "candidates" in payload and not isinstance(candidates_raw, list):
+        errors.append(
+            f"v2: candidates must be a list, got "
+            f"{type(candidates_raw).__name__}"
+        )
+        candidates_raw = []
+    candidates: list[dict[str, Any]] = candidates_raw or []
+
+    for idx, cand in enumerate(candidates):
+        if not isinstance(cand, dict):
+            errors.append(f"v2: candidates[{idx}] must be a JSON object")
+            continue
+        ticker = cand.get("primary_ticker", f"[{idx}]")
+        _check_v2_candidate(cand, idx, ticker, errors, warnings)
+
+    bundle_scope = payload.get("bundle_scope")
+    if bundle_scope == "whr_only":
+        if len(candidates) != 1:
+            errors.append(
+                f"v2: bundle_scope is 'whr_only' but candidates has "
+                f"{len(candidates)} entries (expected exactly 1)"
+            )
+        tickers = [
+            c.get("primary_ticker") for c in candidates
+            if isinstance(c, dict)
+        ]
+        if tickers and tickers != ["WHR"]:
+            errors.append(
+                f"v2: bundle_scope is 'whr_only' but candidates contains "
+                f"{tickers!r} (expected ['WHR'] only)"
+            )
+        for blocked in ("CENX", "FSLR", "TXT", "RIO"):
+            if blocked in tickers:
+                errors.append(
+                    f"v2: {blocked} must not appear in a whr_only bundle"
+                )
+
+    limitations = payload.get("limitations")
+    if "limitations" in payload:
+        if not isinstance(limitations, list):
+            errors.append("v2: limitations must be a list of strings")
+        else:
+            _check_v2_text_tokens(
+                " | ".join(str(e) for e in limitations),
+                "limitations", errors,
+            )
+
+    return _envelope(
+        artifact_path=artifact_path,
+        records_count=len(candidates),
+        errors=errors,
+        warnings=warnings,
+    )
+
+
+def _check_v2_candidate(
+    cand: dict[str, Any], idx: int, ticker: str,
+    errors: list[str], warnings: list[str],
+) -> None:
+    for field in _V2_REQUIRED_CANDIDATE_FIELDS:
+        if field not in cand:
+            errors.append(f"v2: candidate {ticker} missing required field {field!r}")
+
+    import re as _re
+    for date_field in _V2_DATE_FIELDS:
+        val = cand.get(date_field)
+        if not isinstance(val, str) or not val:
+            if date_field in cand:
+                errors.append(
+                    f"v2: candidate {ticker} {date_field} must be a non-empty "
+                    f"YYYY-MM-DD string, got {val!r}"
+                )
+        elif not _re.match(r"^\d{4}-\d{2}-\d{2}$", val):
+            errors.append(
+                f"v2: candidate {ticker} {date_field} must be YYYY-MM-DD, "
+                f"got {val!r}"
+            )
+
+    for field_name, valid_set in (
+        ("freeze_status", _V2_VALID_FREEZE_STATUSES),
+        ("method", _V2_VALID_METHODS),
+        ("benchmark_role", _V2_VALID_BENCHMARK_ROLES),
+        ("peer_check_status", _V2_VALID_PEER_CHECK_STATUSES),
+    ):
+        val = cand.get(field_name)
+        if isinstance(val, str) and val not in valid_set:
+            errors.append(
+                f"v2: candidate {ticker} {field_name} {val!r} not in "
+                f"allowed values {sorted(valid_set)!r}"
+            )
+
+    for horizon_field in ("claimed_horizons", "diagnostic_horizons", "restricted_horizons"):
+        val = cand.get(horizon_field)
+        if val is not None and not isinstance(val, list):
+            errors.append(
+                f"v2: candidate {ticker} {horizon_field} must be a list, "
+                f"got {type(val).__name__}"
+            )
+        elif isinstance(val, list) and not all(isinstance(v, int) for v in val):
+            errors.append(
+                f"v2: candidate {ticker} {horizon_field} must contain only "
+                f"integers, got {val!r}"
+            )
+
+    claimed = set(cand.get("claimed_horizons") or [])
+    diagnostic = set(cand.get("diagnostic_horizons") or [])
+    restricted = set(cand.get("restricted_horizons") or [])
+    for label_a, set_a, label_b, set_b in (
+        ("claimed", claimed, "restricted", restricted),
+        ("claimed", claimed, "diagnostic", diagnostic),
+        ("diagnostic", diagnostic, "restricted", restricted),
+    ):
+        overlap = set_a & set_b
+        if overlap:
+            errors.append(
+                f"v2: candidate {ticker} has horizons in both {label_a} and "
+                f"{label_b}: {sorted(overlap)}"
+            )
+
+    for text_field in (
+        "caveat", "falsifier", "source_quality_note",
+        "anchor_convention_note", "restricted_because", "peer_check_summary",
+    ):
+        val = cand.get(text_field)
+        if isinstance(val, str):
+            _check_v2_text_tokens(val, f"candidate {ticker} {text_field}", errors)
+
+    for num_field in ("h1_AR_pct", "h1_SAR", "h1_p", "h1_q_bh"):
+        val = cand.get(num_field)
+        if val is not None and not isinstance(val, (int, float)):
+            errors.append(
+                f"v2: candidate {ticker} {num_field} must be numeric, "
+                f"got {type(val).__name__}"
+            )
+
+
+def _check_v2_text_tokens(
+    text: str, field_label: str, errors: list[str],
+) -> None:
+    import re
+    low = text.lower()
+    for token in _V2_BANNED_TOKENS:
+        pattern = r"\b" + re.escape(token) + r"\b"
+        if re.search(pattern, low):
+            errors.append(
+                f"v2: {field_label} contains banned overclaim token "
+                f"{token!r}; freeze-candidate prose must remain conservative"
+            )
+
+
+# ---------------------------------------------------------------------------
 # Pure compute
 # ---------------------------------------------------------------------------
 
@@ -223,6 +446,10 @@ def run_validate_freeze_candidate_artifact(
             records_count=0,
             errors=errors, warnings=warnings,
         )
+
+    # v2 dispatch: if schema_version == "v2", use the v2 validator.
+    if payload.get("schema_version") == "v2":
+        return _validate_v2_payload(payload, artifact_path)
 
     # Step 1: required top-level keys.
     for key in _REQUIRED_TOP_LEVEL_KEYS:

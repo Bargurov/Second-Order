@@ -1,0 +1,63 @@
+{
+  "artifact_type": "freeze_candidate_evidence",
+  "schema_version": "v2",
+  "cohort_name": "freeze_candidate_v2_whr_only",
+  "source": "operator_curated_cache_backed",
+  "generated_at": "2026-05-26T00:00:00Z",
+  "demo_wiring_note": "Section C Demo v1 is unchanged; this artifact is not wired to demo.",
+  "bundle_scope": "whr_only",
+  "bundle_scope_note": "WHR-only tracked bundle. CENX, FSLR, TXT, and RIO remain in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json pending their own provenance closeouts. They are not promoted here.",
+  "candidates": [
+    {
+      "primary_ticker": "WHR",
+      "benchmark_ticker": "XLY",
+      "benchmark_role": "sector_etf",
+      "expected_direction": "positive",
+      "mechanism_family": "tariffs_industrial_policy",
+      "method": "production_bhar",
+
+      "source_url": "https://ustr.gov/about-us/policy-offices/press-office/press-releases/2018/january/president-trump-approves-relief-us",
+      "source_type": "official_ustr_announcement",
+      "source_quality_note": "Official USTR press release (archived, still resolves) is the best public market-learning source. Federal Register Proclamation 9694 (published 2018-01-25) is the legal action record.",
+
+      "announcement_date": "2018-01-22",
+      "event_anchor_close": "2018-01-22",
+      "first_tradable_reaction_date": "2018-01-23",
+      "anchor_convention_note": "Anchor is 2018-01-22 close, the last close before the first positive market reaction. WHR showed no positive intraday reaction on 2018-01-22 (WHR -0.53% while XLY +1.10%). The v2.0 market-model h=1 of +3.64% was computed under OLS alpha+beta adjustment from the same anchor; the v2.1 production BHAR h=1 of +2.36% is the canonical claim. Both are significant; the difference is methodological.",
+
+      "claimed_horizons": [1],
+      "diagnostic_horizons": [2],
+      "restricted_horizons": [3, 5, 20],
+      "restricted_because": "Q4 2017 earnings released 2018-01-24 at 16:30 ET, after the 16:00 ET market close. First post-earnings session is 2018-01-25. h>=3 includes this session.",
+
+      "h1_AR_pct": 2.3554,
+      "h1_SAR": 2.4699,
+      "h1_p": 0.013514,
+      "h1_q_bh": 0.013514,
+      "h2_diagnostic_AR_pct": 6.12,
+      "h2_diagnostic_SAR": 4.54,
+      "h2_diagnostic_p": 0.000006,
+      "h2_diagnostic_note": "h=2 (2018-01-22 close to 2018-01-24 close) is the maximum clean reaction window before earnings contamination. Reported as diagnostic only, not a claimed horizon.",
+
+      "peer_check_status": "not_applicable",
+      "peer_check_summary": "No peer check required for WHR. WHR is the original Section 201 petitioner and the most directly exposed domestic washer producer. Unlike supply-shock candidates (where peer corroboration tests mechanism generality), the tariff-protection mechanism is specific to the petitioner.",
+
+      "caveat": "h=1 and h=2 are clean. h>=3 is earnings-contaminated: Whirlpool Q4 2017 earnings were released 2018-01-24 at 16:30 ET (after the 16:00 ET market close); the first post-earnings session is 2018-01-25. h=5 (AR +7.70%, p=0.0003) and h=20 (AR +3.26%, p=0.44) include this contamination and must not be presented as tariff evidence. h=20 faded, which argues against any long-horizon momentum claim.",
+      "falsifier": "WHR does not outperform XLY on 2018-01-23.",
+      "persistence": "transient_h1_only",
+      "freeze_status": "freeze_ready_pending_operator_review",
+      "cache_backed": true,
+      "operator_writeup_reference": "WHR_CENX_operator_writeup.md"
+    }
+  ],
+  "limitations": [
+    "freeze-candidate only - awaiting operator review before any downstream demo backend may consume this artifact.",
+    "WHR-only bundle: CENX, FSLR, TXT, RIO provenance closeouts pending; they are not promoted here.",
+    "WHR h=1 is significant at the 5% level (p=0.014) but not at the 1% level. The h=2 diagnostic (p < 0.00001) is stronger but is a non-standard horizon.",
+    "No cross-event statistical claims are possible from a single-candidate bundle."
+  ],
+  "methodology_notes": {
+    "event_study_form": "Production BHAR via stats.event_study.compute_event_study. AR_h = (P_asset[t+h]/P_asset[t] - 1) - (P_bench[t+h]/P_bench[t] - 1) where t = event_index = the trading day BEFORE first_tradable_reaction_date. sigma_ar_daily = sample stddev (ddof=1) over the 60-bar pre-event estimation window. SAR_h = AR_h / (sigma_ar_daily * sqrt(h)). Daily simple close-to-close returns; auto_adjust=False.",
+    "no_alpha_or_causality_claim": "Nothing in this artifact constitutes a claim of causal mechanism, persistent edge, or replicable trading strategy. Each row reports a pre-registered direction, a measured abnormal return on a single named event, and a falsifier."
+  }
+}
