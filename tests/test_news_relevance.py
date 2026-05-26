@@ -452,6 +452,26 @@ class TestDefenseContextRejection(unittest.TestCase):
         self.assertTrue(is_relevant(
             "Military budget increase boosts defense stocks"))
 
+    def test_keeps_self_defense_strikes_iran(self) -> None:
+        self.assertTrue(is_relevant(
+            "US forces conducted self-defense strikes in southern Iran"))
+
+    def test_keeps_self_defense_strikes_peace(self) -> None:
+        self.assertTrue(is_relevant(
+            "U.S. conducts self-defense strikes in Iran as Trump pushes for peace deal"))
+
+    def test_keeps_self_defense_airstrikes_gaza(self) -> None:
+        self.assertTrue(is_relevant(
+            "Israel cites self-defense in new round of airstrikes on Gaza"))
+
+    def test_keeps_nato_self_defense_cyberattack(self) -> None:
+        self.assertTrue(is_relevant(
+            "NATO invokes self-defense clause after Baltic cyberattack"))
+
+    def test_rejects_self_defense_class(self) -> None:
+        self.assertFalse(is_relevant(
+            "Self-defense class teaches women martial arts"))
+
 
 class TestTearGasRejection(unittest.TestCase):
     """Tear gas matched "gas" but is not natural gas / energy."""

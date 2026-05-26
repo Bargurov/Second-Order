@@ -246,10 +246,24 @@ _ECONOMIC_CHANNEL_KW: set[str] = {
 # channel keyword co-occurs.  This catches sports trades, drone light shows,
 # self-defense martial arts, tear gas, non-market drones, etc.
 
+_FP_SELF_DEFENSE_RE: _re.Pattern[str] = _re.compile(
+    r"\bself[- ]defen[cs]e\b", _re.IGNORECASE)
+
+# Military context that rescues "self-defense" from false-positive rejection.
+# "Self-defense strikes in Iran" is geopolitical; "self-defense martial arts
+# class" is not.  Only checked when _FP_SELF_DEFENSE_RE fires.
+_SELF_DEFENSE_MILITARY_RE: _re.Pattern[str] = _re.compile(
+    r"\b(strikes?|airstrikes?|forces?|troops?|nato|"
+    r"cyberattack|missile|retaliat|invasion|bombing|"
+    r"artillery|naval|air force)\b", _re.IGNORECASE)
+
+
 _FALSE_POSITIVE_PATTERNS: list[_re.Pattern[str]] = [
-    # Self-defense / martial arts / legal defense (not defense spending)
+    # Self-defense — military rescue handled in the loop below
+    _FP_SELF_DEFENSE_RE,
+    # Martial arts / legal defense — always blocked, no military rescue
     _re.compile(
-        r"\b(self[- ]defen[cs]e|martial arts?|karate|judo|taekwondo|"
+        r"\b(martial arts?|karate|judo|taekwondo|"
         r"boxing class|legal defen[cs]e|criminal defen[cs]e)\b", _re.I),
     # Tear gas — not natural gas / LNG
     _re.compile(r"\btear\s+gas\b", _re.I),
@@ -339,6 +353,8 @@ def is_relevant(title: str) -> bool:
     for pat in _FALSE_POSITIVE_PATTERNS:
         if pat.search(title):
             if any(ch in low for ch in _ECONOMIC_CHANNEL_KW):
+                return True
+            if pat is _FP_SELF_DEFENSE_RE and _SELF_DEFENSE_MILITARY_RE.search(title):
                 return True
             return False
 
