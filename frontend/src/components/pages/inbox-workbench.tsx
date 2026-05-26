@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -8,6 +7,7 @@ import {
   AlertTriangle, RotateCw, ChevronRight,
   ArrowLeft, Info, ShieldOff, Archive,
 } from "lucide-react";
+import "@/styles/quiet-archive.css";
 import {
   api,
   type NewsCluster,
@@ -121,11 +121,11 @@ function ContextDrawer({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="group flex w-full items-center gap-2 rounded bg-surface-container-low/50 px-3 py-1.5 text-left transition-colors hover:bg-surface-container-low"
+        className="group flex w-full items-center gap-2 rounded border border-[color:var(--so-rule)] px-3 py-1.5 text-left transition-colors hover:bg-[color:var(--so-bg-2)]"
       >
-        <ChevronRight className={cn("h-3 w-3 text-on-surface-variant/40 transition-transform", open && "rotate-90")} />
-        <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/45">Context</span>
-        <span className="text-[10px] text-on-surface-variant/40">{summary}</span>
+        <ChevronRight className={cn("h-3 w-3 text-[color:var(--so-ink-3)] transition-transform", open && "rotate-90")} />
+        <span className="qa-kicker-dim">— Context</span>
+        <span className="qa-meta">{summary}</span>
       </button>
 
       {open && (
@@ -201,29 +201,31 @@ function StreamCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        "group relative flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors",
-        "border-l-[3px]",
-        selected
-          ? "border-l-primary bg-primary/[0.08]"
-          : failed
-            ? "border-l-destructive/30 hover:bg-white/[0.02]"
-            : "border-l-transparent hover:bg-white/[0.02]",
+        "qa-cluster-rail group relative flex w-full flex-col gap-1 px-3 py-2.5 text-left",
+        selected && "is-selected",
+        failed && "is-failed",
         muted && "opacity-40",
       )}
     >
-      <div className="flex items-center gap-1.5">
-        <span className="font-num text-[9px] tabular-nums text-muted-foreground/40">{_age(c.published_at)}</span>
+      <div className="flex items-center gap-2">
+        <span className="qa-num text-[10px] text-[color:var(--so-ink-3)]">{_age(c.published_at)}</span>
         <span className={cn(
-          "font-num text-[9px] font-bold tabular-nums",
-          c.source_count >= 5 ? "text-primary/70" : c.source_count >= 3 ? "text-foreground/50" : "text-muted-foreground/30",
+          "qa-num text-[10px] font-medium",
+          c.source_count >= 5
+            ? "text-[color:var(--so-citrine)]"
+            : c.source_count >= 3
+              ? "text-[color:var(--so-ink-1)]"
+              : "text-[color:var(--so-ink-3)]",
         )}>
           {c.source_count}s
         </span>
-        {c.agreement === "mixed" && <span className="text-[8px] font-bold uppercase tracking-wider text-destructive/50">mix</span>}
-        {c.low_signal && <span className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground/30">low</span>}
-        {failed && <AlertTriangle className="h-2.5 w-2.5 text-destructive/50" />}
+        {c.agreement === "mixed" && (
+          <span className="qa-meta text-[9px] !text-[color:var(--so-amber)]">mixed</span>
+        )}
+        {c.low_signal && <span className="qa-meta text-[9px]">low</span>}
+        {failed && <AlertTriangle className="h-2.5 w-2.5 text-[color:var(--so-amber)]" />}
       </div>
-      <span className="text-[11.5px] leading-snug text-foreground/90 line-clamp-2">{c.headline}</span>
+      <span className={cn("qa-lead line-clamp-3", selected && "is-selected")}>{c.headline}</span>
       {(c.macro_surprise || c.policy_timing) && (
         <div className="flex items-center gap-1 pt-0.5">
           {c.policy_timing && <PolicyTimingStrip block={c.policy_timing} />}
@@ -251,22 +253,18 @@ function WorksheetSkeleton() {
   return (
     <div className="flex flex-col gap-0">
       <div className="flex items-center gap-2 pb-2">
-        <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/45">Candidate Worksheet</span>
-        <span className="rounded-full bg-on-surface-variant/8 px-2 py-px text-[8px] font-semibold uppercase tracking-wider text-on-surface-variant/30">Deferred</span>
+        <span className="qa-kicker">— Candidate Worksheet</span>
+        <span className="qa-pill qa-pill-amb">Deferred</span>
       </div>
       {_WORKSHEET_FIELDS.map((f) => (
-        <div key={f.key} className="flex items-center gap-3 border-t border-white/[0.03] py-2">
-          <span className={cn(
-            "w-[120px] shrink-0 text-[10px] uppercase tracking-[0.04em] text-on-surface-variant/35",
-            f.mono ? "font-mono" : "font-medium",
-          )}>
-            {f.key}
-          </span>
-          <div className="h-[22px] flex-1 rounded bg-white/[0.02] border border-dashed border-white/[0.04]" />
+        <div key={f.key} className="qa-ws-row">
+          <span className="qa-ws-label">{f.key}</span>
+          <div className="qa-ws-editor" />
         </div>
       ))}
-      <p className="pt-2 text-[9.5px] leading-relaxed text-on-surface-variant/30">
-        Worksheet fields require candidate_id propagation through clustered /news; deferred in Slice 01.
+      <p className="qa-help mt-3">
+        Worksheet fields require <em>candidate_id</em> propagation through clustered <strong>/news</strong>;
+        deferred in Slice 01.
       </p>
     </div>
   );
@@ -279,14 +277,16 @@ function WorksheetSkeleton() {
 function DeskIdle() {
   return (
     <div className="flex h-full min-h-[400px] flex-col items-center justify-center px-8">
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.02]">
-          <Newspaper className="h-4 w-4 text-on-surface-variant/20" />
-        </div>
-        <p className="font-headline text-[14px] font-semibold text-on-surface/60">No cluster selected</p>
-        <p className="mt-1.5 max-w-[240px] text-[11px] leading-relaxed text-on-surface-variant/40">
-          Select a cluster from the stream to populate the desk with headline context, evidence, and worksheet fields.
+      <div className="max-w-[320px] text-left">
+        <span className="qa-kicker block">— Awaiting selection</span>
+        <p className="qa-headline mt-3">
+          No <em>candidate</em> on the desk.
         </p>
+        <p className="qa-help mt-3">
+          Select a cluster from the stream to populate the desk with headline context,
+          evidence, and the worksheet skeleton.
+        </p>
+        <Newspaper className="mt-5 h-3.5 w-3.5 text-[color:var(--so-ink-4)]" />
       </div>
     </div>
   );
@@ -306,33 +306,30 @@ function DeskPanel({
   return (
     <div className="flex flex-col gap-0 overflow-y-auto" style={{ maxHeight: "calc(100dvh - 140px)" }}>
       {/* Desk header */}
-      <div className="border-b border-white/[0.04] px-5 py-4">
-        <div className="flex items-center gap-2 pb-2">
-          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-primary/60">Candidate Desk</span>
-          <span className="text-on-surface-variant/15">·</span>
-          <span className="font-num text-[10px] tabular-nums text-muted-foreground/40">
+      <div className="border-b border-[color:var(--so-rule-hi)] px-5 py-4">
+        <div className="flex items-baseline gap-3 pb-2">
+          <span className="qa-kicker">— Candidate Desk</span>
+          <span className="qa-meta">
             {cluster.source_count} source{cluster.source_count !== 1 ? "s" : ""}
             {cluster.agreement ? ` · ${cluster.agreement}` : ""}
           </span>
         </div>
 
-        <h3 className="font-headline text-[18px] font-bold leading-tight tracking-[-0.015em] text-foreground">
-          {cluster.headline}
-        </h3>
+        <h3 className="qa-headline mt-1">{cluster.headline}</h3>
 
-        {/* Source tier chips — compact inline */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-1">
+        {/* Source tier chips — kit "qa-pill" treatment */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           {cluster.sources.slice(0, 4).map((s) => (
             <span key={s.name} className={cn(
-              "inline-flex items-center gap-1 rounded px-1.5 py-px text-[9.5px]",
-              s.tier === "T1" ? "bg-primary/[0.06] text-primary/70" : "text-muted-foreground/50",
+              "qa-pill",
+              s.tier === "T1" && "qa-pill-cit",
             )}>
-              {s.tier && <span className="font-num text-[8px] font-bold opacity-50">{s.tier}</span>}
+              {s.tier && <span className="opacity-70">{s.tier}</span>}
               {s.name}
             </span>
           ))}
           {cluster.sources.length > 4 && (
-            <span className="text-[9px] text-muted-foreground/30">+{cluster.sources.length - 4}</span>
+            <span className="qa-meta">+{cluster.sources.length - 4}</span>
           )}
         </div>
 
@@ -346,27 +343,37 @@ function DeskPanel({
       </div>
 
       {/* Desk body — scrollable content */}
-      <div className="flex flex-col gap-4 px-5 py-4">
+      <div className="flex flex-col gap-5 px-5 py-4">
         {/* Summary */}
         {cluster.summary && (
           <div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">Summary</span>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-on-surface/80">{cluster.summary}</p>
+            <span className="qa-kicker">— Summary</span>
+            <p
+              className="mt-2 text-[13px] leading-relaxed"
+              style={{ fontFamily: "var(--so-serif)", color: "var(--so-ink-1)", fontWeight: 300 }}
+            >
+              {cluster.summary}
+            </p>
           </div>
         )}
 
         {/* Consensus KV */}
         {con && Object.keys(con).length > 0 && (
           <div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">Consensus</span>
-            <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+            <span className="qa-kicker">— Consensus</span>
+            <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
               {(["actors", "action", "sector", "geography", "uncertainty"] as const).map((k) => {
                 const v = con[k];
                 if (!v) return null;
                 return (
                   <div key={k} className="contents">
-                    <dt className="text-[10px] font-semibold uppercase tracking-[0.06em] text-on-surface-variant/40">{k}</dt>
-                    <dd className="text-[11px] text-on-surface/70">{String(v)}</dd>
+                    <dt className="qa-meta pt-0.5">{k}</dt>
+                    <dd
+                      className="text-[12px]"
+                      style={{ fontFamily: "var(--so-mono)", color: "var(--so-ink-1)" }}
+                    >
+                      {String(v)}
+                    </dd>
                   </div>
                 );
               })}
@@ -377,20 +384,32 @@ function DeskPanel({
         {/* Evidence — compact */}
         {evidence && evidence.length > 0 && (
           <div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">Evidence</span>
-            <div className="mt-1 flex flex-col gap-1">
+            <span className="qa-kicker">— Evidence</span>
+            <div className="mt-1.5 flex flex-col">
               {evidence.map((e, i) => (
-                <div key={i} className="flex items-start gap-2 py-1">
+                <div
+                  key={i}
+                  className="flex items-start gap-3 border-t border-[color:var(--so-rule)] py-2 first:border-t-0"
+                >
                   <span className={cn(
-                    "mt-0.5 shrink-0 font-num text-[9px] font-bold",
-                    e.tier === "T1" ? "text-primary/60" : "text-muted-foreground/35",
+                    "qa-num mt-0.5 shrink-0 text-[10px] font-medium",
+                    e.tier === "T1" ? "text-[color:var(--so-citrine)]" : "text-[color:var(--so-ink-3)]",
                   )}>
                     {e.tier ?? "—"}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-semibold text-on-surface-variant/60">{e.source}</span>
-                    {e.note && <span className="ml-1.5 text-[9px] italic text-destructive/40">{e.note}</span>}
-                    <p className="text-[10.5px] leading-snug text-on-surface/60">{e.title}</p>
+                    <span className="qa-meta">{e.source}</span>
+                    {e.note && (
+                      <span className="ml-2 qa-help text-[10.5px]" style={{ color: "var(--so-amber)" }}>
+                        {e.note}
+                      </span>
+                    )}
+                    <p
+                      className="mt-0.5 text-[12px] leading-snug"
+                      style={{ fontFamily: "var(--so-serif)", color: "var(--so-ink-2)", fontWeight: 300 }}
+                    >
+                      {e.title}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -399,30 +418,40 @@ function DeskPanel({
         )}
 
         {/* Worksheet skeleton — the visual signature of the desk */}
-        <div className="border-t border-white/[0.04] pt-4">
+        <div className="qa-section-head">
           <WorksheetSkeleton />
         </div>
 
-        {/* Actions — pinned feel */}
-        <div className="flex items-center gap-2 border-t border-white/[0.04] pt-3">
+        {/* Actions — kit-style mono buttons */}
+        <div className="qa-section-head flex items-center gap-2 pt-4">
           {onAnalyze && (
-            <Button
-              size="sm"
-              className="h-7 gap-1.5 rounded bg-primary/[0.12] px-3 text-[11px] font-semibold text-primary hover:bg-primary/20 border border-primary/20"
+            <button
+              type="button"
+              className="qa-btn-primary inline-flex h-8 items-center gap-2 px-4"
               onClick={() => onAnalyze(cluster.headline, { context: buildClusterContext(cluster) })}
             >
               {failed ? <RotateCw className="h-3 w-3" /> : <FlaskConical className="h-3 w-3" />}
               {failed ? "Retry" : "Analyze"}
-            </Button>
+            </button>
           )}
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] text-muted-foreground/50 hover:text-muted-foreground" onClick={onSkip}>
+          <button
+            type="button"
+            className="qa-btn-primary inline-flex h-8 items-center px-4"
+            style={{ borderColor: "var(--so-rule)", color: "var(--so-ink-3)", background: "transparent" }}
+            onClick={onSkip}
+          >
             Skip
-          </Button>
-          <Button variant="ghost" size="sm" disabled className="ml-auto h-7 gap-1 px-2 text-[9px] text-on-surface-variant/25 cursor-not-allowed"
-            title="Staging from UI requires backend support. Use CLI: scripts/">
+          </button>
+          <button
+            type="button"
+            disabled
+            className="qa-btn-primary ml-auto inline-flex h-8 items-center gap-2 px-4"
+            style={{ borderColor: "var(--so-ink-4)", color: "var(--so-ink-4)", background: "transparent" }}
+            title="Staging from UI requires backend support. Use CLI: scripts/"
+          >
             <Archive className="h-3 w-3" />
             Stage
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -439,79 +468,96 @@ function DossierPanel({ cluster }: { cluster: NewsCluster }) {
     <div className="flex flex-col gap-0 overflow-y-auto px-4 py-3" style={{ maxHeight: "calc(100dvh - 140px)" }}>
       {/* Cluster metadata KV */}
       <div className="pb-3">
-        <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">Cluster Metadata</span>
-        <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.06em] text-on-surface-variant/35">Sources</dt>
-          <dd className="font-num text-[10px] tabular-nums text-on-surface/70">{cluster.source_count}</dd>
+        <span className="qa-kicker">— Cluster Metadata</span>
+        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+          <dt className="qa-meta">Sources</dt>
+          <dd className="qa-num text-[11px] text-[color:var(--so-ink-0)]">{cluster.source_count}</dd>
 
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.06em] text-on-surface-variant/35">Agreement</dt>
-          <dd className={cn("text-[10px]", cluster.agreement === "mixed" ? "text-destructive/60" : "text-on-surface/70")}>
+          <dt className="qa-meta">Agreement</dt>
+          <dd className={cn(
+            "qa-num text-[11px]",
+            cluster.agreement === "mixed"
+              ? "text-[color:var(--so-amber)]"
+              : "text-[color:var(--so-ink-1)]",
+          )}>
             {cluster.agreement ?? "—"}
           </dd>
 
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.06em] text-on-surface-variant/35">Published</dt>
-          <dd className="font-num text-[10px] tabular-nums text-on-surface/70">
+          <dt className="qa-meta">Published</dt>
+          <dd className="qa-num text-[11px] text-[color:var(--so-ink-1)]">
             {cluster.published_at ? new Date(cluster.published_at).toLocaleString(undefined, {
               month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
             }) : "—"}
           </dd>
 
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.06em] text-on-surface-variant/35">Candidate ID</dt>
-          <dd className="font-num text-[10px] tabular-nums text-on-surface-variant/25">— deferred</dd>
+          <dt className="qa-meta">Candidate ID</dt>
+          <dd className="qa-num text-[11px] text-[color:var(--so-ink-3)]">— deferred</dd>
 
-          <dt className="text-[9px] font-semibold uppercase tracking-[0.06em] text-on-surface-variant/35">Artifact</dt>
-          <dd className="text-[10px] text-on-surface-variant/25">— not staged</dd>
+          <dt className="qa-meta">Artifact</dt>
+          <dd className="qa-num text-[11px] text-[color:var(--so-ink-3)]">— not staged</dd>
         </dl>
       </div>
 
       {/* Source list — collapsed by default */}
-      <div className="border-t border-white/[0.03] py-2.5">
+      <div className="qa-section-head">
         <button type="button" onClick={() => setSrcOpen((o) => !o)}
-          className="flex w-full items-center gap-1.5 text-left">
-          <ChevronRight className={cn("h-2.5 w-2.5 text-on-surface-variant/30 transition-transform", srcOpen && "rotate-90")} />
-          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/35">Sources</span>
-          <span className="font-num text-[9px] tabular-nums text-on-surface-variant/25">{cluster.sources.length}</span>
+          className="flex w-full items-center gap-2 text-left">
+          <ChevronRight className={cn(
+            "h-2.5 w-2.5 text-[color:var(--so-ink-3)] transition-transform",
+            srcOpen && "rotate-90",
+          )} />
+          <span className="qa-kicker">— Sources</span>
+          <span className="qa-num text-[10px] text-[color:var(--so-ink-3)]">{cluster.sources.length}</span>
         </button>
         {srcOpen && (
-          <div className="mt-1.5 flex flex-col gap-0.5 pl-4">
+          <div className="mt-2 flex flex-col gap-1 pl-4">
             {cluster.sources.map((s) => (
-              <div key={s.name} className="flex items-center gap-1.5">
-                <span className={cn("font-num text-[9px] font-bold", s.tier === "T1" ? "text-primary/50" : "text-muted-foreground/25")}>{s.tier ?? "—"}</span>
-                <span className="text-[10px] text-on-surface/50">{s.name}</span>
+              <div key={s.name} className="flex items-center gap-2">
+                <span className={cn(
+                  "qa-num text-[10px] font-medium",
+                  s.tier === "T1" ? "text-[color:var(--so-citrine)]" : "text-[color:var(--so-ink-3)]",
+                )}>
+                  {s.tier ?? "—"}
+                </span>
+                <span className="text-[11px] text-[color:var(--so-ink-1)]" style={{ fontFamily: "var(--so-mono)" }}>
+                  {s.name}
+                </span>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Workflow status panels — compact */}
-      <div className="flex flex-col gap-2 border-t border-white/[0.03] pt-2.5">
+      {/* Workflow status panels — kit gate-preview style, opt-in off */}
+      <div className="qa-section-head flex flex-col gap-3">
         <div className="flex items-start gap-2">
-          <Info className="mt-0.5 h-3 w-3 shrink-0 text-primary/30" />
+          <Info className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--so-citrine)] opacity-60" />
           <div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-primary/45">Staging</span>
-            <p className="text-[9.5px] leading-relaxed text-on-surface-variant/40">
-              Artifact workflow remains CLI-only. Writes land in artifacts/staging/ when backend support is added.
+            <span className="qa-kicker">Staging</span>
+            <p className="qa-help mt-1">
+              Artifact workflow remains <em>CLI-only</em>. Writes land in
+              {" "}<strong>artifacts/staging/</strong> when backend support is added.
             </p>
           </div>
         </div>
 
         <div className="flex items-start gap-2">
-          <ShieldOff className="mt-0.5 h-3 w-3 shrink-0 text-on-surface-variant/20" />
+          <ShieldOff className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--so-ink-3)]" />
           <div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.06em] text-on-surface-variant/30">Gate Preview</span>
-            <p className="text-[9.5px] leading-relaxed text-on-surface-variant/40">
-              Not run from UI in Slice 01. Use CLI gate diagnostic.
+            <span className="qa-kicker-dim">Gate Preview</span>
+            <p className="qa-help mt-1">
+              Not run from UI in Slice 01. Use the CLI gate diagnostic.
             </p>
           </div>
         </div>
       </div>
 
       {/* Held ≠ rejected */}
-      <div className="border-t border-white/[0.03] pt-2.5 mt-2">
-        <p className="text-[9.5px] leading-relaxed text-on-surface-variant/35">
-          <span className="font-semibold text-on-surface-variant/50">Held ≠ rejected.</span>{" "}
-          A held candidate stays in the inbox. The gate identifies candidates that need more evidence — it does not discard.
+      <div className="qa-section-head">
+        <p className="qa-help">
+          <strong>Held ≠ rejected.</strong>{" "}
+          A held candidate stays in the inbox. The gate identifies candidates that need
+          more evidence — it <em>does not</em> discard.
         </p>
       </div>
     </div>
@@ -520,29 +566,28 @@ function DossierPanel({ cluster }: { cluster: NewsCluster }) {
 
 function DossierIdle() {
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
-      <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/30">Dossier</span>
-      <p className="text-[10px] text-on-surface-variant/25">Select a cluster.</p>
+    <div className="flex flex-col gap-3 px-4 py-3 opacity-80">
+      <span className="qa-kicker-dim">— Dossier</span>
+      <p className="qa-help">Select a cluster.</p>
 
-      <div className="flex flex-col gap-2 pt-1">
+      <div className="qa-section-head flex flex-col gap-2.5">
         <div className="flex items-start gap-2">
-          <Info className="mt-0.5 h-3 w-3 shrink-0 text-primary/20" />
-          <p className="text-[9.5px] leading-relaxed text-on-surface-variant/25">
-            <span className="font-semibold text-primary/30">Staging.</span> Artifact writes land in artifacts/staging/.
+          <Info className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--so-citrine)] opacity-50" />
+          <p className="qa-help">
+            <strong>Staging.</strong> Artifact writes land in <em>artifacts/staging/</em>.
           </p>
         </div>
         <div className="flex items-start gap-2">
-          <ShieldOff className="mt-0.5 h-3 w-3 shrink-0 text-on-surface-variant/15" />
-          <p className="text-[9.5px] leading-relaxed text-on-surface-variant/25">
-            <span className="font-semibold text-on-surface-variant/30">Gate.</span> CLI-only in Slice 01.
+          <ShieldOff className="mt-0.5 h-3 w-3 shrink-0 text-[color:var(--so-ink-3)]" />
+          <p className="qa-help">
+            <strong>Gate.</strong> CLI-only in Slice 01.
           </p>
         </div>
       </div>
 
-      <div className="border-t border-white/[0.02] pt-2">
-        <p className="text-[9.5px] text-on-surface-variant/20">
-          <span className="font-semibold text-on-surface-variant/30">Held ≠ rejected.</span>{" "}
-          Held candidates stay in the inbox.
+      <div className="qa-section-head">
+        <p className="qa-help">
+          <strong>Held ≠ rejected.</strong> Held candidates stay in the inbox.
         </p>
       </div>
     </div>
@@ -679,27 +724,32 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
   }, []);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      {/* ── Compact header row ── */}
-      <div className="flex items-center gap-2">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary/50" />
-        <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-primary/55">Staging</span>
-        <span className="text-on-surface-variant/15">|</span>
-        <h2 className="font-headline text-[15px] font-bold tracking-[-0.02em] text-foreground">Inbox Workbench</h2>
-        <Badge variant="outline" className="font-num text-[9px] py-0 px-1.5 h-[18px]">{totalCount}</Badge>
+    <div className="so-quiet-archive flex flex-col gap-1.5 rounded-md px-2 pt-1 pb-3">
+      {/* ── Folio bar — editorial nameplate + citrine staging stamp + meta ── */}
+      <div className="qa-folio">
+        <span className="qa-folio-nameplate">
+          Inbox <em>Workbench</em>
+        </span>
+        <span className="qa-stamp">Staging</span>
+        <span className="qa-folio-meta">
+          <strong className="qa-num">{totalCount.toString().padStart(2, "0")}</strong>
+          <span className="mx-2 text-[color:var(--so-ink-4)]">·</span>
+          Slice 01
+        </span>
 
-        {/* Refresh status inline */}
+        {/* Refresh status — kicker-style, dim */}
         {effectiveMeta && (
-          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/50">
+          <span className="qa-folio-meta inline-flex items-center gap-2">
             <span className={cn("h-1 w-1 rounded-full", _refreshDot(effectiveMeta))} />
-            <span>{_refreshLabel(effectiveMeta)}</span>
-          </div>
+            {_refreshLabel(effectiveMeta)}
+          </span>
         )}
 
         <Button
           variant="ghost" size="sm"
           onClick={handleRefresh} disabled={refreshing}
-          className="ml-auto h-6 w-6 p-0 text-muted-foreground/40 hover:text-muted-foreground"
+          className="ml-auto h-6 w-6 p-0 text-[color:var(--so-ink-3)] hover:text-[color:var(--so-ink-1)]"
+          aria-label="Refresh"
         >
           <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
         </Button>
@@ -752,13 +802,16 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
             mobileDesk && "hidden lg:flex",
           )}>
             {/* Zone header */}
-            <div className="flex flex-col gap-1.5 px-3 pb-1.5 pt-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">Stream</span>
-                <span className="font-num text-[9px] tabular-nums text-muted-foreground/25">{filtered.length}</span>
+            <div className="flex flex-col gap-2 border-b border-[color:var(--so-rule-hi)] px-3 pb-2 pt-2.5">
+              <div className="flex items-center gap-3">
+                <span className="qa-kicker">— Stream</span>
+                <span className="qa-num text-[10px] text-[color:var(--so-ink-3)]">
+                  {filtered.length.toString().padStart(2, "0")}
+                </span>
                 {lowSignal.length > 0 && (
                   <button type="button" onClick={() => setShowLowSignal((s) => !s)}
-                    className="ml-auto flex items-center gap-1 text-[8px] text-muted-foreground/30 hover:text-muted-foreground/50">
+                    className="ml-auto qa-meta inline-flex items-center gap-1 hover:text-[color:var(--so-ink-1)]"
+                  >
                     <EyeOff className="h-2.5 w-2.5" />
                     {showLowSignal ? "Hide" : "+"}{lowSignal.length} low
                   </button>

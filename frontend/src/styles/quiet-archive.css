@@ -1,0 +1,389 @@
+/* ============================================================
+   Quiet Archive — scoped visual language for Inbox Workbench.
+   ============================================================
+   Source: design/second order 2(5)/inbox-handoff (Direction C).
+   Activates inside `.so-quiet-archive`.  Overrides shadcn theme
+   variables under the wrapper so existing Tailwind utility
+   classes (bg-background, bg-card, text-primary, border, …)
+   inherit Quiet Archive tones automatically.  Also exposes
+   `qa-*` editorial helpers for elements the current markup
+   needs (folio bar, citrine stamp, display title, mono kicker).
+
+   House rules from kit/README.md (do not break):
+     - Citrine is CHROME ONLY — never positive return.
+     - Jade / rust are evidence/return signals only.
+     - Amber is held / incomplete / insufficient / degraded only.
+     - All numerics in JetBrains Mono, tabular.
+     - Hairlines over containers; no background-coloured section
+       dividers.
+     - Italics in serif carry semantic weight; citrine accent on
+       key terms.
+   ============================================================ */
+
+/* Editorial fonts loaded for this scope only.  Google Fonts CSS
+   serves @font-face globally but only the wrapped subtree uses
+   them — the rest of the app stays on Inter / Manrope / JBM. */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,wght@0,300..600;1,300..600&family=Geist:wght@300;400;500;600&display=swap');
+
+/* ============================================================
+   Scope overrides — shadcn theme variables.
+   Specificity doubled (.so-quiet-archive.so-quiet-archive) so we
+   win cleanly against the .dark scope from index.css regardless
+   of import order.
+   ============================================================ */
+.so-quiet-archive.so-quiet-archive {
+  /* surfaces — neutral charcoal ladder, no blue/navy cast.
+     Hue 0, saturation 0% so the bone-ink palette reads as bone
+     against a true grey background instead of yellow-against-navy. */
+  --background: 0 0% 4%;           /* #0a0a0a — Stream / near-black */
+  --card:       0 0% 8%;           /* #141414 — Desk / charcoal */
+  --popover:    0 0% 12%;          /* #1f1f1f — raised / hover */
+  --secondary:  0 0% 8%;
+  --muted:      0 0% 8%;
+  --accent:     0 0% 12%;
+
+  /* ink — bone palette */
+  --foreground: 41 16% 74%;        /* #c6c1b3 (ink-1) */
+  --muted-foreground: 41 9% 53%;   /* #908b7f (ink-2) */
+  --card-foreground: 41 19% 81%;   /* between ink-0 and ink-1 */
+  --popover-foreground: 41 19% 81%;
+  --primary-foreground: 0 0% 4%;
+  --secondary-foreground: 41 16% 74%;
+  --accent-foreground: 41 19% 81%;
+
+  /* chrome accent — citrine.  Replaces teal across all primary-
+     tinted utilities (selection rail, kickers, analyze button). */
+  --primary: 46 63% 55%;           /* #d4b343 */
+  --ring: 46 63% 55%;
+
+  /* hairlines — bone-tinted, low contrast */
+  --border: 40 12% 14%;
+  --input: 40 12% 14%;
+
+  /* return / evidence signal — rust replaces destructive. */
+  --destructive: 6 53% 59%;        /* #c97064 */
+
+  /* ============================================================
+     Quiet Archive primitives — direct-access variables and the
+     `qa-*` helpers consumed by inbox-workbench.tsx.
+     ============================================================ */
+  /* Charcoal ladder — Stream / Desk / Dossier in 4-percent steps.
+     Pure neutral (hue 0, sat 0%) so the bone-ink palette and the
+     citrine accent both read cleanly against grey, not navy. */
+  --so-bg:        #0a0a0a;   /* Stream / near-black */
+  --so-bg-1:      #141414;   /* Desk / charcoal */
+  --so-bg-2:      #1c1c1c;   /* Dossier / lifted charcoal */
+  --so-rule:      rgba(232, 227, 209, 0.10);
+  --so-rule-hi:   rgba(232, 227, 209, 0.18);
+
+  --so-ink-0:     #efeadb;
+  --so-ink-1:     #c6c1b3;
+  --so-ink-2:     #908b7f;
+  --so-ink-3:     #5e5a52;
+  --so-ink-4:     #383631;
+
+  --so-citrine:    #d4b343;
+  --so-citrine-2:  #b8993b;
+  --so-citrine-bg: rgba(212, 179, 67, 0.10);
+
+  --so-jade-ink:  #98c2ad;        /* positive return only */
+  --so-rust-ink:  #e0978c;        /* negative return only */
+  --so-amber:     #c89759;        /* held / incomplete / degraded */
+  --so-slate:     #7a8694;        /* pending */
+
+  --so-serif:     'Newsreader', Georgia, serif;
+  --so-display:   'Instrument Serif', 'Newsreader', Georgia, serif;
+  --so-sans:      'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --so-mono:      'JetBrains Mono', ui-monospace, monospace;
+
+  /* The wrapper itself paints archive bg so the page reads as a
+     distinct surface from the global teal app shell.  Inner zones
+     pick up new bg-background / bg-card hues from the var
+     overrides above. */
+  background: var(--so-bg);
+  color: var(--so-ink-1);
+  font-family: var(--so-sans);
+  letter-spacing: -0.005em;
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Citrine selection across the scope. */
+.so-quiet-archive ::selection {
+  background: rgba(212, 179, 67, 0.28);
+  color: var(--so-ink-0);
+}
+
+/* ============================================================
+   Override the Stitch custom tokens (set as literal hex in
+   tailwind.config.ts, not as variables) inside our scope so
+   `bg-surface-container*` / `text-on-surface*` utilities pick
+   up archive tones too.  Higher specificity wins against the
+   Tailwind utility's 0,1,0.
+   ============================================================ */
+.so-quiet-archive .bg-surface-container         { background-color: var(--so-bg-2) !important; }  /* Dossier — distinct from Desk */
+.so-quiet-archive .bg-surface-container-low     { background-color: var(--so-bg)   !important; }
+.so-quiet-archive .bg-surface-container-high    { background-color: var(--so-bg-2) !important; }
+.so-quiet-archive .bg-surface-container-highest { background-color: var(--so-bg-2) !important; }
+.so-quiet-archive .text-on-surface              { color: var(--so-ink-0) !important; }
+.so-quiet-archive .text-on-surface-variant      { color: var(--so-ink-2) !important; }
+
+/* ============================================================
+   qa-* primitives — editorial helpers consumed selectively
+   by inbox-workbench.tsx to upgrade the highest-visibility
+   surfaces (folio bar, citrine stamp, display title, mono
+   kickers, primary button).  Names prefixed `qa-` so they
+   never collide with anything else.
+   ============================================================ */
+
+/* Folio bar — replaces the dot+pipe header pattern with a
+   hairline-bracketed editorial nameplate. */
+.so-quiet-archive .qa-folio {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--so-rule-hi);
+  border-bottom: 1px solid var(--so-rule);
+  padding: 10px 2px 9px;
+  margin: 2px 0 6px;
+}
+.so-quiet-archive .qa-folio-nameplate {
+  font-family: var(--so-display);
+  font-size: 22px;
+  color: var(--so-ink-0);
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+.so-quiet-archive .qa-folio-nameplate em {
+  font-style: italic;
+  color: var(--so-citrine);
+}
+.so-quiet-archive .qa-folio-meta {
+  font-family: var(--so-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--so-ink-3);
+}
+.so-quiet-archive .qa-folio-meta strong {
+  color: var(--so-ink-1);
+  font-weight: 500;
+}
+
+/* The citrine stamp — bordered uppercase mono identifier. */
+.so-quiet-archive .qa-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--so-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--so-citrine);
+  background: var(--so-citrine-bg);
+  border: 1px solid var(--so-citrine);
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Citrine mono kicker — replaces the various 9px/10px uppercase
+   tracking patterns scattered through the existing markup with
+   one consistent treatment. */
+.so-quiet-archive .qa-kicker {
+  font-family: var(--so-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--so-citrine);
+  font-weight: 500;
+}
+.so-quiet-archive .qa-kicker-dim {
+  font-family: var(--so-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--so-ink-3);
+  font-weight: 500;
+}
+
+/* Display headline — serif italic for the desk title. */
+.so-quiet-archive .qa-headline {
+  font-family: var(--so-display);
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: -0.012em;
+  line-height: 1.18;
+  color: var(--so-ink-0);
+}
+.so-quiet-archive .qa-headline em {
+  font-style: italic;
+  color: var(--so-citrine);
+}
+
+/* Cluster lead — serif body for stream headlines, paper-ink-1.
+   `is-selected` modifier brightens to ink-0 for focus. */
+.so-quiet-archive .qa-lead {
+  font-family: var(--so-serif);
+  font-size: 13px;
+  line-height: 1.36;
+  color: var(--so-ink-1);
+  font-weight: 300;
+  letter-spacing: 0;
+}
+.so-quiet-archive .qa-lead.is-selected {
+  color: var(--so-ink-0);
+}
+
+/* Serif-italic help / note copy — for the "Held ≠ rejected" /
+   "Staging" / "Gate Preview" prose blocks. */
+.so-quiet-archive .qa-help {
+  font-family: var(--so-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--so-ink-3);
+  font-weight: 300;
+  line-height: 1.55;
+}
+.so-quiet-archive .qa-help em {
+  color: var(--so-citrine);
+  font-style: italic;
+}
+.so-quiet-archive .qa-help strong {
+  color: var(--so-ink-1);
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Mono meta line — small mono-uppercase informational text. */
+.so-quiet-archive .qa-meta {
+  font-family: var(--so-mono);
+  font-size: 10.5px;
+  color: var(--so-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* Primary button — citrine bordered, citrine bg tint, mono. */
+.so-quiet-archive .qa-btn-primary {
+  font-family: var(--so-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--so-citrine);
+  background: var(--so-citrine-bg);
+  border: 1px solid var(--so-citrine);
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+.so-quiet-archive .qa-btn-primary:hover {
+  background: rgba(212, 179, 67, 0.18);
+  color: var(--so-citrine);
+}
+.so-quiet-archive .qa-btn-primary:disabled {
+  border-color: var(--so-ink-4);
+  color: var(--so-ink-4);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+/* Stream cluster rail — citrine left rail on selected, amber
+   stripe on failed.  Overrides the existing
+   `border-l-primary bg-primary/[0.08]` so the selected tint
+   stays muted (5% instead of 8%) — citrine on dark reads warmer
+   than teal did. */
+.so-quiet-archive .qa-cluster-rail {
+  border-left: 3px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.so-quiet-archive .qa-cluster-rail:hover {
+  background: var(--so-bg-2);
+}
+.so-quiet-archive .qa-cluster-rail.is-selected {
+  background: rgba(212, 179, 67, 0.05);
+  border-left-color: var(--so-citrine);
+}
+.so-quiet-archive .qa-cluster-rail.is-failed {
+  border-left-color: var(--so-amber);
+}
+.so-quiet-archive .qa-cluster-rail.is-failed.is-selected {
+  border-left-color: var(--so-citrine);
+}
+
+/* Source pill — kit chip-ghost equivalent.  Hairline border,
+   mono micro-caps, no fill. */
+.so-quiet-archive .qa-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--so-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--so-ink-2);
+  border: 1px solid var(--so-rule);
+  background: transparent;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.so-quiet-archive .qa-pill-cit {
+  color: var(--so-citrine);
+  border-color: rgba(212, 179, 67, 0.45);
+  background: var(--so-citrine-bg);
+}
+.so-quiet-archive .qa-pill-amb {
+  color: var(--so-amber);
+  border-color: rgba(200, 151, 89, 0.45);
+}
+
+/* Worksheet row — replaces the field-skeleton with the kit's
+   mono-uppercase label + dashed editor pattern. */
+.so-quiet-archive .qa-ws-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--so-rule);
+}
+.so-quiet-archive .qa-ws-label {
+  font-family: var(--so-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--so-ink-3);
+}
+.so-quiet-archive .qa-ws-label.is-mono {
+  /* same as base; semantic hook for tests */
+}
+.so-quiet-archive .qa-ws-editor {
+  height: 28px;
+  border: 1px dashed var(--so-rule);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.012);
+}
+
+/* Section header — hairline + kicker, used by Dossier sections. */
+.so-quiet-archive .qa-section-head {
+  border-top: 1px solid var(--so-rule-hi);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+/* Numeric / mono inline span — small tabular value. */
+.so-quiet-archive .qa-num {
+  font-family: var(--so-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Make the scope flow more like a research folio — light vertical
+   stagger between subsections.  Doesn't interfere with the
+   existing grid; just gives prose a bit of editorial air. */
+.so-quiet-archive h2,
+.so-quiet-archive h3 {
+  font-family: var(--so-display);
+  font-weight: 400;
+  letter-spacing: -0.012em;
+}
