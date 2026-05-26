@@ -458,7 +458,7 @@ DEFAULT_FEEDS: list[dict] = [
     # --- Agriculture / Food ---
     {
         "name": "USDA News",
-        "url":  "https://www.usda.gov/rss/latest-releases.xml",
+        "url":  "https://news.google.com/rss/search?q=site:usda.gov+crop+OR+%22food+safety%22+OR+%22farm+bill%22&hl=en&gl=US&ceid=US:en",
     },
 ]
 
