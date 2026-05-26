@@ -238,5 +238,105 @@ class TestSaveLoadRoundtripKeepsStamp(unittest.TestCase):
         self.assertTrue(_is_valid_news_payload(loaded))
 
 
+# ---------------------------------------------------------------------------
+# Cold-start fallback — incremental returns empty, full recluster fires
+# ---------------------------------------------------------------------------
+
+class TestColdStartReclusterFallback(unittest.TestCase):
+    """When incremental clustering returns 0 clusters from >0 records,
+    _fetch_fresh_news must fall back to a full recluster so the /news
+    endpoint never shows an empty headlines strip when live feeds have
+    data."""
+
+    def setUp(self):
+        self._orig_hot = _api._news_cache.copy()
+        _api._news_cache["data"] = None
+        _api._news_cache["ts"] = 0.0
+
+    def tearDown(self):
+        _api._news_cache["data"] = self._orig_hot.get("data")
+        _api._news_cache["ts"] = self._orig_hot.get("ts", 0.0)
+
+    def _fake_records(self, n=3):
+        return [
+            {"source": f"Feed{i}", "title": f"Headline {i}",
+             "published_at": "2026-05-01T10:00:00", "url": ""}
+            for i in range(n)
+        ]
+
+    def _fake_feed_status(self, n=1):
+        return [{"name": f"Feed{i}", "ok": True, "headlines": 3}
+                for i in range(n)]
+
+    def test_fallback_fires_when_incremental_returns_empty(self):
+        records = self._fake_records(5)
+        recluster_clusters = [
+            {"headline": "Cluster A", "sources": ["Feed0"], "source_count": 1},
+            {"headline": "Cluster B", "sources": ["Feed1"], "source_count": 1},
+        ]
+
+        def _fake_incremental_empty(recs, *, cluster_fn=None, meta=None):
+            if meta is not None:
+                meta.update(known=5, new=0, merged=0, created=0,
+                            reused=0, source="stored")
+            return []
+
+        with patch("api.fetch_all",
+                   return_value=(records, self._fake_feed_status())), \
+             patch("news_cluster_store.refresh_clusters",
+                   side_effect=_fake_incremental_empty), \
+             patch("api.cluster_headlines",
+                   return_value=list(recluster_clusters)) as mock_ch, \
+             patch("api.load_low_signal_headlines", return_value=set()), \
+             patch("api.save_news_cache", lambda _p: None):
+            payload = _api._fetch_fresh_news()
+
+        mock_ch.assert_called_once_with(records)
+        self.assertEqual(len(payload["clusters"]), 2)
+        self.assertEqual(payload["clusters"][0]["headline"], "Cluster A")
+        self.assertEqual(
+            payload["refresh_meta"]["source"], "full_recluster_fallback")
+
+    def test_no_fallback_when_incremental_returns_clusters(self):
+        records = self._fake_records(3)
+        incremental_clusters = [
+            {"headline": "Incremental C", "sources": ["Feed0"],
+             "source_count": 1},
+        ]
+
+        def _fake_incremental_ok(recs, *, cluster_fn=None, meta=None):
+            if meta is not None:
+                meta.update(known=0, new=3, merged=0, created=1,
+                            reused=0, source="incremental")
+            return list(incremental_clusters)
+
+        with patch("api.fetch_all",
+                   return_value=(records, self._fake_feed_status())), \
+             patch("news_cluster_store.refresh_clusters",
+                   side_effect=_fake_incremental_ok), \
+             patch("api.cluster_headlines") as mock_ch, \
+             patch("api.load_low_signal_headlines", return_value=set()), \
+             patch("api.save_news_cache", lambda _p: None):
+            payload = _api._fetch_fresh_news()
+
+        mock_ch.assert_not_called()
+        self.assertEqual(len(payload["clusters"]), 1)
+        self.assertEqual(payload["clusters"][0]["headline"], "Incremental C")
+        self.assertEqual(payload["refresh_meta"]["source"], "incremental")
+
+    def test_no_fallback_when_records_empty(self):
+        with patch("api.fetch_all",
+                   return_value=([], self._fake_feed_status())), \
+             patch("news_cluster_store.refresh_clusters",
+                   return_value=[]) as mock_inc, \
+             patch("api.cluster_headlines") as mock_ch, \
+             patch("api.load_low_signal_headlines", return_value=set()), \
+             patch("api.save_news_cache", lambda _p: None):
+            payload = _api._fetch_fresh_news()
+
+        mock_ch.assert_not_called()
+        self.assertEqual(len(payload["clusters"]), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

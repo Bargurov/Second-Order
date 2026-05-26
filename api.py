@@ -413,6 +413,17 @@ def _fetch_fresh_news() -> dict:
         refresh_meta = {"source": "full_recluster", "known": 0, "new": len(records),
                         "merged": 0, "created": len(clusters), "reused": 0}
 
+    if not clusters and records:
+        _log.warning(
+            "incremental refresh returned 0 clusters from %d records; "
+            "falling back to full recluster",
+            len(records),
+        )
+        clusters = cluster_headlines(records)
+        refresh_meta = {"source": "full_recluster_fallback", "known": 0,
+                        "new": len(records), "merged": 0,
+                        "created": len(clusters), "reused": 0}
+
     elapsed = time.monotonic() - t0
 
     # Determine overall status
