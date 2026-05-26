@@ -2516,13 +2516,15 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         className="-mt-6 mb-6"
       />
 
-      {/* Stress card — compact regime panel + indicator grid.  No
-          longer the page hero; sits below Snapshot as the "plumbing &
-          vol" companion. */}
+      {/* Interpretation environment card — compact regime panel +
+          indicator grid + funding-stress-mode pill.  Sits below
+          Snapshot to frame how reliably event reactions can be read
+          under current tape conditions. */}
       <UncertaintySection
         stress={stress}
         isLoading={ctxLoading}
         uncertaintyConcentration={uncertaintyConcentration}
+        fundingStressMode={ctx?.funding_stress_mode ?? null}
       />
       <ContextExplanationDisclosure
         explanation={contextExplanations.stress}

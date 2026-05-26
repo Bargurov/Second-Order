@@ -225,12 +225,15 @@ _CONTEXT_EXPLANATIONS: dict[str, dict[str, str]] = {
     "stress": {
         "meaning": (
             "Composite cross-asset stress regime — Calm / Watch / "
-            "Stressed — derived from VIX, MOVE, credit spreads, the "
-            "dollar, and safe-haven flows."
+            "Stressed — across volatility, credit, safe havens, and "
+            "breadth. Frames how reliably event reactions can be read; "
+            "stressed conditions widen the confidence band on any "
+            "single reaction, they do not invalidate it."
         ),
         "what_changes_it": (
-            "Sharp moves in volatility, credit, or safe-haven assets; "
-            "the regime can shift intraday as inputs reprice."
+            "VIX falling back below its 20d average, credit spreads "
+            "tightening, safe havens easing, breadth recovering — or "
+            "any of the same components dislocating further."
         ),
     },
     "rates": {

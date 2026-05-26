@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, type StressComponentDetail, type StressRegime, type SectorVolEntry, type NewsSectorUncertaintyEntry, type NewsUncertaintyConcentration } from "@/lib/api";
+import { api, type StressComponentDetail, type StressRegime, type SectorVolEntry, type NewsSectorUncertaintyEntry, type NewsUncertaintyConcentration, type FundingStressMode } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { ChevronDown, AlertTriangle } from "lucide-react";
@@ -239,6 +239,62 @@ function SectorLeadRow({
 }
 
 // ---------------------------------------------------------------------------
+// Funding stress mode pill — surfaces the orthogonal mode classifier
+// already computed by /market-context (duration_shock / credit_widening /
+// dollar_shortage / liquidity_squeeze).  Renders only when a mode is
+// actually firing so the surface stays quiet under calm conditions.
+// ---------------------------------------------------------------------------
+
+const _FUNDING_MODE_LABEL: Record<FundingStressMode["primary_mode"], string> = {
+  none:              "none",
+  duration_shock:    "duration shock",
+  credit_widening:   "credit widening",
+  dollar_shortage:   "dollar shortage",
+  liquidity_squeeze: "liquidity squeeze",
+};
+
+function fundingPillTone(severity: FundingStressMode["composite_severity"]): {
+  bg: string; text: string; dot: string;
+} {
+  if (severity === "acute") {
+    return { bg: "bg-error-container/20", text: "text-error",       dot: "bg-error" };
+  }
+  if (severity === "elevated") {
+    return { bg: "bg-error-dim/15",       text: "text-error-dim",   dot: "bg-error-dim" };
+  }
+  if (severity === "mild") {
+    return { bg: "bg-error-dim/10",       text: "text-error-dim/85", dot: "bg-error-dim/70" };
+  }
+  return { bg: "bg-surface-container-highest", text: "text-on-surface-variant/70", dot: "bg-on-surface-variant/40" };
+}
+
+function isFundingModeFiring(mode: FundingStressMode | null | undefined): mode is FundingStressMode {
+  if (!mode || mode.available === false) return false;
+  if (!mode.primary_mode || mode.primary_mode === "none") return false;
+  if (!mode.composite_severity || mode.composite_severity === "none") return false;
+  return true;
+}
+
+function FundingModePill({ funding }: { funding: FundingStressMode }) {
+  const tone  = fundingPillTone(funding.composite_severity);
+  const label = _FUNDING_MODE_LABEL[funding.primary_mode] ?? funding.primary_mode.replace(/_/g, " ");
+  return (
+    <div
+      title={funding.rationale || undefined}
+      className={cn("inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full", tone.bg)}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", tone.dot)} />
+      <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", tone.text)}>
+        {label}
+      </span>
+      <span className={cn("text-[10px] tracking-[0.12em] uppercase opacity-70", tone.text)}>
+        · {funding.composite_severity}
+      </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Two-column Uncertainty section — matches Stitch reference exactly
 // ---------------------------------------------------------------------------
 
@@ -252,6 +308,11 @@ interface UncertaintySectionProps {
    *  When uncertainty_scope is "sector", the section leads with sector chips
    *  and the 5-signal grid becomes a secondary baseline. */
   uncertaintyConcentration?: NewsUncertaintyConcentration | null;
+  /** Funding/liquidity stress-mode classifier output from /market-context.
+   *  Rendered as a second pill next to the regime pill when a mode is
+   *  firing, so the operator can see WHICH kind of stress is dominating —
+   *  not just whether stress is elevated. */
+  fundingStressMode?: FundingStressMode | null;
 }
 
 function UnavailableStressSection({ degraded }: { degraded?: boolean }) {
@@ -261,7 +322,7 @@ function UnavailableStressSection({ degraded }: { degraded?: boolean }) {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <div className="lg:w-1/4 shrink-0 space-y-2">
             <p className="section-kicker">
-              Stress <span className="font-normal normal-case tracking-normal text-muted-foreground/55">· plumbing &amp; vol</span>
+              Interpretation environment <span className="font-normal normal-case tracking-normal text-muted-foreground/55">· cross-asset stress</span>
             </p>
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-surface-container-highest">
               <AlertTriangle className="h-3 w-3 text-on-surface-variant/45" />
@@ -282,7 +343,7 @@ function UnavailableStressSection({ degraded }: { degraded?: boolean }) {
   );
 }
 
-export function UncertaintySection({ stress, isLoading: parentLoading, uncertaintyConcentration }: UncertaintySectionProps = {}) {
+export function UncertaintySection({ stress, isLoading: parentLoading, uncertaintyConcentration, fundingStressMode }: UncertaintySectionProps = {}) {
   // Parent-provided data takes precedence; only fetch when nothing was passed in.
   const enabled = stress === undefined;
   const { data: fetched, isLoading: fetchedLoading } = useQuery({
@@ -350,36 +411,44 @@ export function UncertaintySection({ stress, isLoading: parentLoading, uncertain
           <div className="flex flex-col lg:flex-row gap-6 items-start">
             <div className="lg:w-1/4 shrink-0 space-y-2">
               <p className="section-kicker">
-                Stress <span className="font-normal normal-case tracking-normal text-muted-foreground/55">· plumbing &amp; vol</span>
+                Interpretation environment <span className="font-normal normal-case tracking-normal text-muted-foreground/55">· cross-asset stress</span>
               </p>
-              {isSectorLed ? (
-                <div className={cn(
-                  "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full",
-                  rc.badge,
-                )}>
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
-                    <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", rc.dot)} />
-                  </span>
-                  <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", rc.text)}>
-                    {uncertaintyConcentration!.lead_sector ?? "Sector"} · Concentration
-                  </span>
-                </div>
-              ) : (
-                <div className={cn(
-                  "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full",
-                  rc.badge,
-                )}>
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
-                    <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", rc.dot)} />
-                  </span>
-                  <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", rc.text)}>{regimeLabel}</span>
-                </div>
-              )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {isSectorLed ? (
+                  <div className={cn(
+                    "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full",
+                    rc.badge,
+                  )}>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
+                      <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", rc.dot)} />
+                    </span>
+                    <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", rc.text)}>
+                      {uncertaintyConcentration!.lead_sector ?? "Sector"} · Concentration
+                    </span>
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full",
+                    rc.badge,
+                  )}>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", rc.dot)} />
+                      <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", rc.dot)} />
+                    </span>
+                    <span className={cn("font-bold text-[11px] tracking-[0.16em] uppercase", rc.text)}>{regimeLabel}</span>
+                  </div>
+                )}
+                {isFundingModeFiring(fundingStressMode) && (
+                  <FundingModePill funding={fundingStressMode} />
+                )}
+              </div>
               {data.summary && (
                 <p className="text-on-surface-variant/85 text-[12px] leading-relaxed">{data.summary}</p>
               )}
+              <p className="text-[11px] leading-relaxed text-on-surface-variant/55">
+                This describes the tape conditions around event reactions; it does not predict direction.
+              </p>
               {sectionDegraded && (
                 <div className="flex items-center gap-1.5">
                   <AlertTriangle className="h-3 w-3 text-error-dim/60 shrink-0" />
