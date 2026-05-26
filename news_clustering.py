@@ -158,6 +158,78 @@ def _mechanism_match(a: tuple[str, str], b: tuple[str, str]) -> bool:
     return False
 
 
+# ---------------------------------------------------------------------------
+# Generic-document title guard
+# ---------------------------------------------------------------------------
+# Static documents and repository entries (research reports, working papers,
+# data-portal pages, World Bank Google-News proxies) bridge into live-news
+# clusters two ways: shared boilerplate tokens push pairwise cosine above
+# _CLUSTER_THRESHOLD even when substantive content is unrelated, and the
+# generic actions extracted from their titles match live-news mechanism
+# floors.  Both paths chain unrelated stories via union-find.
+#
+# This guard blocks both PRIMARY and FLOOR merges when exactly one side of
+# a pair is a generic document.  When both sides are documents, it requires
+# near-duplicate cosine so two versions of the same publication still
+# cluster while two unrelated docs sharing only boilerplate do not.
+# See tests/test_news_clustering.py.
+
+# Cosine floor for merging two generic-document titles with each other.
+# Higher than _CLUSTER_THRESHOLD so boilerplate-only overlap does not
+# qualify; only near-duplicate substantive content does.
+_GENERIC_DOC_NEAR_DUP_THRESHOLD: float = 0.50
+
+# Substring phrases (matched case-insensitively, after strip+lower).
+# Conservative list — narrow document/repository markers only; avoids
+# broad words like "report" alone that would catch legitimate news.
+# Excluded by design: "fact sheet" and "technical note" — both overlap
+# with FDA/regulatory press releases that ARE market news.
+_GENERIC_DOC_PHRASES: tuple[str, ...] = (
+    "trade summary",
+    "doing business",
+    "connecting to compete",
+    "world development report",
+    "development report",
+    "annual report",
+    "working paper",
+    "policy research working paper",
+    "open knowledge",
+    "data bank",
+    "databank",
+)
+
+# Suffixes (matched against the stripped-lowercased title).  Capture the
+# shapes the World Bank Google-News proxy and similar repository feeds
+# emit, where the document type is hidden in the trailing boilerplate.
+_GENERIC_DOC_SUFFIXES: tuple[str, ...] = (
+    "- world bank group",
+    "- world bank open data",
+    "| world bank group",
+    "| world bank open data",
+)
+
+
+def _is_generic_document_title(title: str) -> bool:
+    """Return True for generic document/report/repository titles.
+
+    Used to block bridge merges between static publication titles and
+    live news inside ``cluster_headlines`` and ``news_cluster_store``.
+    Returns False on empty/None input.
+    """
+    if not title:
+        return False
+    low = title.strip().lower()
+    if not low:
+        return False
+    for suf in _GENERIC_DOC_SUFFIXES:
+        if low.endswith(suf):
+            return True
+    for phrase in _GENERIC_DOC_PHRASES:
+        if phrase in low:
+            return True
+    return False
+
+
 # _tokenize imported from token_norm — single source of truth
 
 
@@ -268,10 +340,26 @@ def cluster_headlines(records: list[dict]) -> list[dict]:
     token_lists = [_tokenize(t) for t in titles]
     polarities = [_headline_polarity(toks) for toks in token_lists]
     mechanisms = [_extract_mechanism(t) for t in titles]
+    is_doc = [_is_generic_document_title(t) for t in titles]
 
     for i in range(n):
         for j in range(i + 1, n):
             sim = _cosine_sim(tfidf_vecs[i], tfidf_vecs[j])
+            # Generic-document guard: prevent bridge merges between static
+            # publications and live news (and between unrelated docs that
+            # share only boilerplate).  Applied before both merge paths.
+            if is_doc[i] != is_doc[j]:
+                _cluster_log.info(
+                    "BLOCK-GENDOC cos=%.3f one-sided\n  A: %s\n  B: %s",
+                    sim, titles[i], titles[j],
+                )
+                continue
+            if is_doc[i] and is_doc[j] and sim < _GENERIC_DOC_NEAR_DUP_THRESHOLD:
+                _cluster_log.info(
+                    "BLOCK-GENDOC cos=%.3f both-docs-below-near-dup\n  A: %s\n  B: %s",
+                    sim, titles[i], titles[j],
+                )
+                continue
             if sim >= _CLUSTER_THRESHOLD:
                 # Block merge if both headlines have clear but opposite polarity.
                 # E.g. "Oil prices surge" vs "Oil prices drop" — high cosine

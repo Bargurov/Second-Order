@@ -120,13 +120,26 @@ def _can_merge(headline_a: str, headline_b: str) -> bool:
     cosine similarity ≥ threshold AND no clear polarity conflict.
     Also allows a mechanism-aided lower floor when both headlines share a
     recognized action type (mirrors the elif branch in cluster_headlines).
+
+    Mirrors the generic-document guard in ``cluster_headlines`` so
+    document-vs-live-news pairs never merge here either; this is the
+    cross-refresh merge path and must stay consistent.
     """
     cos, pa, pb = _similarity(headline_a, headline_b)
     if pa != 0 and pb != 0 and pa != pb:
         return False
+    from news_clustering import (
+        _extract_mechanism, _mechanism_match, _MECH_COSINE_FLOOR,
+        _is_generic_document_title, _GENERIC_DOC_NEAR_DUP_THRESHOLD,
+    )
+    is_doc_a = _is_generic_document_title(headline_a)
+    is_doc_b = _is_generic_document_title(headline_b)
+    if is_doc_a != is_doc_b:
+        return False
+    if is_doc_a and is_doc_b and cos < _GENERIC_DOC_NEAR_DUP_THRESHOLD:
+        return False
     if cos >= _MERGE_COSINE_THRESHOLD:
         return True
-    from news_clustering import _extract_mechanism, _mechanism_match, _MECH_COSINE_FLOOR
     if cos >= _MECH_COSINE_FLOOR and _mechanism_match(
         _extract_mechanism(headline_a), _extract_mechanism(headline_b)
     ):
@@ -513,13 +526,23 @@ def _records_for_new_cluster(
 def _find_merge_target(
     new_headline: str, active_clusters: list[dict],
 ) -> Optional[int]:
-    """Return the cluster id that should absorb the new-batch cluster, or None."""
+    """Return the cluster id that should absorb the new-batch cluster, or None.
+
+    Mirrors the generic-document guard from ``cluster_headlines`` so a
+    new doc-shaped cluster never merges into a live-news cluster (and
+    vice-versa) when an entire refresh wires new batches into stored
+    actives.
+    """
     best_id: Optional[int] = None
     best_cos: float = -1.0
     from news_sources import _build_tfidf_vectors, _cosine_sim, _tokenize, _headline_polarity
-    from news_clustering import _extract_mechanism, _mechanism_match, _MECH_COSINE_FLOOR
+    from news_clustering import (
+        _extract_mechanism, _mechanism_match, _MECH_COSINE_FLOOR,
+        _is_generic_document_title, _GENERIC_DOC_NEAR_DUP_THRESHOLD,
+    )
     pa = _headline_polarity(_tokenize(new_headline))
     ma = _extract_mechanism(new_headline)
+    new_is_doc = _is_generic_document_title(new_headline)
     for c in active_clusters:
         existing_headline = c.get("headline", "") or ""
         if not existing_headline:
@@ -528,6 +551,11 @@ def _find_merge_target(
         cos = _cosine_sim(vecs[0], vecs[1])
         pb = _headline_polarity(_tokenize(existing_headline))
         if pa != 0 and pb != 0 and pa != pb:
+            continue
+        existing_is_doc = _is_generic_document_title(existing_headline)
+        if new_is_doc != existing_is_doc:
+            continue
+        if new_is_doc and existing_is_doc and cos < _GENERIC_DOC_NEAR_DUP_THRESHOLD:
             continue
         if cos >= _MERGE_COSINE_THRESHOLD:
             if cos > best_cos:
