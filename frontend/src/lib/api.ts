@@ -2086,14 +2086,24 @@ export interface PolicyTiming {
   source: string;
 }
 
+export interface NewsClusterEvidence {
+  source: string;
+  tier?: string;
+  title: string;
+  published_at?: string;
+  note?: string;
+}
+
 export interface NewsCluster {
   headline: string;
   summary?: string;
   consensus?: Record<string, unknown>;
   sources: { name: string; tier?: string }[];
   source_count: number;
+  published_at?: string;
   low_signal?: boolean;
   agreement?: string;
+  evidence?: NewsClusterEvidence[];
   macro_surprise?: ClusterMacroSurprise;
   policy_timing?: PolicyTiming;
 }

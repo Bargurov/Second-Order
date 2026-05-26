@@ -5,7 +5,7 @@ import { Sidebar, type Page } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MarketOverview } from "@/components/pages/market-overview";
-import { HeadlinesPage } from "@/components/pages/headlines-page";
+import { InboxWorkbench } from "@/components/pages/inbox-workbench";
 import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
 import { Backtest } from "@/components/pages/backtest";
@@ -144,7 +144,7 @@ export default function App() {
                     <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
                   )}
                   {page === "headlines" && (
-                    <HeadlinesPage onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
+                    <InboxWorkbench onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
                   )}
                   {page === "analyze" && (
                     <AnalysisView
