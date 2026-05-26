@@ -1,12 +1,12 @@
 {
   "artifact_type": "freeze_candidate_evidence",
   "schema_version": "v2",
-  "cohort_name": "freeze_candidate_v2_whr_txt",
+  "cohort_name": "freeze_candidate_v2_whr_txt_fslr",
   "source": "operator_curated_cache_backed",
   "generated_at": "2026-05-27T00:00:00Z",
   "demo_wiring_note": "Section C Demo v1 is unchanged; this artifact is not wired to demo.",
-  "bundle_scope": "whr_txt_two_row",
-  "bundle_scope_note": "WHR + TXT tracked bundle. CENX, FSLR, and RIO remain in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json pending their own provenance closeouts. They are not promoted here.",
+  "bundle_scope": "whr_txt_fslr_three_row",
+  "bundle_scope_note": "WHR + TXT + FSLR tracked bundle. CENX and RIO remain in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json pending their own provenance closeouts. They are not promoted here.",
   "candidates": [
     {
       "primary_ticker": "WHR",
@@ -85,14 +85,52 @@
       "freeze_status": "freeze_ready_pending_operator_review",
       "cache_backed": true,
       "operator_writeup_reference": "TXT_LMT_operator_writeup.md"
+    },
+    {
+      "primary_ticker": "FSLR",
+      "benchmark_ticker": "SPY",
+      "benchmark_role": "broad_market",
+      "expected_direction": "positive",
+      "mechanism_family": "policy_driven_direct_beneficiary",
+      "method": "production_bhar",
+
+      "source_url": "https://www.democrats.senate.gov/newsroom/press-releases/senate-majority-leader-chuck-schumer-d-ny-and-sen-joe-manchin-d-wv-on-wednesday-announced-that-they-have-struck-a-long-awaited-deal-on-legislation-that-aims-to-reform-the-tax-code-fight-climate-change-and-cut-health-care-costs",
+      "source_type": "official_senate_joint_statement",
+      "source_quality_note": "Official Senate Democratic Leadership joint Schumer-Manchin statement dated 2022-07-27. The page identifies the IRA agreement and describes domestic energy/manufacturing and climate investment provisions. The source page does not expose an exact publication timestamp in the audited source; contemporaneous reporting supports an after-close/evening announcement convention.",
+
+      "announcement_date": "2022-07-27",
+      "event_anchor_close": "2022-07-27",
+      "first_tradable_reaction_date": "2022-07-28",
+      "anchor_convention_note": "Anchor is 2022-07-27 close. The IRA agreement was announced after the July 27 regular-session close; the first regular-session tradable reaction date is July 28. The July 27 FOMC +75bp statement was released at 14:00 ET and is treated as an adjacent macro backdrop absorbed into the July 27 close, not as the event anchor.",
+
+      "claimed_horizons": [1],
+      "diagnostic_horizons": [],
+      "restricted_horizons": [2, 5, 20],
+      "restricted_because": "FSLR Q2 2022 earnings were released after the 2022-07-28 regular-session close. h=1 ends at the July 28 close and is clean; h>=2 includes post-earnings trading and must not be presented as clean IRA evidence.",
+
+      "h1_AR_pct": 14.0402,
+      "h1_SAR": 4.9058,
+      "h1_p": 9.305304e-07,
+      "h1_q_bh": 4.652652e-06,
+
+      "peer_check_status": "complete",
+      "peer_check_summary": "Clean-sector residual checks against XLU, XLI, and XLB, none containing FSLR, remain strongly positive on h=1: AR +11.71% to +13.53%, SAR +3.50 to +4.47. These checks support the h=1 policy-beneficiary reading while still requiring disclosure that the reaction was solar-sector-wide, not purely idiosyncratic.",
+
+      "caveat": "h=1 only. h>=2 is earnings-contaminated (FSLR Q2 2022 released after the 2022-07-28 regular-session close). The July 27 FOMC +75bp decision is an adjacent macro backdrop absorbed into the July 27 anchor close, not a fatal confound; SPY +1.25% on July 28 captures continued FOMC interpretation, and the FSLR-specific component (AR +14.04% vs SPY) is an order of magnitude larger. Sector co-movement (TAN ~+5% same day) confirms the reaction is solar-sector-wide with FSLR as its strongest expression; not a unique idiosyncratic move.",
+      "falsifier": "FSLR does not outperform SPY on 2022-07-28.",
+      "persistence": "transient_h1_only",
+      "freeze_status": "freeze_ready_pending_operator_review",
+      "cache_backed": true,
+      "operator_writeup_reference": "FSLR_operator_writeup.md"
     }
   ],
   "limitations": [
     "freeze-candidate only - awaiting operator review before any downstream demo backend may consume this artifact.",
-    "WHR + TXT bundle: CENX, FSLR, RIO provenance closeouts pending; they are not promoted here.",
+    "WHR + TXT + FSLR bundle: CENX and RIO remain pending; they are not promoted here.",
     "WHR h=1 is significant at the 5% level (p=0.014) but not at the 1% level. The h=2 diagnostic (p < 0.00001) is stronger but is a non-standard horizon.",
     "TXT uses LMT (the paired loser) as benchmark; TXT/ITA robustness check softens the concern but the paired-loser caveat must be disclosed.",
-    "No cross-event statistical claims are defensible from a two-candidate bundle with different mechanism families."
+    "FSLR h=1 coincides with the July 27 FOMC +75bp; the FOMC is disclosed as an adjacent macro backdrop absorbed by the SPY benchmark, not a fatal confound.",
+    "No cross-event statistical claims are defensible from a three-candidate bundle with different mechanism families."
   ],
   "methodology_notes": {
     "event_study_form": "Production BHAR via stats.event_study.compute_event_study. AR_h = (P_asset[t+h]/P_asset[t] - 1) - (P_bench[t+h]/P_bench[t] - 1) where t = event_index = the trading day BEFORE first_tradable_reaction_date. sigma_ar_daily = sample stddev (ddof=1) over the 60-bar pre-event estimation window. SAR_h = AR_h / (sigma_ar_daily * sqrt(h)). Daily simple close-to-close returns; auto_adjust=False.",

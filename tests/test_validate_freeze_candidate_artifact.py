@@ -1161,6 +1161,76 @@ class TestV2BundleScope(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_whr_txt_two_row_still_rejects_fslr(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_two_row",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT"),
+                _good_v2_candidate(primary_ticker="FSLR"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("whr_txt_two_row" in e or "FSLR" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_three_row_scope_accepts_whr_txt_fslr(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_fslr_three_row",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT"),
+                _good_v2_candidate(primary_ticker="FSLR",
+                                   announcement_date="2022-07-27",
+                                   event_anchor_close="2022-07-27",
+                                   first_tradable_reaction_date="2022-07-28"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertTrue(report["ok"], report["errors"])
+        finally:
+            os.unlink(path)
+
+    def test_three_row_scope_rejects_missing_fslr(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_fslr_three_row",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("whr_txt_fslr_three_row" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
+    def test_three_row_scope_rejects_extra_cenx(self) -> None:
+        artifact = _good_v2_artifact(
+            bundle_scope="whr_txt_fslr_three_row",
+            candidates=[
+                _good_v2_candidate(primary_ticker="WHR"),
+                _good_v2_candidate(primary_ticker="TXT"),
+                _good_v2_candidate(primary_ticker="FSLR"),
+                _good_v2_candidate(primary_ticker="CENX"),
+            ],
+        )
+        path = _write_artifact(artifact)
+        try:
+            report = cli.run_validate_freeze_candidate_artifact(artifact_path=path)
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("CENX" in e or "whr_txt_fslr_three_row" in e for e in report["errors"]))
+        finally:
+            os.unlink(path)
+
 
 class TestV2DateStrictness(unittest.TestCase):
     def test_empty_date_string_fails(self) -> None:
@@ -1327,7 +1397,7 @@ class TestV2LiveBundle(unittest.TestCase):
             f"v2 live bundle rejected: {report['errors']}",
         )
 
-    def test_v2_bundle_contains_whr_and_txt(self) -> None:
+    def test_v2_bundle_contains_whr_txt_fslr(self) -> None:
         if not Path(_V2_LIVE_BUNDLE).exists():
             self.skipTest("v2 bundle not present")
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
@@ -1335,9 +1405,9 @@ class TestV2LiveBundle(unittest.TestCase):
         tickers = sorted(
             c.get("primary_ticker") for c in data.get("candidates", [])
         )
-        self.assertEqual(tickers, ["TXT", "WHR"])
+        self.assertEqual(tickers, ["FSLR", "TXT", "WHR"])
 
-    def test_v2_bundle_both_freeze_ready(self) -> None:
+    def test_v2_bundle_all_freeze_ready(self) -> None:
         if not Path(_V2_LIVE_BUNDLE).exists():
             self.skipTest("v2 bundle not present")
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
@@ -1355,18 +1425,18 @@ class TestV2LiveBundle(unittest.TestCase):
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         tickers = [c.get("primary_ticker") for c in data.get("candidates", [])]
-        for blocked in ("CENX", "FSLR", "RIO"):
+        for blocked in ("CENX", "RIO"):
             self.assertNotIn(
                 blocked, tickers,
-                f"{blocked} must not appear in the WHR+TXT v2 bundle",
+                f"{blocked} must not appear in the WHR+TXT+FSLR v2 bundle",
             )
 
-    def test_v2_bundle_scope_is_whr_txt(self) -> None:
+    def test_v2_bundle_scope_is_three_row(self) -> None:
         if not Path(_V2_LIVE_BUNDLE).exists():
             self.skipTest("v2 bundle not present")
         with open(_V2_LIVE_BUNDLE, "r", encoding="utf-8") as fh:
             data = json.load(fh)
-        self.assertEqual(data.get("bundle_scope"), "whr_txt_two_row")
+        self.assertEqual(data.get("bundle_scope"), "whr_txt_fslr_three_row")
 
 
 if __name__ == "__main__":

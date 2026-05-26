@@ -250,10 +250,11 @@ def _validate_v2_payload(
         _check_v2_candidate(cand, idx, ticker, errors, warnings)
 
     bundle_scope = payload.get("bundle_scope")
-    _KNOWN_SCOPES = {"whr_only", "whr_txt_two_row"}
+    _KNOWN_SCOPES = {"whr_only", "whr_txt_two_row", "whr_txt_fslr_three_row"}
     _SCOPE_RULES: dict[str, tuple[list[str], list[str]]] = {
-        "whr_only":         (["WHR"],        ["CENX", "FSLR", "TXT", "RIO"]),
-        "whr_txt_two_row":  (["WHR", "TXT"], ["CENX", "FSLR", "RIO"]),
+        "whr_only":                (["WHR"],                ["CENX", "FSLR", "TXT", "RIO"]),
+        "whr_txt_two_row":         (["WHR", "TXT"],         ["CENX", "FSLR", "RIO"]),
+        "whr_txt_fslr_three_row":  (["WHR", "TXT", "FSLR"], ["CENX", "RIO"]),
     }
     if bundle_scope is not None and bundle_scope not in _KNOWN_SCOPES:
         errors.append(
