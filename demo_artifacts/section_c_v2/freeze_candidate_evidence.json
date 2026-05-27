@@ -1,12 +1,12 @@
 {
   "artifact_type": "freeze_candidate_evidence",
   "schema_version": "v2",
-  "cohort_name": "freeze_candidate_v2_whr_txt_fslr_rio",
+  "cohort_name": "freeze_candidate_v2_whr_txt_fslr_rio_lite",
   "source": "operator_curated_cache_backed",
   "generated_at": "2026-05-27T00:00:00Z",
   "demo_wiring_note": "Section C Demo v1 is unchanged; this artifact is not wired to demo.",
-  "bundle_scope": "whr_txt_fslr_rio_four_row",
-  "bundle_scope_note": "WHR + TXT + FSLR + RIO tracked bundle. CENX remains deferred as a methodology lesson in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json.",
+  "bundle_scope": "whr_txt_fslr_rio_lite_five_row",
+  "bundle_scope_note": "WHR + TXT + FSLR + RIO + LITE tracked bundle. CENX remains deferred as a methodology lesson in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json.",
   "candidates": [
     {
       "primary_ticker": "WHR",
@@ -111,7 +111,7 @@
       "h1_AR_pct": 14.0402,
       "h1_SAR": 4.9058,
       "h1_p": 9.305304e-07,
-      "h1_q_bh": 4.652652e-06,
+      "h1_q_bh": 2.326326e-06,
 
       "peer_check_status": "complete",
       "peer_check_summary": "Clean-sector residual checks against XLU, XLI, and XLB, none containing FSLR, remain strongly positive on h=1: AR +11.71% to +13.53%, SAR +3.50 to +4.47. These checks support the h=1 policy-beneficiary reading while still requiring disclosure that the reaction was solar-sector-wide, not purely idiosyncratic.",
@@ -162,16 +162,62 @@
       "freeze_status": "freeze_ready_pending_operator_review",
       "cache_backed": true,
       "operator_writeup_reference": "RIO_SPY_operator_writeup.md"
+    },
+    {
+      "primary_ticker": "LITE",
+      "benchmark_ticker": "SMH",
+      "benchmark_role": "sector_etf",
+      "expected_direction": "negative",
+      "mechanism_family": "export_controls_sanctions",
+      "method": "production_bhar",
+
+      "source_url": "https://2017-2021.commerce.gov/news/press-releases/2019/05/department-commerce-announces-addition-huawei-technologies-co-ltd.html",
+      "source_type": "official_commerce_press_release",
+      "source_quality_note": "Official Commerce Department press release dated 2019-05-15 announcing addition of Huawei Technologies Co. Ltd. and affiliates to the Entity List. Federal Register 84 FR 22961 is the legal backup source. The Commerce source does not expose an exact publication timestamp in the audited source; local candidate history records an evening May 15 announcement, and the first full market reaction occurred May 16.",
+      "legal_backup_url": "https://www.federalregister.gov/documents/2019/05/21/2019-10616/addition-of-entities-to-the-entity-list",
+      "timing_backup_url": "https://www.bis.doc.gov/index.php/documents/regulations-docs/2395-effective-date-of-huawei-and-affiliates-entity-list-rule/file",
+      "exposure_backup_url": "https://investor.lumentum.com/financial-news-releases/news-details/2019/Lumentum-Provides-Update-on-U-S--Department-of-Commerce-Entity-List-Designation-of-Huawei-and-Affiliates-and-the-Impact-to-Fiscal-Fourth-Quarter-Ending-June-29-2019-Outlook-2019-5-20/default.aspx",
+
+      "announcement_date": "2019-05-15",
+      "event_anchor_close": "2019-05-15",
+      "first_tradable_reaction_date": "2019-05-16",
+      "anchor_convention_note": "Anchor is 2019-05-15 close. Commerce announced the Huawei Entity List action on May 15; local candidate history records the announcement as evening/after-close. Federal Register/BIS legal-publication timing falls later, but the market reaction tested here is to the May 15 Commerce announcement/news availability. First full equity session reflecting the news is May 16.",
+
+      "claimed_horizons": [1],
+      "diagnostic_horizons": [2],
+      "restricted_horizons": [3, 5, 20],
+      "restricted_because": "Lumentum issued a May 20, 2019 shipment/guidance update after the Huawei Entity List action. h=1 and h=2 are before that company-specific follow-up; h>=3, including h=5 and h=20, includes the May 20 update and must not be presented as clean Entity List announcement evidence.",
+
+      "h1_AR_pct": -10.1295,
+      "h1_SAR": -5.5516,
+      "h1_p": 2.831e-08,
+      "h1_q_bh": 1.4155e-07,
+      "h2_diagnostic_AR_pct": -15.07,
+      "h2_diagnostic_SAR": -5.84,
+      "h2_diagnostic_p": 5.24e-09,
+      "h2_diagnostic_note": "h=2 (2019-05-15 close to 2019-05-17 close) is the maximum clean reaction window before the May 20 Lumentum guidance/shipment update. Reported as diagnostic only, not a claimed horizon.",
+
+      "peer_check_status": "not_applicable",
+      "peer_check_summary": "No peer check required for initial closeout. LITE has direct documented Huawei customer exposure; SMH sector benchmark absorbs broad semiconductor/Huawei supplier shock and likely makes the LITE-specific AR conservative. Optional future robustness could compare other Huawei-exposed suppliers, but not required for h=1 candidacy.",
+
+      "caveat": "h=1 only. LITE had documented Huawei customer exposure of approximately 11% of revenue at the time of designation. h=2 is diagnostic (AR -15.07%, p < 1e-08) and clean. h>=3 is restricted by Lumentum's May 20, 2019 shipment/guidance update, which is a company-specific follow-up to the Entity List action. SMH is not a pure neutral benchmark because it also contains Huawei-exposed suppliers; this likely makes the LITE-specific residual conservative. The Huawei Entity List action was part of broader U.S.-China trade tensions; SMH absorbs the sector-wide component. The Oclaro acquisition closed December 2018; the estimation window sits entirely within the post-acquisition corporate form.",
+      "falsifier": "LITE does not underperform SMH on 2019-05-16.",
+      "persistence": "transient_h1_only",
+      "freeze_status": "freeze_ready_pending_operator_review",
+      "cache_backed": true,
+      "operator_writeup_reference": "LITE_SMH_operator_writeup.md"
     }
   ],
   "limitations": [
     "freeze-candidate only - awaiting operator review before any downstream demo backend may consume this artifact.",
-    "WHR + TXT + FSLR + RIO bundle: CENX remains deferred as a methodology lesson.",
+    "WHR + TXT + FSLR + RIO + LITE bundle: CENX remains deferred as a methodology lesson.",
     "WHR h=1 is significant at the 5% level (p=0.014) but not at the 1% level. The h=2 diagnostic (p < 0.00001) is stronger but is a non-standard horizon.",
     "TXT uses LMT (the paired loser) as benchmark; TXT/ITA robustness check softens the concern but the paired-loser caveat must be disclosed.",
     "FSLR h=1 coincides with the July 27 FOMC +75bp; the FOMC is disclosed as an adjacent macro backdrop absorbed by the SPY benchmark, not a fatal confound.",
     "RIO h=1 SAR is the smallest in the cohort; BHP peer check directionally corroborates but BHP h=1 is not individually significant.",
-    "No cross-event statistical claims are defensible from a four-candidate bundle with different mechanism families."
+    "LITE h>=3 is restricted by Lumentum's May 20 guidance/shipment update; SMH benchmark also contains Huawei-exposed suppliers, likely making the LITE residual conservative.",
+    "BH q-values recomputed across the five tracked h=1 p-values; all five pass q < 0.05. FSLR q updated from 4.65e-06 to 2.33e-06 due to LITE's smaller p replacing CENX in the FDR pool.",
+    "No cross-event statistical claims are defensible from a five-candidate bundle with different mechanism families."
   ],
   "methodology_notes": {
     "event_study_form": "Production BHAR via stats.event_study.compute_event_study. AR_h = (P_asset[t+h]/P_asset[t] - 1) - (P_bench[t+h]/P_bench[t] - 1) where t = event_index = the trading day BEFORE first_tradable_reaction_date. sigma_ar_daily = sample stddev (ddof=1) over the 60-bar pre-event estimation window. SAR_h = AR_h / (sigma_ar_daily * sqrt(h)). Daily simple close-to-close returns; auto_adjust=False.",
