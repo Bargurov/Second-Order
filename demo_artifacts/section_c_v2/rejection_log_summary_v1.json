@@ -1,0 +1,100 @@
+{
+  "artifact_type": "rejection_log_summary",
+  "schema_version": "v1",
+  "generated_at": "2026-05-27T00:00:00Z",
+  "summary": {
+    "identifiable_rejections_count": 7,
+    "unresolved_records_count": 5,
+    "decision_counts": {
+      "rejected": 4,
+      "keep_local_context_only": 1,
+      "keep_for_next_cycle": 1,
+      "deferred_methodology_lesson": 1
+    },
+    "stage_counts": {
+      "pre_validation_curation": 4,
+      "temp_validation": 2,
+      "post_validation": 1
+    },
+    "reason_category_counts": {
+      "other": 4,
+      "date_error": 2,
+      "source_quality": 1
+    },
+    "superseded_by_tracked_candidate_count": 4
+  },
+  "identifiable_rejections": [
+    {
+      "rejection_id": "rej-001",
+      "primary_ticker": "ZION",
+      "benchmark_ticker": "KBE",
+      "decision": "rejected",
+      "stage": "pre_validation_curation",
+      "reason_category": "other",
+      "recorded_on": "2026-05-18"
+    },
+    {
+      "rejection_id": "rej-002",
+      "primary_ticker": "LITE",
+      "benchmark_ticker": "SMH",
+      "decision": "keep_local_context_only",
+      "stage": "pre_validation_curation",
+      "reason_category": "other",
+      "recorded_on": "2026-05-18",
+      "superseded_by_tracked_candidate": "v2_freeze_cohort_lite_smh"
+    },
+    {
+      "rejection_id": "rej-003",
+      "primary_ticker": "PBF",
+      "benchmark_ticker": "CRAK",
+      "decision": "rejected",
+      "stage": "pre_validation_curation",
+      "reason_category": "other",
+      "recorded_on": "2026-05-18"
+    },
+    {
+      "rejection_id": "rej-004",
+      "primary_ticker": "WHR",
+      "benchmark_ticker": "XLY",
+      "decision": "keep_for_next_cycle",
+      "stage": "pre_validation_curation",
+      "reason_category": "other",
+      "recorded_on": "2026-05-18",
+      "superseded_by_tracked_candidate": "v2_freeze_cohort_whr_xly"
+    },
+    {
+      "rejection_id": "rej-005",
+      "primary_ticker": "CENX",
+      "benchmark_ticker": "XME",
+      "decision": "deferred_methodology_lesson",
+      "stage": "post_validation",
+      "reason_category": "source_quality",
+      "recorded_on": "2026-05-27"
+    },
+    {
+      "rejection_id": "rej-006",
+      "primary_ticker": "TXT",
+      "benchmark_ticker": "LMT",
+      "decision": "rejected",
+      "stage": "temp_validation",
+      "reason_category": "date_error",
+      "recorded_on": "2026-05-19",
+      "superseded_by_tracked_candidate": "v2_freeze_cohort_txt_lmt"
+    },
+    {
+      "rejection_id": "rej-007",
+      "primary_ticker": "RIO",
+      "benchmark_ticker": "SPY",
+      "decision": "rejected",
+      "stage": "temp_validation",
+      "reason_category": "date_error",
+      "recorded_on": "2026-05-19",
+      "superseded_by_tracked_candidate": "v2_freeze_cohort_rio_spy"
+    }
+  ],
+  "notes": [
+    "This is a sanitized public summary. Operator reason_note prose, source-file paths, and unresolved records (ticker not recorded in source CSV) are intentionally excluded from this tracked artifact.",
+    "The five unresolved records are summarized as a count only; they remain in the local-only operator log under artifacts/rejection_log.json.",
+    "Superseded entries are preserved to maintain the research trail; the superseding tracked candidate is named via superseded_by_tracked_candidate."
+  ]
+}
