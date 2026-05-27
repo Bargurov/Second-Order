@@ -3,23 +3,23 @@
   "schema_version": "v1",
   "generated_at": "2026-05-27T00:00:00Z",
   "summary": {
-    "identifiable_rejections_count": 8,
+    "identifiable_rejections_count": 9,
     "unresolved_records_count": 5,
     "decision_counts": {
       "rejected": 4,
       "keep_local_context_only": 1,
       "keep_for_next_cycle": 1,
-      "deferred_methodology_lesson": 2
+      "deferred_methodology_lesson": 3
     },
     "stage_counts": {
       "pre_validation_curation": 4,
       "temp_validation": 2,
-      "post_validation": 2
+      "post_validation": 3
     },
     "reason_category_counts": {
       "other": 4,
       "date_error": 2,
-      "source_quality": 2
+      "source_quality": 3
     },
     "superseded_by_tracked_candidate_count": 4
   },
@@ -99,6 +99,15 @@
       "stage": "post_validation",
       "reason_category": "source_quality",
       "recorded_on": "2026-05-27"
+    },
+    {
+      "rejection_id": "rej-009",
+      "primary_ticker": "NOC",
+      "benchmark_ticker": "BA",
+      "decision": "deferred_methodology_lesson",
+      "stage": "post_validation",
+      "reason_category": "source_quality",
+      "recorded_on": "2026-05-28"
     }
   ],
   "notes": [
