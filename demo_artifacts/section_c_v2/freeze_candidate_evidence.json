@@ -1,12 +1,12 @@
 {
   "artifact_type": "freeze_candidate_evidence",
   "schema_version": "v2",
-  "cohort_name": "freeze_candidate_v2_whr_txt_fslr",
+  "cohort_name": "freeze_candidate_v2_whr_txt_fslr_rio",
   "source": "operator_curated_cache_backed",
   "generated_at": "2026-05-27T00:00:00Z",
   "demo_wiring_note": "Section C Demo v1 is unchanged; this artifact is not wired to demo.",
-  "bundle_scope": "whr_txt_fslr_three_row",
-  "bundle_scope_note": "WHR + TXT + FSLR tracked bundle. CENX and RIO remain in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json pending their own provenance closeouts. They are not promoted here.",
+  "bundle_scope": "whr_txt_fslr_rio_four_row",
+  "bundle_scope_note": "WHR + TXT + FSLR + RIO tracked bundle. CENX remains deferred as a methodology lesson in the untracked local artifact at artifacts/freeze_candidate_evidence_v2.json.",
   "candidates": [
     {
       "primary_ticker": "WHR",
@@ -122,15 +122,56 @@
       "freeze_status": "freeze_ready_pending_operator_review",
       "cache_backed": true,
       "operator_writeup_reference": "FSLR_operator_writeup.md"
+    },
+    {
+      "primary_ticker": "RIO",
+      "benchmark_ticker": "SPY",
+      "benchmark_role": "broad_market",
+      "expected_direction": "positive",
+      "mechanism_family": "supply_shock",
+      "method": "production_bhar",
+
+      "source_url": "https://vale.com/w/press-release-from-the-ceo-fabio-schvartsman-on-the-dam-breach",
+      "source_type": "company_disaster_disclosure",
+      "source_quality_note": "Official Vale CEO press release on the Brumadinho dam breach, issued 2019-01-25. The press release confirms the dam breach but does not provide exact clock time. Independent technical reporting places the collapse at approximately 12:28 BRT / 10:28 ET, during US trading hours with roughly 5.5 hours remaining.",
+
+      "announcement_date": "2019-01-25",
+      "event_anchor_close": "2019-01-24",
+      "first_tradable_reaction_date": "2019-01-25",
+      "anchor_convention_note": "Anchor is 2019-01-24 close, the last close before the Brumadinho dam collapse. The collapse occurred during US trading hours on 2019-01-25, so the first tradable reaction date is 2019-01-25.",
+
+      "claimed_horizons": [1],
+      "diagnostic_horizons": [5, 20],
+      "restricted_horizons": [],
+      "restricted_because": "No horizon-specific issuer earnings contamination identified. Rio Tinto 2018 full-year results were released 2019-02-27, outside the h=20 window. h=5 and h=20 are diagnostic only, not claimed.",
+
+      "h1_AR_pct": 3.9463,
+      "h1_SAR": 2.5951,
+      "h1_p": 0.009457,
+      "h1_q_bh": 0.011822,
+      "h5_AR_pct": 10.4126,
+      "h5_SAR": 3.0622,
+      "h5_p": 0.002197,
+
+      "peer_check_status": "complete",
+      "peer_check_summary": "BHP peer check is cache-backed after BHP backfill. BHP/SPY is directionally consistent with the iron-ore supply-shock mechanism: h=1 AR +2.56%, SAR +1.54, p=0.123; h=5 AR +7.38%, SAR +1.98, p=0.047; h=20 AR +10.56%, SAR +1.42, p=0.156. BHP corroborates direction but is weaker than RIO, consistent with greater diversification.",
+
+      "caveat": "h=1 is the claimed horizon. RIO is a globally diversified miner (iron-ore ~70% of group EBITDA, plus aluminum, copper, diamonds, minerals); AR vs SPY captures the broad-market-adjusted move, not pure iron-ore exposure. RIO's h=1 SAR is the smallest in the cohort, consistent with this dilution. h=5 and h=20 are diagnostic: h=5 strengthened to +10.41% (p=0.002), h=20 plateaued at +12.05% (p=0.076), consistent with iron-ore price discovery over the first week then holding. BHP peer check is directionally corroborative (BHP h=1 AR +2.56%, same direction) but BHP h=1 is not individually significant (p=0.123), as expected from BHP's greater diversification.",
+      "falsifier": "RIO does not outperform SPY on 2019-01-25.",
+      "persistence": "sustained_h5_plateau",
+      "freeze_status": "freeze_ready_pending_operator_review",
+      "cache_backed": true,
+      "operator_writeup_reference": "RIO_SPY_operator_writeup.md"
     }
   ],
   "limitations": [
     "freeze-candidate only - awaiting operator review before any downstream demo backend may consume this artifact.",
-    "WHR + TXT + FSLR bundle: CENX and RIO remain pending; they are not promoted here.",
+    "WHR + TXT + FSLR + RIO bundle: CENX remains deferred as a methodology lesson.",
     "WHR h=1 is significant at the 5% level (p=0.014) but not at the 1% level. The h=2 diagnostic (p < 0.00001) is stronger but is a non-standard horizon.",
     "TXT uses LMT (the paired loser) as benchmark; TXT/ITA robustness check softens the concern but the paired-loser caveat must be disclosed.",
     "FSLR h=1 coincides with the July 27 FOMC +75bp; the FOMC is disclosed as an adjacent macro backdrop absorbed by the SPY benchmark, not a fatal confound.",
-    "No cross-event statistical claims are defensible from a three-candidate bundle with different mechanism families."
+    "RIO h=1 SAR is the smallest in the cohort; BHP peer check directionally corroborates but BHP h=1 is not individually significant.",
+    "No cross-event statistical claims are defensible from a four-candidate bundle with different mechanism families."
   ],
   "methodology_notes": {
     "event_study_form": "Production BHAR via stats.event_study.compute_event_study. AR_h = (P_asset[t+h]/P_asset[t] - 1) - (P_bench[t+h]/P_bench[t] - 1) where t = event_index = the trading day BEFORE first_tradable_reaction_date. sigma_ar_daily = sample stddev (ddof=1) over the 60-bar pre-event estimation window. SAR_h = AR_h / (sigma_ar_daily * sqrt(h)). Daily simple close-to-close returns; auto_adjust=False.",
