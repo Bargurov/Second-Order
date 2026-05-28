@@ -9,6 +9,7 @@ import { buildClusterContext } from "@/lib/cluster-context";
 import { UncertaintySection } from "@/components/ui/stress-strip";
 import { SystemHealthPanel } from "@/components/ui/system-health-panel";
 import { BenchmarkSnapshotsStrip } from "@/components/ui/benchmark-snapshots-strip";
+import { TrackedEvidenceCard } from "@/components/ui/tracked-evidence-card";
 import { deriveContextDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -2400,6 +2401,17 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
     staleTime: 300_000,
   });
 
+  // Tracked Phase 1 + Phase 2 evidence layer.  Read-only call to the
+  // tracked-only ``GET /evidence/summary`` route; renders nothing on
+  // first paint and slots in beneath the existing TrackRecord strip
+  // once the envelope arrives.  Long staleTime — the underlying
+  // artifacts only change on a tracked commit.
+  const { data: trackedEvidence, isLoading: trackedEvidenceLoading } = useQuery({
+    queryKey: qk.trackedEvidenceSummary(),
+    queryFn: () => api.trackedEvidenceSummary(),
+    staleTime: 1_800_000,
+  });
+
   // Distribute the unified context to child components.
   const stress = ctx?.stress ?? null;
   const rates = ctx?.rates ?? null;
@@ -2632,6 +2644,20 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
           contradicted / unresolved). */}
       <div className="pt-6">
         <TrackRecordStrip data={trackRecord} isLoading={trackLoading} />
+      </div>
+
+      {/* Tracked evidence layer — compact Phase 1 + Phase 2 readout
+          from the read-only ``GET /evidence/summary`` route.  Phase 1
+          and Phase 2 are surfaced as separate columns so the FDR
+          scope separation stays structural; the verbatim
+          ``fdr_scope_note`` from the envelope is rendered beneath the
+          counts as the quiet caveat.  Sits above SystemHealthPanel
+          per the Slice 1 brief — additive insertion only. */}
+      <div className="pt-6">
+        <TrackedEvidenceCard
+          data={trackedEvidence}
+          isLoading={trackedEvidenceLoading}
+        />
       </div>
 
       {/* System Health — compact pipeline health panel. */}

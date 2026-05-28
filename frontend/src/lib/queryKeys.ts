@@ -35,6 +35,7 @@ export const qk = {
   moversYearly:     () => ["movers", "yearly"] as const,
   moversPersistent: () => ["movers", "persistent"] as const,
   trackRecord:            () => ["stats", "track-record"] as const,
+  trackedEvidenceSummary: () => ["evidence", "summary"] as const,
   trackRecordBreakdown:   () => ["stats", "track-record", "breakdown"] as const,
   confidenceCalibration:  () => ["stats", "confidence-calibration"] as const,
   newsPaginated: (limit: number) => ["news", "paginated", limit] as const,

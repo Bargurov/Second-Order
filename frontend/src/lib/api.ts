@@ -2897,6 +2897,61 @@ export function getDemoEvidenceSummary(): Promise<DemoEvidenceSummaryResponse> {
   return request<DemoEvidenceSummaryResponse>("/demo/evidence-summary");
 }
 
+/** One normalized record from the tracked Phase 1 or Phase 2 array
+ *  returned by ``GET /evidence/summary``.  Matches the shape pinned by
+ *  ``cohort_evidence.RECORD_KEYS`` on the backend: the ``phase`` field
+ *  is the literal ``"phase1"`` or ``"phase2"`` and identifies which
+ *  array the record was drawn from, never a combined scope. */
+export interface TrackedEvidenceRecord {
+  phase:             "phase1" | "phase2";
+  candidate_id:      string;
+  primary_ticker:    string;
+  benchmark_ticker:  string;
+  event_date:        string;
+  mechanism_family:  string;
+  raw_p:             number | null;
+  q_bh:              number | null;
+  passes_bh_at_005:  boolean;
+  status:            string;
+  caveat:            string;
+}
+
+/** Per-phase summary counts from ``GET /evidence/summary``.  The five
+ *  fields are pinned by ``routes/tracked_evidence.SUMMARY_KEYS`` and
+ *  are reported verbatim from the closed Phase 1 freeze cohort and the
+ *  closed Phase 2 BH/FDR pool.  ``deferred_count`` is the count of
+ *  deferred methodology lessons in the sanitized rejection-log summary;
+ *  it is ``null`` when the rejection-log artifact is absent. */
+export interface TrackedEvidenceSummary {
+  phase1_count:       number;
+  phase2_count:       number;
+  phase2_pass_count:  number;
+  phase2_fail_count:  number;
+  deferred_count:     number | null;
+}
+
+/** Envelope returned by ``GET /evidence/summary``.
+ *
+ *  Phase 1 and Phase 2 are returned as **separate** top-level arrays
+ *  by design.  Each phase's q-values come from its own five-row
+ *  denominator and must not be compared as if drawn from the other.
+ *  The ``fdr_scope_note`` string is the machine-readable caveat —
+ *  consumers that strip prose still see the structural separation in
+ *  the ``phase1`` / ``phase2`` keys.  See
+ *  ``routes/tracked_evidence.FDR_SCOPE_NOTE`` for the verbatim source. */
+export interface TrackedEvidenceSummaryResponse {
+  ok:             boolean;
+  section:        "tracked_evidence";
+  schema_version: "v1";
+  summary:        TrackedEvidenceSummary;
+  phase1:         TrackedEvidenceRecord[];
+  phase2:         TrackedEvidenceRecord[];
+  fdr_scope_note: string;
+  limitations:    string[];
+  warnings:       string[];
+  errors:         string[];
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDetail: () => request<HealthDetail>("/health/detail"),
@@ -3165,6 +3220,13 @@ export const api = {
     request<MoverSurfaceResponse>("/movers/persistent").then(unwrapMoverSurface),
 
   trackRecord: () => request<TrackRecord>("/stats/track-record"),
+
+  /** ``GET /evidence/summary`` — tracked Phase 1 freeze cohort + closed
+   *  Phase 2 BH/FDR pool, returned as separate arrays.  Read-only
+   *  endpoint backed by ``demo_artifacts/section_c_v2/`` only; no DB
+   *  reads, no provider, no network. */
+  trackedEvidenceSummary: () =>
+    request<TrackedEvidenceSummaryResponse>("/evidence/summary"),
 
   trackRecordBreakdown: () =>
     request<TrackRecordBreakdown>("/stats/track-record/breakdown"),
