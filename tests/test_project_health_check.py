@@ -114,6 +114,46 @@ def _archive_with(**counts) -> dict:
     return base
 
 
+def _ok_freeze_candidate_envelope() -> dict:
+    return {
+        "ok":            True,
+        "artifact_path": "demo_artifacts/section_c_v2/freeze_candidate_evidence.json",
+        "records_count": 5,
+        "errors":        [],
+        "warnings":      [],
+    }
+
+
+def _ok_phase2_pool_envelope() -> dict:
+    return {
+        "ok":            True,
+        "artifact_path": "demo_artifacts/section_c_v2/phase2_pool_v1.json",
+        "records_count": 5,
+        "errors":        [],
+        "warnings":      [],
+    }
+
+
+def _ok_rejection_log_envelope() -> dict:
+    return {
+        "ok":                            True,
+        "artifact_path":                 "demo_artifacts/section_c_v2/rejection_log_summary_v1.json",
+        "identifiable_rejections_count": 10,
+        "errors":                        [],
+        "warnings":                      [],
+    }
+
+
+def _ok_cohort_evidence_summary() -> dict:
+    return {
+        "phase1_count":      5,
+        "phase2_count":      5,
+        "phase2_pass_count": 3,
+        "phase2_fail_count": 2,
+        "deferred_count":    3,
+    }
+
+
 def _patch_all_clean():
     """Return a context-manager-like ExitStack that patches every
     aggregator seam to a clean fixture."""
@@ -158,6 +198,22 @@ def _patch_all_clean():
     stack.enter_context(patch.object(
         phc, "summarize_stat_validation_readiness",
         return_value=_ok_stat_validation_readiness(),
+    ))
+    stack.enter_context(patch.object(
+        phc, "run_validate_freeze_candidate_artifact",
+        return_value=_ok_freeze_candidate_envelope(),
+    ))
+    stack.enter_context(patch.object(
+        phc, "run_validate_phase2_pool",
+        return_value=_ok_phase2_pool_envelope(),
+    ))
+    stack.enter_context(patch.object(
+        phc, "run_validate_rejection_log_summary",
+        return_value=_ok_rejection_log_envelope(),
+    ))
+    stack.enter_context(patch.object(
+        phc, "summarize_cohort_evidence",
+        return_value=_ok_cohort_evidence_summary(),
     ))
     return stack
 
@@ -381,6 +437,7 @@ class TestAllPass(unittest.TestCase):
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
             "stat_validation_readiness",
+            "evidence_layer",
         ):
             self.assertIsNotNone(
                 payload.get(key),
@@ -409,6 +466,7 @@ class TestPayloadShape(unittest.TestCase):
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
             "stat_validation_readiness",
+            "evidence_layer",
             "warnings",
             "errors",
             "accepted_warnings",
@@ -1754,6 +1812,232 @@ class TestStatValidationReadiness(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# evidence_layer — wires the Phase 1 / Phase 2 tracked-artifact validators
+# plus the cohort_evidence summary helper into the smoke check.
+# ---------------------------------------------------------------------------
+
+
+class TestEvidenceLayer(unittest.TestCase):
+    def test_section_present_and_ok_under_patch_all_clean(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload.get("evidence_layer")
+        self.assertIsNotNone(section)
+        self.assertTrue(
+            section.get("ok"),
+            f"clean fixtures must produce ok=True: {section}",
+        )
+        # Each sub-check is reported as its own dict, not a count.
+        for sub in (
+            "freeze_candidate_evidence",
+            "phase2_pool",
+            "rejection_log_summary",
+            "cohort_evidence",
+        ):
+            self.assertIn(sub, section, f"missing sub-key: {sub}")
+
+    def test_section_pins_expected_counts_alongside_live(self) -> None:
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        section = payload["evidence_layer"]
+        # The pinned-counts dict is what the classifier compares against;
+        # exposing it in the section makes the contract self-documenting.
+        self.assertEqual(
+            section.get("expected_counts"),
+            {
+                "phase1_count":      5,
+                "phase2_count":      5,
+                "phase2_pass_count": 3,
+                "phase2_fail_count": 2,
+                "deferred_count":    3,
+            },
+        )
+
+    def test_freeze_validator_failure_lifts_to_top_level_error(self) -> None:
+        bad = {
+            "ok":            False,
+            "artifact_path": "freeze.json",
+            "records_count": 0,
+            "errors":        ["artifact_type must equal 'freeze_candidate_evidence'"],
+            "warnings":      [],
+        }
+        with _patch_all_clean():
+            with patch.object(
+                phc, "run_validate_freeze_candidate_artifact",
+                return_value=bad,
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("evidence_layer",           joined)
+        self.assertIn("freeze_candidate_evidence", joined)
+        self.assertIn("artifact_type",             joined)
+
+    def test_phase2_validator_failure_lifts_to_top_level_error(self) -> None:
+        bad = {
+            "ok":            False,
+            "artifact_path": "phase2.json",
+            "records_count": 0,
+            "errors":        ["denominator_count must equal 5, got 7"],
+            "warnings":      [],
+        }
+        with _patch_all_clean():
+            with patch.object(
+                phc, "run_validate_phase2_pool",
+                return_value=bad,
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("evidence_layer",     joined)
+        self.assertIn("phase2_pool",        joined)
+        self.assertIn("denominator_count",  joined)
+
+    def test_rejection_log_validator_failure_lifts_to_top_level_error(
+        self,
+    ) -> None:
+        bad = {
+            "ok":                            False,
+            "artifact_path":                 "rejection.json",
+            "identifiable_rejections_count": 0,
+            "errors":                        ["summary.identifiable_rejections_count mismatch"],
+            "warnings":                      [],
+        }
+        with _patch_all_clean():
+            with patch.object(
+                phc, "run_validate_rejection_log_summary",
+                return_value=bad,
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("evidence_layer",        joined)
+        self.assertIn("rejection_log_summary", joined)
+
+    def test_cohort_summary_count_mismatch_lifts_to_top_level_error(
+        self,
+    ) -> None:
+        # phase2_pass_count drift simulates an artifact regression that
+        # passes the schema validators but fails the pinned counts.
+        drifted = dict(_ok_cohort_evidence_summary(), phase2_pass_count=2)
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_cohort_evidence",
+                return_value=drifted,
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("evidence_layer",     joined)
+        self.assertIn("cohort_evidence",    joined)
+        self.assertIn("phase2_pass_count",  joined)
+
+    def test_cohort_summary_exception_captured_as_error(self) -> None:
+        with _patch_all_clean():
+            with patch.object(
+                phc, "summarize_cohort_evidence",
+                side_effect=FileNotFoundError(
+                    "freeze_candidate_evidence.json missing",
+                ),
+            ):
+                payload = phc.run_health_check()
+        self.assertFalse(payload["ok"])
+        joined = " | ".join(payload["errors"])
+        self.assertIn("evidence_layer",  joined)
+        self.assertIn("cohort_evidence", joined)
+        self.assertIn("FileNotFoundError", joined)
+
+    def test_validator_exception_does_not_abort_other_subchecks(self) -> None:
+        # When one validator raises, the others still run and the section
+        # reports its outcome — the section runner never aborts on a
+        # single sub-check failure.
+        with _patch_all_clean():
+            with patch.object(
+                phc, "run_validate_phase2_pool",
+                side_effect=RuntimeError("phase2 disk read error"),
+            ):
+                payload = phc.run_health_check()
+        section = payload["evidence_layer"]
+        # phase2_pool is not-ok with the exception.
+        self.assertFalse(section["phase2_pool"]["ok"])
+        # freeze + rejection still ran and report ok.
+        self.assertTrue(section["freeze_candidate_evidence"]["ok"])
+        self.assertTrue(section["rejection_log_summary"]["ok"])
+        # cohort_evidence summary still ran.
+        self.assertNotIn("error", section["cohort_evidence"])
+        # Top-level error names the phase2_pool sub-check.
+        joined = " | ".join(payload["errors"])
+        self.assertIn("phase2_pool",  joined)
+        self.assertIn("RuntimeError", joined)
+
+    def test_phase1_and_phase2_counts_reported_separately(self) -> None:
+        # Phase 1 and Phase 2 are independent FDR scopes.  The section
+        # must surface each phase's count as its own field — never any
+        # mixed total or cross-scope ratio.
+        with _patch_all_clean():
+            payload = phc.run_health_check()
+        cohort = payload["evidence_layer"]["cohort_evidence"]
+        self.assertIn("phase1_count", cohort)
+        self.assertIn("phase2_count", cohort)
+        # No mixed-scope field allowed.
+        for forbidden in (
+            "total_count",
+            "combined_count",
+            "phase1_phase2_count",
+            "cross_phase_count",
+        ):
+            self.assertNotIn(forbidden, cohort)
+
+    def test_classifier_does_not_emit_warnings(self) -> None:
+        # By design every evidence_layer regression is an error, not a
+        # warning — the artifacts are operator-authored invariants.
+        # Even a benign-looking validator failure must not be downgraded.
+        bad = dict(_ok_phase2_pool_envelope(),
+                   ok=False,
+                   errors=["q_bh disagreement"])
+        with _patch_all_clean():
+            with patch.object(
+                phc, "run_validate_phase2_pool",
+                return_value=bad,
+            ):
+                payload = phc.run_health_check()
+        for w in payload["warnings"]:
+            self.assertNotIn("evidence_layer", w)
+
+    def test_live_cohort_summary_returns_pinned_counts(self) -> None:
+        # Tripwire: the live artifacts must report the 5/5/3/2/3
+        # baseline.  If this fails, either the artifacts shifted or the
+        # cohort_evidence loader regressed — both are signals worth
+        # surfacing immediately.
+        result = phc.summarize_cohort_evidence()
+        self.assertEqual(result["phase1_count"],      5)
+        self.assertEqual(result["phase2_count"],      5)
+        self.assertEqual(result["phase2_pass_count"], 3)
+        self.assertEqual(result["phase2_fail_count"], 2)
+        self.assertEqual(result["deferred_count"],    3)
+
+    def test_evidence_seams_are_module_level_attributes(self) -> None:
+        # Tests must be able to patch each evidence seam by name on the
+        # aggregator's namespace — this pins the four seam names so a
+        # future rename does not silently break the patching contract.
+        for seam in (
+            "run_validate_freeze_candidate_artifact",
+            "run_validate_phase2_pool",
+            "run_validate_rejection_log_summary",
+            "summarize_cohort_evidence",
+        ):
+            self.assertTrue(
+                hasattr(phc, seam),
+                f"seam attribute missing: {seam!r}",
+            )
+
+
+# ---------------------------------------------------------------------------
+# Exception handling
+# ---------------------------------------------------------------------------
+
+
 class TestExceptionHandling(unittest.TestCase):
     def test_repo_hygiene_exception_captured_others_run(self) -> None:
         with _patch_all_clean():
@@ -2056,6 +2340,7 @@ class TestCli(unittest.TestCase):
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
             "stat_validation_readiness",
+            "evidence_layer",
             "warnings",
             "errors",
             "accepted_warnings",
@@ -2116,6 +2401,7 @@ class TestCli(unittest.TestCase):
             "auto_adjust_repair_preview",
             "auto_adjust_repair_write_smoke",
             "stat_validation_readiness",
+            "evidence_layer",
             "Warnings",
             "Errors",
         ):

@@ -55,10 +55,63 @@ from event_date_backfill          import plan_event_date_backfill  # noqa: E402
 from scripts.stat_validation_readiness_report import (  # noqa: E402
     summarize_readiness as summarize_stat_validation_readiness,
 )
+from scripts.validate_freeze_candidate_artifact import (  # noqa: E402
+    run_validate_freeze_candidate_artifact,
+)
+from scripts.validate_phase2_pool import (  # noqa: E402
+    run_validate_phase2_pool,
+)
+from scripts.validate_rejection_log_summary import (  # noqa: E402
+    run_validate_rejection_log_summary,
+)
+from cohort_evidence import summarize as summarize_cohort_evidence  # noqa: E402
 
 
 _DEFAULT_DB         = "events.db"
 _DEFAULT_BACKUP_DIR = "backups"
+
+
+# ---------------------------------------------------------------------------
+# evidence_layer — tracked Phase 1 / Phase 2 evidence artifacts smoke
+# ---------------------------------------------------------------------------
+#
+# Composes three read-only artifact validators plus the cohort_evidence
+# summary helper into one section.  The artifacts under
+# ``demo_artifacts/section_c_v2/`` are tracked, immutable inputs; the
+# aggregator never mutates them and never recomputes Phase 1 q-values
+# against the Phase 2 pool.  Phase 1 and Phase 2 stay separate FDR
+# scopes by construction — this section only reports each phase's
+# pinned counts side by side.
+
+_EVIDENCE_DIR = ROOT / "demo_artifacts" / "section_c_v2"
+_FREEZE_CANDIDATE_ARTIFACT_PATH = str(
+    _EVIDENCE_DIR / "freeze_candidate_evidence.json"
+)
+_PHASE2_POOL_ARTIFACT_PATH = str(_EVIDENCE_DIR / "phase2_pool_v1.json")
+_REJECTION_LOG_ARTIFACT_PATH = str(
+    _EVIDENCE_DIR / "rejection_log_summary_v1.json"
+)
+
+
+# Pinned per-phase counts the live evidence layer must report.  These
+# are the operator-authored ground-truth values for the closed Phase 1
+# freeze cohort + closed Phase 2 BH/FDR pool + sanitized rejection log.
+# Any drift surfaces as a top-level error so future edits to the
+# tracked artifacts cannot regress the demo's headline counts silently.
+_EXPECTED_EVIDENCE_COUNTS: dict[str, int] = {
+    "phase1_count":      5,
+    "phase2_count":      5,
+    "phase2_pass_count": 3,
+    "phase2_fail_count": 2,
+    "deferred_count":    3,
+}
+
+
+_EVIDENCE_VALIDATOR_KEYS: tuple[str, ...] = (
+    "freeze_candidate_evidence",
+    "phase2_pool",
+    "rejection_log_summary",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -814,6 +867,146 @@ def _classify_stat_validation_readiness(
 
 
 # ---------------------------------------------------------------------------
+# evidence_layer — section runner + classifier
+# ---------------------------------------------------------------------------
+
+
+def _safe_evidence_validator_call(fn: Callable[[], Any]) -> dict[str, Any]:
+    """Wrap a single evidence-layer validator call.
+
+    Returns the validator's envelope on success.  On any exception, or
+    on a non-dict return, surfaces a ``{"ok": False, "errors": [...]}``
+    shape so the section runner never raises and the classifier can
+    read every sub-check uniformly.
+    """
+    try:
+        result = fn()
+    except Exception as exc:
+        return {
+            "ok":     False,
+            "errors": [f"{type(exc).__name__}: {exc}"],
+        }
+    if not isinstance(result, dict):
+        return {
+            "ok":     False,
+            "errors": [
+                f"validator returned non-dict: {type(result).__name__}",
+            ],
+        }
+    return result
+
+
+def _safe_cohort_evidence_summary() -> dict[str, Any]:
+    """Wrap :func:`summarize_cohort_evidence`.
+
+    Returns the per-phase summary dict on success.  On any exception
+    (typically :class:`FileNotFoundError` or :class:`ValueError` when an
+    artifact is missing or malformed), returns
+    ``{"error": "<exc>"}`` so the classifier can surface a single line
+    rather than discarding the entire section.
+    """
+    try:
+        result = summarize_cohort_evidence()
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    if not isinstance(result, dict):
+        return {
+            "error":
+                f"summarize_cohort_evidence returned non-dict: "
+                f"{type(result).__name__}",
+        }
+    return result
+
+
+def _section_evidence_layer() -> dict[str, Any]:
+    """Run the three artifact validators + the cohort-evidence summary.
+
+    Each sub-check is wrapped so a single failure does not abort the
+    others; the section therefore reports a uniform shape regardless of
+    which underlying artifact is missing or malformed.  All four calls
+    are read-only — no DB, no cache, no provider, no LLM, no FastAPI
+    surface.
+    """
+    freeze = _safe_evidence_validator_call(
+        lambda: run_validate_freeze_candidate_artifact(
+            artifact_path=_FREEZE_CANDIDATE_ARTIFACT_PATH,
+        ),
+    )
+    phase2 = _safe_evidence_validator_call(
+        lambda: run_validate_phase2_pool(
+            artifact_path=_PHASE2_POOL_ARTIFACT_PATH,
+        ),
+    )
+    rejection = _safe_evidence_validator_call(
+        lambda: run_validate_rejection_log_summary(
+            artifact_path=_REJECTION_LOG_ARTIFACT_PATH,
+        ),
+    )
+    cohort = _safe_cohort_evidence_summary()
+
+    validators_ok = all(
+        bool(sub.get("ok")) for sub in (freeze, phase2, rejection)
+    )
+    cohort_ok = (
+        "error" not in cohort
+        and all(
+            cohort.get(k) == v
+            for k, v in _EXPECTED_EVIDENCE_COUNTS.items()
+        )
+    )
+
+    return {
+        "ok":                         validators_ok and cohort_ok,
+        "freeze_candidate_evidence":  freeze,
+        "phase2_pool":                phase2,
+        "rejection_log_summary":      rejection,
+        "cohort_evidence":            cohort,
+        "expected_counts":            dict(_EXPECTED_EVIDENCE_COUNTS),
+    }
+
+
+def _classify_evidence_layer(
+    section: dict,
+) -> tuple[list[str], list[str]]:
+    """Surface validator failures and cohort-count drift as errors.
+
+    Each sub-check failure is a hard regression: the tracked Phase 1
+    cohort, the closed Phase 2 pool, the sanitized rejection log, and
+    the pinned per-phase counts are operator-authored invariants the
+    smoke check must protect.  Warnings are intentionally unused — a
+    drifted q-value or a missing artifact is never just informational
+    in this layer.
+    """
+    errors:   list[str] = []
+    warnings: list[str] = []
+
+    for name in _EVIDENCE_VALIDATOR_KEYS:
+        sub = section.get(name) or {}
+        if not sub.get("ok"):
+            sub_errors = sub.get("errors") or []
+            first = (
+                sub_errors[0] if sub_errors
+                else "validator returned ok=False without error detail"
+            )
+            errors.append(f"{name}: {first}")
+
+    cohort = section.get("cohort_evidence") or {}
+    if "error" in cohort:
+        errors.append(f"cohort_evidence: {cohort['error']}")
+    else:
+        expected = section.get("expected_counts") or _EXPECTED_EVIDENCE_COUNTS
+        for key, want in expected.items():
+            got = cohort.get(key)
+            if got != want:
+                errors.append(
+                    f"cohort_evidence: {key}={got!r} disagrees with "
+                    f"expected {want!r}"
+                )
+
+    return errors, warnings
+
+
+# ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
 
@@ -829,6 +1022,7 @@ _SECTION_KEYS = (
     "auto_adjust_repair_preview",
     "auto_adjust_repair_write_smoke",
     "stat_validation_readiness",
+    "evidence_layer",
 )
 
 
@@ -990,6 +1184,11 @@ def run_health_check(
         lambda: _section_stat_validation_readiness(db_path=db_path),
         _classify_stat_validation_readiness,
     )
+    _run_section(
+        payload, "evidence_layer",
+        _section_evidence_layer,
+        _classify_evidence_layer,
+    )
 
     _waive_duplicate_clusters(payload, allow=int(allow_duplicate_clusters or 0))
 
@@ -1141,6 +1340,24 @@ def _render_text(payload: dict[str, Any]) -> str:
                 f"  recommended_next_action: "
                 f"{section.get('recommended_next_action')}",
             )
+        elif key == "evidence_layer":
+            for sub_name in _EVIDENCE_VALIDATOR_KEYS:
+                sub = section.get(sub_name) or {}
+                lines.append(f"  {sub_name}.ok: {sub.get('ok')}")
+            cohort = section.get("cohort_evidence") or {}
+            if "error" in cohort:
+                lines.append(f"  cohort_evidence.error: {cohort['error']}")
+            else:
+                for count_key in (
+                    "phase1_count",
+                    "phase2_count",
+                    "phase2_pass_count",
+                    "phase2_fail_count",
+                    "deferred_count",
+                ):
+                    lines.append(
+                        f"  {count_key}: {cohort.get(count_key)}",
+                    )
         lines.append("")
 
     warnings = payload.get("warnings") or []
