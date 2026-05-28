@@ -12,42 +12,83 @@ and market-context overlays, save the result locally, and revisit dated events.
 
 ## Current Status
 
-Phase 0 hardening is complete at the project-process level: CI hygiene checks,
-key rotation guidance, archive backup command, paid server guard, structured
-logging, config health diagnostics, and data-quality diagnostics are in place.
+The tracked evidence track is complete through Phase 4. The cohort-wide
+methodology and the Phase 1–4 arc are documented at
+[`demo_artifacts/section_c_v2/phase_evidence_methodology.md`](demo_artifacts/section_c_v2/phase_evidence_methodology.md)
+and
+[`demo_artifacts/section_c_v2/phase_history.md`](demo_artifacts/section_c_v2/phase_history.md).
 
-Phase 1 read surfaces are active for local archive validation: archive/detail
-reads expose `validation_status_v2`, event detail can hydrate
-`reaction_profile_v1` from cached close data, and zero-cost diagnostics now
-summarize validation, reaction-profile readiness, track-record aggregates, and
-skipped headline candidates.
+- **Phase 1** — a five-row freeze-candidate cohort
+  (WHR / TXT / FSLR / RIO / LITE) is tracked at
+  `demo_artifacts/section_c_v2/freeze_candidate_evidence.json`. Each row
+  carries a pre-registered canonical test at the claimed horizon h = 1
+  with a BH-adjusted q-value frozen at the original five-row Phase 1
+  denominator. Phase 1 q-values are never recomputed against any later
+  scope.
+- **Phase 2** — a closed five-row BH/FDR pool
+  (BA / ALB / NVDA / AMAT / CF) is tracked at
+  `demo_artifacts/section_c_v2/phase2_pool_v1.json`. BA, ALB, and NVDA
+  are BH/FDR discoveries at the q ≤ 0.05 threshold. AMAT and CF did not
+  pass the screen but remain denominator members per the closed-pool
+  policy. Phase 2 is a separate FDR scope from Phase 1.
+- **Phase 3** — three schema validators
+  (`scripts/validate_freeze_candidate_artifact.py`,
+  `scripts/validate_phase2_pool.py`,
+  `scripts/validate_rejection_log_summary.py`), the `cohort_evidence`
+  loader, the `evidence_layer` section of
+  `scripts/project_health_check.py`, and a CI gate in
+  `.github/workflows/ci.yml` protect the tracked artifacts from silent
+  regression. Deferred methodology lessons (CENX, NUE, NOC) are
+  recorded in
+  `demo_artifacts/section_c_v2/rejection_log_summary_v1.json`.
+- **Phase 4** — `GET /evidence/summary` exposes the tracked evidence
+  layer as a read-only JSON view. The route reads only from
+  `demo_artifacts/section_c_v2/`; it does not read local operator
+  artifact paths, the events database, the price cache, any provider,
+  or the network. It preserves Phase 1 and Phase 2 as separate FDR
+  scopes.
+
+Phase 0 process hardening (CI hygiene checks, key rotation guidance,
+archive backup command, paid-server guard, structured logging, config
+health diagnostics, data-quality diagnostics) and the wider app's
+existing Phase 1 read surfaces (archive/detail `validation_status_v2`,
+`reaction_profile_v1` hydration, zero-cost diagnostics for
+`/diagnostics/track-record`, `/diagnostics/major-skipped-headlines`,
+and `/diagnostics/reaction-profile-stats`) remain in place and are
+not affected by the tracked-evidence track.
 
 ## Next Roadmap
 
-Phase 1 foundation validation:
+The tracked evidence track is closed at Phase 4. No new candidates, new
+pools, or new validators are scheduled by this README. Deferred
+methodology lessons (CENX, NUE, NOC) are recorded separately in
+`demo_artifacts/section_c_v2/rejection_log_summary_v1.json` and are not
+denominator members of any open pool. No UI surface is claimed for the
+tracked-evidence layer; the only public consumption surface is the
+read-only `GET /evidence/summary` route.
+
+Open work in the wider app, independent of the tracked-evidence track:
 
 1. Magic-number inventory and empirical validation
-2. `validation_status_v2` calibration and UI refinement
+2. `validation_status_v2` calibration and broader archive coverage
 3. Reaction-profile calibration and coverage expansion
 4. Archive aggregate stats and track-record interpretation
 5. Schema migration discipline
 
-The first Phase 1 read surfaces are live. Remaining Phase 1 work is primarily
-calibration, coverage, migration discipline, and clearer public interpretation
-of archive-derived metrics.
-
-Market validation is being upgraded from raw forward-return checks toward
-abnormal returns, standardized abnormal returns (SAR), confidence intervals
-(CI), and false-discovery-rate (FDR) controls.
-
-Tracked evidence for the Phase 1 freeze cohort and the closed Phase 2 BH/FDR
-pool, together with the rejection / deferred-lesson summary and the schema
-validators that gate them, is documented in
-[demo_artifacts/section_c_v2/phase_evidence_methodology.md](demo_artifacts/section_c_v2/phase_evidence_methodology.md).
+Wider-app market validation continues to move from raw forward-return
+checks toward abnormal returns, standardized abnormal returns (SAR),
+confidence intervals (CI), and false-discovery-rate (FDR) controls.
+That work is separate from the closed tracked-evidence pools and does
+not modify them.
 
 Deferred until the foundation is steadier: charts, tagging expansion,
-scheduler/background jobs, deployment profiles, and Telegram/WhatsApp/OpenClaw
-delivery.
+scheduler/background jobs, deployment profiles, and Telegram /
+WhatsApp / OpenClaw delivery.
+
+Second Order is a local-first research and analyst-support tool. It is
+not a live trading product. The tracked evidence layer is descriptive
+of past, dated events; it does not generate trading signals and makes
+no claim about future returns.
 
 ## Current Capabilities
 
@@ -92,7 +133,7 @@ a high level:
 - asset/proxy discipline: primary, secondary, signal, rejected, and proxy eligibility fields
 - thesis status: `thesis_state`, `thesis_state_reason`, `validation_rationale`
 - actionability and counterfactuals: `actionability_check`, `counterfactual_check`
-- proof and falsification: `proof_status`, `falsifier_status`
+- support status and falsification: `proof_status`, `falsifier_status`
 - traceability: `evidence_sources`
 
 Backend research filters on `/portfolio`: `quality_tier`, `tradable`, and

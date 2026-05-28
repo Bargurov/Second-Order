@@ -15,6 +15,7 @@ policy and rubric documents that gate them.
 | `rejection_log_summary_v1.json` | Sanitized public summary of rejections, deferred methodology lessons (CENX, NUE, NOC), and audit-trail counts. Used to track decisions outside the BH denominators. |
 | `methodology_acceptance_rubric_v1.md` | Per-candidate eight-gate rule (G1–G8) and post-acceptance vocabulary used to describe each tracked row. Documentation only, not a runtime check. |
 | `phase_evidence_methodology.md` | Cohort-wide methodology note: what the evidence layer is, Phase 1 vs Phase 2 scope separation, deferred methodology lessons, claims / non-claims, and reproducibility commands. |
+| `phase_history.md` | Phase 1 through Phase 4 history and the closeout note. Records the tracked deliverables that close the evidence track. |
 | `README.md` | This file. |
 
 ## Phase 1 vs Phase 2 scopes
@@ -29,8 +30,10 @@ scopes are kept distinct by design in `phase2_fdr_policy_v1.md`.
 
 The cohort-wide methodology — what the evidence layer is, claims,
 non-claims, and reproducibility commands — lives at
-[`phase_evidence_methodology.md`](phase_evidence_methodology.md) in
-this same directory.
+[`phase_evidence_methodology.md`](phase_evidence_methodology.md).
+The Phase 1 through Phase 4 arc and the closeout note live at
+[`phase_history.md`](phase_history.md). Both files are in this
+same directory.
 
 ## Validation
 
@@ -46,4 +49,4 @@ python scripts/project_health_check.py --json
 - `bundle_scope`: `whr_txt_fslr_rio_lite_five_row` (Phase 1 freeze cohort)
 - Phase 1 freeze status: `freeze_ready_pending_operator_review` for all five Phase 1 rows
 - Phase 2 pool: closed 2026-05-28 with three BH/FDR discoveries
-- Not wired to any demo endpoint. Section C Demo v1 (`demo_artifacts/section_c_v1/`) is unchanged.
+- Read-only consumption surface: the tracked `GET /evidence/summary` route (Phase 4). Section C Demo v1 (`demo_artifacts/section_c_v1/`) is unchanged.
