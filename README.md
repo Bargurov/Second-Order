@@ -40,6 +40,11 @@ Market validation is being upgraded from raw forward-return checks toward
 abnormal returns, standardized abnormal returns (SAR), confidence intervals
 (CI), and false-discovery-rate (FDR) controls.
 
+Tracked evidence for the Phase 1 freeze cohort and the closed Phase 2 BH/FDR
+pool, together with the rejection / deferred-lesson summary and the schema
+validators that gate them, is documented in
+[demo_artifacts/section_c_v2/phase_evidence_methodology.md](demo_artifacts/section_c_v2/phase_evidence_methodology.md).
+
 Deferred until the foundation is steadier: charts, tagging expansion,
 scheduler/background jobs, deployment profiles, and Telegram/WhatsApp/OpenClaw
 delivery.
