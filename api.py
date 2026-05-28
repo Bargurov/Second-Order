@@ -3475,6 +3475,7 @@ from routes import (
     demo_evidence_summary as _demo_evidence_summary_mod,
     demo_still_moving as _demo_still_moving_mod,
     demo_weekly as _demo_weekly_mod,
+    tracked_evidence as _tracked_evidence_mod,
 )
 
 _DEMO_ARTIFACT_DIR_ENV_VAR: str = "SECOND_ORDER_DEMO_ARTIFACT_DIR"
@@ -3482,6 +3483,13 @@ _DEMO_ARTIFACT_DIR_DEFAULT: _Path = (
     _Path(__file__).resolve().parent / "demo_artifacts" / "section_c_v1"
 )
 _DEMO_FREEZE_ARTIFACT_FILENAME: str = "freeze_candidate_evidence.json"
+
+_TRACKED_EVIDENCE_DIR_DEFAULT: _Path = (
+    _Path(__file__).resolve().parent / "demo_artifacts" / "section_c_v2"
+)
+_TRACKED_EVIDENCE_FREEZE_FILENAME:    str = "freeze_candidate_evidence.json"
+_TRACKED_EVIDENCE_PHASE2_FILENAME:    str = "phase2_pool_v1.json"
+_TRACKED_EVIDENCE_REJECTION_FILENAME: str = "rejection_log_summary_v1.json"
 
 
 def _resolve_demo_artifact_dir() -> _Path:
@@ -3497,6 +3505,15 @@ def _resolve_demo_artifact_dir() -> _Path:
     if isinstance(override, str) and override.strip():
         return _Path(override.strip())
     return _DEMO_ARTIFACT_DIR_DEFAULT
+
+
+# The tracked-evidence endpoint deliberately does NOT resolve any
+# environment variable. The Phase 4 contract requires the public
+# tracked-evidence route to read only from the tracked
+# ``demo_artifacts/section_c_v2/`` bundle, never from a caller-supplied
+# alternate path. An env-var override would let an operator repoint the
+# route at a local / experimental bundle, which the contract forbids.
+# Use ``_TRACKED_EVIDENCE_DIR_DEFAULT`` directly in the endpoint.
 
 
 @app.get("/demo/daily-market")
@@ -3557,4 +3574,32 @@ def _demo_evidence_summary_endpoint():
         artifact_path=(
             _resolve_demo_artifact_dir() / _DEMO_FREEZE_ARTIFACT_FILENAME
         ),
+    )
+
+
+@app.get("/evidence/summary")
+def _evidence_summary_endpoint():
+    """Tracked evidence summary — Phase 1 freeze + Phase 2 pool.
+
+    Returns a per-phase summary of the tracked evidence layer:
+    the Phase 1 freeze cohort, the closed Phase 2 BH/FDR pool, and
+    the sanitized rejection / deferred-lesson summary. Phase 1 and
+    Phase 2 are returned as separate top-level arrays; q-values are
+    surfaced verbatim from each tracked artifact and are never
+    recomputed across phases.
+
+    Reads only from the tracked ``demo_artifacts/section_c_v2/``
+    bundle. The endpoint deliberately ignores the
+    ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` env var that the demo Section
+    C endpoints honor; the tracked-evidence contract must not be
+    repointed at a local or experimental directory.
+
+    No DB write, no provider / yfinance / market_data / price_cache
+    call, no LLM call, no artifact mutation.
+    """
+    base = _TRACKED_EVIDENCE_DIR_DEFAULT
+    return _tracked_evidence_mod.build_tracked_evidence_summary(
+        phase1_path=str(base / _TRACKED_EVIDENCE_FREEZE_FILENAME),
+        phase2_path=str(base / _TRACKED_EVIDENCE_PHASE2_FILENAME),
+        rejection_path=str(base / _TRACKED_EVIDENCE_REJECTION_FILENAME),
     )

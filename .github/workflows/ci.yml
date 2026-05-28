@@ -261,6 +261,7 @@ jobs:
           tests.test_cohort_evidence
           tests.test_validate_rejection_log_summary
           tests.test_validate_cohort_integration_review
+          tests.test_tracked_evidence
 
       - name: Run evidence-layer validators on tracked artifacts
         run: |
