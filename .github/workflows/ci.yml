@@ -254,5 +254,81 @@ jobs:
           --backup-dir ci_tmp/backups
           --allow-duplicate-clusters 28
 
+      - name: Run evidence-layer tests
+        run: >-
+          python -m unittest -v
+          tests.test_validate_phase2_pool
+          tests.test_cohort_evidence
+          tests.test_validate_rejection_log_summary
+          tests.test_validate_cohort_integration_review
+
+      - name: Run evidence-layer validators on tracked artifacts
+        run: |
+          python scripts/validate_freeze_candidate_artifact.py \
+              --artifact demo_artifacts/section_c_v2/freeze_candidate_evidence.json --json
+          python scripts/validate_phase2_pool.py \
+              --artifact demo_artifacts/section_c_v2/phase2_pool_v1.json --json
+          python scripts/validate_rejection_log_summary.py \
+              --artifact demo_artifacts/section_c_v2/rejection_log_summary_v1.json --json
+
+      - name: Assert evidence_layer pinned counts in project health
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          cmd = [
+              sys.executable,
+              "scripts/project_health_check.py",
+              "--json",
+              "--repo-path", ".",
+              "--db-path", "ci_tmp/events.db",
+              "--backup-dir", "ci_tmp/backups",
+              "--allow-duplicate-clusters", "28",
+          ]
+          proc = subprocess.run(
+              cmd, capture_output=True, check=True, text=True,
+          )
+          payload = json.loads(proc.stdout)
+
+          if payload.get("ok") is not True:
+              raise SystemExit(
+                  f"project_health_check ok={payload.get('ok')!r}; "
+                  f"errors={payload.get('errors')!r}"
+              )
+
+          section = payload.get("evidence_layer") or {}
+          if section.get("ok") is not True:
+              raise SystemExit(
+                  f"evidence_layer ok={section.get('ok')!r}; "
+                  f"section={section!r}"
+              )
+
+          cohort = section.get("cohort_evidence") or {}
+          expected = {
+              "phase1_count":      5,
+              "phase2_count":      5,
+              "phase2_pass_count": 3,
+              "phase2_fail_count": 2,
+              "deferred_count":    3,
+          }
+          mismatches = {
+              k: {"got": cohort.get(k), "expected": v}
+              for k, v in expected.items()
+              if cohort.get(k) != v
+          }
+          if mismatches:
+              raise SystemExit(
+                  f"evidence_layer.cohort_evidence count mismatches: "
+                  f"{mismatches!r}"
+              )
+
+          print(json.dumps(
+              {"ok": True, "cohort_evidence": cohort},
+              sort_keys=True,
+          ))
+          PY
+
       - name: Run no-paid smoke
         run: python scripts/no_paid_smoke.py --json
