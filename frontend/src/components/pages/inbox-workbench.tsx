@@ -278,7 +278,7 @@ function DeskIdle() {
   return (
     <div className="flex h-full min-h-[400px] flex-col items-center justify-center px-8">
       <div className="max-w-[320px] text-left">
-        <span className="qa-kicker block">— Awaiting selection</span>
+        <span className="qa-kicker block">— II · Awaiting selection</span>
         <p className="qa-headline mt-3">
           No <em>candidate</em> on the desk.
         </p>
@@ -308,7 +308,7 @@ function DeskPanel({
       {/* Desk header */}
       <div className="border-b border-[color:var(--so-rule-hi)] px-5 py-4">
         <div className="flex items-baseline gap-3 pb-2">
-          <span className="qa-kicker">— Candidate Desk</span>
+          <span className="qa-kicker">— II · Candidate Desk</span>
           <span className="qa-meta">
             {cluster.source_count} source{cluster.source_count !== 1 ? "s" : ""}
             {cluster.agreement ? ` · ${cluster.agreement}` : ""}
@@ -468,7 +468,7 @@ function DossierPanel({ cluster }: { cluster: NewsCluster }) {
     <div className="flex flex-col gap-0 overflow-y-auto px-4 py-3" style={{ maxHeight: "calc(100dvh - 140px)" }}>
       {/* Cluster metadata KV */}
       <div className="pb-3">
-        <span className="qa-kicker">— Cluster Metadata</span>
+        <span className="qa-kicker">— III · Cluster Metadata</span>
         <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
           <dt className="qa-meta">Sources</dt>
           <dd className="qa-num text-[11px] text-[color:var(--so-ink-0)]">{cluster.source_count}</dd>
@@ -567,7 +567,7 @@ function DossierPanel({ cluster }: { cluster: NewsCluster }) {
 function DossierIdle() {
   return (
     <div className="flex flex-col gap-3 px-4 py-3 opacity-80">
-      <span className="qa-kicker-dim">— Dossier</span>
+      <span className="qa-kicker-dim">— III · Dossier</span>
       <p className="qa-help">Select a cluster.</p>
 
       <div className="qa-section-head flex flex-col gap-2.5">
@@ -730,7 +730,6 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
         <span className="qa-folio-nameplate">
           Inbox <em>Workbench</em>
         </span>
-        <span className="qa-stamp">Staging</span>
         <span className="qa-folio-meta">
           <strong className="qa-num">{totalCount.toString().padStart(2, "0")}</strong>
           <span className="mx-2 text-[color:var(--so-ink-4)]">·</span>
@@ -753,6 +752,19 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
         >
           <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
         </Button>
+      </div>
+
+      {/* ── Staging contract banner — the design package's persistent
+            chrome, with copy stating the real contract.  This workbench
+            triages and analyzes; it does not write to the live archive
+            (artifact staging stays CLI-only this slice). ── */}
+      <div className="flex items-center gap-3 rounded border border-[color:var(--so-rule)] bg-[rgba(212,179,67,0.04)] px-3 py-1.5">
+        <span className="qa-stamp shrink-0">Staging</span>
+        <span className="qa-help min-w-0 flex-1 !text-[color:var(--so-ink-2)]">
+          Triage and analysis only — this surface does <em>not</em> write to the live archive.
+          Artifact staging stays <strong>CLI-only</strong> in this slice.
+        </span>
+        <span className="qa-meta ml-auto hidden shrink-0 sm:inline">live archive untouched</span>
       </div>
 
       {/* ── Context drawer — collapsed by default ── */}
@@ -804,7 +816,7 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
             {/* Zone header */}
             <div className="flex flex-col gap-2 border-b border-[color:var(--so-rule-hi)] px-3 pb-2 pt-2.5">
               <div className="flex items-center gap-3">
-                <span className="qa-kicker">— Stream</span>
+                <span className="qa-kicker">— I · Stream</span>
                 <span className="qa-num text-[10px] text-[color:var(--so-ink-3)]">
                   {filtered.length.toString().padStart(2, "0")}
                 </span>
