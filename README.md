@@ -99,6 +99,18 @@ event. Single-event output has `n=1`, so CI, p-value, and FDR are not
 available on the event-detail route; those remain cohort-level
 statistics.
 
+Compute-ready rows are also not automatically valid cohort
+observations. Across the matched compute-ready set, cohort-level
+inference is currently on hold, and the block is independence and
+labeling rather than the event-study engine: the rows are concentrated
+in a few primary tickers and one clustered macro event with overlapping
+forward windows, and `mechanism_family` is unpopulated, so they are not
+independent observations. Running cross-sectional CI, p-value, or FDR
+over them would overstate precision. The criteria a future cohort phase
+must meet are recorded in `stats/METHODOLOGY.md` ("Cohort inference —
+currently blocked"). This decision does not change the closed Phase 1 or
+Phase 2 FDR denominators.
+
 Eight archive-ready rows remain frontier cases waiting for forward
 close maturation. Most other non-ready archive rows are structurally
 blocked, mainly by missing primary tickers or insufficient pre-event

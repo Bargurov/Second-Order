@@ -46,6 +46,66 @@ events. Default: 2000 resamples, 95% confidence, deterministic seed.
 This is **not** a time-series or block bootstrap. The sampling unit
 is independent events, not correlated daily returns.
 
+## Cohort inference — currently blocked (not by the engine)
+
+A compute-ready event-study row (per-horizon BHAR / SAR / CAR point
+estimate) is **not** automatically a valid cohort observation. The
+cross-sectional cohort tools above — the z-test in
+`validation_pipeline.py`, the percentile bootstrap CI in
+`bootstrap_ci.py`, and BH-FDR in `fdr.py` — all assume the sampling unit
+is **independent events**. Computability says nothing about whether a
+row is independent of the others.
+
+As of the current local archive check the matched compute-ready set does
+not meet that assumption, so cohort inference is on hold. The block is
+**independence and labeling, not the event-study engine**:
+
+- 44 matched compute-ready events, but only 7 distinct primary tickers
+  and 24 distinct `(ticker, date)` pairs; one ticker is 21 of the 44.
+- All 44 fall inside a single ~four-week window — energy / oil names
+  reacting to one clustered macro event — so their 20-day forward
+  windows overlap heavily (an event dated one business day after
+  another shares 19 of 20 forward bars).
+- `mechanism_family` is unpopulated (`none`) for all 44, so the one
+  economically grouped cohort axis is unavailable. The count-based
+  buckets that reach `n >= 8` (one ticker; one `stage` value; one
+  `persistence` value) are the same correlated cluster under a different
+  label.
+
+Why the existing tools would overstate on this set: the cohort z
+statistic is `mean(SAR) / (sd(SAR) / sqrt(n))`. With correlated,
+window-overlapping observations the effective independent count is far
+below the nominal `n` — closer to the number of distinct shocks (~1) or
+distinct tickers (~7) than to 44 — so `sqrt(n)` is too large, the
+standard error too small, and the p-value too small. The IID percentile
+bootstrap has the same defect: resampling correlated event SARs as if
+exchangeable yields a CI that is too narrow. Both would report a
+precision the sample does not carry. This is a sampling condition, not a
+tooling gap — no script change makes the current 44 valid for cohort
+inference.
+
+### Minimum criteria before a cohort inference phase
+
+A cohort phase may proceed only when all of the following hold, verified
+read-only first:
+
+- `mechanism_family` (or an equivalent economic label) populated for the
+  candidate rows;
+- at least 8 **independent** shocks — distinct underlying events, not 8
+  rows;
+- distinct event dates, or non-overlapping forward windows, so per-event
+  observations do not share forward bars;
+- a single, clear primary-ticker / benchmark mapping per event;
+- an explicit denominator and a written exclusion list (which candidate
+  rows were dropped and why), fixed before the tests run;
+- a new, self-contained FDR scope for the cohort report's
+  `(cohort, horizon)` hypotheses — never merged with, or compared
+  against, the closed Phase 1 or Phase 2 evidence FDR pools.
+
+Until then the honest surface is the single-event route
+(`GET /events/{event_id}/event-study`): per-horizon point estimates with
+CI, p-value, and FDR explicitly unavailable at `n = 1`.
+
 ## What is intentionally absent
 
 | Item | Status | Condition for revisiting |
