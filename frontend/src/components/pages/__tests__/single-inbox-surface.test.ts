@@ -27,7 +27,7 @@ const APP_FILE   = resolve(__dirname, "../../../App.tsx");
 // ---------------------------------------------------------------------------
 
 describe("single inbox surface", () => {
-  it("headlines-page.tsx exists as the active implementation", () => {
+  it("headlines-page.tsx still exists as a shared-helper module", () => {
     expect(existsSync(resolve(PAGES_DIR, "headlines-page.tsx"))).toBe(true);
   });
 
@@ -58,14 +58,17 @@ describe("single inbox surface", () => {
 // ---------------------------------------------------------------------------
 
 describe("route behavior", () => {
-  it("App.tsx mounts HeadlinesPage for the headlines route", () => {
+  it("App.tsx mounts InboxWorkbench (not HeadlinesPage) for the headlines route", () => {
     const app = readFileSync(APP_FILE, "utf-8");
-    // HeadlinesPage is imported
-    expect(app).toContain('HeadlinesPage');
-    // Rendered when page === "headlines"
+    // InboxWorkbench replaced HeadlinesPage as the mounted headlines surface
+    // (commit ab6e0fc).  It is imported and rendered for page === "headlines".
+    expect(app).toContain("InboxWorkbench");
     expect(app).toContain('page === "headlines"');
-    // The headlines conditional wraps HeadlinesPage
-    expect(app).toMatch(/page === "headlines"[\s\S]{0,80}HeadlinesPage/);
+    // The headlines conditional wraps InboxWorkbench.
+    expect(app).toMatch(/page === "headlines"[\s\S]{0,120}InboxWorkbench/);
+    // HeadlinesPage is no longer mounted by App.tsx for this (or any) route.
+    expect(app).not.toContain("<HeadlinesPage");
+    expect(app).not.toMatch(/page === "headlines"[\s\S]{0,120}HeadlinesPage/);
   });
 
   it("App.tsx has exactly one conditional branch for the headlines route", () => {
@@ -154,13 +157,16 @@ describe("no stale alternate path", () => {
     }
   });
 
-  it("HeadlinesPage is the sole headlines-related page component in pages/", () => {
+  it("only the allowed headlines/inbox page components exist in pages/", () => {
     const files = readdirSync(PAGES_DIR).filter((f) => f.endsWith(".tsx"));
     const headlineFiles = files.filter((f) =>
       f.toLowerCase().includes("headline") ||
       f.toLowerCase().includes("inbox") ||
       f.toLowerCase().includes("feed"),
-    );
-    expect(headlineFiles).toEqual(["headlines-page.tsx"]);
+    ).sort();
+    // InboxWorkbench is the mounted headlines surface; headlines-page.tsx
+    // remains as a shared-helper module (and the now-unmounted HeadlinesPage
+    // component).  No other headlines / inbox / feed surface may exist.
+    expect(headlineFiles).toEqual(["headlines-page.tsx", "inbox-workbench.tsx"]);
   });
 });
