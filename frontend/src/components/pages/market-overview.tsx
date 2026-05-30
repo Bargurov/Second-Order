@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, ChevronDown } from "lucide-react";
@@ -10,22 +11,63 @@ import {
   type RegimeVector,
   type RefreshMeta,
   type NewsUncertaintyConcentration,
+  type StressRegime,
+  type FundingStressMode,
 } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { buildClusterContext } from "@/lib/cluster-context";
-import { UncertaintySection } from "@/components/ui/stress-strip";
 import { BenchmarkSnapshotsStrip } from "@/components/ui/benchmark-snapshots-strip";
 import { TrackedEvidenceCard } from "@/components/ui/tracked-evidence-card";
-import { deriveContextDegradedNotice } from "@/components/ui/degraded-data-notice";
-import { DegradedBanner } from "@/components/ui/degraded-banner";
-import { MetricCard } from "@/components/ui/metric-card";
+import { DegradedContextNotice } from "@/components/ui/degraded-data-notice";
 import {
   MoversSectionHead,
+  MoverEmptyLine,
   TodayMoverCard,
   WeeklyMoverCard,
   PersistentMoverRow,
 } from "@/components/ui/mover-cards";
+
+// ---------------------------------------------------------------------------
+// Design-package palette (Direction C tokens) — scoped to this page via CSS
+// custom properties set on the root, inherited by the snapshot strip and
+// mover cards.  Colours and surfaces are the zip's exact values; the page is
+// styled to the design, not translated into the app's teal theme.
+//
+// Typography: the design is serif (Instrument Serif display + Newsreader
+// body), but those webfonts are not loaded by the shell and ``index.html`` is
+// outside this task's touch-list.  ``--so-display`` / ``--so-serif`` therefore
+// point at the loaded Manrope / Inter so the default render uses real loaded
+// fonts (not a system-serif fallback).  To switch to the true design serifs,
+// load them in ``index.html`` and repoint these two vars — no other change.
+// ---------------------------------------------------------------------------
+
+const SO_VARS = {
+  // Charcoal / graphite card surfaces — neutral, not blue-black/navy.
+  "--so-bg-1": "#121212", // page card surface
+  "--so-bg-2": "#181818", // raised / hover surface
+  "--so-ink-0": "#efeadb",
+  "--so-ink-1": "#c6c1b3",
+  "--so-ink-2": "#908b7f",
+  "--so-ink-3": "#5e5a52",
+  "--so-ink-4": "#383631",
+  "--so-rule": "rgba(232,227,209,0.10)",
+  "--so-rule-hi": "rgba(232,227,209,0.18)",
+  "--so-citrine": "#d4b343",
+  "--so-jade": "#6e9c87",
+  "--so-jade-ink": "#98c2ad",
+  "--so-rust": "#c97064",
+  "--so-rust-ink": "#e0978c",
+  "--so-amber": "#c89759",
+  "--so-slate": "#7a8694",
+  "--so-bd-rust": "rgba(201,112,100,0.40)",
+  "--so-bd-amber": "rgba(200,151,89,0.40)",
+  "--so-bd-jade": "rgba(110,156,135,0.45)",
+  // Loaded fonts (see note above); repoint to the design serifs once they
+  // are loaded in index.html.
+  "--so-display": "'Manrope','Inter',sans-serif",
+  "--so-serif": "'Inter','Manrope',sans-serif",
+} as CSSProperties;
 
 // ---------------------------------------------------------------------------
 // Movers chapter — three visually-distinct windows.  Card components live in
@@ -59,95 +101,81 @@ function MoversChapter({
 
   return (
     <section>
-      {/* TODAY */}
-      <div className="mb-8">
+      {/* TODAY — 4-up clean mono cards; caption sits below the grid. */}
+      <div className="mb-7">
         <MoversSectionHead
-          window="today"
           title="Today"
-          sub="Last 24h · fastest signal, event-linked"
+          sub="last 24h · event-linked"
           count={todayList.length}
         />
-        <p className="mb-3 text-[12px] leading-relaxed text-on-surface-variant/65">
-          Event-linked moves; not validated until evidence broadens.
-        </p>
         {todayLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((k) => (
-              <Skeleton key={k} className="h-44 rounded-xl bg-surface-container-low" />
+              <Skeleton key={k} className="h-28 rounded-[4px] bg-surface-container-low" />
             ))}
           </div>
         ) : todayList.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             {todayList.slice(0, 8).map((m) => (
               <TodayMoverCard key={m.event_id} mover={m} onAnalyze={onAnalyze} />
             ))}
           </div>
         ) : (
-          <div className="rounded-md bg-white/[0.02] px-4 py-3">
-            <span className="text-[12px] text-on-surface-variant/65">
-              No event-linked moves in the last 24 hours.
-            </span>
-          </div>
+          <MoverEmptyLine>No event-linked moves in the last 24 hours.</MoverEmptyLine>
         )}
+        <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+          Event-linked moves; not validated until evidence broadens.
+        </p>
       </div>
 
-      {/* WEEKLY */}
-      <div className="mb-8">
+      {/* WEEKLY — 2-up cards. */}
+      <div className="mb-7">
         <MoversSectionHead
-          window="weekly"
           title="This week"
-          sub="5-day curated review set · thesis-aligned"
+          sub="5-day curated review set"
           count={weeklyList.length}
         />
         {weeklyLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
             {[1, 2].map((k) => (
-              <Skeleton key={k} className="h-48 rounded-xl bg-surface-container-low" />
+              <Skeleton key={k} className="h-32 rounded-[4px] bg-surface-container-low" />
             ))}
           </div>
         ) : weeklyList.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
             {weeklyList.slice(0, 6).map((m) => (
               <WeeklyMoverCard key={m.event_id} mover={m} onAnalyze={onAnalyze} />
             ))}
           </div>
         ) : (
-          <div className="rounded-md bg-white/[0.02] px-4 py-3">
-            <span className="text-[12px] text-on-surface-variant/65">
-              No 5-day confirmed movers yet.
-            </span>
-          </div>
+          <MoverEmptyLine>No 5-day confirmed movers yet.</MoverEmptyLine>
         )}
       </div>
 
       {/* PERSISTENT — Still Moving Markets, gated to high-impact conviction
           by the backend.  Empty means no qualified rows; do not backfill
-          with medium-impact or low-information filler. */}
+          with medium-impact or low-information filler.  Rendered as hairline
+          rows inside a single bordered container, per the design package. */}
       <div className="mb-4">
         <MoversSectionHead
-          window="persistent"
           title="Still moving markets"
-          sub="High-impact effects beyond the initial reaction window"
+          sub="high-impact effects beyond the initial reaction"
           count={persistentList.length}
         />
         {persistentLoading ? (
-          <div className="flex flex-col gap-2">
+          <div className="overflow-hidden rounded-[4px] border border-[color:var(--so-rule)]">
             {[1, 2, 3].map((k) => (
-              <Skeleton key={k} className="h-24 rounded-lg bg-surface-container-low" />
+              <Skeleton key={k} className="h-[58px] rounded-none bg-[var(--so-bg-1)]" />
             ))}
           </div>
         ) : persistentList.length > 0 ? (
-          <div className="flex flex-col gap-2">
+          <div className="divide-y divide-[color:var(--so-rule)] overflow-hidden rounded-[4px] border border-[color:var(--so-rule)]">
             {persistentList.map((m) => (
               <PersistentMoverRow key={m.event_id} mover={m} onAnalyze={onAnalyze} />
             ))}
           </div>
         ) : (
-          <div className="rounded-md bg-white/[0.02] px-4 py-3">
-            <span className="text-[12px] text-on-surface-variant/65">
-              No high-impact persistent movers qualify.
-            </span>
-          </div>
+          <MoverEmptyLine>No high-impact persistent movers qualify.</MoverEmptyLine>
         )}
       </div>
     </section>
@@ -177,23 +205,23 @@ function ContextExplanationDisclosure({
   if (!meaning && !whatChangesIt) return null;
 
   return (
-    <details className={cn("group rounded-md bg-white/[0.016] px-3 py-2 ring-1 ring-white/[0.035]", className)}>
+    <details className={cn("group mt-3.5 border-t border-dashed border-[color:var(--so-rule-hi)] pt-2.5", className)}>
       <summary className="flex cursor-pointer list-none items-center gap-2 marker:hidden">
-        <ChevronDown className="h-3.5 w-3.5 text-on-surface-variant/45 transition-transform group-open:rotate-180" />
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/60">
+        <ChevronDown className="h-3 w-3 text-[var(--so-citrine)] transition-transform group-open:rotate-180" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--so-ink-3)] group-hover:text-[var(--so-ink-1)]">
           How to read this
         </span>
       </summary>
-      <div className="mt-2 space-y-1.5 border-t border-white/[0.035] pt-2 text-[11px] leading-snug text-on-surface-variant/60">
+      <div className="mt-2.5 max-w-[56ch] space-y-1.5 font-[family-name:var(--so-serif)] text-[12.5px] leading-relaxed text-[var(--so-ink-2)]">
         {meaning && (
           <p>
-            <span className="font-medium text-on-surface-variant/75">Meaning: </span>
+            <span className="text-[var(--so-ink-1)]">Meaning: </span>
             {meaning}
           </p>
         )}
         {whatChangesIt && (
           <p>
-            <span className="font-medium text-on-surface-variant/75">What changes it: </span>
+            <span className="text-[var(--so-ink-1)]">What changes it: </span>
             {whatChangesIt}
           </p>
         )}
@@ -299,42 +327,15 @@ export function deriveThemes(
 // Market Regime — compact one-line summary of macro backdrop
 // ---------------------------------------------------------------------------
 
-const _AXIS_LABELS: Record<string, string> = {
-  hot: "Inflation hot",
-  cool: "Inflation cool",
-  hawkish: "Policy hawkish",
-  dovish: "Policy dovish",
-  dollar_strong: "USD strong",
-  dollar_weak: "USD weak",
-  watch: "Growth watch",
-  stressed: "Growth stressed",
-  // Breadth-expansion axes (credit / curve_shape / inflation_path).
-  // Names are full phrases so the chip strip at line ~574 reads
-  // unambiguously when shown without the axis-name prefix.
-  risk_on: "Credit risk-on",
-  risk_off: "Credit risk-off",
-  duration_stress: "Duration stress",
-  front_loaded: "Curve front-loaded",
-  term_premium: "Curve term-premium",
-  parallel: "Curve parallel",
-  hawkish_constraint: "Path hawkish-constraint",
-  dovish_space: "Path dovish-space",
-};
-
 // ---------------------------------------------------------------------------
-// Regime read — axis vocabulary + the compact RegimeVectorCard used in
-// Section 1.  Older companion cards (CreditRegime / Highlights /
-// SectorRotation / UncertaintyConcentration / MacroSystem /
-// RegimeInterpretationSection) were removed in Slice 2; this card is the
-// canonical surface now.
+// Regime read — text-forward consolidation of the four legacy regime
+// surfaces (regime strip + vector + macro system + interpretation) into one
+// card, per the Slice 02 design package.  No dial: a compound headline, a
+// confidence read, a one-line rationale, chips for the off-neutral axes
+// only, and a count for the neutral remainder.  Axis vocabulary mirrors
+// regime_vector.REGIME_AXES so the chips line up with how the backend talks
+// about the regime.
 // ---------------------------------------------------------------------------
-
-type RegimeAxis = {
-  key: string;
-  label: string;
-  value: string;
-  intensity: number;
-};
 
 type RegimeAxisKey =
   | "inflation"
@@ -345,6 +346,27 @@ type RegimeAxisKey =
   | "curve_shape"
   | "inflation_path";
 
+// Tone is a factual read, never a market-direction verdict: only the
+// unambiguous stress states read coral, an unsettled "watch" reads
+// neutral/slate, and every other off-neutral axis is a quiet teal-keyed
+// "active" chip.  Directional reads (hot / hawkish / USD strong) are NOT
+// graded good-or-bad — the page reports the read, it does not rate it.
+type RegimeAxisTone = "active" | "watch" | "stress";
+
+// "neutral" is a real backend reading (the axis is settled); a missing or
+// "unknown" value means there is NO reading.  The two are kept distinct so
+// the card never asserts an unread axis is neutral — the backend normally
+// degrades to "neutral", but a genuinely absent axis must read as unread.
+type RegimeAxisStatus = "active" | "neutral" | "unknown";
+
+type RegimeAxis = {
+  key: string;
+  label: string;
+  state: string;
+  status: RegimeAxisStatus;
+  tone: RegimeAxisTone;
+};
+
 function _axisLabel(axis: RegimeAxisKey): string {
   if (axis === "policy_stance") return "Policy";
   if (axis === "growth_stress") return "Growth";
@@ -354,27 +376,46 @@ function _axisLabel(axis: RegimeAxisKey): string {
   return axis.charAt(0).toUpperCase() + axis.slice(1);
 }
 
-function _axisValue(value: string | undefined): string {
-  if (!value || value === "unknown") return "Unknown";
-  return _AXIS_LABELS[value] ?? value.replace(/_/g, " ");
+// Concise state words for the off-neutral axis chips.  The directional
+// phrases read unambiguously without the axis-name prefix, which the chip
+// carries as a separate key.
+const _AXIS_STATE_WORDS: Record<string, string> = {
+  hot: "hot",
+  cool: "cool",
+  hawkish: "hawkish",
+  dovish: "dovish",
+  dollar_strong: "USD strong",
+  dollar_weak: "USD weak",
+  stressed: "stressed",
+  watch: "watch",
+  risk_on: "risk-on",
+  risk_off: "risk-off",
+  front_loaded: "front-loaded",
+  term_premium: "term premium",
+  parallel: "parallel",
+  hawkish_constraint: "constraint",
+  dovish_space: "space",
+};
+
+function _axisShortState(value: string): string {
+  return _AXIS_STATE_WORDS[value] ?? value.replace(/_/g, " ");
 }
 
-function _axisIntensity(value: string | undefined): number {
-  if (!value || value === "unknown" || value === "neutral") return 0.25;
-  // Strong directional reads on each axis (incl. breadth-expansion).
-  if (["hot", "hawkish", "dollar_strong", "stressed",
-       "risk_off", "front_loaded", "hawkish_constraint"].includes(value)) return 0.78;
-  // Softer or opposite-direction reads.
-  if (["cool", "dovish", "dollar_weak", "watch",
-       "risk_on", "term_premium", "dovish_space",
-       "duration_stress"].includes(value)) return 0.58;
-  // ``parallel`` and any other recognised-but-undirectional read.
-  return 0.42;
+function _axisChipTone(value: string): RegimeAxisTone {
+  if (value === "stressed" || value === "risk_off" || value === "duration_stress") {
+    return "stress";
+  }
+  if (value === "watch") return "watch";
+  return "active";
+}
+
+function _axisStatus(value: string): RegimeAxisStatus {
+  if (value === "neutral") return "neutral";
+  if (value === "unknown" || value === "") return "unknown";
+  return "active";
 }
 
 function _regimeAxes(regimeVec: RegimeVector | null): RegimeAxis[] {
-  // Mirrors the 7-axis order in regime_vector.REGIME_AXES so the dial
-  // segments line up with how the backend talks about the regime.
   const axes: readonly RegimeAxisKey[] = [
     "inflation", "policy_stance", "fx", "growth_stress",
     "credit", "curve_shape", "inflation_path",
@@ -384,10 +425,47 @@ function _regimeAxes(regimeVec: RegimeVector | null): RegimeAxis[] {
     return {
       key: axis,
       label: _axisLabel(axis),
-      value: _axisValue(value),
-      intensity: _axisIntensity(value),
+      state: _axisShortState(value),
+      status: _axisStatus(value),
+      tone: _axisChipTone(value),
     };
   });
+}
+
+// Design axis tones: a factual stress read is rust, an unsettled watch is
+// amber, every other off-neutral read carries neutral chrome (the axis has a
+// reading, but the page does not grade it good-or-bad).  The axis-name key is
+// always dim (ink-3); only the state word takes the tone colour.
+const _AXIS_CHIP_BORDER: Record<RegimeAxisTone, string> = {
+  active: "border-[color:var(--so-rule-hi)]",
+  watch: "border-[color:var(--so-bd-amber)]",
+  stress: "border-[color:var(--so-bd-rust)]",
+};
+const _AXIS_CHIP_STATE: Record<RegimeAxisTone, string> = {
+  active: "text-[var(--so-ink-2)]",
+  watch: "text-[var(--so-amber)]",
+  stress: "text-[var(--so-rust-ink)]",
+};
+
+function AxisChip({ axis }: { axis: RegimeAxis }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-baseline gap-1.5 rounded-[2px] border px-2 py-[3px] font-mono text-[10.5px] tracking-[0.04em]",
+        _AXIS_CHIP_BORDER[axis.tone],
+      )}
+    >
+      <span className="text-[9px] uppercase tracking-[0.12em] text-[var(--so-ink-3)]">
+        {axis.label}
+      </span>
+      <span className={_AXIS_CHIP_STATE[axis.tone]}>{axis.state}</span>
+    </span>
+  );
+}
+
+function _humanizeCompound(label: string): string {
+  const s = label.replace(/_/g, " ").trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
 function RegimeVectorCard({
@@ -402,130 +480,226 @@ function RegimeVectorCard({
     | null;
   explanation?: ContextExplanation | null;
 }) {
+  const title = (
+    <div className="mb-3.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
+      Regime read
+    </div>
+  );
+
   if (!regimeVec?.available) {
     return (
-      <div className="rounded-lg bg-surface-container-low px-5 py-4">
-        <div className="mb-3.5 font-headline text-[12.5px] font-semibold uppercase tracking-[0.08em] text-on-surface-variant">
-          Regime vector
-        </div>
-        <div className="rounded-md bg-white/[0.02] px-4 py-6 text-center">
-          <p className="font-headline text-[15px] font-semibold text-on-surface/80">
-            Unavailable
-          </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-on-surface-variant/65">
-            Regime vector data is unavailable for this market snapshot.
-          </p>
-        </div>
+      <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4">
+        {title}
+        <p className="font-[family-name:var(--so-serif)] text-[13px] italic leading-relaxed text-[var(--so-ink-3)]">
+          Regime read is unavailable for this market snapshot.
+        </p>
       </div>
     );
   }
 
   const axes = _regimeAxes(regimeVec);
+  const offNeutral = axes.filter((a) => a.status === "active");
+  const neutral = axes.filter((a) => a.status === "neutral");
+  const unread = axes.filter((a) => a.status === "unknown");
+
   const compoundLabel = regimeVec.compound?.label ?? "";
   // ``label === "none"`` means the compound classifier did not lock a
-  // regime — confidence is N/A, not zero.  Showing "0%" here misreads
-  // as low-quality data; show "—" with an "unlocked" sublabel so the
-  // dial is unambiguous.  The perimeter arcs are also forced to the
-  // neutral fallback in that branch — without it, the colored ring
-  // reads as a locked-regime signal even though the center says
-  // "Unlocked".  Axis values stay visible in the dl on the right.
+  // regime — confidence is N/A, not zero.  Show "—" rather than "0%" so a
+  // mixed read never misreads as low-quality data.
   const isLocked = !!compoundLabel && compoundLabel !== "none";
   const confidence = regimeVec.compound?.confidence;
   const confPct = isLocked && typeof confidence === "number"
     ? Math.round(confidence * 100)
     : null;
   // Backend always supplies a rationale — for locked regimes it's the
-  // rule's prose ("Hot inflation + tight Fed with growth cracking");
-  // for the unlocked branch it's the reason the classifier didn't lock
-  // ("Best candidate `reflation` below 0.60 confidence floor" or
-  // "No compound regime rule matched the vector").  Backticks come
-  // straight from regime_compound.py and would render literally — strip
-  // them.  The "no rule matched" string is replaced with plain-English
-  // copy that doesn't read like a bug report.
+  // rule's prose; for the unlocked branch it's why the classifier didn't
+  // lock.  Backticks come straight from regime_compound.py and would
+  // render literally — strip them; replace the unlocked branch with
+  // plain-English copy that doesn't read like a bug report.
   const rawRationale = (regimeVec.compound?.rationale ?? "")
     .replace(/`/g, "")
     .trim();
-  // For the unlocked branch, keep the state muted while describing it
-  // as a mixed/shifting market read instead of a missing-data failure.
   const compoundRationale = !isLocked
     ? "Signals are mixed/shifting; no combined regime rule matched."
     : rawRationale;
 
   return (
-    <div className="rounded-lg bg-surface-container-low px-5 py-4">
-      <div className="mb-3.5 font-headline text-[12.5px] font-semibold uppercase tracking-[0.08em] text-on-surface-variant">
-        Regime vector
+    <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4">
+      {title}
+      <h3 className="font-[family-name:var(--so-display)] text-[20px] font-normal leading-[1.28] tracking-tight text-[var(--so-ink-0)] max-w-[30ch]">
+        {isLocked ? _humanizeCompound(compoundLabel) : "No dominant regime pattern"}
+      </h3>
+      <div className="mt-2.5 flex items-baseline gap-2 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--so-ink-3)]">
+        <span>Confidence</span>
+        <span className="tabular-nums text-[var(--so-amber)]">
+          {isLocked ? (confPct == null ? "—" : `${confPct}%`) : "—"}
+        </span>
       </div>
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div className="relative h-[124px] w-[124px] shrink-0">
-          <svg viewBox="0 0 120 120" width="124" height="124" aria-hidden>
-            <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
-            {axes.map((axis, i) => {
-              const seg = 360 / axes.length;
-              const start = i * seg - 90 + 4;
-              const end = (i + 1) * seg - 90 - 4;
-              const rad = Math.PI / 180;
-              const r = 46;
-              const x1 = 60 + r * Math.cos(start * rad);
-              const y1 = 60 + r * Math.sin(start * rad);
-              const x2 = 60 + r * Math.cos(end * rad);
-              const y2 = 60 + r * Math.sin(end * rad);
-              const color = !isLocked
-                ? "rgba(255,255,255,0.22)"
-                : axis.intensity > 0.65
-                  ? "rgb(147 209 211)"
-                  : axis.intensity > 0.45
-                    ? "rgba(147,209,211,0.58)"
-                    : "rgba(255,255,255,0.22)";
-              return (
-                <path
-                  key={axis.key}
-                  d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
-                  stroke={color}
-                  strokeWidth="10"
-                  fill="none"
-                />
-              );
-            })}
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-on-surface-variant/60">
-              {isLocked ? "Confidence" : "Regime"}
-            </div>
-            <div className={cn(
-              "font-headline tabular-nums text-on-surface",
-              isLocked ? "text-[18px] font-bold" : "max-w-[86px] text-[11.5px] font-semibold leading-tight",
-            )}>
-              {isLocked
-                ? (confPct == null ? "—" : `${confPct}%`)
-                : "No dominant regime pattern"}
-            </div>
-          </div>
+      {compoundRationale && (
+        <p className="mt-3 font-[family-name:var(--so-serif)] text-[13px] leading-[1.55] text-[var(--so-ink-2)] max-w-[60ch]">
+          {compoundRationale}
+        </p>
+      )}
+      {offNeutral.length > 0 && (
+        <div className="mt-3.5 flex flex-wrap gap-1.5">
+          {offNeutral.map((a) => (
+            <AxisChip key={a.key} axis={a} />
+          ))}
         </div>
-        <div className="min-w-0 flex-1">
-          <dl className="grid grid-cols-1 gap-x-12 gap-y-2 sm:grid-cols-2">
-            {axes.map((axis) => (
-              <div key={axis.key} className="grid grid-cols-[3.25rem_1fr] items-baseline gap-x-2">
-                <dt className="text-[11.5px] text-on-surface-variant/60">{axis.label}</dt>
-                <dd className="m-0 font-mono text-[12px] text-on-surface/85 truncate">{axis.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-4 border-t border-outline-variant/15 pt-3 text-[12px] leading-relaxed text-on-surface-variant/75">
-            {isLocked ? (
-              <>Compound: <span className="font-medium text-on-surface">{compoundLabel.replace(/_/g, " ")}</span></>
-            ) : (
-              <span className="font-medium text-on-surface">No dominant regime pattern</span>
-            )}
-            {compoundRationale && (
-              <div className="mt-1 text-[11.5px] text-on-surface-variant/55">
-                {compoundRationale}
-              </div>
-            )}
-            <ContextExplanationDisclosure explanation={explanation} className="mt-3 bg-white/[0.012]" />
-          </div>
+      )}
+      {neutral.length > 0 && (
+        <div className="mt-2.5 font-mono text-[10px] tracking-[0.03em] text-[var(--so-ink-3)]">
+          {neutral.length} {neutral.length === 1 ? "axis" : "axes"} neutral · {neutral.map((a) => a.label).join(" · ")}
         </div>
+      )}
+      {unread.length > 0 && (
+        <div className="mt-1 font-mono text-[10px] tracking-[0.03em] text-[var(--so-ink-4)]">
+          {unread.length} {unread.length === 1 ? "axis" : "axes"} without a current read · {unread.map((a) => a.label).join(" · ")}
+        </div>
+      )}
+      <ContextExplanationDisclosure explanation={explanation} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Uncertainty & funding — compact three-row card (Stress · Funding ·
+// Concentration), per the Slice 02 design package.  Replaces the heavy
+// full-width stress-strip on this page; reads real stress / funding /
+// concentration data.  Design palette: quiet/normal reads jade, the
+// concentration breadth-caveat and an unsettled watch read amber, genuine
+// stress reads rust — a state read, never a directional verdict.
+// ---------------------------------------------------------------------------
+
+type StressData = StressRegime & { available?: boolean };
+type UncTone = "pos" | "watch" | "stress";
+
+const _UNC_TONE_CLASS: Record<UncTone, string> = {
+  pos: "text-[var(--so-jade-ink)]",
+  watch: "text-[var(--so-amber)]",
+  stress: "text-[var(--so-rust-ink)]",
+};
+
+function _titleCase(s: string): string {
+  const t = s.replace(/_/g, " ").trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
+
+type UncRowData = { label: string; note: string; tone: UncTone };
+
+// Real stress regimes from market_check.compute_stress_regime: "Calm",
+// "Calm with Undercurrent", "Geopolitical Stress", "Systemic Stress".  The
+// "Degraded" / "Unavailable" / "Unknown" states all carry available === false
+// and are filtered out above.  Concise value labels keep the design's
+// single-word value slot; the full read lives in the note.
+const _STRESS_LABEL: Record<string, string> = {
+  "calm": "Calm",
+  "calm with undercurrent": "Undercurrent",
+  "geopolitical stress": "Geopolitical",
+  "systemic stress": "Systemic",
+};
+
+function _stressRow(stress: StressData | null): UncRowData | null {
+  if (!stress || stress.available === false || !stress.regime) return null;
+  const r = stress.regime.toLowerCase();
+  const tone: UncTone =
+    r.includes("systemic") || r.includes("geopolitical") || r.includes("stress") ? "stress"
+    : r.includes("undercurrent") || r.includes("watch") || r.includes("elevated") ? "watch"
+    : "pos";
+  return {
+    label: _STRESS_LABEL[r] ?? _titleCase(stress.regime),
+    note: (stress.summary ?? "").trim(),
+    tone,
+  };
+}
+
+const _FUNDING_MODE_LABEL: Record<FundingStressMode["primary_mode"], string> = {
+  none: "Normal",
+  duration_shock: "Duration shock",
+  credit_widening: "Credit widening",
+  dollar_shortage: "Dollar shortage",
+  liquidity_squeeze: "Liquidity squeeze",
+};
+
+function _fundingRow(funding: FundingStressMode | null): UncRowData | null {
+  if (!funding || funding.available === false) return null;
+  const firing = funding.primary_mode !== "none" && funding.composite_severity !== "none";
+  if (!firing) {
+    return {
+      label: "Normal",
+      note: (funding.rationale ?? "No active funding-stress mode").trim(),
+      tone: "pos",
+    };
+  }
+  const tone: UncTone =
+    funding.composite_severity === "acute" || funding.composite_severity === "elevated"
+      ? "stress"
+      : "watch";
+  return {
+    label: _FUNDING_MODE_LABEL[funding.primary_mode] ?? _titleCase(funding.primary_mode),
+    note: (funding.rationale ?? "").trim(),
+    tone,
+  };
+}
+
+function UncRow({ k, label, note, tone }: { k: string } & UncRowData) {
+  return (
+    <div className="grid grid-cols-[92px_1fr] items-baseline gap-3 py-2.5">
+      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
+        {k}
+      </dt>
+      <dd className="m-0 flex min-w-0 items-baseline gap-2">
+        <span className={cn("shrink-0 font-[family-name:var(--so-display)] text-[17px] tracking-tight", _UNC_TONE_CLASS[tone])}>
+          {label}
+        </span>
+        {note && (
+          <span className="truncate font-[family-name:var(--so-serif)] text-[12px] italic text-[var(--so-ink-3)]">
+            {note}
+          </span>
+        )}
+      </dd>
+    </div>
+  );
+}
+
+function UncertaintyCard({
+  stress,
+  funding,
+  concentration,
+  explanation,
+}: {
+  stress: StressData | null;
+  funding: FundingStressMode | null;
+  concentration: NewsUncertaintyConcentration | null;
+  explanation?: ContextExplanation | null;
+}) {
+  const s = _stressRow(stress);
+  const f = _fundingRow(funding);
+  // Hide the whole card only when both stress and funding are absent; a
+  // missing concentration block just omits its own row.
+  if (!s && !f) return null;
+
+  const concView = buildUncertaintyConcentrationView(concentration);
+  const conc = concView.entries.length > 0 ? concView.entries[0]! : null;
+
+  return (
+    <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4">
+      <div className="mb-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
+        Uncertainty &amp; funding
       </div>
+      <dl className="m-0 divide-y divide-[color:var(--so-rule)]">
+        {s && <UncRow k="Stress" label={s.label} note={s.note} tone={s.tone} />}
+        {f && <UncRow k="Funding" label={f.label} note={f.note} tone={f.tone} />}
+        {conc && (
+          <UncRow
+            k="Concentration"
+            label={conc.value}
+            note={`${_titleCase(conc.key)} leads`}
+            tone="watch"
+          />
+        )}
+      </dl>
+      <ContextExplanationDisclosure explanation={explanation} />
     </div>
   );
 }
@@ -610,69 +784,51 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
   if (isLoading) {
     return (
       <section className="mb-6">
-        <Skeleton className="h-20 rounded-xl bg-surface-container-highest" />
+        <Skeleton className="h-24 rounded-lg bg-surface-container-highest" />
       </section>
     );
   }
+  // Cold-start hides the card entirely — no stub.  Track record appears once
+  // at least one resolved event lands.
   if (!data || data.total === 0) return null;
 
-  const { hitRate, hitTone, avgSupport } = computeTrackRecordDisplay(data);
+  const { hitRate, avgSupport } = computeTrackRecordDisplay(data);
 
-  const hitColor = hitTone === "positive"
-    ? "text-primary" : hitTone === "warn" ? "text-error-dim" : "text-on-surface-variant";
-  const hitDot = hitTone === "positive"
-    ? "bg-primary" : hitTone === "warn" ? "bg-error-dim" : "bg-on-surface-variant/40";
+  // Four hairline-gridded cells, design palette per the package:
+  // validated (jade) / contradicted (rust) / unresolved (amber) / hit rate
+  // (jade).  A quiet mono footer carries analyzed + avg support.
+  const cells: Array<{ k: string; v: string | number; cls: string }> = [
+    { k: "Validated", v: data.validated, cls: "text-[var(--so-jade-ink)]" },
+    { k: "Contradicted", v: data.contradicted, cls: "text-[var(--so-rust-ink)]" },
+    { k: "Unresolved", v: data.unresolved, cls: "text-[var(--so-amber)]" },
+    { k: "Hit rate", v: hitRate == null ? "—" : `${hitRate}%`, cls: "text-[var(--so-jade-ink)]" },
+  ];
 
   return (
-    <section className="mb-6" data-testid="track-record">
-      <div className="bg-surface-container-low rounded-lg px-5 py-3 md:px-6">
-
-        {/* Row 1: compact inline metrics — hit rate same weight as peers */}
-        <div className="flex items-center gap-5">
-
-          {/* Lead stat: hit rate (or total if no resolved yet) */}
-          {hitRate !== null ? (
-            <div className="flex items-baseline gap-1.5 shrink-0">
-              <span className={cn("w-1.5 h-1.5 rounded-full self-center shrink-0", hitDot)} />
-              <span className={cn("text-[18px] font-headline font-extrabold tabular-nums leading-none tracking-tight", hitColor)}>
-                {hitRate}%
-              </span>
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/55 self-center">
-                Hit Rate
-              </span>
+    <section className="mb-5" data-testid="track-record">
+      <div className="mb-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
+        Saved-event outcomes
+      </div>
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[4px] bg-[color:var(--so-rule)] sm:grid-cols-4">
+        {cells.map((c) => (
+          <div key={c.k} className="bg-[var(--so-bg-1)] px-4 py-3.5">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
+              {c.k}
             </div>
-          ) : (
-            <div className="flex items-baseline gap-1.5 shrink-0">
-              <span className="text-[18px] font-headline font-extrabold tabular-nums leading-none tracking-tight text-on-surface">
-                {data.total}
-              </span>
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-on-surface-variant/55 self-center">
-                Analyzed
-              </span>
+            <div
+              className={cn(
+                "mt-2 font-[family-name:var(--so-display)] text-[30px] font-normal leading-none tracking-tight tabular-nums",
+                c.cls,
+              )}
+            >
+              {c.v}
             </div>
-          )}
-
-          {/* Thin divider */}
-          <div className="w-px h-9 bg-outline-variant/15 shrink-0" />
-
-          {/* Secondary breakdown — compact inline metrics */}
-          <div className="flex items-center gap-3 md:gap-4 overflow-x-auto min-w-0">
-            <MetricCard label="Analyzed" value={data.total} />
-            <MetricCard label="Validated" value={data.validated} accent="text-primary" />
-            <MetricCard label="Contradicted" value={data.contradicted} accent="text-error-dim" />
-            <MetricCard label="Unresolved" value={data.unresolved} accent="text-on-surface-variant/40" />
-            {avgSupport !== null && (
-              <MetricCard label="Avg Support" value={`${avgSupport}%`} />
-            )}
           </div>
-
-          {/* Revisit badge — far right */}
-          {data.revisit_scored > 0 && (
-            <span className="ml-auto shrink-0 text-[10px] font-semibold text-primary/55 uppercase tracking-[0.1em] hidden md:block">
-              {data.revisit_scored} revisit-scored
-            </span>
-          )}
-        </div>
+        ))}
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
+        <span>{data.total} analyzed</span>
+        {avgSupport !== null && <span>avg support {avgSupport}%</span>}
       </div>
     </section>
   );
@@ -706,10 +862,16 @@ export function deriveNewsFreshness(meta?: RefreshMeta | null): NewsFreshnessSta
 }
 
 const _FRESHNESS_TONE_CLASS: Record<NewsFreshnessState["tone"], string> = {
-  ok:      "bg-primary/15 text-primary",
-  warn:    "bg-error-dim/15 text-error-dim",
-  error:   "bg-error-dim/20 text-error-dim",
-  neutral: "bg-surface-container-highest text-on-surface-variant/50",
+  ok:      "text-[var(--so-jade-ink)]",
+  warn:    "text-[var(--so-amber)]",
+  error:   "text-[var(--so-rust-ink)]",
+  neutral: "text-[var(--so-ink-3)]",
+};
+const _FRESHNESS_DOT_CLASS: Record<NewsFreshnessState["tone"], string> = {
+  ok:      "bg-[var(--so-jade)]",
+  warn:    "bg-[var(--so-amber)]",
+  error:   "bg-[var(--so-rust)]",
+  neutral: "bg-[var(--so-ink-3)]",
 };
 
 // ---------------------------------------------------------------------------
@@ -731,10 +893,10 @@ function LatestHeadlinesStrip({
 }) {
   if (isLoading) {
     return (
-      <section className="mt-12 mb-8">
-        <Skeleton className="h-5 w-40 bg-surface-container-highest mb-4" />
+      <section className="mt-[26px] border-t border-[color:var(--so-rule)] pt-5 opacity-[0.82]">
+        <Skeleton className="mb-3 h-3.5 w-40 bg-[var(--so-bg-2)]" />
         <div className="space-y-2">
-          {[1, 2, 3].map((k) => <Skeleton key={k} className="h-10 rounded-lg bg-surface-container-highest" />)}
+          {[1, 2, 3].map((k) => <Skeleton key={k} className="h-7 rounded bg-[var(--so-bg-1)]" />)}
         </div>
       </section>
     );
@@ -748,61 +910,51 @@ function LatestHeadlinesStrip({
 
   const freshness = deriveNewsFreshness(refreshMeta);
 
+  // The design's `.mo-heads`: a reduced-prominence footer (≈0.82 opacity),
+  // a mono label, and hairline rows of mono source-count + serif headline —
+  // it never competes with the three numbered sections above.
   return (
-    <section className="mt-12 mb-8">
-      <div className="flex items-center gap-2 mb-3">
-        <h2 className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant/65">
-          Latest Headlines
+    <section className="mt-[26px] border-t border-[color:var(--so-rule)] pt-5 opacity-[0.82]">
+      <div className="mb-2 flex items-center gap-2.5">
+        <h2 className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--so-ink-3)]">
+          Latest headlines
         </h2>
         <span className={cn(
-          "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] leading-none",
+          "inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.1em] leading-none",
           _FRESHNESS_TONE_CLASS[freshness.tone],
         )}>
-          <span className={cn(
-            "h-1 w-1 rounded-full",
-            freshness.tone === "ok" && "bg-primary",
-            freshness.tone === "warn" && "bg-error-dim",
-            freshness.tone === "error" && "bg-error-dim",
-            freshness.tone === "neutral" && "bg-on-surface-variant/30",
-          )} />
+          <span className={cn("h-1 w-1 rounded-full", _FRESHNESS_DOT_CLASS[freshness.tone])} />
           {freshness.label}
         </span>
       </div>
-      <div className="space-y-1.5">
+      <div className="divide-y divide-[color:var(--so-rule)]">
         {top.map((c, i) => {
           const isFailed = failedHeadlines?.has(c.headline);
           return (
-            <div
-              key={i}
-              className={cn(
-                "group flex items-center gap-3 rounded-lg bg-surface-container-low px-3 py-2 transition-shadow",
-                isFailed
-                  ? "ring-1 ring-error-dim/25 hover:ring-error-dim/40"
-                  : "hover:bg-surface-container-high",
-              )}
-            >
+            <div key={i} className="group flex items-baseline gap-3 py-[7px]">
               <span className={cn(
-                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums",
-                c.source_count >= 3 ? "bg-primary/15 text-primary" : "bg-surface-container-highest text-on-surface-variant/50",
+                "w-5 shrink-0 text-right font-mono text-[10.5px] tabular-nums",
+                c.source_count >= 3 ? "text-[var(--so-citrine)]" : "text-[var(--so-ink-3)]",
               )}>
                 {c.source_count}
               </span>
-              <span className="min-w-0 flex-1 text-[12px] font-medium leading-snug text-on-surface line-clamp-1">
+              <span className={cn(
+                "min-w-0 flex-1 font-[family-name:var(--so-serif)] text-[13px] leading-[1.45] line-clamp-1",
+                isFailed ? "text-[var(--so-ink-2)]" : "text-[var(--so-ink-1)]",
+              )}>
                 {c.headline}
               </span>
               {isFailed && (
-                <span className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-error-dim/70">
-                  <AlertTriangle className="h-2.5 w-2.5" />
-                </span>
+                <AlertTriangle className="h-2.5 w-2.5 shrink-0 text-[var(--so-rust)]" />
               )}
               {onAnalyze && (
                 <button
                   onClick={() => onAnalyze(c.headline, { context: buildClusterContext(c) })}
                   className={cn(
-                    "shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] transition-all",
+                    "shrink-0 inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.1em] transition-colors",
                     isFailed
-                      ? "text-on-surface-variant/50 hover:text-primary hover:bg-primary/10"
-                      : "text-on-surface-variant/40 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100",
+                      ? "text-[var(--so-ink-3)] hover:text-[var(--so-citrine)]"
+                      : "text-[var(--so-ink-4)] opacity-0 hover:text-[var(--so-citrine)] group-hover:opacity-100",
                   )}
                 >
                   <FlaskConical className="h-3 w-3" />
@@ -817,19 +969,38 @@ function LatestHeadlinesStrip({
   );
 }
 
-function _providerIssueItems(ctx: import("@/lib/api").MarketContext | null | undefined): string[] {
-  if (!ctx?.snapshots) return [];
-  return ctx.snapshots
-    .filter((s) => s.error || s.value == null || s.stale)
-    .slice(0, 8)
-    .map((s) => {
-      const reason = s.error
-        ? s.error.replace(/_/g, " ")
-        : s.stale
-          ? "stale"
-          : "missing";
-      return `${s.market}: ${reason}`;
-    });
+// ---------------------------------------------------------------------------
+// Section head — hairline top rule, teal mono kicker on the left, numbered
+// display subhead on the right.  Shared chrome that carries the three
+// viewer-facing section breaks (no background-coloured dividers).
+// ---------------------------------------------------------------------------
+
+function SectionHead({
+  kicker,
+  n,
+  title,
+  className,
+}: {
+  kicker: string;
+  n: string;
+  title: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "mb-5 flex items-baseline gap-4 border-t border-[color:var(--so-rule-hi)] pt-3 pb-1",
+        className,
+      )}
+    >
+      <span className="shrink-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.18em] text-[var(--so-citrine)]">
+        {kicker}
+      </span>
+      <h2 className="ml-auto font-[family-name:var(--so-display)] text-[19px] font-normal tracking-tight text-[var(--so-ink-0)]">
+        <span className="italic text-[var(--so-citrine)]">{n} ·</span> {title}
+      </h2>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -898,14 +1069,6 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   const contextExplanations = ctx?.context_explanations ?? {};
   const todaysHighlights = ctx?.highlights ?? [];
 
-  // ``providerIssueItems`` feeds the degraded-context banner so a
-  // reader sees which provider is misbehaving in plain English.  The
-  // deeper engine blocks (finance_playbook, credit_regime,
-  // sector_rotation) were rendered by the Section B / Section D
-  // surfaces that Slice 2 retired; they are still produced by the
-  // /market-context enrichment, just no longer surfaced on this page.
-  const providerIssueItems = _providerIssueItems(ctx);
-
   // Surface a single inline error banner when any of the top-level queries
   // fail.  Without this, a backend that's unreachable on first start would
   // render the page completely blank (every section gracefully hides on
@@ -914,68 +1077,76 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   const firstError = ctxError ?? persistentError ?? weeklyError;
   const errorMessage = firstError instanceof Error ? firstError.message : null;
 
-  // True cold-start empty: data loaded successfully on every channel but
-  // the archive is empty.  Show a friendly first-run nudge instead of a
-  // blank page.  Stress / snapshots can still be empty on a fresh clone,
-  // so we gate purely on "all queries finished + no movers anywhere".
-  const allLoaded = !ctxLoading && !persistentLoading && !weeklyLoading;
+  // True cold-start empty: every archive-derived channel finished loading
+  // and there is genuinely nothing to show.  Any populated surface — movers,
+  // track record, or tracked evidence — suppresses the "No archive yet"
+  // nudge; if a channel is still loading we treat it as "might have data" and
+  // hide the nudge rather than risk a false cold-start message.
+  const allLoaded =
+    !ctxLoading && !persistentLoading && !weeklyLoading
+    && !trackLoading && !trackedEvidenceLoading;
+  const hasTrackRecord = !!trackRecord && trackRecord.total > 0;
+  const hasTrackedEvidence =
+    !!trackedEvidence
+    && ((trackedEvidence.summary?.phase1_count ?? 0) > 0
+      || (trackedEvidence.summary?.phase2_count ?? 0) > 0);
   const isColdStart =
     allLoaded
     && !firstError
     && (!persistent || persistent.length === 0)
     && (!weekly || weekly.length === 0)
-    && todaysHighlights.length === 0;
+    && todaysHighlights.length === 0
+    && !hasTrackRecord
+    && !hasTrackedEvidence;
 
   return (
     // Page-level flow: no nested overflow container, no h-full reliance.
     // The shell scrolls the whole document; this page just stacks its
-    // sections.  TodayStrip used to be `position: absolute` inside a
-    // fixed-height wrapper — that pattern is gone, the strip is now an
-    // inline footer at the natural end of the overview content.
-    <div className="space-y-0">
+    // sections.  ``SO_VARS`` scopes the design-package palette to this page
+    // (inherited by the snapshot strip and mover cards) so the page is
+    // styled to the zip rather than the app's teal/sans theme.
+    <div className="space-y-0 text-[var(--so-ink-1)]" style={SO_VARS}>
       {/* Inline error banner — only renders when one of the top-level
           queries failed.  Keeps the rest of the page rendering its own
           empty states so partial degradation still works. */}
       {errorMessage && (
         <div
           role="alert"
-          className="mb-6 bg-error-container/15 rounded-lg p-4 flex items-start gap-3 ring-1 ring-error-dim/25"
+          className="mb-4 flex items-center gap-3.5 rounded-[4px] border border-[color:var(--so-bd-rust)] bg-[rgba(201,112,100,0.05)] px-3.5 py-2.5"
         >
-          <AlertTriangle className="h-4 w-4 text-error-dim shrink-0 mt-0.5" />
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-error-dim">Market data unavailable</p>
-            <p className="text-[10px] text-on-surface-variant mt-0.5 break-words">{errorMessage}</p>
-          </div>
+          <span className="shrink-0 rounded-[2px] border border-[color:var(--so-rust)] px-[7px] py-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--so-rust-ink)]">
+            Error
+          </span>
+          <span className="min-w-0 font-[family-name:var(--so-serif)] text-[13px] italic text-[var(--so-ink-2)]">
+            Market data unavailable — <span className="break-words not-italic font-mono text-[11.5px] text-[var(--so-ink-1)]">{errorMessage}</span>
+          </span>
         </div>
       )}
 
       {/* Cold-start empty state — only when every channel loaded cleanly
           but there is genuinely nothing to show.  A first-run user sees
-          a clear nudge instead of a stack of "no X detected" boxes. */}
+          the design's centred cold-start panel, not a stack of empty boxes. */}
       {isColdStart && (
-        <div className="mb-6 bg-surface-container-low rounded-lg p-6 text-center">
-          <p className="text-sm font-headline font-bold text-on-surface/80 mb-1">
-            No archive yet
-          </p>
-          <p className="text-[11px] text-on-surface-variant/70 max-w-md mx-auto leading-relaxed">
-            Run an analysis from the Headlines page to start populating Market Overview.
-          </p>
+        <div className="mb-6 grid min-h-[280px] place-items-center rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] p-10 text-center">
+          <div className="max-w-[460px]">
+            <div className="mb-3.5 font-mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--so-citrine)]">
+              — Cold start
+            </div>
+            <h3 className="font-[family-name:var(--so-display)] text-[30px] font-normal leading-[1.22] tracking-tight text-[var(--so-ink-0)]">
+              No archive <em className="italic text-[var(--so-citrine)]">yet.</em>
+            </h3>
+            <p className="mt-3.5 font-[family-name:var(--so-serif)] text-[14.5px] leading-[1.55] text-[var(--so-ink-2)]">
+              Run an analysis from the Headlines page to start populating Market Overview.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Degraded-context banner — fires when snapshots are stale or provider is down */}
-      {ctx && (() => {
-        const n = deriveContextDegradedNotice(ctx);
-        return n ? (
-          <DegradedBanner
-            title={n.label}
-            detail={n.detail ?? undefined}
-            items={providerIssueItems}
-            severity={n.severity}
-            className="mb-4"
-          />
-        ) : null;
-      })()}
+      {/* Degraded-context notice — a single compact line (24px) when
+          snapshots are stale or a provider is down.  Per-cell "· stale"
+          tags in the snapshot row carry the detail; this never expands into
+          a large block above Section 1. */}
+      <DegradedContextNotice ctx={ctx} className="mb-4" />
 
       {/*
         Three-section composition, matched to the viewer's three
@@ -987,56 +1158,33 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       */}
 
       {/* ────────────── 1 · MARKET BACKDROP ────────────── */}
-      <div className="flex items-baseline justify-between mb-4 mt-1">
-        <p className="section-kicker">Snapshot</p>
-        <span className="text-[11px] text-on-surface-variant/55">
-          1 · Market backdrop
-        </span>
-      </div>
+      <SectionHead kicker="Snapshot" n="1" title="Market backdrop" className="mt-1" />
 
-      {/* Liquid Benchmark Snapshots — equities / rates / FX /
-          commodities read at a glance.  Hides cleanly when ``snapshots``
-          is null; the degraded banner already explains why. */}
+      {/* Liquid Benchmark Snapshots — a single hairline-gridded mono row.
+          Hides cleanly when ``snapshots`` is null; the degraded banner
+          already explains why. */}
       <BenchmarkSnapshotsStrip snapshots={snapshots} isLoading={ctxLoading} />
-      <ContextExplanationDisclosure
-        explanation={contextExplanations.snapshots}
-        className="-mt-6 mb-6"
-      />
 
-      {/* Regime read → Uncertainty & funding — stacked full-width so
-          each band gets the room it needs.  ``UncertaintySection`` is a
-          full-width layout (1/4 label column + a 5-up indicator grid);
-          inside a half-width grid cell its indicator cards wrapped
-          heavily, so it now owns its own row beneath the
-          ``RegimeVectorCard`` (dial + axes) instead of sharing one.
-          ``UncertaintySection`` still composes stress + funding-stress-
-          mode + the uncertainty-concentration breadth caveat.  Each card
-          renders its own inline empty state when its data is null — one
-          empty state never hides the other. */}
-      <div className="space-y-4">
+      {/* Regime read + Uncertainty & funding as one 2-up composition
+          (1.25fr / 1fr) — two compact cards, each carrying its own "How to
+          read this" disclosure.  Stacks on narrow viewports.  The compact
+          UncertaintyCard reads real stress / funding / concentration data;
+          it replaces the heavy full-width stress-strip on this page. */}
+      <div className="mt-3.5 grid grid-cols-1 gap-3.5 lg:grid-cols-[1.25fr_1fr]">
         <RegimeVectorCard
           regimeVec={regimeVec}
           explanation={contextExplanations.regime_vector}
         />
-        <UncertaintySection
+        <UncertaintyCard
           stress={stress}
-          isLoading={ctxLoading}
-          uncertaintyConcentration={uncertaintyConcentration}
-          fundingStressMode={ctx?.funding_stress_mode ?? null}
+          funding={ctx?.funding_stress_mode ?? null}
+          concentration={uncertaintyConcentration}
+          explanation={contextExplanations.stress}
         />
       </div>
-      <ContextExplanationDisclosure
-        explanation={contextExplanations.stress}
-        className="-mt-2 mb-0"
-      />
 
       {/* ────────────── 2 · EVENT ACTIVITY ────────────── */}
-      <div className="flex items-baseline justify-between mb-4 mt-12">
-        <p className="section-kicker">Activity</p>
-        <span className="text-[11px] text-on-surface-variant/55">
-          2 · Event activity
-        </span>
-      </div>
+      <SectionHead kicker="Activity" n="2" title="Event activity" className="mt-14" />
 
       {/* Three stacked sub-windows: Today (4-up cards) → This week
           (2-up editorial cards) → Still moving (horizontal rows).
@@ -1056,12 +1204,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       />
 
       {/* ────────────── 3 · TRACK RECORD & EVIDENCE ────────────── */}
-      <div className="flex items-baseline justify-between mb-4 mt-12">
-        <p className="section-kicker">Track record</p>
-        <span className="text-[11px] text-on-surface-variant/55">
-          3 · Track record &amp; evidence
-        </span>
-      </div>
+      <SectionHead kicker="Track record" n="3" title="Track record & evidence" className="mt-11" />
 
       {/* Saved-event outcomes — single track-record strip.  The
           earlier ``DiagnosticsTrackRecordStrip`` overlapped this
@@ -1075,7 +1218,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
           surfaces the envelope's ``fdr_scope_note`` verbatim so the
           FDR-scope disclaimer never drifts between the backend and
           the UI. */}
-      <div className="pt-4">
+      <div className="pt-2">
         <TrackedEvidenceCard
           data={trackedEvidence}
           isLoading={trackedEvidenceLoading}

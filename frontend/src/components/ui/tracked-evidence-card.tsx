@@ -10,18 +10,13 @@
  * envelope's ``fdr_scope_note`` is rendered verbatim as a quiet caveat
  * below the counts.
  *
- * Aesthetic constraints (project CLAUDE.md / DESIGN.md):
- *
- *   - muted teal accent only; muted coral only for the error footer;
- *   - tonal contrast (raised-surface on section-surface) for the
- *     card boundary, never new border lines;
- *   - tabular numerics for every count;
- *   - Manrope for headlines, Inter for body, JetBrains Mono for
- *     identifiers;
- *   - tight radii (8px cap) and tight spacing;
- *   - no buy / sell / trading-signal language anywhere in the
- *     rendered output; the card describes a closed historical
- *     evidence layer, not a prescription.
+ * Styled to the Slice 02 design package (`.mo-evi`): a charcoal card with
+ * hairline rules, mono labels, citrine/jade accents, and a serif scope note.
+ * Colours come from the design palette CSS vars set by the Market Overview
+ * page root (charcoal surfaces, jade/citrine/rust). Kept deliberately
+ * compact and phase-separated; identifiers in JetBrains Mono; no buy / sell /
+ * trading-signal language — the card describes a closed historical evidence
+ * layer, not a prescription.
  */
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +43,7 @@ export const TRACKED_EVIDENCE_COPY = {
     "not compared across phases.",
   phase2AbsentLine: "Phase 2 pool not declared in this snapshot.",
   errorPrefix:      "Tracked evidence layer unavailable: ",
+  scopeStamp:       "fdr_scope_note · verbatim from /evidence/summary",
   methodologyLabel: "Methodology",
   methodologyPath:
     "demo_artifacts/section_c_v2/phase_evidence_methodology.md",
@@ -81,31 +77,33 @@ function PhaseColumn({
   countLabel,
   sub,
   detail,
+  className,
 }: {
   eyebrow: string;
   count: string;
   countLabel: string;
   sub: string;
   detail?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="rounded-md bg-surface-container px-4 py-3.5">
-      <div className="mb-2 font-headline text-[10.5px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant/60">
+    <div className={cn("min-w-0", className)}>
+      <div className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
         {eyebrow}
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="font-headline text-[28px] font-semibold leading-none text-on-surface tabular-nums">
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <span className="font-[family-name:var(--so-display)] text-[26px] font-normal leading-none tabular-nums text-[var(--so-ink-0)]">
           {count}
         </span>
-        <span className="text-[11px] uppercase tracking-[0.1em] text-on-surface-variant/55">
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
           {countLabel}
         </span>
       </div>
-      <div className="mt-1 text-[11px] leading-snug text-on-surface-variant/50">
+      <div className="mt-1 font-mono text-[10px] tracking-[0.02em] text-[var(--so-ink-3)]">
         {sub}
       </div>
       {detail ? (
-        <div className="mt-3 border-t border-outline-variant/15 pt-2.5 text-[11.5px] leading-relaxed text-on-surface-variant/75">
+        <div className="mt-2.5 border-t border-[color:var(--so-rule)] pt-2">
           {detail}
         </div>
       ) : null}
@@ -123,18 +121,18 @@ function CountRow({
   label: string;
 }) {
   const toneClass =
-    tone === "positive" ? "text-primary"
-    : tone === "muted"  ? "text-on-surface-variant/55"
-    : "text-on-surface/85";
+    tone === "positive" ? "text-[var(--so-jade-ink)]"
+    : tone === "muted"  ? "text-[var(--so-ink-3)]"
+    : "text-[var(--so-ink-1)]";
   return (
     <div className="flex items-baseline gap-2">
       <span className={cn(
-        "font-headline text-[14px] font-semibold leading-none tabular-nums",
+        "font-[family-name:var(--so-display)] text-[14px] font-normal leading-none tabular-nums",
         toneClass,
       )}>
         {value}
       </span>
-      <span className="text-[11px] leading-snug text-on-surface-variant/60">
+      <span className="font-mono text-[10px] leading-snug tracking-[0.02em] text-[var(--so-ink-3)]">
         {label}
       </span>
     </div>
@@ -154,9 +152,9 @@ export function TrackedEvidenceCard({
     return (
       <section
         aria-label={TRACKED_EVIDENCE_COPY.sectionTitle}
-        className={cn("mb-8", className)}
+        className={className}
       >
-        <Skeleton className="h-44 rounded-lg bg-surface-container-low" />
+        <Skeleton className="h-40 rounded-[4px] bg-[var(--so-bg-1)]" />
       </section>
     );
   }
@@ -187,44 +185,41 @@ export function TrackedEvidenceCard({
     <section
       aria-label={TRACKED_EVIDENCE_COPY.sectionTitle}
       className={cn(
-        "mb-8 rounded-lg bg-surface-container-low p-5",
+        "rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4",
         className,
       )}
     >
-      {/* Header */}
-      <header className="mb-4 flex items-baseline justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-headline text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant/45">
-            {TRACKED_EVIDENCE_COPY.sectionEyebrow}
-          </div>
-          <h2 className="font-headline text-[13.5px] font-semibold tracking-[-0.005em] text-on-surface">
-            {TRACKED_EVIDENCE_COPY.sectionTitle}
-          </h2>
-        </div>
-        <div className="shrink-0 text-[10.5px] uppercase tracking-[0.12em] text-on-surface-variant/45">
-          schema {data.schema_version}
+      {/* Header — `.mo-card-title` style: mono title left, eyebrow + schema
+          right. */}
+      <header className="mb-3.5 flex items-baseline justify-between gap-3">
+        <h2 className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-1)]">
+          {TRACKED_EVIDENCE_COPY.sectionTitle}
+        </h2>
+        <div className="shrink-0 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--so-ink-3)]">
+          {TRACKED_EVIDENCE_COPY.sectionEyebrow} · schema {data.schema_version}
         </div>
       </header>
 
-      {/* Two-column grid: Phase 1 left, Phase 2 right.  Phase 2 column
-          carries an inline pass / fail breakdown.  Deferred lessons sit
-          beneath as a single quiet row so the methodology record stays
-          complete without competing with the per-phase columns. */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* Phase 1 / Phase 2 side-by-side, split by a vertical hairline — the
+          two FDR scopes are kept visually separate and never combined.
+          Phase 2 carries an inline pass / fail breakdown beneath its count. */}
+      <div className="grid grid-cols-2 divide-x divide-[color:var(--so-rule)]">
         <PhaseColumn
+          className="pr-4"
           eyebrow={TRACKED_EVIDENCE_COPY.phase1Label}
           count={phase1Count}
           countLabel="rows"
           sub={TRACKED_EVIDENCE_COPY.phase1Sub}
         />
         <PhaseColumn
+          className="pl-4"
           eyebrow={TRACKED_EVIDENCE_COPY.phase2Label}
           count={phase2Count}
           countLabel="tests"
           sub={TRACKED_EVIDENCE_COPY.phase2Sub}
           detail={
             phase2Absent ? (
-              <span className="text-on-surface-variant/55">
+              <span className="font-mono text-[10px] text-[var(--so-ink-3)]">
                 {TRACKED_EVIDENCE_COPY.phase2AbsentLine}
               </span>
             ) : (
@@ -245,50 +240,52 @@ export function TrackedEvidenceCard({
         />
       </div>
 
-      {/* Deferred lessons — single line beneath the two columns. */}
-      <div className="mt-3 flex items-baseline gap-2 rounded-md bg-surface-container px-4 py-3">
-        <span className="font-headline text-[14px] font-semibold leading-none text-on-surface/80 tabular-nums">
+      {/* Deferred lessons — single quiet row beneath the two columns. */}
+      <div className="mt-3 flex items-baseline gap-2 border-t border-[color:var(--so-rule)] pt-2.5">
+        <span className="font-[family-name:var(--so-display)] text-[14px] font-normal leading-none tabular-nums text-[var(--so-ink-1)]">
           {deferred}
         </span>
-        <span className="text-[11.5px] leading-snug text-on-surface-variant/65">
+        <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--so-ink-3)]">
           {TRACKED_EVIDENCE_COPY.deferredLabel}
         </span>
       </div>
 
-      {/* FDR scope caveat — verbatim from the envelope when present. */}
-      <p className="mt-4 text-[11.5px] leading-relaxed text-on-surface-variant/55">
-        {scopeNote}
-      </p>
+      {/* FDR scope caveat — a mono provenance stamp over the verbatim note. */}
+      <div className="mt-3">
+        <span className="mb-1 block font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--so-ink-4)]">
+          {TRACKED_EVIDENCE_COPY.scopeStamp}
+        </span>
+        <p className="font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+          {scopeNote}
+        </p>
+      </div>
 
-      {/* Documentation references.  Rendered as muted label + path
-          captions rather than clickable links: the docs live inside
-          this repo at the printed paths, and there is no public
-          static host yet to point an &lt;a&gt; element at.  The path
-          itself is the affordance — an operator opens the file in
-          the repo.  Identifiers are rendered in JetBrains Mono so
-          they read as code-style references, not as call-to-action
-          buttons. */}
-      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px]">
-        <dt className="font-headline text-[10.5px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">
-          {TRACKED_EVIDENCE_COPY.methodologyLabel}
+      {/* Documentation references.  Rendered as muted label + repo-path
+          captions rather than clickable links: the docs live inside this
+          repo at the printed paths, and there is no public static host yet
+          to point an <a> element at.  The path itself is the affordance —
+          an operator opens the file in the repo.  Identifiers render in
+          JetBrains Mono so they read as code-style references. */}
+      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 border-t border-[color:var(--so-rule)] pt-3 text-[11px]">
+        <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+          {TRACKED_EVIDENCE_COPY.methodologyLabel} <span className="text-[var(--so-citrine)]">→</span>
         </dt>
-        <dd className="m-0 break-all font-mono text-[11px] text-on-surface-variant/65">
+        <dd className="m-0 break-all font-mono text-[10.5px] text-[var(--so-ink-3)]">
           {TRACKED_EVIDENCE_COPY.methodologyPath}
         </dd>
-        <dt className="font-headline text-[10.5px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/40">
-          {TRACKED_EVIDENCE_COPY.phaseHistoryLabel}
+        <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+          {TRACKED_EVIDENCE_COPY.phaseHistoryLabel} <span className="text-[var(--so-citrine)]">→</span>
         </dt>
-        <dd className="m-0 break-all font-mono text-[11px] text-on-surface-variant/65">
+        <dd className="m-0 break-all font-mono text-[10.5px] text-[var(--so-ink-3)]">
           {TRACKED_EVIDENCE_COPY.phaseHistoryPath}
         </dd>
       </dl>
 
-      {/* Error footer — muted coral, single line, only when the
-          envelope reports errors.  ``ok`` is True iff ``errors`` is
-          empty, so this branch is the same signal surfaced as a
-          readable string. */}
+      {/* Error footer — muted rust, single line, only when the envelope
+          reports errors.  ``ok`` is True iff ``errors`` is empty, so this
+          branch is the same signal surfaced as a readable string. */}
       {firstError ? (
-        <p className="mt-3 text-[11.5px] leading-snug text-error-dim">
+        <p className="mt-3 font-mono text-[11px] leading-snug text-[var(--so-rust-ink)]">
           {TRACKED_EVIDENCE_COPY.errorPrefix}
           {firstError}
         </p>
