@@ -163,3 +163,25 @@
 .az-canvas .az-serif {
   font-family: var(--so-serif); font-weight: 300; color: var(--so-ink-1);
 }
+
+/* ------------------------------------------------------------
+   Source Consensus — mute the shared EvidenceQualityStrip into
+   the Analyze card language.  The component is not edited; these
+   overrides apply only inside the `.az-consensus` wrapper.  The
+   strip's opacity-suffixed surface utilities (`/50`, `/60`) are
+   NOT caught by the surface remap above, so they are flattened
+   here; supportive counts read MUTED JADE (not bright teal),
+   warn reads rust, and cell dividers use the warm hairline.
+   Returns / validation data colours elsewhere are untouched.
+   ------------------------------------------------------------ */
+.az-canvas .az-consensus .bg-surface-container-highest\/50,
+.az-canvas .az-consensus .bg-surface-container-highest\/60 {
+  background-color: transparent !important;
+}
+.az-canvas .az-consensus .border-outline-variant\/10 {
+  border-color: var(--so-rule) !important;
+}
+.az-canvas .az-consensus .text-primary { color: var(--so-jade-ink) !important; }
+.az-canvas .az-consensus .bg-primary\/70 { background-color: var(--so-jade-ink) !important; }
+.az-canvas .az-consensus .text-error-dim { color: var(--so-rust-ink) !important; }
+.az-canvas .az-consensus .bg-error-dim\/60 { background-color: var(--so-rust-ink) !important; }

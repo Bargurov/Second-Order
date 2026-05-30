@@ -916,8 +916,10 @@ function PolicySensitivityBlock({ data }: { data: PolicySensitivity }) {
 // ---------------------------------------------------------------------------
 
 const INV_STYLE: Record<string, { icon: string; color: string; bg: string }> = {
+  // comfortable / calm / supportive reads MUTED JADE, not bright teal —
+  // citrine stays chrome-only and teal stays a market-return colour.
   tight:       { icon: "▲", color: "text-error-dim", bg: "bg-error-dim/8" },
-  comfortable: { icon: "▼", color: "text-primary", bg: "bg-primary/8" },
+  comfortable: { icon: "▼", color: "text-[var(--so-jade-ink)]", bg: "bg-[rgba(152,194,173,0.07)]" },
   neutral:     { icon: "●", color: "text-on-surface-variant", bg: "bg-surface-container-highest" },
 };
 
@@ -3474,10 +3476,14 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
       {/* ── SKELETON ── */}
       {phase === "classify" && !result && <AnalysisSkeleton />}
 
-      {/* ── EVIDENCE QUALITY / SOURCE CONSENSUS ── */}
+      {/* ── EVIDENCE QUALITY / SOURCE CONSENSUS ──
+          Wrapped in the Analyze card language (charcoal surface, warm
+          hairline, mono label).  The `az-consensus` hook lets the scoped
+          stylesheet mute the evidence strip's loud teal/navy chips to
+          jade/rust/charcoal without editing the shared component. */}
       {result && result.analysis && !isLowSignal && (
-        <div className="mb-6">
-          <p className="section-kicker mb-2">Source Consensus</p>
+        <div className="az-consensus mb-6 rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-4 py-3">
+          <p className="az-card-title mb-2.5">Source Consensus</p>
           <EvidenceQualityStrip result={result} />
         </div>
       )}
