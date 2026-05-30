@@ -1,0 +1,165 @@
+/* ============================================================
+   Analyze Canvas — scoped Direction-C visual layer for the
+   Analyze page (Slice 02).  Activates inside `.az-canvas`.
+   Source: design/second order - analyze page (Direction C kit).
+
+   Overrides shadcn / Stitch surface + ink tokens under the
+   wrapper so the page reads as neutral charcoal with warm bone
+   ink, then exposes a few `az-*` editorial helpers for the
+   chrome Slice 2 restyles (section leads, event header, card
+   titles, backstage).
+
+   House rules (kit/README.md — do not break):
+     - Citrine is CHROME ONLY — never positive-return colour.
+     - Jade / rust / amber are evidence / return / held signals.
+     - Surfaces are neutral charcoal (hue 0, sat 0%), not navy.
+     - Hairlines over containers; no background-coloured dividers.
+     - Numerics in JetBrains Mono, tabular.
+
+   IMPORTANT: `--primary` (teal) is intentionally NOT remapped.
+   It carries market / return / validation meaning across the
+   ticker grid, scorecard, and specialist blocks, and must never
+   become citrine.  Citrine is applied explicitly as chrome via
+   the helpers below and via inline `var(--so-citrine)` on the
+   specific editorial elements Slice 2 touches.
+   ============================================================ */
+
+/* Editorial fonts, scope-applied only (the rest of the app stays
+   on Inter / Manrope / JetBrains Mono). */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,wght@0,300..600;1,300..600&display=swap');
+
+/* Doubled specificity so the scope wins against the .dark block
+   from index.css regardless of import order. */
+.az-canvas.az-canvas {
+  /* surfaces — neutral charcoal ladder, no blue/navy cast */
+  --background: 0 0% 4%;          /* #0a0a0a — page */
+  --card:       0 0% 7%;          /* #121212 — section card */
+  --popover:    0 0% 9%;          /* #171717 — raised */
+  --secondary:  0 0% 9%;
+  --muted:      0 0% 9%;
+  --accent:     0 0% 9%;
+
+  /* ink — warm bone */
+  --foreground: 41 16% 74%;       /* #c6c1b3 */
+  --muted-foreground: 41 9% 53%;  /* #908b7f */
+  --card-foreground: 41 19% 81%;
+  --popover-foreground: 41 19% 81%;
+
+  /* hairlines — bone-tinted, low contrast */
+  --border: 40 12% 13%;
+  --input: 40 12% 13%;
+
+  /* direct-access design tokens (Direction C) */
+  --so-bg:   #0a0a0a;
+  --so-bg-1: #121212;
+  --so-bg-2: #181818;
+  --so-rule:    rgba(232, 227, 209, 0.10);
+  --so-rule-hi: rgba(232, 227, 209, 0.18);
+  --so-ink-0: #efeadb;
+  --so-ink-1: #c6c1b3;
+  --so-ink-2: #908b7f;
+  --so-ink-3: #5e5a52;
+  --so-ink-4: #383631;
+  --so-citrine:    #d4b343;
+  --so-citrine-bg: rgba(212, 179, 67, 0.08);
+  --so-jade-ink:  #98c2ad;        /* positive return / evidence */
+  --so-rust-ink:  #e0978c;        /* negative return / stress */
+  --so-amber:     #c89759;        /* held / incomplete / watch */
+  --so-slate:     #7a8694;        /* pending / neutral */
+  --so-serif:   'Newsreader', Georgia, serif;
+  --so-display: 'Instrument Serif', 'Newsreader', Georgia, serif;
+  --so-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  color: var(--so-ink-1);
+}
+
+/* Citrine selection across the scope. */
+.az-canvas ::selection { background: rgba(212, 179, 67, 0.26); color: var(--so-ink-0); }
+
+/* ------------------------------------------------------------
+   Stitch surface / ink utilities → charcoal.  Specificity beats
+   the utility's 0,1,0 so existing `bg-surface-container*` /
+   `text-on-surface*` classes pick up the charcoal ladder — the
+   deferred ticker grid / specialist blocks inherit charcoal
+   surfaces without being restyled.  `--primary` is untouched,
+   so returns / validation keep their teal/jade/coral meaning.
+   ------------------------------------------------------------ */
+.az-canvas .bg-surface-container-low     { background-color: var(--so-bg-1) !important; }
+.az-canvas .bg-surface-container         { background-color: var(--so-bg-2) !important; }
+.az-canvas .bg-surface-container-high    { background-color: var(--so-bg-2) !important; }
+.az-canvas .bg-surface-container-highest { background-color: var(--so-bg-2) !important; }
+.az-canvas .bg-surface-bright            { background-color: var(--so-bg-2) !important; }
+.az-canvas .text-on-surface              { color: var(--so-ink-0) !important; }
+
+/* ------------------------------------------------------------
+   az-* editorial helpers (chrome only)
+   ------------------------------------------------------------ */
+
+/* Event headline — display serif. */
+.az-canvas .az-headline {
+  font-family: var(--so-display);
+  font-weight: 400;
+  color: var(--so-ink-0);
+  font-size: 32px;
+  line-height: 1.18;
+  letter-spacing: -0.018em;
+}
+
+/* Event-identity tag chip — mono micro-caps, hairline border. */
+.az-canvas .az-tag {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  font-family: var(--so-mono);
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--so-ink-2);
+  border: 1px solid var(--so-rule);
+  border-radius: 2px;
+  padding: 3px 8px;
+}
+.az-canvas .az-tag .tk { color: var(--so-ink-3); }
+.az-canvas .az-tag.age { color: var(--so-citrine); border-color: rgba(212, 179, 67, 0.30); }
+
+/* Mock-fallback badge — amber, held/incomplete signal. */
+.az-canvas .az-mock-badge {
+  display: inline-flex; align-items: center;
+  font-family: var(--so-mono);
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--so-amber);
+  border: 1px solid rgba(200, 151, 89, 0.4);
+  border-radius: 2px;
+  padding: 3px 8px;
+}
+
+/* Header metric (Confidence / Status) — mono label + value + serif sub. */
+.az-canvas .az-metric .ml {
+  font-family: var(--so-mono); font-size: 9.5px; color: var(--so-ink-3);
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px;
+}
+.az-canvas .az-metric .mv {
+  font-family: var(--so-mono); font-size: 13px; color: var(--so-ink-1);
+  letter-spacing: 0.02em;
+}
+.az-canvas .az-metric .mv.conf-high { color: var(--so-jade-ink); }
+.az-canvas .az-metric .mv.conf-medium { color: var(--so-amber); }
+.az-canvas .az-metric .mv.conf-low { color: var(--so-ink-2); }
+.az-canvas .az-metric .ms {
+  font-family: var(--so-serif); font-style: italic; font-size: 11.5px;
+  color: var(--so-ink-3); font-weight: 300; margin-top: 2px;
+}
+
+/* Citrine mono kicker — section/backstage chrome. */
+.az-canvas .az-kick {
+  font-family: var(--so-mono);
+  text-transform: uppercase; letter-spacing: 0.18em;
+  font-size: 10.5px; color: var(--so-citrine); font-weight: 500;
+}
+
+/* Mono card title — sub-section label inside a section card. */
+.az-canvas .az-card-title {
+  font-family: var(--so-mono); font-size: 11px; color: var(--so-ink-2);
+  text-transform: uppercase; letter-spacing: 0.14em; font-weight: 500;
+}
+
+/* Serif body — leads / rationales / prose. */
+.az-canvas .az-serif {
+  font-family: var(--so-serif); font-weight: 300; color: var(--so-ink-1);
+}

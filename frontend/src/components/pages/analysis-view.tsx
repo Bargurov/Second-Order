@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type AnalogMatchDimension, type RevisitSnapshot, type ConfidenceCalibration, type CrossAssetConfirmation, type CreditTransmission, type HorizonCheckpoints, type HorizonCheckpoint, type SectorPassthrough, type SectorPassthroughEntry, type MechanismFamily, type ExpectedChannel, type Counterforce, type SubstitutionBarrier, type EventMacroReleaseContext, type EventPolicyTimingContext, type EventCountryVulnerabilityContext, type PolicyTimingStatus, type VulnerabilityTier, type CommodityTier } from "@/lib/api";
 import { deriveAllHorizons, deriveTrajectory, type HorizonSummary, type ThesisTrajectory } from "@/lib/revisit-derivation";
+import "@/styles/analyze-canvas.css";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
 import { formatMemo, formatBlurb, formatMemoMarkdown } from "@/lib/format-memo";
@@ -84,16 +85,24 @@ const SECTION_CARD = "bg-surface-container-low rounded-lg";
 // Inner card (bg-surface-container-highest)
 const INNER_CARD = "bg-surface-container-highest rounded-md";
 
-// Quiet section lead — "01 · Title" used to anchor the new hierarchy.
+// Section lead — Direction-C rhythm: a hairline top rule, a citrine mono
+// number, a display-serif title, and quiet serif subcopy.  Anchors each
+// numbered section so the page reads as one numbered narrative.
 function SectionLead({ num, title, sub }: { num: string; title: string; sub?: string }) {
   return (
-    <div className="mb-3 flex items-baseline gap-3">
-      <span className="font-mono text-[11px] tabular-nums text-on-surface-variant/45">{num}</span>
-      <h3 className="font-headline text-[14px] font-semibold tracking-[-0.005em] text-on-surface">
-        {title}
-      </h3>
+    <div className="mb-3">
+      <div className="flex items-baseline gap-2.5 border-t border-[color:var(--so-rule-hi)] pt-3">
+        <span className="font-mono text-[12px] italic tabular-nums tracking-wide text-[var(--so-citrine)]">
+          {num} ·
+        </span>
+        <h3 className="font-[family-name:var(--so-display)] text-[21px] font-normal leading-tight tracking-[-0.01em] text-[var(--so-ink-0)]">
+          {title}
+        </h3>
+      </div>
       {sub && (
-        <span className="text-[11px] text-on-surface-variant/55">{sub}</span>
+        <p className="mt-1.5 font-[family-name:var(--so-serif)] text-[12.5px] font-light italic leading-snug text-[var(--so-ink-3)]">
+          {sub}
+        </p>
       )}
     </div>
   );
@@ -105,8 +114,8 @@ function SectionLead({ num, title, sub }: { num: string; title: string; sub?: st
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-4 flex items-center gap-2">
-      <span className="w-1 h-3 bg-primary rounded-full" />
+    <h4 className="az-card-title mb-4 flex items-center gap-2">
+      <span className="h-3 w-0.5 rounded-full bg-[var(--so-citrine)]" />
       {children}
     </h4>
   );
@@ -3346,7 +3355,6 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
   const conf = result?.analysis
     ? (CONFIDENCE[result.analysis.confidence] ?? CONFIDENCE.low)
     : null;
-  const ConfIcon = conf?.icon ?? Shield;
 
   const calibBucket = result?.analysis?.confidence && calibData
     ? calibData[result.analysis.confidence as Confidence]
@@ -3358,7 +3366,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
     && result.analysis.losers.length === 0;
 
   return (
-    <div className="pb-8">
+    <div className="az-canvas pb-8">
       {/* Sticky back-nav row.  Sits directly under the (also sticky)
           TopBar (`top-14`) so the user can return to Market Overview
           from anywhere in a long analysis without scrolling back to
@@ -3376,60 +3384,65 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
         </div>
       )}
 
-      {/* ── TOP AREA ── */}
-      <div className="mb-8">
+      {/* ── EVENT IDENTITY — tag chips · display headline · metric row ── */}
+      <div className="mb-9">
+        {/* Tag row */}
+        {(result?.stage || result?.persistence || result?.event_date || (result?.is_mock && !result?.analysis_failed)) && (
+          <div className="mb-3.5 flex flex-wrap items-center gap-1.5">
+            {result?.is_mock && !result?.analysis_failed && (
+              <span className="az-mock-badge">mock fallback</span>
+            )}
+            {result?.stage && (
+              <span className="az-tag"><span className="tk">stage</span>{result.stage}</span>
+            )}
+            {result?.persistence && (
+              <span className="az-tag"><span className="tk">persistence</span>{result.persistence}</span>
+            )}
+            {result?.event_date && (
+              <span className="az-tag"><span className="tk">event</span>{result.event_date}</span>
+            )}
+          </div>
+        )}
 
+        {/* Headline — display serif (input when idle) */}
         {result ? (
-          <h1 className="font-headline text-[22px] font-extrabold tracking-tighter text-on-surface leading-tight max-w-3xl">
-            {result.headline}
-          </h1>
+          <h1 className="az-headline max-w-[34ch]">{result.headline}</h1>
         ) : (
           <input
             type="text"
-            placeholder="Paste a headline to analyze..."
+            placeholder="Paste a headline to analyze…"
             value={headline}
             onChange={(e) => setHeadline(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
-            className="w-full bg-transparent font-headline text-[22px] font-extrabold tracking-tighter text-primary placeholder:text-on-surface-variant/25 focus:outline-none"
+            className="az-headline w-full max-w-[34ch] bg-transparent placeholder:text-[var(--so-ink-4)] focus:outline-none"
           />
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {result?.stage && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-bold uppercase tracking-widest">
-              {result.stage}
-            </span>
-          )}
-          {result?.persistence && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-bold uppercase tracking-widest">
-              {result.persistence}
-            </span>
-          )}
-          {result?.is_mock && !result?.analysis_failed && (
-            <span className="text-[9px] px-2 py-0.5 rounded bg-error-container/30 text-error font-bold uppercase tracking-widest">Mock</span>
-          )}
-          {conf && result?.analysis && (
-            <span className={cn("inline-flex items-center gap-1.5 text-[9px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-widest", conf.bg, conf.text)}>
-              <span className={cn("w-1.5 h-1.5 rounded-full", conf.dot)} />
-              <ConfIcon className="h-3 w-3" />
-              {conf.label}
-            </span>
-          )}
-          {calibBucket && (
-            <span className="text-[9px] text-on-surface-variant/35 tabular-nums" title={`Historical validation rate for ${result?.analysis?.confidence}-confidence calls`}>
-              {Math.round(calibBucket.hit_rate * 100)}% validated historically (n={calibBucket.n})
-            </span>
-          )}
-          {result?.event_date && (
-            <span className="text-[9px] text-on-surface-variant/40 ml-1">{result.event_date}</span>
-          )}
-          {loading && (
-            <span className="inline-flex items-center gap-1 text-[9px] text-primary font-bold ml-1">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              {phase === "analysis" ? "Mechanism" : "Market"}
-            </span>
-          )}
-        </div>
+        {/* Metric row — confidence + live status, az-metric rhythm */}
+        {((conf && result?.analysis) || loading) && (
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-9 gap-y-3">
+            {conf && result?.analysis && (
+              <div className="az-metric">
+                <div className="ml">Confidence</div>
+                <div className={cn("mv", `conf-${result.analysis.confidence}`)}>{conf.label}</div>
+                {calibBucket && (
+                  <div className="ms" title={`Historical validation rate for ${result.analysis.confidence}-confidence calls`}>
+                    {Math.round(calibBucket.hit_rate * 100)}% validated historically, n={calibBucket.n}
+                  </div>
+                )}
+              </div>
+            )}
+            {loading && (
+              <div className="az-metric">
+                <div className="ml">Status</div>
+                <div className="mv inline-flex items-center gap-1.5" style={{ color: "var(--so-citrine)" }}>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {phase === "analysis" ? "Mechanism…" : "Market…"}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── ERROR ── */}
@@ -3519,15 +3532,15 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                     <ul className="space-y-2.5">
                       {result.analysis.what_changed.split(/[.!]\s+/).filter(Boolean).map((s, i) => (
                         <li key={i} className="flex items-start gap-2.5">
-                          <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                          <p className="text-[13px] text-on-surface leading-relaxed">{s.trim().replace(/\.$/, "")}.</p>
+                          <Check className="h-3.5 w-3.5 text-[var(--so-citrine)] shrink-0 mt-0.5" />
+                          <p className="az-serif text-[13.5px] leading-relaxed">{s.trim().replace(/\.$/, "")}.</p>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="pt-5 border-t border-border/30">
-                    <h4 className="text-[11px] font-semibold text-on-surface-variant mb-2">Mechanism Summary</h4>
-                    <p className="text-[13px] text-on-surface-variant/85 leading-relaxed whitespace-pre-line">
+                  <div className="pt-5 border-t border-[color:var(--so-rule)]">
+                    <h4 className="az-card-title mb-2">Mechanism Summary</h4>
+                    <p className="az-serif text-[13px] leading-relaxed text-[var(--so-ink-2)] whitespace-pre-line">
                       {result.analysis.mechanism_summary}
                     </p>
                   </div>
@@ -3792,12 +3805,18 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
           )}
 
           {/* ── BACKSTAGE — collapsed reference disclosures (analyst memo +
-              engine-phase fields), de-emphasised and trailing the read so
-              the thesis narrative stays primary.  Each self-hides when
-              empty, and render conditions are unchanged from their prior
-              in-flow positions — memo: strong-signal only; engine
-              reference: whenever analysis is present (so the cluster cannot
-              render an empty frame, no wrapper label is added). ── */}
+              engine-phase fields), framed quietly and trailing the read so
+              the thesis narrative stays primary.  The citrine kicker + rule
+              renders only on the strong-signal branch (where the memo is
+              present), so it can never orphan.  The disclosures' own render
+              gates and collapsed-by-default behaviour are unchanged —
+              memo: strong-signal only; engine reference: whenever analysis
+              is present. ── */}
+          {result.analysis && !isLowSignal && (
+            <div className="border-t border-[color:var(--so-rule-hi)] pt-6">
+              <span className="az-kick">— Backstage · reference</span>
+            </div>
+          )}
           {result.analysis && !isLowSignal && (
             <ResearchMemoBlock result={result} />
           )}
