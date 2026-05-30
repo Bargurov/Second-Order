@@ -33,6 +33,7 @@ from validation_outcome import (
 )
 from validation_status import score_validation_status
 from reaction_profile_hydration import hydrate_per_ticker_profile
+from event_study_validation import build_event_study_validation
 
 import api as _api
 import headline_registry as _hr
@@ -1035,6 +1036,22 @@ def cascade(event_id: int):
     if result["root"] is None:
         raise HTTPException(404, f"Event {event_id} not found.")
     return _api._sanitize_floats(result)
+
+
+@router.get("/events/{event_id}/event-study")
+def event_study(event_id: int):
+    """Gated, read-only single-event event-study (SAR/CAR) proof.
+
+    Backend-only surface (no UI consumer): reaches the
+    :mod:`stats.event_study` engine for one event when readiness gates
+    pass, and returns an explicit ``insufficient_data`` object with
+    blocking reasons otherwise.  Does not alter ``validation_status_v2``
+    or ``reaction_profile_v1``; no provider call, no DB write.
+    """
+    target = _api.load_event_by_id(event_id)
+    if not target:
+        raise HTTPException(404, f"Event {event_id} not found.")
+    return _api._sanitize_floats(build_event_study_validation(target))
 
 
 @router.get("/events/{event_id}/backtest")
