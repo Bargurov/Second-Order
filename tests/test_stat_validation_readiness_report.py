@@ -1008,5 +1008,143 @@ class TestNoForbiddenSeams(_Base):
         )
 
 
+# ---------------------------------------------------------------------------
+# Compute-readiness — the strict event-study gate, reused from the proof path
+# ---------------------------------------------------------------------------
+
+
+def _contiguous_window(event_date: date, n_pre: int, n_post: int) -> list[date]:
+    """Contiguous business days: ``n_pre`` before, the event, ``n_post`` after."""
+    pre: list[date] = []
+    cur = event_date
+    while len(pre) < n_pre:
+        cur -= timedelta(days=1)
+        if cur.weekday() < 5:
+            pre.append(cur)
+    pre.reverse()
+    post: list[date] = []
+    cur = event_date
+    while len(post) < n_post:
+        cur += timedelta(days=1)
+        if cur.weekday() < 5:
+            post.append(cur)
+    return pre + [event_date] + post
+
+
+def _seed_series(
+    conn: sqlite3.Connection,
+    *,
+    ticker: str,
+    dates: list[date],
+    base: float,
+    noise: bool,
+    auto_adjust: int,
+    jump_from: int | None = None,
+) -> None:
+    """Seed a price series.  ``noise`` adds an alternating idiosyncratic
+    term (so the ticker's daily abnormal returns have positive variance →
+    positive sigma); the optional post-event jump creates a clear AR."""
+    for i, d in enumerate(dates):
+        val = base * (1 + 0.0005 * i + (0.003 * ((-1) ** i) if noise else 0.0))
+        if jump_from is not None and i >= jump_from:
+            val *= 1.04
+        _seed_cache_row(conn, ticker=ticker, date_str=d.isoformat(),
+                        auto_adjust=auto_adjust, close=round(val, 4))
+
+
+class TestComputeReadiness(_Base):
+    _ED = date(2026, 4, 15)
+
+    def _seed_compute_ready(self, *, ticker_flag: int, spy_flag: int) -> None:
+        dates = _contiguous_window(self._ED, 65, 22)
+        event_index = 65
+        with self._conn() as conn:
+            _seed_event(conn, event_date=self._ED.isoformat(),
+                        market_tickers=json.dumps([{"symbol": "XLE"}]))
+            _seed_series(conn, ticker="XLE", dates=dates, base=50.0, noise=True,
+                         auto_adjust=ticker_flag, jump_from=event_index + 1)
+            _seed_series(conn, ticker=_BENCHMARK_TICKER, dates=dates, base=100.0,
+                         noise=False, auto_adjust=spy_flag)
+            conn.commit()
+
+    def test_compute_readiness_section_keys_present(self) -> None:
+        cr = report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
+        for k in ("archive_ready_count", "event_study_compute_ready_count",
+                  "status_counts", "top_blocking_reasons",
+                  "auto_adjust_basis_counts", "cross_flag_caveat_count"):
+            self.assertIn(k, cr)
+        self.assertIn("event_study_available", cr["status_counts"])
+        self.assertIn("insufficient_data", cr["status_counts"])
+
+    def test_archive_ready_can_exceed_compute_ready(self) -> None:
+        # Full archive coverage (60 pre + isolated +1/+5/+20bd forward
+        # points + one SPY point) flips every ARCHIVE check — but the
+        # archive gate never checks SPY's pre-event window, so the strict
+        # gate refuses: archive-ready 1, compute-ready 0.
+        with self._conn() as conn:
+            _seed_event(conn, event_date=self._ED.isoformat(),
+                        market_tickers=json.dumps([{"symbol": "AAPL"}]))
+            _seed_full_cache_for_event(conn, ticker="AAPL", event_date=self._ED)
+            conn.commit()
+        result = report.summarize_readiness(db_path=self._tmp)
+        self.assertEqual(result["events_fully_ready"], 1)            # archive
+        cr = result["compute_readiness"]
+        self.assertEqual(cr["archive_ready_count"], 1)
+        self.assertEqual(cr["event_study_compute_ready_count"], 0)   # compute
+        self.assertTrue(cr["top_blocking_reasons"])
+        self.assertIn("insufficient_estimation_window_benchmark",
+                      cr["top_blocking_reasons"])
+
+    def test_matched_flag_event_is_compute_ready_without_caveat(self) -> None:
+        self._seed_compute_ready(ticker_flag=0, spy_flag=0)
+        cr = report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+        self.assertEqual(cr["auto_adjust_basis_counts"]["matched"], 1)
+        self.assertEqual(cr["auto_adjust_basis_counts"]["cross_flag"], 0)
+        self.assertEqual(cr["cross_flag_caveat_count"], 0)
+
+    def test_cross_flag_caveat_counted_separately(self) -> None:
+        # Asset adjusted-only, benchmark raw-only → computes on the cross
+        # pair, counted as cross_flag and carrying the dividend caveat.
+        self._seed_compute_ready(ticker_flag=1, spy_flag=0)
+        cr = report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+        self.assertEqual(cr["auto_adjust_basis_counts"]["cross_flag"], 1)
+        self.assertEqual(cr["auto_adjust_basis_counts"]["matched"], 0)
+        self.assertEqual(cr["cross_flag_caveat_count"], 1)
+
+    def test_compute_ready_path_invokes_no_provider_seam(self) -> None:
+        from contextlib import ExitStack
+        # A compute-READY event so compute_event_study actually runs;
+        # assert the strict gate still reaches no provider / writer.
+        self._seed_compute_ready(ticker_flag=0, spy_flag=0)
+        seams = (
+            ("market_data", "get_provider"),
+            ("price_cache", "fetch_daily_cached"),
+            ("price_cache", "_write_rows"),
+        )
+        with ExitStack() as stack:
+            for mod_name, attr in seams:
+                try:
+                    mod = __import__(mod_name)
+                except Exception:
+                    continue
+                if hasattr(mod, attr):
+                    stack.enter_context(patch.object(
+                        mod, attr,
+                        side_effect=AssertionError(f"{mod_name}.{attr} called"),
+                    ))
+            try:
+                import yfinance  # noqa: F401
+                stack.enter_context(patch(
+                    "yfinance.download",
+                    side_effect=AssertionError("yfinance called"),
+                ))
+            except ImportError:
+                pass
+            cr = report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

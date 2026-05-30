@@ -50,7 +50,15 @@ Output contract::
       "events_with_20d_forward_cache":           int,
       "events_missing_benchmark_proxy":          int,
       "events_with_insufficient_estimation_window": int,
-      "events_fully_ready":                      int,
+      "events_fully_ready":                      int,   # ARCHIVE readiness
+      "compute_readiness": {                     # STRICT event-study gate
+        "archive_ready_count":             int,
+        "event_study_compute_ready_count": int,
+        "status_counts": {"event_study_available": int, "insufficient_data": int},
+        "top_blocking_reasons":            {str: int},
+        "auto_adjust_basis_counts":        {"matched": int, "cross_flag": int},
+        "cross_flag_caveat_count":         int,
+      },
       "events": [                          # capped at --limit, id asc
         {
           "event_id":         int,
@@ -80,8 +88,14 @@ Out of scope (deliberately)
   ``market_data``, ``price_cache.fetch_daily_cached``, no provider
   call, no network.
 * No FastAPI app surface — never imports ``api`` or ``routes.*``.
-* No event-study compute — this report only measures *readiness*,
-  not the abnormal returns themselves.
+* The archive-readiness checks above are a pure date-coverage measure.
+  The ``compute_readiness`` section additionally reaches
+  ``stats.event_study.compute_event_study`` (via
+  ``event_study_validation.build_event_study_validation``, the same gate
+  the live ``/events/{id}/event-study`` route uses) to count how many
+  events the engine can actually score.  That path stays read-only —
+  SELECT-only, no provider, no DB writes, no FastAPI, no ``api`` /
+  ``routes.*`` import.
 
 Usage::
 
@@ -253,6 +267,12 @@ def summarize_readiness(
     # SQL ``ORDER BY id`` above; cap at the requested limit.
     truncated = per_event[:capped_limit]
 
+    # Strict event-study compute readiness over EVERY event (not the
+    # truncated list), via the same gate the live route uses.
+    compute_readiness = _summarize_compute_readiness(
+        per_event, db_path=path, archive_ready_count=n_fully_ready,
+    )
+
     return {
         "total_events":                                total_events,
         "events_with_event_date":                      n_event_date,
@@ -264,12 +284,116 @@ def summarize_readiness(
         "events_missing_benchmark_proxy":              n_missing_benchmark,
         "events_with_insufficient_estimation_window":  n_insufficient_est,
         "events_fully_ready":                          n_fully_ready,
+        "compute_readiness":                           compute_readiness,
         "events":                                      truncated,
         "recommended_next_action": (
             _RECOMMENDED_OK
             if total_events > 0 and n_fully_ready == total_events
             else _RECOMMENDED_GAPS
         ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Compute-readiness — the STRICT gate the live event-study proof enforces
+# ---------------------------------------------------------------------------
+#
+# ``events_fully_ready`` above is ARCHIVE readiness: it unions the two
+# auto_adjust flags, checks only the primary ticker's estimation window,
+# and never checks that the asset+benchmark intersection forms a single
+# contiguous engine-consumable window.  This section answers the stricter
+# question the backend proof path actually enforces — would
+# ``stats.event_study.compute_event_study`` produce a usable record for
+# this event right now? — by REUSING
+# ``event_study_validation.build_event_study_validation`` (the same gate
+# the ``/events/{id}/event-study`` route uses) rather than duplicating it,
+# so the report and the route never drift.
+
+_COMPUTE_TOP_REASONS = 8
+
+
+def _compute_readiness_empty() -> dict[str, Any]:
+    return {
+        "archive_ready_count":             0,
+        "event_study_compute_ready_count": 0,
+        "status_counts": {"event_study_available": 0, "insufficient_data": 0},
+        "top_blocking_reasons":            {},
+        "auto_adjust_basis_counts":        {"matched": 0, "cross_flag": 0},
+        "cross_flag_caveat_count":         0,
+    }
+
+
+def _summarize_compute_readiness(
+    per_event: list[dict[str, Any]],
+    *,
+    db_path: str | None,
+    archive_ready_count: int,
+) -> dict[str, Any]:
+    """Apply the strict event-study compute gate to every event.
+
+    Reuses ``event_study_validation.build_event_study_validation`` so the
+    report cannot overstate what the engine can actually compute.
+    Read-only: ``build`` issues only ``SELECT`` statements and never
+    reaches a provider, the price_cache writer, or a FastAPI surface.
+    """
+    # Lazy import keeps the module-level import graph (and ``--help``)
+    # free of the event-study engine + numpy until a run needs the gate.
+    from event_study_validation import (
+        STATUS_AVAILABLE,
+        STATUS_INSUFFICIENT,
+        build_event_study_validation,
+    )
+    import db as _dbmod
+
+    status_counts = {STATUS_AVAILABLE: 0, STATUS_INSUFFICIENT: 0}
+    basis_counts = {"matched": 0, "cross_flag": 0}
+    blocking: dict[str, int] = {}
+    cross_flag_caveat = 0
+
+    # ``build`` reads price_cache through the global ``db.DB_FILE``; point
+    # it at the same archive this report summarizes for the loop, then
+    # restore.  When ``db_path`` is the live default this is a no-op.
+    saved = _dbmod.DB_FILE
+    if db_path is not None:
+        _dbmod.DB_FILE = db_path
+    try:
+        for entry in per_event:
+            primary = entry.get("primary_ticker")
+            event = {
+                "id":             entry.get("event_id"),
+                "event_date":     entry.get("event_date"),
+                "market_tickers": [{"symbol": primary}] if primary else [],
+            }
+            out = build_event_study_validation(event)
+            if out.get("status") == STATUS_AVAILABLE:
+                status_counts[STATUS_AVAILABLE] += 1
+                basis = out.get("auto_adjust_basis") or {}
+                if basis.get("asset") == basis.get("benchmark"):
+                    basis_counts["matched"] += 1
+                else:
+                    basis_counts["cross_flag"] += 1
+                if out.get("basis_caveat"):
+                    cross_flag_caveat += 1
+            else:
+                status_counts[STATUS_INSUFFICIENT] += 1
+                for reason in out.get("blocking_reasons") or []:
+                    # Collapse parameterized suffixes (``engine_error(..)``)
+                    # to the bare reason key for a stable histogram.
+                    key = reason.split("(")[0].split(":")[0].strip()
+                    blocking[key] = blocking.get(key, 0) + 1
+    finally:
+        _dbmod.DB_FILE = saved
+
+    top = dict(
+        sorted(blocking.items(), key=lambda kv: (-kv[1], kv[0]))[:_COMPUTE_TOP_REASONS]
+    )
+    return {
+        "archive_ready_count":             archive_ready_count,
+        "event_study_compute_ready_count": status_counts[STATUS_AVAILABLE],
+        "status_counts":                   dict(status_counts),
+        "top_blocking_reasons":            top,
+        "auto_adjust_basis_counts":        dict(basis_counts),
+        "cross_flag_caveat_count":         cross_flag_caveat,
     }
 
 
@@ -285,6 +409,7 @@ def _empty_report() -> dict[str, Any]:
         "events_missing_benchmark_proxy":              0,
         "events_with_insufficient_estimation_window":  0,
         "events_fully_ready":                          0,
+        "compute_readiness":                           _compute_readiness_empty(),
         "events":                                      [],
         # An empty archive isn't "fully ready" for downstream
         # event-study work — there's nothing to validate.  The gaps
@@ -468,7 +593,25 @@ def _render_text(report: dict[str, Any]) -> str:
     lines.append(f"  forward cache ready (20d):                   {report['events_with_20d_forward_cache']}")
     lines.append(f"  missing benchmark proxy ({_BENCHMARK_TICKER}):              {report['events_missing_benchmark_proxy']}")
     lines.append(f"  insufficient estimation window (<{_ESTIMATION_WINDOW}d):       {report['events_with_insufficient_estimation_window']}")
-    lines.append(f"  fully ready:                                 {report['events_fully_ready']}")
+    lines.append(f"  fully ready (archive):                       {report['events_fully_ready']}")
+    cr = report.get("compute_readiness") or {}
+    basis = cr.get("auto_adjust_basis_counts") or {}
+    lines.append(
+        f"  event-study compute-ready:                   "
+        f"{cr.get('event_study_compute_ready_count', 0)} "
+        f"(of {cr.get('archive_ready_count', 0)} archive-ready)"
+    )
+    lines.append(
+        f"  compute basis:                               "
+        f"matched={basis.get('matched', 0)} "
+        f"cross_flag={basis.get('cross_flag', 0)} "
+        f"(caveat={cr.get('cross_flag_caveat_count', 0)})"
+    )
+    tbr = cr.get("top_blocking_reasons") or {}
+    if tbr:
+        lines.append("  top compute blockers:")
+        for reason, count in tbr.items():
+            lines.append(f"    {reason}: {count}")
     lines.append("")
 
     events = report["events"]
