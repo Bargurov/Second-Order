@@ -42,9 +42,9 @@ describe("isActionabilityEmpty", () => {
 
   it("treats a low_information populated block as non-empty", () => {
     // The engine composer ALWAYS populates the dict on low_information
-    // — that read is exactly what the user needs to see ("not tradable
-    // because: insufficient evidence").  Skipping it would hide the
-    // diagnostic.
+    // — that read is exactly what the user needs to see ("not
+    // decision-relevant because: insufficient evidence").  Skipping it
+    // would hide the diagnostic.
     expect(
       isActionabilityEmpty({
         tradable: false,

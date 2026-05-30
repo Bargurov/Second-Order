@@ -13,8 +13,8 @@
  *     wrapper renders nothing — no placeholder card.
  *   * Renders in BOTH the strong-signal and low-signal branches; on
  *     low_information events the actionability + counterfactual blocks
- *     are exactly what diagnoses *why* the read isn't tradable, so
- *     hiding them on the low-info path defeats the point.
+ *     are exactly what diagnoses *why* the read isn't decision-relevant,
+ *     so hiding them on the low-info path defeats the point.
  *   * Visually secondary to thesis / proof / falsifier content — small
  *     type, tabular numbers, no heavy borders.
  *
@@ -90,8 +90,12 @@ export function hasAnyEnginePhaseContent(a?: AnalysisDetail | null): boolean {
 const SECTION_CARD = "bg-surface-container-low rounded-lg";
 const INNER_CARD = "bg-surface-container-highest rounded-md";
 
+// Viewer-facing tier labels.  The map KEYS are the backend ``quality_tier``
+// values (unchanged); the VALUES are observation-only research labels — the
+// project reports research evidence, not a trade recommendation, so no
+// "actionable" / position language reaches the reader.
 const _TIER_LABEL: Record<QualityTier, string> = {
-  actionable: "Actionable",
+  actionable: "Research-grade",
   watch_only: "Watch only",
   low_information: "Low information",
 };
@@ -152,7 +156,7 @@ function DisciplineStrip({ analysis }: { analysis: AnalysisDetail }) {
               : "bg-on-surface-variant/12 text-on-surface-variant/70 border-on-surface-variant/20",
           )}
         >
-          {ac!.tradable ? "Tradable" : "Not tradable"}
+          {ac!.tradable ? "Decision-relevant" : "Observation only"}
         </span>
       )}
       {warnings.map((w) => (
@@ -174,7 +178,7 @@ function ActionabilityDetail({ ac }: { ac?: ActionabilityCheck | null }) {
   return (
     <div className={cn(INNER_CARD, "p-3 space-y-2")}>
       <p className="text-[11px] font-semibold text-on-surface-variant/75">
-        Actionability
+        Decision framing
       </p>
       {ac!.why_tradable_or_not && (
         <p className="text-[12px] text-on-surface leading-relaxed">
