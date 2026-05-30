@@ -57,6 +57,54 @@ existing Phase 1 read surfaces (archive/detail `validation_status_v2`,
 and `/diagnostics/reaction-profile-stats`) remain in place and are
 not affected by the tracked-evidence track.
 
+## Event-Study Compute-Readiness Contract
+
+The backend route `GET /events/{event_id}/event-study` is a wider-app
+archive route, separate from the closed tracked-evidence Phase 1 and
+Phase 2 FDR pools.
+
+`archive-ready` is the broad coverage gate from
+`scripts/stat_validation_readiness_report.py`: the event has an
+`event_date`, a primary ticker, enough cached primary-ticker history,
+forward cache coverage at the 1d / 5d / 20d horizons, and SPY benchmark
+proxy coverage. It is a data-coverage denominator, not a promise that
+the event-study engine can score the row.
+
+`event-study compute-ready` is stricter. It reuses
+`event_study_validation.build_event_study_validation`, the same gate
+behind `GET /events/{event_id}/event-study`. The gate requires a
+contiguous intersected asset-plus-SPY window, enough SPY pre-event
+history for the estimation window, and an engine-usable volatility
+estimate. A compute-ready row can return per-horizon abnormal return,
+SAR, and CAR point estimates.
+
+`matched adjusted basis` means the asset and SPY benchmark both use
+`auto_adjust=True` price-cache rows for the full window consumed by the
+event-study engine. As of the current local archive check, every
+compute-ready event sits on matched adjusted basis, so no mixed
+adjusted/raw basis caveat is attached to the compute-ready set.
+
+Current verified counts from
+`python scripts/stat_validation_readiness_report.py --json --limit 0`:
+
+- total archive events: 157
+- archive-ready events: 52
+- event-study compute-ready events: 44
+- matched adjusted-basis events: 44
+- cross-flag caveats: 0
+
+Compute-ready means SAR/CAR point estimates are computable. It does not
+mean cohort-level statistical inference is available for a single
+event. Single-event output has `n=1`, so CI, p-value, and FDR are not
+available on the event-detail route; those remain cohort-level
+statistics.
+
+Eight archive-ready rows remain frontier cases waiting for forward
+close maturation. Most other non-ready archive rows are structurally
+blocked, mainly by missing primary tickers or insufficient pre-event
+estimation history. These archive event-study counts do not change the
+closed Phase 1 or Phase 2 FDR denominators.
+
 ## Next Roadmap
 
 The tracked evidence track is closed at Phase 4. No new candidates, new
@@ -186,7 +234,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 python scripts/repo_hygiene_check.py --json
-python scripts/project_health_check.py --json --allow-duplicate-clusters 32
+python scripts/project_health_check.py --json
 python scripts/no_paid_smoke.py --json
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
 ```
@@ -374,7 +422,7 @@ coverage. From the repo root:
 
 ```powershell
 python scripts/repo_hygiene_check.py --json
-python scripts/project_health_check.py --json --allow-duplicate-clusters 32
+python scripts/project_health_check.py --json
 python scripts/no_paid_smoke.py --json
 python -m pytest tests/test_test_db_isolation.py -q
 python -m pytest tests/test_backfill_paid_guard.py -q
