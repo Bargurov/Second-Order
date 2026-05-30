@@ -3474,12 +3474,12 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
         <div className="space-y-8">
 
           {/* ── STATE A: Strong signal — primary thesis stack ──
-              Hierarchy: why surfaced → thesis / proof / falsifier →
-              transmission → assets → engine reference (collapsible).
-              Macro context anchors WHY (regime forced this onto the
-              radar); thesis/proof/falsifier are visually primary;
-              transmission and assets follow; secondary analytical
-              blocks trail before the collapsible Engine Reference. */}
+              Hierarchy: why surfaced → thesis → evidence / falsifiers →
+              transmission → assets.  Macro context anchors WHY (regime
+              forced this onto the radar); thesis and evidence/falsifiers
+              are visually primary; transmission and assets follow.  Market
+              validation, follow-through, then the collapsed backstage
+              disclosures trail the read. */}
           {result.analysis && !isLowSignal && (
             <div className="space-y-8">
               {/* ============================================================
@@ -3511,7 +3511,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                   THESIS — what changed + mechanism (lifted to primary)
                   ============================================================ */}
               <div className="space-y-4">
-                <SectionLead num="02" title="Thesis" sub="What changed and how it transmits" />
+                <SectionLead num="02" title="What changed & how it transmits" sub="The thesis and its mechanism" />
 
                 <div className={cn(SECTION_CARD, "p-6 space-y-5")}>
                   <div>
@@ -3541,10 +3541,10 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               </div>
 
               {/* ============================================================
-                  PROOF & FALSIFIERS — pre-committed tests, visually primary
+                  EVIDENCE & FALSIFIERS — pre-committed tests, visually primary
                   ============================================================ */}
               <div className="space-y-4">
-                <SectionLead num="03" title="Proof & falsifiers" sub="Pre-committed tests — the thesis is only as good as these" />
+                <SectionLead num="03" title="Evidence & falsifiers" sub="Pre-committed tests — the thesis is only as good as these" />
 
                 <ThesisScorecard analysis={result.analysis} />
 
@@ -3567,7 +3567,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                   ============================================================ */}
               {result.analysis.transmission_chain && result.analysis.transmission_chain.length > 0 && (
                 <div className="space-y-4">
-                  <SectionLead num="04" title="Transmission" sub="Step-by-step path from event to price" />
+                  <SectionLead num="04" title="Event to price, step by step" sub="The transmission path" />
                   <section className={cn(SECTION_CARD, "px-6 py-8 relative overflow-hidden")}>
                     <div aria-hidden className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
                     <TransmissionChainCircular steps={result.analysis.transmission_chain} />
@@ -3580,7 +3580,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                   Market validation card sits immediately below this block.
                   ============================================================ */}
               <div className="space-y-4">
-                <SectionLead num="05" title="Assets" sub="Where the thesis should and shouldn't show up" />
+                <SectionLead num="05" title="Where it should & shouldn't show up" sub="Projected beneficiaries and losers" />
 
                 <div className={cn(SECTION_CARD, "p-6 grid grid-cols-1 md:grid-cols-2 gap-6")}>
                   <div>
@@ -3665,7 +3665,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                       className="text-[13px] font-semibold leading-none tracking-[-0.01em] text-on-surface"
                       style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
                     >
-                      Real-Time Confirmation
+                      Tape alignment
                     </h3>
                     <MarketValidationStatus market={result.market} freshness={result.freshness} />
                   </div>
@@ -3778,28 +3778,31 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                 <HistoricalAnalogsBlock analogs={result.analysis.historical_analogs} />
               )}
 
-              {/* Research Output — collapsible analyst memo */}
-              <ResearchMemoBlock result={result} />
             </div>
           )}
 
-          {/* ── ENGINE QUALITY / REFERENCE ──
-              Frozen engine-phase fields (quality_tier, mechanism_subtype,
-              actionability/counterfactual checks, thesis_timing,
-              critical_breakpoints, evidence_sources, confidence + validation
-              rationales).  Rendered as a secondary disclosure section so
-              the thesis content stays visually primary.  Available on both
-              strong-signal and low-signal branches; the wrapper renders
-              nothing when every group is empty. */}
-          {result.analysis && (
-            <EnginePhaseSummary analysis={result.analysis} />
-          )}
-
-          {/* ── REVISIT TIMELINE — own section card, at the bottom ── */}
+          {/* ── FOLLOW-THROUGH — revisit timeline, sequenced after the
+              analysis and before the backstage disclosures so the read
+              ends on how the thesis actually played out.  Render condition
+              unchanged (market present + a saved event to revisit). ── */}
           {result.market && !!pendingEventIdRef.current && (
             <section className={cn(SECTION_CARD, "p-6")}>
               <RevisitTimeline eventId={pendingEventIdRef.current} snapshots={[]} />
             </section>
+          )}
+
+          {/* ── BACKSTAGE — collapsed reference disclosures (analyst memo +
+              engine-phase fields), de-emphasised and trailing the read so
+              the thesis narrative stays primary.  Each self-hides when
+              empty, and render conditions are unchanged from their prior
+              in-flow positions — memo: strong-signal only; engine
+              reference: whenever analysis is present (so the cluster cannot
+              render an empty frame, no wrapper label is added). ── */}
+          {result.analysis && !isLowSignal && (
+            <ResearchMemoBlock result={result} />
+          )}
+          {result.analysis && (
+            <EnginePhaseSummary analysis={result.analysis} />
           )}
         </div>
       )}
