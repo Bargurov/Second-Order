@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
 import { MarketBackdropStrip } from "@/components/ui/market-backdrop-strip";
 import { TickerDetailPanel } from "@/components/ui/ticker-detail-panel";
-import { TransmissionChainCircular } from "@/components/ui/transmission-chain";
+import { getStepLabel, isAccentStep } from "@/components/ui/transmission-chain";
 import { IfPersistsSection } from "@/components/ui/if-persists";
 import {
   Loader2,
@@ -122,6 +122,55 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
+// Transmission — Direction-C mono hop-chain (`az-hop`).  Numbered nodes,
+// hairline vertical connectors, citrine chrome on the markers, serif step
+// text.  Reuses the tested pure helpers (getStepLabel / isAccentStep) and
+// the existing string[] step data — no actor/channel fields are invented.
+// Analyze-local so the shared transmission-chain component (and Market
+// Movers) stays untouched.
+// ---------------------------------------------------------------------------
+
+function AzTransmissionChain({ steps }: { steps: string[] }) {
+  if (!steps || steps.length === 0) return null;
+  return (
+    <div>
+      {steps.map((step, i) => {
+        const label = getStepLabel(i, steps.length);
+        const accent = isAccentStep(i, steps.length);
+        const isLast = i === steps.length - 1;
+        return (
+          <div key={i} className="relative grid grid-cols-[28px_1fr] gap-4 pb-4 last:pb-0">
+            <div className="relative flex justify-center">
+              <span
+                className={cn(
+                  "z-10 grid h-7 w-7 place-items-center rounded-full border bg-[var(--so-bg-1)] font-mono text-[10px] tabular-nums",
+                  accent
+                    ? "border-[color:rgba(212,179,67,0.45)] text-[var(--so-citrine)]"
+                    : "border-[color:var(--so-rule-hi)] text-[var(--so-ink-3)]",
+                )}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {!isLast && (
+                <span className="absolute left-1/2 top-7 -bottom-4 w-px -translate-x-1/2 bg-[color:var(--so-rule-hi)]" />
+              )}
+            </div>
+            <div className="min-w-0 pt-1">
+              <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
+                {label}
+              </p>
+              <p className="font-[family-name:var(--so-serif)] text-[13.5px] font-light leading-relaxed text-[var(--so-ink-1)]">
+                {step}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Macro Backdrop — compact regime/rates summary that was fed into the LLM
 // ---------------------------------------------------------------------------
 
@@ -129,7 +178,7 @@ const VALIDATION_STATUS_META: Record<string, { label: string; dot: string; text:
   validated:    { label: "Validated",    dot: "bg-[#6ec6a5]", text: "text-[#6ec6a5]", bg: "bg-[#6ec6a5]/8" },
   contradicted: { label: "Contradicted", dot: "bg-[#ee7d77]", text: "text-[#ee7d77]", bg: "bg-[#ee7d77]/10" },
   unresolved:   { label: "Unresolved",   dot: "bg-[#a89f91]", text: "text-[#a89f91]", bg: "bg-[#a89f91]/8" },
-  pending:      { label: "Pending",      dot: "bg-primary/70", text: "text-primary/80", bg: "bg-primary/8" },
+  pending:      { label: "Pending",      dot: "bg-[var(--so-slate)]", text: "text-[var(--so-slate)]", bg: "bg-[rgba(122,134,148,0.08)]" },
 };
 
 function _compactPercent(value: number | null | undefined): string {
@@ -157,7 +206,7 @@ function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["v
     <section className={cn(SECTION_CARD, "p-5")}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="section-kicker mb-1.5">Validation status</p>
+          <p className="az-card-title mb-2">Validation status</p>
           <div className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1", meta.bg)}>
             <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} />
             <span className={cn("text-[10px] font-bold uppercase tracking-[0.14em]", meta.text)}>
@@ -166,37 +215,37 @@ function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["v
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-on-surface-variant/45">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
             Support ratio
           </p>
-          <p className="font-num text-[18px] font-bold leading-none text-on-surface">
+          <p className="font-[family-name:var(--so-display)] text-[28px] font-normal leading-none tabular-nums text-[var(--so-jade-ink)]">
             {_compactPercent(block.ratio)}
           </p>
         </div>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-on-surface-variant/80">
+      <p className="mb-4 font-[family-name:var(--so-serif)] text-[12.5px] font-light italic leading-relaxed text-[var(--so-ink-2)]">
         {block.reason || "No validation reason available."}
       </p>
 
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          ["Directional", directional],
-          ["Supports", supporting],
-          ["Contradicts", contradicting],
-        ].map(([label, value]) => (
-          <div key={label} className={cn(INNER_CARD, "px-3 py-2")}>
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/45">
+      <div className="grid grid-cols-3 gap-2 border-t border-[color:var(--so-rule)] pt-3">
+        {([
+          ["Directional", directional, "text-[var(--so-ink-0)]"],
+          ["Supports", supporting, "text-[var(--so-jade-ink)]"],
+          ["Contradicts", contradicting, "text-[var(--so-rust-ink)]"],
+        ] as const).map(([label, value, cls]) => (
+          <div key={label}>
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
               {label}
             </p>
-            <p className="font-num text-[15px] font-semibold text-on-surface">{value}</p>
+            <p className={cn("font-mono text-[16px] font-semibold tabular-nums", cls)}>{value}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-3 text-[10px] text-on-surface-variant/45">
+      <p className="mt-3 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--so-ink-3)]">
         {total} ticker{total === 1 ? "" : "s"} checked
-        {block.event_age_days != null ? ` / ${block.event_age_days}d since event` : ""}
+        {block.event_age_days != null ? ` · ${block.event_age_days}d since event` : ""}
       </p>
     </section>
   );
@@ -211,18 +260,18 @@ function ReactionProfileCard({ block }: { block: NonNullable<AnalyzeResponse["re
     <section className={cn(SECTION_CARD, "p-5")}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="section-kicker mb-1.5">Reaction profile</p>
+          <p className="az-card-title mb-2">Reaction profile</p>
           <div
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
-              isUnscorable ? "bg-[#a89f91]/8" : "bg-primary/8",
+              isUnscorable ? "bg-[rgba(122,134,148,0.10)]" : "bg-[rgba(152,194,173,0.10)]",
             )}
           >
-            <span className={cn("h-1.5 w-1.5 rounded-full", isUnscorable ? "bg-[#a89f91]" : "bg-primary")} />
+            <span className={cn("h-1.5 w-1.5 rounded-full", isUnscorable ? "bg-[var(--so-slate)]" : "bg-[var(--so-jade-ink)]")} />
             <span
               className={cn(
                 "text-[10px] font-bold uppercase tracking-[0.14em]",
-                isUnscorable ? "text-[#a89f91]" : "text-primary",
+                isUnscorable ? "text-[var(--so-slate)]" : "text-[var(--so-jade-ink)]",
               )}
             >
               {isUnscorable ? "Unscorable" : "Available"}
@@ -230,21 +279,21 @@ function ReactionProfileCard({ block }: { block: NonNullable<AnalyzeResponse["re
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-on-surface-variant/45">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
             Tickers
           </p>
-          <p className="font-num text-[18px] font-bold leading-none text-on-surface">
+          <p className="font-[family-name:var(--so-display)] text-[24px] font-normal leading-none tabular-nums text-[var(--so-ink-0)]">
             {block.n_tickers ?? tickers.length}
           </p>
         </div>
       </div>
 
-      <p className="mb-4 text-[12px] leading-relaxed text-on-surface-variant/80">
+      <p className="mb-4 font-[family-name:var(--so-serif)] text-[12.5px] font-light italic leading-relaxed text-[var(--so-ink-2)]">
         {block.reason || (isUnscorable ? "Not enough stored price history to score the reaction profile." : "Reaction profile computed.")}
       </p>
 
       {displayTickers.length > 0 ? (
-        <div className="space-y-2">
+        <div>
           {displayTickers.map((ticker, index) => {
             const basis = ticker.reaction_profile_basis ?? "unscorable";
             const status =
@@ -252,18 +301,27 @@ function ReactionProfileCard({ block }: { block: NonNullable<AnalyzeResponse["re
               ?? ticker.fade_or_hold_label_5d
               ?? ticker.fade_or_hold_label_60d
               ?? (basis === "unscorable" ? "insufficient" : null);
+            // Basis: forward-anchored reads jade, same-day fallback amber,
+            // stale/unscorable slate.  Hold reads jade, fade amber, reverse
+            // rust — a tape read, not a directional verdict.
+            const basisTone = basis.includes("forward")
+              ? "text-[var(--so-jade-ink)]"
+              : basis.includes("fallback") ? "text-[var(--so-amber)]" : "text-[var(--so-ink-3)]";
+            const statusTone = status === "hold"
+              ? "text-[var(--so-jade-ink)]"
+              : status === "fade" ? "text-[var(--so-amber)]"
+              : status === "reverse" ? "text-[var(--so-rust-ink)]" : "text-[var(--so-ink-3)]";
             return (
-              <div key={`${ticker.symbol ?? "ticker"}-${index}`} className={cn(INNER_CARD, "flex items-center justify-between gap-3 px-3 py-2")}>
-                <div className="min-w-0">
-                  <p className="font-num text-[12px] font-bold text-on-surface">
-                    {ticker.symbol || "Unknown"}
-                  </p>
-                  <p className="truncate text-[10px] text-on-surface-variant/50">
-                    {_labelizeToken(basis, "No basis")}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded bg-surface-container-low px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant/70">
-                  {_labelizeToken(status, "No status")}
+              <div
+                key={`${ticker.symbol ?? "ticker"}-${index}`}
+                className="grid grid-cols-[58px_1fr_auto] items-baseline gap-3 border-b border-[color:var(--so-rule)] py-2 last:border-b-0"
+              >
+                <span className="font-mono text-[12px] text-[var(--so-ink-0)]">{ticker.symbol || "—"}</span>
+                <span className={cn("min-w-0 truncate font-mono text-[9.5px] uppercase tracking-[0.06em]", basisTone)}>
+                  {_labelizeToken(basis, "no basis")}
+                </span>
+                <span className={cn("shrink-0 font-mono text-[10px] uppercase tracking-[0.1em]", statusTone)}>
+                  {_labelizeToken(status, "—")}
                 </span>
               </div>
             );
@@ -2908,9 +2966,12 @@ function isContradicting(t: Ticker): boolean {
 }
 
 function directionBadge(t: Ticker): { label: string; cls: string } {
-  if (isSupporting(t)) return { label: "Confirmed", cls: "bg-primary-container/40 text-primary" };
-  if (isContradicting(t)) return { label: "Inverted", cls: "bg-error-container/30 text-error-dim" };
-  return { label: "Pending", cls: "bg-outline-variant/20 text-on-surface-variant" };
+  // "Aligned" (not "Confirmed") — the tape is moving with the thesis at the
+  // ticker level; muted jade for supportive, rust for inverted, slate for
+  // pending.  Citrine stays chrome-only.
+  if (isSupporting(t)) return { label: "Aligned", cls: "bg-[rgba(152,194,173,0.12)] text-[var(--so-jade-ink)]" };
+  if (isContradicting(t)) return { label: "Inverted", cls: "bg-[rgba(224,151,140,0.12)] text-[var(--so-rust-ink)]" };
+  return { label: "Pending", cls: "bg-[rgba(122,134,148,0.10)] text-[var(--so-slate)]" };
 }
 
 // Memoised so that selecting one card cannot trigger other cards to
@@ -2953,7 +3014,7 @@ const TickerCard = memo(function TickerCard({
         )}
       </div>
       {r5 != null && (
-        <div className={cn("mt-2 text-[10px] font-bold", r5 > 0 ? "text-primary" : r5 < 0 ? "text-error-dim" : "text-on-surface-variant")}>
+        <div className={cn("mt-2 text-[10px] font-bold", r5 > 0 ? "text-[var(--so-jade-ink)]" : r5 < 0 ? "text-[var(--so-rust-ink)]" : "text-[var(--so-slate)]")}>
           {r5 >= 0 ? "+" : ""}{r5.toFixed(2)}% 5d
         </div>
       )}
@@ -2975,18 +3036,18 @@ const TickerCard = memo(function TickerCard({
 // ---------------------------------------------------------------------------
 
 const _VERDICT_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-  validated:    { label: "Validated",    color: "text-primary",            bg: "bg-primary/10" },
-  contradicted: { label: "Contradicted", color: "text-error-dim",          bg: "bg-error-dim/10" },
-  mixed:        { label: "Mixed",        color: "text-on-surface-variant", bg: "bg-surface-container-highest" },
-  no_data:      { label: "Pending",      color: "text-on-surface-variant/40", bg: "bg-surface-container-highest/30" },
+  validated:    { label: "Validated",    color: "text-[var(--so-jade-ink)]", bg: "bg-[rgba(152,194,173,0.10)]" },
+  contradicted: { label: "Contradicted", color: "text-[var(--so-rust-ink)]", bg: "bg-[rgba(224,151,140,0.10)]" },
+  mixed:        { label: "Mixed",        color: "text-[var(--so-slate)]",    bg: "bg-surface-container-highest" },
+  no_data:      { label: "Pending",      color: "text-[var(--so-ink-3)]",    bg: "bg-surface-container-highest/30" },
 };
 
 const _TRAJECTORY_STYLE: Record<ThesisTrajectory, { label: string; icon: typeof TrendingUp; color: string }> = {
-  holding:   { label: "Thesis holding",  icon: TrendingUp,   color: "text-primary" },
-  fading:    { label: "Signal fading",   icon: TrendingDown,  color: "text-on-surface-variant" },
-  reversed:  { label: "Thesis reversed", icon: TrendingDown,  color: "text-error-dim" },
-  mixed:     { label: "Mixed signals",   icon: AlertTriangle, color: "text-on-surface-variant" },
-  too_early: { label: "Too early",       icon: Clock,         color: "text-on-surface-variant/40" },
+  holding:   { label: "Thesis holding",  icon: TrendingUp,   color: "text-[var(--so-jade-ink)]" },
+  fading:    { label: "Signal fading",   icon: TrendingDown,  color: "text-[var(--so-slate)]" },
+  reversed:  { label: "Thesis reversed", icon: TrendingDown,  color: "text-[var(--so-rust-ink)]" },
+  mixed:     { label: "Mixed signals",   icon: AlertTriangle, color: "text-[var(--so-slate)]" },
+  too_early: { label: "Too early",       icon: Clock,         color: "text-[var(--so-ink-3)]" },
 };
 
 function HorizonColumn({ h }: { h: HorizonSummary }) {
@@ -3008,7 +3069,7 @@ function HorizonColumn({ h }: { h: HorizonSummary }) {
       {h.avgReturn != null ? (
         <div className={cn(
           "text-[18px] font-bold tabular-nums leading-none mb-2",
-          h.avgReturn > 0.2 ? "text-primary" : h.avgReturn < -0.2 ? "text-error-dim" : "text-on-surface-variant",
+          h.avgReturn > 0.2 ? "text-[var(--so-jade-ink)]" : h.avgReturn < -0.2 ? "text-[var(--so-rust-ink)]" : "text-[var(--so-slate)]",
         )}>
           {h.avgReturn > 0 ? "+" : ""}{h.avgReturn.toFixed(1)}%
         </div>
@@ -3176,6 +3237,7 @@ function MarketSection({ tickers, eventDate, analysis }: { tickers: Ticker[]; ev
         ))}
       </div>
       {selectedTicker && selectedTicker.label !== "needs more evidence" && (
+        <div className="az-tickerdetail">
         <TickerDetailPanel
           ticker={selectedTicker}
           eventDate={eventDate}
@@ -3188,10 +3250,11 @@ function MarketSection({ tickers, eventDate, analysis }: { tickers: Ticker[]; ev
             why: analysis ? _buildWhyNote(selectedTicker, analysis) : undefined,
           }}
         />
+        </div>
       )}
       {withDir.length > 0 && (
-        <p className="text-[10px] text-on-surface-variant">
-          Hypothesis: <span className={cn("font-bold", supportCount === withDir.length && "text-primary", supportCount === 0 && "text-error")}>{supportCount}/{withDir.length}</span> tickers confirmed
+        <p className="font-mono text-[10px] text-[var(--so-ink-3)]">
+          Hypothesis: <span className={cn("font-bold", supportCount === withDir.length && "text-[var(--so-jade-ink)]", supportCount === 0 && "text-[var(--so-rust-ink)]")}>{supportCount}/{withDir.length}</span> directional tickers aligned at 1d
         </p>
       )}
     </div>
@@ -3587,9 +3650,8 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               {result.analysis.transmission_chain && result.analysis.transmission_chain.length > 0 && (
                 <div className="space-y-4">
                   <SectionLead num="04" title="Event to price, step by step" sub="The transmission path" />
-                  <section className={cn(SECTION_CARD, "px-6 py-8 relative overflow-hidden")}>
-                    <div aria-hidden className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
-                    <TransmissionChainCircular steps={result.analysis.transmission_chain} />
+                  <section className={cn(SECTION_CARD, "px-6 py-6")}>
+                    <AzTransmissionChain steps={result.analysis.transmission_chain} />
                   </section>
                 </div>
               )}
@@ -3708,14 +3770,20 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
               </div>
               {(() => {
                 const _dn = deriveDegradedNotice(result.market, result.analysis);
-                return _dn ? (
+                if (!_dn) return null;
+                // Surface the scope caveat (deriveDegradedNotice logic is
+                // unchanged): a degraded support ratio is computed only on
+                // directional / scorable names.
+                const caveat = "Support ratio is computed only on directional, scorable names.";
+                const detail = _dn.detail ? `${_dn.detail} ${caveat}` : caveat;
+                return (
                   <DegradedBanner
                     title={_dn.label}
-                    detail={_dn.detail ?? undefined}
+                    detail={detail}
                     severity={_dn.severity}
                     className="mb-3"
                   />
-                ) : null;
+                );
               })()}
               <MarketSection tickers={result.market.tickers} eventDate={result.event_date ?? undefined} analysis={result.analysis ?? undefined} />
             </section>

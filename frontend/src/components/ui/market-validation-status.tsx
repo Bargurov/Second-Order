@@ -139,35 +139,38 @@ const TONE_MAP: Record<
     bg: string;
   }
 > = {
+  // Direction-C palette (resolves inside the Analyze `.az-canvas` scope):
+  // fresh/current reads muted jade, neutral reads warm slate, error reads
+  // rust.  Citrine stays chrome-only and is not used here.
   live: {
     icon: Zap,
-    dot: "bg-primary",
-    text: "text-primary",
-    bg: "bg-primary/8",
+    dot: "bg-[var(--so-jade-ink)]",
+    text: "text-[var(--so-jade-ink)]",
+    bg: "bg-[rgba(152,194,173,0.08)]",
   },
   refreshed: {
     icon: RefreshCw,
-    dot: "bg-primary/60",
-    text: "text-primary/80",
-    bg: "bg-primary/6",
+    dot: "bg-[var(--so-jade-ink)]",
+    text: "text-[var(--so-jade-ink)]",
+    bg: "bg-[rgba(152,194,173,0.06)]",
   },
   stale: {
     icon: Clock,
-    dot: "bg-on-surface-variant/40",
-    text: "text-on-surface-variant",
-    bg: "bg-on-surface-variant/6",
+    dot: "bg-[var(--so-slate)]",
+    text: "text-[var(--so-slate)]",
+    bg: "bg-[rgba(122,134,148,0.08)]",
   },
   frozen: {
     icon: Snowflake,
-    dot: "bg-[#7ba4c9]",
-    text: "text-[#7ba4c9]",
-    bg: "bg-[#7ba4c9]/8",
+    dot: "bg-[var(--so-slate)]",
+    text: "text-[var(--so-slate)]",
+    bg: "bg-[rgba(122,134,148,0.08)]",
   },
   error: {
     icon: AlertTriangle,
-    dot: "bg-error-dim",
-    text: "text-error-dim",
-    bg: "bg-error-dim/8",
+    dot: "bg-[var(--so-rust-ink)]",
+    text: "text-[var(--so-rust-ink)]",
+    bg: "bg-[rgba(224,151,140,0.08)]",
   },
 };
 

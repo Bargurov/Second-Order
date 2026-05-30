@@ -185,3 +185,18 @@
 .az-canvas .az-consensus .bg-primary\/70 { background-color: var(--so-jade-ink) !important; }
 .az-canvas .az-consensus .text-error-dim { color: var(--so-rust-ink) !important; }
 .az-canvas .az-consensus .bg-error-dim\/60 { background-color: var(--so-rust-ink) !important; }
+
+/* ------------------------------------------------------------
+   Ticker detail — mute the shared (Market-Movers) panel's loud
+   chrome to Direction-C inside Analyze, without editing the
+   shared component.  Surfaces are already charcoal from the
+   token remap above; here the bright green/red support dots and
+   the val-pos / val-neg return cells read jade / rust so no
+   Market-Movers green/red leaks into the Analyze read.  (The
+   role badge wording is owned by the shared component and is
+   left as a known limitation — it needs the shared file.)
+   ------------------------------------------------------------ */
+.az-canvas .az-tickerdetail .bg-\[\#15803d\] { background-color: var(--so-jade-ink) !important; }
+.az-canvas .az-tickerdetail .bg-\[\#b91c1c\] { background-color: var(--so-rust-ink) !important; }
+.az-canvas .az-tickerdetail .val-pos { color: var(--so-jade-ink) !important; }
+.az-canvas .az-tickerdetail .val-neg { color: var(--so-rust-ink) !important; }

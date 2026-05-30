@@ -1,23 +1,24 @@
 /**
- * DegradedBanner — prominent dismissible alert strip for data-quality issues.
+ * DegradedBanner — data-quality banner for the Analyze surface.
  *
- * Sits above page content when one or more data sources are stale / errored.
- * More assertive than DegradedDataNotice (which is a tiny inline badge);
- * use DegradedBanner when the issue affects the whole surface, not one field.
+ * Styled to the Direction-C `az-banner` rhythm (charcoal, hairline,
+ * uppercase mono stamp + serif explanation).  Analyze-only; it renders
+ * inside the `.az-canvas` scope, so the `--so-*` palette resolves.
  *
  * Severity:
- *   "warn"  → muted coral border (provider error / stale feeds)
- *   "info"  → outline-variant border (degraded but non-critical)
+ *   "warn"  → amber stamp (degraded / partial / held — kit: amber = held /
+ *             incomplete / degraded)
+ *   "info"  → slate stamp (non-critical)
  */
 
 import { useState } from "react";
-import { AlertTriangle, Info, X } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface DegradedBannerProps {
-  /** Short one-line title — shown bold at the left. */
+  /** Short one-line title — shown as the stamp at the left. */
   title: string;
-  /** Optional secondary sentence. */
+  /** Optional secondary sentence (the serif explanation). */
   detail?: string;
   /** Specific stale/error sources — rendered as inline chips. */
   items?: string[];
@@ -29,20 +30,14 @@ export interface DegradedBannerProps {
 
 const SEV = {
   warn: {
-    root:   "border-error-dim/25 bg-error-container/8",
-    accent: "bg-error-dim",
-    icon:   "text-error-dim/60",
-    title:  "text-error-dim/90",
-    detail: "text-on-surface-variant/70",
-    chip:   "bg-error-container/20 text-error-dim/70",
+    root:  "border-[color:rgba(200,151,89,0.40)] bg-[rgba(200,151,89,0.05)]",
+    stamp: "border-[color:var(--so-amber)] text-[var(--so-amber)]",
+    chip:  "border-[color:rgba(200,151,89,0.35)] text-[var(--so-amber)]",
   },
   info: {
-    root:   "border-outline-variant/30 bg-surface-container-highest/50",
-    accent: "bg-on-surface-variant/30",
-    icon:   "text-on-surface-variant/50",
-    title:  "text-on-surface-variant/80",
-    detail: "text-on-surface-variant/55",
-    chip:   "bg-surface-container-highest text-on-surface-variant/60",
+    root:  "border-[color:var(--so-rule-hi)] bg-[rgba(255,255,255,0.012)]",
+    stamp: "border-[color:var(--so-rule-hi)] text-[var(--so-slate)]",
+    chip:  "border-[color:var(--so-rule)] text-[var(--so-ink-3)]",
   },
 } as const;
 
@@ -58,7 +53,6 @@ export function DegradedBanner({
   if (dismissed) return null;
 
   const s = SEV[severity];
-  const Icon = severity === "warn" ? AlertTriangle : Info;
 
   const handleDismiss = () => {
     setDismissed(true);
@@ -69,44 +63,47 @@ export function DegradedBanner({
     <div
       role="alert"
       className={cn(
-        "flex items-start gap-3 rounded-lg border px-3.5 py-2.5",
+        "flex items-center gap-3.5 rounded-[4px] border px-3.5 py-2.5",
         s.root,
         className,
       )}
     >
-      {/* Left accent bar */}
-      <span className={cn("mt-0.5 w-0.5 self-stretch rounded-full shrink-0", s.accent)} />
-
-      <Icon className={cn("h-3 w-3 shrink-0 mt-[3px]", s.icon)} />
-
-      <div className="min-w-0 flex-1">
-        <p className={cn("text-[11px] font-bold leading-none", s.title)}>{title}</p>
-        {detail && (
-          <p className={cn("text-[10px] mt-1 leading-relaxed", s.detail)}>{detail}</p>
+      <span
+        className={cn(
+          "shrink-0 self-start rounded-[2px] border px-[7px] py-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em]",
+          s.stamp,
         )}
-        {items && items.length > 0 && (
-          <ul className="mt-2 flex flex-wrap gap-1">
-            {items.map((item, i) => (
-              <li
-                key={i}
-                className={cn(
-                  "inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-px rounded",
-                  s.chip,
-                )}
-              >
-                <span className={cn("w-1 h-1 rounded-full shrink-0", s.accent)} />
-                {item}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      >
+        {title}
+      </span>
+
+      {detail && (
+        <span className="min-w-0 flex-1 font-[family-name:var(--so-serif)] text-[12.5px] font-light italic leading-snug text-[var(--so-ink-2)]">
+          {detail}
+        </span>
+      )}
+
+      {items && items.length > 0 && (
+        <span className="ml-auto flex shrink-0 flex-wrap gap-1">
+          {items.map((item, i) => (
+            <span
+              key={i}
+              className={cn(
+                "rounded-[2px] border px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.1em]",
+                s.chip,
+              )}
+            >
+              {item}
+            </span>
+          ))}
+        </span>
+      )}
 
       {onDismiss && (
         <button
           onClick={handleDismiss}
           aria-label="Dismiss"
-          className="shrink-0 mt-0.5 text-on-surface-variant/30 hover:text-on-surface-variant/60 transition-colors"
+          className="shrink-0 self-start text-[var(--so-ink-3)] transition-colors hover:text-[var(--so-ink-1)]"
         >
           <X className="h-3 w-3" />
         </button>
