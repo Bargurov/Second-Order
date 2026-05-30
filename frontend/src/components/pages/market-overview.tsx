@@ -503,11 +503,11 @@ function RegimeVectorCard({
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1.5">
+          <dl className="grid grid-cols-1 gap-x-12 gap-y-2 sm:grid-cols-2">
             {axes.map((axis) => (
-              <div key={axis.key} className="contents">
+              <div key={axis.key} className="grid grid-cols-[3.25rem_1fr] items-baseline gap-x-2">
                 <dt className="text-[11.5px] text-on-surface-variant/60">{axis.label}</dt>
-                <dd className="m-0 font-mono text-[12px] text-on-surface/85">{axis.value}</dd>
+                <dd className="m-0 font-mono text-[12px] text-on-surface/85 truncate">{axis.value}</dd>
               </div>
             ))}
           </dl>
@@ -609,7 +609,7 @@ export function computeTrackRecordDisplay(data: TrackRecord) {
 function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
   if (isLoading) {
     return (
-      <section className="mb-8">
+      <section className="mb-6">
         <Skeleton className="h-20 rounded-xl bg-surface-container-highest" />
       </section>
     );
@@ -624,7 +624,7 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
     ? "bg-primary" : hitTone === "warn" ? "bg-error-dim" : "bg-on-surface-variant/40";
 
   return (
-    <section className="mt-10 mb-8" data-testid="track-record">
+    <section className="mb-6" data-testid="track-record">
       <div className="bg-surface-container-low rounded-lg px-5 py-3 md:px-6">
 
         {/* Row 1: compact inline metrics — hit rate same weight as peers */}
@@ -731,7 +731,7 @@ function LatestHeadlinesStrip({
 }) {
   if (isLoading) {
     return (
-      <section className="mb-8">
+      <section className="mt-12 mb-8">
         <Skeleton className="h-5 w-40 bg-surface-container-highest mb-4" />
         <div className="space-y-2">
           {[1, 2, 3].map((k) => <Skeleton key={k} className="h-10 rounded-lg bg-surface-container-highest" />)}
@@ -749,7 +749,7 @@ function LatestHeadlinesStrip({
   const freshness = deriveNewsFreshness(refreshMeta);
 
   return (
-    <section className="mb-8">
+    <section className="mt-12 mb-8">
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant/65">
           Latest Headlines
@@ -987,7 +987,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       */}
 
       {/* ────────────── 1 · MARKET BACKDROP ────────────── */}
-      <div className="flex items-baseline justify-between mb-3 mt-2">
+      <div className="flex items-baseline justify-between mb-4 mt-1">
         <p className="section-kicker">Snapshot</p>
         <span className="text-[11px] text-on-surface-variant/55">
           1 · Market backdrop
@@ -1003,15 +1003,17 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         className="-mt-6 mb-6"
       />
 
-      {/* Regime read · Uncertainty & funding — two compact cards
-          side by side on wide viewports.  Regime read uses the
-          existing ``RegimeVectorCard`` (dial + axes); Uncertainty &
-          funding uses the existing ``UncertaintySection`` which
-          already composes stress + funding-stress-mode + the
-          uncertainty-concentration breadth caveat.  When either side
-          has nothing to render its column collapses to its own
-          inline empty state — neither hides the other. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+      {/* Regime read → Uncertainty & funding — stacked full-width so
+          each band gets the room it needs.  ``UncertaintySection`` is a
+          full-width layout (1/4 label column + a 5-up indicator grid);
+          inside a half-width grid cell its indicator cards wrapped
+          heavily, so it now owns its own row beneath the
+          ``RegimeVectorCard`` (dial + axes) instead of sharing one.
+          ``UncertaintySection`` still composes stress + funding-stress-
+          mode + the uncertainty-concentration breadth caveat.  Each card
+          renders its own inline empty state when its data is null — one
+          empty state never hides the other. */}
+      <div className="space-y-4">
         <RegimeVectorCard
           regimeVec={regimeVec}
           explanation={contextExplanations.regime_vector}
@@ -1025,11 +1027,11 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       </div>
       <ContextExplanationDisclosure
         explanation={contextExplanations.stress}
-        className="-mt-4 mb-6"
+        className="-mt-2 mb-0"
       />
 
       {/* ────────────── 2 · EVENT ACTIVITY ────────────── */}
-      <div className="flex items-baseline justify-between mb-3 mt-2">
+      <div className="flex items-baseline justify-between mb-4 mt-12">
         <p className="section-kicker">Activity</p>
         <span className="text-[11px] text-on-surface-variant/55">
           2 · Event activity
@@ -1054,7 +1056,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       />
 
       {/* ────────────── 3 · TRACK RECORD & EVIDENCE ────────────── */}
-      <div className="flex items-baseline justify-between mb-3 mt-8">
+      <div className="flex items-baseline justify-between mb-4 mt-12">
         <p className="section-kicker">Track record</p>
         <span className="text-[11px] text-on-surface-variant/55">
           3 · Track record &amp; evidence
