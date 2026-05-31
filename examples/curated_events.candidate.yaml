@@ -1,0 +1,76 @@
+# Curated-event candidate — D1G real source-anchored draft.
+#
+# STATUS: CANDIDATE, awaiting operator review. NOT written to the live
+# archive. One row, anchored to a primary official Federal Reserve press
+# release with an exact release timestamp.
+#
+# Conservative language only: the row records a FALSIFIABLE mechanism
+# HYPOTHESIS read off the official source — never a confirmed mechanism and
+# never a trade signal. `predicted_direction` is validated by the curated
+# pipeline but is deliberately NOT persisted by the writer, so no directional
+# framing reaches the archive or any surface.
+#
+# Provenance fields (source_type / source_publisher / source_published_at /
+# mechanism_label_provenance) are consumed by the intake guard and stored in
+# event_provenance. source_url + source_published_at together make the row
+# read back as "source_anchored".
+#
+# Read by: scripts/curated_event_loader.py, scripts/curated_event_validator.py,
+#          scripts/curated_event_intake_apply.py
+
+events:
+  - event_id: fomc-2026-04-29
+    event_date: 2026-04-29
+    headline: >-
+      FOMC maintains the federal funds rate target range at 3-1/2 to 3-3/4
+      percent (April 2026 meeting)
+    source_url: https://www.federalreserve.gov/newsevents/pressreleases/monetary20260429a.htm
+    source_type: official
+    source_publisher: Board of Governors of the Federal Reserve System
+    source_published_at: "2026-04-29T14:00:00-04:00"
+    primary_ticker: TLT
+    benchmark_ticker: SPY
+    mechanism_family: policy_surprise
+    mechanism_description: >-
+      The Committee left the target range unchanged at 3-1/2 to 3-3/4
+      percent while the official statement described inflation as
+      "elevated, in part reflecting the recent increase in global energy
+      prices" and flagged developments in the Middle East as a source of
+      uncertainty. Hypothesis (not a confirmed mechanism): a hold paired
+      with elevated-inflation and external-risk language reads as a
+      restrictive-for-longer stance that puts modest upward pressure on
+      longer-dated Treasury yields — i.e. downward pressure on a
+      long-duration Treasury proxy over the short post-statement window.
+    predicted_direction: down
+    prediction_rationale: >-
+      First-order rate channel: if the statement's elevated-inflation
+      framing nudges the expected policy path higher relative to an
+      anticipated hold, a long-duration Treasury proxy (TLT) would be
+      expected to drift down versus the broad market (SPY) over the days
+      following the 2:00 p.m. EDT release. Recorded as a falsifiable
+      expectation to be checked against realized returns, not as a claim
+      that the mechanism is confirmed.
+    mechanism_label_provenance: curated
+    curator_notes: >-
+      Anchored to the primary Federal Reserve press release
+      (monetary20260429a.htm), released 2026-04-29 at 2:00 p.m. EDT; the
+      release time is confirmed verbatim on the official statement PDF
+      (monetary20260429a1.pdf, "For release at 2:00 p.m. EDT"). The decision
+      and the quoted inflation language are taken from the official statement
+      text; the maintained range 3-1/2 to 3-3/4 percent is from the
+      statement. The official statement itself also records the dissents —
+      Miran preferred to lower the target range by 1/4 percentage point;
+      Hammack, Kashkari, and Logan preferred to maintain the range but
+      without language that could be read as signaling an easing bias. That
+      detail IS on the official release page; it is excluded from the
+      mechanism only to keep this first live candidate narrowly anchored to
+      the rate decision and the core statement text, not because it is
+      unofficial. NOTE on taxonomy: mechanism_family is set to the canonical
+      "policy_surprise" (FAMILY_LABELS: "Central-bank / policy surprise"), a
+      member of the project's FAMILY_IDS in mechanism_family.py. The narrower
+      descriptive subtype phrase for this event is "monetary policy rate
+      decision" (a held target range), kept here in the notes only — it is NOT
+      used as the mechanism_family field value. Within policy_surprise the
+      closest registered subtype vocabulary is hawkish/dovish surprise; a hold
+      with elevated-inflation language leans hawkish-hold, but no subtype field
+      is asserted for this curated row.
