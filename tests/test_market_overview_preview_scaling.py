@@ -383,9 +383,9 @@ class TestMarketOverviewFrontendNoSparkline(unittest.TestCase):
         with open(row_path, "r", encoding="utf-8") as f:
             row_src = f.read()
         # Symbol render (lead-ticker shape).
-        self.assertIn("lead.symbol", row_src)
-        # Return value render via the pct() helper.
-        self.assertIn("pct(r5)", row_src)
+        self.assertIn("lead?.symbol", row_src)
+        # Return value render via the fmtDelta() helper.
+        self.assertIn("fmtDelta(r5)", row_src)
         # The 5d / 20d label scaffolding the chips sit inside.
         self.assertIn("5d", row_src)
         self.assertIn("20d", row_src)

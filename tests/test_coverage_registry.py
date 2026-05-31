@@ -334,7 +334,8 @@ class TestMarketDrift(unittest.TestCase):
 
 class TestCoverageSize(unittest.TestCase):
     def test_feed_group_count(self):
-        self.assertEqual(len(COVERAGE_REGISTRY["feed_groups"]), 9)
+        # +sector_regulators (FDA / USDA primary sources), added 2026-05-26.
+        self.assertEqual(len(COVERAGE_REGISTRY["feed_groups"]), 10)
 
     def test_market_group_count(self):
         self.assertEqual(len(COVERAGE_REGISTRY["market_groups"]), 4)
@@ -343,7 +344,8 @@ class TestCoverageSize(unittest.TestCase):
         total = sum(
             len(g["members"]) for g in COVERAGE_REGISTRY["feed_groups"]
         )
-        self.assertEqual(total, 35)
+        # 35 + FDA Press Releases + USDA News = 37.
+        self.assertEqual(total, 37)
 
     def test_total_market_coverage(self):
         total = sum(

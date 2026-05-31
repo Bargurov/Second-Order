@@ -224,6 +224,21 @@ COVERAGE_REGISTRY: dict[str, Any] = {
                 "Defense News",
             ],
         },
+        {
+            "id":          "sector_regulators",
+            "owner":       "policy",
+            "category":    "policy",
+            "tier":        "medium",
+            "description": "US federal sector regulators / agency primary "
+                           "sources (health, agriculture).  Primary-source "
+                           "read on healthcare and agriculture sector events; "
+                           "added for inbox breadth.",
+            "added_at":    "2026-05-26",
+            "members": [
+                "FDA Press Releases",
+                "USDA News",
+            ],
+        },
     ],
     "market_groups": [
         {

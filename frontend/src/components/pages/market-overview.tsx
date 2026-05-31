@@ -829,6 +829,7 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
       <div className="mt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
         <span>{data.total} analyzed</span>
         {avgSupport !== null && <span>avg support {avgSupport}%</span>}
+        {data.revisit_scored > 0 && <span>{data.revisit_scored} revisit-scored</span>}
       </div>
     </section>
   );

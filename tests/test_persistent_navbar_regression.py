@@ -280,11 +280,16 @@ class TestStillMovingSectionNoDoubleFilter(unittest.TestCase):
         content = _read_frontend(
             "frontend", "src", "components", "pages", "market-overview.tsx",
         )
-        # The persistent section was inlined into ``MoversChapter`` and is
-        # identified by the ``window="persistent"`` MoversSectionHead prop.
-        idx = content.find('window="persistent"')
-        self.assertNotEqual(idx, -1, "persistent movers section not found")
-        body = content[idx:idx + 800]
+        # The persistent ("Still moving markets") section renders from
+        # ``persistentList`` inside ``MoversChapter``; the backend already
+        # gates /movers/persistent, so the surface shows the response
+        # verbatim.  Re-anchor on the binding and assert no insufficient-
+        # evidence filter appears between it and the row render.
+        start = content.find("const persistentList")
+        self.assertNotEqual(start, -1, "persistent movers binding not found")
+        end = content.find("PersistentMoverRow", start)
+        self.assertNotEqual(end, -1, "persistent movers render not found")
+        body = content[start:end]
         self.assertNotIn(
             "insufficient evidence",
             body.lower(),
