@@ -15,6 +15,20 @@ SCHEMA_VERSION = 3
 # save_event() and load_recent_events() check this before touching the DB.
 _db_ready: bool = False
 
+# ---------------------------------------------------------------------------
+# Non-analysis stage markers
+# ---------------------------------------------------------------------------
+# A ``curated_intake`` row is a real archived event (headline + provenance)
+# stamped by the guarded curated-intake writer.  It carries NO thesis, no
+# market check, and no scored outcome — it is an operator-curated stub
+# awaiting a later analysis phase.  Such rows must never enter an outcome /
+# validation denominator (track record, statistical readiness, diagnostics
+# outcome counts).  This is the single source of truth for that marker: the
+# curated-intake writer and every aggregator key off these names rather than
+# re-spelling the literal.
+CURATED_INTAKE_STAGE = "curated_intake"
+NON_ANALYSIS_STAGES = frozenset({CURATED_INTAKE_STAGE})
+
 
 def get_db_path() -> str:
     """Return the active SQLite events DB path.
@@ -1359,17 +1373,27 @@ def compute_track_record() -> dict:
         }
 
     with _connect_db() as conn:
-        # Include revisit_snapshots in the query.
+        # Include revisit_snapshots + stage in the query.
         try:
             rows = conn.execute(
-                "SELECT market_tickers, rating, revisit_snapshots FROM events"
+                "SELECT market_tickers, rating, revisit_snapshots, stage "
+                "FROM events"
             ).fetchall()
         except sqlite3.OperationalError:
-            # Column may not exist yet on ancient DBs.
+            # revisit_snapshots may not exist on ancient DBs; ``stage`` is a
+            # core column that has always existed, so it stays in the fallback.
             rows = conn.execute(
-                "SELECT market_tickers, rating FROM events"
+                "SELECT market_tickers, rating, stage FROM events"
             ).fetchall()
-            rows = [(r[0], r[1], None) for r in rows]
+            rows = [(r[0], r[1], None, r[2]) for r in rows]
+
+    # Curated-intake stubs are real archived rows but carry no thesis
+    # outcome — exclude every non-analysis stage from the denominator so they
+    # neither inflate ``total`` nor land in the ``unresolved`` bucket.
+    rows = [
+        r for r in rows
+        if not (isinstance(r[3], str) and r[3] in NON_ANALYSIS_STAGES)
+    ]
 
     total = len(rows)
     validated = 0

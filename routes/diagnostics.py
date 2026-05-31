@@ -554,6 +554,12 @@ def _compute_archive_aggregates() -> dict:
         from thesis_state import derive_thesis_state
         ts_counts: dict[str, int] = {}
         for event in decoded:
+            # Curated-intake stubs are kept in the stage / persistence
+            # inventory histograms above but carry no thesis to classify —
+            # exclude them from the outcome (thesis-state) block.
+            stage = (event.get("stage") or "").strip()
+            if stage in _db.NON_ANALYSIS_STAGES:
+                continue
             try:
                 state = derive_thesis_state(event)
             except Exception:
@@ -611,6 +617,7 @@ def _validation_status_unavailable() -> dict:
         "counts_by_reason":       {},
         "pending_count":          0,
         "unresolved_count":       0,
+        "curated_intake_excluded_count": 0,
         "latest_event_timestamp": None,
     }
 
@@ -621,8 +628,12 @@ def _compute_validation_status_stats() -> dict:
     Per-event scoring failures are skipped (the row contributes to
     ``total_events`` and ``latest_event_timestamp`` but not to status /
     reason counts) so a single bad row never breaks the aggregate.
-    Structural failures (DB unreachable, import error) raise so the
-    outer route handler can flip ``available`` to ``False``.
+    Curated-intake stubs (stage in ``db.NON_ANALYSIS_STAGES``) carry no
+    thesis to validate; they are excluded from ``total_events`` and every
+    status / reason bucket and disclosed via ``curated_intake_excluded_count``
+    so they are never silently hidden.  Structural failures (DB unreachable,
+    import error) raise so the outer route handler can flip ``available`` to
+    ``False``.
     """
     import sqlite3
     import db as _db
@@ -639,12 +650,21 @@ def _compute_validation_status_stats() -> dict:
     counts_by_reason: dict[str, int] = {}
     latest_ts: str | None = None
     total = 0
+    curated_intake_excluded = 0
 
     for row in rows:
         try:
             event = _db._decode_event_row(row)
         except Exception:
             event = dict(row)
+
+        # Curated-intake stubs are real archived rows with no thesis to
+        # validate; exclude them from the denominator and every bucket.
+        stage = (event.get("stage") or "").strip()
+        if stage in _db.NON_ANALYSIS_STAGES:
+            curated_intake_excluded += 1
+            continue
+
         total += 1
 
         ts = event.get("timestamp")
@@ -671,6 +691,7 @@ def _compute_validation_status_stats() -> dict:
         "counts_by_reason":       counts_by_reason,
         "pending_count":          counts_by_status["pending"],
         "unresolved_count":       counts_by_status["unresolved"],
+        "curated_intake_excluded_count": curated_intake_excluded,
         "latest_event_timestamp": latest_ts,
     }
 
@@ -1143,6 +1164,7 @@ def _track_record_unavailable() -> dict:
             "score_failures":         0,
             "hydration_failures":     0,
         },
+        "curated_intake_excluded_count":            0,
         "latest_event_timestamp":                   None,
     }
 
@@ -1181,15 +1203,24 @@ def _compute_track_record() -> dict:
     events_with_20d_signal       = 0
     score_failures               = 0
     hydration_failures           = 0
+    curated_intake_excluded      = 0
     latest_ts: str | None        = None
 
     for raw in rows:
-        total_events += 1
         try:
             event = _db._decode_event_row(raw)
         except Exception:
             event = dict(raw)
 
+        # Curated-intake stubs are real archived rows with no thesis to
+        # score; exclude them from every outcome count and disclose the
+        # tally separately so they are never silently hidden.
+        stage = (event.get("stage") or "").strip()
+        if stage in _db.NON_ANALYSIS_STAGES:
+            curated_intake_excluded += 1
+            continue
+
+        total_events += 1
         ts = event.get("timestamp")
         if isinstance(ts, str) and ts and (latest_ts is None or ts > latest_ts):
             latest_ts = ts
@@ -1283,6 +1314,7 @@ def _compute_track_record() -> dict:
             "score_failures":         score_failures,
             "hydration_failures":     hydration_failures,
         },
+        "curated_intake_excluded_count":            curated_intake_excluded,
         "latest_event_timestamp":                   latest_ts,
     }
 

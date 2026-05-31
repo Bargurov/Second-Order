@@ -71,6 +71,7 @@ _TOP_KEYS = (
     "events_missing_benchmark_proxy",
     "events_with_insufficient_estimation_window",
     "events_fully_ready",
+    "curated_intake_excluded_count",
     "events",
     "recommended_next_action",
 )
@@ -1050,6 +1051,70 @@ def _seed_series(
             val *= 1.04
         _seed_cache_row(conn, ticker=ticker, date_str=d.isoformat(),
                         auto_adjust=auto_adjust, close=round(val, 4))
+
+
+_EVENTS_DDL_WITH_STAGE = """
+CREATE TABLE events (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    headline        TEXT,
+    event_date      TEXT,
+    market_tickers  TEXT,
+    stage           TEXT
+)
+""".strip()
+
+
+class TestCuratedIntakeExclusion(unittest.TestCase):
+    """A stage-carrying fixture: curated_intake rows are excluded from the
+    readiness denominator and reported on a separate count, never hidden."""
+
+    def setUp(self) -> None:
+        self._tmp = os.path.join(
+            tempfile.gettempdir(), f"test_svrr_ci_{uuid.uuid4().hex}.db",
+        )
+        conn = sqlite3.connect(self._tmp)
+        try:
+            conn.execute(_EVENTS_DDL_WITH_STAGE)
+            conn.execute(_PRICE_CACHE_DDL)
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self) -> None:
+        try:
+            os.remove(self._tmp)
+        except (OSError, PermissionError):
+            pass
+
+    def _seed(self, *, stage: str, market_tickers: str = "[]",
+              event_date: str = "2026-04-15") -> None:
+        with sqlite3.connect(self._tmp) as conn:
+            conn.execute(
+                "INSERT INTO events (headline, event_date, market_tickers, "
+                "stage) VALUES (?, ?, ?, ?)",
+                ("headline", event_date, market_tickers, stage),
+            )
+            conn.commit()
+
+    def test_curated_intake_excluded_from_denominator_and_counted(self) -> None:
+        self._seed(stage="realized",
+                   market_tickers=json.dumps([{"symbol": "AAPL"}]))
+        self._seed(stage="curated_intake")
+        self._seed(stage="curated_intake")
+        result = report.summarize_readiness(db_path=self._tmp)
+        # only the analysis-eligible row counts toward the denominator
+        self.assertEqual(result["total_events"], 1)
+        self.assertEqual(result["curated_intake_excluded_count"], 2)
+        # the excluded rows never appear in the per-event listing either
+        self.assertEqual(len(result["events"]), 1)
+        self.assertEqual(result["events"][0]["primary_ticker"], "AAPL")
+
+    def test_excluded_count_zero_when_no_intake_rows(self) -> None:
+        self._seed(stage="realized",
+                   market_tickers=json.dumps([{"symbol": "AAPL"}]))
+        result = report.summarize_readiness(db_path=self._tmp)
+        self.assertEqual(result["curated_intake_excluded_count"], 0)
+        self.assertEqual(result["total_events"], 1)
 
 
 class TestComputeReadiness(_Base):

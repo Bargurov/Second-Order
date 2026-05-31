@@ -162,6 +162,24 @@ class TestTrackRecordAggregation(_IsolatedDb):
         r = compute_track_record()
         self.assertEqual(r["unresolved"], 1)
 
+    def test_curated_intake_rows_excluded_from_denominator(self):
+        """Curated-intake stubs are real archived events but carry no
+        thesis outcome — they must never enlarge the track-record
+        denominator or land in the unresolved bucket."""
+        save_event(_event("Real validated event", [
+            {"symbol": "AAPL", "direction_tag": "supports ↑",
+             "return_5d": 2.0, "spark": []},
+        ]))
+        intake = _event("Curated intake stub", [])
+        intake["stage"] = db_module.CURATED_INTAKE_STAGE
+        intake["persistence"] = "unscored"
+        save_event(intake)
+
+        r = compute_track_record()
+        self.assertEqual(r["total"], 1)        # curated_intake excluded
+        self.assertEqual(r["validated"], 1)
+        self.assertEqual(r["unresolved"], 0)   # not counted as unresolved
+
     def test_multiple_events_correct_totals(self):
         save_event(_event("V1", [{"symbol": "A", "direction_tag": "supports \u2191", "return_5d": 1.0, "spark": []}]))
         save_event(_event("V2", [{"symbol": "B", "direction_tag": "supports \u2193", "return_5d": -1.0, "spark": []}]))

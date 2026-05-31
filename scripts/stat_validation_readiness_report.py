@@ -130,6 +130,13 @@ _ESTIMATION_WINDOW: int = 60
 _BENCHMARK_TICKER:  str = "SPY"
 _HORIZONS:          tuple[int, ...] = (1, 5, 20)
 
+# Mirrors ``db.CURATED_INTAKE_STAGE`` — kept inline (not imported) for the
+# same reason as the constants above: the SELECT path stays project-import
+# free.  Curated-intake rows are operator-curated stubs with no analysis
+# output, so they are excluded from the readiness denominator and disclosed
+# separately via ``curated_intake_excluded_count`` (never silently dropped).
+_CURATED_INTAKE_STAGE: str = "curated_intake"
+
 
 _RECOMMENDED_OK = (
     "Every event in the archive has the cache coverage needed to run "
@@ -181,10 +188,20 @@ def summarize_readiness(
     try:
         try:
             event_rows = conn.execute(
-                "SELECT id, event_date, market_tickers FROM events ORDER BY id"
+                "SELECT id, event_date, market_tickers, stage "
+                "FROM events ORDER BY id"
             ).fetchall()
         except sqlite3.Error:
-            event_rows = []
+            # Older / hand-rolled fixtures may lack the ``stage`` column;
+            # fall back to the stage-less shape (no row is then excluded).
+            try:
+                rows = conn.execute(
+                    "SELECT id, event_date, market_tickers "
+                    "FROM events ORDER BY id"
+                ).fetchall()
+                event_rows = [(r[0], r[1], r[2], None) for r in rows]
+            except sqlite3.Error:
+                event_rows = []
 
         try:
             cache_rows = conn.execute(
@@ -200,8 +217,15 @@ def summarize_readiness(
     cache_dates_by_ticker = _group_cache_dates(cache_rows)
 
     # Per-event compute -------------------------------------------------------
+    # Curated-intake rows are real archived stubs with no analysis output;
+    # drop them from the per-event readiness universe (denominator + listing)
+    # and disclose the count separately so they are never silently hidden.
+    curated_intake_excluded_count = 0
     per_event: list[dict[str, Any]] = []
-    for raw_id, raw_event_date, raw_market_tickers in event_rows:
+    for raw_id, raw_event_date, raw_market_tickers, raw_stage in event_rows:
+        if isinstance(raw_stage, str) and raw_stage == _CURATED_INTAKE_STAGE:
+            curated_intake_excluded_count += 1
+            continue
         try:
             event_id = int(raw_id)
         except (TypeError, ValueError):
@@ -284,6 +308,7 @@ def summarize_readiness(
         "events_missing_benchmark_proxy":              n_missing_benchmark,
         "events_with_insufficient_estimation_window":  n_insufficient_est,
         "events_fully_ready":                          n_fully_ready,
+        "curated_intake_excluded_count":               curated_intake_excluded_count,
         "compute_readiness":                           compute_readiness,
         "events":                                      truncated,
         "recommended_next_action": (
@@ -409,6 +434,7 @@ def _empty_report() -> dict[str, Any]:
         "events_missing_benchmark_proxy":              0,
         "events_with_insufficient_estimation_window":  0,
         "events_fully_ready":                          0,
+        "curated_intake_excluded_count":               0,
         "compute_readiness":                           _compute_readiness_empty(),
         "events":                                      [],
         # An empty archive isn't "fully ready" for downstream
@@ -594,6 +620,7 @@ def _render_text(report: dict[str, Any]) -> str:
     lines.append(f"  missing benchmark proxy ({_BENCHMARK_TICKER}):              {report['events_missing_benchmark_proxy']}")
     lines.append(f"  insufficient estimation window (<{_ESTIMATION_WINDOW}d):       {report['events_with_insufficient_estimation_window']}")
     lines.append(f"  fully ready (archive):                       {report['events_fully_ready']}")
+    lines.append(f"  curated_intake excluded (not analysis):      {report.get('curated_intake_excluded_count', 0)}")
     cr = report.get("compute_readiness") or {}
     basis = cr.get("auto_adjust_basis_counts") or {}
     lines.append(

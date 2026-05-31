@@ -96,6 +96,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+# ``db`` is the canonical home of the curated-intake stage marker.  Import it
+# here (after the sys.path insert) so ``INTAKE_STAGE`` is the SAME object as
+# ``db.CURATED_INTAKE_STAGE`` rather than a re-spelled literal that could drift.
+# db imports only the stdlib at module load, so this stays cheap.
+import db  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Intake constants — the value layer D1A deferred to the write path.
@@ -106,7 +112,7 @@ if ROOT not in sys.path:
 #: are unknown to every ``stage`` / ``persistence`` reader (which branch on
 #: equality), so they read as neutral and give a later phase a clean handle
 #: to filter intake rows out of analysis denominators.
-INTAKE_STAGE = "curated_intake"
+INTAKE_STAGE = db.CURATED_INTAKE_STAGE
 INTAKE_PERSISTENCE = "unscored"
 INTAKE_PATH = "curated_yaml"
 

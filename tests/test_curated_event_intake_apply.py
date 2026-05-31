@@ -346,6 +346,14 @@ class CuratedEventIntakeApplyTest(unittest.TestCase):
         self.assertEqual(self._count("events"), 2)
         self.assertEqual(self._count("event_provenance"), 1)
 
+    # ----- canonical constant reuse ---------------------------------------
+    def test_writer_uses_canonical_db_stage_constant(self) -> None:
+        # The intake stage marker is the single source of truth in db.py —
+        # the writer reuses it rather than duplicating the literal, so the
+        # denominator guards and the writer can never drift apart.
+        self.assertEqual(cli.INTAKE_STAGE, db.CURATED_INTAKE_STAGE)
+        self.assertIn(cli.INTAKE_STAGE, db.NON_ANALYSIS_STAGES)
+
 
 if __name__ == "__main__":
     unittest.main()

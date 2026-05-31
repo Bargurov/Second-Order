@@ -4866,5 +4866,69 @@ class TestEventDateBackfillImpactPreviewNoProviderCalls(_EventDateBackfillBase):
         self.assertEqual(body["proposed_updates"],   1)
 
 
+# ---------------------------------------------------------------------------
+# D1D — curated-intake rows must not contaminate outcome denominators
+# ---------------------------------------------------------------------------
+
+
+class TestArchiveStatsCuratedIntake(_ArchiveBase):
+    def test_curated_intake_separated_and_excluded_from_thesis_state(self) -> None:
+        # A single curated-intake stub: real archived row, no thesis.
+        self._seed(
+            stage=db.CURATED_INTAKE_STAGE, persistence="unscored",
+            market_tickers=[],
+        )
+        body = client.get("/diagnostics/archive-stats").json()
+        # Inventory histograms SEPARATE it under its own buckets.
+        self.assertEqual(
+            body["events_by_stage"]["counts"].get("curated_intake"), 1,
+        )
+        self.assertEqual(
+            body["events_by_persistence"]["counts"].get("unscored"), 1,
+        )
+        # The outcome (thesis-state) block EXCLUDES it.
+        block = body["events_by_thesis_state"]
+        self.assertTrue(block["available"])
+        self.assertEqual(sum(block["counts"].values()), 0)
+
+
+class TestTrackRecordCuratedIntake(_TrackRecordBase):
+    def test_curated_intake_excluded_from_outcome_counts(self) -> None:
+        self._seed(
+            stage=db.CURATED_INTAKE_STAGE, persistence="unscored",
+            market_tickers=[],
+        )
+        body = client.get("/diagnostics/track-record").json()
+        # Not counted as an outcome row in any validation-status bucket.
+        self.assertEqual(body["total_events"], 0)
+        for status in _VAL_STATUS_KEYS:
+            self.assertEqual(body["counts_by_validation_status"][status], 0)
+        # Disclosed, not silently hidden.
+        self.assertEqual(body["curated_intake_excluded_count"], 1)
+
+
+class TestValidationStatusStatsCuratedIntake(_ArchiveBase):
+    def test_curated_intake_excluded_from_outcome_counts(self) -> None:
+        # A real validated row plus a curated-intake stub: the stub must
+        # neither inflate the denominator nor land in any status bucket.
+        self._seed(market_tickers=[
+            {"symbol": "AAPL", "direction_tag": "supports thesis"},
+            {"symbol": "MSFT", "direction_tag": "supports thesis"},
+        ])
+        self._seed(
+            stage=db.CURATED_INTAKE_STAGE, persistence="unscored",
+            market_tickers=[],
+        )
+        body = client.get("/diagnostics/validation-status-stats").json()
+        # Only the analysis row counts toward the denominator + buckets.
+        self.assertEqual(body["total_events"], 1)
+        self.assertEqual(body["counts_by_status"]["validated"], 1)
+        self.assertEqual(sum(body["counts_by_status"].values()), 1)
+        self.assertEqual(body["pending_count"],    0)
+        self.assertEqual(body["unresolved_count"], 0)
+        # Disclosed, not silently hidden.
+        self.assertEqual(body["curated_intake_excluded_count"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
