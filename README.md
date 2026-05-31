@@ -117,6 +117,63 @@ blocked, mainly by missing primary tickers or insufficient pre-event
 estimation history. These archive event-study counts do not change the
 closed Phase 1 or Phase 2 FDR denominators.
 
+## Curated Intake — Source-Anchored Archive Stubs
+
+Operator-curated events enter the archive through a guarded intake path
+(`scripts/curated_event_intake_apply.py`), which writes one `events` row
+plus one matching `event_provenance` row from a hand-authored YAML
+worksheet.
+
+A `curated_intake` row is a **source-anchored archive stub, not analyzed
+evidence.** It records that a real, primary-source event happened and
+where it came from. It carries no market check, no scored outcome, and no
+validated thesis; it is stamped `stage = "curated_intake"`,
+`persistence = "unscored"`, and must never be read as a confirmed
+mechanism or a trading signal. The curated `predicted_direction` is a
+falsifiable hypothesis recorded for later checking and is deliberately
+**not** persisted, so no directional framing reaches any surface.
+
+**First live curated row** (written 2026-06-01):
+
+- `event_id` 293
+- Federal Reserve FOMC statement, April 29, 2026 — official press release
+  `monetary20260429a.htm`, released 2:00 p.m. EDT
+- `mechanism_family` `policy_surprise` (the canonical family; the narrower
+  "monetary policy rate decision" is descriptive only)
+- `provenance_status` `source_anchored` (both `source_url` and
+  `source_published_at` are recorded)
+
+**Denominator policy.** Curated_intake rows are counted as **archive
+inventory** but excluded from every **outcome / readiness / claim**
+denominator, so they can never inflate or dilute a research finding:
+
+- The **raw archive count includes** curated_intake rows (e.g.
+  `events_by_stage`; the default `GET /events` listing).
+- **Readiness, track-record, and validation-status exclude** them.
+  `db.NON_ANALYSIS_STAGES` is the single source of truth for the filter.
+- Each excluding surface **discloses** the omission via a
+  `curated_intake_excluded_count` field — the rows are separated, never
+  silently hidden.
+
+**Backup policy.** A live intake write requires the full guarded triple —
+`--write`, `--confirm`, and `--backup-path` pointing at a restore point
+distinct from `events.db`. The writer snapshots the database before any
+mutation, runs all inserts in one transaction that rolls back on error,
+and is idempotent by `source_url`. The backup `.db` and `events.db`
+itself are untracked (gitignored) and are never committed.
+
+```powershell
+python scripts/curated_event_intake_apply.py `
+    --yaml examples/curated_events.candidate.yaml `
+    --write --confirm --backup-path backups/pre-intake.db --json
+```
+
+**Current live counts** after the first curated write:
+
+- raw events: 158
+- readiness `total_events`: 157 (curated_intake excluded)
+- `curated_intake_excluded_count`: 1
+
 ## Next Roadmap
 
 The tracked evidence track is closed at Phase 4. No new candidates, new
