@@ -506,7 +506,100 @@ def init_db() -> None:
             ON macro_release_facts (release_time)
         """)
 
+        # ------------------------------------------------------------------
+        # event_provenance — D1A source-provenance sidecar (schema only).
+        #
+        # One row per source-anchored event; ``event_id`` is the PK and a
+        # 1:1 FK to ``events.id``.  This lets FUTURE events record where
+        # their headline + mechanism label came from WITHOUT retroactively
+        # upgrading historical rows: legacy events simply have no
+        # provenance row and read as ``unrecorded`` (see
+        # ``derive_provenance_status``).  No writer/intake lives here — that
+        # is a later step.  Notes:
+        #   * ``provenance_status`` is DERIVED ON READ, never stored.
+        #   * ``mechanism_label_provenance`` is NOT NULL but carries NO
+        #     CHECK: no grounded label-source taxonomy exists yet, and a
+        #     guessed, un-ALTERable enum would force a table rebuild later.
+        #     The write layer enforces the vocabulary once the values are
+        #     real.  Intended values: 'curated' (human), 'model' (LLM
+        #     family commit), 'keyword_fallback' (classify_family),
+        #     'unknown' (legacy/backfill).
+        #   * The FK is declared for intent; PRAGMA foreign_keys is left at
+        #     its default (unenforced) so no existing connection path
+        #     changes behaviour.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS event_provenance (
+                event_id                   INTEGER PRIMARY KEY,
+                source_type                TEXT NOT NULL,
+                source_publisher           TEXT,
+                source_url                 TEXT,
+                source_published_at        TEXT,
+                mechanism_label_provenance TEXT NOT NULL,
+                intake_path                TEXT NOT NULL,
+                created_at                 TEXT NOT NULL,
+                FOREIGN KEY (event_id) REFERENCES events (id)
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_event_provenance_source_url
+            ON event_provenance (source_url)
+        """)
+
     _db_ready = True
+
+
+# ---------------------------------------------------------------------------
+# event_provenance — read-side helpers (D1A).  No writer/intake here.
+# ---------------------------------------------------------------------------
+
+def derive_provenance_status(prov: Any) -> str:
+    """Map a provenance row to a status — DERIVED ON READ, never stored.
+
+    ``prov`` may be a dict, a ``sqlite3.Row``, or ``None``.  Keys off the
+    two external-anchor fields (``source_url`` + ``source_published_at``);
+    ``source_type`` / ``source_publisher`` are intentionally ignored.
+
+    * ``None``                            → ``"unrecorded"`` (legacy: no row)
+    * source_url AND source_published_at  → ``"source_anchored"``
+    * exactly one of the two              → ``"partial"``
+    * neither                             → ``"unanchored"``
+    """
+    if prov is None:
+        return "unrecorded"
+    if not isinstance(prov, dict):
+        # sqlite3.Row (or any keyed row) has no ``.get()`` — normalise.
+        prov = {k: prov[k] for k in prov.keys()}
+    has_url = bool((prov.get("source_url") or "").strip())
+    has_pub = bool((prov.get("source_published_at") or "").strip())
+    if has_url and has_pub:
+        return "source_anchored"
+    if has_url or has_pub:
+        return "partial"
+    return "unanchored"
+
+
+def get_event_provenance(event_id: int, conn=None):
+    """Return the provenance row for ``event_id`` as a dict, or ``None``.
+
+    Read-only.  ``None`` for legacy events that have no provenance row.
+    """
+    own = conn is None
+    if own:
+        conn = _connect_db()
+    try:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT * FROM event_provenance WHERE event_id = ?", (event_id,)
+        ).fetchone()
+        return {k: row[k] for k in row.keys()} if row is not None else None
+    finally:
+        if own:
+            conn.close()
+
+
+def provenance_status_for_event(event_id: int, conn=None) -> str:
+    """Derived provenance status for an event id (``"unrecorded"`` if no row)."""
+    return derive_provenance_status(get_event_provenance(event_id, conn=conn))
 
 
 def _handle_outdated_db() -> bool:
