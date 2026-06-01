@@ -174,6 +174,69 @@ python scripts/curated_event_intake_apply.py `
 - readiness `total_events`: 157 (curated_intake excluded)
 - `curated_intake_excluded_count`: 1
 
+## Price-Provider Provenance — Where a Cached Bar Came From
+
+The price cache (`price_cache`) now records **which market-data provider
+served each bar** in a nullable `source_provider` column, read through the
+single helper `db.derive_price_provider`. This is distinct from event
+provenance (below) and never affects whether a bar is used — it only
+records origin.
+
+**`legacy_unknown` is a provenance gap, not bad data.** When
+`source_provider` is NULL or blank, `db.derive_price_provider` returns
+`legacy_unknown`. That means exactly one thing: the provider was **not
+recorded at write time**. It is **not** a claim that the bar is wrong,
+stale, or invalid — these are real cached closes that simply predate
+provider stamping (or came from a writer that does not stamp yet).
+
+**Current live coverage is 100% `legacy_unknown`, and that is expected,
+not a regression.** The cache predates the stamping path, and no refresh
+or backfill has been run to repopulate it (none is run casually). As of
+2026-06-01:
+
+- total cached bars: 18,630
+- distinct providers: 1 (`legacy_unknown`)
+- `legacy_unknown`: 18,630 bars across 155 tickers
+- basis split: 9,274 raw (`auto_adjust=0`) / 9,356 adjusted (`auto_adjust=1`)
+- date range: 2017-07-07 → 2026-05-29
+
+**Future canonical fetches stamp the provider.** Bars pulled through the
+canonical read-through path (`price_cache.fetch_daily_cached`) are stamped
+with the resolved provider identity:
+
+- `yfinance` — the default provider
+- `polygon` — when configured via `MARKET_DATA_PROVIDER=polygon`
+- `fallback:<arm>` — e.g. `fallback:yfinance` / `fallback:polygon`, when a
+  `FallbackProvider` served the bar through the named arm
+
+An unrecognized or unnamed provider is recorded as `legacy_unknown` rather
+than guessed — provenance is stamped only when it is reliable.
+
+**Repair / backfill / promote writers remain intentionally unstamped** for
+now: `price_cache_refresh.py`, `auto_adjust_mismatch_repair.py`,
+`scripts/adjusted_ticker_backfill.py`,
+`scripts/spy_adjusted_benchmark_backfill.py`, and
+`scripts/xle_live_backfill_promote.py`. Bars these write stay
+`legacy_unknown` until a later step wires them in.
+
+**Coverage report (read-only).** A single `SELECT` groups every cached bar
+by `db.derive_price_provider` and reports per-provider row, ticker, basis,
+and date-range counts. It never fetches, never mutates, and never calls a
+provider:
+
+```powershell
+python scripts/price_provider_coverage_report.py --json
+```
+
+**This is separate from event provenance** — the two answer different
+questions and must not be conflated:
+
+- `event_provenance` / `provenance_status` answers **where the event came
+  from** (the source-anchored origin of an archived event; see *Curated
+  Intake* above).
+- `source_provider` answers **where the price bar came from** (which
+  market-data vendor served a cached daily close).
+
 ## Next Roadmap
 
 The tracked evidence track is closed at Phase 4. No new candidates, new
