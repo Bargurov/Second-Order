@@ -165,9 +165,24 @@ def _ensure_table() -> bool:
                         volume      REAL,
                         auto_adjust INTEGER NOT NULL,
                         fetched_at  TEXT NOT NULL,
+                        source_provider TEXT,
                         PRIMARY KEY (ticker, date, auto_adjust)
                     )
                 """)
+                # D2B — price-provider provenance.  Mirrors the db.init_db
+                # schema path: backfill the nullable ``source_provider``
+                # column onto pre-D2B six-column databases.  The ALTER gets
+                # its OWN try/except so the expected duplicate-column
+                # OperationalError (fresh table, or already migrated) is
+                # swallowed here instead of bubbling to the outer handler
+                # below — which would otherwise falsely return False and
+                # skip ``_table_ready`` / the corrupt-row purge.
+                try:
+                    conn.execute(
+                        "ALTER TABLE price_cache ADD COLUMN source_provider TEXT"
+                    )
+                except sqlite3.OperationalError:
+                    pass  # column already present
                 conn.execute("""
                     CREATE INDEX IF NOT EXISTS idx_price_cache_ticker_range
                     ON price_cache (ticker, auto_adjust, date)

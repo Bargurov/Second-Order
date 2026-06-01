@@ -265,9 +265,24 @@ def init_db() -> None:
                 volume      REAL,
                 auto_adjust INTEGER NOT NULL,
                 fetched_at  TEXT NOT NULL,
+                source_provider TEXT,
                 PRIMARY KEY (ticker, date, auto_adjust)
             )
         """)
+        # D2B — price-provider provenance.  ``source_provider`` is nullable
+        # with no default: every row written before provider stamping (which
+        # D2B deliberately does NOT add) reads back as ``"legacy_unknown"``
+        # via ``derive_price_provider``.  This ALTER backfills the column
+        # onto pre-D2B six-column databases; on a fresh DB the CREATE above
+        # already includes it and the ALTER no-ops on the duplicate-column
+        # OperationalError.  The primary key stays (ticker, date,
+        # auto_adjust) — ADD COLUMN never touches it.
+        try:
+            conn.execute(
+                "ALTER TABLE price_cache ADD COLUMN source_provider TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass  # column already present — fresh table or already migrated
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_price_cache_ticker_range
             ON price_cache (ticker, auto_adjust, date)
@@ -614,6 +629,49 @@ def get_event_provenance(event_id: int, conn=None):
 def provenance_status_for_event(event_id: int, conn=None) -> str:
     """Derived provenance status for an event id (``"unrecorded"`` if no row)."""
     return derive_provenance_status(get_event_provenance(event_id, conn=conn))
+
+
+# ---------------------------------------------------------------------------
+# price_cache — source-provider read helper (D2B).  No writer/stamping here.
+# ---------------------------------------------------------------------------
+
+# Sentinel returned for any price_cache row whose ``source_provider`` is
+# NULL or blank — i.e. every row written before provider stamping existed.
+# DERIVED ON READ, never stored.
+LEGACY_PRICE_PROVIDER = "legacy_unknown"
+
+
+def derive_price_provider(value_or_row: Any) -> str:
+    """Resolve a price_cache row's ``source_provider`` to a non-blank label.
+
+    DERIVED ON READ — never stored.  Mirrors :func:`derive_provenance_status`:
+    accepts either the raw ``source_provider`` value (``str`` / ``None``) or a
+    full price_cache row (``dict`` / ``sqlite3.Row``) and returns
+
+    * the stored provider string, when present and non-blank;
+    * :data:`LEGACY_PRICE_PROVIDER` (``"legacy_unknown"``) when the column is
+      NULL or blank — the state of every row written before provider stamping.
+
+    D2B is schema + read only: no writer stamps ``source_provider`` yet, so
+    today every live row derives as ``"legacy_unknown"``.
+    """
+    value = value_or_row
+    # A row (dict or sqlite3.Row) — pull the provider column out.  Plain
+    # strings and ``None`` are treated as the raw value directly.
+    if value is not None and not isinstance(value, str):
+        if isinstance(value, dict):
+            value = value.get("source_provider")
+        elif hasattr(value, "keys"):
+            # sqlite3.Row has no ``.get()`` — index by name when present.
+            keys = value.keys()
+            value = value["source_provider"] if "source_provider" in keys else None
+        else:
+            # Unknown non-string scalar — treat as no recorded provider.
+            value = None
+    if value is None:
+        return LEGACY_PRICE_PROVIDER
+    text = str(value).strip()
+    return text if text else LEGACY_PRICE_PROVIDER
 
 
 def _handle_outdated_db() -> bool:

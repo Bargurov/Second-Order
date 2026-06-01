@@ -756,5 +756,167 @@ class InstitutionalResearchFieldsRoundTripTests(unittest.TestCase):
             self.assertIn(field, rows[0])
 
 
+class PriceCacheSourceProviderSchemaTests(unittest.TestCase):
+    """D2B — price_cache.source_provider provenance column (schema only).
+
+    init_db() must create ``price_cache`` with a nullable
+    ``source_provider`` column and idempotently backfill it onto pre-D2B
+    six-column tables via ALTER, all without disturbing the
+    ``(ticker, date, auto_adjust)`` primary key.  No writer stamps the
+    column yet — that is a later step.
+    """
+
+    def setUp(self) -> None:
+        self.original_db_file = db.DB_FILE
+        self.original_ready = db._db_ready
+        self._tmp_dir, self.test_db_file = _make_temp_db("test_events_")
+        db.DB_FILE = self.test_db_file
+
+    def tearDown(self) -> None:
+        db.DB_FILE = self.original_db_file
+        db._db_ready = self.original_ready
+        _remove_temp_dir(self._tmp_dir)
+
+    def _table_info(self):
+        # PRAGMA table_info columns: (cid, name, type, notnull, dflt_value, pk)
+        with sqlite3.connect(self.test_db_file) as conn:
+            return conn.execute("PRAGMA table_info(price_cache)").fetchall()
+
+    def test_init_db_creates_source_provider_column(self) -> None:
+        db.init_db()
+        by_name = {r[1]: r for r in self._table_info()}
+        self.assertIn("source_provider", by_name)
+        self.assertEqual(by_name["source_provider"][2].upper(), "TEXT")
+        self.assertEqual(
+            by_name["source_provider"][3], 0, "source_provider must be nullable",
+        )
+        self.assertEqual(
+            by_name["source_provider"][5], 0,
+            "source_provider must not be part of the primary key",
+        )
+
+    def test_primary_key_unchanged(self) -> None:
+        db.init_db()
+        by_name = {r[1]: r for r in self._table_info()}
+        pk_cols = {name for name, r in by_name.items() if r[5] > 0}
+        self.assertEqual(pk_cols, {"ticker", "date", "auto_adjust"})
+
+    def test_migration_idempotent_across_repeated_init_db(self) -> None:
+        db.init_db()
+        with sqlite3.connect(self.test_db_file) as conn:
+            conn.execute(
+                "INSERT INTO price_cache "
+                "(ticker, date, close, volume, auto_adjust, fetched_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                ("AAPL", "2026-03-02", 100.0, 1000.0, 0,
+                 "2026-03-02T00:00:00Z"),
+            )
+            conn.commit()
+
+        db.init_db()  # second pass — ALTER must no-op, row must survive
+
+        with sqlite3.connect(self.test_db_file) as conn:
+            cols = [r[1] for r in conn.execute(
+                "PRAGMA table_info(price_cache)").fetchall()]
+            count = conn.execute(
+                "SELECT COUNT(*) FROM price_cache").fetchone()[0]
+            provider = conn.execute(
+                "SELECT source_provider FROM price_cache").fetchone()[0]
+        self.assertEqual(cols.count("source_provider"), 1)
+        self.assertEqual(count, 1, "init_db must not rebuild/wipe price_cache")
+        self.assertIsNone(provider)
+
+    def test_alter_backfills_legacy_six_column_table(self) -> None:
+        # A pre-D2B version-3 DB whose price_cache predates the column.
+        with sqlite3.connect(self.test_db_file) as conn:
+            conn.execute("""
+                CREATE TABLE events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL, headline TEXT NOT NULL,
+                    stage TEXT NOT NULL, persistence TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE price_cache (
+                    ticker      TEXT NOT NULL,
+                    date        TEXT NOT NULL,
+                    close       REAL,
+                    volume      REAL,
+                    auto_adjust INTEGER NOT NULL,
+                    fetched_at  TEXT NOT NULL,
+                    PRIMARY KEY (ticker, date, auto_adjust)
+                )
+            """)
+            conn.execute(
+                "INSERT INTO price_cache "
+                "(ticker, date, close, volume, auto_adjust, fetched_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                ("SPY", "2026-03-02", 50.0, 10.0, 0, "2026-03-02T00:00:00Z"),
+            )
+            conn.execute(f"PRAGMA user_version = {db.SCHEMA_VERSION}")
+            conn.commit()
+
+        db.init_db()  # must ALTER the column in, not rename the DB to .bak
+
+        self.assertFalse(os.path.exists(self.test_db_file + ".bak"))
+        with sqlite3.connect(self.test_db_file) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT * FROM price_cache WHERE ticker='SPY'").fetchone()
+        self.assertIn("source_provider", row.keys())
+        self.assertIsNone(row["source_provider"])
+        self.assertEqual(db.derive_price_provider(row), "legacy_unknown")
+
+
+class DerivePriceProviderTests(unittest.TestCase):
+    """D2B read helper — DERIVED ON READ, never stored.
+
+    ``derive_price_provider`` maps a price_cache ``source_provider`` value
+    (or a full row) to a non-blank label: the stored provider when present,
+    else ``"legacy_unknown"`` for the NULL/blank legacy state.
+    """
+
+    def test_none_reads_legacy_unknown(self) -> None:
+        self.assertEqual(db.derive_price_provider(None), "legacy_unknown")
+
+    def test_empty_string_reads_legacy_unknown(self) -> None:
+        self.assertEqual(db.derive_price_provider(""), "legacy_unknown")
+
+    def test_whitespace_only_reads_legacy_unknown(self) -> None:
+        self.assertEqual(db.derive_price_provider("   "), "legacy_unknown")
+
+    def test_stored_provider_reads_back(self) -> None:
+        self.assertEqual(db.derive_price_provider("yfinance"), "yfinance")
+
+    def test_dict_with_provider(self) -> None:
+        self.assertEqual(
+            db.derive_price_provider({"source_provider": "yfinance"}),
+            "yfinance",
+        )
+
+    def test_dict_with_null_provider(self) -> None:
+        self.assertEqual(
+            db.derive_price_provider({"source_provider": None}),
+            "legacy_unknown",
+        )
+
+    def test_dict_missing_provider_key(self) -> None:
+        self.assertEqual(
+            db.derive_price_provider({"ticker": "AAPL"}),
+            "legacy_unknown",
+        )
+
+    def test_accepts_sqlite_row(self) -> None:
+        conn = sqlite3.connect(":memory:")
+        try:
+            conn.execute("CREATE TABLE t (source_provider TEXT, other TEXT)")
+            conn.execute("INSERT INTO t VALUES (?, ?)", ("yfinance", "x"))
+            conn.row_factory = sqlite3.Row
+            row = conn.execute("SELECT * FROM t").fetchone()
+        finally:
+            conn.close()
+        self.assertEqual(db.derive_price_provider(row), "yfinance")
+
+
 if __name__ == "__main__":
     unittest.main()

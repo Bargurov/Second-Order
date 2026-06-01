@@ -487,5 +487,130 @@ class TestPlanFetchRanges(unittest.TestCase):
         self.assertGreaterEqual(g_start, _date(2026, 3, 12))
 
 
+# ---------------------------------------------------------------------------
+# D2B — source_provider provenance (schema + read helper, no writer wiring)
+# ---------------------------------------------------------------------------
+
+class TestSourceProviderProvenance(_CacheTestBase):
+    """``_ensure_table`` must create / backfill the nullable
+    ``source_provider`` column idempotently; the existing named-column
+    writers keep working against the widened table (leaving the new
+    column NULL — no writer stamps it yet); and stored values read back
+    through ``db.derive_price_provider``."""
+
+    def _table_info(self):
+        # PRAGMA table_info columns: (cid, name, type, notnull, dflt_value, pk)
+        with sqlite3.connect(db.DB_FILE) as conn:
+            return conn.execute("PRAGMA table_info(price_cache)").fetchall()
+
+    def test_ensure_table_creates_source_provider_column(self) -> None:
+        self.assertTrue(price_cache._ensure_table())
+        by_name = {r[1]: r for r in self._table_info()}
+        self.assertIn("source_provider", by_name)
+        self.assertEqual(by_name["source_provider"][2].upper(), "TEXT")
+        self.assertEqual(by_name["source_provider"][3], 0)  # nullable
+        self.assertEqual(by_name["source_provider"][5], 0)  # not in PK
+
+    def test_primary_key_unchanged(self) -> None:
+        self.assertTrue(price_cache._ensure_table())
+        by_name = {r[1]: r for r in self._table_info()}
+        pk_cols = {name for name, r in by_name.items() if r[5] > 0}
+        self.assertEqual(pk_cols, {"ticker", "date", "auto_adjust"})
+
+    def test_ensure_table_idempotent_across_resets(self) -> None:
+        self.assertTrue(price_cache._ensure_table())
+        price_cache._write_rows("AAPL", _make_df([100.0]), auto_adjust=False)
+        # Force a re-probe so the ALTER runs a second time against the
+        # already-widened table.  The duplicate-column error must be
+        # swallowed locally and the table must stay usable — if it bubbled
+        # to the outer handler, _ensure_table would return False here.
+        price_cache._reset_table_ready_for_tests()
+        self.assertTrue(price_cache._ensure_table())
+        cols = [r[1] for r in self._table_info()]
+        self.assertEqual(cols.count("source_provider"), 1)
+        # The row written before the reset survives — the ALTER did not
+        # rebuild the table.
+        with sqlite3.connect(db.DB_FILE) as conn:
+            count = conn.execute(
+                "SELECT COUNT(*) FROM price_cache WHERE ticker='AAPL'"
+            ).fetchone()[0]
+        self.assertEqual(count, 1)
+
+    def test_init_db_then_ensure_table_idempotent(self) -> None:
+        # Cross-module: db.init_db creates the column, then
+        # price_cache._ensure_table runs its own ALTER against the widened
+        # table.  The duplicate column must be swallowed and the table stay
+        # usable with the column present exactly once.
+        db.init_db()
+        price_cache._reset_table_ready_for_tests()
+        self.assertTrue(price_cache._ensure_table())
+        cols = [r[1] for r in self._table_info()]
+        self.assertEqual(cols.count("source_provider"), 1)
+
+    def test_existing_writer_leaves_source_provider_null(self) -> None:
+        # _write_rows uses the legacy six-column named INSERT — it must keep
+        # working against the seven-column table and leave the new column
+        # NULL, which reads back as legacy_unknown.
+        price_cache._write_rows(
+            "AAPL", _make_df([100.0, 101.0, 102.0]), auto_adjust=False,
+        )
+        with sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM price_cache WHERE ticker='AAPL' ORDER BY date"
+            ).fetchall()
+        self.assertEqual(len(rows), 3)
+        for row in rows:
+            self.assertIsNone(row["source_provider"])
+            self.assertEqual(db.derive_price_provider(row), "legacy_unknown")
+
+    def test_seven_column_named_insert_round_trips(self) -> None:
+        # A named INSERT that includes source_provider must work against the
+        # widened table; stored values read back via the helper, blanks
+        # collapse to legacy_unknown.
+        self.assertTrue(price_cache._ensure_table())
+        with sqlite3.connect(db.DB_FILE) as conn:
+            conn.executemany(
+                "INSERT INTO price_cache "
+                "(ticker, date, close, volume, auto_adjust, fetched_at, "
+                "source_provider) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    ("MSFT", "2026-03-02", 100.0, 1000.0, 0,
+                     "2026-03-02T00:00:00Z", "yfinance"),
+                    ("MSFT", "2026-03-03", 101.0, 1000.0, 0,
+                     "2026-03-02T00:00:00Z", "   "),
+                ],
+            )
+            conn.commit()
+            conn.row_factory = sqlite3.Row
+            rows = {
+                r["date"]: r for r in conn.execute(
+                    "SELECT * FROM price_cache WHERE ticker='MSFT'"
+                ).fetchall()
+            }
+        self.assertEqual(
+            db.derive_price_provider(rows["2026-03-02"]), "yfinance",
+        )
+        self.assertEqual(
+            db.derive_price_provider(rows["2026-03-03"]), "legacy_unknown",
+        )
+
+    def test_no_writer_stamps_source_provider_via_fetch(self) -> None:
+        # The full read-through fetch path must not stamp a provider yet.
+        df = _make_df([100.0, 101.0, 102.0, 103.0, 104.0])
+        set_provider(_RecordingProvider(df=df))
+        price_cache.fetch_daily_cached(
+            "AAPL", start="2026-03-02", end="2026-03-06", auto_adjust=False,
+        )
+        with sqlite3.connect(db.DB_FILE) as conn:
+            providers = [
+                r[0] for r in conn.execute(
+                    "SELECT source_provider FROM price_cache"
+                ).fetchall()
+            ]
+        self.assertTrue(providers, "fetch should have written rows")
+        self.assertTrue(all(p is None for p in providers))
+
+
 if __name__ == "__main__":
     unittest.main()
