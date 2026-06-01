@@ -372,8 +372,22 @@ def _read_range(
     return _df_from_rows(rows)
 
 
-def _write_rows(ticker: str, df: pd.DataFrame, auto_adjust: bool) -> None:
-    """Upsert every row in ``df`` into the cache.  Best-effort; silent on failure."""
+def _write_rows(
+    ticker: str,
+    df: pd.DataFrame,
+    auto_adjust: bool,
+    *,
+    source_provider: Optional[str] = None,
+) -> None:
+    """Upsert every row in ``df`` into the cache.  Best-effort; silent on failure.
+
+    ``source_provider`` records which market-data provider produced these
+    bars (see ``market_data.resolve_provider_identity``).  It is keyword-only
+    and defaults to ``None`` so every existing caller keeps the legacy
+    behaviour: the column stays NULL and ``db.derive_price_provider`` reads
+    it back as ``legacy_unknown``.  On the canonical fetch path
+    ``fetch_daily_cached`` passes the resolved identity through.
+    """
     if df is None or df.empty:
         return
     if not _ensure_table():
@@ -421,21 +435,28 @@ def _write_rows(ticker: str, df: pd.DataFrame, auto_adjust: bool) -> None:
                 and close_f == int(close_f)):
             _log.debug("price_cache: rejected suspect row %s %s close=%.1f", key, date_str, close_f)
             continue
-        rows.append((key, date_str, close_f, vol_f, flag, fetched_at))
+        rows.append((key, date_str, close_f, vol_f, flag, fetched_at, source_provider))
 
     if not rows:
         return
     try:
         with _db.connect_db() as conn:
+            # source_provider is written with named columns (D2C).  On
+            # conflict it is overwritten alongside close/volume/fetched_at:
+            # an upserted row reflects fresh bars from this fetch, so the
+            # stamp must track the provider that actually wrote them
+            # (NULL when the provider is unknown).  Pure cache hits never
+            # reach this path, so an existing stamp is preserved untouched.
             conn.executemany(
                 """
                 INSERT INTO price_cache
-                    (ticker, date, close, volume, auto_adjust, fetched_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (ticker, date, close, volume, auto_adjust, fetched_at, source_provider)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(ticker, date, auto_adjust) DO UPDATE SET
-                    close      = excluded.close,
-                    volume     = excluded.volume,
-                    fetched_at = excluded.fetched_at
+                    close           = excluded.close,
+                    volume          = excluded.volume,
+                    fetched_at      = excluded.fetched_at,
+                    source_provider = excluded.source_provider
                 """,
                 rows,
             )
@@ -545,7 +566,7 @@ def fetch_daily_cached(
 
     # Late import avoids a circular market_data → market_check → price_cache
     # bootstrap cycle and lets tests swap the provider via set_provider().
-    from market_data import get_provider
+    from market_data import get_provider, resolve_provider_identity
 
     if gaps:
         provider = get_provider()
@@ -560,7 +581,13 @@ def fetch_daily_cached(
             )
             if fetched is None or fetched.empty:
                 continue
-            _write_rows(ticker, fetched, auto_adjust)
+            # Resolve identity AFTER the fetch so a FallbackProvider's
+            # last_source reflects the arm that served THIS gap.  Unknown
+            # providers resolve to None → NULL → legacy_unknown.
+            provider_id = resolve_provider_identity(provider)
+            _write_rows(
+                ticker, fetched, auto_adjust, source_provider=provider_id,
+            )
 
         # Re-read now that backfill is done.
         cached = _read_range(ticker, req_start, req_end, auto_adjust)

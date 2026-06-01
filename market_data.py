@@ -109,6 +109,10 @@ class YFinanceProvider:
     depends on the MarketDataProvider Protocol, not on yfinance directly.
     """
 
+    # Self-declared identity recorded into price_cache.source_provider on
+    # the canonical fetch path.  See ``resolve_provider_identity``.
+    provider_name = "yfinance"
+
     def fetch_daily(
         self,
         ticker: str,
@@ -216,6 +220,10 @@ class PolygonProvider:
     Free-tier rate limit is 5 calls/min — the existing in-memory cache in
     market_check.py absorbs repeated calls within the TTL window.
     """
+
+    # Self-declared identity recorded into price_cache.source_provider on
+    # the canonical fetch path.  See ``resolve_provider_identity``.
+    provider_name = "polygon"
 
     def __init__(self, api_key: str):
         if not api_key:
@@ -424,6 +432,24 @@ class FallbackProvider:
         self.secondary = secondary
         self.last_source: str = "primary"
 
+    @property
+    def provider_name(self) -> "str | None":
+        """Identity of the arm that last served, prefixed ``fallback:``.
+
+        Reads ``last_source`` so the recorded provenance reflects which
+        arm actually produced the most recent bars (``fallback:polygon``
+        vs ``fallback:yfinance``).  Returns ``None`` when the active arm
+        declares no usable name — never guesses — so the fetch path
+        stores NULL rather than a misleading label.  ``last_source`` is
+        advisory (see class docstring); under concurrency a rare stale
+        read mislabels a single batch, never corrupts the schema.
+        """
+        arm = self.primary if self.last_source == "primary" else self.secondary
+        base = getattr(arm, "provider_name", None)
+        if not isinstance(base, str) or not base.strip():
+            return None
+        return f"fallback:{base.strip()}"
+
     def fetch_daily(
         self,
         ticker: str,
@@ -520,6 +546,29 @@ def _build_default_provider() -> MarketDataProvider:
 # ---------------------------------------------------------------------------
 
 _provider: MarketDataProvider = _build_default_provider()
+
+
+def resolve_provider_identity(provider: object) -> Optional[str]:
+    """Return the smallest reliable provider-identity string, or ``None``.
+
+    The identity is what a provider self-declares via ``provider_name``
+    (``"yfinance"``, ``"polygon"``, or ``"fallback:<arm>"`` for
+    :class:`FallbackProvider`).  The value is normalized (must be a
+    non-blank ``str``, stripped).  Anything else — a provider with no
+    ``provider_name``, a blank/non-string name, or ``None`` — yields
+    ``None`` so the caller stores NULL and the row reads back as
+    ``legacy_unknown``.
+
+    We deliberately do NOT infer identity from the class name: an
+    unrecognized provider is recorded as unknown rather than mislabelled.
+    This is the seam the canonical ``price_cache.fetch_daily_cached`` path
+    uses to stamp ``price_cache.source_provider``.
+    """
+    name = getattr(provider, "provider_name", None)
+    if not isinstance(name, str):
+        return None
+    name = name.strip()
+    return name or None
 
 
 def get_provider() -> MarketDataProvider:

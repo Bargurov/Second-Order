@@ -62,10 +62,15 @@ class _RecordingProvider:
         df: Optional[pd.DataFrame] = None,
         *,
         trim_to_range: bool = False,
+        provider_name: Optional[str] = None,
     ):
         self._df = df
         self.calls: list[dict] = []
         self._trim = trim_to_range
+        # ``provider_name`` mirrors the real-provider convention
+        # resolve_provider_identity keys off.  Default None → the fetch
+        # path stamps NULL (provider unknown → legacy_unknown).
+        self.provider_name = provider_name
 
     def fetch_daily(
         self,
@@ -610,6 +615,116 @@ class TestSourceProviderProvenance(_CacheTestBase):
             ]
         self.assertTrue(providers, "fetch should have written rows")
         self.assertTrue(all(p is None for p in providers))
+
+
+# ---------------------------------------------------------------------------
+# D2C — source_provider stamping on the canonical fetch path
+# ---------------------------------------------------------------------------
+
+class TestSourceProviderStamping(_CacheTestBase):
+    """The canonical ``fetch_daily_cached`` path stamps ``source_provider``
+    from the resolved provider identity.  Cache hits never re-stamp, and an
+    unknown provider leaves NULL (→ ``legacy_unknown``).  Backfill/repair
+    writers are out of scope and remain unstamped."""
+
+    def _providers(self, ticker: str) -> list:
+        with sqlite3.connect(db.DB_FILE) as conn:
+            return [
+                r[0] for r in conn.execute(
+                    "SELECT source_provider FROM price_cache "
+                    "WHERE ticker = ? ORDER BY date", (ticker,),
+                ).fetchall()
+            ]
+
+    def test_canonical_fetch_stamps_named_provider(self) -> None:
+        df = _make_df([100.0, 101.0, 102.0, 103.0, 104.0])
+        set_provider(_RecordingProvider(df=df, provider_name="test_provider"))
+        result = price_cache.fetch_daily_cached(
+            "AAPL", start="2026-03-02", end="2026-03-06", auto_adjust=False,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), 5)
+        providers = self._providers("AAPL")
+        self.assertEqual(len(providers), 5)
+        self.assertTrue(all(p == "test_provider" for p in providers))
+        # Reads back through the helper.
+        with sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT * FROM price_cache WHERE ticker='AAPL' LIMIT 1").fetchone()
+        self.assertEqual(db.derive_price_provider(row), "test_provider")
+
+    def test_unknown_provider_leaves_null_reads_legacy_unknown(self) -> None:
+        df = _make_df([100.0, 101.0, 102.0])
+        set_provider(_RecordingProvider(df=df))  # no provider_name → unknown
+        price_cache.fetch_daily_cached(
+            "XOM", start="2026-03-02", end="2026-03-04", auto_adjust=False,
+        )
+        providers = self._providers("XOM")
+        self.assertTrue(providers, "fetch should have written rows")
+        self.assertTrue(all(p is None for p in providers))
+        with sqlite3.connect(db.DB_FILE) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT * FROM price_cache WHERE ticker='XOM' LIMIT 1").fetchone()
+        self.assertEqual(db.derive_price_provider(row), "legacy_unknown")
+
+    def test_cache_hit_preserves_existing_source_provider(self) -> None:
+        # Seed a fully-covered window stamped by a prior provider.
+        seed = _make_df([100.0, 101.0, 102.0, 103.0, 104.0],
+                        start_date="2026-03-02")
+        price_cache._write_rows(
+            "GC=F", seed, auto_adjust=False, source_provider="seed_provider",
+        )
+        # A read fully covered by cache (auto_adjust=False) must not fetch,
+        # so _write_rows is never re-invoked and the stamp is preserved.
+        provider = _RecordingProvider(df=seed, provider_name="other_provider")
+        set_provider(provider)
+        result = price_cache.fetch_daily_cached(
+            "GC=F", start="2026-03-02", end="2026-03-06", auto_adjust=False,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(len(provider.calls), 0, "cache hit must not call provider")
+        providers = self._providers("GC=F")
+        self.assertEqual(len(providers), 5)
+        self.assertTrue(all(p == "seed_provider" for p in providers))
+
+    def test_write_rows_stamps_explicit_provider_else_null(self) -> None:
+        # Writer-level: a named source_provider is persisted; the default
+        # (no arg) preserves the legacy NULL behavior.
+        price_cache._write_rows(
+            "MSFT", _make_df([100.0], start_date="2026-03-02"),
+            auto_adjust=False, source_provider="yfinance",
+        )
+        price_cache._write_rows(
+            "MSFT", _make_df([101.0], start_date="2026-03-03"), auto_adjust=False,
+        )
+        with sqlite3.connect(db.DB_FILE) as conn:
+            rows = {
+                r[0]: r[1] for r in conn.execute(
+                    "SELECT date, source_provider FROM price_cache "
+                    "WHERE ticker='MSFT'",
+                ).fetchall()
+            }
+        self.assertEqual(rows["2026-03-02"], "yfinance")
+        self.assertIsNone(rows["2026-03-03"])
+
+    def test_auto_adjust_basis_unchanged_with_stamping(self) -> None:
+        # Stamping coexists with the auto_adjust key: fetched rows keep the
+        # correct basis flag and carry the provider.
+        df = _make_df([100.0, 101.0, 102.0])
+        set_provider(_RecordingProvider(df=df, provider_name="test_provider"))
+        price_cache.fetch_daily_cached(
+            "SPY", start="2026-03-02", end="2026-03-04", auto_adjust=False,
+        )
+        with sqlite3.connect(db.DB_FILE) as conn:
+            rows = conn.execute(
+                "SELECT auto_adjust, source_provider FROM price_cache "
+                "WHERE ticker='SPY'",
+            ).fetchall()
+        self.assertTrue(rows)
+        self.assertTrue(all(r[0] == 0 for r in rows))          # raw basis
+        self.assertTrue(all(r[1] == "test_provider" for r in rows))
 
 
 if __name__ == "__main__":
