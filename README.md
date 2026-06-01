@@ -117,6 +117,46 @@ blocked, mainly by missing primary tickers or insufficient pre-event
 estimation history. These archive event-study counts do not change the
 closed Phase 1 or Phase 2 FDR denominators.
 
+### Coverage report — per-event AR/SAR/CAR across the archive
+
+`scripts/event_study_coverage_report.py` makes the engine's reach
+auditable in one place. It loops `build_event_study_validation` over every
+analysis-stage archived event (read-only — plain `SELECT`s, no provider,
+no network, no DB write) and surfaces, for each compute-ready event, the
+per-horizon (1d / 5d / 20d) `abnormal_return`, `sar`, and `car` point
+estimates; for every other event it lists the `blocking_reasons` and no
+estimates.
+
+It is **not a new FDR pool** and never reads, modifies, or reopens the
+closed Phase 1 / Phase 2 pools (`demo_artifacts` / `cohort_evidence` are a
+separate scope). It reuses the same gate as the event-detail route, so its
+`event_study_available` count matches the readiness report's
+`event_study_compute_ready` exactly (44 = 44).
+
+**Single-event output is point estimates only.** At `n=1` there is no
+confidence interval, no p-value, and no FDR; the report makes no
+`confirmed` / `validated` / "significant" claim. Each JSON payload carries
+an explicit `non_claims` block stating this.
+
+Current live coverage:
+
+- event_study_available: 44
+- insufficient_data: 113
+- curated_intake excluded: 1
+- auto_adjust basis: matched 44, cross_flag 0
+
+The dominant blocker is `no_primary_ticker` (84) — a **coverage gap, not a
+statistics failure**: those events never reach the engine because they
+carry no primary ticker. The next blockers are forward-cache gaps
+(`missing_forward_cache_20d` 20, `missing_forward_cache_5d` 10),
+`insufficient_estimation_window_primary` (9), and
+`no_contiguous_aligned_window` (8). None is an engine error; each is a
+data-coverage or contiguity precondition.
+
+```powershell
+python scripts/event_study_coverage_report.py --json
+```
+
 ## Curated Intake — Source-Anchored Archive Stubs
 
 Operator-curated events enter the archive through a guarded intake path
