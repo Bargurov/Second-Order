@@ -9,6 +9,7 @@ export const qk = {
   events:     (query: EventsQuery) => ["events", query] as const,
   eventById:  (id: number) => ["events", id] as const,
   eventShare: (id: number) => ["events", id, "share"] as const,
+  eventStudy: (id: number) => ["events", id, "event-study"] as const,
   related:    (id: number) => ["events", id, "related"] as const,
   cascade:    (id: number) => ["events", id, "cascade"] as const,
   backtest:   (id: number) => ["backtest", id] as const,

@@ -1196,6 +1196,29 @@ export interface ReactionProfileV1Block {
   n_tickers: number;
 }
 
+/** One horizon row of the single-event event-study readout (point
+ *  estimates only — see EventStudyBlock). */
+export interface EventStudyHorizon {
+  horizon: number;
+  abnormal_return?: number | null;
+  sar?: number | null;
+  car?: number | null;
+  raw_return?: number | null;
+  benchmark_return?: number | null;
+}
+
+/** Gated single-event event-study payload from GET /events/{id}/event-study.
+ *  Point estimates only at n=1 — no CI / p-value / FDR; never a verdict.
+ *  Permissive/optional so the readout degrades cleanly. */
+export interface EventStudyBlock {
+  status: "event_study_available" | "insufficient_data" | string;
+  primary_ticker?: string | null;
+  benchmark?: string | null;
+  estimation_window_used?: number | null;
+  blocking_reasons?: string[];
+  per_horizon?: EventStudyHorizon[];
+}
+
 export type ArchiveQuality =
   | "pending"
   | "degraded"
@@ -3138,6 +3161,11 @@ export const api = {
   /** Fetch a saved event as a structured JSON object for read-only views (e.g. share page). */
   getEventJson: (eventId: number) =>
     request<SavedEvent>(`/events/${eventId}/export/json`),
+
+  /** Gated single-event event-study readout (AR/SAR/CAR point estimates,
+   *  or insufficient_data + blocking_reasons).  Read-only backend route. */
+  getEventStudy: (eventId: number) =>
+    request<EventStudyBlock>(`/events/${eventId}/event-study`),
 
   backtest: (eventId: number, force = false) =>
     request<BacktestResult>(
