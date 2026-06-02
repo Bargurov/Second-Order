@@ -39,6 +39,7 @@ import { MarketValidationStatus } from "@/components/ui/market-validation-status
 import { EventStudyCard } from "@/components/ui/event-study-card";
 import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
+import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT } from "@/lib/claim-copy";
 
 /*
   Tonal hierarchy (from Stitch reference):
@@ -195,7 +196,7 @@ function _labelizeToken(value: string | null | undefined, fallback = "Unknown"):
     .replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
 }
 
-function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["validation_status_v2"]> }) {
+export function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["validation_status_v2"]> }) {
   const meta = VALIDATION_STATUS_META[block.status] ?? VALIDATION_STATUS_META.unresolved!;
   const counts = block.counts ?? {};
   const directional = counts.directional ?? 0;
@@ -247,6 +248,10 @@ function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["v
       <p className="mt-3 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--so-ink-3)]">
         {total} ticker{total === 1 ? "" : "s"} checked
         {block.event_age_days != null ? ` · ${block.event_age_days}d since event` : ""}
+      </p>
+
+      <p className="mt-3 border-t border-[color:var(--so-rule)] pt-3 font-[family-name:var(--so-serif)] text-[11px] font-light italic leading-relaxed text-[var(--so-ink-3)]">
+        {VALIDATION_V2_SCOPE_CAVEAT}
       </p>
     </section>
   );
@@ -3742,7 +3747,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
           {/* ── ANALYSIS SKELETON (waiting) ── */}
           {!result.analysis && <AnalysisSkeleton />}
 
-          {/* ── TICKER EVIDENCE — market validation ── */}
+          {/* ── TICKER EVIDENCE — raw market reaction (event-window returns) ── */}
           {!result.market ? (
             <div className="space-y-3">
               <Skeleton className="h-3 w-48 bg-surface-container-highest" />
@@ -3754,7 +3759,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             <section className={cn(SECTION_CARD, "p-6")}>
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <p className="section-kicker mb-1.5">Market Validation</p>
+                  <p className="section-kicker mb-1.5">{MARKET_REACTION_LABEL}</p>
                   <div className="flex items-center gap-2.5">
                     <h3
                       className="text-[13px] font-semibold leading-none tracking-[-0.01em] text-on-surface"
@@ -3782,6 +3787,9 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                   </span>
                 </div>
               </div>
+              <p className="mb-4 font-[family-name:var(--so-serif)] text-[12px] font-light italic leading-relaxed text-[var(--so-ink-3)] max-w-2xl">
+                {MARKET_REACTION_SUBLABEL}
+              </p>
               {(() => {
                 const _dn = deriveDegradedNotice(result.market, result.analysis);
                 if (!_dn) return null;

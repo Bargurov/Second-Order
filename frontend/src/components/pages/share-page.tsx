@@ -10,6 +10,7 @@ import { api, type SavedEvent, type Ticker } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { EventStudyCard } from "@/components/ui/event-study-card";
+import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL } from "@/lib/claim-copy";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -212,7 +213,7 @@ export function SharePage({ eventId }: { eventId: number }) {
 // Content — separated so skeleton renders during load
 // ---------------------------------------------------------------------------
 
-function ShareContent({ ev }: { ev: SavedEvent }) {
+export function ShareContent({ ev }: { ev: SavedEvent }) {
   const tickers = ev.market_tickers ?? [];
   const beneficiaryTickers = tickers.filter((t) => t.role === "beneficiary");
   const loserTickers = tickers.filter((t) => t.role !== "beneficiary");
@@ -312,7 +313,10 @@ function ShareContent({ ev }: { ev: SavedEvent }) {
           className="py-8 border-b border-white/[0.06]"
           style={{ animation: "page-in 450ms ease-out" }}
         >
-          <SectionHeader label="Market Validation" />
+          <SectionHeader label={MARKET_REACTION_LABEL} />
+          <p className="text-[11px] text-white/30 mb-3 leading-relaxed max-w-2xl">
+            {MARKET_REACTION_SUBLABEL}
+          </p>
           {ev.market_note && (
             <p className="text-xs text-white/35 mb-4 leading-relaxed">{ev.market_note}</p>
           )}
