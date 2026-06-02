@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { formatMemo, formatBlurb } from "../format-memo";
+import { formatMemo, formatBlurb, formatMemoMarkdown } from "../format-memo";
 import type { AnalyzeResponse, AnalysisDetail, MarketResult, Ticker } from "../api";
 
 // ---------------------------------------------------------------------------
@@ -344,5 +344,25 @@ describe("formatBlurb — structure", () => {
     const lineCount = out.split("\n").length;
     expect(lineCount).toBeGreaterThanOrEqual(3);
     expect(lineCount).toBeLessThanOrEqual(5);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// F2 claim honesty — the exported memo must not pose raw returns as validation
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("memo claim honesty — raw market reaction, not 'Market Validation'", () => {
+  it("text memo titles the section 'MARKET REACTION (RAW)', not 'MARKET VALIDATION'", () => {
+    const out = formatMemo(makeResponse());
+    expect(out).toContain("MARKET REACTION (RAW)");
+    expect(out).toContain("not benchmark-adjusted");
+    expect(out).not.toContain("MARKET VALIDATION");
+  });
+
+  it("markdown memo titles the section 'Market reaction (raw)', not 'Market Validation'", () => {
+    const out = formatMemoMarkdown(makeResponse());
+    expect(out).toContain("## Market reaction (raw)");
+    expect(out).toContain("not benchmark-adjusted");
+    expect(out).not.toContain("Market Validation");
   });
 });

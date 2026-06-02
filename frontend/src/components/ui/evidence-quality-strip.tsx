@@ -29,7 +29,9 @@ export function buildQualitySignals(result: AnalyzeResponse): QualitySignal[] {
   const signals: QualitySignal[] = [];
   const tickers = result.market?.tickers ?? [];
 
-  // 1. Market confirmation ratio
+  // 1. Market tape-alignment ratio (supporting vs contradicting tickers) —
+  //    "Aligned", not "Confirmed": tape direction agreement is descriptive,
+  //    not thesis confirmation or event-study inference.
   if (tickers.length > 0) {
     const supporting = tickers.filter(isSupporting).length;
     const contradicting = tickers.filter(isContradicting).length;
@@ -38,12 +40,12 @@ export function buildQualitySignals(result: AnalyzeResponse): QualitySignal[] {
       const ratio = supporting / assessed;
       const pct = Math.round(ratio * 100);
       signals.push({
-        label: "Confirmed",
+        label: "Aligned",
         value: `${pct}%`,
         tone: ratio >= 0.6 ? "positive" : ratio >= 0.3 ? "neutral" : "warn",
       });
     } else {
-      signals.push({ label: "Confirmed", value: "—", tone: "neutral" });
+      signals.push({ label: "Aligned", value: "—", tone: "neutral" });
     }
   }
 

@@ -73,7 +73,16 @@ function findSignal(signals: QualitySignal[], label: string) {
 // ---------------------------------------------------------------------------
 
 describe("buildQualitySignals", () => {
-  it("computes confirmation ratio from direction_tag", () => {
+  // F2 claim honesty: the supporting-ticker ratio is labelled "Aligned",
+  // not "Confirmed" — tape-direction agreement is descriptive, not thesis
+  // confirmation.  Guard against a regression back to the overclaim word.
+  it("labels the tape-alignment ratio 'Aligned', never 'Confirmed'", () => {
+    const signals = buildQualitySignals(makeResult());
+    expect(findSignal(signals, "Aligned")).toBeDefined();
+    expect(findSignal(signals, "Confirmed")).toBeUndefined();
+  });
+
+  it("computes tape-alignment ratio from direction_tag", () => {
     const result = makeResult({
       market: {
         note: "",
@@ -85,7 +94,7 @@ describe("buildQualitySignals", () => {
         ],
       },
     });
-    const sig = findSignal(buildQualitySignals(result), "Confirmed");
+    const sig = findSignal(buildQualitySignals(result), "Aligned");
     expect(sig).toBeDefined();
     // 2 supporting / 3 assessed = 67%
     expect(sig!.value).toBe("67%");
@@ -104,7 +113,7 @@ describe("buildQualitySignals", () => {
         ],
       },
     });
-    const sig = findSignal(buildQualitySignals(result), "Confirmed");
+    const sig = findSignal(buildQualitySignals(result), "Aligned");
     expect(sig!.value).toBe("33%");
     expect(sig!.tone).toBe("neutral"); // 33% is >= 0.3
   });
@@ -117,7 +126,7 @@ describe("buildQualitySignals", () => {
         tickers: [makeTicker({ direction_tag: null })],
       },
     });
-    const sig = findSignal(buildQualitySignals(result), "Confirmed");
+    const sig = findSignal(buildQualitySignals(result), "Aligned");
     expect(sig!.value).toBe("—");
     expect(sig!.tone).toBe("neutral");
   });

@@ -1,4 +1,5 @@
 import type { AnalyzeResponse } from "./api";
+import { MARKET_REACTION_LABEL } from "./claim-copy";
 
 const SEP = "─".repeat(48);
 
@@ -130,11 +131,12 @@ export function formatMemo(r: AnalyzeResponse): string {
     lines.push("");
   }
 
-  // ── Market validation ───────────────────────
+  // ── Market reaction (raw) ───────────────────
   const tickers = r.market?.tickers ?? [];
   const mNote = r.market?.note;
   if (tickers.length > 0) {
-    lines.push("MARKET VALIDATION");
+    lines.push(MARKET_REACTION_LABEL.toUpperCase());
+    lines.push("Raw event-window returns (1d/5d/20d) — not benchmark-adjusted.");
     if (mNote) {
       lines.push(mNote);
       lines.push("");
@@ -269,7 +271,9 @@ export function formatMemoMarkdown(r: AnalyzeResponse): string {
 
   const tickers = r.market?.tickers ?? [];
   if (tickers.length > 0) {
-    lines.push("## Market Validation");
+    lines.push(`## ${MARKET_REACTION_LABEL}`);
+    lines.push("");
+    lines.push("_Raw event-window returns (1d/5d/20d) — not benchmark-adjusted._");
     lines.push("");
     if (r.market?.note) { lines.push(`> ${r.market.note}`); lines.push(""); }
     lines.push("| Ticker | Role | 1d | 5d | 20d | Signal |");
