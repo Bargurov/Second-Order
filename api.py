@@ -2174,7 +2174,7 @@ def _build_event_research_memo(ev: dict) -> str:
     """Render a saved event as a clean research memo in Markdown.
 
     Sections: Thesis, Mechanism, Beneficiaries / Losers,
-              Market Validation, Key Context.
+              Market reaction (raw), Key Context.
     Each section is silently omitted when source data is absent.
     """
     lines: list[str] = []
@@ -2224,7 +2224,7 @@ def _build_event_research_memo(ev: dict) -> str:
             lines.append(f"**Losers:** {', '.join(losers)}")
         lines.append("")
 
-    # --- Market Validation ---
+    # --- Market reaction (raw) ---
     tickers = ev.get("market_tickers") or []
     if tickers:
         def _pct(v):
@@ -2232,7 +2232,9 @@ def _build_event_research_memo(ev: dict) -> str:
                 return "—"
             return f"{'+' if v >= 0 else ''}{v:.2f}%"
 
-        lines.append("## Market Validation")
+        lines.append("## Market reaction (raw)")
+        lines.append("")
+        lines.append("_Raw event-window returns (1d/5d/20d) — not benchmark-adjusted._")
         lines.append("")
         lines.append("| Ticker | Role | 1d | 5d | 20d | Signal |")
         lines.append("|--------|------|---:|---:|----:|--------|")

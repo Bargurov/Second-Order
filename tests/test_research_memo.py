@@ -60,7 +60,7 @@ class TestSectionOrder(unittest.TestCase):
             "thesis": result.index("## Thesis"),
             "mechanism": result.index("## Mechanism"),
             "affected": result.index("## Beneficiaries"),
-            "market": result.index("## Market Validation"),
+            "market": result.index("## Market reaction (raw)"),
             "context": result.index("## Key Context"),
         }
         ordered = sorted(positions.values())
@@ -85,11 +85,11 @@ class TestMissingBeneficiariesLosers(unittest.TestCase):
 
 
 class TestMissingTickers(unittest.TestCase):
-    def test_market_validation_omitted_when_no_tickers(self):
+    def test_market_reaction_section_omitted_when_no_tickers(self):
         ev = _full_event()
         ev["market_tickers"] = []
         result = api._build_event_research_memo(ev)
-        self.assertNotIn("## Market Validation", result)
+        self.assertNotIn("## Market reaction (raw)", result)
 
 
 class TestKeyContextAllAbsent(unittest.TestCase):
@@ -121,6 +121,17 @@ class TestMarketNote(unittest.TestCase):
     def test_market_note_appears_as_blockquote(self):
         result = api._build_event_research_memo(_full_event())
         self.assertIn("> Options market pricing further downside.", result)
+
+
+class TestMarketReactionRawCopy(unittest.TestCase):
+    """F2B: the raw event-window return section is honestly labelled, with a
+    scope caveat, and no longer posed as 'Market Validation'."""
+
+    def test_section_is_market_reaction_raw_not_validation(self):
+        result = api._build_event_research_memo(_full_event())
+        self.assertIn("## Market reaction (raw)", result)
+        self.assertIn("not benchmark-adjusted", result)
+        self.assertNotIn("## Market Validation", result)
 
 
 if __name__ == "__main__":
