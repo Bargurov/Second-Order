@@ -152,13 +152,30 @@ class _Base(unittest.TestCase):
             )
 
     def _snapshot(self):
+        # Snapshot events + price_cache + movers_cache.  movers_cache is
+        # included specifically to catch the E6 regression: GET /events/{id}
+        # must not rebuild/persist the derived mover slices (E6C).
         with sqlite3.connect(self._tmp) as conn:
             events = list(conn.execute("SELECT * FROM events ORDER BY id"))
             cache = list(conn.execute(
                 "SELECT ticker, date, close, volume, auto_adjust "
                 "FROM price_cache ORDER BY ticker, date, auto_adjust"
             ))
-        return events, cache
+            movers = list(conn.execute(
+                "SELECT slice, payload, built_at, event_count, max_event_id, "
+                "compute_version FROM movers_cache ORDER BY slice"
+            ))
+        return events, cache, movers
+
+    def _seed_stale_movers_row(self, slice_name: str) -> None:
+        with sqlite3.connect(self._tmp) as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO movers_cache "
+                "(slice, payload, built_at, event_count, max_event_id, "
+                "compute_version) VALUES (?, ?, ?, ?, ?, ?)",
+                (slice_name, "[]", "2020-01-01T00:00:00", 0, 0, 0),
+            )
+            conn.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +295,31 @@ class TestReadOnly(_Base):
         self.assertEqual(r.status_code, 200)
         self.assertIn("event_study", r.json())
         self.assertEqual(before, self._snapshot(), "detail mutated the DB")
+
+    def test_cold_movers_cache_not_written(self) -> None:
+        # Cold movers_cache: GET /events/{id} must NOT bootstrap/persist it
+        # (E6C — the event-detail mover_context path is read-only).
+        self._seed_ready_prices()
+        eid = self._seed(headline="Cold movers event", tickers=[{"symbol": "XLE"}])
+        before = self._snapshot()
+        r = client.get(f"/events/{eid}")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("mover_context", r.json())
+        self.assertEqual(before, self._snapshot(),
+                         "GET wrote movers_cache on a cold cache")
+
+    def test_stale_movers_cache_row_not_rewritten(self) -> None:
+        # A stale movers_cache row must be served read-only, never rebuilt.
+        self._seed_ready_prices()
+        for s in ("market_movers", "weekly", "persistent"):
+            self._seed_stale_movers_row(s)
+        eid = self._seed(headline="Stale movers event", tickers=[{"symbol": "XLE"}])
+        before = self._snapshot()
+        r = client.get(f"/events/{eid}")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("mover_context", r.json())
+        self.assertEqual(before, self._snapshot(),
+                         "GET rewrote a stale movers_cache row")
 
 
 if __name__ == "__main__":

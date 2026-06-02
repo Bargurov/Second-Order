@@ -179,10 +179,14 @@ def load_ui_slices_for_event_context(limit: int = 100) -> dict[str, list[dict]]:
     Reuses the same pipeline the HTTP endpoints use
     (``sanitize_mover_card`` → ``enrich_mover_cards``) so the cards
     the detail route sees match what the mover endpoints surface.
-    Each underlying slice is already TTL-cached — reading is cheap
-    and never triggers a new market fetch.  Individual slice
-    failures degrade to ``[]`` rather than raising so one flaky
-    window can't block the detail response.
+    Each persisted slice is read with ``allow_refresh=False`` so this
+    detail-side read is STRICTLY read-only: it serves the cached slice
+    (or an empty list when the cache is cold/stale) and never recomputes
+    or persists ``movers_cache``.  This keeps ``GET /events/{id}`` from
+    writing the DB; the ``/movers/*`` endpoints keep their own
+    lazy-refresh behaviour.  Reading is cheap and never triggers a
+    market fetch.  Individual slice failures degrade to ``[]`` rather
+    than raising so one flaky window can't block the detail response.
     """
     out: dict[str, list[dict]] = {
         "today": [], "market": [], "weekly": [], "persistent": [],
@@ -205,6 +209,7 @@ def load_ui_slices_for_event_context(limit: int = 100) -> dict[str, list[dict]]:
             movers_cache.get_slice(
                 "market_movers", limit=limit,
                 ttl_seconds=_api._MARKET_MOVERS_TTL,
+                allow_refresh=False,
             ),
             window="market",
         )
@@ -214,6 +219,7 @@ def load_ui_slices_for_event_context(limit: int = 100) -> dict[str, list[dict]]:
         out["weekly"] = _enrich(
             movers_cache.get_slice(
                 "weekly", limit=limit, ttl_seconds=_api._WEEKLY_MOVERS_TTL,
+                allow_refresh=False,
             ),
             window="weekly",
         )
@@ -226,6 +232,7 @@ def load_ui_slices_for_event_context(limit: int = 100) -> dict[str, list[dict]]:
         raw_persistent = movers_cache.get_slice(
             "persistent", limit=_PERSISTENT_OVERFETCH,
             ttl_seconds=_api._PERSISTENT_MOVERS_TTL,
+            allow_refresh=False,
         )
         if isinstance(raw_persistent, list):
             raw_persistent = [

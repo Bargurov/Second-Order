@@ -303,12 +303,14 @@ class TestGetSlice(unittest.TestCase):
 
         self._compute_fn = _compute
 
-    def _get(self, *, slice_name="weekly", limit=10, force=False, ttl=1800):
+    def _get(self, *, slice_name="weekly", limit=10, force=False, ttl=1800,
+             allow_refresh=True):
         return movers_cache.get_slice(
             slice_name,
             limit=limit,
             ttl_seconds=ttl,
             force=force,
+            allow_refresh=allow_refresh,
             now=_now(),
             load_events_fn=self._load_events_fn,
             load_cache_fn=self._load_cache_fn,
@@ -381,6 +383,41 @@ class TestGetSlice(unittest.TestCase):
         out = self._get(limit=1)
         self.assertEqual(len(out), 1)
         self.assertEqual(self.compute_calls, 0)
+
+    def test_allow_refresh_false_serves_stale_cache_without_persist(self):
+        """Read-only mode: a stale + fingerprint-changed cached row is served
+        as-is, never recomputed or persisted (the E6C event-detail contract)."""
+        self._get()  # bootstrap a warm row
+        # Make it stale AND move the fingerprint so a refreshing read WOULD
+        # rebuild — proving read-only ignores both triggers.
+        self._cache_store["weekly"]["built_at"] = (
+            (_now() - timedelta(hours=2)).replace(microsecond=0).isoformat()
+        )
+        self._fp = (99, 99)
+        self.compute_calls = 0
+        self.save_calls = 0
+
+        out = self._get(allow_refresh=False)
+        self.assertEqual(len(out), 3)            # served the cached payload
+        self.assertEqual(self.compute_calls, 0)  # never recomputed
+        self.assertEqual(self.save_calls, 0)     # never persisted
+
+    def test_allow_refresh_false_missing_returns_empty_without_persist(self):
+        """Read-only mode with no cached row returns [] without bootstrapping."""
+        out = self._get(allow_refresh=False)  # cold cache, no row
+        self.assertEqual(out, [])
+        self.assertEqual(self.compute_calls, 0)
+        self.assertEqual(self.save_calls, 0)
+        self.assertNotIn("weekly", self._cache_store)
+
+    def test_allow_refresh_false_respects_limit(self):
+        """Read-only mode trims the cached payload to the caller's limit."""
+        self._get()  # bootstrap (3 rows)
+        self.compute_calls = 0
+        self.save_calls = 0
+        out = self._get(limit=1, allow_refresh=False)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(self.save_calls, 0)
 
     def test_compute_failure_returns_empty_list(self):
         """A crashing compute_fn degrades to an empty list, not a 500."""

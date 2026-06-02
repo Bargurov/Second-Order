@@ -875,6 +875,7 @@ def get_slice(
     limit: int,
     ttl_seconds: Optional[int] = None,
     force: bool = False,
+    allow_refresh: bool = True,
     now: Optional[datetime] = None,
     load_events_fn: Optional[Callable[[int], list[dict]]] = None,
     load_cache_fn: Optional[Callable[[str], Optional[dict]]] = None,
@@ -893,6 +894,15 @@ def get_slice(
          events that were saved inside the TTL window so the UI
          reflects them immediately.
       5. Otherwise → serve the cached payload directly.
+
+    ``allow_refresh=False`` makes the read STRICTLY read-only: the
+    cached payload is served (trimmed to ``limit``) when a row exists,
+    else an empty list is returned — the cache is NEVER recomputed or
+    persisted, and staleness / fingerprint / version are ignored in
+    favour of a guaranteed no-write read.  This is the contract the
+    event-detail ``mover_context`` block uses so ``GET /events/{id}``
+    never writes the DB (see routes/events.py / routes/movers.py);
+    the ``/movers/*`` endpoints keep the default lazy-refresh behaviour.
 
     The callables are injectable so tests can observe the underlying
     call count without patching module globals, and so rare bootstrap
@@ -916,6 +926,15 @@ def get_slice(
 
     ttl = ttl_seconds if ttl_seconds is not None else _DEFAULT_TTLS.get(slice_name, 1800)
     now_dt = now or datetime.now()
+
+    # 0. Read-only mode — never recompute or persist.  Serve the cached
+    # payload (trimmed) when present, else []; ignore staleness.  Keeps
+    # read endpoints (event-detail mover_context) from writing the DB.
+    if not allow_refresh:
+        cached = load_cache_fn(slice_name)
+        if cached is None:
+            return []
+        return (cached.get("payload") or [])[:limit]
 
     # 1. Forced refresh — always recompute.
     if force:
