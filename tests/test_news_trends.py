@@ -82,13 +82,30 @@ class TestGetTrendingClusters(unittest.TestCase):
         self.assertIn("Above threshold", headlines)
 
     def test_window_cutoff_inclusive(self):
-        # Exactly at the boundary should be included (>= comparison)
-        boundary_ts = _ts(72)
+        # Exactly at the boundary should be included (>= comparison).
+        #
+        # Freeze "now" so the seeded boundary timestamp and the window
+        # cutoff inside get_trending_clusters are computed against the SAME
+        # instant.  With two independent datetime.now() calls (one here for
+        # boundary_ts, one in db.get_trending_clusters a few statements
+        # later) both truncated to whole seconds, a wall-clock second that
+        # ticks between them shifts the >=-inclusive cutoff past the
+        # exactly-at-boundary row and drops it.  That race is rare in a fast
+        # isolated run but surfaces under slow full-suite load (E13).
+        import db as db_module
+        fixed_now = datetime(2026, 6, 1, 12, 0, 0)
+        boundary_ts = (fixed_now - timedelta(hours=72)).isoformat(timespec="seconds")
+        outside_ts = (fixed_now - timedelta(hours=73)).isoformat(timespec="seconds")
         with sqlite3.connect(self.db_path) as conn:
             _insert_cluster(conn, "At boundary", 4, ["r1"], boundary_ts)
-            _insert_cluster(conn, "Just outside", 4, ["r1"], _ts(73))
+            _insert_cluster(conn, "Just outside", 4, ["r1"], outside_ts)
 
-        result = self._call(window_hours=72, min_sources=3)
+        with patch.object(db_module, "datetime") as mock_dt:
+            mock_dt.now.return_value = fixed_now
+            with patch.object(db_module, "_db_ready", True), \
+                 patch.object(db_module, "DB_FILE", self.db_path):
+                result = db_module.get_trending_clusters(window_hours=72, min_sources=3)
+
         headlines = [r["headline"] for r in result]
         self.assertIn("At boundary", headlines)
         self.assertNotIn("Just outside", headlines)
