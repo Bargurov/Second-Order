@@ -157,6 +157,36 @@ data-coverage or contiguity precondition.
 python scripts/event_study_coverage_report.py --json
 ```
 
+### Event detail — the `event_study` block on `GET /events/{id}`
+
+`GET /events/{id}` carries an additive top-level `event_study` block,
+populated by the same `build_event_study_validation` gate as the standalone
+`GET /events/{id}/event-study` route — the two return the **identical**
+payload for a given event, so detail consumers need no second round-trip.
+
+- **Compute-ready events** carry the per-horizon (1d / 5d / 20d)
+  `abnormal_return`, `sar`, and `car` point estimates (alongside
+  `raw_return`, `benchmark_return`, `estimation_window_used`, and
+  `auto_adjust_basis`).
+- **Not-ready events** carry `status = "insufficient_data"` and an explicit
+  `blocking_reasons` list — never point estimates, never a raw-return
+  fallback.
+
+The block is **additive**: it changes nothing that already shipped.
+`validation_status`, `validation_status_v2`, the track record, the movers
+surfaces, and the UI are all unchanged — `event_study` is a new sibling key
+alongside `validation_status_v2` and `reaction_profile_v1`.
+
+It stays **point-estimate-only**. At `n=1` there is no confidence interval,
+no p-value, and no FDR; the payload makes no `confirmed` / `validated` /
+"significant" claim (the gate marks `cross_sectional_inference.available =
+false` and lists those terms under `claims.not_claimed`). It never reads,
+modifies, or reopens the closed Phase 1 / Phase 2 FDR pools.
+
+**`GET /events/{id}` is read-only.** Its `mover_context` block reads the
+cached mover slices without rebuilding or persisting them, so a detail
+request never writes `movers_cache` (or anything else) to the database.
+
 ## Curated Intake — Source-Anchored Archive Stubs
 
 Operator-curated events enter the archive through a guarded intake path
