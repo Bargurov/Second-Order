@@ -831,6 +831,23 @@ def get_event_detail(event_id: int = Path(..., ge=1)):
     # before a future task hydrates closes from price_cache.  See
     # docs/reaction_profile_design.md.
     ev["reaction_profile_v1"] = _build_reaction_profile_v1(ev)
+    # Event-study point estimates — detail-only, additive sibling block
+    # (E5).  Surfaces the SAME gated payload as GET /events/{id}/event-study:
+    # per-horizon abnormal_return / sar / car for compute-ready events, else
+    # an explicit insufficient_data block with blocking_reasons.  Point
+    # estimates only — the gate marks cross_sectional_inference unavailable
+    # at n=1 and never claims confirmed/validated/significant.  Read-only
+    # (plain price_cache SELECTs; no provider, no DB write).  Wrapped
+    # defensively so an unexpected engine error degrades to a stable
+    # insufficient block rather than 500-ing the whole detail response.
+    try:
+        ev["event_study"] = build_event_study_validation(ev)
+    except Exception:
+        ev["event_study"] = {
+            "status":           "insufficient_data",
+            "event_id":         ev.get("id"),
+            "blocking_reasons": ["event_study_error"],
+        }
     return _api._sanitize_floats(ev)
 
 
@@ -1042,11 +1059,14 @@ def cascade(event_id: int):
 def event_study(event_id: int):
     """Gated, read-only single-event event-study (SAR/CAR) proof.
 
-    Backend-only surface (no UI consumer): reaches the
-    :mod:`stats.event_study` engine for one event when readiness gates
-    pass, and returns an explicit ``insufficient_data`` object with
-    blocking reasons otherwise.  Does not alter ``validation_status_v2``
-    or ``reaction_profile_v1``; no provider call, no DB write.
+    Dedicated single-event route.  As of E5 the SAME payload is also
+    attached to ``GET /events/{id}`` under the additive ``event_study``
+    key, so detail consumers need no second round-trip; the UI does not
+    render it yet.  Reaches the :mod:`stats.event_study` engine for one
+    event when readiness gates pass, and returns an explicit
+    ``insufficient_data`` object with blocking reasons otherwise.  Does
+    not alter ``validation_status_v2`` or ``reaction_profile_v1``; no
+    provider call, no DB write.
     """
     target = _api.load_event_by_id(event_id)
     if not target:
