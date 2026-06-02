@@ -640,8 +640,16 @@ class TestEndpointContract(unittest.TestCase):
         self.api._news_cache["ts"] = 0.0
         self._orig_backfill_provider = os.environ.get("BACKFILL_PROVIDER")
         self._orig_backfill_budget = os.environ.get("MAX_BACKFILL_LLM_CALLS")
+        # ENABLE_PAID_ANALYSIS is the server-side kill-switch (default off)
+        # that 403s any dry_run=false backfill before it can spend.  The
+        # backfill-recent tests exercise that paid path with the provider
+        # seams mocked, so they must opt into the switch — otherwise the
+        # guard short-circuits to 403 before the mocks are ever reached.
+        # Saved/restored like the two env vars above so it can't leak.
+        self._orig_paid_analysis = os.environ.get("ENABLE_PAID_ANALYSIS")
         os.environ["BACKFILL_PROVIDER"] = "anthropic"
         os.environ["MAX_BACKFILL_LLM_CALLS"] = "20"
+        os.environ["ENABLE_PAID_ANALYSIS"] = "true"
 
     def tearDown(self):
         if self._orig_backfill_provider is None:
@@ -652,6 +660,10 @@ class TestEndpointContract(unittest.TestCase):
             os.environ.pop("MAX_BACKFILL_LLM_CALLS", None)
         else:
             os.environ["MAX_BACKFILL_LLM_CALLS"] = self._orig_backfill_budget
+        if self._orig_paid_analysis is None:
+            os.environ.pop("ENABLE_PAID_ANALYSIS", None)
+        else:
+            os.environ["ENABLE_PAID_ANALYSIS"] = self._orig_paid_analysis
         db.DB_FILE = self._orig
         if os.path.exists(self._tmp):
             try:
@@ -812,6 +824,34 @@ class TestEndpointContract(unittest.TestCase):
         self.assertEqual(diagnostics["analyzed"], 0)
         self.assertEqual(diagnostics["skipped"].get("llm_unavailable"), 1)
         analyze_mock.assert_not_called()
+
+    def test_backfill_recent_blocked_when_paid_analysis_disabled(self):
+        """Kill-switch stays enforced: with ENABLE_PAID_ANALYSIS off, a
+        dry_run=false backfill returns 403 and short-circuits BEFORE any
+        provider seam — proving setUp's opt-in is the only reason the
+        other paid-path tests reach 200, and that no real spend can leak."""
+        with patch.dict(os.environ, {"ENABLE_PAID_ANALYSIS": "false"}):
+            with patch("api.analyze_event") as analyze_mock, \
+                 patch("api.market_check") as market_mock:
+                r = self.client.post(
+                    "/movers/backfill-recent?limit=1&scan_limit=1&dry_run=false&max_llm_calls=1",
+                )
+        self.assertEqual(r.status_code, 403)
+        analyze_mock.assert_not_called()
+        market_mock.assert_not_called()
+
+    def test_backfill_recent_dry_run_allowed_without_paid_flag(self):
+        """A dry_run=true preview is never gated by the kill-switch (no spend)."""
+        self._seed_news_cache(headlines=["OPEC cuts output by 500k bpd"], total_headlines=1)
+        with patch.dict(os.environ, {"ENABLE_PAID_ANALYSIS": "false"}):
+            with patch("api.analyze_event") as analyze_mock, \
+                 patch("api.market_check") as market_mock:
+                r = self.client.post(
+                    "/movers/backfill-recent?limit=1&scan_limit=1&dry_run=true&max_llm_calls=1",
+                )
+        self.assertEqual(r.status_code, 200)
+        analyze_mock.assert_not_called()
+        market_mock.assert_not_called()
 
     def test_backfill_recent_refreshes_saved_event_from_asset_hints_without_llm(self):
         headline = "OPEC cuts output by 500k bpd"
