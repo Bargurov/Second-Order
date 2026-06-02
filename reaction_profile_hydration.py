@@ -264,4 +264,88 @@ def hydrate_per_ticker_profile(
     }
 
 
-__all__ = ["hydrate_per_ticker_profile", "HYDRATION_STATUSES"]
+def build_reaction_profile_v1(event: dict) -> dict:
+    """Compose the ``reaction_profile_v1`` block for a saved event.
+
+    Read-only over the saved event row.  For each saved
+    ``market_tickers`` entry the helper hands the per-ticker dict to
+    :func:`hydrate_per_ticker_profile`, which reads the raw close window
+    from the SQLite price-cache table and feeds it into the pure
+    :func:`reaction_profile.compute_reaction_profile`.  The hydrator is
+    read-only over the cache: it never plans or triggers a provider
+    fetch (see ``docs/reaction_profile_hydration_plan.md`` §6 / §7).
+
+    ``available`` is True when at least one ticker hydrated to a
+    non-unscorable basis; consumers can branch on it without
+    re-deriving the cause.
+
+    Surfaced by ``GET /events/{id}`` and by the cached
+    ``POST /analyze {event_id}`` restore (``api._build_cached_response``)
+    so both saved-event surfaces read identically.
+    """
+    raw_tickers = event.get("market_tickers")
+    tickers: list[dict] = (
+        list(raw_tickers) if isinstance(raw_tickers, list) else []
+    )
+    event_date = event.get("event_date")
+    per_ticker: list[dict] = []
+    for t in tickers:
+        if not isinstance(t, dict):
+            # Malformed entry — skip.  Composer never raises on this
+            # path, but we don't want to attach a profile to a row we
+            # can't even name.
+            continue
+        per_ticker.append(
+            hydrate_per_ticker_profile(t, event_date=event_date)
+        )
+
+    # ``available`` means at least one per-ticker entry hydrated to a
+    # real numeric signal.  Aligned with the per-ticker
+    # ``hydration_status`` enum: status="hydrated" iff any return_* is
+    # non-null.
+    status_counts: dict[str, int] = {s: 0 for s in HYDRATION_STATUSES}
+    for entry in per_ticker:
+        s = entry.get("hydration_status")
+        if isinstance(s, str) and s in status_counts:
+            status_counts[s] += 1
+
+    n_hydrated = status_counts["hydrated"]
+    total = len(per_ticker)
+    available = n_hydrated > 0
+
+    if total == 0:
+        reason = "no market_tickers on this event"
+    else:
+        # Always emit a per-status breakdown so consumers can see why
+        # the block reads the way it does without re-deriving the
+        # cause.
+        bits: list[str] = []
+        for s in HYDRATION_STATUSES:
+            n = status_counts[s]
+            if n > 0:
+                bits.append(f"{n} {s}")
+        breakdown = ", ".join(bits) if bits else f"{total} unknown"
+        if available:
+            reason = (
+                f"hydrated {n_hydrated}/{total} per-ticker profile(s) "
+                f"from cached close windows ({breakdown})"
+            )
+        else:
+            reason = (
+                f"0/{total} per-ticker profile(s) hydrated; per-ticker "
+                f"status: {breakdown}"
+            )
+
+    return {
+        "available": available,
+        "reason":    reason,
+        "tickers":   per_ticker,
+        "n_tickers": len(per_ticker),
+    }
+
+
+__all__ = [
+    "hydrate_per_ticker_profile",
+    "build_reaction_profile_v1",
+    "HYDRATION_STATUSES",
+]

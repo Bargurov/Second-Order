@@ -1113,6 +1113,23 @@ def _build_cached_response(
                      "serving raw analogs", exc_info=True)
         analysis_block["historical_analogs"] = _raw_analogs
 
+    # Sibling evidence blocks for the saved-event restore — the same
+    # reads GET /events/{id} attaches, so a saved event re-opened in
+    # AnalysisView shows the same validation / reaction-profile blocks
+    # (and the F1 v2 caveat) as event detail.  Read-only:
+    # score_validation_status is a pure tape read of the stored
+    # market_tickers; build_reaction_profile_v1 hydrates per-ticker
+    # profiles from the price_cache (read_window_no_fetch — no provider,
+    # no DB write).  Nested under ``analysis`` (not a new top-level key)
+    # so the fresh/cached top-level key-parity contract
+    # (test_freeze_policy_contract) stays intact; the frontend reads them
+    # via result.analysis.validation_status_v2 / .reaction_profile_v1.
+    # Unwrapped to mirror the detail route (routes/events.get_event_detail).
+    from validation_status import score_validation_status
+    from reaction_profile_hydration import build_reaction_profile_v1
+    analysis_block["validation_status_v2"] = score_validation_status(cached)
+    analysis_block["reaction_profile_v1"] = build_reaction_profile_v1(cached)
+
     response = {
         "headline":    headline,
         "stage":       cached["stage"],
