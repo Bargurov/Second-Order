@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
+import { EventStudyCard } from "@/components/ui/event-study-card";
 import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality, type ValidationStatusV2 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -962,6 +963,15 @@ function EventDetail({
   const [memoExporting, setMemoExporting] = useState(false);
   const [memoError, setMemoError] = useState(false);
 
+  // Read-only event-study readout (AR / SAR / CAR point estimates) for this
+  // saved event.  Same gated, tracked-only GET the analysis surface uses —
+  // no paid calls, no scoring.  Renders nothing until the block resolves.
+  const { data: eventStudy } = useQuery({
+    queryKey: qk.eventStudy(event.id),
+    queryFn: () => api.getEventStudy(event.id),
+    staleTime: 300_000,
+  });
+
   const conf = CONFIDENCE_META[event.confidence] ?? { icon: ShieldAlert, color: "val-neg" };
   const ConfIcon = conf.icon;
   const rating = event.rating ? (RATING_META[event.rating] ?? null) : null;
@@ -1186,6 +1196,14 @@ function EventDetail({
                 )}
                 <MarketTable tickers={event.market_tickers} />
               </div>
+            </>
+          )}
+
+          {/* Event-study readout — AR / SAR / CAR point estimates (n = 1). */}
+          {eventStudy && (
+            <>
+              <Separator />
+              <EventStudyCard block={eventStudy} />
             </>
           )}
 

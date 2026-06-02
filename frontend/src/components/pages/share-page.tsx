@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, type SavedEvent, type Ticker } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
+import { EventStudyCard } from "@/components/ui/event-study-card";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -216,6 +217,16 @@ function ShareContent({ ev }: { ev: SavedEvent }) {
   const beneficiaryTickers = tickers.filter((t) => t.role === "beneficiary");
   const loserTickers = tickers.filter((t) => t.role !== "beneficiary");
 
+  // Read-only event-study readout (AR / SAR / CAR point estimates) for this
+  // saved event.  Fetched from the gated, tracked-only GET — no paid calls,
+  // no scoring.  Renders nothing until the block resolves so the snapshot
+  // stays calm on load and for events that are not computable.
+  const { data: eventStudy } = useQuery({
+    queryKey: qk.eventStudy(ev.id),
+    queryFn: () => api.getEventStudy(ev.id),
+    staleTime: 300_000,
+  });
+
   return (
     <div className="space-y-0">
       {/* ── Hero ── */}
@@ -323,6 +334,16 @@ function ShareContent({ ev }: { ev: SavedEvent }) {
               </tbody>
             </table>
           </div>
+        </section>
+      )}
+
+      {/* ── Event-study readout ── */}
+      {eventStudy && (
+        <section
+          className="py-8 border-b border-white/[0.06]"
+          style={{ animation: "page-in 475ms ease-out" }}
+        >
+          <EventStudyCard block={eventStudy} />
         </section>
       )}
 
