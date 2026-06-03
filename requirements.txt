@@ -1,14 +1,32 @@
+# Dependency policy — scoped major-version caps (NOT a lockfile).
+#
+# These caps guard against obvious future MAJOR-version breakage; they do NOT
+# claim byte-for-byte reproducible installs. Transitive dependencies still
+# float and the project ships no Python lockfile.
+#
+# - numpy / pandas / pydantic / python-telegram-bot are capped below their next
+#   major: a major bump there breaks imports or the research math. pydantic
+#   especially is import-critical for the API, and a pydantic-3 break would not
+#   be caught by CI (CI never boots the API).
+# - fastapi / uvicorn are intentionally NOT capped: they are pre-1.0, so a "<1"
+#   cap is not meaningful protection (even 0.x minors can break). Only a
+#   lockfile would pin them safely.
+# - The provider SDKs (anthropic, openai, yfinance) are intentionally left
+#   floating to preserve compatibility with their upstream APIs.
+# - Upgrade path: if the project ever needs true install determinism, add a
+#   requirements-lock.txt (full pinned set) rather than tightening this file.
+
 anthropic
 apscheduler>=3.10
 openai
 feedparser
 fastapi
 httpx
-numpy
-pandas
-pydantic
+numpy>=2.2,<3
+pandas>=2.2,<3
+pydantic>=2,<3
 python-dotenv
-python-telegram-bot[job-queue]
+python-telegram-bot[job-queue]>=21,<22
 streamlit
 uvicorn[standard]
 yfinance
