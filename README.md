@@ -466,6 +466,25 @@ OpenAI, market checks, or persistence. Use `GET /registry/diagnostics` for
 zero-cost headline-registry state counts, skip reasons, recent expiry counts,
 and eligible unanalyzed candidates.
 
+### Dev / verification DB safety (`EVENTS_DB_FILE`)
+
+A bare `uvicorn api:app` and most scripts bind to the live `events.db` by
+default, so a leaked dev server or an ad-hoc script can silently mutate the real
+archive. For dev servers, visual passes, and Phase-H coverage / ticker repair
+work, run against a **copy** instead of the live archive:
+
+```powershell
+Copy-Item events.db events.dev.db
+$env:EVENTS_DB_FILE = "events.dev.db"
+uvicorn api:app --reload --host 127.0.0.1 --port 8000
+```
+
+`EVENTS_DB_FILE` is resolved once, at import time. When it is unset the backend
+falls back to the live `events.db` and logs a startup warning so the live
+binding is never silent. Phase-H repair scripts must point at a copy via
+`EVENTS_DB_FILE` (or an explicit `--db` flag) and must not run against the bare
+live default.
+
 ### 2. React Frontend
 
 Market Overview, Event Detail, shell, portfolio, and archive polish use a

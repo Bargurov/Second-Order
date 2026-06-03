@@ -4,7 +4,35 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 
-DB_FILE = "events.db"
+# Canonical live archive path.  ``EVENTS_DB_FILE`` lets dev servers,
+# verification passes, and Phase-H coverage / ticker-repair scripts bind to a
+# *copy* instead of the live archive — see "Dev / verification DB safety" in
+# README.md.  ``EVENTS_DB_FILE`` is resolved ONCE here at import time into
+# ``DB_FILE``; every DB access goes through ``get_db_path()`` so that single
+# import-time value reaches all call sites.  Unset / blank → the live
+# ``events.db`` default, and api's startup logs a warning (gated on
+# ``db_binding_is_live``) so the live binding is never silent.  Tests rebind
+# ``DB_FILE`` directly to redirect writes away from the archive.
+LIVE_DB_FILE = "events.db"
+
+
+def _read_events_db_env(environ=None) -> str:
+    """Stripped ``EVENTS_DB_FILE`` value, or ``""`` when unset / blank."""
+    env = os.environ if environ is None else environ
+    return (env.get("EVENTS_DB_FILE") or "").strip()
+
+
+def resolve_events_db_file(environ=None) -> str:
+    """Resolve the events DB path from the environment.
+
+    A non-blank ``EVENTS_DB_FILE`` overrides the live ``events.db`` default;
+    an unset or whitespace-only value falls back to it.  Pure — pass an
+    explicit mapping to resolve without reading the real process environment.
+    """
+    return _read_events_db_env(environ) or LIVE_DB_FILE
+
+
+DB_FILE = resolve_events_db_file()
 
 # Increment this whenever the events table schema changes.
 # init_db() stamps a fresh database with this version and renames
@@ -47,6 +75,30 @@ def connect_db(*args, **kwargs) -> sqlite3.Connection:
 
 def _connect_db(*args, **kwargs) -> sqlite3.Connection:
     return connect_db(*args, **kwargs)
+
+
+def events_db_override(environ=None) -> str | None:
+    """The explicit ``EVENTS_DB_FILE`` override, or ``None`` when unset / blank.
+
+    ``None`` means the process fell back to the live ``events.db`` default.
+    api's startup pairs this with :func:`db_binding_is_live` so the not-silent
+    live-binding warning fires only on the unset → live fallback (an explicit
+    ``EVENTS_DB_FILE=events.db`` is a deliberate, non-silent choice).
+    """
+    return _read_events_db_env(environ) or None
+
+
+def db_binding_is_live(path: Any = None) -> bool:
+    """True when the active events DB path resolves to the live archive.
+
+    Compares realpaths so a relative ``events.db`` and an absolute
+    project-root path are recognised as the same file.  ``path`` defaults to
+    the active :func:`get_db_path`; the test-suite isolation harness rebinds
+    ``DB_FILE`` to a per-process temp path, so this returns ``False`` under
+    tests instead of false-firing the startup warning.
+    """
+    active = get_db_path() if path is None else os.fspath(path)
+    return os.path.realpath(active) == os.path.realpath(LIVE_DB_FILE)
 
 
 def init_db() -> None:

@@ -49,6 +49,7 @@ from db import (
     load_low_signal_headlines, find_historical_analogs, compute_track_record,
     append_revisit_snapshot, load_revisit_snapshots,
     get_confidence_calibration_stats,
+    events_db_override, db_binding_is_live, get_db_path,
 )
 from classify import classify_stage, classify_persistence
 from analyze_event import (
@@ -96,6 +97,18 @@ _log = logging.getLogger("second_order.api")
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     init_db()
+    # Dev / verification DB safety: when EVENTS_DB_FILE is unset the backend
+    # falls back to the live events.db archive — warn so that live binding is
+    # never silent.  Gated on db_binding_is_live() so the test-suite isolation
+    # harness (which rebinds db.DB_FILE to a temp path) stays quiet, and an
+    # explicit EVENTS_DB_FILE=events.db (a deliberate choice) does not warn.
+    if events_db_override() is None and db_binding_is_live():
+        _log.warning(
+            "EVENTS_DB_FILE is unset — bound to the live events.db archive at "
+            "%s. Set EVENTS_DB_FILE to a copy for dev / verification runs "
+            "(see README 'Dev / verification DB safety').",
+            get_db_path(),
+        )
     # Optional background snapshot refresh — gated by env var so the test
     # suite (which uses TestClient) does not spin up a background thread.
     if os.environ.get("MARKET_SNAPSHOTS_ENABLED", "").lower() in ("1", "true", "yes"):
