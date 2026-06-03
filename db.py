@@ -57,6 +57,18 @@ _db_ready: bool = False
 CURATED_INTAKE_STAGE = "curated_intake"
 NON_ANALYSIS_STAGES = frozenset({CURATED_INTAKE_STAGE})
 
+# A promoted curated row (Phase K).  Unlike a ``curated_intake`` stub it
+# carries a primary ticker and a canonical ``mechanism_family``, so it IS a
+# real event-study OBSERVATION and counts in the analysis / coverage
+# denominators.  But it carries NO LLM thesis (no beneficiaries / losers /
+# direction tags), so it must never enter a thesis-OUTCOME denominator
+# (track record, validation status, diagnostics outcome blocks).  That second
+# notion is the broader ``NON_THESIS_STAGES`` set below — a superset of
+# ``NON_ANALYSIS_STAGES``.  Membership, not stage spelling, is what every
+# aggregator keys off, so the split stays in one place.
+CURATED_OBSERVATION_STAGE = "curated_observation"
+NON_THESIS_STAGES = NON_ANALYSIS_STAGES | frozenset({CURATED_OBSERVATION_STAGE})
+
 
 def get_db_path() -> str:
     """Return the active SQLite events DB path.
@@ -1552,12 +1564,12 @@ def compute_track_record() -> dict:
             ).fetchall()
             rows = [(r[0], r[1], None, r[2]) for r in rows]
 
-    # Curated-intake stubs are real archived rows but carry no thesis
-    # outcome — exclude every non-analysis stage from the denominator so they
+    # Curated rows (intake stubs AND promoted observations) carry no thesis
+    # outcome — exclude every non-thesis stage from the denominator so they
     # neither inflate ``total`` nor land in the ``unresolved`` bucket.
     rows = [
         r for r in rows
-        if not (isinstance(r[3], str) and r[3] in NON_ANALYSIS_STAGES)
+        if not (isinstance(r[3], str) and r[3] in NON_THESIS_STAGES)
     ]
 
     total = len(rows)

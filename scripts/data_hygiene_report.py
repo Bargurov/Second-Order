@@ -287,17 +287,22 @@ def _primary_ticker(raw_market_tickers: Any) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 
-def _load_rows(path: str) -> tuple[list[dict], int, int]:
-    """Return (analysis-stage row dicts, curated_intake_excluded, archive_total).
+def _load_rows(path: str) -> tuple[list[dict], int, int, int]:
+    """Return (analysis-stage rows, curated_intake_excluded, archive_total,
+    source_anchored_promoted).
 
     Pure read through a read-only connection.  Excludes
     ``db.NON_ANALYSIS_STAGES`` (curated_intake stubs) from the analysis-stage
-    set and discloses the excluded count.  Any DB error degrades to empties.
+    set and discloses the excluded count.  ``source_anchored_promoted`` counts
+    the analysis-stage rows that are promoted curated observations
+    (``db.CURATED_OBSERVATION_STAGE``) — they are counted in the denominator,
+    not hidden, and broken out so the curated additions stay visible beside
+    the organic archive.  Any DB error degrades to empties.
     """
     try:
         conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     except sqlite3.Error:
-        return [], 0, 0
+        return [], 0, 0, 0
     try:
         conn.row_factory = sqlite3.Row
         try:
@@ -306,18 +311,22 @@ def _load_rows(path: str) -> tuple[list[dict], int, int]:
                 "FROM events ORDER BY id"
             ).fetchall()
         except sqlite3.Error:
-            return [], 0, 0
+            return [], 0, 0, 0
     finally:
         conn.close()
 
     non_analysis = getattr(db, "NON_ANALYSIS_STAGES", frozenset())
+    observation_stage = getattr(db, "CURATED_OBSERVATION_STAGE", "curated_observation")
     analysis: list[dict] = []
     excluded = 0
+    source_anchored_promoted = 0
     for r in rows:
         stage = r["stage"]
         if isinstance(stage, str) and stage in non_analysis:
             excluded += 1
             continue
+        if isinstance(stage, str) and stage == observation_stage:
+            source_anchored_promoted += 1
         analysis.append({
             "id": r["id"],
             "headline": r["headline"],
@@ -325,7 +334,7 @@ def _load_rows(path: str) -> tuple[list[dict], int, int]:
             "market_tickers": r["market_tickers"],
             "model": r["model"],
         })
-    return analysis, excluded, len(rows)
+    return analysis, excluded, len(rows), source_anchored_promoted
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +374,7 @@ def summarize_data_hygiene(
         return _empty_report()
     path = str(path)
 
-    analysis, excluded, archive_total = _load_rows(path)
+    analysis, excluded, archive_total, source_anchored_promoted = _load_rows(path)
     annotated = classify_rows(analysis)
 
     # Event-study compute-ready status via the real gate (read-only).  The gate
@@ -454,6 +463,7 @@ def summarize_data_hygiene(
         "archive_raw_total": archive_total,
         "analysis_stage_total": analysis_stage_total,
         "curated_intake_excluded_count": excluded,
+        "source_anchored_promoted_count": source_anchored_promoted,
         "synthetic_total": len(synthetic),
         "synthetic_seed_count": len(by_cat[CATEGORY_SYNTHETIC_SEED]),
         "synthetic_test_count": len(by_cat[CATEGORY_SYNTHETIC_TEST]),
@@ -481,7 +491,8 @@ def _empty_report() -> dict[str, Any]:
     z = _ratio(0, 0)
     return {
         "archive_raw_total": 0, "analysis_stage_total": 0,
-        "curated_intake_excluded_count": 0, "synthetic_total": 0,
+        "curated_intake_excluded_count": 0, "source_anchored_promoted_count": 0,
+        "synthetic_total": 0,
         "synthetic_seed_count": 0, "synthetic_test_count": 0, "real_row_total": 0,
         "distinct_real_event_total": 0, "real_duplicate_rows": 0,
         "real_duplicate_groups_count": 0, "redundant_real_duplicate_rows": 0,

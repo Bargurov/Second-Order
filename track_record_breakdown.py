@@ -31,6 +31,8 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Iterable, Optional
 
+import db
+
 
 # ---------------------------------------------------------------------------
 # Mechanism-family display labels
@@ -571,7 +573,16 @@ def compute_track_record_breakdown(events: Iterable[dict]) -> dict:
     falsifier_triggered_count = 0
     low_information_count = 0
 
+    # Curated rows (intake stubs + promoted observations) carry no thesis
+    # outcome.  Exclude every non-thesis stage so the breakdown slices the
+    # SAME outcome set as db.compute_track_record rather than counting an
+    # outcome-less row in a mechanism-family group.
+    _non_thesis = getattr(db, "NON_THESIS_STAGES", frozenset())
     for ev in events or []:
+        if isinstance(ev, dict):
+            _stage = ev.get("stage") or ""
+            if isinstance(_stage, str) and _stage in _non_thesis:
+                continue
         total_events += 1
         tickers     = _loads(ev.get("market_tickers"), [])
         revisit     = _loads(ev.get("revisit_snapshots"), [])

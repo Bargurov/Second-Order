@@ -554,11 +554,12 @@ def _compute_archive_aggregates() -> dict:
         from thesis_state import derive_thesis_state
         ts_counts: dict[str, int] = {}
         for event in decoded:
-            # Curated-intake stubs are kept in the stage / persistence
-            # inventory histograms above but carry no thesis to classify —
-            # exclude them from the outcome (thesis-state) block.
+            # Curated rows (intake stubs AND promoted observations) are kept
+            # in the stage / persistence inventory histograms above but carry
+            # no thesis to classify — exclude every non-thesis stage from the
+            # outcome (thesis-state) block.
             stage = (event.get("stage") or "").strip()
-            if stage in _db.NON_ANALYSIS_STAGES:
+            if stage in _db.NON_THESIS_STAGES:
                 continue
             try:
                 state = derive_thesis_state(event)
@@ -658,10 +659,11 @@ def _compute_validation_status_stats() -> dict:
         except Exception:
             event = dict(row)
 
-        # Curated-intake stubs are real archived rows with no thesis to
-        # validate; exclude them from the denominator and every bucket.
+        # Curated rows (intake stubs AND promoted observations) are real
+        # archived rows with no thesis to validate; exclude every non-thesis
+        # stage from the denominator and every bucket.
         stage = (event.get("stage") or "").strip()
-        if stage in _db.NON_ANALYSIS_STAGES:
+        if stage in _db.NON_THESIS_STAGES:
             curated_intake_excluded += 1
             continue
 
@@ -1212,11 +1214,12 @@ def _compute_track_record() -> dict:
         except Exception:
             event = dict(raw)
 
-        # Curated-intake stubs are real archived rows with no thesis to
-        # score; exclude them from every outcome count and disclose the
-        # tally separately so they are never silently hidden.
+        # Curated rows (intake stubs AND promoted observations) are real
+        # archived rows with no thesis to score; exclude every non-thesis
+        # stage from every outcome count and disclose the tally separately so
+        # they are never silently hidden.
         stage = (event.get("stage") or "").strip()
-        if stage in _db.NON_ANALYSIS_STAGES:
+        if stage in _db.NON_THESIS_STAGES:
             curated_intake_excluded += 1
             continue
 
