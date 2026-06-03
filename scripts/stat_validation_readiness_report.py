@@ -181,7 +181,9 @@ def summarize_readiness(
         return empty
 
     try:
-        conn = sqlite3.connect(path)
+        # Read-only / no-create (matches data_hygiene_report.py): a missing
+        # file raises sqlite3.Error here instead of creating a stray events.db.
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     except sqlite3.Error:
         return empty
 

@@ -283,6 +283,31 @@ class TestEmptyArchive(_Base):
         self.assertEqual(result["events"], [])
 
 
+class TestMissingDb(_Base):
+    def test_missing_db_returns_empty_shape(self) -> None:
+        missing = os.path.join(
+            tempfile.gettempdir(), f"nocreate_svrr_{uuid.uuid4().hex}.db",
+        )
+        self.addCleanup(lambda: os.path.exists(missing) and os.remove(missing))
+        result = report.summarize_readiness(db_path=missing)
+        self.assertEqual(result["total_events"], 0)
+        self.assertEqual(result["events"], [])
+
+    def test_missing_db_does_not_create_file(self) -> None:
+        # A clean clone has no events.db.  Running the report against a
+        # missing path must NOT leave a stray empty events.db behind.
+        missing = os.path.join(
+            tempfile.gettempdir(), f"nocreate_svrr_{uuid.uuid4().hex}.db",
+        )
+        self.addCleanup(lambda: os.path.exists(missing) and os.remove(missing))
+        self.assertFalse(os.path.exists(missing))
+        report.summarize_readiness(db_path=missing)
+        self.assertFalse(
+            os.path.exists(missing),
+            "report must not create a DB file on a missing path",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Individual readiness checks
 # ---------------------------------------------------------------------------

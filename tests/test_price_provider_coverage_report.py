@@ -212,6 +212,22 @@ class EmptyAndMissingTest(unittest.TestCase):
         self.assertEqual(s["total_rows"], 0)
         self.assertEqual(s["providers"], {})
 
+    def test_missing_db_does_not_create_file(self) -> None:
+        # A clean clone has no events.db.  Running the report against a
+        # missing path must NOT leave a stray empty events.db behind.
+        missing = os.path.join(
+            tempfile.gettempdir(), f"nocreate_prov_{uuid.uuid4().hex}.db",
+        )
+        self.addCleanup(lambda: os.path.exists(missing) and os.remove(missing))
+        self.assertFalse(os.path.exists(missing))
+        s = report.summarize_provider_coverage(db_path=missing)
+        self.assertFalse(
+            os.path.exists(missing),
+            "report must not create a DB file on a missing path",
+        )
+        self.assertEqual(s["total_rows"], 0)
+        self.assertEqual(s["providers"], {})
+
     def test_other_basis_rows_counted(self) -> None:
         # Defensive branch: an auto_adjust value outside {0,1} is counted
         # under other_basis_rows, not silently dropped or miscounted as raw.

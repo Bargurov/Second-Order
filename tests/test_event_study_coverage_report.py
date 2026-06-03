@@ -286,6 +286,22 @@ class EmptyTest(unittest.TestCase):
         self.assertEqual(s["total_events"], 0)
         self.assertEqual(s["available"], [])
 
+    def test_missing_db_does_not_create_file(self) -> None:
+        # A clean clone has no events.db.  Running the report against a
+        # missing path must NOT leave a stray empty events.db behind.
+        missing = os.path.join(
+            tempfile.gettempdir(), f"nocreate_es_{uuid.uuid4().hex}.db",
+        )
+        self.addCleanup(lambda: os.path.exists(missing) and os.remove(missing))
+        self.assertFalse(os.path.exists(missing))
+        s = report.summarize_event_study_coverage(db_path=missing)
+        self.assertFalse(
+            os.path.exists(missing),
+            "report must not create a DB file on a missing path",
+        )
+        self.assertEqual(s["total_events"], 0)
+        self.assertEqual(s["available"], [])
+
 
 class IsolationTest(unittest.TestCase):
     def test_imports_no_provider_or_fdr_pool(self) -> None:
