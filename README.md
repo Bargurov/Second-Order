@@ -223,6 +223,63 @@ p-value, or BH-FDR is claimed and the closed Phase 1 / Phase 2 FDR pools are
 untouched. No replacement events were cherry-picked to inflate the pass
 rate; the one failure (#280) stays on the record.
 
+### Archive data-hygiene & denominator policy
+
+`scripts/data_hygiene_report.py` is the read-only, reproducible **source of
+truth** for which archive rows are genuine research events and which are
+seeded/test contamination. It classifies every analysis-stage row by exact
+headline + `model` fingerprint (never by lack of a ticker) into
+`synthetic_seed` / `synthetic_test` / `real_duplicate` / `real_unique`, and
+emits three denominator views so every coverage figure names the base it uses:
+
+- **157 — analysis-stage, denominator of record:** 62/157 ≈ 39% event-study
+  coverage. Every analysis-stage row, contamination included.
+- **86 — real rows** (157 − 71 synthetic): 62/86 ≈ 72%. Non-synthetic rows.
+- **71 — distinct real events** (the 86 real rows after collapsing duplicate
+  headlines): 52/71 ≈ 73%. The most defensible research-coverage figure.
+
+(Archive raw total is 158, including the one excluded `curated_intake` stub.)
+
+**Why 157 stays the disclosed denominator of record.** It keeps the
+legacy/seed/test contamination *visible* instead of quietly dropping it — a
+reader sees that ~45% of the analysis-stage archive is non-research rows
+rather than being handed a flattering ratio with the noise hidden. Coverage is
+always reported against 157 first.
+
+**Why 86 and 71 matter.** They are the honest denominators for any
+coverage/quality *claim*. The 71 synthetic rows never reach the engine (all
+no-ticker, all insufficient), so 62/157 actually *understates* real reach; the
+86-row and 71-event views state it honestly, and the 71-event view
+additionally collapses duplicate headlines so coverage is not double-counted.
+Exclusion here enables *computation*, never silent shrinkage: both ratios are
+reported alongside 157, never instead of it.
+
+**Synthetic / seed / test rows: 71.** 58 are seed/demo headlines run through
+the real model (e.g. "OPEC slashes output by 2 mbpd", "Fed speakers rotate"),
+repeated across consecutive dates; 13 are literal test artifacts ("Macro shock
+test event", "Test headline" / the `test-model` fingerprint). All 71 carry no
+primary ticker and are insufficient — none is compute-ready.
+
+**Real duplicates: 27 rows across 12 headlines (15 redundant copies).** Even
+within the 86 real rows, the same genuine headline is sometimes analysed on
+multiple dates (e.g. "AP News: OPEC members discuss extending output cuts" ×4),
+so the 62 compute-ready *rows* are only **52 distinct events**. Duplicates
+barely move the coverage *ratio* (the redundancy nearly cancels between
+numerator and denominator); their real cost is to the independent-observation
+count any cohort claim would need.
+
+**Non-claims.** This is denominator *hygiene*, not statistical inference. The
+report deletes and mutates nothing (read-only) and never reads, modifies, or
+reopens the closed Phase 1 / Phase 2 FDR pools; it does not change the 157
+denominator of record. The cohort/inference denominator stays **separately
+gated** by the independence and `mechanism_family` rules in
+`stats/METHODOLOGY.md` — de-duplicating headlines is necessary but not
+sufficient for cohort eligibility.
+
+```powershell
+python scripts/data_hygiene_report.py --json
+```
+
 ### Event detail — the `event_study` block on `GET /events/{id}`
 
 `GET /events/{id}` carries an additive top-level `event_study` block,
