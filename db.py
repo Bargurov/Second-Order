@@ -626,6 +626,39 @@ def init_db() -> None:
             ON event_provenance (source_url)
         """)
 
+        # ------------------------------------------------------------------
+        # event_hygiene — H9/E1 archive data-hygiene OVERRIDE sidecar (schema
+        # only; no writer/intake here).
+        #
+        # Branch 1 of the H8 scoping (overrides-only, derive-primary).  The
+        # authoritative hygiene classification (synthetic_seed / synthetic_test
+        # / real_duplicate / real_unique) is DERIVED ON READ by
+        # ``scripts.data_hygiene_report.derive_event_hygiene`` — that report
+        # stays the single source of truth, so NOTHING derivable is persisted
+        # here.  This table stores ONLY the one non-derivable thing: a
+        # curatorial OVERRIDE of the derived class.  Most events have NO row
+        # and read as their derived heuristic class (mirrors event_provenance:
+        # no row -> derived default).  Notes:
+        #   * No persisted ``hygiene_class`` / ``canonical_event_id`` /
+        #     ``classification_basis`` rows until a NAMED SQL/API consumer needs
+        #     JOINable hygiene (Branch 2), which must ship a stored-vs-rederived
+        #     drift validator in the same slice.
+        #   * ``override_class`` carries NO SQL CHECK: the H6 vocabulary IS
+        #     grounded, but a SQL enum would force a table rebuild if the
+        #     vocabulary later grows, so the write layer (when it exists)
+        #     enforces it instead.
+        #   * The FK is declared for intent; PRAGMA foreign_keys is left at its
+        #     default (unenforced) so no existing connection path changes.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS event_hygiene (
+                event_id        INTEGER PRIMARY KEY,
+                override_class  TEXT,
+                override_reason TEXT,
+                created_at      TEXT NOT NULL,
+                FOREIGN KEY (event_id) REFERENCES events (id)
+            )
+        """)
+
     _db_ready = True
 
 
@@ -681,6 +714,28 @@ def get_event_provenance(event_id: int, conn=None):
 def provenance_status_for_event(event_id: int, conn=None) -> str:
     """Derived provenance status for an event id (``"unrecorded"`` if no row)."""
     return derive_provenance_status(get_event_provenance(event_id, conn=conn))
+
+
+def get_event_hygiene(event_id: int, conn=None):
+    """Return the ``event_hygiene`` OVERRIDE row for ``event_id`` as a dict, or ``None``.
+
+    Read-only.  ``None`` is the common case — the sidecar stores only operator
+    overrides (Branch 1 of the H8 scoping), so most events have no row and read
+    as their derived heuristic class via
+    ``scripts.data_hygiene_report.derive_event_hygiene``.  No writer lives here.
+    """
+    own = conn is None
+    if own:
+        conn = _connect_db()
+    try:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT * FROM event_hygiene WHERE event_id = ?", (event_id,)
+        ).fetchone()
+        return {k: row[k] for k in row.keys()} if row is not None else None
+    finally:
+        if own:
+            conn.close()
 
 
 # ---------------------------------------------------------------------------

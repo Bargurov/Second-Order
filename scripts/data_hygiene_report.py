@@ -98,6 +98,26 @@ CATEGORY_SYNTHETIC_TEST = "synthetic_test"
 CATEGORY_REAL_DUPLICATE = "real_duplicate"
 CATEGORY_REAL_UNIQUE = "real_unique"
 _SYNTHETIC_CATEGORIES = frozenset({CATEGORY_SYNTHETIC_SEED, CATEGORY_SYNTHETIC_TEST})
+_VALID_HYGIENE_CLASSES = frozenset({
+    CATEGORY_SYNTHETIC_SEED, CATEGORY_SYNTHETIC_TEST,
+    CATEGORY_REAL_DUPLICATE, CATEGORY_REAL_UNIQUE,
+})
+
+# Derived-view maps (Branch 1, H8/H9): the hygiene_class enum fully determines
+# source_type and the synthetic exclusion reason — they are derived on read,
+# never stored.
+_SOURCE_TYPE_BY_CLASS = {
+    CATEGORY_SYNTHETIC_SEED: "seed",
+    CATEGORY_SYNTHETIC_TEST: "test",
+    CATEGORY_REAL_DUPLICATE: "real_ingested",
+    CATEGORY_REAL_UNIQUE: "real_ingested",
+}
+_EXCLUSION_REASON_BY_CLASS = {
+    CATEGORY_SYNTHETIC_SEED: "synthetic_seed",
+    CATEGORY_SYNTHETIC_TEST: "synthetic_test_artifact",
+}
+CLASSIFIER_BASIS = "data_hygiene_report:v1 exact-headline+model fingerprint"
+OVERRIDE_BASIS = "operator_override"
 
 
 _NON_CLAIMS: dict[str, Any] = {
@@ -166,6 +186,75 @@ def classify_rows(rows: Iterable[dict]) -> list[dict]:
                 CATEGORY_REAL_DUPLICATE if h in dup_headlines else CATEGORY_REAL_UNIQUE
             )
     return annotated
+
+
+def derive_event_hygiene(event_row, sidecar=None, *,
+                         duplicate_headlines=None, canonical_event_id=None):
+    """Derive the read-only hygiene VIEW for one event (Branch 1, H8/H9/E1).
+
+    The authoritative classification stays HERE in the report — the
+    ``event_hygiene`` sidecar persists only a non-derivable curatorial override.
+    Mirrors ``db.derive_provenance_status`` (no row → derived default).
+
+    ``event_row``: dict with at least ``id``, ``headline``, ``model``.
+    ``sidecar``: the ``event_hygiene`` row dict (``override_class`` /
+        ``override_reason``) or ``None``.  A valid ``override_class`` wins over
+        the heuristic; an unknown override value is ignored (falls back to it).
+    ``duplicate_headlines``: optional set of real headlines known to appear
+        more than once (classifier context).  Absent → a real row defaults to
+        ``real_unique`` — we never assert duplication we cannot see.
+    ``canonical_event_id``: optional canonical representative id for this row's
+        duplicate group; a ``real_duplicate`` row counts as a "redundant" copy
+        (excluded from the research denominator) only when this points at a
+        DIFFERENT event id.
+
+    Returns a dict: ``hygiene_class``, ``source_type``, ``is_synthetic``,
+    ``excluded_from_research_denominator``, ``exclusion_reason``,
+    ``canonical_event_id``, ``classification_basis``.
+    """
+    override = None
+    if isinstance(sidecar, dict):
+        oc = (sidecar.get("override_class") or "").strip()
+        if oc in _VALID_HYGIENE_CLASSES:
+            override = oc
+
+    if override is not None:
+        klass = override
+        basis = OVERRIDE_BASIS
+    else:
+        klass = classify_synthetic(event_row.get("headline"), event_row.get("model"))
+        if klass is None:
+            h = (event_row.get("headline") or "").strip()
+            klass = (
+                CATEGORY_REAL_DUPLICATE
+                if duplicate_headlines and h in duplicate_headlines
+                else CATEGORY_REAL_UNIQUE
+            )
+        basis = CLASSIFIER_BASIS
+
+    is_synthetic = klass in _SYNTHETIC_CATEGORIES
+    is_redundant = (
+        klass == CATEGORY_REAL_DUPLICATE
+        and canonical_event_id is not None
+        and canonical_event_id != event_row.get("id")
+    )
+    excluded = is_synthetic or is_redundant
+    if is_synthetic:
+        exclusion_reason = _EXCLUSION_REASON_BY_CLASS[klass]
+    elif is_redundant:
+        exclusion_reason = "duplicate_headline"
+    else:
+        exclusion_reason = None
+
+    return {
+        "hygiene_class": klass,
+        "source_type": _SOURCE_TYPE_BY_CLASS.get(klass, "real_ingested"),
+        "is_synthetic": is_synthetic,
+        "excluded_from_research_denominator": excluded,
+        "exclusion_reason": exclusion_reason,
+        "canonical_event_id": canonical_event_id,
+        "classification_basis": basis,
+    }
 
 
 def _primary_ticker(raw_market_tickers: Any) -> Optional[str]:
