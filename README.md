@@ -57,6 +57,29 @@ existing Phase 1 read surfaces (archive/detail `validation_status_v2`,
 and `/diagnostics/reaction-profile-stats`) remain in place and are
 not affected by the tracked-evidence track.
 
+## Reproducibility & data
+
+This repository is local-first, and its two kinds of numbers reproduce
+differently from a clean clone:
+
+- **The closed Phase 1–4 evidence track is clean-clone reproducible.** Its
+  artifacts (`demo_artifacts/section_c_v2/`) and the three schema validators
+  are tracked, and `.github/workflows/ci.yml` re-runs them on every push
+  against a fixture database it builds on the CI runner — it never needs a
+  local archive. A fresh clone reproduces the Phase 1 / Phase 2 pool counts
+  exactly.
+- **The wider-app archive coverage and data-hygiene counts do not ship.** They
+  are computed against the maintainer's local `events.db`, which is
+  intentionally **not** committed — it is gitignored, large, and carries
+  seed/test rows. A clean clone therefore starts with an **empty** archive, so
+  the coverage / hygiene / price-provider figures quoted below reflect the
+  maintainer's local archive as of the dates noted, not a fresh checkout.
+
+The read-only report commands in the sections below recompute every archive
+figure from whatever `events.db` is present, so they — not the numbers frozen
+in this file — are the source of truth. On a clean clone with no archive they
+return an empty (zero-count) report.
+
 ## Event-Study Compute-Readiness Contract
 
 The backend route `GET /events/{event_id}/event-study` is a wider-app
@@ -382,16 +405,16 @@ recorded at write time**. It is **not** a claim that the bar is wrong,
 stale, or invalid — these are real cached closes that simply predate
 provider stamping (or came from a writer that does not stamp yet).
 
-**Current live coverage is 100% `legacy_unknown`, and that is expected,
-not a regression.** The cache predates the stamping path, and no refresh
-or backfill has been run to repopulate it (none is run casually). As of
-2026-06-01:
-
-- total cached bars: 18,630
-- distinct providers: 1 (`legacy_unknown`)
-- `legacy_unknown`: 18,630 bars across 155 tickers
-- basis split: 9,274 raw (`auto_adjust=0`) / 9,356 adjusted (`auto_adjust=1`)
-- date range: 2017-07-07 → 2026-05-29
+**The cache is predominantly `legacy_unknown`, by design — but that share is
+not fixed.** Most cached bars predate the stamping path and carry no recorded
+provider; as provider-stamped reads land, the mix shifts. The Batch-1 coverage
+repair (above) introduced the first `yfinance`-stamped bars through the
+canonical read-through path, so the cache now spans **two** providers
+(`legacy_unknown` and `yfinance`) — 20,118 cached bars across 155 tickers at
+the time of writing. These counts drift with every backfill, so the live split
+is whatever the read-only coverage report below prints, never a number frozen
+in this file. `legacy_unknown` there means the provider was **not recorded at
+write time, not that the data is invalid**.
 
 **Future canonical fetches stamp the provider.** Bars pulled through the
 canonical read-through path (`price_cache.fetch_daily_cached`) are stamped
@@ -553,6 +576,8 @@ Invoke-RestMethod "http://127.0.0.1:8000/movers/persistent"
 
 ### 1. Backend
 
+Requires **Python 3.12** (the version pinned in `.github/workflows/ci.yml`).
+
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
@@ -568,6 +593,10 @@ The health commands above are lightweight safety and readiness checks. They do
 not certify that every backend or frontend test is green.
 
 API base URL: `http://127.0.0.1:8000`. Health check: `/health`.
+
+A bare `uvicorn api:app` binds the live `events.db`; for dev servers and
+verification runs, point `EVENTS_DB_FILE` at a copy first — see **Dev /
+verification DB safety** below.
 
 For a fresh local run, keep `.env` minimal:
 
@@ -665,7 +694,7 @@ set `CORS_ALLOWED_ORIGINS` on the backend to the frontend origin.
 Copy `.env.example` to `.env` for local use and keep `.env` untracked. Real current keys are:
 
 Security and paid-action guardrails are documented in [SECURITY.md](SECURITY.md).
-Contribution workflow and local verification commands are in [CONTRIBUTING.md](CONTRIBUTING.md).
+Local verification commands are in the [Test](#test) section below.
 
 - `ANTHROPIC_API_KEY`
 - `OPENAI_API_KEY`
@@ -756,7 +785,9 @@ confidence-bucket depth, relevance filter, plausible-range guards) run:
 python calibration_report.py
 ```
 
-See [EVALUATION.md](EVALUATION.md) for the current eval flow and limits.
+The eval presets above are canary / targeted smoke runs that exercise the
+analysis pipeline and threshold reporting; they are not a full benchmark or a
+statistical-coverage claim.
 
 ## Test
 
