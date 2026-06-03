@@ -1,0 +1,520 @@
+# Phase-K sanction sourcing funnel — FROZEN pre-registration artifact.
+#
+# WHAT THIS IS
+# -----------
+# The frozen result of the K7 source-anchored sanction-family sourcing pass:
+# 15 CONSIDERED candidates, of which 5 are marked include_in_validation and
+# 10 are flagged/excluded with reasons.  Sibling to
+# examples/phase_k_tariff_sourcing_funnel.yaml (K5).  Frozen BEFORE any return
+# check, event-study validation, price backfill, or curated_observation
+# promotion.  An anti-cherry-pick pre-registration record.
+#
+# WHAT THIS IS NOT
+# ----------------
+# * NOT a 15-event validation cohort, and NOT a finished cohort on its own.
+# * NOT an entry in examples/selection_funnel_ledger.yaml (the CLOSED v2 /
+#   Phase 1-2 pool's validation-OUTCOME record).  Kept in a SEPARATE file to
+#   avoid conflating open pre-validation sourcing with the closed pool and to
+#   avoid breaking scripts/selection_funnel_summary.py.  Nothing reads this
+#   file yet; it is a tracked audit artifact.
+#
+# COMBINED COUNT (with the K5 tariff funnel)
+# ------------------------------------------
+# By the independence criterion frozen in stats/METHODOLOGY.md (distinct
+# underlying events with DISTINCT DATES / NON-OVERLAPPING forward windows),
+# the 6 tariff includes (K5) + the 5 sanction includes here = ~9-11 distinct
+# non-overlapping shocks spanning 2002-2024 -> the cohort COUNT FLOOR (n>=8)
+# is plausibly CLEARED.  The cross-sectional correlation that would inflate
+# the cohort z-test comes from OVERLAPPING WINDOWS, which these temporally-
+# dispersed events do not have; so a same-sector "effective-N" collapse is the
+# wrong lens here.  The binding open issue is NOT count -- it is MECHANISM /
+# SIGN CONCENTRATION (see caveats) -- and it is a K9 cohort-design question
+# (benchmark choice + sign-oriented testing + a new FDR scope), not something
+# sourcing settles.
+#
+# DATE CONVENTION (per row)
+# -------------------------
+#   source_url  = the official PROVENANCE document (OFAC/Treasury, BIS/Commerce,
+#                 Federal Register, White House, or the company's SEC 8-K where
+#                 that is the public news-break).
+#   event_date  = the date the MARKET first learned the operative news.
+#   date_anchor = "verified" (confirmed against official source) or
+#                 "estimated" (pin before any validation).
+#
+# mechanism_family is the canonical FAMILY_IDS value "sanction" for every row.
+# Export controls are NOT a separate family -- they are mechanism_subtype
+# "tech_sanction".  Subtypes used: oil_sanction / tech_sanction /
+# financial_sanction (from FAMILY_SUBTYPES['sanction']).
+#
+# Frozen at: 2026-06-04 (authoring date; git records the commit time).
+# Upstream: K6 (sanction = next family), K7 (this sourcing pass).
+
+phase: K
+mechanism_family: sanction
+frozen_at: "2026-06-04"
+
+# ---------------------------------------------------------------------------
+# Funnel summary
+# ---------------------------------------------------------------------------
+funnel_summary:
+  considered: 15
+  included_for_validation: 5
+  excluded_or_flagged: 10
+  combined_tariff_plus_sanction_window_independent_estimate: "~9-11"
+  cohort_count_floor: "plausibly clears n>=8"
+  cohort_ready: provisional
+  conclusion: >-
+    Combined with the 6 frozen tariff includes (K5), the 5 sanction includes
+    here give ~9-11 distinct, non-overlapping shocks (2002-2024) -> the n>=8
+    COUNT floor is plausibly cleared.  But cohort readiness is PROVISIONAL:
+    the includes carry a mechanism/sign concentration that cohort design must
+    resolve before any inference (see caveats).  No returns were checked; no
+    FDR scope exists.
+
+# Independence-span coverage of the 15-row sanction batch (documentation only).
+independence_span:
+  legal_bases:        [ofac_treasury, bis_commerce_entity_list, executive_order, statute]
+  subtypes:           [tech_sanction, oil_sanction, financial_sanction]
+  administrations:    [trump_1, trump_2, biden, obama]
+  sectors:            [semiconductors, energy_refining, metals_aluminum, nuclear_fuel, banking]
+  distinct_years:     [2018, 2019, 2020, 2022, 2023, 2024]
+  include_only_subset:
+    subtypes:        [tech_sanction, oil_sanction]
+    sectors:         [semiconductors, energy_refining]
+    distinct_years:  [2018, 2019, 2020, 2022]
+    note: >-
+      The 5 includes are 4 tech_sanction (semis: ACIA-2018, QRVO-2019,
+      LRCX-2020, NVDA-2022) + 1 oil_sanction (energy: PBF-2019).  Distinct
+      dates / non-overlapping windows, so independent for the count; but 4/5
+      are one export-control mechanism and all 5 are negative-direction.
+
+# ---------------------------------------------------------------------------
+# Caveats (binding — read before any cohort design)
+# ---------------------------------------------------------------------------
+caveats:
+  - "ACIA (k-san-01) is PROVISIONAL: Acacia Communications was acquired by Cisco (2021) and delisted; per the K4 CLR/AGN finding, providers return empty frames for ALL historical windows of delisted names, so it may be UNCOMPUTABLE at data-time.  Optical-peer fallback (LITE / IIVI) is less ZTE-concentrated; or accept 4 robust sanction includes."
+  - "The sanction includes are almost all NEGATIVE-direction (exposed US name harmed); only the excluded/positive rows (CENX, MU) point the other way."
+  - "4 of 5 included sanctions are tech_sanction / export-control-loss (the same natural experiment 2018-2022) -> they are not 5 independent mechanisms; this is the real independence limit and is NOT fixed by benchmarking."
+  - "Family confounds sign: every tariff include (K5) is positive, every sanction include here is negative -- a naive pooled test cannot separate 'mechanism' from 'direction'."
+  - "DO NOT pool raw returns.  If cohort design proceeds, test SIGN-ORIENTED SAR per pre-registered direction."
+  - "Sector-relative benchmark design is UNRESOLVED.  The coverage engine hardcodes SPY; the cohort/sensitivity layer needs a per-event sector benchmark (SMH/SOXX for semis, XLE/XOP for energy).  benchmark_ticker below is the proposed sector benchmark; SPY is the coverage-engine default."
+  - "NO FDR scope exists yet.  Any cohort report must open a NEW self-contained (cohort, horizon) FDR scope, never merged with or compared against the closed Phase 1 / Phase 2 pools."
+
+# ---------------------------------------------------------------------------
+# Anti-cherry-pick statement (binding)
+# ---------------------------------------------------------------------------
+anti_cherry_pick:
+  - "No return checks, event-study validation, or price-cache backfill were run before this freeze."
+  - "No candidate may be replaced, re-dated, or re-classified after returns are checked; corrections (if any) must be added as NEW, separately-counted entries, never silent edits."
+  - "Excluded/flagged candidates remain visible in this file (include_in_validation: false) and are never deleted, so the full denominator stays auditable."
+  - "The closed Phase 1 / Phase 2 evidence FDR pools are untouched and must NOT be merged with this set.  The CENX/Rusal event (k-san-07) is excluded precisely because it already lives in the closed pool."
+
+# ---------------------------------------------------------------------------
+# Candidates (15 considered)
+# ---------------------------------------------------------------------------
+candidates:
+
+  # ===== INCLUDE (5) ========================================================
+
+  - candidate_id: k-san-01
+    headline: "BIS imposes a 7-year denial order on ZTE, cutting off US suppliers (Acacia Communications, ZTE's largest customer)"
+    source_publisher: "BIS / U.S. Department of Commerce (+ Acacia 8-K, SEC)"
+    source_url: "https://www.bis.doc.gov/index.php/2011-09-13-13-22-03/17-regulations/1446-bis-issues-an-order-terminating-the-denial-order-issued-on-april-15-2018-against-zte"
+    event_date: "2018-04-16"
+    first_trading_date: "2018-04-16"
+    date_anchor: verified
+    legal_basis: bis_commerce_denial_order
+    administration: trump_1
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: ACIA
+    benchmark_ticker: SMH
+    predicted_direction: negative
+    what_would_falsify: >-
+      ACIA fails to UNDER-perform SMH within 5d; a licence/reprieve restores
+      ZTE shipments within the window (the order was in fact terminated
+      2018-07-13, so the forward window must end before then).
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      PROVISIONAL — Acacia was acquired by Cisco in 2021 and delisted; high
+      risk of being uncomputable at data-time (CLR/AGN failure mode).  Order
+      issued Sun 2018-04-15; optical names repriced Mon 2018-04-16.  Fallback
+      peers: LITE / IIVI (less ZTE-concentrated).
+
+  - candidate_id: k-san-02
+    headline: "BIS adds Huawei + 68 affiliates to the Entity List, cutting US RF/chip suppliers' access (Qorvo: ~15% of FY19 revenue)"
+    source_publisher: "BIS / Federal Register (+ Qorvo 8-K, SEC)"
+    source_url: "https://www.federalregister.gov/documents/2019/05/21/2019-10616/addition-of-entities-to-the-entity-list"
+    event_date: "2019-05-16"
+    first_trading_date: "2019-05-16"
+    date_anchor: verified
+    legal_basis: bis_commerce_entity_list
+    administration: trump_1
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: QRVO
+    benchmark_ticker: SMH
+    predicted_direction: negative
+    what_would_falsify: >-
+      QRVO fails to under-perform SMH within 5d; a temporary general licence
+      restores Huawei shipments and QRVO recovers within the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      Qorvo's own 8-K quantified Huawei at ~$469M / 15% of FY19 revenue --
+      clean, large, documented exposure.  Entity List effective 2019-05-16;
+      QRVO/SWKS/AVGO repriced 2019-05-16..20.  Confirm exact FR doc id at K9.
+
+  - candidate_id: k-san-03
+    headline: "OFAC designates Venezuela's state oil company PDVSA (E.O. 13850), cutting heavy-crude feedstock to US Gulf refiners"
+    source_publisher: "U.S. Department of the Treasury (OFAC)"
+    source_url: "https://home.treasury.gov/news/press-releases/sm594"
+    event_date: "2019-01-28"
+    first_trading_date: "2019-01-28"
+    date_anchor: verified
+    legal_basis: ofac_treasury
+    administration: trump_1
+    sector: energy_refining
+    mechanism_family: sanction
+    mechanism_subtype: oil_sanction
+    primary_ticker: PBF
+    benchmark_ticker: XLE
+    predicted_direction: negative
+    what_would_falsify: >-
+      PBF fails to under-perform XLE/XOP within 5d; general licences (8 were
+      issued) preserve enough PdVSA crude access that the feedstock hit does
+      not bind within the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      Direction is the EXPOSED US refiner harmed by feedstock loss (not a
+      substitute benefiting).  PBF ran Venezuelan heavy crude; VLO is a
+      secondary candidate.  The only clean oil_sanction include -- other oil
+      sanctions are ambiguous or clustered (see k-san-10/11).
+
+  - candidate_id: k-san-04
+    headline: "US imposes a license requirement on NVIDIA A100/H100 datacenter GPU exports to China (disclosed via 8-K)"
+    source_publisher: "NVIDIA 8-K (SEC) / BIS"
+    source_url: "https://www.sec.gov/Archives/edgar/data/0001045810/000104581022000151/nvda-20220831.htm"
+    event_date: "2022-08-31"
+    first_trading_date: "2022-08-31"
+    date_anchor: verified
+    legal_basis: bis_commerce_license_requirement
+    administration: biden
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: NVDA
+    benchmark_ticker: SMH
+    predicted_direction: negative
+    what_would_falsify: >-
+      NVDA fails to under-perform SMH within 5d; the company secures
+      exemptions / a compliant China SKU within the window that neutralizes
+      the disclosed China-revenue risk.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      Government notified NVDA 2022-08-26; the public news-break is the
+      8-K (2022-08-31).  Shares a 2022-semis factor with k-san-06 (Oct-7
+      controls, excluded) -- the windows are ~26 trading days apart (just
+      non-overlapping); keep one of the two.
+
+  - candidate_id: k-san-05
+    headline: "BIS adds SMIC to the Entity List (presumption of denial for advanced-node items), cutting US semicap suppliers' China sales"
+    source_publisher: "U.S. Department of Commerce / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2020/12/22/2020-28031/addition-of-entities-to-the-entity-list-revision-of-entry-on-the-entity-list-and-removal-of-entities"
+    event_date: "2020-12-18"
+    first_trading_date: "2020-12-21"
+    date_anchor: verified
+    legal_basis: bis_commerce_entity_list
+    administration: trump_1
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: LRCX
+    benchmark_ticker: SMH
+    predicted_direction: negative
+    what_would_falsify: >-
+      LRCX fails to under-perform SMH within 5d; licences for sub-10nm items
+      are granted quickly enough that the SMIC-revenue hit does not bind.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      MODERATE confidence — the SMIC action was partly anticipated (DoD list
+      + Sept-2020 reports of a pending Entity-List action), so some of the
+      move may have leaked pre-event.  Commerce announced 2020-12-18 (Fri);
+      semicap repriced Mon 2020-12-21.  AMAT/KLAC are alternative tickers.
+
+  # ===== EXCLUDE / FLAGGED (10) ============================================
+
+  - candidate_id: k-san-06
+    headline: "BIS Oct-7-2022 controls on advanced computing + semiconductor-manufacturing items to China"
+    source_publisher: "BIS / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2022/10/13/2022-21658/implementation-of-additional-export-controls-certain-advanced-computing-and-semiconductor"
+    event_date: "2022-10-07"
+    first_trading_date: "2022-10-07"
+    date_anchor: verified
+    legal_basis: bis_commerce_export_controls
+    administration: biden
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: AMAT
+    benchmark_ticker: SMH
+    predicted_direction: negative
+    what_would_falsify: >-
+      n/a - excluded pre-test.
+    include_in_validation: false
+    exclude_reason: >-
+      Contaminated horizon: 2022 H2 was a broad semiconductor down-cycle, and
+      the window sits ~26 trading days from the NVDA A100/H100 disclosure
+      (k-san-04) -> the forward window is not cleanly attributable to this
+      action alone.  Keep k-san-04 as the cleaner 2022 semis read.
+    operator_notes: >-
+      Could be a borderline include on a strict 1d horizon; excluded to avoid
+      a 2022-semis sub-cluster and cycle contamination at h>1.
+
+  - candidate_id: k-san-07
+    headline: "OFAC sanctions Rusal / EN+ / Deripaska (2nd-largest world aluminum producer), benefiting US aluminum substitute Century Aluminum"
+    source_publisher: "U.S. Department of the Treasury (OFAC)"
+    source_url: "https://home.treasury.gov/news/press-releases/sm592"
+    event_date: "2018-04-06"
+    first_trading_date: "2018-04-09"
+    date_anchor: verified
+    legal_basis: ofac_treasury
+    administration: trump_1
+    sector: metals_aluminum
+    mechanism_family: sanction
+    mechanism_subtype: financial_sanction
+    primary_ticker: CENX
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded (closed-pool reuse).
+    include_in_validation: false
+    exclude_reason: >-
+      Already in the CLOSED Phase 1 / Phase 2 evidence pool (the accepted
+      CENX-Rusal row, h=1 AR ~+11%).  Reusing it in a new cohort would
+      double-count against the closed pool and violate the separation
+      requirement.  Also metals -> overlaps the tariff set's steel/aluminum
+      factor.
+    operator_notes: >-
+      Listed here only to make the no-reuse decision auditable; it is NOT a
+      new independent shock for this cohort.
+
+  - candidate_id: k-san-08
+    headline: "BIS adds Fujian Jinhua to the Entity List (DRAM), removing a Chinese competitor to Micron"
+    source_publisher: "U.S. Department of Commerce / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2018/10/30/2018-23693/addition-of-an-entity-to-the-entity-list"
+    event_date: "2018-10-29"
+    first_trading_date: "2018-10-30"
+    date_anchor: verified
+    legal_basis: bis_commerce_entity_list
+    administration: trump_1
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: MU
+    benchmark_ticker: SMH
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded pre-test.
+    include_in_validation: false
+    exclude_reason: >-
+      DRAM down-cycle contamination: 2018 H2 was a sharp memory-price
+      downturn confounding any MU event-window move.  The closed-project
+      ledger declined to validate this (mu-soxx backup) for the same reason.
+    operator_notes: >-
+      One of the few POSITIVE-direction sanction reads (competitor removed);
+      kept visible because the cycle confound, not the direction, is the
+      blocker.
+
+  - candidate_id: k-san-09
+    headline: "BIS Oct-17-2023 update tightening advanced-compute controls (NVIDIA A800/H800 banned)"
+    source_publisher: "BIS / Federal Register (+ NVDA 8-K)"
+    source_url: "https://www.federalregister.gov/documents/2023/10/25/2023-23055/implementation-of-additional-export-controls-certain-advanced-computing-items-supercomputer-and"
+    event_date: "2023-10-17"
+    first_trading_date: "2023-10-17"
+    date_anchor: verified
+    legal_basis: bis_commerce_export_controls
+    administration: biden
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: NVDA
+    benchmark_ticker: SMH
+    predicted_direction: negative
+    what_would_falsify: >-
+      n/a - excluded pre-test.
+    include_in_validation: false
+    exclude_reason: >-
+      Same mechanism and same ticker as k-san-04 (NVDA export-control loss),
+      one year later -> a near-duplicate of the same natural experiment, not
+      an independent shock.  Including both would overstate independence.
+    operator_notes: >-
+      Demonstrates the mechanism-concentration limit: NVDA export-control
+      events recur; pick one.
+
+  - candidate_id: k-san-10
+    headline: "US reimposes Iran oil sanctions after JCPOA withdrawal (with 8 country waivers)"
+    source_publisher: "U.S. Department of the Treasury / State"
+    source_url: "https://home.treasury.gov/news/press-releases/sm541"
+    event_date: "2018-11-05"
+    first_trading_date: "2018-11-05"
+    date_anchor: estimated
+    legal_basis: ofac_treasury
+    administration: trump_1
+    sector: energy_refining
+    mechanism_family: sanction
+    mechanism_subtype: oil_sanction
+    primary_ticker: VLO
+    benchmark_ticker: XLE
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - excluded pre-test (direction not committed).
+    include_in_validation: false
+    exclude_reason: >-
+      The reimposition shipped with 8 significant-reduction waivers, so it was
+      read as a DOVISH surprise and crude fell -- opposite of a supply-cut
+      premium.  Also heavy leakage from the telegraphed 2018-05-08 JCPOA
+      withdrawal.  Direction not defensibly committable.
+    operator_notes: >-
+      Confirm exact Treasury press-release id at K9 if ever revisited; the
+      waivers are the reason this is not a clean supply cut.
+
+  - candidate_id: k-san-11
+    headline: "G7/US price cap and ban on seaborne Russian crude"
+    source_publisher: "U.S. Department of the Treasury (OFAC)"
+    source_url: "https://ofac.treasury.gov/sanctions-programs-and-country-information/russian-harmful-foreign-activities-sanctions"
+    event_date: "2022-12-05"
+    first_trading_date: "2022-12-05"
+    date_anchor: estimated
+    legal_basis: ofac_treasury
+    administration: biden
+    sector: energy_refining
+    mechanism_family: sanction
+    mechanism_subtype: oil_sanction
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - no isolable single-name hypothesis.
+    include_in_validation: false
+    exclude_reason: >-
+      Part of the 2022 Russia sanction cluster (overlapping-window risk); the
+      price-cap design intentionally KEEPS Russian oil flowing at a capped
+      price, so the crude-price effect is ambiguous and there is no clean
+      US-listed single-name read.
+    operator_notes: >-
+      Excluded primarily to avoid clustering all energy sanctions in the 2022
+      Russia window (the energy analogue of the 2018 steel cluster).
+
+  - candidate_id: k-san-12
+    headline: "US/EU block major Russian banks and remove them from SWIFT"
+    source_publisher: "U.S. Department of the Treasury (OFAC) / White House"
+    source_url: "https://home.treasury.gov/news/press-releases/jy0608"
+    event_date: "2022-02-26"
+    first_trading_date: "2022-02-28"
+    date_anchor: estimated
+    legal_basis: ofac_treasury
+    administration: biden
+    sector: banking
+    mechanism_family: sanction
+    mechanism_subtype: financial_sanction
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - no clean US-listed instrument.
+    include_in_validation: false
+    exclude_reason: >-
+      Targets are untradeable Russian banks; no clean US-listed beneficiary or
+      exposed single-name.  Also part of the 2022 Russia cluster.
+    operator_notes: >-
+      The HARD tradeability gate fails: the instrument that would move is
+      foreign/untradeable.
+
+  - candidate_id: k-san-13
+    headline: "E.O. 13959 bans US investment in Communist Chinese Military Companies (forced divestiture of named ADRs)"
+    source_publisher: "The White House (Executive Order 13959)"
+    source_url: "https://home.treasury.gov/policy-issues/financial-sanctions/recent-actions/20210601"
+    event_date: "2020-11-12"
+    first_trading_date: "2020-11-12"
+    date_anchor: estimated
+    legal_basis: executive_order
+    administration: trump_1
+    sector: banking
+    mechanism_family: sanction
+    mechanism_subtype: financial_sanction
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: negative
+    what_would_falsify: >-
+      n/a - no clean US-listed instrument.
+    include_in_validation: false
+    exclude_reason: >-
+      The forced-divestiture targets are FOREIGN ADRs (e.g. CNOOC, later
+      delisted from the NYSE); there is no clean US-listed beneficiary, and
+      the affected instruments are foreign.
+    operator_notes: >-
+      A 'forced divestiture' shock, but the tradeable names are the foreign
+      targets themselves -> fails the US-listed-instrument gate.
+
+  - candidate_id: k-san-14
+    headline: "Prohibiting Russian Uranium Imports Act (PL 118-62) bans Russian LEU, favoring domestic enrichers"
+    source_publisher: "U.S. Congress (PL 118-62) / DOE"
+    source_url: "https://www.congress.gov/118/plaws/publ62/PLAW-118publ62.pdf"
+    event_date: "2024-05-13"
+    first_trading_date: "2024-05-13"
+    date_anchor: estimated
+    legal_basis: statute
+    administration: biden
+    sector: nuclear_fuel
+    mechanism_family: sanction
+    mechanism_subtype: commodity_import_ban   # NON-STANDARD: not a registered FAMILY_SUBTYPES id
+    primary_ticker: LEU
+    benchmark_ticker: URA
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded pre-test (family/anchor unresolved).
+    include_in_validation: false
+    exclude_reason: >-
+      FAMILY-AMBIGUOUS: a statutory IMPORT BAN that protects a domestic
+      substitute is mechanistically closer to a TARIFF than to a sanction;
+      classifying it as 'sanction' is contested.  Also heavily anticipated
+      (passed Congress weeks earlier) and softened by waivers to 2028.
+    operator_notes: >-
+      Directionally DIVERSIFYING (positive, new nuclear-fuel sector, clean
+      domestic substitute LEU/Centrus) -- the strongest non-semis,
+      non-negative candidate IF the family question is resolved and a cleaner
+      surprise anchor (e.g. a pivotal procedural vote) is found.  Revisit at
+      K9 only with the family classification settled.
+
+  - candidate_id: k-san-15
+    headline: "BIS tightens the Huawei foreign-direct-product rule, cutting Huawei off from foundry-made chips"
+    source_publisher: "BIS / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2020/08/20/2020-18213/addition-of-huawei-non-us-affiliates-to-the-entity-list-the-removal-of-temporary-general-license-and"
+    event_date: "2020-08-17"
+    first_trading_date: "2020-08-17"
+    date_anchor: estimated
+    legal_basis: bis_commerce_export_controls
+    administration: trump_1
+    sector: semiconductors
+    mechanism_family: sanction
+    mechanism_subtype: tech_sanction
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - no clean US single-name hypothesis.
+    include_in_validation: false
+    exclude_reason: >-
+      The binding effect runs through foreign foundries (TSMC) and Huawei
+      itself; the US single-name read is muddy, and it overlaps the
+      Huawei-2019 mechanism already captured by k-san-02.
+    operator_notes: >-
+      Kept visible to document that the second Huawei action does not add a
+      clean independent US-listed shock.
