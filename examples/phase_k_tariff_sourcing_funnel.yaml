@@ -1,0 +1,523 @@
+# Phase-K tariff sourcing funnel — FROZEN pre-registration artifact.
+#
+# WHAT THIS IS
+# -----------
+# The frozen result of the K4 source-anchored tariff/trade-policy sourcing
+# pass: 15 CONSIDERED candidates, of which 6 are marked include_in_validation
+# and 9 are flagged/excluded with reasons.  This is a SOURCING FUNNEL and an
+# anti-cherry-pick pre-registration record — it is frozen BEFORE any return
+# check, event-study validation, price backfill, or curated_observation
+# promotion.
+#
+# WHAT THIS IS NOT
+# ----------------
+# * NOT a 15-event validation cohort.  Only 6 rows are clean single-name
+#   includes, and they collapse to ~3-4 EFFECTIVE independent sector-shocks
+#   (steel x4 temporally-independent but one sector factor; appliances x1;
+#   solar x1; ticker X repeats).  That is below the METHODOLOGY n>=8
+#   independent-shock floor, so a tariff-only cohort is NOT cohort-ready.
+# * NOT part of the closed Phase 1 / Phase 2 evidence FDR pools, and NOT an
+#   entry in examples/selection_funnel_ledger.yaml.  That ledger is the v2
+#   cohort's validation-OUTCOME record (gate_stage / outcome / result_code =
+#   PASS/FAIL for the closed WHR/CENX/FSLR/TXT/RIO pool) and is consumed by
+#   scripts/selection_funnel_summary.py against fixed v2 expectations.  This
+#   Phase-K funnel is kept in a SEPARATE file to avoid conflating open
+#   pre-validation sourcing with the closed pool and to avoid breaking that
+#   consumer.  Nothing reads this file yet; it is a tracked audit artifact.
+#
+# DATE CONVENTION (per row)
+# -------------------------
+#   source_url   = the official PROVENANCE document (USTR / Federal Register /
+#                  White House / Commerce / USITC).
+#   event_date   = the date the MARKET first learned the operative news
+#                  (the news-break), which is often EARLIER than the
+#                  proclamation / final-determination document date.  AD/CVD
+#                  surprise is normally the PRELIMINARY determination; a
+#                  proclamation's surprise is normally the ANNOUNCEMENT OF
+#                  INTENT, not the signing.  (Exception: k-tar-02, where the
+#                  preliminary was negative and the FINAL reversed it -> the
+#                  final is the surprise.)
+#   date_anchor  = "verified" (date confirmed against official source) or
+#                  "estimated" (must be pinned before any validation).
+#
+# mechanism_family is the canonical FAMILY_IDS value "tariff" for every row
+# (NOT the older "tariffs_industrial_policy" string used in v2 prose).
+#
+# Frozen at: 2026-06-04 (authoring date; git records the commit time).
+# Upstream: brainstorming K1 (tariff-first), K2/K3 (curated_observation path).
+
+phase: K
+mechanism_family: tariff
+frozen_at: "2026-06-04"
+
+# ---------------------------------------------------------------------------
+# Funnel summary
+# ---------------------------------------------------------------------------
+funnel_summary:
+  considered: 15
+  included_for_validation: 6
+  excluded_or_flagged: 9
+  effective_independent_n_estimate: "~3-4"
+  cohort_ready: false
+  conclusion: >-
+    Tariff-only cohort inference is NOT ready.  Clean single-name tariff
+    includes are scarce and steel-concentrated: the 6 includes are steel x4
+    (X-2002, X-2014, STLD-2015, NUE-2018; temporally independent but one
+    sector factor, ticker X repeated), appliances x1 (WHR-2018), solar x1
+    (FSLR-2024) -> ~3-4 effective independent sector-shocks, below the n>=8
+    floor in stats/METHODOLOGY.md.  The clean-single-name constraint
+    collapses the nominal authority/administration/industry/year diversity
+    back into steel.  Resolve before any cohort FDR via one of: (a) sector-
+    relative benchmarks (XME/SLX/TAN/XLY) per the closed cohort while
+    accepting low effective-N; (b) a future non-steel clean batch; or
+    (c) broadening to a mixed-mechanism family cohort.
+
+# Independence-span coverage of the 15-row batch (documentation only).
+independence_span:
+  legal_authorities: [section_201, section_232, section_301, ad_cvd, section_421]
+  administrations:    [bush, obama, trump_1, biden, trump_2]
+  industries:         [steel, appliances, solar, aluminum, tires, lumber, paper, energy_tubular]
+  distinct_years:     [2002, 2009, 2012, 2014, 2015, 2017, 2018, 2024, 2025]
+  include_only_subset:
+    legal_authorities: [section_201, section_232, section_301, ad_cvd]
+    administrations:    [bush, obama, trump_1, biden]
+    industries:         [steel, appliances, solar]
+    distinct_years:     [2002, 2014, 2015, 2018, 2024]
+    note: >-
+      Spans the matrix nominally, but the include set is steel-dominated
+      (4 of 6) and effective independent N is ~3-4 sector-shocks, not 6.
+
+# ---------------------------------------------------------------------------
+# Anti-cherry-pick statement (binding)
+# ---------------------------------------------------------------------------
+anti_cherry_pick:
+  - "No return checks, event-study validation, or price-cache backfill were run before this freeze."
+  - "No candidate may be replaced, re-dated, or re-classified after returns are checked; corrections (if any) must be added as NEW, separately-counted entries, never silent edits."
+  - "Excluded/flagged candidates remain visible in this file (include_in_validation: false) and are never deleted, so the full denominator stays auditable."
+  - "Tariff-only cohort inference is BLOCKED until more independent, clean, single-name tariff events are sourced (or a sector-relative / mixed-family construction is adopted); effective independent N (~3-4) is below the n>=8 floor."
+
+# ---------------------------------------------------------------------------
+# Candidates (15 considered)
+# ---------------------------------------------------------------------------
+candidates:
+
+  # ===== INCLUDE (6) ========================================================
+
+  - candidate_id: k-tar-01
+    headline: "President Bush imposes Section 201 safeguard tariffs (up to 30%) on imported steel (Proclamation 7529)"
+    source_publisher: "The White House / Federal Register"
+    source_url: "https://www.presidency.ucsb.edu/documents/proclamation-7529-facilitate-positive-adjustment-competition-from-imports-certain-steel"
+    event_date: "2002-03-05"
+    first_trading_date: "2002-03-06"
+    date_anchor: verified
+    legal_authority: section_201
+    administration: bush
+    industry: steel
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: X
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      X fails to outperform XME within 5d; broad WTO-developing-country or
+      product exclusions announced within days that gut the remedy; HRC steel
+      price falls despite the safeguard.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      ITC injury (Oct 2001) and remedy recommendations (Dec 2001) set
+      expectations; the President's remedy SELECTION on 2002-03-05 is the
+      operative surprise.  Benchmark XME for the cohort; the coverage engine
+      (event_study_validation.py) uses SPY by default.  Confirm intraday
+      announcement timing.
+
+  - candidate_id: k-tar-02
+    headline: "Commerce issues affirmative FINAL AD determination on oil country tubular goods (OCTG) from Korea, reversing a negative preliminary"
+    source_publisher: "U.S. Department of Commerce / Federal Register"
+    source_url: "https://www.trade.gov/faq/final-determination-antidumping-duty-and-countervailing-duty-investigations-oil-country-tubular"
+    event_date: "2014-07-11"
+    first_trading_date: "2014-07-14"
+    date_anchor: estimated
+    legal_authority: ad_cvd
+    administration: obama
+    industry: energy_tubular
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: X
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      X fails to outperform the steel/energy sector within 5d; margins set so
+      low as to be immaterial; CIT remand reverses within the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      Unusual: the FINAL is the surprise because the 2014-02-25 preliminary
+      was NEGATIVE for Korea and the final reversed to affirmative (low
+      anticipation).  Ticker X repeats k-tar-01 (12y apart -> independent
+      windows, but adds steel/X concentration).  ESTIMATED date: pin the exact
+      Commerce final-determination announcement (FR published 2014-07-18).
+
+  - candidate_id: k-tar-03
+    headline: "Commerce issues affirmative PRELIMINARY AD/CVD determinations on corrosion-resistant steel from China/Korea/others (first cash deposits)"
+    source_publisher: "U.S. Department of Commerce / Federal Register"
+    source_url: "https://www.trade.gov/preliminary-determinations-antidumping-duty-investigations-corrosion-resistant-steel-products"
+    event_date: "2015-12-22"
+    first_trading_date: "2015-12-23"
+    date_anchor: estimated
+    legal_authority: ad_cvd
+    administration: obama
+    industry: steel
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: STLD
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      STLD fails to outperform XME within 5d; preliminary margins near
+      de-minimis; final guts the preliminary.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      Petitioners were US Steel/Nucor/Steel Dynamics/ArcelorMittal/AK -> clean
+      petitioner class.  PRELIMINARY (not the 2016-06-02 final) is the surprise.
+      ESTIMATED date: pin the exact preliminary date (preliminary CVD verified
+      2015-11-06; preliminary AD ~Dec 2015 carried the larger margins) and
+      confirm which moved the tape.
+
+  - candidate_id: k-tar-04
+    headline: "USTR/President approve Section 201 safeguard (tariff-rate quota) on large residential washers (Proclamation 9694)"
+    source_publisher: "USTR / The White House"
+    source_url: "https://ustr.gov/about-us/policy-offices/press-office/press-releases/2018/january/president-trump-approves-relief-us"
+    event_date: "2018-01-22"
+    first_trading_date: "2018-01-23"
+    date_anchor: verified
+    legal_authority: section_201
+    administration: trump_1
+    industry: appliances
+    mechanism_family: tariff
+    mechanism_subtype: safeguard_appliance   # descriptive; not a registered FAMILY_SUBTYPES id
+    primary_ticker: WHR
+    benchmark_ticker: XLY
+    predicted_direction: positive
+    what_would_falsify: >-
+      WHR fails to outperform XLY within 5d; importers (Samsung/LG) absorb the
+      TRQ; WHR give-back within 1-5d on a carve-out.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      WHR was the explicit petitioner/beneficiary (the closed-cohort accepted
+      template; first Section 201 use in 16 years).  Announcement 2018-01-22
+      (evening); Proclamation 9694 issued 2018-01-23.  Cleanest non-steel
+      include.
+
+  - candidate_id: k-tar-05
+    headline: "Trump announces intent to impose 25% Section 232 tariffs on steel (steel-executives meeting); formalized as Proclamation 9705"
+    source_publisher: "The White House / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2018/03/15/2018-05478/adjusting-imports-of-steel-into-the-united-states"
+    event_date: "2018-03-01"
+    first_trading_date: "2018-03-01"
+    date_anchor: verified
+    legal_authority: section_232
+    administration: trump_1
+    industry: steel
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: NUE
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      NUE fails to outperform XME within 5d; immediate broad country
+      exemptions (Canada/Mexico/EU) gut the tariff; HRC steel price falls
+      within 5d.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      Anchored to the 2018-03-01 announcement of intent (steel names spiked
+      03-01/02), NOT the 2018-03-08 proclamation (which was anticipated and
+      largely priced).  source_url is the proclamation (provenance).
+
+  - candidate_id: k-tar-06
+    headline: "Biden directs USTR to raise Section 301 China tariffs - solar cells to 50%, EVs 100%, semiconductors 50%, steel/aluminum 25%"
+    source_publisher: "USTR / The White House"
+    source_url: "https://ustr.gov/about-us/policy-offices/press-office/press-releases/2024/may/us-trade-representative-katherine-tai-take-further-action-china-tariffs-after-releasing-statutory"
+    event_date: "2024-05-14"
+    first_trading_date: "2024-05-14"
+    date_anchor: verified
+    legal_authority: section_301
+    administration: biden
+    industry: solar
+    mechanism_family: tariff
+    mechanism_subtype: import_tariff_china
+    primary_ticker: FSLR
+    benchmark_ticker: TAN
+    predicted_direction: positive
+    what_would_falsify: >-
+      FSLR fails to outperform TAN within 5d; solar-manufacturing-equipment
+      exclusions dominate the read; FSLR give-back within 1-5d.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      FSLR is the dominant US-based panel maker and a clear pro-China-tariff
+      beneficiary.  DISTINCT from the 2018 Section 201 solar case (k-tar-08):
+      here FSLR's thin-film position is a tailwind, not the ambiguity.  The
+      05-14 announcement is the surprise (Sept-2024 finalization was
+      pre-signaled).
+
+  # ===== EXCLUDE / FLAGGED (9) =============================================
+
+  - candidate_id: k-tar-07
+    headline: "Commerce final AD/CVD determination on common alloy aluminum sheet from China (self-initiated investigation)"
+    source_publisher: "U.S. Department of Commerce"
+    source_url: "https://enforcement.trade.gov/download/factsheets/factsheet-prc-alloy-aluminum-sheet-ad-cvd-final-110718.pdf"
+    event_date: "2018-11-07"
+    first_trading_date: "2018-11-08"
+    date_anchor: verified
+    legal_authority: ad_cvd
+    administration: trump_1
+    industry: aluminum
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: CSTM
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      CSTM fails to outperform XME within 5d.
+    include_in_validation: false
+    exclude_reason: >-
+      Low-confidence: Commerce SELF-INITIATED the case (no petition-filing
+      surprise), and the only listed petitioner-side names (Constellium /
+      Arconic) are non-pure-play / foreign-parent rolled-products makers.
+      Weak single-name read; flagged rather than counted clean.  Aluminum is
+      therefore not cleanly represented in the include set.
+    operator_notes: >-
+      Aluminum's only clean-direction event is the 232 tariff, which is
+      itself excluded (k-tar-09, same-date as steel) -> aluminum is
+      unrepresented in the clean include set.
+
+  - candidate_id: k-tar-08
+    headline: "President approves Section 201 safeguard on imported crystalline-silicon solar cells/modules (Proclamation 9693)"
+    source_publisher: "USTR / The White House"
+    source_url: "https://ustr.gov/about-us/policy-offices/press-office/press-releases/2018/january/president-trump-approves-relief-us"
+    event_date: "2018-01-22"
+    first_trading_date: "2018-01-23"
+    date_anchor: verified
+    legal_authority: section_201
+    administration: trump_1
+    industry: solar
+    mechanism_family: tariff
+    mechanism_subtype: safeguard_solar   # descriptive
+    primary_ticker: FSLR
+    benchmark_ticker: TAN
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - excluded pre-test (direction not committed).
+    include_in_validation: false
+    exclude_reason: >-
+      Same announcement date as the washer safeguard k-tar-04 (2018-01-22) ->
+      overlapping forward window, not an independent shock.  AND FSLR (CdTe
+      thin-film) was NOT the petitioner class (Suniva/SolarWorld), so a
+      positive call is the documented wrong-sign trap (ledger
+      fslr-section-201-solar).
+    operator_notes: >-
+      Direction handled positively only in the DISTINCT 2024 China-import
+      solar case k-tar-06; here the safeguard plus FSLR's thin-film exemption
+      make a positive call a wrong-sign trap.
+
+  - candidate_id: k-tar-09
+    headline: "Trump Section 232 25% tariff on aluminum imports (Proclamation 9704, same intent announcement as steel)"
+    source_publisher: "The White House / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2018/03/15/2018-05477/adjusting-imports-of-aluminum-into-the-united-states"
+    event_date: "2018-03-01"
+    first_trading_date: "2018-03-01"
+    date_anchor: verified
+    legal_authority: section_232
+    administration: trump_1
+    industry: aluminum
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: CENX
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded pre-test.
+    include_in_validation: false
+    exclude_reason: >-
+      Same announcement (2018-03-01) and same-day proclamation (2018-03-08) as
+      the steel 232 action k-tar-05 -> fully overlapping window, not an
+      independent shock.  Confirm the aluminum proclamation FR URL (9704).
+    operator_notes: >-
+      Pairs with k-tar-05 (same 2018-03-01 intent announcement / same-day
+      proclamation); include at most one of the two same-day 232 metal
+      actions.
+
+  - candidate_id: k-tar-10
+    headline: "President Obama imposes Section 421 China-specific safeguard duties (35%) on passenger/light-truck tires"
+    source_publisher: "The White House (Obama archive)"
+    source_url: "https://obamawhitehouse.archives.gov/the-press-office/proclamation-address-market-disruption-imports-certain-passenger-vehicle-and-light-"
+    event_date: "2009-09-11"
+    first_trading_date: "2009-09-14"
+    date_anchor: verified
+    legal_authority: section_421
+    administration: obama
+    industry: tires
+    mechanism_family: tariff
+    mechanism_subtype: china_safeguard
+    primary_ticker: CTB
+    benchmark_ticker: SPY
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - excluded pre-test (direction not committed).
+    include_in_validation: false
+    exclude_reason: >-
+      Direction-ambiguous: the petitioner was the USW (union), NOT the tire
+      makers; major US producers (Goodyear) had Chinese sourcing, so the
+      equity benefit to a domestic tire ticker is not cleanly positive
+      (wrong-sign risk).  Signed Fri 2009-09-11 (after close) -> first trading
+      Mon 2009-09-14.
+    operator_notes: >-
+      Duties effective 2009-09-26 at 35%; USITC market-disruption report
+      2009-07-09.  Cooper (CTB) was the most domestically-focused name but
+      the benefit is still ambiguous.
+
+  - candidate_id: k-tar-11
+    headline: "Commerce affirmative PRELIMINARY countervailing-duty determination on softwood lumber from Canada"
+    source_publisher: "U.S. Department of Commerce"
+    source_url: "https://www.commerce.gov/news/press-releases/2017/04/us-department-commerce-issues-affirmative-preliminary-countervailing"
+    event_date: "2017-04-24"
+    first_trading_date: "2017-04-25"
+    date_anchor: verified
+    legal_authority: ad_cvd
+    administration: trump_1
+    industry: lumber
+    mechanism_family: tariff
+    mechanism_subtype: countervailing_duty
+    primary_ticker: WY
+    benchmark_ticker: WOOD
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded pre-test (already a documented failure).
+    include_in_validation: false
+    exclude_reason: >-
+      The ledger already tested WY softwood and it FAILED wrong-sign
+      (FAIL_WRONG_SIGN); WY/PCH/RYN are REITs whose structure muddies
+      sawmill-margin flow-through, and the WOOD benchmark holds both US and
+      Canadian producers (opposite sides of the duty).  Kept visible (do not
+      silently drop a known failure).
+    operator_notes: >-
+      Cross-reference the closed-ledger row wy-xlb-spy-softwood
+      (FAIL_WRONG_SIGN).  Final affirmative CVD determination was Nov 2017.
+
+  - candidate_id: k-tar-12
+    headline: "Trump presidential memorandum directing Section 301 tariffs on ~$50B of Chinese goods (List 1)"
+    source_publisher: "USTR / The White House"
+    source_url: "https://ustr.gov/issue-areas/enforcement/section-301-investigations"
+    event_date: "2018-03-22"
+    first_trading_date: "2018-03-22"
+    date_anchor: estimated
+    legal_authority: section_301
+    administration: trump_1
+    industry: multi
+    mechanism_family: tariff
+    mechanism_subtype: import_tariff_china
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: market_wide
+    what_would_falsify: >-
+      n/a - no isolable single-name hypothesis.
+    include_in_validation: false
+    exclude_reason: >-
+      Broad-based action (~$50B of goods across many sectors) -> market-wide
+      reaction with no defensible isolable single-name primary ticker.
+      Confirm the exact 2018-03-22 presidential-memorandum URL (the listed
+      source_url is the stable USTR Section 301 landing page).
+    operator_notes: >-
+      List 1 tariffs effective 2018-07-06; List 3 ($200B) Sept 2018.  Confirm
+      the exact 2018-03-22 presidential-memorandum URL (source_url is the
+      stable USTR Section 301 landing page).
+
+  - candidate_id: k-tar-13
+    headline: "Trump restores/raises Section 232 steel & aluminum tariffs to 25% and removes all country exemptions (Proclamations 10895/10896)"
+    source_publisher: "The White House / Federal Register"
+    source_url: "https://www.whitehouse.gov/fact-sheets/2025/02/fact-sheet-president-donald-j-trump-restores-section-232-tariffs/"
+    event_date: "2025-02-10"
+    first_trading_date: "2025-02-11"
+    date_anchor: verified
+    legal_authority: section_232
+    administration: trump_2
+    industry: steel
+    mechanism_family: tariff
+    mechanism_subtype: metals_tariff
+    primary_ticker: CLF
+    benchmark_ticker: XME
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded pre-test (contaminated window).
+    include_in_validation: false
+    exclude_reason: >-
+      Contaminated horizon: February 2025 carried multiple overlapping tariff
+      shocks (Canada/Mexico/China actions ~Feb 1; reciprocal-tariff threats;
+      a June-2025 escalation to 50%), so the forward window is not cleanly
+      attributable to the 232 steel/aluminum action.
+    operator_notes: >-
+      A June-2025 escalation to 50% (effective 2025-06-04) further
+      contaminates the window; revisit only if an uncontaminated steel window
+      can be isolated.
+
+  - candidate_id: k-tar-14
+    headline: "Commerce/USITC affirmative AD/CVD on crystalline-silicon PV cells from China (antidumping duty order)"
+    source_publisher: "U.S. Department of Commerce / Federal Register"
+    source_url: "https://www.federalregister.gov/documents/2012/12/07/2012-29668/crystalline-silicon-photovoltaic-cells-whether-or-not-assembled-into-modules-from-the-peoples"
+    event_date: "2012-11-07"
+    first_trading_date: "2012-11-08"
+    date_anchor: estimated
+    legal_authority: ad_cvd
+    administration: obama
+    industry: solar
+    mechanism_family: tariff
+    mechanism_subtype: import_tariff_china
+    primary_ticker: FSLR
+    benchmark_ticker: TAN
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - excluded pre-test (direction not committed).
+    include_in_validation: false
+    exclude_reason: >-
+      Petitioner SolarWorld is defunct/unlisted; FSLR (thin-film) benefits
+      only INDIRECTLY from a tariff on Chinese crystalline cells -> direction
+      ambiguous (same thin-film caveat as k-tar-08).  ESTIMATED date: ITC
+      final injury vote 2012-11-07; AD order effective 2012-12-07 (the
+      source_url).
+    operator_notes: >-
+      Alternative construction: a NEGATIVE read on Chinese solar respondent
+      ADRs (CSIQ/TSL/JKS), but that cross-lists a foreign ADR and changes the
+      family read.
+
+  - candidate_id: k-tar-15
+    headline: "Commerce AD/CVD investigation/determinations on uncoated (free-sheet) paper from China/Indonesia/Brazil/Australia/Portugal"
+    source_publisher: "U.S. Department of Commerce / USITC"
+    source_url: "https://www.federalregister.gov/documents/2015/06/29/2015-15891/certain-uncoated-paper-from-the-peoples-republic-of-china-preliminary-affirmative-countervailing"
+    event_date: "2015-06-29"
+    first_trading_date: "2015-06-30"
+    date_anchor: estimated
+    legal_authority: ad_cvd
+    administration: obama
+    industry: paper
+    mechanism_family: tariff
+    mechanism_subtype: import_tariff
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - no clean single-name hypothesis.
+    include_in_validation: false
+    exclude_reason: >-
+      No clean liquid pure-play petitioner ticker: petitioners were the USW
+      union, Domtar (later delisted/taken private), Finch, Glatfelter, and
+      Packaging Corp (PKG, not an uncoated-freesheet pure-play).  No
+      defensible single-name primary.  ESTIMATED date: pin the operative
+      determination (preliminary CVD 2015-06-29 vs final Jan 2016).
+    operator_notes: >-
+      Domtar was taken private/delisted in 2021; Packaging Corp (PKG) and
+      Glatfelter are not uncoated-freesheet pure-plays.  Pin the
+      preliminary-vs-final date only if this is ever revisited.
