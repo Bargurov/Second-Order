@@ -78,19 +78,22 @@ history for the estimation window, and an engine-usable volatility
 estimate. A compute-ready row can return per-horizon abnormal return,
 SAR, and CAR point estimates.
 
-`matched adjusted basis` means the asset and SPY benchmark both use
-`auto_adjust=True` price-cache rows for the full window consumed by the
-event-study engine. As of the current local archive check, every
-compute-ready event sits on matched adjusted basis, so no mixed
-adjusted/raw basis caveat is attached to the compute-ready set.
+`matched basis` means the asset and SPY benchmark use the **same**
+`auto_adjust` flag for the full window the event-study engine consumes
+(no adjusted/raw splice within a series). All compute-ready events sit on
+matched basis (`cross_flag` = 0). Note that since the Batch-1 coverage
+repair (below) the 18 repaired events resolved on matched **raw** basis,
+so the earlier "every compute-ready event is on matched *adjusted* basis"
+no longer holds — but no row mixes flags, so no splice caveat applies.
 
 Current verified counts from
 `python scripts/stat_validation_readiness_report.py --json --limit 0`:
 
 - total archive events: 157
-- archive-ready events: 52
-- event-study compute-ready events: 44
-- matched adjusted-basis events: 44
+- archive-ready events: 63
+- event-study compute-ready events: 62 (was 44 before the Batch-1
+  coverage repair documented below)
+- matched-basis events: 62
 - cross-flag caveats: 0
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
@@ -111,11 +114,14 @@ must meet are recorded in `stats/METHODOLOGY.md` ("Cohort inference —
 currently blocked"). This decision does not change the closed Phase 1 or
 Phase 2 FDR denominators.
 
-Eight archive-ready rows remain frontier cases waiting for forward
-close maturation. Most other non-ready archive rows are structurally
-blocked, mainly by missing primary tickers or insufficient pre-event
-estimation history. These archive event-study counts do not change the
-closed Phase 1 or Phase 2 FDR denominators.
+After the Batch-1 coverage repair (below) the residual cache/window
+blockers shrank sharply — `no_contiguous_aligned_window` fell from 8 to
+1 and the forward-cache gaps roughly halved. The one remaining Batch-1
+frontier case is #280 (XLE), whose 20th forward trading-day bar had not
+yet printed at repair time. The dominant remaining blocker is still
+`no_primary_ticker` (84) — a coverage gap left deliberately untouched
+(see the repair note below). These archive event-study counts do not
+change the closed Phase 1 or Phase 2 FDR denominators.
 
 ### Coverage report — per-event AR/SAR/CAR across the archive
 
@@ -131,31 +137,91 @@ It is **not a new FDR pool** and never reads, modifies, or reopens the
 closed Phase 1 / Phase 2 pools (`demo_artifacts` / `cohort_evidence` are a
 separate scope). It reuses the same gate as the event-detail route, so its
 `event_study_available` count matches the readiness report's
-`event_study_compute_ready` exactly (44 = 44).
+`event_study_compute_ready` exactly (62 = 62).
 
 **Single-event output is point estimates only.** At `n=1` there is no
 confidence interval, no p-value, and no FDR; the report makes no
 `confirmed` / `validated` / "significant" claim. Each JSON payload carries
 an explicit `non_claims` block stating this.
 
-Current live coverage:
+Current live coverage (after the Batch-1 coverage repair below):
 
-- event_study_available: 44
-- insufficient_data: 113
+- event_study_available: 62
+- insufficient_data: 95
 - curated_intake excluded: 1
-- auto_adjust basis: matched 44, cross_flag 0
+- auto_adjust basis: matched 62, cross_flag 0
 
 The dominant blocker is `no_primary_ticker` (84) — a **coverage gap, not a
 statistics failure**: those events never reach the engine because they
-carry no primary ticker. The next blockers are forward-cache gaps
-(`missing_forward_cache_20d` 20, `missing_forward_cache_5d` 10),
-`insufficient_estimation_window_primary` (9), and
-`no_contiguous_aligned_window` (8). None is an engine error; each is a
+carry no primary ticker, and that pool was left untouched (see the repair
+note below). The remaining cache/window blockers are
+`insufficient_estimation_window_primary` (9), `missing_forward_cache_20d`
+(9), `missing_forward_cache_5d` (5), `no_cached_prices_for_primary_ticker`
+(4), `missing_forward_cache_1d` (4), `no_contiguous_aligned_window` (1),
+and `missing_benchmark_proxy` (1). None is an engine error; each is a
 data-coverage or contiguity precondition.
 
 ```powershell
 python scripts/event_study_coverage_report.py --json
 ```
+
+### Batch-1 event-study coverage repair (H1 → H3, 2026-06-03)
+
+The first bounded coverage-repair batch lifted event-study compute-ready
+events from **44/157 to 62/157** (insufficient **113 → 95**) by backfilling
+missing `price_cache` rows. It added no events, changed no thesis text, and
+reassigned no tickers or benchmarks — it is a data-coverage fix, not new
+evidence.
+
+**Denominator of record.** 157 analysis-stage events; curated_intake stubs
+are excluded separately (1 at repair time) and never enter this count.
+
+**Frozen baseline (H1).** The 113 insufficient rows split into 84 with no
+primary ticker and 29 that already carried a primary ticker but failed a
+cache/window precondition. The 84 `no_primary_ticker` rows were left
+untouched — **71 are synthetic/seed/test duplicates** ("OPEC slashes output
+by 2 mbpd", "Macro shock test event", "Test headline", repeated across
+consecutive dates) and **13 are real macro/geopolitical events with no
+single defensible public ticker**. Assigning tickers to them after the fact
+would be survivorship/look-ahead bias, so that pool is explicitly out of
+scope for this batch.
+
+**Frozen Batch-1 selection rule (pre-outcome attributes only).** An event
+qualified iff: (a) it already had a primary ticker chosen at analysis time,
+(b) that ticker is a real US-listed instrument, (c) its blocker was
+cache/window coverage (forward-cache gap or non-contiguous window), not
+ticker assignment, and (d) the event + 20 business-day window was already
+in the past. No ticker or benchmark was reassigned; only price history was
+backfilled.
+
+**Frozen 19 ids:** 2, 42, 45, 80, 94, 211, 212, 213, 214, 232, 233, 234,
+235, 236, 238, 239, 240, 250, 280.
+
+**Result — 18 pass / 1 fail.** Eighteen events flipped to
+`event_study_available` (all on matched raw basis). The single failure is
+**#280 (XLE, 2026-05-05)**: its 20th forward trading-day bar is 2026-06-03,
+which had not yet printed at repair time — a data frontier, not an engine
+error. It is reported as a failure (not dropped or replaced) and becomes
+compute-ready once that bar exists.
+
+**Mutation scope (H3, live, `price_cache` only).** The repair ran first
+against a DB copy (`events.h2.dev.db`, via `EVENTS_DB_FILE`) and was then
+promoted to the live archive as a `price_cache`-only change: **+1,440
+inserted rows** and **15 updated adjusted (`auto_adjust=1`) rows** (14
+`legacy_unknown → yfinance` provider/close refreshes plus one SPY
+2026-06-02 volume refresh). The `events`, `event_provenance`, and
+`movers_cache` tables were unchanged; no headline, ticker, or benchmark was
+edited. Live `events.db` SHA-256 went `c813ad4d…` → `8736908a…`; a
+pre-promotion backup is at
+`backups/pre_h3_price_cache_promote_2026-06-03.db`.
+
+**Non-claims.** This is coverage repair (more rows can now produce point
+estimates), **not** new-evidence discovery and **not** a cohort-level
+inference — the compute-ready set stays concentrated in a few primary
+tickers with `mechanism_family` unpopulated, so no cross-sectional CI,
+p-value, or BH-FDR is claimed and the closed Phase 1 / Phase 2 FDR pools are
+untouched. No replacement events were cherry-picked to inflate the pass
+rate; the one failure (#280) stays on the record.
 
 ### Event detail — the `event_study` block on `GET /events/{id}`
 
