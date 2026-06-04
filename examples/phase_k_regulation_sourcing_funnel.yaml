@@ -17,11 +17,14 @@
 # ----------------
 # * NOT a validated cohort, and NOT a pooled/FDR/significance claim.  No return
 #   was checked before this freeze; cohort_ready is false.
-# * NOT a 15-event cohort.  After M3, only 9 rows are clean single-name includes,
-#   and they collapse to an estimated ~6 EFFECTIVE independent shocks (three
-#   sectors carry a temporally-separated crossed-sign pair, and a Spring-2024
-#   window cluster overlaps three reads).  That is BELOW the n>=8 floor in
-#   stats/METHODOLOGY.md.
+# * NOT a 23-event cohort.  After M5, 15 of the 23 considered rows are includes
+#   across ELEVEN sectors; the estimated effective N is ~8-10 -- about 8 (AT the
+#   n>=8 floor in stats/METHODOLOGY.md) on the core four alone, up to ~10 only if
+#   the TLN/COF timing and the two secondaries all clear -- so cohort_ready stays
+#   false pending the per-row h1-macro / timing flags.
+#   (M3 state: 9 includes / ~6 effective, below the floor; M5 then added six
+#   fresh-sector includes -- payments, tech, independent-power, entertainment,
+#   brokers.)
 # * NOT first-order regulatory evidence.  Per the M1 scope decision this family
 #   is SECOND-ORDER only: the regulator acts on the firm's competitive /
 #   prudential / pricing environment and the market prices the DOWNSTREAM
@@ -76,19 +79,22 @@ frozen_at: "2026-06-04"
 # Funnel summary
 # ---------------------------------------------------------------------------
 funnel_summary:
-  considered: 15
-  included_for_validation: 9          # M3: was 10; k-reg-10 / HUM reclassified to excluded
-  excluded_or_flagged: 6              # M3: was 5; + k-reg-10
-  direction_mix_included: "5 positive / 4 negative"   # M3: lost one negative (HUM)
-  effective_independent_n_estimate: "~6 (BELOW the n>=8 floor)"
-  cohort_ready: false
+  considered: 23                      # M5: +8 (k-reg-16..23); was 15
+  included_for_validation: 15         # M5: +6 (k-reg-16..21); was 9
+  excluded_or_flagged: 8              # M5: +2 (k-reg-22 EQT, k-reg-23 CP-KCS); was 6
+  direction_mix_included: "6 positive / 9 negative"   # M5: +1 pos (COF), +5 neg
+  core_new_additions: "k-reg-16 V, k-reg-17 COF, k-reg-18 AAPL, k-reg-19 TLN (the effective-N lift)"
+  secondary_flagged_additions: "k-reg-20 LYV, k-reg-21 HOOD"
+  effective_independent_n_estimate: "~8-10 (~8 -- AT the n>=8 floor -- on the core four; up to ~10 only if TLN/COF timing + the two secondaries all clear)"
+  cohort_ready: false                 # still false until the TLN/COF timing + per-row h1-macro flags are resolved
   conclusion: >-
     Regulation is a genuinely CROSSED-SIGN second-order family: the same
     mechanism produces clean positives (prudential relief, a vacated fee rule,
     antitrust-block relief for an acquirer, a proposed rule repeal) and clean
     negatives (a tougher capital proposal, a fee cap, a drug-price-negotiation
     listing, a stricter emissions rule) on well-defined single-name US-listed
-    tickers across SIX distinct sectors.  That breaks the one-sector-collapse
+    tickers across six distinct sectors (the M3 state; M5 lifted this to ELEVEN
+    -- see the M5 UPDATE below).  That breaks the one-sector-collapse
     failure of the tariff funnel (steel) and of a supply_shock funnel (this
     codebase's _ticker_sector folds all commodities into ONE channel).  M3
     official-source verification CONFIRMED all 13 datable event dates (no recalled
@@ -105,7 +111,8 @@ funnel_summary:
     windows straddle a macro print (k-reg-01 GDP/PCE, k-reg-02 CPI + Sep FOMC,
     k-reg-06 Q1-GDP/PCE, k-reg-08 CPI, k-reg-11 CPI) -> read h1-only per
     PHASE_K_EVIDENCE §6 and confirm h1 is clean of same-day macro at validation.
-    So effective N is ~6, BELOW the n>=8 floor.  POSITIVE-LEG ASYMMETRY: ALL FIVE
+    So at the M3 state the effective N was ~6, BELOW the n>=8 floor (M5 then
+    lifted it -- see the M5 UPDATE below).  POSITIVE-LEG ASYMMETRY: ALL FIVE
     positives are relief / reversal reads -- regulatory-relief (JPM softening,
     BFH injunction, BTU proposed repeal) or acquirer-relief (KR, JBLU); there is
     NO pure "a regulator acted to directly help this name" positive in the set,
@@ -123,8 +130,28 @@ funnel_summary:
     temporally-ISOLATED regulation events (ideally pre-2023) to lift effective N
     clear of 8; (c) sector-relative benchmarks per included row while accepting
     the low effective N.
+    M5 UPDATE (2026-06-04, read-only official-source sourcing): added SIX includes
+    in FIVE new sectors -- payments (k-reg-16 V neg 2024-09 / k-reg-17 COF pos
+    2025-04, a temporally-separated crossed-sign pair), tech (k-reg-18 AAPL neg
+    2024-03), independent-power (k-reg-19 TLN neg 2024-11), entertainment
+    (k-reg-20 LYV neg, secondary), brokers (k-reg-21 HOOD neg 2022-12, secondary)
+    -- plus two excluded-but-visible (k-reg-22 EQT, folds into the commodities
+    factor with BTU; k-reg-23 CP-KCS, foreign acquirer + first-order US target).
+    The CORE FOUR (V, COF, AAPL, TLN) carry the lift: V is the cleanest (off
+    cluster, mild macro); COF is the only NON-relief positive but its first
+    session is 2025-04-21 (Apr-18 was Good Friday, markets closed) on a
+    tariff-volatile tape; AAPL is Spring-cluster-adjacent and the day after the
+    3/20 FOMC; TLN is the most contaminated (2024-11-01 = NFP/jobs day, election/
+    FOMC week).  So the estimate rises from ~6 to ~8-10 -- about 8 (AT the floor)
+    on the core four with TLN/COF timing-discounted and the two secondaries set
+    aside, up to ~10 only if all clear -- BUT cohort_ready stays FALSE until the
+    TLN/COF timing pins and per-row h1-macro cleanliness are resolved.  HONEST DIRECTION TILT: the included set is now 6
+    positive / 9 negative -- clean regulation reads skew negative (regulation
+    mostly constrains), and a clean NON-relief positive remains scarce (COF is
+    the only one).  No existing row was altered; all M5 candidates are kept
+    visible.
 
-# Independence-span coverage of the 15-row batch (documentation only).
+# Independence-span coverage of the 23-row batch (documentation only).
 independence_span:
   sub_channels:
     - bank_capital_rule           # Basel III endgame proposal / softening
@@ -132,23 +159,32 @@ independence_span:
     - drug_price_regulation       # IRA Medicare negotiation (NOT FDA approval)
     - power_plant_emissions_rule  # EPA GHG rule + proposed repeal
     - antitrust_merger_block      # JetBlue-Spirit, Kroger-Albertsons (acquirer read)
+    - antitrust_monopolization    # M5: DOJ v Visa / Apple / Live Nation (k-reg-16/18/20); k-reg-07 excluded
+    - bank_merger_approval        # M5: Capital One-Discover (k-reg-17, acquirer-gain read)
+    - grid_interconnection_ruling # M5: FERC Talen-Amazon colocation (k-reg-19)
+    - market_structure_rule       # M5: SEC PFOF proposal (k-reg-21, secondary)
     - medicare_advantage_rate     # EXCLUDED by M3 (k-reg-10 / HUM re-anchor failure)
-    - antitrust_monopolization    # excluded (k-reg-07, contaminated window)
-  sectors:        [banking, consumer_finance, pharma, coal_power, grocery, airlines]
-  distinct_years: [2023, 2024, 2025]
-  direction_mix:  "included 5 positive / 4 negative (M3: lost the managed_care negative, HUM)"
+    - methane_emissions_rule      # EXCLUDED by M5 (k-reg-22 EQT, commodities-factor overlap)
+    - rail_merger_approval        # EXCLUDED by M5 (k-reg-23 CP-KCS, foreign acquirer / first-order target)
+  sectors:        [banking, consumer_finance, pharma, coal_power, grocery, airlines, payments, tech, independent_power, entertainment, brokers]
+  distinct_years: [2022, 2023, 2024, 2025]
+  direction_mix:  "included 6 positive / 9 negative (M5: +1 pos COF, +5 neg; clean reg reads skew negative)"
   include_only_subset:
-    sectors:        [banking, consumer_finance, pharma, coal_power, grocery, airlines]
-    distinct_years: [2023, 2024, 2025]
+    sectors:        [banking, consumer_finance, pharma, coal_power, grocery, airlines, payments, tech, independent_power, entertainment, brokers]
+    distinct_years: [2022, 2023, 2024, 2025]
     note: >-
-      SIX distinct sectors after M3 dropped managed_care (k-reg-10 / HUM
-      excluded), still far less concentrated than tariff (steel-dominated) or
-      supply_shock (one commodities channel).  But banking, consumer finance,
-      and coal/power each appear TWICE as a temporally-separated crossed-sign
-      pair (sharing a sector factor, so ~1.5 effective shocks apiece), and a
-      Mar-May 2024 cluster (k-reg-03, k-reg-06, k-reg-04) still has overlapping
-      forward windows — so the effective independent N is ~6, BELOW the n>=8
-      floor, not 9.
+      ELEVEN distinct sectors after the M5 additions (was six).  The CORE FOUR
+      M5 adds carry the effective-N lift: payments (k-reg-16 V + k-reg-17 COF,
+      a temporally-separated crossed-sign pair), tech (k-reg-18 AAPL),
+      independent-power (k-reg-19 TLN) -- fresh independent factors, not
+      re-slices of the existing sectors.  OFF-CLUSTER: V (2024-09), TLN
+      (2024-11), COF (2025-04), HOOD (2022-12) sit away from the Mar-May 2024
+      cluster; SPRING-CLUSTER-ADJACENT: AAPL (2024-03-21) and LYV (2024-05-23,
+      secondary).  So the effective independent N rises from ~6 to ~8-10 -- about
+      8 (AT the n>=8 floor) on the core four, up to ~10 only if the TLN (NFP-day)
+      and COF (Good-Friday / tariff-tape) timing flags wash out clean AND the two
+      secondaries hold; if TLN/COF do not, V + AAPL alone (+2 fresh sectors) still
+      lift it to ~8, at the floor.
 
 # ---------------------------------------------------------------------------
 # Anti-cherry-pick statement (binding)
@@ -160,8 +196,9 @@ anti_cherry_pick:
   - "Excluded/flagged candidates remain visible in this file (include_in_validation: false) and are never deleted, so the full denominator stays auditable."
   - "M3 (2026-06-04) source-verified every datable event against its official primary source: all 13 dates were confirmed (no recalled date was wrong); the 9 includes and the confirmed-date excludes are now date_anchor: verified. STILL OPEN before validation: first_trading_date / intraday timing on the court-ruling and release rows, and a few exact source_url deep-links."
   - "k-reg-10 / HUM was reclassified from included to excluded by SOURCE VERIFICATION ONLY (a clean-anchor / window-contamination judgment), before any returns were checked, and is kept visible. NO replacement candidate was added — the included count simply fell 10 -> 9."
+  - "M5 (2026-06-04) sourced 8 additional candidates (k-reg-16..23) by OFFICIAL-SOURCE research only — no returns checked; every event_date was web-confirmed against the official source. All 8 are kept visible: 6 includes (4 core + 2 secondary/flagged) and 2 excluded (k-reg-22 EQT commodities-factor overlap, k-reg-23 CP-KCS foreign-acquirer/first-order-target). NO existing row was altered or replaced; the M5 rows are appended, separately counted."
   - "The closed Phase 1 / Phase 2 evidence FDR pools are untouched and unreferenced; this is open pre-validation sourcing, a separate scope."
-  - "Regulation cohort inference is BLOCKED until effective independent N clears 8 (pin the remaining timings, add temporally-isolated events, or adopt sector-relative benchmarks); the post-M3 estimate (~6) is BELOW the floor."
+  - "Regulation cohort inference remains BLOCKED until the post-M5 effective N (~8-10, about 8 on the core four at the conservative low end) is CONFIRMED by resolving the TLN/COF timing pins and the per-row h1-macro flags; cohort_ready stays false. No returns, event-study, backfill, or promotion have been run."
 
 # ---------------------------------------------------------------------------
 # Candidates (15 considered)
@@ -620,3 +657,248 @@ candidates:
     operator_notes: >-
       Documents the deal-spread exclusion so the acquirer-vs-target distinction
       in k-reg-08 / k-reg-09 is auditable.
+
+  # ===== M5 ADDITIONS (k-reg-16 .. k-reg-23) — sourced 2026-06-04 ============
+  # Read-only official-source research (M5).  Core includes k-reg-16/17/18/19
+  # bring fresh sectors (payments, tech, independent-power) to lift effective N
+  # above the floor; k-reg-20/21 are SECONDARY/flagged includes; k-reg-22/23 are
+  # excluded but kept visible.  Every event_date was web-confirmed against the
+  # official source; first_trading_date / intraday timing is flagged per row.
+
+  - candidate_id: k-reg-16
+    headline: "DOJ sues Visa for monopolizing U.S. debit-network markets (SDNY)"
+    source_publisher: "U.S. Department of Justice (Antitrust Division)"
+    source_url: "https://www.justice.gov/atr/case/us-v-visa-inc-2024"
+    event_date: "2024-09-24"
+    first_trading_date: "2024-09-24"
+    date_anchor: verified
+    regulatory_authority: "DOJ Antitrust Division / U.S. District Court (SDNY)"
+    sub_channel: antitrust_monopolization
+    industry: payments
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_monopolization
+    primary_ticker: V
+    benchmark_ticker: IPAY
+    predicted_direction: negative
+    what_would_falsify: >-
+      V fails to underperform IPAY within 5d; the suit is read as
+      low-probability / years-from-remedy so no repricing; a same-week macro
+      shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: the suit transfers no value; the market prices future remedy
+      / debit-economics risk to Visa's network -- a direct single-name read, NOT
+      an acquirer read.  CLEANEST M5 add: payments is a NEW sector, 2024-09-24 is
+      well off the Spring-2024 cluster, only mild macro nearby.  M5: 2024-09-24
+      CONFIRMED (DOJ Antitrust, SDNY).
+
+  - candidate_id: k-reg-17
+    headline: "Federal Reserve and OCC approve Capital One's acquisition of Discover"
+    source_publisher: "Federal Reserve (Order No. 2025-10) / OCC (NR-2025-36)"
+    source_url: "https://www.federalreserve.gov/newsevents/pressreleases/files/orders20250418a2.pdf"
+    event_date: "2025-04-18"
+    first_trading_date: "2025-04-21"
+    date_anchor: verified
+    regulatory_authority: "Federal Reserve / OCC"
+    sub_channel: bank_merger_approval
+    industry: payments
+    mechanism_family: regulation
+    mechanism_subtype: bank_merger_approval_acquirer_read
+    primary_ticker: COF
+    benchmark_ticker: KBE
+    predicted_direction: positive
+    what_would_falsify: >-
+      COF fails to outperform KBE within 5d (first session 2025-04-21); the
+      market reads integration / overpay risk rather than the strategic gain;
+      the tariff-volatile April-2025 tape dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER ACQUIRER-GAIN read on COF (acquirer GAINS the Discover payment
+      network -- a competitive-position value), NOT the first-order deal-spread on
+      the target DFS (that target read is the excluded scope class, cf k-reg-15).
+      The one NON-relief positive sourced in M5 -- "regulator green-lit a
+      value-creating acquisition", not relief-from-a-prior-negative -- though
+      still an acquirer read with direction softness.  M5: 2025-04-18 CONFIRMED
+      (Fed Order 2025-10 + OCC NR-2025-36).  TIMING: 2025-04-18 was GOOD FRIDAY
+      (US markets CLOSED) -> first_trading_date is Mon 2025-04-21; late-April 2025
+      was a tariff-volatile tape -> confirm the COF move is idiosyncratic at
+      validation.
+
+  - candidate_id: k-reg-18
+    headline: "DOJ sues Apple for monopolizing smartphone markets (D.N.J.)"
+    source_publisher: "U.S. Department of Justice (Antitrust Division)"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-sues-apple-monopolizing-smartphone-markets"
+    event_date: "2024-03-21"
+    first_trading_date: "2024-03-21"
+    date_anchor: verified
+    regulatory_authority: "DOJ Antitrust Division / U.S. District Court (D.N.J.)"
+    sub_channel: antitrust_monopolization
+    industry: tech
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_monopolization
+    primary_ticker: AAPL
+    benchmark_ticker: XLK
+    predicted_direction: negative
+    what_would_falsify: >-
+      AAPL fails to underperform XLK within 5d; the suit is read as
+      low-probability; a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: the suit prices future remedy / business-model risk; fills the
+      TECH sector gap left by the excluded GOOGL (k-reg-07).  M5: 2024-03-21
+      CONFIRMED (DOJ Antitrust, D.N.J. No. 2:24-cv-04055).  CAVEATS: event-day is
+      the day AFTER the 2024-03-20 FOMC, and 2024-03-21 sits ~11 trading days from
+      k-reg-03 (2024-03-05) -> SPRING-CLUSTER-ADJACENT (different sector, so low
+      return correlation).  h1-only per §6.
+
+  - candidate_id: k-reg-19
+    headline: "FERC rejects the amended Talen-Amazon interconnection agreement for the Susquehanna nuclear data-center colocation (2-1)"
+    source_publisher: "Federal Energy Regulatory Commission"
+    source_url: "https://www.ferc.gov/news-events/news"
+    event_date: "2024-11-01"
+    first_trading_date: "2024-11-01"
+    date_anchor: verified
+    regulatory_authority: "FERC"
+    sub_channel: grid_interconnection_ruling
+    industry: independent_power
+    mechanism_family: regulation
+    mechanism_subtype: grid_interconnection_ruling
+    primary_ticker: TLN
+    benchmark_ticker: XLU
+    predicted_direction: negative
+    what_would_falsify: >-
+      TLN fails to underperform XLU within 5d; the rejection is read as
+      procedural / re-fileable so no durable revenue loss; the same-day jobs
+      report or election week dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: FERC's rejection prices the lost future data-center revenue
+      and the impaired colocation strategy (also hit CEG / VST).  NEW
+      independent-power (non-coal) sector.  M5: 2024-11-01 CONFIRMED (FERC 2-1,
+      Christie/See majority; Talen 8-K 2024-11-03).  STRONG CONTAMINATION CAVEAT:
+      2024-11-01 was a JOBS-REPORT (NFP) day, in election (Nov 5) / FOMC (Nov 7)
+      week, and a FRIDAY -> the event-day move mixes the FERC decision with the
+      NFP/election tape; pin intraday timing (first session may be Mon
+      2024-11-04) and confirm h1 is FERC-attributable at validation.  The most
+      contamination-exposed M5 add.  Pin the exact FERC docket/order URL.
+
+  - candidate_id: k-reg-20
+    headline: "DOJ sues Live Nation-Ticketmaster for monopolizing the live-events industry; seeks Ticketmaster divestiture (SDNY)"
+    source_publisher: "U.S. Department of Justice (Antitrust Division)"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-sues-live-nation-ticketmaster-monopolizing-markets-across-live-concert"
+    event_date: "2024-05-23"
+    first_trading_date: "2024-05-23"
+    date_anchor: verified
+    regulatory_authority: "DOJ Antitrust Division / U.S. District Court (SDNY)"
+    sub_channel: antitrust_monopolization
+    industry: entertainment
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_monopolization
+    primary_ticker: LYV
+    benchmark_ticker: XLC
+    predicted_direction: negative
+    what_would_falsify: >-
+      LYV fails to underperform XLC within 5d; the divestiture threat is read as
+      low-probability; a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECONDARY / FLAGGED INCLUDE (not a core-four lift).  SECOND-ORDER: prices the
+      Ticketmaster-divestiture / remedy risk.  NEW entertainment sector.  M5:
+      2024-05-23 CONFIRMED (DOJ Antitrust, SDNY).  CAVEAT: 2024-05-23 is ~9 trading
+      days after k-reg-04 (2024-05-10) -> SPRING-CLUSTER-ADJACENT (the May-2024
+      tail); kept secondary so the core four (V/COF/AAPL/TLN) carry the
+      effective-N lift.
+
+  - candidate_id: k-reg-21
+    headline: "SEC proposes a sweeping equity market-structure overhaul (PFOF / order-competition auctions / best-execution)"
+    source_publisher: "U.S. Securities and Exchange Commission"
+    source_url: "https://www.sec.gov/newsroom/press-releases"
+    event_date: "2022-12-14"
+    first_trading_date: "2022-12-14"
+    date_anchor: verified
+    regulatory_authority: "SEC (NOT in the M5 preferred-agency list)"
+    sub_channel: market_structure_rule
+    industry: brokers
+    mechanism_family: regulation
+    mechanism_subtype: market_structure_rule
+    primary_ticker: HOOD
+    benchmark_ticker: IAI
+    predicted_direction: negative
+    what_would_falsify: >-
+      HOOD fails to underperform IAI within 5d; the proposal is read as
+      unlikely-to-finalize (the order-competition Rule 615 was later NOT
+      adopted); a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECONDARY / FLAGGED INCLUDE.  SECOND-ORDER: prices the PFOF / order-flow
+      business-model risk to Robinhood's economics.  NEW brokers sector, and
+      PRE-2023 (2022-12-14) -> OFF the 2024 cluster (a plus).  CAVEATS: (a) SEC is
+      NOT in the M5 preferred-agency list (it is an official regulator but flagged);
+      (b) HOOD is heavily PFOF-specific so the read is concentrated; (c) the most
+      drastic proposed rule (Rule 615 auctions) was later NOT adopted.  M5:
+      2022-12-14 CONFIRMED (SEC 4-proposal package, 3-2 PFOF vote).  Pin the exact
+      SEC press-release URL.
+
+  - candidate_id: k-reg-22
+    headline: "EPA finalizes the oil & gas methane rule (announced at COP28)"
+    source_publisher: "U.S. Environmental Protection Agency"
+    source_url: "https://www.epa.gov/newsreleases/biden-harris-administration-announces-final-rule-cut-methane-emissions-strengthen-and"
+    event_date: "2023-12-02"
+    first_trading_date: "2023-12-04"
+    date_anchor: verified
+    regulatory_authority: "EPA"
+    sub_channel: emissions_rule
+    industry: oil_gas
+    mechanism_family: regulation
+    mechanism_subtype: methane_emissions_rule
+    primary_ticker: EQT
+    benchmark_ticker: XOP
+    predicted_direction: negative
+    what_would_falsify: >-
+      n/a - excluded for sector-factor overlap, not by data.
+    include_in_validation: false
+    exclude_reason: >-
+      EXCLUDED for SECTOR-FACTOR OVERLAP, not by data: a methane-rule read on a gas
+      E&P (EQT) is real and second-order (compliance cost -> margin), but in this
+      codebase's _ticker_sector oil/gas/coal all fold into the SINGLE "commodities"
+      channel -- so EQT shares the same sector factor as k-reg-06 / k-reg-11 (BTU)
+      and adds ~no independent N (the supply_shock one-channel failure mode).  Date
+      CONFIRMED 2023-12-02 (announced Sat at COP28 -> first session Mon 2023-12-04).
+    operator_notes: >-
+      Kept visible.  Revisit only if a NON-commodities benchmark / peer set is
+      adopted that would let EQT count as an independent observation.
+
+  - candidate_id: k-reg-23
+    headline: "Surface Transportation Board approves the Canadian Pacific-Kansas City Southern rail merger"
+    source_publisher: "Surface Transportation Board (PR-23-07)"
+    source_url: "https://www.stb.gov/news-communications/latest-news/pr-23-07/"
+    event_date: "2023-03-15"
+    first_trading_date: "2023-03-15"
+    date_anchor: verified
+    regulatory_authority: "Surface Transportation Board (NOT in the M5 preferred-agency list)"
+    sub_channel: rail_merger_approval
+    industry: rail
+    mechanism_family: regulation
+    mechanism_subtype: rail_merger_approval
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded for ticker/scope reasons, not by data.
+    include_in_validation: false
+    exclude_reason: >-
+      EXCLUDED for TICKER/SCOPE reasons, not by data: the acquirer CP (Canadian
+      Pacific) is CANADIAN-DOMICILED (a foreign issuer, not a clean US-listed
+      single name), and the clean US name KSU (Kansas City Southern) is the TARGET
+      -> a first-order deal-value read, the excluded scope class (cf k-reg-15).
+      STB is also not in the M5 preferred-agency list.  Date CONFIRMED 2023-03-15
+      (STB PR-23-07).
+    operator_notes: >-
+      Documents that rail regulation did not yield a clean US-listed second-order
+      single-name read this round (acquirer foreign, target first-order).
