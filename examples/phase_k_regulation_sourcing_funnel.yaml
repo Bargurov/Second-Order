@@ -17,16 +17,17 @@
 # ----------------
 # * NOT a validated cohort, and NOT a pooled/FDR/significance claim.  No return
 #   was checked before this freeze; cohort_ready is false.
-# * NOT a 23-event cohort, and now BELOW the floor.  After M9, 11 of the 23
-#   considered rows are includes across EIGHT sectors; the estimated effective N
-#   is ~7 -- BELOW the n>=8 floor in stats/METHODOLOGY.md.  The funnel is SUB-FLOOR:
-#   resolving it needs another clean-event sourcing round (pre-2023, off
-#   macro-print days) or an explicit N<8 / sector-relative decision.  cohort_ready
+# * NOT a 29-event cohort, but ABOVE the floor again (not yet validation-ready).
+#   After M11, 15 of the 29 considered rows are includes across TEN sectors; the
+#   estimated effective N is ~9-10 -- ABOVE the n>=8 floor in stats/METHODOLOGY.md.
+#   Still NOT validation-ready: the WFC Fed-statement announcement-time pin, the
+#   BFH PACER timestamp, and per-row h1 macro cleanliness are open.  cohort_ready
 #   is false.  (Lineage: M3 = 9 includes / ~6 effective; M5 added six fresh-sector
-#   includes toward ~8-10; M7's timing/macro audit re-anchored 10 intraday rows
-#   and EXCLUDED COF/TLN/HOOD (macro-contaminated), settling at ~8; M9 then pinned
-#   the KR court timing -- after-close 12-10 -> 12-11 CPI-day h1 -- and EXCLUDED
-#   KR, dropping it to ~7, below the floor.)
+#   includes toward ~8-10; M7 re-anchored 10 intraday rows and EXCLUDED COF/TLN/HOOD
+#   (macro-contaminated), settling at ~8; M9 EXCLUDED KR (after-close 12-10 ->
+#   12-11 CPI-day h1), dropping it to ~7 / sub-floor; M11 sourced 4 macro-clean
+#   includes (BX/PYPL/TMUS/WFC: 2 new sectors + 2 growth-enabling positives),
+#   restoring ~9-10.)
 # * NOT first-order regulatory evidence.  Per the M1 scope decision this family
 #   is SECOND-ORDER only: the regulator acts on the firm's competitive /
 #   prudential / pricing environment and the market prices the DOWNSTREAM
@@ -93,14 +94,14 @@ frozen_at: "2026-06-04"
 # Funnel summary
 # ---------------------------------------------------------------------------
 funnel_summary:
-  considered: 23                      # unchanged
-  included_for_validation: 11         # M9: was 12; -1 (KR after-close -> CPI-day h1)
-  excluded_or_flagged: 12             # M9: was 11; +1 (KR)
-  direction_mix_included: "4 positive / 7 negative"   # M9: lost KR(+); positive leg now all relief/reversal
+  considered: 29                      # M11: +6 (k-reg-24..29)
+  included_for_validation: 15         # M11: +4 (BX/PYPL/TMUS/WFC)
+  excluded_or_flagged: 14             # M11: +2 (k-reg-28 MSFT, k-reg-29 COIN)
+  direction_mix_included: "6 positive / 9 negative"   # M11: +2 pos (TMUS/WFC), +2 neg (BX/PYPL)
   core_new_additions: "k-reg-16 V + k-reg-18 AAPL SURVIVE; k-reg-17 COF + k-reg-19 TLN EXCLUDED (M7 macro-contaminated)"
   secondary_flagged_additions: "k-reg-20 LYV kept (re-anchored); k-reg-21 HOOD EXCLUDED (FOMC-day)"
-  effective_independent_n_estimate: "~7 (BELOW the n>=8 floor; regulation is now SUB-FLOOR after M9 excluded KR -- needs another clean sourcing round or an explicit N<8 / sector-relative decision)"
-  cohort_ready: false                 # sub-floor; BFH exact-anchor pin (PACER) still open
+  effective_independent_n_estimate: "~9-10 (ABOVE the n>=8 floor again; M11 restored it with 2 fresh sectors [alt-managers BX, telecom TMUS] + PYPL/WFC, conditional on the WFC announcement-time pin, the BFH PACER pin, and per-row h1 macro cleanliness)"
+  cohort_ready: false                 # above the floor again, but timing pins (WFC, BFH) + h1-cleanliness still pending before any validation
   conclusion: >-
     Regulation is a genuinely CROSSED-SIGN second-order family: the same
     mechanism produces clean positives (prudential relief, a vacated fee rule,
@@ -196,8 +197,24 @@ funnel_summary:
     another clean-event sourcing round (pre-2023, off macro-print days) or an
     explicit decision to validate at N<8 with sector-relative benchmarks.
     cohort_ready stays FALSE.
+    M11 UPDATE (2026-06-04, read-only sourcing -- official-source + MACRO-CALENDAR
+    checks, no returns): took the "another clean-event sourcing round" path.  The
+    decisive filter was that the first priceable session land OFF
+    CPI/FOMC/NFP/GDP/PCE days (the exact bar that excluded COF/TLN/HOOD/KR).  Added
+    FOUR includes -- BX (SEC private-fund rule 2023-08-23, NEW alt-asset-managers,
+    neg), PYPL (CFPB digital-wallet rule 2024-11-21, payments, neg), TMUS
+    (T-Mobile/Sprint clearance 2020-02-11, NEW telecom, pos acquirer-gain), WFC
+    (Fed lifts the asset cap 2025-06-03, banking, pos growth-enabling) -- and TWO
+    rejected-but-visible (MSFT, FTC/Activision clearance: negligible signal vs cap
+    + CPI-in-h5; COIN, spot-BTC-ETF approval: first session 2024-01-11 = CPI day,
+    the IDEAL non-relief positive lost to a macro day -- the recurring honest
+    limit).  This lifts effective N from ~7 back to ~9-10, ABOVE the n>=8 floor,
+    via 2 fresh sectors + 2 growth-enabling positives (improving the all-relief
+    positive leg).  Residual pins before validation: the WFC Fed-statement
+    announcement time (anchor 06-02/03 vs first session 06-03/04), the BFH PACER
+    timestamp, and per-row h1 macro cleanliness.  cohort_ready stays FALSE.
 
-# Independence-span coverage of the 23-row batch (documentation only).
+# Independence-span coverage of the 29-row batch (documentation only).
 independence_span:
   sub_channels:
     - bank_capital_rule           # Basel III endgame proposal / softening
@@ -212,27 +229,34 @@ independence_span:
     - medicare_advantage_rate     # EXCLUDED by M3 (k-reg-10 / HUM re-anchor failure)
     - methane_emissions_rule      # EXCLUDED by M5 (k-reg-22 EQT, commodities-factor overlap)
     - rail_merger_approval        # EXCLUDED by M5 (k-reg-23 CP-KCS, foreign acquirer / first-order target)
-  sectors:        [banking, consumer_finance, pharma, coal_power, airlines, payments, tech, entertainment]
+    - adviser_compliance_rule     # M11: SEC private-fund rule (k-reg-24 BX, incl)
+    - nonbank_supervision_rule    # M11: CFPB digital-wallet rule (k-reg-25 PYPL, incl)
+    - antitrust_merger_clearance  # M11: T-Mobile/Sprint (k-reg-26 TMUS, incl, acquirer-gain)
+    - consent_order_termination   # M11: Fed lifts WFC asset cap (k-reg-27 WFC, incl, growth-enabling)
+    - antitrust_clearance         # M11: FTC/Activision (k-reg-28 MSFT) -- REJECTED (weak signal / CPI-in-h5)
+    - etf_approval                # M11: spot-BTC-ETF (k-reg-29 COIN) -- REJECTED (first session = CPI day)
+  sectors:        [banking, consumer_finance, pharma, coal_power, airlines, payments, tech, entertainment, alt_asset_managers, telecom]
   distinct_years: [2022, 2023, 2024, 2025]
-  direction_mix:  "included 4 positive / 7 negative (M9: also dropped KR; positive leg now JPM/BFH/JBLU/BTU-repeal, ALL relief/reversal)"
+  direction_mix:  "included 6 positive / 9 negative (M11: +2 pos TMUS/WFC growth-enabling, +2 neg BX/PYPL)"
   include_only_subset:
-    sectors:        [banking, consumer_finance, pharma, coal_power, airlines, payments, tech, entertainment]
+    sectors:        [banking, consumer_finance, pharma, coal_power, airlines, payments, tech, entertainment, alt_asset_managers, telecom]
     distinct_years: [2022, 2023, 2024, 2025]
     note: >-
-      EIGHT distinct included sectors after M9 also dropped grocery (KR excluded).
-      The optimistic ~10 did not survive the M7 timing/macro audit (TLN/COF/HOOD
-      excluded), and M9 then resolved the KR timing AGAINST the row: the D. Or.
-      ruling was filed after the 2024-12-10 close, so KR's first priceable session
-      is the 2024-12-11 CPI day -> contaminated -> excluded.  The surviving
-      fresh-sector lift over the M3 ~6 is V (payments, clean) + AAPL (tech,
-      macro-adjacent but usable) + LYV (entertainment, secondary), and KR's loss
-      removes a grocery shock, so the effective independent N is ~7 -- BELOW the
-      n>=8 floor.  The funnel is now SUB-FLOOR.  Three sectors still carry
-      temporally-separated crossed-sign pairs (banking, consumer-finance,
-      coal/power) sharing a sector factor; a Mar-May 2024 cluster persists; and the
-      surviving positive leg (JPM/BFH/JBLU/BTU-repeal) is ALL relief/reversal --
-      no clean non-relief positive remains.  Path forward: another clean-event
-      sourcing round or an explicit N<8 / sector-relative decision.
+      TEN distinct included sectors after M11 added alt_asset_managers (BX) and
+      telecom (TMUS).  M9 had pushed the funnel SUB-FLOOR (~7) by excluding KR
+      (after-close 12-10 -> 12-11 CPI-day h1); M11 then sourced 4 macro-clean
+      includes -- BX (alt-managers, new), TMUS (telecom, new), PYPL (payments,
+      2nd), WFC (banking, 3rd) -- all with first priceable sessions OFF the
+      top-tier macro calendar.  That lifts effective N back to ~9-10, ABOVE the
+      n>=8 floor.  HAIRCUTS: banking (GS/JPM/WFC), consumer-finance, coal/power,
+      and payments (V/PYPL) each carry shared sector factors; BX has the
+      SEC-not-preferred + rule-vacated caveat; TMUS is acquirer-soft + strictly
+      h1-only (pre-COVID-crash).  POSITIVE LEG improved but still mostly relief:
+      JPM/BFH/JBLU/BTU-repeal (relief) + TMUS (acquirer-gain) + WFC (growth-
+      enabling, the cleanest) = 6 positives; the truly NON-relief positive (COIN
+      spot-BTC-ETF) was rejected for a CPI-day first session.  NOT validation-ready:
+      the WFC announcement-time pin, the BFH PACER pin, and per-row h1 macro
+      cleanliness must still be resolved before any returns/event-study.
 
 # ---------------------------------------------------------------------------
 # Anti-cherry-pick statement (binding)
@@ -247,8 +271,9 @@ anti_cherry_pick:
   - "M5 (2026-06-04) sourced 8 additional candidates (k-reg-16..23) by OFFICIAL-SOURCE research only — no returns checked; every event_date was web-confirmed against the official source. All 8 are kept visible: 6 includes (4 core + 2 secondary/flagged) and 2 excluded (k-reg-22 EQT commodities-factor overlap, k-reg-23 CP-KCS foreign-acquirer/first-order-target). NO existing row was altered or replaced; the M5 rows are appended, separately counted."
   - "M7 (2026-06-04) reclassified rows by TIMING / CALENDAR facts only, before any returns: 10 intraday rows were RE-ANCHORED to the prior trading close (§3, with the news-break date kept per row), and COF/TLN/HOOD were moved to excluded as macro-contaminated on their first priceable session. Excluded rows kept visible; NO replacement rows were added; no event-study / price / backfill / validation was run."
   - "M9 (2026-06-04) reclassified KR (k-reg-08) by COURT-TIMING / CALENDAR facts only, no returns: the D. Or. ruling was filed after the 2024-12-10 close, so the first priceable session is the 2024-12-11 CPI day -> h1 contaminated -> excluded, kept visible. JBLU's source_url was pinned (DOJ Antitrust case page) and its anchor confirmed; BFH's exact filing time could not be pinned without PACER (kept included, both sessions macro-clean). NO replacement row was added."
+  - "M11 (2026-06-04) sourced 6 candidates (k-reg-24..29) by OFFICIAL-SOURCE + MACRO-CALENDAR research only, no returns: the decisive filter was that the first priceable session land OFF CPI/FOMC/NFP/GDP/PCE days. 4 includes (BX/PYPL/TMUS/WFC, adding alt-asset-managers + telecom sectors and 2 growth-enabling positives) and 2 rejected-but-visible (MSFT weak/CPI-in-h5; COIN first-session-is-CPI-day). NO existing row was altered or replaced; the M11 rows are appended, separately counted."
   - "The closed Phase 1 / Phase 2 evidence FDR pools are untouched and unreferenced; this is open pre-validation sourcing, a separate scope."
-  - "Regulation cohort inference remains BLOCKED and is now SUB-FLOOR: the post-M9 effective N is ~7 (BELOW the n>=8 floor) after KR's exclusion. Resolving it needs another clean-event sourcing round or an explicit N<8 / sector-relative decision, plus the residual BFH exact-anchor (PACER) pin. cohort_ready stays false; no returns, event-study, backfill, or promotion have been run."
+  - "Regulation cohort inference remains BLOCKED but is ABOVE the floor again after M11: the post-M11 effective N is ~9-10. It is NOT validation-ready: the WFC Fed-statement announcement-time pin, the BFH PACER timestamp, and per-row h1 macro cleanliness must be resolved first. cohort_ready stays false; no returns, event-study, backfill, or promotion have been run."
 
 # ---------------------------------------------------------------------------
 # Candidates (15 considered)
@@ -1018,3 +1043,208 @@ candidates:
     operator_notes: >-
       Documents that rail regulation did not yield a clean US-listed second-order
       single-name read this round (acquirer foreign, target first-order).
+
+  # ===== M11 ADDITIONS (k-reg-24 .. k-reg-29) — sourced 2026-06-04 ===========
+  # Read-only official-source + MACRO-CALENDAR research (M11), to restore
+  # effective N above the floor after M9/M10 dropped KR.  The decisive filter
+  # was that the first priceable session land OFF CPI/FOMC/NFP/GDP/PCE days.  4
+  # includes (k-reg-24/25/26/27) add 2 fresh sectors (alt-asset-managers,
+  # telecom) + 2 growth-enabling positives; 2 rejected-but-visible (k-reg-28/29).
+
+  - candidate_id: k-reg-24
+    headline: "SEC adopts the private-fund-adviser rule (quarterly statements, audits, preferential-treatment limits)"
+    source_publisher: "U.S. Securities and Exchange Commission"
+    source_url: "https://www.sec.gov/newsroom/press-releases/2023-155"
+    event_date: "2023-08-22"
+    first_trading_date: "2023-08-23"
+    date_anchor: verified
+    regulatory_authority: "SEC (NOT in the M5 preferred-agency list)"
+    sub_channel: adviser_compliance_rule
+    industry: alt_asset_managers
+    mechanism_family: regulation
+    mechanism_subtype: adviser_compliance_rule
+    primary_ticker: BX
+    benchmark_ticker: XLF
+    predicted_direction: negative
+    what_would_falsify: >-
+      BX fails to underperform XLF within 5d; the rule is read as legally fragile
+      / unlikely to bind (it was indeed later vacated) so no compliance-cost
+      repricing; a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: the rule imposes quarterly-statement / audit /
+      preferential-treatment compliance burden on alternative-asset managers ->
+      downstream cost/margin; BX (Blackstone) is the largest alt-manager pure-play
+      -> clean single-name read.  NEW alt-asset-managers sector.  M11: 2023-08-23
+      CONFIRMED (SEC PR 2023-155, adopted at the open meeting).  M11 RE-ANCHOR
+      (§3): event_date -> 2023-08-22 (intraday SEC meeting); NEWS-BREAK 2023-08-23.
+      MACRO: 2023-08-23 is OFF CPI (8/10) / FOMC (none in Aug) / NFP (8/4) / GDP
+      (8/30) -- only S&P flash PMIs + new home sales (pre-Jackson-Hole) -> h1-only
+      per §6.  CAVEATS: (a) SEC is not in the preferred-agency list (official
+      regulator, flagged); (b) the rule was VACATED by the 5th Cir. 2024-06-05, so
+      the market may have read it as legally fragile -> a possibly-muted negative.
+
+  - candidate_id: k-reg-25
+    headline: "CFPB finalizes the larger-participant rule for general-use digital consumer payment applications (federal supervision of payment apps / digital wallets)"
+    source_publisher: "Consumer Financial Protection Bureau"
+    source_url: "https://www.consumerfinance.gov/rules-policy/final-rules/defining-larger-participants-of-a-market-for-general-use-digital-consumer-payment-applications/"
+    event_date: "2024-11-20"
+    first_trading_date: "2024-11-21"
+    date_anchor: verified
+    regulatory_authority: "CFPB"
+    sub_channel: nonbank_supervision_rule
+    industry: payments
+    mechanism_family: regulation
+    mechanism_subtype: nonbank_supervision_rule
+    primary_ticker: PYPL
+    benchmark_ticker: IPAY
+    predicted_direction: negative
+    what_would_falsify: >-
+      PYPL fails to underperform IPAY within 5d; CFPB supervision is read as
+      low-cost / already-priced; a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: federal CFPB supervision of large payment apps -> compliance /
+      oversight cost -> downstream margin; PYPL owns both PayPal AND Venmo (two of
+      the named covered apps) -> the most-exposed clean single name.  Payments
+      sector (2nd, after V/k-reg-16, sharing the payments factor).  M11: 2024-11-21
+      CONFIRMED (CFPB final rule, "defining larger participants ... digital
+      consumer payment applications").  M11 RE-ANCHOR (§3): event_date ->
+      2024-11-20; NEWS-BREAK 2024-11-21 (AM CFPB).  MACRO: 2024-11-21 is OFF CPI
+      (11/13) / FOMC (11/7) / NFP (11/1) / GDP (11/27) -- the only texture is the
+      NVDA-earnings reaction (NVDA reported 11/20 after close), which is
+      semis-specific and low-correlation to a payments name (NVDA moved only
+      ~-0.5%) -> h1-only per §6.  NOTE: the rule was later repealed by Congress
+      (CRA, 2025) -- AFTER the event, immaterial to this pre-registration.
+
+  - candidate_id: k-reg-26
+    headline: "Federal court (SDNY, Judge Marrero) approves the T-Mobile / Sprint merger, dismissing the 14-state AG antitrust challenge"
+    source_publisher: "U.S. District Court (SDNY) / state-AG antitrust challenge"
+    source_url: "https://www.sec.gov/Archives/edgar/data/0001283699/000119312520030768/d879296dex991.htm"
+    event_date: "2020-02-10"
+    first_trading_date: "2020-02-11"
+    date_anchor: verified
+    regulatory_authority: "U.S. District Court (S.D.N.Y., Judge Marrero) -- state-AG challenge (DOJ had separately cleared with the Dish remedy)"
+    sub_channel: antitrust_merger_clearance
+    industry: telecom
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_merger_clearance_acquirer_read
+    primary_ticker: TMUS
+    benchmark_ticker: XLC
+    predicted_direction: positive
+    what_would_falsify: >-
+      TMUS fails to outperform XLC within 5d; the market reads the cleared deal as
+      integration / dilution risk rather than a scale gain; the late-Feb-2020 COVID
+      selloff contaminates the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER ACQUIRER-GAIN read on TMUS (the cleared merger lets T-Mobile
+      absorb Sprint's scale + spectrum), NOT the first-order deal-spread on the
+      target Sprint (which jumped ~70% -> excluded scope class, cf k-reg-15).  NEW
+      telecom sector.  M11: 2020-02-11 CONFIRMED (Judge Victor Marrero, SDNY,
+      dismissed the 14-state AG challenge).  M11 RE-ANCHOR (§3): event_date ->
+      2020-02-10; NEWS-BREAK 2020-02-11 (ruling broke AM).  MACRO: 2020-02-11 is
+      OFF CPI (2/13) / FOMC (1/29) / NFP (2/7) -- only Powell semiannual testimony
+      (scripted, minor).  CAVEATS: (a) acquirer-direction SOFT (same softness as
+      the KR/JBLU acquirer reads); (b) PRE-COVID-CRASH -- the late-Feb-2020 selloff
+      begins ~2/24, so STRICTLY h1-only (h5/h20 contaminated).  SOURCE PIN: the
+      primary is the SDNY opinion (State of New York v. Deutsche Telekom,
+      19-cv-5434); the source_url is a TMUS 8-K -- verify it is the 02-11 ruling
+      filing and pin the official docket.
+
+  - candidate_id: k-reg-27
+    headline: "Federal Reserve terminates the Wells Fargo $1.95T asset cap (2018 growth-restriction consent order)"
+    source_publisher: "Federal Reserve (Gov. Barr statement)"
+    source_url: "https://www.federalreserve.gov/newsevents/pressreleases/barr-statement-20250603.htm"
+    event_date: "2025-06-03"
+    first_trading_date: "2025-06-03"
+    date_anchor: verified
+    regulatory_authority: "Federal Reserve"
+    sub_channel: consent_order_termination
+    industry: banking
+    mechanism_family: regulation
+    mechanism_subtype: consent_order_termination
+    primary_ticker: WFC
+    benchmark_ticker: KBE
+    predicted_direction: positive
+    what_would_falsify: >-
+      WFC fails to outperform KBE within 5d; the cap removal is read as
+      already-priced (long-telegraphed) so no growth-trajectory repricing; the
+      June-2025 tariff-volatile tape dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER GROWTH-ENABLING positive: the Fed removed the 2018 $1.95T asset
+      cap, letting WFC grow unrestricted (cards, wealth, commercial) -> a
+      forward-growth-trajectory repricing, the cleanest "regulator enables future
+      growth" positive sourced (more than a one-time overhang removal, though
+      relief-lineaged).  Banking sector (3rd, sharing the GS/JPM factor ->
+      effective-N haircut).  M11: 2025-06-03 CONFIRMED (Fed, Gov. Barr statement;
+      WFC 8-K).  TIMING PIN OPEN (convention b): event_date holds the 2025-06-03
+      NEWS-BREAK pending the Fed-statement time -- if after-close, anchor 06-03 /
+      first session 06-04; if intraday, anchor 06-02 / first session 06-03.  MACRO:
+      2025-06-03 is OFF CPI (6/11) / FOMC (6/18) / NFP (6/6) -- only JOLTS; but
+      June-2025 was a tariff-volatile tape -> confirm the WFC move is idiosyncratic.
+      h1-only per §6.
+
+  - candidate_id: k-reg-28
+    headline: "[REJECTED] Federal court (N.D. Cal., Judge Corley) denies the FTC's preliminary injunction against the Microsoft-Activision merger"
+    source_publisher: "FTC / U.S. District Court (N.D. Cal.)"
+    source_url: "https://www.ftc.gov/legal-library/browse/cases-proceedings/microsoft-corpactivision-blizzard-inc"
+    event_date: "2023-07-11"
+    first_trading_date: "2023-07-11"
+    date_anchor: verified
+    regulatory_authority: "FTC / U.S. District Court (N.D. Cal., Judge Corley)"
+    sub_channel: antitrust_clearance
+    industry: tech
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_clearance_acquirer_read
+    primary_ticker: MSFT
+    benchmark_ticker: XLK
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded by M11 (weak signal / not clean), not by data.
+    include_in_validation: false
+    exclude_reason: >-
+      EXCLUDED (M11): a WEAK second-order signal -- the ~$69B Activision deal is
+      small relative to MSFT's ~$2.5T market cap, so the clearance produces a
+      negligible MSFT abnormal move; tech is already represented by AAPL
+      (k-reg-18); the 2023-07-12 CPI sits in MSFT's h5 window; and the
+      acquirer-direction is soft.  Kept visible.
+    operator_notes: >-
+      Documents a considered-but-weak antitrust-clearance acquirer read.  Date
+      2023-07-11 confirmed (Judge Corley, N.D. Cal., denied the FTC injunction).
+
+  - candidate_id: k-reg-29
+    headline: "[REJECTED] SEC approves the first US spot Bitcoin ETFs"
+    source_publisher: "U.S. Securities and Exchange Commission"
+    source_url: "https://www.sec.gov/newsroom/press-releases/2024-2"
+    event_date: "2024-01-10"
+    first_trading_date: "2024-01-11"
+    date_anchor: verified
+    regulatory_authority: "SEC"
+    sub_channel: etf_approval
+    industry: exchanges_crypto
+    mechanism_family: regulation
+    mechanism_subtype: etf_approval
+    primary_ticker: COIN
+    benchmark_ticker: null
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded by M11 (CPI-day first priceable session), not by data.
+    include_in_validation: false
+    exclude_reason: >-
+      EXCLUDED (M11) for MACRO CONTAMINATION, not by data: the SEC approval orders
+      came AFTER the 2024-01-10 close (following the 01-09 fake-tweet incident), so
+      the first priceable session is 2024-01-11 = the December-CPI release day ->
+      h1 contaminated.  This would have been the IDEAL non-relief positive (a
+      regulatory green-light enabling new crypto-trading / custody business for
+      COIN), but it fails the same macro-cleanliness bar that excluded
+      COF/TLN/HOOD/KR -- the recurring honest limit (clean non-relief regulatory
+      positives keep landing on macro-print days).  Kept visible.
+    operator_notes: >-
+      Documents that the cleanest available NON-RELIEF positive was lost to a
+      CPI-day first session.  Revisit only with an intraday / sector-relative method.
