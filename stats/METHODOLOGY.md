@@ -56,31 +56,37 @@ cross-sectional cohort tools above — the z-test in
 is **independent events**. Computability says nothing about whether a
 row is independent of the others.
 
-As of the current local archive the matched compute-ready set does not
-meet that assumption, so cohort inference is on hold. The block is
-**labeling and independence, not the event-study engine**, and it fails
-on the first criterion alone. (The counts below are a dated snapshot —
-run `scripts/event_study_coverage_report.py` for live figures, which
-drift with every coverage repair.)
+As of the current local archive the matched compute-ready set — **70 rows:
+the 62 legacy/organic compute-ready rows plus the 8 Phase-K
+`curated_observation` rows** — does not meet that assumption, so cohort
+inference is on hold. The block is **labeling and independence, not the
+event-study engine**. (The counts below are a dated snapshot — run
+`scripts/event_study_coverage_report.py` for live figures, which drift with
+every coverage repair.)
 
-- **`mechanism_family` is unpopulated (`none`) for every compute-ready
-  row.** This is the stable, independently sufficient block: the one
-  economically grouped cohort axis does not exist, so there is no
-  defensible cohort to declare. The count-based buckets that reach
-  `n >= 8` (a single ticker; one `stage` value; one `persistence` value)
-  are not independent cohorts — they re-slice the same correlated rows
-  under a different label.
-- **The rows are date-clustered with overlapping forward windows.** The
-  62 compute-ready rows fall within about four weeks — 14 distinct event
-  dates from 2026-04-04 to 2026-05-02 — so their 20-day forward windows
-  overlap heavily (an event dated one business day after another shares
-  19 of its 20 forward bars). Overlap makes the observations correlated
-  regardless of how many distinct tickers are present.
-- **Ticker coverage is broader than before but still concentrated.** The
-  set spans roughly 19 distinct primary tickers across several sectors —
-  broader than the pre-repair energy / oil cluster — yet one ticker
-  (XLE) is still about a third of the rows, so the nominal row count
-  badly overstates the count of independent observations.
+- **`mechanism_family` is unpopulated for the legacy/organic compute-ready
+  rows, and the 8 labeled Phase-K rows do not rescue a pooled read.** The 62
+  legacy/organic compute-ready rows carry no economic grouping label, so for
+  them the one economically grouped cohort axis does not exist. The 8 Phase-K
+  `curated_observation` rows *are* labeled (tariff / sanction), but pooling
+  across them is still blocked by a family/sign confound (every tariff event
+  is expected-positive, every sanction event expected-negative) and per-family
+  n < 8 — see `stats/PHASE_K_EVIDENCE.md` §7. Either way there is no defensible
+  cohort to declare. The count-based buckets that reach `n >= 8` (a single
+  ticker; one `stage` value; one `persistence` value) are not independent
+  cohorts — they re-slice the same correlated rows under a different label.
+- **The legacy/organic rows are date-clustered with overlapping forward
+  windows.** Those 62 legacy/organic rows fall within about four weeks — 14
+  distinct event dates from 2026-04-04 to 2026-05-02 — so their 20-day forward
+  windows overlap heavily (an event dated one business day after another
+  shares 19 of its 20 forward bars). Overlap makes the observations correlated
+  regardless of how many distinct tickers are present. (The 8 Phase-K rows are
+  separate historical anchors from 2018–2024 and do not share this window.)
+- **Ticker coverage in that legacy cluster is broader than before but still
+  concentrated.** It spans roughly 19 distinct primary tickers across several
+  sectors — broader than the pre-repair energy / oil cluster — yet one ticker
+  (XLE) is still about a third of the rows, so the nominal row count badly
+  overstates the count of independent observations.
 
 Why the existing tools would overstate on this set: the cohort z
 statistic is `mean(SAR) / (sd(SAR) / sqrt(n))`. With correlated,
@@ -114,7 +120,10 @@ read-only first:
 
 Until then the honest surface is the single-event route
 (`GET /events/{event_id}/event-study`): per-horizon point estimates with
-CI, p-value, and FDR explicitly unavailable at `n = 1`.
+CI, p-value, and FDR explicitly unavailable at `n = 1`. The Phase-K
+`curated_observation` events are read this way in
+`stats/PHASE_K_EVIDENCE.md` — descriptive, h1-only single-event evidence,
+explicitly **not** a validation and **not** a pooled cohort.
 
 ## What is intentionally absent
 

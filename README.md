@@ -112,11 +112,12 @@ no longer holds — but no row mixes flags, so no splice caveat applies.
 Current verified counts from
 `python scripts/stat_validation_readiness_report.py --json --limit 0`:
 
-- total archive events: 157
-- archive-ready events: 63
-- event-study compute-ready events: 62 (was 44 before the Batch-1
-  coverage repair documented below)
-- matched-basis events: 62
+- total archive events: 165
+- archive-ready events: 71
+- event-study compute-ready events: 70 (was 62 after the Batch-1 coverage
+  repair documented below, and 44 before it; the +8 are the Phase-K
+  `curated_observation` promotions)
+- matched-basis events: 70
 - cross-flag caveats: 0
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
@@ -128,14 +129,17 @@ statistics.
 Compute-ready rows are also not automatically valid cohort
 observations. Across the matched compute-ready set, cohort-level
 inference is currently on hold, and the block is independence and
-labeling rather than the event-study engine: the rows are concentrated
-in a few primary tickers and one clustered macro event with overlapping
-forward windows, and `mechanism_family` is unpopulated, so they are not
-independent observations. Running cross-sectional CI, p-value, or FDR
-over them would overstate precision. The criteria a future cohort phase
-must meet are recorded in `stats/METHODOLOGY.md` ("Cohort inference —
-currently blocked"). This decision does not change the closed Phase 1 or
-Phase 2 FDR denominators.
+labeling rather than the event-study engine: the legacy/organic
+compute-ready rows are concentrated in a few primary tickers and one
+clustered macro window with overlapping forward windows and carry no
+`mechanism_family` label, so they are not independent observations. The
+8 Phase-K `curated_observation` rows *are* labeled (tariff / sanction),
+but a pooled read across them is still blocked by a family/sign confound
+and per-family n < 8 — see `stats/PHASE_K_EVIDENCE.md`. Running
+cross-sectional CI, p-value, or FDR over the set would overstate
+precision. The criteria a future cohort phase must meet are recorded in
+`stats/METHODOLOGY.md` ("Cohort inference — currently blocked"). This
+decision does not change the closed Phase 1 or Phase 2 FDR denominators.
 
 After the Batch-1 coverage repair (below) the residual cache/window
 blockers shrank sharply — `no_contiguous_aligned_window` fell from 8 to
@@ -160,19 +164,20 @@ It is **not a new FDR pool** and never reads, modifies, or reopens the
 closed Phase 1 / Phase 2 pools (`demo_artifacts` / `cohort_evidence` are a
 separate scope). It reuses the same gate as the event-detail route, so its
 `event_study_available` count matches the readiness report's
-`event_study_compute_ready` exactly (62 = 62).
+`event_study_compute_ready` exactly (70 = 70).
 
 **Single-event output is point estimates only.** At `n=1` there is no
 confidence interval, no p-value, and no FDR; the report makes no
 `confirmed` / `validated` / "significant" claim. Each JSON payload carries
 an explicit `non_claims` block stating this.
 
-Current live coverage (after the Batch-1 coverage repair below):
+Current live coverage (after the Batch-1 coverage repair below and the
+Phase-K `curated_observation` promotions):
 
-- event_study_available: 62
+- event_study_available: 70
 - insufficient_data: 95
 - curated_intake excluded: 1
-- auto_adjust basis: matched 62, cross_flag 0
+- auto_adjust basis: matched 70, cross_flag 0
 
 The dominant blocker is `no_primary_ticker` (84) — a **coverage gap, not a
 statistics failure**: those events never reach the engine because they
@@ -191,13 +196,16 @@ python scripts/event_study_coverage_report.py --json
 ### Batch-1 event-study coverage repair (H1 → H3, 2026-06-03)
 
 The first bounded coverage-repair batch lifted event-study compute-ready
-events from **44/157 to 62/157** (insufficient **113 → 95**) by backfilling
-missing `price_cache` rows. It added no events, changed no thesis text, and
-reassigned no tickers or benchmarks — it is a data-coverage fix, not new
-evidence.
+events from **44 to 62** (insufficient **113 → 95**) against the then-157
+analysis-stage rows, by backfilling missing `price_cache` rows. It added no
+events, changed no thesis text, and reassigned no tickers or benchmarks — it
+is a data-coverage fix, not new evidence.
 
-**Denominator of record.** 157 analysis-stage events; curated_intake stubs
-are excluded separately (1 at repair time) and never enter this count.
+**Denominator at repair time.** 157 analysis-stage events as of 2026-06-03;
+curated_intake stubs are excluded separately (1 at repair time) and never
+enter this count. (The live analysis-stage denominator is now 165 after the
+Phase-K promotions — see the data-hygiene section below for the current
+split.)
 
 **Frozen baseline (H1).** The 113 insufficient rows split into 84 with no
 primary ticker and 29 that already carried a primary ticker but failed a
@@ -240,7 +248,7 @@ pre-promotion backup is at
 
 **Non-claims.** This is coverage repair (more rows can now produce point
 estimates), **not** new-evidence discovery and **not** a cohort-level
-inference — the compute-ready set stays concentrated in a few primary
+inference — the Batch-1 compute-ready rows were concentrated in a few primary
 tickers with `mechanism_family` unpopulated, so no cross-sectional CI,
 p-value, or BH-FDR is claimed and the closed Phase 1 / Phase 2 FDR pools are
 untouched. No replacement events were cherry-picked to inflate the pass
@@ -255,27 +263,44 @@ headline + `model` fingerprint (never by lack of a ticker) into
 `synthetic_seed` / `synthetic_test` / `real_duplicate` / `real_unique`, and
 emits three denominator views so every coverage figure names the base it uses:
 
-- **157 — analysis-stage, denominator of record:** 62/157 ≈ 39% event-study
-  coverage. Every analysis-stage row, contamination included.
-- **86 — real rows** (157 − 71 synthetic): 62/86 ≈ 72%. Non-synthetic rows.
-- **71 — distinct real events** (the 86 real rows after collapsing duplicate
-  headlines): 52/71 ≈ 73%. The most defensible research-coverage figure.
+- **165 — analysis-stage observation denominator:** 70/165 ≈ 42% event-study
+  coverage. Every analysis-stage row, contamination included. This is the
+  research-*observation* denominator (`db.NON_ANALYSIS_STAGES` excludes only
+  the 1 `curated_intake` stub: 166 − 1 = 165); it **includes** the 8 Phase-K
+  `curated_observation` promotions.
+- **94 — real rows** (165 − 71 synthetic): 70/94 ≈ 74%. Non-synthetic rows.
+- **79 — distinct real events** (the 94 real rows after collapsing duplicate
+  headlines): 60/79 ≈ 76%. The most defensible research-coverage figure.
 
-(Archive raw total is 158, including the one excluded `curated_intake` stub.)
+(Archive raw total is 166, including the one excluded `curated_intake` stub.)
 
-**Why 157 stays the disclosed denominator of record.** It keeps the
-legacy/seed/test contamination *visible* instead of quietly dropping it — a
-reader sees that ~45% of the analysis-stage archive is non-research rows
-rather than being handed a flattering ratio with the noise hidden. Coverage is
-always reported against 157 first.
+**Two separate denominators — and why 157 is still here.** The 8 Phase-K
+`curated_observation` rows raised the analysis-stage *observation* denominator
+from 157 to **165**, but the *thesis / track-record* denominator stayed at
+exactly **157**, because `db.NON_THESIS_STAGES` excludes **both**
+`curated_intake` (1) **and** `curated_observation` (8): 166 − 1 − 8 = 157.
+Those 8 rows carry a primary ticker and a `mechanism_family`, so they are real
+event-study *observations* (counted in the 165), but they carry no LLM thesis
+(beneficiaries / losers / direction), so they never enter the *outcome* pool
+(the 157). One denominator answers "can the engine read this event"; the other
+answers "did a scored thesis play out". The 8 promotions and their descriptive,
+single-event (h1-only) evidence — explicitly **not** a validation and **not** a
+pooled cohort — are recorded in `stats/PHASE_K_EVIDENCE.md`.
 
-**Why 86 and 71 matter.** They are the honest denominators for any
+**Why 165 keeps the contamination visible.** Reporting coverage against the
+full analysis-stage 165 first keeps the legacy/seed/test contamination
+*visible* instead of quietly dropping it — a reader sees that a large share of
+the analysis-stage archive is non-research rows rather than being handed a
+flattering ratio with the noise hidden. Coverage is always reported against
+165 first.
+
+**Why 94 and 79 matter.** They are the honest denominators for any
 coverage/quality *claim*. The 71 synthetic rows never reach the engine (all
-no-ticker, all insufficient), so 62/157 actually *understates* real reach; the
-86-row and 71-event views state it honestly, and the 71-event view
+no-ticker, all insufficient), so 70/165 actually *understates* real reach; the
+94-row and 79-event views state it honestly, and the 79-event view
 additionally collapses duplicate headlines so coverage is not double-counted.
-Exclusion here enables *computation*, never silent shrinkage: both ratios are
-reported alongside 157, never instead of it.
+Exclusion here enables *computation*, never silent shrinkage: every ratio is
+reported alongside 165, never instead of it.
 
 **Synthetic / seed / test rows: 71.** 58 are seed/demo headlines run through
 the real model (e.g. "OPEC slashes output by 2 mbpd", "Fed speakers rotate"),
@@ -284,19 +309,20 @@ test event", "Test headline" / the `test-model` fingerprint). All 71 carry no
 primary ticker and are insufficient — none is compute-ready.
 
 **Real duplicates: 27 rows across 12 headlines (15 redundant copies).** Even
-within the 86 real rows, the same genuine headline is sometimes analysed on
+within the 94 real rows, the same genuine headline is sometimes analysed on
 multiple dates (e.g. "AP News: OPEC members discuss extending output cuts" ×4),
-so the 62 compute-ready *rows* are only **52 distinct events**. Duplicates
+so the 70 compute-ready *rows* are only **60 distinct events**. Duplicates
 barely move the coverage *ratio* (the redundancy nearly cancels between
 numerator and denominator); their real cost is to the independent-observation
 count any cohort claim would need.
 
 **Non-claims.** This is denominator *hygiene*, not statistical inference. The
 report deletes and mutates nothing (read-only) and never reads, modifies, or
-reopens the closed Phase 1 / Phase 2 FDR pools; it does not change the 157
-denominator of record. The cohort/inference denominator stays **separately
-gated** by the independence and `mechanism_family` rules in
-`stats/METHODOLOGY.md` — de-duplicating headlines is necessary but not
+reopens the closed Phase 1 / Phase 2 FDR pools; it changes neither the 165
+analysis-stage observation denominator nor the separate 157 thesis denominator.
+The cohort/inference denominator stays **separately gated** by the independence
+and `mechanism_family` rules in `stats/METHODOLOGY.md` and the Phase-K blockers
+in `stats/PHASE_K_EVIDENCE.md` — de-duplicating headlines is necessary but not
 sufficient for cohort eligibility.
 
 ```powershell
@@ -384,11 +410,15 @@ python scripts/curated_event_intake_apply.py `
     --write --confirm --backup-path backups/pre-intake.db --json
 ```
 
-**Current live counts** after the first curated write:
+**Current live counts** (live archive, post-Phase-K):
 
-- raw events: 158
-- readiness `total_events`: 157 (curated_intake excluded)
+- raw events: 166 (1 `curated_intake` stub + 8 Phase-K `curated_observation`
+  promotions + 157 thesis-eligible analysis-stage rows)
+- readiness `total_events`: 165 (`curated_intake` excluded; the 8
+  `curated_observation` rows are counted here but excluded from the thesis /
+  track-record denominator — see the data-hygiene section)
 - `curated_intake_excluded_count`: 1
+- `source_anchored_promoted_count`: 8 (Phase-K `curated_observation` rows)
 
 ## Price-Provider Provenance — Where a Cached Bar Came From
 
