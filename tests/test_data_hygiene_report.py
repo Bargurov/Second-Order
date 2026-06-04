@@ -236,7 +236,11 @@ class SummarizeFixtureTests(unittest.TestCase):
         self.assertTrue(nc["does_not_touch_phase1_phase2_fdr_pools"])
         self.assertTrue(nc["does_not_delete_or_mutate_rows"])
         self.assertTrue(nc["classification_is_heuristic_and_auditable"])
-        self.assertEqual(nc["denominator_of_record_remains_157"], True)
+        # Post-K: the frozen-157 "denominator of record" key is gone; the
+        # corrected, can't-go-stale stance is machine-readable in its place.
+        self.assertNotIn("denominator_of_record_remains_157", nc)
+        self.assertTrue(nc["analysis_stage_denominator_is_dynamic"])
+        self.assertTrue(nc["thesis_denominator_separate_from_analysis_stage"])
 
     def test_coverage_ratios_shape(self):
         rep = report.summarize_data_hygiene(db_path=str(self.tmp))
@@ -275,6 +279,65 @@ class SummarizeFixtureTests(unittest.TestCase):
         # report when a required field is added.
         rep = report.summarize_data_hygiene(db_path=str(self.tmp))
         self.assertEqual(set(report._empty_report()), set(rep))
+
+
+# ---------------------------------------------------------------------------
+# Honesty guard: the "157 remains the denominator of record" framing
+# ---------------------------------------------------------------------------
+
+
+# These phrases were true before Phase K (when the analysis-stage denominator
+# was a frozen 157) but became dishonest once curated_observation rows were
+# promoted into the analysis stage (live analysis_stage_total is now 165). None
+# may reappear in the docstring, the non-claims block, or either renderer. The
+# strictly-conditional thesis note ("may remain 157" / "not a frozen 157") is
+# deliberately NOT banned — only the unconditional / "denominator of record"
+# framing is.
+_STALE_DENOMINATOR_PHRASES = (
+    "denominator_of_record_remains_157",
+    "denominator of record",
+    "157 analysis-stage count",
+    "157 remains",
+)
+
+
+class NoStaleDenominatorWordingTests(unittest.TestCase):
+    def _assert_clean(self, text, where):
+        for phrase in _STALE_DENOMINATOR_PHRASES:
+            self.assertNotIn(
+                phrase, text,
+                f"stale denominator wording {phrase!r} reappeared in {where}",
+            )
+
+    def test_module_docstring_has_no_stale_denominator_wording(self):
+        self._assert_clean(report.__doc__ or "", "module docstring")
+
+    def test_non_claims_keys_have_no_frozen_157(self):
+        for key in report._NON_CLAIMS:
+            self.assertNotIn("157", key, f"non_claims key {key!r} embeds a frozen 157")
+        self.assertNotIn("denominator_of_record_remains_157", report._NON_CLAIMS)
+
+    def test_non_claims_notes_have_no_stale_denominator_wording(self):
+        self._assert_clean(report._NON_CLAIMS["notes"], "non_claims notes")
+
+    def test_json_render_has_no_stale_denominator_wording(self):
+        self._assert_clean(report._render_json(report._empty_report()), "JSON render")
+
+    def test_text_render_has_no_stale_denominator_wording(self):
+        self._assert_clean(report._render_text(report._empty_report()), "text render")
+
+    def test_non_claims_documents_dynamic_analysis_denominator(self):
+        # The corrected stance must be machine-readable, not merely deleted.
+        nc = report._NON_CLAIMS
+        self.assertTrue(nc["analysis_stage_denominator_is_dynamic"])
+        self.assertTrue(nc["thesis_denominator_separate_from_analysis_stage"])
+
+    def test_text_render_surfaces_source_anchored_promoted(self):
+        # The promoted curated_observation count is surfaced beside the
+        # analysis-stage denominator, never hidden.
+        self.assertIn(
+            "source-anchored promoted", report._render_text(report._empty_report())
+        )
 
 
 if __name__ == "__main__":

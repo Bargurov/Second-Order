@@ -3,10 +3,10 @@
 
 The live archive's ``events`` table mixes three populations: genuine ingested
 research events, deliberately seeded/demo headlines run through the real
-analysis pipeline, and literal test artifacts.  The H5/C audit found that of
-157 analysis-stage rows, **71 are synthetic/seed/test** and a further **15 are
-redundant copies of real headlines** — so an honest coverage ratio must name
-which denominator it uses.
+analysis pipeline, and literal test artifacts.  The H5/C audit found that, of
+the then-157 analysis-stage rows, **71 were synthetic/seed/test** and a further
+**15 were redundant copies of real headlines** — so an honest coverage ratio
+must name which denominator it uses.
 
 This report makes that classification auditable in one place.  It loops over
 every analysis-stage archived event (read-only — plain ``SELECT``s, no
@@ -28,9 +28,9 @@ fingerprint visible in each ``synthetic_groups`` entry.  The real recurring
 "AP News: OPEC members discuss extending output cuts" is deliberately NOT
 collided with the seed "OPEC slashes output by 2 mbpd".
 
-It emits four honest denominators (archive/raw, analysis-stage denominator of
-record, real rows, distinct real events) and the three coverage ratios that
-follow from them.
+It emits four honest denominators (archive/raw, the analysis-stage total, real
+rows, distinct real events) and the three coverage ratios that follow from
+them.
 
 What this report explicitly does NOT do (see the ``non_claims`` block)
 ----------------------------------------------------------------------
@@ -39,8 +39,13 @@ What this report explicitly does NOT do (see the ``non_claims`` block)
 * Never deletes, edits, or mutates any row — read-only.
 * The classification is a documented heuristic, surfaced per-group so a
   reviewer can audit it; it is not a stored label.
-* The 157 analysis-stage count stays the disclosed denominator of record; the
-  research denominators are reported alongside it, never instead of it.
+* The analysis-stage denominator is the live ``analysis_stage_total`` field
+  (it grows as ``curated_observation`` rows are promoted, broken out by
+  ``source_anchored_promoted_count``), not a frozen 157.  The thesis /
+  track-record denominator is a SEPARATE pool — it may remain 157 because
+  ``db.NON_THESIS_STAGES`` keeps ``curated_observation`` out of the outcome
+  counts.  The research denominators are reported alongside the analysis-stage
+  total, never instead of it.
 
 Usage::
 
@@ -124,16 +129,26 @@ _NON_CLAIMS: dict[str, Any] = {
     "does_not_touch_phase1_phase2_fdr_pools": True,
     "does_not_delete_or_mutate_rows": True,
     "classification_is_heuristic_and_auditable": True,
-    "denominator_of_record_remains_157": True,
+    # The analysis-stage denominator is this report's live ``analysis_stage_total``,
+    # not a frozen constant; it grows as curated_observation rows are promoted.
+    "analysis_stage_denominator_is_dynamic": True,
+    # The thesis / track-record denominator is a separate pool — db.NON_THESIS_STAGES
+    # excludes curated_observation — so it may differ from analysis_stage_total.
+    "thesis_denominator_separate_from_analysis_stage": True,
     "notes": (
         "Wider-archive event-study hygiene only. Synthetic/test rows are "
         "classified by exact seed headline + test-model fingerprint (corroborated "
         "by the repeated consecutive-date pattern shown per group), never by lack "
         "of ticker. The report reads the archive read-only, deletes/edits nothing, "
         "and never reads, modifies, or reopens the closed Phase 1 / Phase 2 FDR "
-        "pools. The 157 analysis-stage count remains the disclosed denominator of "
-        "record; the real-row and distinct-real-event denominators are reported "
-        "alongside it, not instead of it."
+        "pools. The analysis-stage denominator is this report's live "
+        "analysis_stage_total field, not a frozen constant; "
+        "source_anchored_promoted_count breaks out the promoted curated_observation "
+        "rows it includes. The thesis / track-record denominator is a separate pool "
+        "(it may remain 157) because db.NON_THESIS_STAGES excludes "
+        "curated_observation from the outcome counts. The real-row and "
+        "distinct-real-event denominators are reported alongside the analysis-stage "
+        "total, not instead of it."
     ),
 }
 
@@ -518,8 +533,9 @@ def _render_json(report: dict[str, Any]) -> str:
 def _render_text(report: dict[str, Any]) -> str:
     L: list[str] = ["Archive data-hygiene report", ""]
     L.append(f"archive raw total (incl curated_intake): {report['archive_raw_total']}")
-    L.append(f"analysis-stage total (denominator of record): {report['analysis_stage_total']}")
+    L.append(f"analysis-stage total (analysis denominator): {report['analysis_stage_total']}")
     L.append(f"  curated_intake excluded: {report['curated_intake_excluded_count']}")
+    L.append(f"  source-anchored promoted (curated_observation): {report['source_anchored_promoted_count']}")
     L.append(
         f"  synthetic: {report['synthetic_total']} "
         f"(seed {report['synthetic_seed_count']}, test {report['synthetic_test_count']})"
@@ -549,8 +565,9 @@ def _render_text(report: dict[str, Any]) -> str:
     L.append("")
     L.append("Caveat: synthetic/test rows are classified heuristically (exact seed "
              "headline + test-model fingerprint), kept visible, never deleted; the "
-             "157 analysis-stage count stays the denominator of record; the closed "
-             "Phase 1/2 FDR pools are untouched.")
+             "analysis-stage denominator is the live analysis_stage_total above, not "
+             "a frozen 157 (the separate thesis / track-record denominator may remain "
+             "157); the closed Phase 1/2 FDR pools are untouched.")
     return "\n".join(L)
 
 
