@@ -19,8 +19,10 @@ It makes **no** of the following claims:
   confirmed (or refuted) mechanism.
 - **No buy / sell or directional trading-signal framing.**
 
-All reads are vs **SPY** (the production event-study benchmark). A
-sector-relative benchmark sensitivity (XME/SMH/TAN/XLE) has not been run.
+The event-study reads in §4 are vs **SPY** (the production event-study
+benchmark). A read-only sector-relative sensitivity against the named sector
+ETFs (XLY/XME/SMH/TAN/XLE) is reported in §8 as a descriptive robustness
+check; it adds no new claim.
 
 ## 2. Denominator / funnel (kept visible)
 
@@ -118,6 +120,55 @@ and it is **not** separable into "mechanism vs direction" (see §7).
 
 Until then, the honest surface is this per-event, h1-only, descriptive note.
 
+## 8. Sector-relative h1 sensitivity
+
+A read-only **sector-relative sensitivity**: the same corrected h1 anchors as
+§4, re-measured against the named **sector ETF** as benchmark instead of SPY,
+to ask whether each move survives stripping out the sector beta. The SPY h1
+AR% column repeats §4 exactly, as a cross-check; the sector leg is
+**descriptive only** and adds no new claim.
+
+| candidate | ticker | family | exp. dir | sector ETF | SPY h1 AR% | sector h1 AR% | survives sector |
+|---|---|---|---|---|---|---|---|
+| k-tar-04  | WHR  | tariff   | + | XLY | **+2.99** | +2.36 | yes (moderate) |
+| k-san-04  | NVDA | sanction | − | SMH | **−7.98** | −5.48 | yes (robust) |
+| k-tar-05b | NUE  | tariff   | + | XME | **+4.71** | +0.76 | sign only — mostly sector-wide |
+| k-san-03b | PBF  | sanction | − | XLE | **−1.92** | −1.68 | yes (modest) |
+| k-san-02b | QRVO | sanction | − | SMH | **−8.07** | −5.73 | yes (robust) |
+| k-tar-06b | FSLR | tariff   | + | TAN | **−1.81** | −3.69 | no — still contradicts |
+| k-san-05  | LRCX | sanction | − | SMH | **+0.83** | +1.66 | no — wrong-sign / anticipated |
+
+**Interpretation (descriptive).** Sign agreement with the pre-registered
+direction **survives the sector benchmark for all five SPY-supporting events**
+(WHR, NVDA, NUE, PBF, QRVO). **QRVO and NVDA are the most robust name-specific
+reads** — each keeps a large negative move against SMH (−5.73 and −5.48
+respectively, vs ≈ −8% against SPY) once the semis-sector beta is removed. **WHR is moderate** — its abnormal move over XLY is smaller
+but still positive. **PBF is modest** — close to its XLE sector. **NUE survives
+in sign only**: against XME the abnormal move collapses to +0.76, so most of
+the SPY-measured +4.71 was a **sector-wide steel move**, not strong
+name-specific evidence. **FSLR and LRCX remain non-supportive** — FSLR is even
+more negative against TAN (still a contradiction of its expected-positive
+direction), and LRCX stays wrong-sign against SMH (the weak, anticipated read).
+
+**Benchmark caveats.**
+
+- **NVDA is a heavy SMH component**, so SMH partly contains NVDA's own move;
+  benchmarking against it can **mute** the idiosyncratic read rather than
+  isolate it.
+- **FSLR sits in TAN, and TAN itself reacts to solar trade / policy**, so the
+  sector leg is not independent of the tariff event being measured.
+- **Sector-relative removes sector beta, not the family / sign confound.**
+  Every tariff read is still expected-positive and every sanction read
+  expected-negative, so a sector benchmark cannot separate "the mechanism
+  worked" from a one-sided sector move (see §7).
+
+**Non-claims (unchanged).** This sector leg adds **no** pooled-cohort claim,
+**no** FDR / significance claim, and **no** validated / contradicted *thesis*
+or *mechanism* claim; it carries **no** buy / sell or directional
+trading-signal framing. The family / sign confound of §7 remains. It is one
+more descriptive, h1-only, single-event read — now against a second benchmark
+— and nothing here is aggregated into a cohort statistic.
+
 ---
 
 *Sources:* `examples/phase_k_tariff_sourcing_funnel.yaml`,
@@ -126,4 +177,5 @@ Until then, the honest surface is this per-event, h1-only, descriptive note.
 run (restore point `backups/pre_k14_phase_k_live_promotion_2026-06-04.db`).
 Event-study reads via `event_study_validation.build_event_study_validation`
 (vs SPY). Corrected-anchor reads were computed read-only on a DB copy; live
-`events.db` was not mutated and no event row was re-dated.
+`events.db` was not mutated and no event row was re-dated. §8 reports a
+descriptive sector-ETF sensitivity on the same §4 corrected anchors.
