@@ -20,14 +20,16 @@
 # * NOT a 29-event cohort, but ABOVE the floor again (not yet validation-ready).
 #   After M11, 15 of the 29 considered rows are includes across TEN sectors; the
 #   estimated effective N is ~9-10 -- ABOVE the n>=8 floor in stats/METHODOLOGY.md.
-#   Still NOT validation-ready: the WFC Fed-statement announcement-time pin, the
-#   BFH PACER timestamp, and per-row h1 macro cleanliness are open.  cohort_ready
-#   is false.  (Lineage: M3 = 9 includes / ~6 effective; M5 added six fresh-sector
-#   includes toward ~8-10; M7 re-anchored 10 intraday rows and EXCLUDED COF/TLN/HOOD
+#   After M13 the WFC timing and TMUS source pins are RESOLVED; the only residuals
+#   before the first returns/validation gate are the non-blocking BFH exact anchor
+#   (PACER) and the standard per-row h1-macro confirmation.  cohort_ready is false.
+#   (Lineage: M3 = 9 includes / ~6 effective; M5 added six fresh-sector includes
+#   toward ~8-10; M7 re-anchored 10 intraday rows and EXCLUDED COF/TLN/HOOD
 #   (macro-contaminated), settling at ~8; M9 EXCLUDED KR (after-close 12-10 ->
 #   12-11 CPI-day h1), dropping it to ~7 / sub-floor; M11 sourced 4 macro-clean
 #   includes (BX/PYPL/TMUS/WFC: 2 new sectors + 2 growth-enabling positives),
-#   restoring ~9-10.)
+#   restoring ~9-10; M13 pinned WFC (after-close -> first session 06-04) + TMUS
+#   (DOJ + opinion).)
 # * NOT first-order regulatory evidence.  Per the M1 scope decision this family
 #   is SECOND-ORDER only: the regulator acts on the firm's competitive /
 #   prudential / pricing environment and the market prices the DOWNSTREAM
@@ -100,8 +102,8 @@ funnel_summary:
   direction_mix_included: "6 positive / 9 negative"   # M11: +2 pos (TMUS/WFC), +2 neg (BX/PYPL)
   core_new_additions: "k-reg-16 V + k-reg-18 AAPL SURVIVE; k-reg-17 COF + k-reg-19 TLN EXCLUDED (M7 macro-contaminated)"
   secondary_flagged_additions: "k-reg-20 LYV kept (re-anchored); k-reg-21 HOOD EXCLUDED (FOMC-day)"
-  effective_independent_n_estimate: "~9-10 (ABOVE the n>=8 floor again; M11 restored it with 2 fresh sectors [alt-managers BX, telecom TMUS] + PYPL/WFC, conditional on the WFC announcement-time pin, the BFH PACER pin, and per-row h1 macro cleanliness)"
-  cohort_ready: false                 # above the floor again, but timing pins (WFC, BFH) + h1-cleanliness still pending before any validation
+  effective_independent_n_estimate: "~9-10 (ABOVE the n>=8 floor; M13 RESOLVED the WFC timing [after-close -> first session 06-04] and the TMUS source [DOJ release + opinion 439 F.Supp.3d 179]; the only residual is the BFH exact anchor [PACER-only, NON-BLOCKING -- both candidate sessions macro-clean] plus the standard per-row h1-macro confirmation at the validation gate)"
+  cohort_ready: false                 # WFC/TMUS pins resolved (M13); only the non-blocking BFH anchor + per-row h1-macro confirmation remain before the first returns/validation gate
   conclusion: >-
     Regulation is a genuinely CROSSED-SIGN second-order family: the same
     mechanism produces clean positives (prudential relief, a vacated fee rule,
@@ -254,9 +256,11 @@ independence_span:
       h1-only (pre-COVID-crash).  POSITIVE LEG improved but still mostly relief:
       JPM/BFH/JBLU/BTU-repeal (relief) + TMUS (acquirer-gain) + WFC (growth-
       enabling, the cleanest) = 6 positives; the truly NON-relief positive (COIN
-      spot-BTC-ETF) was rejected for a CPI-day first session.  NOT validation-ready:
-      the WFC announcement-time pin, the BFH PACER pin, and per-row h1 macro
-      cleanliness must still be resolved before any returns/event-study.
+      spot-BTC-ETF) was rejected for a CPI-day first session.  M13 then RESOLVED the
+      WFC timing (after-close -> first session 06-04) and the TMUS source (DOJ
+      release + opinion); the only residuals before any returns/event-study are the
+      non-blocking BFH exact anchor (PACER) and the standard per-row h1-macro
+      confirmation.
 
 # ---------------------------------------------------------------------------
 # Anti-cherry-pick statement (binding)
@@ -272,8 +276,9 @@ anti_cherry_pick:
   - "M7 (2026-06-04) reclassified rows by TIMING / CALENDAR facts only, before any returns: 10 intraday rows were RE-ANCHORED to the prior trading close (§3, with the news-break date kept per row), and COF/TLN/HOOD were moved to excluded as macro-contaminated on their first priceable session. Excluded rows kept visible; NO replacement rows were added; no event-study / price / backfill / validation was run."
   - "M9 (2026-06-04) reclassified KR (k-reg-08) by COURT-TIMING / CALENDAR facts only, no returns: the D. Or. ruling was filed after the 2024-12-10 close, so the first priceable session is the 2024-12-11 CPI day -> h1 contaminated -> excluded, kept visible. JBLU's source_url was pinned (DOJ Antitrust case page) and its anchor confirmed; BFH's exact filing time could not be pinned without PACER (kept included, both sessions macro-clean). NO replacement row was added."
   - "M11 (2026-06-04) sourced 6 candidates (k-reg-24..29) by OFFICIAL-SOURCE + MACRO-CALENDAR research only, no returns: the decisive filter was that the first priceable session land OFF CPI/FOMC/NFP/GDP/PCE days. 4 includes (BX/PYPL/TMUS/WFC, adding alt-asset-managers + telecom sectors and 2 growth-enabling positives) and 2 rejected-but-visible (MSFT weak/CPI-in-h5; COIN first-session-is-CPI-day). NO existing row was altered or replaced; the M11 rows are appended, separately counted."
+  - "M13 (2026-06-04) pinned WFC and TMUS by SOURCE / TIMING facts only, no returns and NO membership change: WFC's Fed announcement was confirmed AFTER the 2025-06-03 close (the move traded after-hours) -> first_trading_date corrected to 2025-06-04 (event_date stays 2025-06-03); TMUS's source_url was tightened to the DOJ press release + the published opinion (439 F.Supp.3d 179). BFH's exact filing time remains PACER-only but NON-BLOCKING (both candidate anchors macro-clean) -> run a both-anchor h1 sensitivity at validation."
   - "The closed Phase 1 / Phase 2 evidence FDR pools are untouched and unreferenced; this is open pre-validation sourcing, a separate scope."
-  - "Regulation cohort inference remains BLOCKED but is ABOVE the floor again after M11: the post-M11 effective N is ~9-10. It is NOT validation-ready: the WFC Fed-statement announcement-time pin, the BFH PACER timestamp, and per-row h1 macro cleanliness must be resolved first. cohort_ready stays false; no returns, event-study, backfill, or promotion have been run."
+  - "Regulation cohort inference remains BLOCKED but is ABOVE the floor (~9-10) with the WFC/TMUS pins RESOLVED (M13). The only residuals before the first returns/validation gate are the non-blocking BFH exact anchor (PACER) and the standard per-row h1-macro confirmation. cohort_ready stays false; no returns, event-study, backfill, or promotion have been run."
 
 # ---------------------------------------------------------------------------
 # Candidates (15 considered)
@@ -413,7 +418,13 @@ candidates:
       05-13) are macro-clean enough, so BFH STAYS INCLUDED and is usable either
       way; the exact §3 anchor (05-09 vs 05-10) is a residual precision pin only.
       No stable official N.D. Tex order URL found -> source_url left as the CFPB
-      litigation page (do not invent one).  h1-only.
+      litigation page (do not invent one).  h1-only.  M13: still could NOT pin the
+      intraday-vs-after-close filing time from public sources -- the exact docket
+      timestamp remains PACER-only.  Both candidate anchors stay macro-clean (05-10
+      = UMich sentiment; 05-13 = quiet Monday), so BFH REMAINS INCLUDED; this is a
+      NON-BLOCKING residual.  AT THE VALIDATION GATE: compute h1 for BOTH candidate
+      anchors (05-09 -> first session 05-10; 05-10 -> first session 05-13) and
+      report the sensitivity, rather than guessing the anchor.
 
   - candidate_id: k-reg-05
     headline: "CMS announces the first 10 drugs selected for Medicare Part D price negotiation under the Inflation Reduction Act"
@@ -1121,8 +1132,8 @@ candidates:
 
   - candidate_id: k-reg-26
     headline: "Federal court (SDNY, Judge Marrero) approves the T-Mobile / Sprint merger, dismissing the 14-state AG antitrust challenge"
-    source_publisher: "U.S. District Court (SDNY) / state-AG antitrust challenge"
-    source_url: "https://www.sec.gov/Archives/edgar/data/0001283699/000119312520030768/d879296dex991.htm"
+    source_publisher: "U.S. District Court (SDNY) / DOJ press release"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-welcomes-decision-new-york-v-deutsche-telecom-t-mobilesprint-merger"
     event_date: "2020-02-10"
     first_trading_date: "2020-02-11"
     date_anchor: verified
@@ -1150,17 +1161,20 @@ candidates:
       OFF CPI (2/13) / FOMC (1/29) / NFP (2/7) -- only Powell semiannual testimony
       (scripted, minor).  CAVEATS: (a) acquirer-direction SOFT (same softness as
       the KR/JBLU acquirer reads); (b) PRE-COVID-CRASH -- the late-Feb-2020 selloff
-      begins ~2/24, so STRICTLY h1-only (h5/h20 contaminated).  SOURCE PIN: the
-      primary is the SDNY opinion (State of New York v. Deutsche Telekom,
-      19-cv-5434); the source_url is a TMUS 8-K -- verify it is the 02-11 ruling
-      filing and pin the official docket.
+      begins ~2/24, so STRICTLY h1-only (h5/h20 contaminated).  M13 SOURCE PIN
+      RESOLVED: source_url -> the DOJ press release ("Justice Department Welcomes
+      Decision in New York v. Deutsche Telecom"); the published opinion is 439
+      F.Supp.3d 179 (S.D.N.Y. 2020), Doc 409, signed 2020-02-10 / filed 2020-02-11
+      (docket 19-cv-5434).  Anchor 2020-02-10 and first session 2020-02-11
+      CONFIRMED; strictly h1-only because h20 enters the late-Feb-2020 COVID crash
+      (~2/24).
 
   - candidate_id: k-reg-27
     headline: "Federal Reserve terminates the Wells Fargo $1.95T asset cap (2018 growth-restriction consent order)"
     source_publisher: "Federal Reserve (Gov. Barr statement)"
     source_url: "https://www.federalreserve.gov/newsevents/pressreleases/barr-statement-20250603.htm"
     event_date: "2025-06-03"
-    first_trading_date: "2025-06-03"
+    first_trading_date: "2025-06-04"
     date_anchor: verified
     regulatory_authority: "Federal Reserve"
     sub_channel: consent_order_termination
@@ -1183,12 +1197,14 @@ candidates:
       growth" positive sourced (more than a one-time overhang removal, though
       relief-lineaged).  Banking sector (3rd, sharing the GS/JPM factor ->
       effective-N haircut).  M11: 2025-06-03 CONFIRMED (Fed, Gov. Barr statement;
-      WFC 8-K).  TIMING PIN OPEN (convention b): event_date holds the 2025-06-03
-      NEWS-BREAK pending the Fed-statement time -- if after-close, anchor 06-03 /
-      first session 06-04; if intraday, anchor 06-02 / first session 06-03.  MACRO:
-      2025-06-03 is OFF CPI (6/11) / FOMC (6/18) / NFP (6/6) -- only JOLTS; but
-      June-2025 was a tariff-volatile tape -> confirm the WFC move is idiosyncratic.
-      h1-only per §6.
+      WFC 8-K).  M13 TIMING PIN RESOLVED: the Fed announcement came AFTER the
+      2025-06-03 close (the WFC move traded after-hours; CNBC 2025-06-03), so the
+      first priceable session is 2025-06-04 -> event_date stays 2025-06-03 (the
+      anchor / last close before the first priceable session), first_trading_date
+      = 2025-06-04.  MACRO: 2025-06-03 is OFF CPI (6/11) / FOMC (6/18) / NFP (6/6);
+      the h1 session 2025-06-04 is an ADP + ISM-Services day (second-tier macro;
+      NFP itself was 6/6, off-window) -> macro-adjacent, h1-only, confirm
+      attribution; June-2025 was a tariff-volatile tape.
 
   - candidate_id: k-reg-28
     headline: "[REJECTED] Federal court (N.D. Cal., Judge Corley) denies the FTC's preliminary injunction against the Microsoft-Activision merger"
