@@ -1,0 +1,574 @@
+# Phase-K regulation sourcing funnel — FROZEN pre-registration artifact.
+#
+# WHAT THIS IS
+# -----------
+# The frozen result of the M2 source-anchored REGULATION sourcing pass: 15
+# CONSIDERED candidates, of which 10 are marked include_in_validation and 5 are
+# flagged/excluded with reasons.  This is the THIRD mechanism family in the
+# Phase-K program (after tariff and sanction) and is the designated
+# CROSSED-SIGN family whose job is to break the tariff(+)/sanction(-)
+# family-sign confound documented in stats/PHASE_K_EVIDENCE.md §7.  This is a
+# SOURCING FUNNEL and an anti-cherry-pick pre-registration record — it is
+# frozen BEFORE any return check, event-study validation, price backfill, or
+# curated_observation promotion.
+#
+# WHAT THIS IS NOT
+# ----------------
+# * NOT a validated cohort, and NOT a pooled/FDR/significance claim.  No return
+#   was checked before this freeze; cohort_ready is false.
+# * NOT a 15-event cohort.  Only 10 rows are clean single-name includes, and
+#   they collapse to an estimated ~7-8 EFFECTIVE independent shocks (three
+#   sectors carry a temporally-separated crossed-sign pair, and a Spring-2024
+#   window cluster overlaps four reads).  That is AT/NEAR the n>=8 floor in
+#   stats/METHODOLOGY.md, not comfortably above it.
+# * NOT first-order regulatory evidence.  Per the M1 scope decision this family
+#   is SECOND-ORDER only: the regulator acts on the firm's competitive /
+#   prudential / pricing environment and the market prices the DOWNSTREAM
+#   consequence.  First-order events — FDA product approvals/CRLs and pure
+#   merger-arb deal-spread reads on a target — are EXCLUDED on purpose and kept
+#   visible as k-reg-14 / k-reg-15 so the scope boundary is auditable.
+# * NOT source-checked.  This freeze was authored without network access, so
+#   every event_date and source_url below is high-confidence MODEL RECALL, not
+#   confirmed against the official document (see DATE CONVENTION).  All rows are
+#   date_anchor: estimated and must be pinned — and possibly re-anchored —
+#   before any validation.
+# * NOT part of the closed Phase 1 / Phase 2 evidence FDR pools, and NOT an
+#   entry in examples/selection_funnel_ledger.yaml.  Kept in a SEPARATE file to
+#   avoid conflating open pre-validation sourcing with the closed pool.
+#   Nothing reads this file yet; it is a tracked audit artifact.
+#
+# DATE CONVENTION (per row)
+# -------------------------
+#   source_url   = the official PROVENANCE document or newsroom page (Fed / OCC
+#                  / FDIC / CFPB / CMS / EPA / FERC / FCC / DOJ / FTC / Federal
+#                  Register / the court docket for an injunction or ruling).
+#   event_date   = the date the MARKET first learned the operative news (the
+#                  news-break / first market-learnable date), which is often
+#                  the proposal, the ruling, or the rate-notice release — NOT a
+#                  later effective date.
+#   date_anchor  = "estimated" for EVERY row in this freeze.  This artifact was
+#                  authored WITHOUT network access, so NO date and NO source_url
+#                  below was checked against its official source — all are
+#                  high-confidence MODEL RECALL.  This is a deliberately weaker
+#                  guarantee than the sibling tariff/sanction funnels, where
+#                  "verified" meant checked against the USTR / Federal-Register
+#                  document; to avoid silently re-using that word for recall, NO
+#                  row here is marked "verified".  Before ANY validation, every
+#                  row's event_date, intraday timing, and source_url MUST be
+#                  pinned against the official source — and the date may be
+#                  RE-ANCHORED (not merely confirmed) if the market-moving
+#                  document turns out to be a different release than the one
+#                  recalled here.
+#
+# mechanism_family is the canonical FAMILY_IDS value "regulation" for every row
+# (mechanism_family.py: "regulation" = antitrust / merger block / capital rules
+# / disclosure / company-specific regulatory action, distinct from the broad
+# "policy_surprise" central-bank family).
+#
+# Frozen at: 2026-06-04 (authoring date; git records the commit time).
+# Upstream: M1 third-family selection (regulation, second-order scope).
+
+phase: K
+mechanism_family: regulation
+frozen_at: "2026-06-04"
+
+# ---------------------------------------------------------------------------
+# Funnel summary
+# ---------------------------------------------------------------------------
+funnel_summary:
+  considered: 15
+  included_for_validation: 10
+  excluded_or_flagged: 5
+  direction_mix_included: "5 positive / 5 negative"
+  effective_independent_n_estimate: "~7-8 (at the n>=8 floor, not above it)"
+  cohort_ready: false
+  conclusion: >-
+    Regulation is a genuinely CROSSED-SIGN second-order family: the same
+    mechanism produces clean positives (prudential relief, a vacated fee rule,
+    antitrust-block relief for an acquirer, a proposed rule repeal) and clean
+    negatives (a tougher capital proposal, a fee cap, a drug-price-negotiation
+    listing, a stricter emissions rule, a reimbursement-rate cut) on
+    well-defined single-name US-listed tickers across SEVEN distinct sectors.
+    That breaks the one-sector-collapse failure of the tariff funnel (steel)
+    and of a supply_shock funnel (this codebase's _ticker_sector folds all
+    commodities into ONE channel).  BUT three caveats keep cohort_ready false
+    and the effective N only ~7-8: (1) three sectors (banking, consumer
+    finance, coal/power) each carry a temporally-separated crossed-sign PAIR,
+    so they are ~1.5 effective shocks apiece, not 2; (2) four 2024 reads
+    (Mar-May: consumer-finance, managed-care, coal, consumer-finance) have
+    OVERLAPPING 20-day forward windows — cross-sector and idiosyncratic, so
+    weakly correlated, but not fully independent; (3) several dates are
+    ESTIMATED and must be pinned.  FIRST-ORDER vs SECOND-ORDER coherence: this
+    funnel is scoped so every included read is the market pricing a DOWNSTREAM
+    consequence (future ROE / fee revenue / Medicare revenue / coal demand /
+    reimbursement margin / competitive structure), the SAME kind of read as
+    tariff (a competitor's cost change) and sanction (a supplier's access
+    change).  The mechanically-priced first-order cases a skeptic would attack
+    — FDA product approvals and merger-arb target spreads — are EXCLUDED on
+    purpose (k-reg-14, k-reg-15) so they cannot prop up a hit rate.  Resolve
+    before any cohort FDR via one of: (a) pin all estimated dates and confirm
+    no window double-counts the Spring-2024 cluster; (b) source a few more
+    temporally-ISOLATED regulation events (ideally pre-2023) to lift effective
+    N clear of 8; (c) sector-relative benchmarks per included row while
+    accepting the low effective N.
+
+# Independence-span coverage of the 15-row batch (documentation only).
+independence_span:
+  sub_channels:
+    - bank_capital_rule           # Basel III endgame proposal / softening
+    - consumer_finance_fee_rule   # CFPB late-fee rule + its court injunction
+    - drug_price_regulation       # IRA Medicare negotiation (NOT FDA approval)
+    - power_plant_emissions_rule  # EPA GHG rule + proposed repeal
+    - medicare_advantage_rate     # CMS MA final rate notice
+    - antitrust_merger_block      # JetBlue-Spirit, Kroger-Albertsons (acquirer read)
+    - antitrust_monopolization    # excluded this round (contaminated / first-order)
+  sectors:        [banking, consumer_finance, pharma, coal_power, managed_care, grocery, airlines]
+  distinct_years: [2023, 2024, 2025]
+  direction_mix:  "included 5 positive / 5 negative (balanced by design)"
+  include_only_subset:
+    sectors:        [banking, consumer_finance, pharma, coal_power, managed_care, grocery, airlines]
+    distinct_years: [2023, 2024, 2025]
+    note: >-
+      Seven distinct sectors, far less concentrated than tariff (steel-dominated)
+      or supply_shock (one commodities channel).  But banking, consumer finance,
+      and coal/power each appear TWICE as a temporally-separated crossed-sign
+      pair (sharing a sector factor), and four of the ten reads fall in a
+      Mar-May 2024 window cluster with overlapping forward windows — so the
+      effective independent N is ~7-8, not 10.
+
+# ---------------------------------------------------------------------------
+# Anti-cherry-pick statement (binding)
+# ---------------------------------------------------------------------------
+anti_cherry_pick:
+  - "No return checks, event-study validation, or price-cache backfill were run before this freeze."
+  - "No curated_observation promotion was performed; this file changes no DB row and no report output."
+  - "No candidate may be replaced, re-dated, or re-classified after returns are checked; corrections (if any) must be added as NEW, separately-counted entries, never silent edits."
+  - "Excluded/flagged candidates remain visible in this file (include_in_validation: false) and are never deleted, so the full denominator stays auditable."
+  - "EVERY row is date_anchor: estimated: this freeze was authored without network access, so all dates and source_urls are high-confidence model recall, not source-checked. Each row's event_date, intraday timing, and source_url must be pinned to the official source — and the date re-anchored if a different release moved the tape — before that row is validated; an unpinned row is not cohort-eligible."
+  - "The closed Phase 1 / Phase 2 evidence FDR pools are untouched and unreferenced; this is open pre-validation sourcing, a separate scope."
+  - "Regulation cohort inference is BLOCKED until effective independent N clears 8 (pin dates + add temporally-isolated events, or adopt sector-relative benchmarks); the current estimate (~7-8) is at the floor, not above it."
+
+# ---------------------------------------------------------------------------
+# Candidates (15 considered)
+# ---------------------------------------------------------------------------
+candidates:
+
+  # ===== INCLUDE (10) — balanced 5 positive / 5 negative ====================
+
+  - candidate_id: k-reg-01
+    headline: "Fed/OCC/FDIC propose the Basel III 'Endgame' capital rule — large-bank capital requirements raised more than the market expected"
+    source_publisher: "Federal Reserve / OCC / FDIC (joint NPR)"
+    source_url: "https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230727a.htm"
+    event_date: "2023-07-27"
+    first_trading_date: "2023-07-27"
+    date_anchor: estimated
+    regulatory_authority: "Federal Reserve / OCC / FDIC"
+    sub_channel: bank_capital_rule
+    industry: banking
+    mechanism_family: regulation
+    mechanism_subtype: bank_capital_rule
+    primary_ticker: GS
+    benchmark_ticker: XLF
+    predicted_direction: negative
+    what_would_falsify: >-
+      GS fails to underperform XLF within 5d; the proposal is read as
+      already-priced (well-leaked) so no surprise; a same-week macro/rates
+      shock dominates the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: the NPR transfers no value; the market prices the downstream
+      ROE / buyback-capacity hit.  GS chosen as the most capital-markets-exposed
+      G-SIB (largest RWA inflation under the proposal).  Crossed-sign PAIR with
+      k-reg-02 (same mechanism, opposite sign, 14 months later -> independent
+      windows but one banking sector factor).  Confirm intraday timing.
+
+  - candidate_id: k-reg-02
+    headline: "Fed Vice Chair Barr announces a major softening of the Basel III Endgame — proposed capital increase cut roughly in half"
+    source_publisher: "Federal Reserve (Barr speech)"
+    source_url: "https://www.federalreserve.gov/newsevents/speech/barr20240910a.htm"
+    event_date: "2024-09-10"
+    first_trading_date: "2024-09-10"
+    date_anchor: estimated
+    regulatory_authority: "Federal Reserve"
+    sub_channel: bank_capital_rule
+    industry: banking
+    mechanism_family: regulation
+    mechanism_subtype: bank_capital_rule
+    primary_ticker: JPM
+    benchmark_ticker: XLF
+    predicted_direction: positive
+    what_would_falsify: >-
+      JPM fails to outperform XLF within 5d; the re-proposal is read as still
+      too strict; a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER relief: lower required capital -> restored buyback capacity.
+      JPM (not GS) used here to avoid an exact-ticker repeat of k-reg-01 while
+      staying in the same crossed-sign banking pair.  The re-proposal surprise
+      was the SIZE of the cut.
+
+  - candidate_id: k-reg-03
+    headline: "CFPB finalizes the credit-card late-fee rule, capping most late fees at $8"
+    source_publisher: "Consumer Financial Protection Bureau"
+    source_url: "https://www.consumerfinance.gov/about-us/newsroom/cfpb-bans-excessive-credit-card-late-fees/"
+    event_date: "2024-03-05"
+    first_trading_date: "2024-03-05"
+    date_anchor: estimated
+    regulatory_authority: "CFPB"
+    sub_channel: consumer_finance_fee_rule
+    industry: consumer_finance
+    mechanism_family: regulation
+    mechanism_subtype: consumer_finance_fee_rule
+    primary_ticker: SYF
+    benchmark_ticker: XLF
+    predicted_direction: negative
+    what_would_falsify: >-
+      SYF fails to underperform XLF within 5d; the cap is read as already-priced;
+      issuers credibly signal full fee/APR re-pricing that offsets the hit.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: caps a fee revenue stream -> future EPS hit.  SYF (Synchrony)
+      is a private-label-card pure-play with high late-fee exposure -> clean
+      single-name read.  Crossed-sign PAIR with k-reg-04 (the injunction).
+
+  - candidate_id: k-reg-04
+    headline: "Federal court (N.D. Tex.) preliminarily enjoins the CFPB credit-card late-fee rule before its effective date"
+    source_publisher: "U.S. District Court, Northern District of Texas (docket)"
+    source_url: "https://www.consumerfinance.gov/late-fee-rule-litigation/"
+    event_date: "2024-05-10"
+    first_trading_date: "2024-05-10"
+    date_anchor: estimated
+    regulatory_authority: "U.S. District Court (N.D. Tex.)"
+    sub_channel: consumer_finance_fee_rule
+    industry: consumer_finance
+    mechanism_family: regulation
+    mechanism_subtype: consumer_finance_fee_rule
+    primary_ticker: BFH
+    benchmark_ticker: XLF
+    predicted_direction: positive
+    what_would_falsify: >-
+      BFH fails to outperform XLF within 5d; the injunction is read as a brief
+      procedural delay, not relief; a same-week macro shock dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER relief: the enjoined rule restores the fee stream.  BFH (Bread
+      Financial) used as a distinct high-late-fee name (avoids exact-ticker
+      repeat of k-reg-03).  ESTIMATED date: pin the exact preliminary-injunction
+      date (~2024-05-10) and confirm which order moved the tape.  NOTE temporal
+      proximity to k-reg-06 (2024-04-25, coal) -> overlapping forward window,
+      different sector; documented in the effective-N haircut.
+
+  - candidate_id: k-reg-05
+    headline: "CMS announces the first 10 drugs selected for Medicare Part D price negotiation under the Inflation Reduction Act"
+    source_publisher: "CMS / HHS"
+    source_url: "https://www.cms.gov/newsroom/press-releases/hhs-announces-first-ten-drugs-selected-medicare-price-negotiation"
+    event_date: "2023-08-29"
+    first_trading_date: "2023-08-29"
+    date_anchor: estimated
+    regulatory_authority: "CMS / HHS"
+    sub_channel: drug_price_regulation
+    industry: pharma
+    mechanism_family: regulation
+    mechanism_subtype: drug_price_negotiation
+    primary_ticker: BMY
+    benchmark_ticker: XLV
+    predicted_direction: negative
+    what_would_falsify: >-
+      BMY fails to underperform XLV within 5d; the selection list was fully
+      anticipated (no surprise) so no abnormal move; Eliquis loss-of-exclusivity
+      timing makes the negotiation immaterial.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER (drug PRICING, NOT an FDA product decision -> in scope): the
+      listing prices a downstream Medicare-revenue hit on Eliquis, BMY's largest
+      drug.  ANTICIPATION CAVEAT: the 10-name list was partly predicted by
+      analysts; treat the confirmation as the surprise and verify the move was
+      not pre-priced.
+
+  - candidate_id: k-reg-06
+    headline: "EPA finalizes the power-plant greenhouse-gas rule (carbon limits for existing coal and new gas units)"
+    source_publisher: "U.S. Environmental Protection Agency"
+    source_url: "https://www.epa.gov/newsreleases/biden-harris-administration-finalizes-suite-standards-reduce-pollution-fossil-fuel"
+    event_date: "2024-04-25"
+    first_trading_date: "2024-04-25"
+    date_anchor: estimated
+    regulatory_authority: "EPA"
+    sub_channel: power_plant_emissions_rule
+    industry: coal_power
+    mechanism_family: regulation
+    mechanism_subtype: power_plant_emissions_rule
+    primary_ticker: BTU
+    benchmark_ticker: XLE
+    predicted_direction: negative
+    what_would_falsify: >-
+      BTU fails to underperform XLE within 5d; the rule is read as legally
+      doomed (so no economic bite); thermal-coal export/price dynamics dominate
+      the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: the rule hits power-plant operators; BTU (Peabody, thermal
+      coal) prices the downstream DEMAND hit -> clean single-name miner read.
+      Benchmark XLE is imperfect (no clean coal ETF; KOL delisted) -> a
+      sector-relative read should use a thermal-coal peer set.  Crossed-sign
+      PAIR with k-reg-11 (proposed repeal, ~14 months later).
+
+  - candidate_id: k-reg-07
+    headline: "U.S. District Court (DDC) rules Google illegally monopolized general search (DOJ v. Google liability ruling)"
+    source_publisher: "U.S. District Court, District of Columbia / DOJ"
+    source_url: "https://www.justice.gov/opa/pr/department-justice-statement-district-court-ruling-united-states-v-google"
+    event_date: "2024-08-05"
+    first_trading_date: "2024-08-05"
+    date_anchor: estimated
+    regulatory_authority: "DOJ Antitrust Division / U.S. District Court (DDC)"
+    sub_channel: antitrust_monopolization
+    industry: internet
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_monopolization
+    primary_ticker: GOOGL
+    benchmark_ticker: XLC
+    predicted_direction: negative
+    what_would_falsify: >-
+      n/a - excluded pre-test (contaminated window).
+    include_in_validation: false
+    exclude_reason: >-
+      CONTAMINATED HORIZON: the 2024-08-05 ruling landed on the same day as the
+      global yen-carry-unwind selloff (Nikkei -12%, VIX spike), so GOOGL's move
+      is not cleanly attributable to the ruling -- the benchmark itself
+      convulsed.  A genuinely second-order, single-name antitrust read, but
+      unusable on this date.
+    operator_notes: >-
+      Kept visible to document the contaminated-window exclusion.  Revisit only
+      with the later REMEDIES ruling (2025) if that date is not itself
+      contaminated; the liability date cannot be cleaned.
+
+  - candidate_id: k-reg-08
+    headline: "Federal court grants the FTC's preliminary injunction blocking the Kroger-Albertsons merger"
+    source_publisher: "FTC / U.S. District Court (D. Or.)"
+    source_url: "https://www.ftc.gov/news-events/news/press-releases"
+    event_date: "2024-12-10"
+    first_trading_date: "2024-12-10"
+    date_anchor: estimated
+    regulatory_authority: "FTC / U.S. District Court (D. Or.)"
+    sub_channel: antitrust_merger_block
+    industry: grocery
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_merger_block_acquirer_read
+    primary_ticker: KR
+    benchmark_ticker: XLP
+    predicted_direction: positive
+    what_would_falsify: >-
+      KR fails to outperform XLP within 5d; the market reads the blocked deal as
+      a strategic loss rather than relief; the $24.6B financing overhang was
+      already discounted.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER ACQUIRER-RELIEF read on KR (Kroger), NOT the first-order
+      deal-spread on the target ACI (that target read is the excluded scope
+      example k-reg-15).  Acquirer-relief direction can be ambiguous; KR's
+      balance-sheet relief from dropping a debt-heavy deal is the committed
+      hypothesis.  ESTIMATED date: pin the exact ruling date (Oregon federal
+      preliminary injunction, ~2024-12-10; a Washington state ruling followed).
+
+  - candidate_id: k-reg-09
+    headline: "Federal court (D. Mass.) blocks the JetBlue-Spirit merger on DOJ antitrust challenge"
+    source_publisher: "DOJ / U.S. District Court (D. Mass.)"
+    source_url: "https://www.justice.gov/opa/pr"
+    event_date: "2024-01-16"
+    first_trading_date: "2024-01-16"
+    date_anchor: estimated
+    regulatory_authority: "DOJ Antitrust Division / U.S. District Court (D. Mass.)"
+    sub_channel: antitrust_merger_block
+    industry: airlines
+    mechanism_family: regulation
+    mechanism_subtype: antitrust_merger_block_acquirer_read
+    primary_ticker: JBLU
+    benchmark_ticker: JETS
+    predicted_direction: positive
+    what_would_falsify: >-
+      JBLU fails to outperform JETS within 5d; the market reads the block as a
+      growth-strategy loss rather than relief from an expensive, dilutive deal.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER ACQUIRER-RELIEF read on JBLU (well-documented relief rally:
+      freed from a costly, debt-funded acquisition).  Target SAVE's deal-spread
+      collapse is the first-order read deliberately NOT used (see k-reg-15
+      scope note).  Pin intraday timing (ruling issued 2024-01-16).
+
+  - candidate_id: k-reg-10
+    headline: "CMS releases the 2025 Medicare Advantage final rate notice; effective benchmark growth lands below medical-cost trend"
+    source_publisher: "CMS"
+    source_url: "https://www.cms.gov/newsroom/press-releases"
+    event_date: "2024-04-01"
+    first_trading_date: "2024-04-01"
+    date_anchor: estimated
+    regulatory_authority: "CMS"
+    sub_channel: medicare_advantage_rate
+    industry: managed_care
+    mechanism_family: regulation
+    mechanism_subtype: medicare_advantage_rate
+    primary_ticker: HUM
+    benchmark_ticker: IHF
+    predicted_direction: negative
+    what_would_falsify: >-
+      HUM fails to underperform IHF within 5d; the final rate is read as
+      better-than-feared vs the January Advance Notice (the surprise flips
+      positive); a same-week selloff dominates.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER: the reimbursement rate sets downstream MA margin; HUM is the
+      most MA-concentrated large insurer -> clean single-name read.  The surprise
+      is the FINAL rate vs the Advance Notice baseline, not vs zero.  ESTIMATED /
+      RE-ANCHOR RISK: the largest 2024 Humana MA reactions clustered around the
+      ~2024-01-31 Advance Notice and a June-2024 utilization warning, so the pin
+      step must RE-ANCHOR this row to whichever release actually moved the tape
+      (Advance Notice vs the ~2024-04-01 Final Notice), not assume the Final
+      Notice.  NOTE temporal proximity to k-reg-03/06 (Spring-2024 window cluster).
+
+  - candidate_id: k-reg-11
+    headline: "EPA proposes to repeal the power-plant greenhouse-gas rule"
+    source_publisher: "U.S. Environmental Protection Agency"
+    source_url: "https://www.epa.gov/newsreleases"
+    event_date: "2025-06-11"
+    first_trading_date: "2025-06-11"
+    date_anchor: estimated
+    regulatory_authority: "EPA"
+    sub_channel: power_plant_emissions_rule
+    industry: coal_power
+    mechanism_family: regulation
+    mechanism_subtype: power_plant_emissions_rule
+    primary_ticker: BTU
+    benchmark_ticker: XLE
+    predicted_direction: positive
+    what_would_falsify: >-
+      BTU fails to outperform XLE within 5d; the proposed repeal is read as
+      legally fragile / reversible so no durable demand relief; coal export
+      prices dominate the window.
+    include_in_validation: true
+    exclude_reason: null
+    operator_notes: >-
+      SECOND-ORDER relief and the crossed-sign PARTNER of k-reg-06 (same EPA
+      mechanism and same name BTU, opposite sign, ~14 months later -> temporally
+      independent window).  ESTIMATED date: pin the exact proposed-repeal
+      announcement date in 2025; this is the most forward-dated row and the most
+      in need of source pinning.
+
+  # ===== EXCLUDE / FLAGGED (5) — kept visible ===============================
+
+  - candidate_id: k-reg-12
+    headline: "FTC issues a final rule banning most non-compete agreements nationwide"
+    source_publisher: "Federal Trade Commission"
+    source_url: "https://www.ftc.gov/news-events/news/press-releases/2024/04/ftc-announces-rule-banning-noncompetes"
+    event_date: "2024-04-23"
+    first_trading_date: "2024-04-23"
+    date_anchor: estimated
+    regulatory_authority: "FTC"
+    sub_channel: labor_regulation
+    industry: multi
+    mechanism_family: regulation
+    mechanism_subtype: labor_market_rule
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: market_wide
+    what_would_falsify: >-
+      n/a - excluded pre-test (no isolable single-name hypothesis).
+    include_in_validation: false
+    exclude_reason: >-
+      Broad, economy-wide labor rule with no defensible isolable single-name
+      primary ticker -> market-wide reaction, not a clean second-order read.
+    operator_notes: >-
+      Later stayed/struck by courts (2024); even the litigation has no clean
+      single-name beneficiary.  Kept visible as the market-wide exclusion
+      example.
+
+  - candidate_id: k-reg-13
+    headline: "FCC votes to restore net-neutrality / common-carrier broadband rules"
+    source_publisher: "Federal Communications Commission"
+    source_url: "https://www.fcc.gov/document/fcc-restores-net-neutrality"
+    event_date: "2024-04-25"
+    first_trading_date: "2024-04-25"
+    date_anchor: estimated
+    regulatory_authority: "FCC"
+    sub_channel: telecom_regulation
+    industry: telecom
+    mechanism_family: regulation
+    mechanism_subtype: broadband_common_carrier
+    primary_ticker: CMCSA
+    benchmark_ticker: XLC
+    predicted_direction: ambiguous
+    what_would_falsify: >-
+      n/a - excluded pre-test (direction not cleanly committable).
+    include_in_validation: false
+    exclude_reason: >-
+      Direction-ambiguous and historically near-zero market impact: the
+      2017 repeal and 2024 restoration of net neutrality both produced muted ISP
+      stock reactions, so there is no defensible second-order magnitude.  Clean
+      telecom single-name regulation reads were the weakest sub-channel sourced.
+    operator_notes: >-
+      Kept visible to document that telecom regulation did not yield a clean,
+      direction-committable single-name read this round.
+
+  - candidate_id: k-reg-14
+    headline: "[SCOPE BOUNDARY] An FDA new-drug approval / complete-response letter (PDUFA decision) on a single biotech name"
+    source_publisher: "U.S. Food and Drug Administration (illustrative scope example)"
+    source_url: "https://www.fda.gov/news-events/fda-newsroom/press-announcements"
+    event_date: "n/a"
+    first_trading_date: "n/a"
+    date_anchor: estimated
+    regulatory_authority: "FDA"
+    sub_channel: product_approval
+    industry: biotech
+    mechanism_family: regulation
+    mechanism_subtype: fda_product_decision
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: positive
+    what_would_falsify: >-
+      n/a - excluded by SCOPE, not by data.
+    include_in_validation: false
+    exclude_reason: >-
+      FIRST-ORDER and OUT OF SCOPE per the M1 decision: an FDA product decision
+      acts directly on the firm's product rights, so the abnormal return is
+      near-mechanical, not a second-order read of a downstream consequence.
+      Pooling such events would let a skeptic argue the cohort hit rate is
+      propped up by trivially-priced approvals.  No specific event is sourced;
+      this row documents the excluded category.
+    operator_notes: >-
+      This is the defining scope exclusion for the regulation family.  Drug
+      PRICING regulation (k-reg-05) is in scope; drug PRODUCT approval is not.
+
+  - candidate_id: k-reg-15
+    headline: "[SCOPE BOUNDARY] A pure merger-arb deal-spread read on a blocked TARGET (e.g., SAVE on the JetBlue block, ACI on the Kroger block)"
+    source_publisher: "DOJ / FTC / court (illustrative scope example)"
+    source_url: "https://www.justice.gov/atr"
+    event_date: "n/a"
+    first_trading_date: "n/a"
+    date_anchor: estimated
+    regulatory_authority: "DOJ / FTC"
+    sub_channel: antitrust_merger_block
+    industry: multi
+    mechanism_family: regulation
+    mechanism_subtype: merger_arb_target_spread
+    primary_ticker: null
+    benchmark_ticker: null
+    predicted_direction: negative
+    what_would_falsify: >-
+      n/a - excluded by SCOPE, not by data.
+    include_in_validation: false
+    exclude_reason: >-
+      FIRST-ORDER and OUT OF SCOPE per the M1 decision: a blocked target's spread
+      collapse is the mechanical loss of one deal's value, not a second-order
+      read of a competitive consequence.  The SECOND-ORDER acquirer-relief reads
+      (KR in k-reg-08, JBLU in k-reg-09) are the in-scope way to use the same
+      antitrust events.
+    operator_notes: >-
+      Documents the deal-spread exclusion so the acquirer-vs-target distinction
+      in k-reg-08 / k-reg-09 is auditable.
