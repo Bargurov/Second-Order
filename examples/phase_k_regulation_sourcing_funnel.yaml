@@ -17,15 +17,16 @@
 # ----------------
 # * NOT a validated cohort, and NOT a pooled/FDR/significance claim.  No return
 #   was checked before this freeze; cohort_ready is false.
-# * NOT a 23-event cohort.  After M7, 12 of the 23 considered rows are includes
-#   across NINE sectors; the estimated effective N is ~8 (AT the n>=8 floor in
-#   stats/METHODOLOGY.md, NOT above), conditional on the §3 re-anchors (esp. the
-#   JBLU sign-flip), the KR 2024-12-10 ruling-time pin, and per-row h1 macro
-#   cleanliness -- so cohort_ready stays false.
-#   (Lineage: M3 = 9 includes / ~6 effective; M5 added six fresh-sector includes
-#   toward ~8-10; M7's timing/macro audit re-anchored 10 intraday rows and
-#   EXCLUDED COF/TLN/HOOD as macro-contaminated, removing the optimistic ~10 and
-#   settling at ~8.)
+# * NOT a 23-event cohort, and now BELOW the floor.  After M9, 11 of the 23
+#   considered rows are includes across EIGHT sectors; the estimated effective N
+#   is ~7 -- BELOW the n>=8 floor in stats/METHODOLOGY.md.  The funnel is SUB-FLOOR:
+#   resolving it needs another clean-event sourcing round (pre-2023, off
+#   macro-print days) or an explicit N<8 / sector-relative decision.  cohort_ready
+#   is false.  (Lineage: M3 = 9 includes / ~6 effective; M5 added six fresh-sector
+#   includes toward ~8-10; M7's timing/macro audit re-anchored 10 intraday rows
+#   and EXCLUDED COF/TLN/HOOD (macro-contaminated), settling at ~8; M9 then pinned
+#   the KR court timing -- after-close 12-10 -> 12-11 CPI-day h1 -- and EXCLUDED
+#   KR, dropping it to ~7, below the floor.)
 # * NOT first-order regulatory evidence.  Per the M1 scope decision this family
 #   is SECOND-ORDER only: the regulator acts on the firm's competitive /
 #   prudential / pricing environment and the market prices the DOWNSTREAM
@@ -93,13 +94,13 @@ frozen_at: "2026-06-04"
 # ---------------------------------------------------------------------------
 funnel_summary:
   considered: 23                      # unchanged
-  included_for_validation: 12         # M7: was 15; -3 (COF/TLN/HOOD macro-contaminated)
-  excluded_or_flagged: 11             # M7: was 8; +3
-  direction_mix_included: "5 positive / 7 negative"   # M7: lost COF(+), TLN(-), HOOD(-)
-  core_new_additions: "k-reg-16 V + k-reg-18 AAPL SURVIVE M7; k-reg-17 COF + k-reg-19 TLN EXCLUDED (macro-contaminated)"
+  included_for_validation: 11         # M9: was 12; -1 (KR after-close -> CPI-day h1)
+  excluded_or_flagged: 12             # M9: was 11; +1 (KR)
+  direction_mix_included: "4 positive / 7 negative"   # M9: lost KR(+); positive leg now all relief/reversal
+  core_new_additions: "k-reg-16 V + k-reg-18 AAPL SURVIVE; k-reg-17 COF + k-reg-19 TLN EXCLUDED (M7 macro-contaminated)"
   secondary_flagged_additions: "k-reg-20 LYV kept (re-anchored); k-reg-21 HOOD EXCLUDED (FOMC-day)"
-  effective_independent_n_estimate: "~8 (AT the n>=8 floor, not above; conditional on the §3 re-anchors -- esp. JBLU sign-flip -- the KR 2024-12-10 timing, and per-row h1 macro cleanliness)"
-  cohort_ready: false                 # near the floor; re-anchors + KR timing + h1-macro confirmation still pending
+  effective_independent_n_estimate: "~7 (BELOW the n>=8 floor; regulation is now SUB-FLOOR after M9 excluded KR -- needs another clean sourcing round or an explicit N<8 / sector-relative decision)"
+  cohort_ready: false                 # sub-floor; BFH exact-anchor pin (PACER) still open
   conclusion: >-
     Regulation is a genuinely CROSSED-SIGN second-order family: the same
     mechanism produces clean positives (prudential relief, a vacated fee rule,
@@ -179,6 +180,22 @@ funnel_summary:
     surviving lift over the M3 ~6 is V (clean) + AAPL (macro-adjacent-usable), so
     effective N is ~8 -- AT the n>=8 floor, NOT above -- and only if the §3
     re-anchors and the KR timing hold.  cohort_ready stays FALSE.
+    M9 UPDATE (2026-06-04, read-only court-timing/docket audit -- no returns): the
+    KR timing resolved AGAINST the row -- the D. Or. ruling was filed 2024-12-10
+    in the evening ET (after the 4pm close), so the first priceable session is
+    2024-12-11 = the November-CPI day -> KR's h1 is CPI-contaminated with no clean
+    anchor, and KR is EXCLUDED (same bar as COF/TLN/HOOD; classification on the
+    ruling time + the CPI calendar, no returns).  JBLU's source_url was pinned to
+    the DOJ Antitrust case page and its 2024-01-12 anchor confirmed (MLK holiday);
+    BFH's exact intraday-vs-after-close time could NOT be pinned without PACER but
+    both candidate sessions are macro-clean, so BFH stays included (residual
+    anchor-precision pin only).  NET: includes 12 -> 11, direction 4 positive / 7
+    negative (the positive leg is now JPM/BFH/JBLU/BTU-repeal, ALL relief/reversal),
+    8 sectors (grocery dropped), and effective N falls to ~7 -- BELOW the n>=8
+    floor.  The regulation funnel is now SUB-FLOOR: the honest path forward is
+    another clean-event sourcing round (pre-2023, off macro-print days) or an
+    explicit decision to validate at N<8 with sector-relative benchmarks.
+    cohort_ready stays FALSE.
 
 # Independence-span coverage of the 23-row batch (documentation only).
 independence_span:
@@ -187,7 +204,7 @@ independence_span:
     - consumer_finance_fee_rule   # CFPB late-fee rule + its court injunction
     - drug_price_regulation       # IRA Medicare negotiation (NOT FDA approval)
     - power_plant_emissions_rule  # EPA GHG rule + proposed repeal
-    - antitrust_merger_block      # JetBlue-Spirit, Kroger-Albertsons (acquirer read)
+    - antitrust_merger_block      # JetBlue-Spirit (k-reg-09, incl); Kroger-Albertsons (k-reg-08) -- EXCLUDED by M9 (after-close -> CPI-day h1)
     - antitrust_monopolization    # M5: DOJ v Visa / Apple / Live Nation (k-reg-16/18/20); k-reg-07 excluded
     - bank_merger_approval        # M5: Capital One-Discover (k-reg-17) -- EXCLUDED by M7 (macro-contaminated 04-21)
     - grid_interconnection_ruling # M5: FERC Talen-Amazon (k-reg-19) -- EXCLUDED by M7 (NFP-day 11-01)
@@ -195,25 +212,27 @@ independence_span:
     - medicare_advantage_rate     # EXCLUDED by M3 (k-reg-10 / HUM re-anchor failure)
     - methane_emissions_rule      # EXCLUDED by M5 (k-reg-22 EQT, commodities-factor overlap)
     - rail_merger_approval        # EXCLUDED by M5 (k-reg-23 CP-KCS, foreign acquirer / first-order target)
-  sectors:        [banking, consumer_finance, pharma, coal_power, grocery, airlines, payments, tech, entertainment]
+  sectors:        [banking, consumer_finance, pharma, coal_power, airlines, payments, tech, entertainment]
   distinct_years: [2022, 2023, 2024, 2025]
-  direction_mix:  "included 5 positive / 7 negative (M7: dropped COF/TLN/HOOD as macro-contaminated; clean reg reads skew negative)"
+  direction_mix:  "included 4 positive / 7 negative (M9: also dropped KR; positive leg now JPM/BFH/JBLU/BTU-repeal, ALL relief/reversal)"
   include_only_subset:
-    sectors:        [banking, consumer_finance, pharma, coal_power, grocery, airlines, payments, tech, entertainment]
+    sectors:        [banking, consumer_finance, pharma, coal_power, airlines, payments, tech, entertainment]
     distinct_years: [2022, 2023, 2024, 2025]
     note: >-
-      NINE distinct included sectors after M7 dropped independent_power (TLN) and
-      brokers (HOOD), and with payments now V-only (COF excluded).  The optimistic
-      ~10 did NOT survive the M7 timing/macro audit: the two adds that would have
-      lifted past the floor (TLN, COF) are macro-contaminated on their first
-      priceable session, and HOOD landed on an FOMC day.  The SURVIVING fresh-sector
-      lift over the M3 ~6 is V (payments, clean) + AAPL (tech, macro-adjacent but
-      usable), plus LYV (entertainment, secondary, re-anchored).  So the effective
-      independent N is ~8 -- AT the n>=8 floor, NOT comfortably above it -- and
-      conditional on the §3 re-anchors (esp. the JBLU sign-flip), the KR 2024-12-10
-      ruling-time pin, and per-row h1 macro cleanliness.  Three sectors still carry
+      EIGHT distinct included sectors after M9 also dropped grocery (KR excluded).
+      The optimistic ~10 did not survive the M7 timing/macro audit (TLN/COF/HOOD
+      excluded), and M9 then resolved the KR timing AGAINST the row: the D. Or.
+      ruling was filed after the 2024-12-10 close, so KR's first priceable session
+      is the 2024-12-11 CPI day -> contaminated -> excluded.  The surviving
+      fresh-sector lift over the M3 ~6 is V (payments, clean) + AAPL (tech,
+      macro-adjacent but usable) + LYV (entertainment, secondary), and KR's loss
+      removes a grocery shock, so the effective independent N is ~7 -- BELOW the
+      n>=8 floor.  The funnel is now SUB-FLOOR.  Three sectors still carry
       temporally-separated crossed-sign pairs (banking, consumer-finance,
-      coal/power) sharing a sector factor, and a Mar-May 2024 cluster persists.
+      coal/power) sharing a sector factor; a Mar-May 2024 cluster persists; and the
+      surviving positive leg (JPM/BFH/JBLU/BTU-repeal) is ALL relief/reversal --
+      no clean non-relief positive remains.  Path forward: another clean-event
+      sourcing round or an explicit N<8 / sector-relative decision.
 
 # ---------------------------------------------------------------------------
 # Anti-cherry-pick statement (binding)
@@ -227,8 +246,9 @@ anti_cherry_pick:
   - "k-reg-10 / HUM was reclassified from included to excluded by SOURCE VERIFICATION ONLY (a clean-anchor / window-contamination judgment), before any returns were checked, and is kept visible. NO replacement candidate was added — the included count simply fell 10 -> 9."
   - "M5 (2026-06-04) sourced 8 additional candidates (k-reg-16..23) by OFFICIAL-SOURCE research only — no returns checked; every event_date was web-confirmed against the official source. All 8 are kept visible: 6 includes (4 core + 2 secondary/flagged) and 2 excluded (k-reg-22 EQT commodities-factor overlap, k-reg-23 CP-KCS foreign-acquirer/first-order-target). NO existing row was altered or replaced; the M5 rows are appended, separately counted."
   - "M7 (2026-06-04) reclassified rows by TIMING / CALENDAR facts only, before any returns: 10 intraday rows were RE-ANCHORED to the prior trading close (§3, with the news-break date kept per row), and COF/TLN/HOOD were moved to excluded as macro-contaminated on their first priceable session. Excluded rows kept visible; NO replacement rows were added; no event-study / price / backfill / validation was run."
+  - "M9 (2026-06-04) reclassified KR (k-reg-08) by COURT-TIMING / CALENDAR facts only, no returns: the D. Or. ruling was filed after the 2024-12-10 close, so the first priceable session is the 2024-12-11 CPI day -> h1 contaminated -> excluded, kept visible. JBLU's source_url was pinned (DOJ Antitrust case page) and its anchor confirmed; BFH's exact filing time could not be pinned without PACER (kept included, both sessions macro-clean). NO replacement row was added."
   - "The closed Phase 1 / Phase 2 evidence FDR pools are untouched and unreferenced; this is open pre-validation sourcing, a separate scope."
-  - "Regulation cohort inference remains BLOCKED: the post-M7 effective N is ~8 (AT the n>=8 floor, not above), conditional on the §3 re-anchors (esp. the JBLU sign-flip), the KR 2024-12-10 ruling-time pin, and per-row h1 macro cleanliness. cohort_ready stays false; no returns, event-study, backfill, or promotion have been run."
+  - "Regulation cohort inference remains BLOCKED and is now SUB-FLOOR: the post-M9 effective N is ~7 (BELOW the n>=8 floor) after KR's exclusion. Resolving it needs another clean-event sourcing round or an explicit N<8 / sector-relative decision, plus the residual BFH exact-anchor (PACER) pin. cohort_ready stays false; no returns, event-study, backfill, or promotion have been run."
 
 # ---------------------------------------------------------------------------
 # Candidates (15 considered)
@@ -362,7 +382,13 @@ candidates:
       M7 TIMING PIN: 2024-05-10 was a FRIDAY -> pin whether the preliminary
       injunction issued intraday (first priceable session 05-10, anchor 05-09) or
       after-close (first priceable Mon 05-13, anchor 05-10); MACRO 05-10 = UMich
-      sentiment.  Tighten source_url to the N.D. Tex court order.  h1-only.
+      sentiment.  M9: could NOT pin the intraday-vs-after-close filing time from
+      public sources (the 5th Cir. ordered Pittman to rule "by 05-10"; the exact
+      docket timestamp needs PACER).  BUT both candidate first sessions (05-10 /
+      05-13) are macro-clean enough, so BFH STAYS INCLUDED and is usable either
+      way; the exact §3 anchor (05-09 vs 05-10) is a residual precision pin only.
+      No stable official N.D. Tex order URL found -> source_url left as the CFPB
+      litigation page (do not invent one).  h1-only.
 
   - candidate_id: k-reg-05
     headline: "CMS announces the first 10 drugs selected for Medicare Part D price negotiation under the Inflation Reduction Act"
@@ -473,11 +499,17 @@ candidates:
     benchmark_ticker: XLP
     predicted_direction: positive
     what_would_falsify: >-
-      KR fails to outperform XLP within 5d; the market reads the blocked deal as
-      a strategic loss rather than relief; the $24.6B financing overhang was
-      already discounted.
-    include_in_validation: true
-    exclude_reason: null
+      n/a - excluded by M9 (after-close ruling -> CPI-day h1).
+    include_in_validation: false
+    exclude_reason: >-
+      MACRO-CONTAMINATED (M9, no returns used): the D. Or. preliminary-injunction
+      ruling (Judge Nelson) was filed 2024-12-10 in the evening ET (~6:48 PM ET
+      per a Bloomberg Law timestamp; consistent with M7's 4:12 / 5:29 PM ET update
+      markers), i.e., AFTER the 4 PM ET close.  So the first priceable session is
+      2024-12-11, which was the November-CPI release day (BLS-confirmed) -> h1
+      (12-10 close -> 12-11 close) is CPI-contaminated, and re-anchoring cannot
+      rescue it because the ONLY priceable session IS the CPI day.  Same bar as
+      COF/TLN/HOOD.  Excluded before validation, kept visible; no replacement added.
     operator_notes: >-
       SECOND-ORDER ACQUIRER-RELIEF read on KR (Kroger), NOT the first-order
       deal-spread on the target ACI (that target read is the excluded scope
@@ -491,14 +523,16 @@ candidates:
       rise on relief).  M7 TIMING-CRITICAL: the D.Or. ruling appears LATE
       AFTERNOON 2024-12-10 (~4:12pm ET updates); if it issued after the 4pm close,
       the first priceable session is 2024-12-11 = CPI day -> h1 CONTAMINATED.
-      MUST pin the exact ruling time + the D.Or. court-order URL before
       validation; if after-close / CPI-contaminated, exclude or re-anchor in a
-      later gate.  Kept included-but-flagged for now.
+      later gate.  M9: EXCLUDED -- the ruling time is now confirmed evening-ET
+      (after the 4pm close), so h1 lands on the 2024-12-11 CPI day with no clean
+      alternative anchor.  No returns were used (the call rests on the ruling
+      time + the CPI calendar).  Pin the D. Or. docket/order URL only if revisited.
 
   - candidate_id: k-reg-09
     headline: "Federal court (D. Mass.) blocks the JetBlue-Spirit merger on DOJ antitrust challenge"
     source_publisher: "DOJ / U.S. District Court (D. Mass.)"
-    source_url: "https://www.justice.gov/opa/pr"
+    source_url: "https://www.justice.gov/atr/case/us-and-plaintiff-states-v-jetblue-airways-corporation-and-spirit-airlines-inc"
     event_date: "2024-01-12"
     first_trading_date: "2024-01-16"
     date_anchor: verified
@@ -526,7 +560,10 @@ candidates:
       (intraday).  *** SIGN-FLIP RISK ***: JBLU rose ~+5% on 01-16 and gave most
       of it back 01-17, so the OLD anchor (event_date 01-16) would have measured
       h1 = 01-16->01-17 = the GIVE-BACK and FLIPPED the sign; the 01-12 anchor is
-      essential.  Still pin the exact DOJ/D.Mass. court-order URL.
+      essential.  M9 SOURCE PINNED: source_url -> the DOJ Antitrust case page; the
+      official opinion is the "Findings of Fact and Conclusions of Law"
+      (2024-01-16), cite 2024 WL 162876 (D. Mass.).  Anchor 2024-01-12 CONFIRMED
+      (2024-01-15 = MLK holiday; 2024-01-16 = first priceable session).
 
   # k-reg-10 RECLASSIFIED to excluded by M3 source verification (kept in place).
   - candidate_id: k-reg-10
