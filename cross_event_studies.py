@@ -367,12 +367,22 @@ def _compute_combination_outcomes(events: list[dict]) -> list[dict]:
 
     Only combinations with ≥ _MIN_COMBO_COUNT directional events are
     emitted — smaller samples aren't meaningful.
+
+    This is a thesis-OUTCOME aggregation, so ``db.NON_THESIS_STAGES`` rows
+    (``curated_observation`` research observations and ``curated_intake``
+    stubs) are excluded by stage membership — never by ticker shape. They
+    still appear in the descriptive cross-cuts above.
     """
+    import db  # NON_THESIS_STAGES — local import keeps this a pure composer
+
     stats: dict[tuple[str, str], dict] = defaultdict(
         lambda: {"total": 0, "validated": 0, "contradicted": 0, "event_ids": []},
     )
 
     for ev in events:
+        stage = (ev.get("stage") or "").strip()
+        if stage in db.NON_THESIS_STAGES:
+            continue
         fam = (ev.get("mechanism_family") or "").strip()
         if not fam or fam == "none":
             continue

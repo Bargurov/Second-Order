@@ -45,6 +45,7 @@ def _event(
     date: str,
     family: str,
     *,
+    stage: str | None = None,
     beneficiary_tickers: list[str] | None = None,
     loser_tickers: list[str] | None = None,
     transmission_path: list[dict] | None = None,
@@ -54,6 +55,7 @@ def _event(
         "id":                   eid,
         "event_date":           date,
         "mechanism_family":     family,
+        "stage":                stage,
         "beneficiary_tickers":  json.dumps(beneficiary_tickers or []),
         "loser_tickers":        json.dumps(loser_tickers or []),
         "transmission_path":    json.dumps(transmission_path or []),
@@ -430,6 +432,122 @@ class TestOutputDiscipline(unittest.TestCase):
         # Must not raise; event 1 is simply skipped from co-occurrence.
         block = compute_cross_event_studies(events)
         self.assertEqual(block["total_events"], 4)
+
+
+# ---------------------------------------------------------------------------
+# 7. curated_observation thesis-outcome exclusion (NON_THESIS_STAGES guard)
+# ---------------------------------------------------------------------------
+
+class TestCuratedObservationThesisExclusion(unittest.TestCase):
+    """curated_observation rows are research observations, not thesis evidence.
+
+    They count for event-study coverage and may appear in *descriptive*
+    cross-cuts, but must NEVER enter the validated/contradicted hit-rate
+    aggregation. The exclusion must key on ``db.NON_THESIS_STAGES`` membership,
+    not on the incidental fact that promoted rows currently lack beneficiary/
+    loser ticker shape — so these fixtures deliberately give curated rows the
+    FULL outcome shape (sector via beneficiary tickers + a validated score).
+    """
+
+    def _mt(self, support: int, contradict: int) -> list[dict]:
+        rows = []
+        for i in range(support):
+            rows.append({"symbol": f"S{i}", "direction_tag": "supports thesis",
+                          "return_5d": 1.0})
+        for i in range(contradict):
+            rows.append({"symbol": f"C{i}", "direction_tag": "contradicts thesis",
+                          "return_5d": -1.0})
+        return rows
+
+    def test_curated_observation_with_full_outcome_shape_is_excluded(self):
+        # Three curated_observation rows that DO carry the outcome shape, so
+        # without the stage guard they would form a hit-rate combo.
+        events = [
+            _event(300 + i, f"2026-03-0{i+1}", "tariff",
+                   stage="curated_observation",
+                   beneficiary_tickers=["USO"],            # → commodities
+                   market_tickers=self._mt(2, 0))          # → validated
+            for i in range(3)
+        ]
+        block = compute_cross_event_studies(events)
+        self.assertEqual(
+            block["combination_outcomes"], [],
+            "curated_observation rows leaked into the thesis-outcome aggregation",
+        )
+
+    def test_exclusion_is_by_stage_not_ticker_shape(self):
+        # The load-bearing proof: identical outcome shape, two stages. Only the
+        # thesis-eligible (realized) combo survives — so the guard keys on stage
+        # membership, not on whether the row has beneficiary/loser tickers.
+        events = []
+        for i in range(3):
+            events.append(_event(300 + i, f"2026-03-0{i+1}", "tariff",
+                                 stage="curated_observation",
+                                 beneficiary_tickers=["USO"],     # commodities
+                                 market_tickers=self._mt(2, 0)))
+        for i in range(3):
+            events.append(_event(400 + i, f"2026-03-1{i}", "sanction",
+                                 stage="realized",
+                                 beneficiary_tickers=["HYG"],     # credit
+                                 market_tickers=self._mt(2, 0)))
+        block = compute_cross_event_studies(events)
+        families = {c["mechanism_family"] for c in block["combination_outcomes"]}
+        self.assertIn("sanction", families,
+                      "thesis-eligible realized rows must still be scored")
+        self.assertNotIn("tariff", families,
+                         "curated_observation rows must be excluded by stage")
+
+    def test_curated_intake_also_excluded(self):
+        # curated_intake ∈ NON_ANALYSIS_STAGES ⊂ NON_THESIS_STAGES — same guard.
+        events = [
+            _event(500 + i, f"2026-03-0{i+1}", "tariff",
+                   stage="curated_intake",
+                   beneficiary_tickers=["USO"],
+                   market_tickers=self._mt(2, 0))
+            for i in range(3)
+        ]
+        block = compute_cross_event_studies(events)
+        self.assertEqual(block["combination_outcomes"], [])
+
+    def test_thesis_eligible_realized_and_anticipation_rows_still_count(self):
+        # Over-exclusion regression guard: BOTH thesis-eligible stages named in
+        # the task (realized AND anticipation) with outcome shape still produce
+        # combination-outcome rows. Passes pre- and post-guard; pins that the
+        # guard does not over-exclude thesis-eligible stages.
+        events = []
+        for i in range(3):
+            events.append(_event(400 + i, f"2026-03-0{i+1}", "supply_shock",
+                                 stage="realized",
+                                 beneficiary_tickers=["USO"],     # commodities
+                                 market_tickers=self._mt(2, 0)))
+        for i in range(3):
+            events.append(_event(420 + i, f"2026-03-1{i}", "bank_stress",
+                                 stage="anticipation",
+                                 beneficiary_tickers=["HYG"],     # credit
+                                 market_tickers=self._mt(2, 0)))
+        block = compute_cross_event_studies(events)
+        by_fam = {c["mechanism_family"]: c for c in block["combination_outcomes"]}
+        self.assertIn("supply_shock", by_fam, "realized rows must still count")
+        self.assertIn("bank_stress", by_fam, "anticipation rows must still count")
+        self.assertEqual(by_fam["supply_shock"]["hit_rate"], 1.0)
+
+    def test_curated_observation_still_appears_in_descriptive_sector_clusters(self):
+        # The deliberate asymmetry: excluded from thesis OUTCOMES, but still a
+        # research observation in DESCRIPTIVE cross-cuts. Guards against a future
+        # edit that over-zealously bolts the stage guard onto every helper.
+        events = [
+            _event(600 + i, f"2026-03-0{i+1}", "tariff",
+                   stage="curated_observation",
+                   beneficiary_tickers=["HYG", "USO"])      # credit + commodities
+            for i in range(2)
+        ]
+        block = compute_cross_event_studies(events)
+        pairs = block["sector_clusters"]
+        self.assertTrue(pairs, "curated_observation must still count in descriptive cross-cuts")
+        self.assertEqual(
+            tuple(sorted((pairs[0]["sector_a"], pairs[0]["sector_b"]))),
+            ("commodities", "credit"),
+        )
 
 
 if __name__ == "__main__":
