@@ -285,7 +285,12 @@ event-study *observations* (counted in the 165), but they carry no LLM thesis
 (the 157). One denominator answers "can the engine read this event"; the other
 answers "did a scored thesis play out". The 8 promotions and their descriptive,
 single-event (h1-only) evidence — explicitly **not** a validation and **not** a
-pooled cohort — are recorded in `stats/PHASE_K_EVIDENCE.md`.
+pooled cohort — are recorded in `stats/PHASE_K_EVIDENCE.md`. A third
+crossed-sign mechanism-family candidate, regulation, was separately sourced,
+source-pinned, timing-audited, and read descriptively h1-only on a DB copy in
+`stats/PHASE_K_REGULATION_EVIDENCE.md`; it was **not** promoted to live
+`curated_observation` and does not enter the analysis, track-record, cohort, or
+FDR denominators.
 
 **Why 165 keeps the contamination visible.** Reporting coverage against the
 full analysis-stage 165 first keeps the legacy/seed/test contamination
