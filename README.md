@@ -834,8 +834,8 @@ coverage. From the repo root:
 python scripts/repo_hygiene_check.py --json
 python scripts/project_health_check.py --json
 python scripts/no_paid_smoke.py --json
-python -m pytest tests/test_test_db_isolation.py -q
-python -m pytest tests/test_backfill_paid_guard.py -q
+python -m unittest tests.test_test_db_isolation -v
+python -m unittest tests.test_backfill_paid_guard -v
 python -m unittest tests.test_project_health_check -v
 python -m unittest tests.test_no_paid_smoke -v
 ```
