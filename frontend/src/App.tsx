@@ -141,7 +141,7 @@ export default function App() {
                       setPage("overview") callers still resolve to the same
                       page; preserve until callers migrate. */}
                   {(page === "market" || page === "overview") && (
-                    <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
+                    <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} onOpenHeadlines={() => navigate("headlines")} />
                   )}
                   {page === "headlines" && (
                     <InboxWorkbench onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />

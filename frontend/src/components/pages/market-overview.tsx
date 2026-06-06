@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical, ChevronDown } from "lucide-react";
@@ -1108,12 +1108,96 @@ function EvidenceNonClaims() {
 }
 
 // ---------------------------------------------------------------------------
+// Headline-analysis intake (P6) — the always-available "start here" entry.
+// Routes any free-text headline into the existing onAnalyze flow; the
+// LatestHeadlinesStrip footer remains the real-news browse affordance.
+// ---------------------------------------------------------------------------
+
+export const INTAKE_TITLE = "Start an analysis";
+export const INTAKE_PLACEHOLDER = "Paste a market-relevant headline…";
+export const INTAKE_BUTTON = "Analyze headline";
+export const INTAKE_BROWSE_LINK = "Browse Headlines inbox";
+export const INTAKE_ORIENTATION =
+  "Paste a headline, run the mechanism read, then compare it against the archive and evidence limits below.";
+
+// Returns true and calls onAnalyze(trimmed) for non-blank input; ignores
+// empty / whitespace-only input.  Pure, so the submit guard is unit-tested
+// without rendering.
+export function intakeSubmit(
+  raw: string,
+  onAnalyze?: (headline: string) => void,
+): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  onAnalyze?.(trimmed);
+  return true;
+}
+
+export function HeadlineIntake({
+  onAnalyze,
+  onOpenHeadlines,
+}: {
+  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
+  onOpenHeadlines?: () => void;
+}) {
+  const [value, setValue] = useState("");
+  const submit = () => {
+    if (intakeSubmit(value, (h) => onAnalyze?.(h))) setValue("");
+  };
+  return (
+    <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-4 py-3.5">
+      <div className="mb-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--so-citrine)]">
+        {INTAKE_TITLE}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="flex flex-col gap-2 sm:flex-row sm:items-center"
+      >
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={INTAKE_PLACEHOLDER}
+          aria-label={INTAKE_TITLE}
+          className="min-w-0 flex-1 rounded-[3px] border border-[color:var(--so-rule)] bg-[var(--so-bg-2)] px-3 py-2 font-[family-name:var(--so-serif)] text-[13px] text-[var(--so-ink-1)] placeholder:text-[var(--so-ink-3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--so-rule-hi)]"
+        />
+        <button
+          type="submit"
+          disabled={!value.trim()}
+          className="shrink-0 rounded-[3px] border border-[color:var(--so-rule-hi)] px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--so-citrine)] transition-colors hover:bg-[var(--so-bg-2)] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {INTAKE_BUTTON}
+        </button>
+      </form>
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <p className="min-w-0 font-[family-name:var(--so-serif)] text-[11.5px] italic leading-relaxed text-[var(--so-ink-3)]">
+          {INTAKE_ORIENTATION}
+        </p>
+        {onOpenHeadlines && (
+          <button
+            type="button"
+            onClick={onOpenHeadlines}
+            className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-2)] transition-colors hover:text-[var(--so-citrine)]"
+          >
+            {INTAKE_BROWSE_LINK} <span className="text-[var(--so-citrine)]">→</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
-export function MarketOverview({ onAnalyze, failedHeadlines }: {
+export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: {
   onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
   failedHeadlines?: Set<string>;
+  onOpenHeadlines?: () => void;
 }) {
   // Single normalized market context fetch — replaces the previous separate
   // /snapshots, /stress, and /movers/today queries.  Stress + benchmarks +
@@ -1289,6 +1373,13 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
           concentration={uncertaintyConcentration}
           explanation={contextExplanations.stress}
         />
+      </div>
+
+      {/* Headline-analysis intake — the always-available "start here" path.
+          The LatestHeadlinesStrip footer remains the real-news browse
+          affordance; this never empties and never reads as a live feed. */}
+      <div className="mt-11">
+        <HeadlineIntake onAnalyze={onAnalyze} onOpenHeadlines={onOpenHeadlines} />
       </div>
 
       {/* ────────────── 2 · THE ARCHIVE ────────────── */}
