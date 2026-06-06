@@ -38,6 +38,7 @@ import {
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ResearchPageShell } from "@/components/ui/research-page-shell";
 import {
   BookOpen,
   TrendingUp,
@@ -2724,7 +2725,7 @@ function SaveCohortPairDialog({
     >
       <div
         className={cn(
-          "w-full max-w-sm rounded-xl bg-[#13131a] px-5 py-4",
+          "w-full max-w-sm rounded-xl bg-card px-5 py-4",
           "shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_0_0_1px_rgba(71,70,86,0.45)]",
         )}
         onClick={(e) => e.stopPropagation()}
@@ -3709,7 +3710,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <ResearchPageShell className="mx-auto max-w-3xl space-y-5">
       {/* ── Header ── */}
       <div className="flex items-end justify-between gap-4 pb-1">
         <div>
@@ -3887,6 +3888,6 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
           onToggle={toggleId}
         />
       )}
-    </div>
+    </ResearchPageShell>
   );
 }
