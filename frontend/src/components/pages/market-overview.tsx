@@ -798,6 +798,13 @@ export function computeTrackRecordDisplay(data: TrackRecord) {
   return { resolved, hitRate, hitTone, avgSupport };
 }
 
+// Public-facing non-claim notes for the split lower sections.  Exported so
+// the honesty contract is pinned by a unit test (no banned overclaim words).
+export const OUTCOME_LEDGER_NOTE =
+  "Saved outcomes are descriptive archive reads, not a live trading record.";
+export const EVIDENCE_LAYER_NOTE =
+  "Evidence pools remain separated by phase and denominator; closed FDR pools are not recomputed here.";
+
 function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
   if (isLoading) {
     return (
@@ -823,19 +830,19 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
   ];
 
   return (
-    <section className="mb-5" data-testid="track-record">
-      <div className="mb-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
-        Saved-event outcomes
-      </div>
+    <section className="mb-4" data-testid="track-record">
+      {/* Compact KPI grid — section header now labels it, so the inner
+          "Saved-event outcomes" caption is dropped and the numbers are
+          sized to read as a tight ledger, not a hero stat. */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[4px] bg-[color:var(--so-rule)] sm:grid-cols-4">
         {cells.map((c) => (
-          <div key={c.k} className="bg-[var(--so-bg-1)] px-4 py-3.5">
+          <div key={c.k} className="bg-[var(--so-bg-1)] px-3.5 py-3">
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
               {c.k}
             </div>
             <div
               className={cn(
-                "mt-2 font-[family-name:var(--so-display)] text-[30px] font-normal leading-none tracking-tight tabular-nums",
+                "mt-1.5 font-[family-name:var(--so-display)] text-[22px] font-normal leading-none tracking-tight tabular-nums",
                 c.cls,
               )}
             >
@@ -844,7 +851,7 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
           </div>
         ))}
       </div>
-      <div className="mt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
         <span>{data.total} analyzed</span>
         {avgSupport !== null && <span>avg support {avgSupport}%</span>}
         {data.revisit_scored > 0 && <span>{data.revisit_scored} revisit-scored</span>}
@@ -1222,27 +1229,36 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         onAnalyze={onAnalyze}
       />
 
-      {/* ────────────── 3 · TRACK RECORD & EVIDENCE ────────────── */}
-      <SectionHead kicker="Track record" n="3" title="Track record & evidence" className="mt-11" />
+      {/* ────────────── 3 · OUTCOME LEDGER ────────────── */}
+      <SectionHead kicker="Outcome" n="3" title="Outcome ledger" className="mt-11" />
 
-      {/* Saved-event outcomes — single track-record strip.  The
-          earlier ``DiagnosticsTrackRecordStrip`` overlapped this
-          surface; removed in Slice 2 so readers see one canonical
-          source. */}
+      {/* Saved-event outcomes — compact KPI strip.  Hides on cold-start
+          (no resolved events yet); the note keeps the section honestly
+          labelled either way. */}
       <TrackRecordStrip data={trackRecord} isLoading={trackLoading} />
+      <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {OUTCOME_LEDGER_NOTE}
+      </p>
+
+      {/* ────────────── 4 · EVIDENCE LAYER ────────────── */}
+      <SectionHead kicker="Evidence" n="4" title="Evidence layer" className="mt-11" />
 
       {/* Tracked evidence layer — Phase 1 + Phase 2 evidence read
-          straight from the tracked ``GET /evidence/summary`` route.
-          The card renders Phase 1 and Phase 2 as separate columns and
-          surfaces the envelope's ``fdr_scope_note`` verbatim so the
-          FDR-scope disclaimer never drifts between the backend and
-          the UI. */}
-      <div className="pt-2">
+          straight from the tracked ``GET /evidence/summary`` route.  The
+          card renders Phase 1 and Phase 2 as separate columns, the
+          deferred-lessons count, and the methodology / phase-history
+          references, and surfaces the envelope's ``fdr_scope_note``
+          verbatim so the FDR-scope disclaimer never drifts between the
+          backend and the UI. */}
+      <div className="pt-1">
         <TrackedEvidenceCard
           data={trackedEvidence}
           isLoading={trackedEvidenceLoading}
         />
       </div>
+      <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {EVIDENCE_LAYER_NOTE}
+      </p>
 
       {/* Recent headlines — kept as a quiet footer per the Slice 2
           design package; the next slice moves this surface onto the
