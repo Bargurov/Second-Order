@@ -23,6 +23,8 @@ import { DegradedContextNotice } from "@/components/ui/degraded-data-notice";
 import {
   MoversSectionHead,
   MoverEmptyLine,
+  EventActivityEmpty,
+  allMoverWindowsEmpty,
   TodayMoverCard,
   WeeklyMoverCard,
   PersistentMoverRow,
@@ -99,8 +101,22 @@ function MoversChapter({
   // showing the response verbatim is the contract.
   const persistentList = persistent ?? [];
 
+  // When every window is empty and none is still loading, three per-window
+  // dashed lines read as three disconnected "broken" empties.  Collapse them
+  // into one coherent research-style block instead.  Any populated — or
+  // still-loading — window falls through to the per-window view below.
+  const showConsolidatedEmpty =
+    !todayLoading &&
+    !weeklyLoading &&
+    !persistentLoading &&
+    allMoverWindowsEmpty(todayList, weeklyList, persistentList);
+
   return (
     <section>
+      {showConsolidatedEmpty ? (
+        <EventActivityEmpty />
+      ) : (
+        <>
       {/* TODAY — 4-up clean mono cards; caption sits below the grid. */}
       <div className="mb-7">
         <MoversSectionHead
@@ -178,6 +194,8 @@ function MoversChapter({
           <MoverEmptyLine>No high-impact persistent movers qualify.</MoverEmptyLine>
         )}
       </div>
+        </>
+      )}
     </section>
   );
 }

@@ -119,6 +119,70 @@ export function MoverEmptyLine({ children }: { children: ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
+// Consolidated Event-Activity empty state.
+//
+// When all three mover windows (today / weekly / persistent) are empty, three
+// separate dashed lines read as three disconnected "broken" empties.  The
+// emptiness is HONEST — no recent events, and persistent is strict by design —
+// so this collapses them into one coherent research-style block: a quiet,
+// intentional read, never an error.  No fabricated movers, no buy/sell framing.
+// ---------------------------------------------------------------------------
+
+// True only when every mover window is empty.  Drives the consolidated empty
+// state; any populated window keeps the per-window cards instead.
+export function allMoverWindowsEmpty(
+  today: MarketMover[],
+  weekly: MarketMover[],
+  persistent: MarketMover[],
+): boolean {
+  return today.length === 0 && weekly.length === 0 && persistent.length === 0;
+}
+
+const EVENT_ACTIVITY_EMPTY_TITLE =
+  "No events currently qualify for these windows";
+
+const EVENT_ACTIVITY_EMPTY_EXPLANATION =
+  "Event activity surfaces analyzed events once their forward price windows " +
+  "print. None fall inside the windows below right now — this is the " +
+  "archive's current state, not a data error.";
+
+const EVENT_ACTIVITY_EMPTY_ROWS = [
+  "24h — no event-linked moves in the last trading day.",
+  "5-day — no events with a settled five-day window in range.",
+  "Persistent — no event meets the high-impact, still-moving bar " +
+    "(strict by design; never backfilled).",
+] as const;
+
+const EVENT_ACTIVITY_EMPTY_FOOTER =
+  "Movers reappear here automatically as newly analyzed events price into each window.";
+
+export function EventActivityEmpty() {
+  return (
+    <div className="rounded-[4px] border border-dashed border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-5 py-5">
+      <h3 className="font-[family-name:var(--so-display)] text-[14px] font-semibold tracking-[-0.01em] text-[var(--so-ink-1)]">
+        {EVENT_ACTIVITY_EMPTY_TITLE}
+      </h3>
+      <p className="mt-2 max-w-[62ch] font-[family-name:var(--so-serif)] text-[13px] italic leading-[1.55] text-[var(--so-ink-2)]">
+        {EVENT_ACTIVITY_EMPTY_EXPLANATION}
+      </p>
+      <div className="mt-3.5 border-t border-[color:var(--so-rule)]">
+        {EVENT_ACTIVITY_EMPTY_ROWS.map((row) => (
+          <p
+            key={row}
+            className="border-b border-[color:var(--so-rule)] py-2 font-[family-name:var(--so-serif)] text-[12.5px] italic leading-[1.5] text-[var(--so-ink-3)]"
+          >
+            {row}
+          </p>
+        ))}
+      </div>
+      <p className="mt-3.5 font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-[var(--so-ink-3)]">
+        <span className="text-[var(--so-citrine)]">·</span> {EVENT_ACTIVITY_EMPTY_FOOTER}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // TodayMoverCard — 4-up · `.mo-mover`
 // ---------------------------------------------------------------------------
 
