@@ -1269,6 +1269,11 @@ class SmokeScript:
     module: str
     args: tuple[str, ...] = ("--json", "--limit", "5")
     body_invariants: tuple[BodyInvariant, ...] = field(default_factory=tuple)
+    # Local input files the check cannot run without (e.g. a maintainer-local
+    # backup that is not tracked, so it is absent on a clean clone or CI
+    # runner).  When any declared path is missing the check is *skipped*
+    # rather than failed — see ``_missing_required_paths``.
+    required_paths: tuple[str, ...] = ()
 
 
 @dataclass
@@ -1279,6 +1284,7 @@ class SmokeResult:
     status_code: int | None
     elapsed_ms: int
     error: str | None = None
+    skipped: bool = False
 
 
 ENDPOINTS: tuple[SmokeEndpoint, ...] = (
@@ -1418,6 +1424,11 @@ SCRIPTS: tuple[SmokeScript, ...] = (
             "--limit", "5",
         ),
         body_invariants=(_assert_manual_repaired_cohort_validation_no_paid,),
+        # Untracked maintainer-local backup: absent on a clean clone / CI.
+        # Gate the check on it so a missing fixture skips (not fails) this
+        # check, while a present fixture runs the full no-paid invariant
+        # above unchanged.
+        required_paths=("backups/events-20260507T095609.db",),
     ),
 )
 
@@ -1752,6 +1763,31 @@ def _run_script(script: SmokeScript) -> tuple[bool, str | None]:
     return True, None
 
 
+def _fixture_exists(path: str) -> bool:
+    """Resolve a script's declared fixture path, CWD-relative.
+
+    The runner invokes each script in-process from the same working
+    directory the script's own CLI resolves a relative ``--backup-path``
+    against, so ``Path(path).exists()`` here matches exactly how the runner
+    resolves the same argument: the skip fires precisely when the runner
+    itself would error on the absent input, and never when it is present.
+    """
+    return Path(path).exists()
+
+
+def _missing_required_paths(script: SmokeScript) -> list[str]:
+    """Return the script's declared local fixtures that are absent.
+
+    A check that declares ``required_paths`` is skipped (not failed) when
+    any required input is missing: the runner is never invoked, so no
+    paid/provider seam can fire, and a missing local fixture is not a
+    paid-safety regression.  When every required path is present the check
+    runs exactly as before, with its full body invariants under the no-paid
+    guard.
+    """
+    return [p for p in script.required_paths if not _fixture_exists(p)]
+
+
 def run_smoke(
     *,
     client: Any | None = None,
@@ -1820,6 +1856,30 @@ def run_smoke(
             # failure path.
             for script in SCRIPTS:
                 start = time.perf_counter()
+                missing = _missing_required_paths(script)
+                if missing:
+                    # A declared local fixture is absent (e.g. a clean clone
+                    # without the maintainer's untracked backup).  The runner
+                    # is never invoked, so no paid seam can fire; report the
+                    # check as skipped — distinct from both pass and fail —
+                    # rather than letting the runner's missing-file error read
+                    # as a no-paid failure.
+                    elapsed_ms = int((time.perf_counter() - start) * 1000)
+                    results.append(
+                        SmokeResult(
+                            name=script.name,
+                            path=_format_script_path(script),
+                            ok=False,
+                            status_code=None,
+                            elapsed_ms=elapsed_ms,
+                            error=(
+                                "skipped: required local fixture(s) absent: "
+                                + ", ".join(missing)
+                            ),
+                            skipped=True,
+                        )
+                    )
+                    continue
                 ok = False
                 error = None
                 try:
@@ -1841,13 +1901,18 @@ def run_smoke(
 
 
 def summarize(results: list[SmokeResult]) -> dict[str, Any]:
-    passed = sum(1 for r in results if r.ok)
+    passed = sum(1 for r in results if r.ok and not r.skipped)
+    skipped = sum(1 for r in results if r.skipped)
     total = len(results)
+    failed = total - passed - skipped
     return {
-        "ok": passed == total,
+        # A skipped check (an absent local fixture) is neither a pass nor a
+        # failure, so it never flips ``ok``; only real failures do.
+        "ok": failed == 0,
         "summary": {
             "passed": passed,
-            "failed": total - passed,
+            "failed": failed,
+            "skipped": skipped,
             "total": total,
         },
         "checks": [asdict(r) for r in results],
@@ -1859,7 +1924,10 @@ def render_table(results: list[SmokeResult]) -> str:
     lines.append(f"{'check':<22} {'status':<7} {'ms':>5} endpoint")
     lines.append(f"{'-' * 22} {'-' * 7} {'-' * 5} {'-' * 48}")
     for result in results:
-        status = "PASS" if result.ok else "FAIL"
+        if result.skipped:
+            status = "SKIP"
+        else:
+            status = "PASS" if result.ok else "FAIL"
         code = str(result.status_code) if result.status_code is not None else "-"
         lines.append(
             f"{result.name:<22} {status:<7} {result.elapsed_ms:>5} "
@@ -1871,7 +1939,7 @@ def render_table(results: list[SmokeResult]) -> str:
     lines.append("")
     lines.append(
         f"Summary: {info['passed']}/{info['total']} PASS, "
-        f"{info['failed']} FAIL"
+        f"{info['failed']} FAIL, {info['skipped']} SKIP"
     )
     return "\n".join(lines)
 

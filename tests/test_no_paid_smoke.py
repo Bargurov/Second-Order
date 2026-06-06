@@ -150,7 +150,7 @@ class TestNoPaidSmokeRunner(_Base):
         expected_total = (
             len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
         )
-        failures = [r for r in results if not r.ok]
+        failures = [r for r in results if not r.ok and not r.skipped]
         self.assertEqual(failures, [])
         self.assertEqual(len(results), expected_total)
         self.assertEqual(before, after, "smoke endpoints must not mutate DB")
@@ -1270,7 +1270,7 @@ class TestNoPaidSmokeScriptRunner(_Base):
         script_results = self._script_results(results)
         for r in script_results:
             self.assertTrue(
-                r.ok,
+                r.ok or r.skipped,
                 f"script smoke unexpectedly failed: name={r.name!r} "
                 f"path={r.path!r} error={r.error!r}",
             )
@@ -2838,7 +2838,12 @@ class TestRepairedCohortRunnerGuardFailsClosed(_Base):
             market_check._fetch("SPY")
             return 0
 
-        with patch.object(target_module, "main", _seam_invoking_main):
+        # Force the required-fixture gate to "present" so the seam path runs
+        # even on a clean clone where the untracked backup is absent.  The
+        # skip-gate must never mask a paid seam when the fixture is present.
+        with patch.object(
+            no_paid_smoke, "_fixture_exists", return_value=True,
+        ), patch.object(target_module, "main", _seam_invoking_main):
             results = no_paid_smoke.run_smoke(client=client)
 
         broken = [
@@ -2846,6 +2851,172 @@ class TestRepairedCohortRunnerGuardFailsClosed(_Base):
             if _MANUAL_REPAIRED_COHORT_MODULE in r.path
         ]
         self.assertEqual(len(broken), 1)
+        self.assertFalse(broken[0].skipped)
         self.assertFalse(broken[0].ok)
         self.assertIn("forbidden seam", broken[0].error or "")
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+
+class TestSummarizeSkipSemantics(unittest.TestCase):
+    """A skipped check is counted separately from passed and failed, and a
+    skip alone never flips the overall ``ok`` to False.  Pins the summary
+    contract independently of the live archive.
+    """
+
+    def _result(self, name, *, ok, skipped=False, error=None):
+        return no_paid_smoke.SmokeResult(
+            name=name,
+            path=f"python -m scripts.{name}",
+            ok=ok,
+            status_code=None,
+            elapsed_ms=1,
+            error=error,
+            skipped=skipped,
+        )
+
+    def test_skipped_counted_separately_and_not_as_failure(self) -> None:
+        results = [
+            self._result("passing", ok=True),
+            self._result("failing", ok=False, error="boom"),
+            self._result(
+                "skipped",
+                ok=False,
+                skipped=True,
+                error="skipped: required local fixture(s) absent: x",
+            ),
+        ]
+        summary = no_paid_smoke.summarize(results)["summary"]
+        self.assertEqual(summary["passed"], 1)
+        self.assertEqual(summary["failed"], 1)
+        self.assertEqual(summary["skipped"], 1)
+        self.assertEqual(summary["total"], 3)
+
+    def test_real_failure_alongside_skip_flips_overall_ok_false(self) -> None:
+        results = [
+            self._result("failing", ok=False, error="boom"),
+            self._result("skipped", ok=False, skipped=True, error="skipped: x"),
+        ]
+        self.assertFalse(no_paid_smoke.summarize(results)["ok"])
+
+    def test_skip_alone_keeps_overall_ok_true(self) -> None:
+        results = [
+            self._result("passing", ok=True),
+            self._result("skipped", ok=False, skipped=True, error="skipped: x"),
+        ]
+        payload = no_paid_smoke.summarize(results)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["summary"]["skipped"], 1)
+        self.assertEqual(payload["summary"]["failed"], 0)
+        self.assertEqual(payload["summary"]["passed"], 1)
+
+    def test_render_table_marks_skipped_rows(self) -> None:
+        table = no_paid_smoke.render_table([
+            self._result("passing", ok=True),
+            self._result("skipped", ok=False, skipped=True, error="skipped: x"),
+        ])
+        self.assertIn("SKIP", table)
+
+
+class TestRequiredFixtureGate(unittest.TestCase):
+    """``_missing_required_paths`` drives the skip decision through the
+    patchable ``_fixture_exists`` seam.  Scripts without ``required_paths``
+    never skip, and check #30 pins the untracked backup while keeping its
+    no-paid invariant attached.
+    """
+
+    def test_missing_when_fixture_absent(self) -> None:
+        from unittest.mock import patch
+
+        script = no_paid_smoke.SmokeScript(
+            "demo", "scripts.demo", required_paths=("backups/nope.db",),
+        )
+        with patch.object(no_paid_smoke, "_fixture_exists", return_value=False):
+            self.assertEqual(
+                no_paid_smoke._missing_required_paths(script),
+                ["backups/nope.db"],
+            )
+
+    def test_empty_when_fixture_present(self) -> None:
+        from unittest.mock import patch
+
+        script = no_paid_smoke.SmokeScript(
+            "demo", "scripts.demo", required_paths=("backups/nope.db",),
+        )
+        with patch.object(no_paid_smoke, "_fixture_exists", return_value=True):
+            self.assertEqual(no_paid_smoke._missing_required_paths(script), [])
+
+    def test_script_without_required_paths_never_skips(self) -> None:
+        script = no_paid_smoke.SmokeScript("demo", "scripts.demo")
+        self.assertEqual(no_paid_smoke._missing_required_paths(script), [])
+
+    def test_manual_repaired_pins_backup_path_and_keeps_invariant(self) -> None:
+        match = next(
+            (s for s in no_paid_smoke.SCRIPTS
+             if s.module == _MANUAL_REPAIRED_COHORT_MODULE),
+            None,
+        )
+        self.assertIsNotNone(match)
+        self.assertEqual(
+            match.required_paths,
+            ("backups/events-20260507T095609.db",),
+        )
+        # the gated fixture is exactly the runner's --backup-path input
+        self.assertIn("backups/events-20260507T095609.db", match.args)
+        # the no-paid invariant must remain attached (not stripped)
+        self.assertIn(
+            no_paid_smoke._assert_manual_repaired_cohort_validation_no_paid,
+            match.body_invariants,
+        )
+
+
+class TestSkipMissingFixtureEndToEnd(_Base):
+    """End-to-end: with the untracked backup absent (clean clone / CI),
+    check #30 is skipped — reported distinctly, not failed, not silently
+    passed — and the overall smoke stays ``ok``.  With the fixture present
+    the check reaches the runner (the seam-fails-closed pin above proves it
+    still enforces the no-paid invariant when present).
+    """
+
+    def test_manual_repaired_skipped_when_backup_absent(self) -> None:
+        from unittest.mock import patch
+
+        # _fixture_exists is consulted only for scripts that declare
+        # required_paths (today only check #30), so forcing it False skips
+        # exactly that check and nothing else.
+        with patch.object(no_paid_smoke, "_fixture_exists", return_value=False):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        manual = [
+            r for r in results if _MANUAL_REPAIRED_COHORT_MODULE in r.path
+        ]
+        self.assertEqual(len(manual), 1)
+        self.assertTrue(manual[0].skipped)
+        self.assertFalse(manual[0].ok)
+        self.assertIn("skipped", (manual[0].error or "").lower())
+
+        payload = no_paid_smoke.summarize(results)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["summary"]["skipped"], 1)
+        self.assertEqual(payload["summary"]["failed"], 0)
+
+    def test_manual_repaired_runs_when_backup_present(self) -> None:
+        from unittest.mock import patch
+
+        ran: list[str] = []
+
+        def _spy(script):
+            ran.append(script.module)
+            return True, None
+
+        with patch.object(
+            no_paid_smoke, "_fixture_exists", return_value=True,
+        ), patch.object(no_paid_smoke, "_run_script", side_effect=_spy):
+            results = no_paid_smoke.run_smoke(client=client)
+
+        # present fixture -> check #30 reaches the runner (not skipped)
+        self.assertIn(_MANUAL_REPAIRED_COHORT_MODULE, ran)
+        manual = [
+            r for r in results if _MANUAL_REPAIRED_COHORT_MODULE in r.path
+        ]
+        self.assertEqual(len(manual), 1)
+        self.assertFalse(manual[0].skipped)
