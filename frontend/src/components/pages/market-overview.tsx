@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, FlaskConical } from "lucide-react";
@@ -404,7 +404,12 @@ function _humanizeCompound(label: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
-function RegimeVectorCard({
+// Regime read — P8D compact band.  Full-width; the identity (kicker · headline
+// · confidence) sits on one header row with the off-neutral axis chips pushed
+// right, so the band fills its width instead of reading as a wide empty card.
+// All prior data/copy is preserved, just laid out horizontally and tighter.
+// Exported for render tests.
+export function RegimeVectorCard({
   regimeVec,
   explanation,
 }: {
@@ -416,17 +421,17 @@ function RegimeVectorCard({
     | null;
   explanation?: ContextExplanation | null;
 }) {
-  const title = (
-    <div className="mb-3.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
+  const kicker = (
+    <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
       Regime read
-    </div>
+    </span>
   );
 
   if (!regimeVec?.available) {
     return (
-      <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4">
-        {title}
-        <p className="font-[family-name:var(--so-serif)] text-[13px] italic leading-relaxed text-[var(--so-ink-3)]">
+      <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-3.5">
+        {kicker}
+        <p className="mt-1.5 font-[family-name:var(--so-serif)] text-[13px] italic leading-relaxed text-[var(--so-ink-3)]">
           Regime read is unavailable for this market snapshot.
         </p>
       </div>
@@ -460,43 +465,56 @@ function RegimeVectorCard({
     : rawRationale;
 
   return (
-    <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4">
-      {title}
-      <h3 className="font-[family-name:var(--so-display)] text-[20px] font-normal leading-[1.28] tracking-tight text-[var(--so-ink-0)] max-w-[30ch]">
-        {isLocked ? _humanizeCompound(compoundLabel) : "No dominant regime pattern"}
-      </h3>
-      <div className="mt-2.5 flex items-baseline gap-2 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--so-ink-3)]">
-        <span>Confidence</span>
-        <span className="tabular-nums text-[var(--so-amber)]">
-          {isLocked ? (confPct == null ? "—" : `${confPct}%`) : "—"}
-        </span>
+    <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-3.5">
+      {/* Header band: kicker · headline · confidence (left), off-neutral chips
+          (right) — fills the full width. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          {kicker}
+          <h3 className="font-[family-name:var(--so-display)] text-[16px] font-normal leading-tight tracking-tight text-[var(--so-ink-0)]">
+            {isLocked ? _humanizeCompound(compoundLabel) : "No dominant regime pattern"}
+          </h3>
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-3)]">
+            Confidence{" "}
+            <span className="tabular-nums text-[var(--so-amber)]">
+              {isLocked ? (confPct == null ? "—" : `${confPct}%`) : "—"}
+            </span>
+          </span>
+        </div>
+        {offNeutral.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {offNeutral.map((a) => (
+              <AxisChip key={a.key} axis={a} />
+            ))}
+          </div>
+        )}
       </div>
+
       {compoundRationale && (
-        <p className="mt-3 font-[family-name:var(--so-serif)] text-[13px] leading-[1.55] text-[var(--so-ink-2)] max-w-[60ch]">
+        <p className="mt-2 font-[family-name:var(--so-serif)] text-[12.5px] leading-[1.5] text-[var(--so-ink-2)]">
           {compoundRationale}
         </p>
       )}
-      {offNeutral.length > 0 && (
-        <div className="mt-3.5 flex flex-wrap gap-1.5">
-          {offNeutral.map((a) => (
-            <AxisChip key={a.key} axis={a} />
-          ))}
+
+      {(neutral.length > 0 || unread.length > 0) && (
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[10px] tracking-[0.03em] text-[var(--so-ink-3)]">
+          {neutral.length > 0 && (
+            <span>
+              {neutral.length} {neutral.length === 1 ? "axis" : "axes"} neutral · {neutral.map((a) => a.label).join(" · ")}
+            </span>
+          )}
+          {unread.length > 0 && (
+            <span className="text-[var(--so-ink-4)]">
+              {unread.length} without a current read · {unread.map((a) => a.label).join(" · ")}
+            </span>
+          )}
         </div>
       )}
-      {neutral.length > 0 && (
-        <div className="mt-2.5 font-mono text-[10px] tracking-[0.03em] text-[var(--so-ink-3)]">
-          {neutral.length} {neutral.length === 1 ? "axis" : "axes"} neutral · {neutral.map((a) => a.label).join(" · ")}
-        </div>
-      )}
-      {unread.length > 0 && (
-        <div className="mt-1 font-mono text-[10px] tracking-[0.03em] text-[var(--so-ink-4)]">
-          {unread.length} {unread.length === 1 ? "axis" : "axes"} without a current read · {unread.map((a) => a.label).join(" · ")}
-        </div>
-      )}
+
       {(() => {
         const jargonAxis = offNeutral.find((a) => plainMeaning(`${a.label} ${a.state}`));
         return jargonAxis ? (
-          <PlainMeaningLine label={`${jargonAxis.label} ${jargonAxis.state}`} className="mt-2.5" />
+          <PlainMeaningLine label={`${jargonAxis.label} ${jargonAxis.state}`} className="mt-2" />
         ) : null;
       })()}
       <ContextExplanationInline explanation={explanation} />
@@ -505,12 +523,14 @@ function RegimeVectorCard({
 }
 
 // ---------------------------------------------------------------------------
-// Uncertainty & funding — compact three-row card (Stress · Funding ·
-// Concentration), per the Slice 02 design package.  Replaces the heavy
-// full-width stress-strip on this page; reads real stress / funding /
-// concentration data.  Design palette: quiet/normal reads jade, the
-// concentration breadth-caveat and an unsettled watch read amber, genuine
-// stress reads rust — a state read, never a directional verdict.
+// Uncertainty & funding — four compact zones (State · Drivers · Horizon ·
+// Interpretation), per the Slice 02 design package.  Surfaces the funding /
+// stress / credit decomposition /market-context already computes, driver-first
+// (the observable move leads; severity is a small tag), and adds horizon
+// discipline so a short/medium-horizon event read is never confused with a
+// permanent asset forecast.  Replaces the heavy full-width stress-strip.
+// Design palette: quiet/normal reads jade, an unsettled watch reads amber,
+// genuine stress reads rust — a state read, never a directional verdict.
 // ---------------------------------------------------------------------------
 
 type StressData = StressRegime & { available?: boolean };
@@ -584,67 +604,577 @@ function _fundingRow(funding: FundingStressMode | null): UncRowData | null {
   };
 }
 
-function UncRow({ k, label, note, tone }: { k: string } & UncRowData) {
+// ---- P8B decomposition selectors (pure, driver-first; exported for tests) ----
+
+// Minimal structural shape of MarketContext["credit_regime"] — declared
+// locally so lib/api.ts stays untouched; the parent passes the real block.
+type CreditRegimeBlock = {
+  available?: boolean;
+  regime?: string;
+  regime_label?: string;
+  rationale?: string;
+  hy_ig_differential_5d?: number | null;
+};
+
+export interface FiringFundingMode {
+  mode: string;
+  label: string;
+  severity: string;
+  drivers: string[];
+}
+
+const _FUNDING_SEVERITY_RANK: Record<string, number> = {
+  acute: 3,
+  elevated: 2,
+  mild: 1,
+  none: 0,
+};
+
+// Funding modes that fired, most-severe first, drivers carried verbatim.
+// Returns [] when the block is absent / unavailable or nothing fired — never
+// fabricates a mode or a driver.
+export function selectFiringFundingModes(
+  funding: FundingStressMode | null,
+): FiringFundingMode[] {
+  if (!funding || funding.available === false) return [];
+  const modes = funding.modes;
+  if (!modes || typeof modes !== "object") return [];
+  const out: FiringFundingMode[] = [];
+  for (const [mode, m] of Object.entries(modes)) {
+    if (!m || m.fired !== true) continue;
+    const drivers = Array.isArray(m.drivers)
+      ? m.drivers.filter((d): d is string => typeof d === "string" && d.trim() !== "")
+      : [];
+    out.push({
+      mode,
+      label: _FUNDING_MODE_LABEL[mode as FundingStressMode["primary_mode"]] ?? _titleCase(mode),
+      severity: typeof m.severity === "string" ? m.severity : "",
+      drivers,
+    });
+  }
+  out.sort(
+    (a, b) => (_FUNDING_SEVERITY_RANK[b.severity] ?? 0) - (_FUNDING_SEVERITY_RANK[a.severity] ?? 0),
+  );
+  return out;
+}
+
+export interface StressSignalMarker {
+  key: string;
+  label: string;
+}
+
+// Stress component flags, in canonical order — the underlying booleans behind
+// the one-word regime label.
+const _STRESS_SIGNAL_LABEL: ReadonlyArray<readonly [string, string]> = [
+  ["vix_elevated", "VIX elevated"],
+  ["term_inversion", "Curve inverted"],
+  ["credit_widening", "Credit widening"],
+  ["safe_haven_bid", "Safe-haven bid"],
+  ["breadth_deterioration", "Breadth weak"],
+];
+
+// Firing stress component flags only; [] when the signals block is absent.
+export function selectFiringStressSignals(
+  stress: StressData | null,
+): StressSignalMarker[] {
+  const signals = stress?.signals as Record<string, unknown> | undefined;
+  if (!signals || typeof signals !== "object") return [];
+  return _STRESS_SIGNAL_LABEL.filter(([k]) => signals[k] === true).map(([key, label]) => ({
+    key,
+    label,
+  }));
+}
+
+export interface CreditConfirmation {
+  label: string;
+  diff: number | null;
+}
+
+// Credit-regime confirmation read; null when unavailable or unlabeled.
+export function selectCreditConfirmation(
+  cr: CreditRegimeBlock | null | undefined,
+): CreditConfirmation | null {
+  if (!cr || cr.available === false) return null;
+  const label = (cr.regime_label ?? "").trim();
+  if (!label) return null;
+  return {
+    label,
+    diff:
+      typeof cr.hy_ig_differential_5d === "number" && Number.isFinite(cr.hy_ig_differential_5d)
+        ? cr.hy_ig_differential_5d
+        : null,
+  };
+}
+
+// ---- Horizon discipline — static, descriptive copy (no forecast claim) ----
+
+export const HORIZON_DISCIPLINE_NOTE =
+  "Second-order reads are short- and medium-horizon event claims, not permanent asset forecasts.";
+export const HORIZON_DISCIPLINE_PLAIN =
+  "A headline can move oil, rates, credit, or equities for days or weeks without changing the long-run trend.";
+
+export interface HorizonRow {
+  k: string;
+  label: string;
+  note: string;
+}
+export const HORIZON_ROWS: ReadonlyArray<HorizonRow> = [
+  { k: "1d", label: "reaction", note: "first repricing" },
+  { k: "5d", label: "window", note: "short-term confirmation or fade" },
+  { k: "20d", label: "persistence", note: "whether the channel keeps mattering" },
+  { k: "Secular", label: "baseline", note: "outside this event claim" },
+];
+
+export const INTERPRETATION_WHAT_CHANGES_LABEL = "What would change this read";
+
+// ---------------------------------------------------------------------------
+// Explainable terms (P8E) — page-local term-level explanations.  A viewer
+// clicks a jargon term (a subtle button) and a stable in-card panel shows a
+// short research-note read.  No whole-card expansion, no modal, no "How to
+// read this" accordion.  Copy is descriptive and horizon-disciplined; it never
+// implies an event shock is a permanent asset forecast.
+// ---------------------------------------------------------------------------
+
+export interface TermExplanation {
+  title: string;
+  plainMeaning: string;
+  whyItMatters: string;
+  whatWouldChange?: string;
+  horizonCaveat?: string;
+}
+
+export const EXPLANATION_DEFAULT = "Select a term to see the plain-language read.";
+
+const _HORIZON_CAVEAT =
+  "Second-order reads are short- and medium-horizon event claims, not permanent asset forecasts.";
+
+const _TERM_EXPLANATIONS: Record<string, TermExplanation> = {
+  funding_severity: {
+    title: "Funding severity",
+    plainMeaning:
+      "How tight funding conditions are right now — a composite read from Normal to Acute across dollar liquidity, credit spreads, volatility, and financing costs.",
+    whyItMatters:
+      "Event reactions can be amplified when markets are also repricing dollar liquidity, credit spreads, volatility, or financing costs.",
+    whatWouldChange:
+      "Dollar pressure eases, credit spreads tighten, volatility normalizes, or stress components stop corroborating.",
+  },
+  dollar_shortage: {
+    title: "Dollar shortage",
+    plainMeaning: "Dollar demand is firming relative to available liquidity.",
+    whyItMatters: "USD-sensitive reactions can persist when the dollar funding channel confirms the event shock.",
+    whatWouldChange: "DXY pressure fades or dollar-liquidity stress stops appearing in the funding drivers.",
+  },
+  credit_widening: {
+    title: "Credit widening",
+    plainMeaning: "Credit spreads are widening — the market is repricing borrowing risk higher.",
+    whyItMatters: "Funding-sensitive reactions can persist when credit-risk appetite is weakening alongside the event.",
+    whatWouldChange: "Credit spreads tighten, or high-yield stabilizes relative to investment grade.",
+  },
+  liquidity_squeeze: {
+    title: "Liquidity squeeze",
+    plainMeaning: "Funding liquidity is drying up across markets.",
+    whyItMatters: "Reactions can be amplified when liquidity is scarce and positions are harder to finance.",
+    whatWouldChange: "Volatility normalizes and funding conditions ease.",
+  },
+  duration_shock: {
+    title: "Duration shock",
+    plainMeaning: "A sharp move in interest-rate duration — bond-price and discount-rate pressure.",
+    whyItMatters: "Rate-sensitive reactions can persist when the duration channel confirms the event shock.",
+    whatWouldChange: "Long-end yields stabilize and the duration move fades.",
+  },
+  vix_elevated: {
+    title: "VIX elevated",
+    plainMeaning: "Equity-market volatility is running above its recent average.",
+    whyItMatters:
+      "A single event reaction is harder to read cleanly when broad volatility is elevated; the confidence band around any one move is wider.",
+    whatWouldChange: "VIX falls back toward its recent average.",
+  },
+  hy_ig: {
+    title: "HY−IG",
+    plainMeaning: "High-yield bonds compared with investment-grade bonds.",
+    whyItMatters:
+      "A widening gap suggests weaker credit-risk appetite, which can make funding-sensitive event effects more persistent.",
+    whatWouldChange: "High-yield stabilizes relative to investment grade.",
+  },
+  horizon_1d: {
+    title: "1d reaction",
+    plainMeaning: "The first day's repricing after the event.",
+    whyItMatters: "The initial move shows how the market first read the headline, before any confirmation or fade.",
+    horizonCaveat: _HORIZON_CAVEAT,
+  },
+  horizon_5d: {
+    title: "5d window",
+    plainMeaning: "The reaction over the first week of trading.",
+    whyItMatters: "Five days shows whether the initial move was confirmed or faded — the short-term read.",
+    horizonCaveat: _HORIZON_CAVEAT,
+  },
+  horizon_20d: {
+    title: "20d persistence",
+    plainMeaning: "Whether the reaction still holds about a month out.",
+    whyItMatters: "Persistence at twenty days shows whether the channel kept mattering or the move reversed.",
+    horizonCaveat: _HORIZON_CAVEAT,
+  },
+  horizon_secular: {
+    title: "Secular baseline",
+    plainMeaning: "The long-run direction of an asset is outside this event claim.",
+    whyItMatters:
+      "A headline can move oil, rates, credit, or equities for days or weeks without changing the long-run trend.",
+    horizonCaveat: _HORIZON_CAVEAT,
+  },
+};
+
+// Pure lookup — the plain-language read shown in the panel when a term is
+// selected; null for no / unknown term (the panel then shows the default
+// prompt).  Exported for tests.
+export function getTermExplanation(term: string | null | undefined): TermExplanation | null {
+  if (!term) return null;
+  return _TERM_EXPLANATIONS[term] ?? null;
+}
+
+// A subtle, calm term button — the only affordance is a hover/active tint;
+// never a whole-card target.  Callers pass the visual classes for the term
+// they wrap (chip, label, or row).
+function ExplainableTerm({
+  term,
+  active,
+  onSelect,
+  className,
+  children,
+}: {
+  term: string;
+  active: boolean;
+  onSelect: (term: string) => void;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="grid grid-cols-[92px_1fr] items-baseline gap-3 py-2.5">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
-        {k}
-      </dt>
-      <dd className="m-0 flex min-w-0 items-baseline gap-2">
-        <span className={cn("shrink-0 font-[family-name:var(--so-display)] text-[17px] tracking-tight", _UNC_TONE_CLASS[tone])}>
-          {label}
-        </span>
-        {note && (
-          <span className="truncate font-[family-name:var(--so-serif)] text-[12px] italic text-[var(--so-ink-3)]">
-            {note}
-          </span>
-        )}
-      </dd>
-      {plainMeaning(label) && (
-        <PlainMeaningLine label={label} className="col-span-2 mt-0.5" />
+    <button
+      type="button"
+      data-term={term}
+      aria-pressed={active}
+      onClick={() => onSelect(term)}
+      className={cn(
+        "rounded-[2px] text-left transition-colors hover:bg-white/[0.04]",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--so-rule-hi)]",
+        active && "bg-white/[0.06]",
+        className,
       )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ExplLine({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <dt className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">{k}</dt>
+      <dd className="m-0 mt-0.5 max-w-[68ch] font-[family-name:var(--so-serif)] text-[12.5px] leading-[1.5] text-[var(--so-ink-2)]">
+        {v}
+      </dd>
     </div>
   );
 }
 
-function UncertaintyCard({
+// Stable in-card explanation panel — a quiet research note, not a chatbot.  A
+// min-height keeps the card from jumping as the selection changes.  Exported
+// for tests.
+export function ExplanationPanel({ explanation }: { explanation: TermExplanation | null }) {
+  if (!explanation) {
+    return (
+      <div className="mt-3.5 min-h-[96px] border-t border-[color:var(--so-rule)] pt-3">
+        <p className="font-[family-name:var(--so-serif)] text-[12.5px] italic leading-relaxed text-[var(--so-ink-3)]">
+          {EXPLANATION_DEFAULT}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3.5 min-h-[96px] border-t border-[color:var(--so-rule)] pt-3">
+      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-citrine)]">
+        {explanation.title}
+      </div>
+      <dl className="m-0 space-y-1.5">
+        <ExplLine k="Plain meaning" v={explanation.plainMeaning} />
+        <ExplLine k="Why it matters" v={explanation.whyItMatters} />
+        {explanation.whatWouldChange && <ExplLine k="What would change this read" v={explanation.whatWouldChange} />}
+        {explanation.horizonCaveat && <ExplLine k="Horizon caveat" v={explanation.horizonCaveat} />}
+      </dl>
+    </div>
+  );
+}
+
+// Driver row — driver-first, severity as a small tag, clickable for its
+// term-level explanation.  Never a hero stat.
+function FundingModeRow({
+  m,
+  active,
+  onSelect,
+}: {
+  m: FiringFundingMode;
+  active: boolean;
+  onSelect: (term: string) => void;
+}) {
+  return (
+    <ExplainableTerm
+      term={m.mode}
+      active={active}
+      onSelect={onSelect}
+      className="flex w-full flex-wrap items-baseline gap-x-2.5 gap-y-0.5 px-1"
+    >
+      <span className="font-mono text-[12px] tabular-nums text-[var(--so-ink-1)]">
+        {m.drivers.length > 0 ? m.drivers.join(" · ") : m.label}
+      </span>
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
+        {m.label}
+        {m.severity ? ` · ${m.severity}` : ""}
+      </span>
+    </ExplainableTerm>
+  );
+}
+
+// State item — a quiet labelled read (no hero styling).  Clickable (a term
+// button) when ``onSelect`` is supplied; otherwise a plain labelled read.
+function StateItem({
+  k,
+  value,
+  tone,
+  term,
+  active,
+  onSelect,
+}: {
+  k: string;
+  value: string;
+  tone: UncTone;
+  term?: string;
+  active?: boolean;
+  onSelect?: (term: string) => void;
+}) {
+  const body = (
+    <>
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">{k}</span>
+      <span className={cn("font-[family-name:var(--so-display)] text-[15px] tracking-tight", _UNC_TONE_CLASS[tone])}>
+        {value}
+      </span>
+    </>
+  );
+  if (term && onSelect) {
+    return (
+      <ExplainableTerm term={term} active={!!active} onSelect={onSelect} className="flex items-baseline gap-2 px-1">
+        {body}
+      </ExplainableTerm>
+    );
+  }
+  return (
+    <div data-term={term} className="flex items-baseline gap-2">
+      {body}
+    </div>
+  );
+}
+
+const _ZONE_LABEL =
+  "mb-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[var(--so-ink-3)]";
+// Grid-cell wrapper for a zone — a top hairline + padding; vertical spacing
+// between rows is handled by the grid gap, not a margin.
+const _ZONE_CELL = "border-t border-[color:var(--so-rule)] pt-3";
+const _INTERP_P =
+  "max-w-[64ch] font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]";
+const _INTERP_KEY = "font-mono text-[10px] not-italic uppercase tracking-[0.12em] text-[var(--so-ink-2)]";
+
+// Uncertainty & funding — four compact zones (State · Drivers · Horizon ·
+// Interpretation).  Surfaces the decomposition /market-context already
+// computes, driver-first (the observable move leads; severity is a small tag),
+// contained to the Section-1 card footprint.  Exported for render tests.
+export function UncertaintyCard({
   stress,
   funding,
-  concentration,
+  creditRegime,
   explanation,
 }: {
   stress: StressData | null;
   funding: FundingStressMode | null;
-  concentration: NewsUncertaintyConcentration | null;
+  creditRegime?: CreditRegimeBlock | null;
   explanation?: ContextExplanation | null;
 }) {
+  // Selected explainable term — drives the in-card explanation panel.  Declared
+  // before any early return to satisfy the rules of hooks.
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
+
   const s = _stressRow(stress);
   const f = _fundingRow(funding);
-  // Hide the whole card only when both stress and funding are absent; a
-  // missing concentration block just omits its own row.
+  // Hide the whole card only when both stress and funding are absent.
   if (!s && !f) return null;
 
-  const concView = buildUncertaintyConcentrationView(concentration);
-  const conc = concView.entries.length > 0 ? concView.entries[0]! : null;
+  // ZONE 1 — State (quiet labels): stress regime + composite funding severity.
+  const fundingSeverity =
+    funding && funding.available !== false
+      ? _titleCase(funding.composite_severity === "none" ? "Normal" : funding.composite_severity)
+      : null;
+
+  // ZONE 2 — Drivers (driver-first): firing funding modes, stress flags, credit.
+  const firingModes = selectFiringFundingModes(funding);
+  const stressSignals = selectFiringStressSignals(stress);
+  const credit = selectCreditConfirmation(creditRegime);
+  const leadMode = firingModes[0];
+  const hasDrivers = firingModes.length > 0 || stressSignals.length > 0 || !!credit;
+
+  // ZONE 4 — Interpretation: keep meaning, add what-would-change.
+  const meaning = _contextExplanationText(explanation?.meaning);
+  const whatChanges = _contextExplanationText(explanation?.what_changes_it);
 
   return (
     <div className="rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-[18px] py-4">
-      <div className="mb-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
+      <div className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
         Uncertainty &amp; funding
       </div>
-      <dl className="m-0 divide-y divide-[color:var(--so-rule)]">
-        {s && <UncRow k="Stress" label={s.label} note={s.note} tone={s.tone} />}
-        {f && <UncRow k="Funding" label={f.label} note={f.note} tone={f.tone} />}
-        {conc && (
-          <UncRow
-            k="Concentration"
-            label={conc.value}
-            note={`${_titleCase(conc.key)} leads`}
-            tone="watch"
-          />
-        )}
-      </dl>
-      <ContextExplanationInline explanation={explanation} />
+
+      {/* Four zones in a responsive 2-up grid — a full-width module on the
+          page; stacks to one column on mobile.  A 4-across layout is
+          deliberately avoided: the Interpretation paragraphs would be cramped
+          at quarter width, so 2×2 is the widest the content reads cleanly at.
+          ``data-term`` hooks on the leaf terms keep them targetable by a later
+          explanation layer without wiring any popover here. */}
+      <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-2">
+        {/* ZONE 1 — STATE (quiet labels) */}
+        <div className={_ZONE_CELL}>
+          <div className={_ZONE_LABEL}>State</div>
+          <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5">
+            {s && <StateItem k="Stress" value={s.label} tone={s.tone} term="stress_regime" />}
+            {fundingSeverity && (
+              <StateItem
+                k="Funding"
+                value={fundingSeverity}
+                tone={f?.tone ?? "pos"}
+                term="funding_severity"
+                active={selectedTerm === "funding_severity"}
+                onSelect={setSelectedTerm}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* ZONE 2 — DRIVERS (driver-first) */}
+        <div className={_ZONE_CELL}>
+          <div className={_ZONE_LABEL}>Drivers</div>
+          {hasDrivers ? (
+            <>
+              {firingModes.length > 0 && (
+                <div className="space-y-1.5">
+                  {firingModes.map((m) => (
+                    <FundingModeRow
+                      key={m.mode}
+                      m={m}
+                      active={selectedTerm === m.mode}
+                      onSelect={setSelectedTerm}
+                    />
+                  ))}
+                </div>
+              )}
+              {leadMode && plainMeaning(leadMode.label) && (
+                <PlainMeaningLine label={leadMode.label} className="mt-1.5" />
+              )}
+              {stressSignals.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {stressSignals.map((sig) => (
+                    <ExplainableTerm
+                      key={sig.key}
+                      term={sig.key}
+                      active={selectedTerm === sig.key}
+                      onSelect={setSelectedTerm}
+                      className="border border-[color:var(--so-rule-hi)] px-1.5 py-[2px] font-mono text-[9.5px] tracking-[0.04em] text-[var(--so-ink-2)]"
+                    >
+                      {sig.label}
+                    </ExplainableTerm>
+                  ))}
+                </div>
+              )}
+              {credit && (
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5">
+                  <span className="font-[family-name:var(--so-serif)] text-[12px] text-[var(--so-ink-2)]">
+                    {credit.label}
+                  </span>
+                  {credit.diff != null && (
+                    <ExplainableTerm
+                      term="hy_ig"
+                      active={selectedTerm === "hy_ig"}
+                      onSelect={setSelectedTerm}
+                      className="px-1 font-mono text-[11px] tabular-nums text-[var(--so-ink-3)]"
+                    >
+                      HY−IG {credit.diff >= 0 ? "+" : ""}
+                      {credit.diff.toFixed(2)}/5d
+                    </ExplainableTerm>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+              No funding-stress mode is firing.
+            </p>
+          )}
+        </div>
+
+        {/* ZONE 3 — HORIZON DISCIPLINE (static, descriptive) */}
+        <div className={_ZONE_CELL}>
+          <div className={_ZONE_LABEL}>Horizon</div>
+          <div className="space-y-1">
+            {HORIZON_ROWS.map((h) => {
+              const term = `horizon_${h.k.toLowerCase()}`;
+              return (
+                <ExplainableTerm
+                  key={h.k}
+                  term={term}
+                  active={selectedTerm === term}
+                  onSelect={setSelectedTerm}
+                  className="flex w-full items-baseline gap-2.5 px-1"
+                >
+                  <span className="w-[60px] shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--so-ink-2)]">
+                    {h.k}
+                  </span>
+                  <span className="min-w-0 font-[family-name:var(--so-serif)] text-[12px]">
+                    <span className="text-[var(--so-ink-1)]">{h.label}</span>
+                    <span className="text-[var(--so-ink-3)]"> — {h.note}</span>
+                  </span>
+                </ExplainableTerm>
+              );
+            })}
+          </div>
+          <p className="mt-2 font-[family-name:var(--so-serif)] text-[11.5px] italic leading-relaxed text-[var(--so-ink-3)]">
+            {HORIZON_DISCIPLINE_NOTE}
+          </p>
+          <p className="mt-1 font-[family-name:var(--so-serif)] text-[11.5px] italic leading-relaxed text-[var(--so-ink-3)]">
+            <span className="font-mono text-[9px] not-italic uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+              Plain meaning:
+            </span>{" "}
+            {HORIZON_DISCIPLINE_PLAIN}
+          </p>
+        </div>
+
+        {/* ZONE 4 — INTERPRETATION */}
+        <div className={_ZONE_CELL}>
+          <div className={_ZONE_LABEL}>Interpretation</div>
+          {meaning && (
+            <p className={_INTERP_P}>
+              <span className={_INTERP_KEY}>Plain meaning:</span> {meaning}
+            </p>
+          )}
+          {whatChanges && (
+            <p className={cn(_INTERP_P, meaning && "mt-2")}>
+              <span className={_INTERP_KEY}>{INTERPRETATION_WHAT_CHANGES_LABEL}:</span> {whatChanges}
+            </p>
+          )}
+          {!meaning && !whatChanges && (
+            <p className="font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+              No interpretation available for this snapshot.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Explanation panel — a stable in-card research note that updates when a
+          term above is selected.  No whole-card expansion, no modal, no
+          accordion; the panel reserves a min-height so the card barely jumps. */}
+      <ExplanationPanel explanation={getTermExplanation(selectedTerm)} />
     </div>
   );
 }
@@ -1424,7 +1954,6 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
   const stress = ctx?.stress ?? null;
   const regimeVec = ctx?.regime_vector ?? null;
   const snapshots = ctx?.snapshots ?? null;
-  const uncertaintyConcentration = ctx?.uncertainty_concentration ?? null;
   const contextExplanations = ctx?.context_explanations ?? {};
   const archiveTotal = archive?.total ?? null;
   const latestCases = pickLatestAnalyzedCases(archive?.items ?? [], 5);
@@ -1530,14 +2059,16 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
         <BenchmarkSnapshotsStrip snapshots={snapshots} isLoading={ctxLoading} />
       </div>
 
-      {/* Regime read + Uncertainty & funding as one 2-up composition
-          (1.25fr / 1fr) — two compact cards, each carrying its own inline
-          plain-language guidance.  Stacks on narrow viewports.  The compact
-          UncertaintyCard reads real stress / funding / concentration data;
-          it replaces the heavy full-width stress-strip on this page.  The
-          wider top margin and gutter keep the two cards reading as separate
-          panels rather than one merged backdrop slab. */}
-      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[1.25fr_1fr]">
+      {/* P8D: Regime read (compact band) stacked above a full-width Uncertainty
+          & Funding module.  The old 2-up [1.25fr_1fr] inverted content weight —
+          the sparse Regime card took the wide column while the now four-zone
+          Uncertainty module was crammed into the narrow one.  Stacking gives
+          Uncertainty the full page width (its zones lay out 2×2 internally) and
+          lets Regime read as a thin band.  Spacing uses padding + a nested
+          space-y because the page root's ``space-y-0`` overrides ``mt-*`` on
+          direct children (see the intake note below); ``space-y-4`` here
+          applies to this wrapper's own children, so it is not overridden. */}
+      <div className="pt-6 space-y-4">
         <RegimeVectorCard
           regimeVec={regimeVec}
           explanation={contextExplanations.regime_vector}
@@ -1545,7 +2076,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
         <UncertaintyCard
           stress={stress}
           funding={ctx?.funding_stress_mode ?? null}
-          concentration={uncertaintyConcentration}
+          creditRegime={ctx?.credit_regime ?? null}
           explanation={contextExplanations.stress}
         />
       </div>
