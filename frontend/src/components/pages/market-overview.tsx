@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, FlaskConical, ChevronDown } from "lucide-react";
+import { AlertTriangle, FlaskConical } from "lucide-react";
 import {
   api,
   type ContextExplanation,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
+import { pct } from "@/lib/ticker-utils";
 import { buildClusterContext } from "@/lib/cluster-context";
 import { BenchmarkSnapshotsStrip } from "@/components/ui/benchmark-snapshots-strip";
 import { TrackedEvidenceCard } from "@/components/ui/tracked-evidence-card";
@@ -80,7 +81,48 @@ function _contextExplanationText(value?: ContextExplanation["meaning"]): string 
   return value.trim();
 }
 
-function ContextExplanationDisclosure({
+// ---------------------------------------------------------------------------
+// Plain-language guidance (P6B).  Replaces the old click-to-expand "How to
+// read this" accordion with always-visible inline guidance, and translates a
+// few non-obvious market-backdrop labels at the point of use — no big
+// accordion, no Googling core labels.
+// ---------------------------------------------------------------------------
+
+export const HOWTO_MARKET_BACKDROP =
+  "How to read: the market regime the archive is interpreted against — context, not a directional call.";
+export const HOWTO_ARCHIVE =
+  "How to read: the frozen research corpus and its most recent analyzed cases — a record of past work, not current activity.";
+export const HOWTO_OUTCOME_LEDGER =
+  "How to read: descriptive archive reads; the hit rate is over resolved cases only, and unresolved cases stay visible.";
+export const HOWTO_EVIDENCE =
+  "How to read: what the evidence supports, kept separate from what the project explicitly does not claim.";
+
+// Plain meanings for non-obvious backdrop labels (regime axes, funding/stress
+// modes).  Substring-keyed so "Credit · duration stress" resolves the same as
+// "duration stress".
+const _PLAIN_MEANING: ReadonlyArray<readonly [string, string]> = [
+  ["duration stress", "pressure from credit conditions and interest-rate duration — markets more sensitive to financing costs and discount-rate moves."],
+  ["duration shock", "a sharp move in interest-rate duration — bond-price and discount-rate pressure."],
+  ["credit widening", "credit spreads widening — the market repricing borrowing risk higher."],
+  ["dollar shortage", "tight dollar funding — a scramble for US-dollar liquidity."],
+  ["liquidity squeeze", "funding liquidity drying up across markets."],
+  ["geopolitical", "stress driven by geopolitical events rather than financial plumbing."],
+  ["systemic", "broad, cross-market stress — not contained to a single channel."],
+];
+
+// Returns a plain-language meaning for a jargon label, or null when the label
+// is already plain / unknown.
+export function plainMeaning(label: string | null | undefined): string | null {
+  if (!label) return null;
+  const norm = label.toLowerCase();
+  for (const [key, text] of _PLAIN_MEANING) {
+    if (norm.includes(key)) return text;
+  }
+  return null;
+}
+
+// Always-visible inline "Plain meaning" line — replaces the old accordion.
+export function ContextExplanationInline({
   explanation,
   className,
 }: {
@@ -88,32 +130,39 @@ function ContextExplanationDisclosure({
   className?: string;
 }) {
   const meaning = _contextExplanationText(explanation?.meaning);
-  const whatChangesIt = _contextExplanationText(explanation?.what_changes_it);
-  if (!meaning && !whatChangesIt) return null;
-
+  if (!meaning) return null;
   return (
-    <details className={cn("group mt-3.5 border-t border-dashed border-[color:var(--so-rule-hi)] pt-2.5", className)}>
-      <summary className="flex cursor-pointer list-none items-center gap-2 marker:hidden">
-        <ChevronDown className="h-3 w-3 text-[var(--so-citrine)] transition-transform group-open:rotate-180" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--so-ink-3)] group-hover:text-[var(--so-ink-1)]">
-          How to read this
-        </span>
-      </summary>
-      <div className="mt-2.5 max-w-[56ch] space-y-1.5 font-[family-name:var(--so-serif)] text-[12.5px] leading-relaxed text-[var(--so-ink-2)]">
-        {meaning && (
-          <p>
-            <span className="text-[var(--so-ink-1)]">Meaning: </span>
-            {meaning}
-          </p>
-        )}
-        {whatChangesIt && (
-          <p>
-            <span className="text-[var(--so-ink-1)]">What changes it: </span>
-            {whatChangesIt}
-          </p>
-        )}
-      </div>
-    </details>
+    <p
+      className={cn(
+        "mt-3 max-w-[64ch] border-t border-dashed border-[color:var(--so-rule)] pt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]",
+        className,
+      )}
+    >
+      <span className="font-mono text-[10px] not-italic uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+        Plain meaning:
+      </span>{" "}
+      {meaning}
+    </p>
+  );
+}
+
+// Compact plain-meaning line for a single jargon label, rendered at the point
+// of use; renders nothing when the label is already plain.
+function PlainMeaningLine({ label, className }: { label: string; className?: string }) {
+  const meaning = plainMeaning(label);
+  if (!meaning) return null;
+  return (
+    <p
+      className={cn(
+        "font-[family-name:var(--so-serif)] text-[11.5px] italic leading-relaxed text-[var(--so-ink-3)]",
+        className,
+      )}
+    >
+      <span className="font-mono text-[9px] not-italic uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+        Plain meaning:
+      </span>{" "}
+      {meaning}
+    </p>
   );
 }
 
@@ -444,7 +493,13 @@ function RegimeVectorCard({
           {unread.length} {unread.length === 1 ? "axis" : "axes"} without a current read · {unread.map((a) => a.label).join(" · ")}
         </div>
       )}
-      <ContextExplanationDisclosure explanation={explanation} />
+      {(() => {
+        const jargonAxis = offNeutral.find((a) => plainMeaning(`${a.label} ${a.state}`));
+        return jargonAxis ? (
+          <PlainMeaningLine label={`${jargonAxis.label} ${jargonAxis.state}`} className="mt-2.5" />
+        ) : null;
+      })()}
+      <ContextExplanationInline explanation={explanation} />
     </div>
   );
 }
@@ -545,6 +600,9 @@ function UncRow({ k, label, note, tone }: { k: string } & UncRowData) {
           </span>
         )}
       </dd>
+      {plainMeaning(label) && (
+        <PlainMeaningLine label={label} className="col-span-2 mt-0.5" />
+      )}
     </div>
   );
 }
@@ -586,7 +644,7 @@ function UncertaintyCard({
           />
         )}
       </dl>
-      <ContextExplanationDisclosure explanation={explanation} />
+      <ContextExplanationInline explanation={explanation} />
     </div>
   );
 }
@@ -934,6 +992,17 @@ export interface ArchiveCase {
   ticker: string | null;
   statusLabel: string;
   isObservation: boolean;
+  /** One-line engine mechanism read; null when the row carries none. */
+  mechanismSummary: string | null;
+  /** validation_status_v2 ticker tallies; null when the block omits them
+   *  (a real 0 is kept — it is information, not absence). */
+  supporting: number | null;
+  contradicting: number | null;
+  /** Lead market ticker's realized 5-day return, in percent units; null when
+   *  the list payload carries no return for it.  reaction_profile_v1 is a
+   *  detail-route block (GET /events/{id}) and is intentionally not read on
+   *  this list surface. */
+  reactionReturn5d: number | null;
 }
 
 function _leadTicker(mt: SavedEvent["market_tickers"]): string | null {
@@ -949,6 +1018,56 @@ function _statusLabel(v2: SavedEvent["validation_status_v2"]): string {
   return "—";
 }
 
+// Trimmed one-line mechanism read, or null — never an invented summary.
+function _mechanismSummary(s: SavedEvent["mechanism_summary"]): string | null {
+  const t = (s ?? "").trim();
+  return t || null;
+}
+
+// Supporting / contradicting ticker tallies off the validation_status_v2
+// block.  Each side is null when the block omits it; a real 0 is preserved.
+function _supportCounts(
+  v2: SavedEvent["validation_status_v2"],
+): { supporting: number | null; contradicting: number | null } {
+  const counts = v2?.counts;
+  return {
+    supporting: typeof counts?.supporting === "number" ? counts.supporting : null,
+    contradicting: typeof counts?.contradicting === "number" ? counts.contradicting : null,
+  };
+}
+
+// Reaction read for the displayed lead ticker (market_tickers[0]) — the same
+// ticker _leadTicker surfaces, so the return always matches the shown symbol.
+// The /events LIST payload does not carry reaction_profile_v1 (it is hydrated
+// only on the GET /events/{id} detail route), so the list reaction comes off
+// the stored market_tickers return; null when that ticker has no 5-day return.
+function _leadReactionReturn5d(mt: SavedEvent["market_tickers"]): number | null {
+  if (!Array.isArray(mt) || mt.length === 0) return null;
+  const r = (mt[0] as { return_5d?: number | null } | undefined)?.return_5d;
+  return typeof r === "number" && Number.isFinite(r) ? r : null;
+}
+
+// Evidence subline text: "N supporting · M contradicting".  Returns null —
+// so the caller omits the line — when there is no directional evidence to
+// show (both tallies absent or zero); a data-less unresolved case already
+// reads as such from its status, and repeating "0 supporting · 0
+// contradicting" on every such card is noise, not substance.  When at least
+// one side is non-zero, both present counts render (a real 0 paired with a
+// non-zero other side is the meaningful supported/contradicted read).  Pure —
+// unit-tested without rendering.
+export function formatSupportCounts(
+  supporting: number | null | undefined,
+  contradicting: number | null | undefined,
+): string | null {
+  const sup = typeof supporting === "number" ? supporting : 0;
+  const con = typeof contradicting === "number" ? contradicting : 0;
+  if (sup === 0 && con === 0) return null;
+  const parts: string[] = [];
+  if (typeof supporting === "number") parts.push(`${supporting} supporting`);
+  if (typeof contradicting === "number") parts.push(`${contradicting} contradicting`);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 // "Latest analyzed cases": analysis-stage events first (each sorted by
 // event_date desc), then any curated observations (flagged), capped at limit.
 // /events has no sort param, so the ordering happens here — never insertion order.
@@ -957,14 +1076,21 @@ export function pickLatestAnalyzedCases(items: SavedEvent[], limit: number): Arc
     (b.event_date ?? "").localeCompare(a.event_date ?? "");
   const analysis = items.filter((e) => !_NON_THESIS_STAGES.has(e.stage)).sort(byDateDesc);
   const observations = items.filter((e) => _NON_THESIS_STAGES.has(e.stage)).sort(byDateDesc);
-  return [...analysis, ...observations].slice(0, Math.max(0, limit)).map((e) => ({
-    id: e.id,
-    headline: e.headline,
-    eventDate: e.event_date ?? null,
-    ticker: _leadTicker(e.market_tickers),
-    statusLabel: _statusLabel(e.validation_status_v2),
-    isObservation: _NON_THESIS_STAGES.has(e.stage),
-  }));
+  return [...analysis, ...observations].slice(0, Math.max(0, limit)).map((e) => {
+    const { supporting, contradicting } = _supportCounts(e.validation_status_v2);
+    return {
+      id: e.id,
+      headline: e.headline,
+      eventDate: e.event_date ?? null,
+      ticker: _leadTicker(e.market_tickers),
+      statusLabel: _statusLabel(e.validation_status_v2),
+      isObservation: _NON_THESIS_STAGES.has(e.stage),
+      mechanismSummary: _mechanismSummary(e.mechanism_summary),
+      supporting,
+      contradicting,
+      reactionReturn5d: _leadReactionReturn5d(e.market_tickers),
+    };
+  });
 }
 
 // quality_tier is present in the live /breakdown payload but not yet declared on
@@ -1016,23 +1142,64 @@ function ArchiveCasesPanel({
       </div>
       {cases.length > 0 ? (
         <div className="divide-y divide-[color:var(--so-rule)] overflow-hidden rounded-[4px] border border-[color:var(--so-rule)]">
-          {cases.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => onAnalyze?.(c.headline, { eventId: c.id })}
-              className="group grid w-full grid-cols-[64px_1fr_auto] items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--so-bg-2)]"
-            >
-              <span className="font-mono text-[11px] tabular-nums text-[var(--so-ink-3)]">{c.eventDate ?? "—"}</span>
-              <span className="min-w-0 truncate font-[family-name:var(--so-serif)] text-[12.5px] text-[var(--so-ink-1)]">
-                {c.ticker && <span className="font-mono text-[var(--so-ink-2)]">{c.ticker} </span>}
-                {c.headline}
-              </span>
-              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
-                {c.isObservation ? "observation" : c.statusLabel}
-              </span>
-            </button>
-          ))}
+          {cases.map((c) => {
+            const counts = formatSupportCounts(c.supporting, c.contradicting);
+            const reactionTone =
+              c.reactionReturn5d == null
+                ? ""
+                : c.reactionReturn5d > 0
+                  ? "text-[var(--so-jade-ink)]"
+                  : c.reactionReturn5d < 0
+                    ? "text-[var(--so-rust-ink)]"
+                    : "text-[var(--so-ink-2)]";
+            const hasMeta = c.reactionReturn5d != null || counts != null;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onAnalyze?.(c.headline, { eventId: c.id })}
+                className="group grid w-full grid-cols-[64px_1fr] items-start gap-x-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--so-bg-2)]"
+              >
+                <span className="pt-px font-mono text-[11px] tabular-nums text-[var(--so-ink-3)]">
+                  {c.eventDate ?? "—"}
+                </span>
+                <span className="min-w-0">
+                  {/* Row 1 — headline + lead ticker, with the validation status
+                      (or "observation" flag) pinned right; unchanged density. */}
+                  <span className="flex items-baseline gap-2">
+                    <span className="min-w-0 flex-1 truncate font-[family-name:var(--so-serif)] text-[12.5px] text-[var(--so-ink-1)]">
+                      {c.ticker && <span className="font-mono text-[var(--so-ink-2)]">{c.ticker} </span>}
+                      {c.headline}
+                    </span>
+                    <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
+                      {c.isObservation ? "observation" : c.statusLabel}
+                    </span>
+                  </span>
+                  {/* Mechanism read — one clamped line, omitted when absent so a
+                      curated stub never shows an invented thesis. */}
+                  {c.mechanismSummary && (
+                    <span className="mt-1 block truncate font-[family-name:var(--so-serif)] text-[11.5px] italic leading-snug text-[var(--so-ink-2)]">
+                      {c.mechanismSummary}
+                    </span>
+                  )}
+                  {/* Meta — realized 5-day reaction of the lead ticker (coloured
+                      by sign, a factual move not a verdict) and the evidence
+                      tally; each part renders only when present. */}
+                  {hasMeta && (
+                    <span className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-[10px] tracking-[0.04em] text-[var(--so-ink-3)]">
+                      {c.reactionReturn5d != null && (
+                        <span className="tabular-nums">
+                          <span className="text-[var(--so-ink-4)]">5d </span>
+                          <span className={reactionTone}>{pct(c.reactionReturn5d)}</span>
+                        </span>
+                      )}
+                      {counts && <span className="tabular-nums">{counts}</span>}
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-[4px] border border-dashed border-[color:var(--so-rule)] px-4 py-3 font-[family-name:var(--so-serif)] text-[13px] italic text-[var(--so-ink-3)]">
@@ -1351,18 +1518,26 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
 
       {/* ────────────── 1 · MARKET BACKDROP ────────────── */}
       <SectionHead kicker="Snapshot" n="1" title="Market backdrop" className="mt-1" />
+      <p className="mt-1.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {HOWTO_MARKET_BACKDROP}
+      </p>
 
       {/* Liquid Benchmark Snapshots — a single hairline-gridded mono row.
           Hides cleanly when ``snapshots`` is null; the degraded banner
-          already explains why. */}
-      <BenchmarkSnapshotsStrip snapshots={snapshots} isLoading={ctxLoading} />
+          already explains why.  ``mt-4`` lifts the row off the how-to-read
+          line so it reads as its own band, not part of the header. */}
+      <div className="mt-4">
+        <BenchmarkSnapshotsStrip snapshots={snapshots} isLoading={ctxLoading} />
+      </div>
 
       {/* Regime read + Uncertainty & funding as one 2-up composition
-          (1.25fr / 1fr) — two compact cards, each carrying its own "How to
-          read this" disclosure.  Stacks on narrow viewports.  The compact
+          (1.25fr / 1fr) — two compact cards, each carrying its own inline
+          plain-language guidance.  Stacks on narrow viewports.  The compact
           UncertaintyCard reads real stress / funding / concentration data;
-          it replaces the heavy full-width stress-strip on this page. */}
-      <div className="mt-3.5 grid grid-cols-1 gap-3.5 lg:grid-cols-[1.25fr_1fr]">
+          it replaces the heavy full-width stress-strip on this page.  The
+          wider top margin and gutter keep the two cards reading as separate
+          panels rather than one merged backdrop slab. */}
+      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[1.25fr_1fr]">
         <RegimeVectorCard
           regimeVec={regimeVec}
           explanation={contextExplanations.regime_vector}
@@ -1377,13 +1552,22 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
 
       {/* Headline-analysis intake — the always-available "start here" path.
           The LatestHeadlinesStrip footer remains the real-news browse
-          affordance; this never empties and never reads as a live feed. */}
-      <div className="mt-11">
+          affordance; this never empties and never reads as a live feed.
+          Separation from the backdrop two-card row is PADDING, not margin:
+          the page root's ``space-y-0`` sets ``margin-top: 0`` on every
+          non-first child at a higher specificity than ``mt-*``, so a top
+          margin renders as no gap (this is why the earlier ``mt-14`` did
+          nothing).  ``pt-16`` gives real dark-space breathing room so the
+          intake reads as a separate entry point below the backdrop. */}
+      <div className="pt-16">
         <HeadlineIntake onAnalyze={onAnalyze} onOpenHeadlines={onOpenHeadlines} />
       </div>
 
       {/* ────────────── 2 · THE ARCHIVE ────────────── */}
       <SectionHead kicker="Archive" n="2" title={ARCHIVE_SECTION_TITLE} className="mt-14" />
+      <p className="mt-1.5 mb-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {HOWTO_ARCHIVE}
+      </p>
 
       {/* The frozen research corpus, not a live feed: an at-a-glance count +
           the most recent analyzed cases (sorted by event_date, never insertion
@@ -1397,6 +1581,9 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
 
       {/* ────────────── 3 · OUTCOME LEDGER ────────────── */}
       <SectionHead kicker="Outcome" n="3" title="Outcome ledger" className="mt-11" />
+      <p className="mt-1.5 mb-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {HOWTO_OUTCOME_LEDGER}
+      </p>
 
       {/* Saved-event outcomes — compact KPI strip.  Hides on cold-start
           (no resolved events yet); the note keeps the section honestly
@@ -1409,6 +1596,9 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
 
       {/* ────────────── 4 · EVIDENCE & LIMITS ────────────── */}
       <SectionHead kicker="Evidence" n="4" title={EVIDENCE_LIMITS_TITLE} className="mt-11" />
+      <p className="mt-1.5 mb-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {HOWTO_EVIDENCE}
+      </p>
       <div className="mt-2.5 mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
         {EVIDENCE_ESTABLISHES_LABEL}
       </div>
