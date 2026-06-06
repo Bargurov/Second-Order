@@ -41,6 +41,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
 import { EventStudyCard } from "@/components/ui/event-study-card";
+import { ResearchPageShell } from "@/components/ui/research-page-shell";
 import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality, type ValidationStatusV2 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -858,7 +859,7 @@ function CascadeNodeCard({
       "rounded-[6px] border px-3 py-2",
       dim
         ? "border-border/25 bg-background"
-        : "border-[#93d1d3]/12 bg-[#13131a]",
+        : "border-[color:var(--so-rule-hi)] bg-card",
     )}>
       <p className={cn(
         "text-[12px] font-medium leading-snug",
@@ -1515,8 +1516,12 @@ export function RecentEvents() {
   }
 
   return (
-    // Page-level scroll: list view is plain flow.
-    <div className="flex flex-col gap-3">
+    // Page-level scroll: list view is plain flow.  Wrapped in the shared
+    // research shell so the archive's shadcn-token chrome (cards, borders,
+    // muted text, primary accent) adopts the Direction-C palette — charcoal
+    // surfaces, warm ink, citrine accent — and visually belongs with Market
+    // Overview.  Chrome only: the shell remaps theme tokens, no logic moves.
+    <ResearchPageShell className="flex flex-col gap-3">
       <div className="flex shrink-0 flex-col gap-3 px-1 pb-1 pt-1 md:flex-row md:items-end md:justify-between">
         <div className="flex min-w-0 items-end gap-3">
           <div className="min-w-0">
@@ -1929,6 +1934,6 @@ export function RecentEvents() {
           </button>
         </div>
       )}
-    </div>
+    </ResearchPageShell>
   );
 }
