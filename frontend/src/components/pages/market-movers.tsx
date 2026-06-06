@@ -8,6 +8,7 @@ import { TickerDetailPanel } from "@/components/ui/ticker-detail-panel";
 import { TransmissionChainCompact } from "@/components/ui/transmission-chain";
 import { IfPersistsCompact } from "@/components/ui/if-persists";
 import { RatesContextCompact } from "@/components/ui/rates-context";
+import { ResearchPageShell } from "@/components/ui/research-page-shell";
 import { api, type MarketMover, type BacktestResult, type BacktestOutcome } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
@@ -248,7 +249,7 @@ export function MarketMovers() {
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <ResearchPageShell className="space-y-2">
         <div className="flex items-center gap-2">
           <Zap className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold">Market Movers</span>
@@ -257,21 +258,21 @@ export function MarketMovers() {
           <Skeleton className="h-36 w-[360px] shrink-0 rounded-2xl" />
           <Skeleton className="h-36 w-[360px] shrink-0 rounded-2xl" />
         </div>
-      </div>
+      </ResearchPageShell>
     );
   }
 
   if (!movers || movers.length === 0) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3">
+      <ResearchPageShell className="flex items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3">
         <Zap className="h-3.5 w-3.5 text-muted-foreground/50" />
         <span className="text-xs text-muted-foreground">No confirmed market movers right now</span>
-      </div>
+      </ResearchPageShell>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <ResearchPageShell className="space-y-2">
       <div className="flex items-center gap-2">
         <Zap className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs font-semibold">Market Movers</span>
@@ -290,6 +291,6 @@ export function MarketMovers() {
           <MoverCard key={m.event_id} mover={m} liveMap={liveMap} />
         ))}
       </div>
-    </div>
+    </ResearchPageShell>
   );
 }
