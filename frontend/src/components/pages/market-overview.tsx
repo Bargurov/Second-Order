@@ -5,8 +5,10 @@ import { AlertTriangle, FlaskConical, ChevronDown } from "lucide-react";
 import {
   api,
   type ContextExplanation,
-  type MarketMover,
   type TrackRecord,
+  type SavedEvent,
+  type TrackRecordBreakdown,
+  type TrackRecordBreakdownBucket,
   type NewsCluster,
   type RegimeVector,
   type RefreshMeta,
@@ -20,15 +22,6 @@ import { buildClusterContext } from "@/lib/cluster-context";
 import { BenchmarkSnapshotsStrip } from "@/components/ui/benchmark-snapshots-strip";
 import { TrackedEvidenceCard } from "@/components/ui/tracked-evidence-card";
 import { DegradedContextNotice } from "@/components/ui/degraded-data-notice";
-import {
-  MoversSectionHead,
-  MoverEmptyLine,
-  EventActivityEmpty,
-  allMoverWindowsEmpty,
-  TodayMoverCard,
-  WeeklyMoverCard,
-  PersistentMoverRow,
-} from "@/components/ui/mover-cards";
 
 // ---------------------------------------------------------------------------
 // Design-package palette (Direction C tokens) — scoped to this page via CSS
@@ -71,134 +64,10 @@ const SO_VARS = {
   "--so-serif": "'Inter','Manrope',sans-serif",
 } as CSSProperties;
 
-// ---------------------------------------------------------------------------
-// Movers chapter — three visually-distinct windows.  Card components live in
-// ``mover-cards.tsx``; this page composes them with section heads that match
-// the design package.
-// ---------------------------------------------------------------------------
-
-function MoversChapter({
-  today,
-  weekly,
-  persistent,
-  todayLoading,
-  weeklyLoading,
-  persistentLoading,
-  onAnalyze,
-}: {
-  today: MarketMover[] | undefined;
-  weekly: MarketMover[] | undefined;
-  persistent: MarketMover[] | undefined;
-  todayLoading: boolean;
-  weeklyLoading: boolean;
-  persistentLoading: boolean;
-  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
-}) {
-  const todayList = today ?? [];
-  const weeklyList = weekly ?? [];
-  // Backend already gates /movers/persistent to high-impact conviction items.
-  // (``is_high_conviction_persistent``).  No extra filter on this surface —
-  // showing the response verbatim is the contract.
-  const persistentList = persistent ?? [];
-
-  // When every window is empty and none is still loading, three per-window
-  // dashed lines read as three disconnected "broken" empties.  Collapse them
-  // into one coherent research-style block instead.  Any populated — or
-  // still-loading — window falls through to the per-window view below.
-  const showConsolidatedEmpty =
-    !todayLoading &&
-    !weeklyLoading &&
-    !persistentLoading &&
-    allMoverWindowsEmpty(todayList, weeklyList, persistentList);
-
-  return (
-    <section>
-      {showConsolidatedEmpty ? (
-        <EventActivityEmpty />
-      ) : (
-        <>
-      {/* TODAY — 4-up clean mono cards; caption sits below the grid. */}
-      <div className="mb-7">
-        <MoversSectionHead
-          title="Today"
-          sub="last 24h · event-linked"
-          count={todayList.length}
-        />
-        {todayLoading ? (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((k) => (
-              <Skeleton key={k} className="h-28 rounded-[4px] bg-surface-container-low" />
-            ))}
-          </div>
-        ) : todayList.length > 0 ? (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            {todayList.slice(0, 8).map((m) => (
-              <TodayMoverCard key={m.event_id} mover={m} onAnalyze={onAnalyze} />
-            ))}
-          </div>
-        ) : (
-          <MoverEmptyLine>No event-linked moves in the last 24 hours.</MoverEmptyLine>
-        )}
-        <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
-          Event-linked moves; not validated until evidence broadens.
-        </p>
-      </div>
-
-      {/* WEEKLY — 2-up cards. */}
-      <div className="mb-7">
-        <MoversSectionHead
-          title="This week"
-          sub="5-day curated review set"
-          count={weeklyList.length}
-        />
-        {weeklyLoading ? (
-          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-            {[1, 2].map((k) => (
-              <Skeleton key={k} className="h-32 rounded-[4px] bg-surface-container-low" />
-            ))}
-          </div>
-        ) : weeklyList.length > 0 ? (
-          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
-            {weeklyList.slice(0, 6).map((m) => (
-              <WeeklyMoverCard key={m.event_id} mover={m} onAnalyze={onAnalyze} />
-            ))}
-          </div>
-        ) : (
-          <MoverEmptyLine>No 5-day confirmed movers yet.</MoverEmptyLine>
-        )}
-      </div>
-
-      {/* PERSISTENT — Still Moving Markets, gated to high-impact conviction
-          by the backend.  Empty means no qualified rows; do not backfill
-          with medium-impact or low-information filler.  Rendered as hairline
-          rows inside a single bordered container, per the design package. */}
-      <div className="mb-4">
-        <MoversSectionHead
-          title="Still moving markets"
-          sub="high-impact effects beyond the initial reaction"
-          count={persistentList.length}
-        />
-        {persistentLoading ? (
-          <div className="overflow-hidden rounded-[4px] border border-[color:var(--so-rule)]">
-            {[1, 2, 3].map((k) => (
-              <Skeleton key={k} className="h-[58px] rounded-none bg-[var(--so-bg-1)]" />
-            ))}
-          </div>
-        ) : persistentList.length > 0 ? (
-          <div className="divide-y divide-[color:var(--so-rule)] overflow-hidden rounded-[4px] border border-[color:var(--so-rule)]">
-            {persistentList.map((m) => (
-              <PersistentMoverRow key={m.event_id} mover={m} onAnalyze={onAnalyze} />
-            ))}
-          </div>
-        ) : (
-          <MoverEmptyLine>No high-impact persistent movers qualify.</MoverEmptyLine>
-        )}
-      </div>
-        </>
-      )}
-    </section>
-  );
-}
+// The former MoversChapter (today / weekly / persistent rolling-mover windows)
+// was retired in P5B: Section 2 is now "The archive", which reads off the
+// frozen research corpus instead of empty live windows.  The mover-card
+// components remain in ``mover-cards.tsx`` for other surfaces.
 
 function _contextExplanationText(value?: ContextExplanation["meaning"]): string {
   if (!value) return "";
@@ -1030,6 +899,215 @@ function SectionHead({
 }
 
 // ---------------------------------------------------------------------------
+// Frozen-archive front door (P5B) — helpers, copy, and panels.  The archive is
+// a fixed research corpus, not a live feed, so Section 2 reads off the archive
+// itself rather than rolling mover windows.
+// ---------------------------------------------------------------------------
+
+// Stages that carry no scored thesis (curated stubs / promoted observations).
+const _NON_THESIS_STAGES = new Set(["curated_intake", "curated_observation"]);
+
+export const ARCHIVE_SECTION_TITLE = "The archive";
+export const ARCHIVE_FRAMING_NOTE =
+  "The most recent analyses in the frozen research archive, dated by event and " +
+  "read off realized market reactions — a record of past work, not a feed of current activity.";
+export const ARCHIVE_CASES_LABEL = "Latest analyzed cases";
+
+export const OUTCOME_BREAKDOWN_DIMENSION = "by_quality_tier" as const;
+export const OUTCOME_BREAKDOWN_NOTE =
+  "Outcomes by evidence-quality tier — descriptive; hit rate is over resolved events only.";
+
+export const EVIDENCE_LIMITS_TITLE = "Evidence & limits";
+export const EVIDENCE_ESTABLISHES_LABEL = "What the evidence establishes";
+export const EVIDENCE_NONCLAIMS_LABEL = "What it does not claim";
+export const EVIDENCE_NONCLAIMS: readonly string[] = [
+  "Descriptive research on dated past events — not a trading or trade-recommendation tool.",
+  "Outcome counts are archive reads, not a record of trading performance.",
+  "Phase 1 and Phase 2 stay separate FDR pools; nothing is pooled across them.",
+  "Regulation evidence was read on a copy and never promoted into a live denominator.",
+];
+
+export interface ArchiveCase {
+  id: number;
+  headline: string;
+  eventDate: string | null;
+  ticker: string | null;
+  statusLabel: string;
+  isObservation: boolean;
+}
+
+function _leadTicker(mt: SavedEvent["market_tickers"]): string | null {
+  if (!Array.isArray(mt) || mt.length === 0) return null;
+  const first = mt[0] as { symbol?: string } | undefined;
+  return first?.symbol ?? null;
+}
+
+function _statusLabel(v2: SavedEvent["validation_status_v2"]): string {
+  if (v2 && typeof v2 === "object" && typeof (v2 as { status?: string }).status === "string") {
+    return (v2 as { status: string }).status;
+  }
+  return "—";
+}
+
+// "Latest analyzed cases": analysis-stage events first (each sorted by
+// event_date desc), then any curated observations (flagged), capped at limit.
+// /events has no sort param, so the ordering happens here — never insertion order.
+export function pickLatestAnalyzedCases(items: SavedEvent[], limit: number): ArchiveCase[] {
+  const byDateDesc = (a: SavedEvent, b: SavedEvent) =>
+    (b.event_date ?? "").localeCompare(a.event_date ?? "");
+  const analysis = items.filter((e) => !_NON_THESIS_STAGES.has(e.stage)).sort(byDateDesc);
+  const observations = items.filter((e) => _NON_THESIS_STAGES.has(e.stage)).sort(byDateDesc);
+  return [...analysis, ...observations].slice(0, Math.max(0, limit)).map((e) => ({
+    id: e.id,
+    headline: e.headline,
+    eventDate: e.event_date ?? null,
+    ticker: _leadTicker(e.market_tickers),
+    statusLabel: _statusLabel(e.validation_status_v2),
+    isObservation: _NON_THESIS_STAGES.has(e.stage),
+  }));
+}
+
+// quality_tier is present in the live /breakdown payload but not yet declared on
+// the TrackRecordBreakdown TS type; read it through a narrow cast so lib/api.ts
+// stays untouched.  family / subtype / tradable / compound / policy are
+// degenerate on this archive and deliberately never read here.
+interface _QualityTierBucket extends TrackRecordBreakdownBucket {
+  tier?: string;
+}
+export function qualityTierBuckets(bd: TrackRecordBreakdown | undefined): _QualityTierBucket[] {
+  const ext = bd as
+    | (TrackRecordBreakdown & { by_quality_tier?: _QualityTierBucket[] })
+    | undefined;
+  const list = ext?.by_quality_tier;
+  return Array.isArray(list) ? list.filter((b) => (b.total ?? 0) > 0) : [];
+}
+
+// ---- presentational panels (Direction-C --so-* language) ----
+
+function ArchiveCasesPanel({
+  cases,
+  total,
+  trackRecord,
+  onAnalyze,
+}: {
+  cases: ArchiveCase[];
+  total: number | null;
+  trackRecord?: TrackRecord;
+  onAnalyze?: (headline: string, opts?: { eventId?: number }) => void;
+}) {
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
+        {total != null && (
+          <span>
+            <span className="tabular-nums text-[var(--so-ink-1)]">{total}</span> events in the active archive
+          </span>
+        )}
+        {trackRecord && (
+          <span>
+            <span className="tabular-nums text-[var(--so-jade-ink)]">{trackRecord.validated}</span> validated ·{" "}
+            <span className="tabular-nums text-[var(--so-rust-ink)]">{trackRecord.contradicted}</span> contradicted ·{" "}
+            <span className="tabular-nums">{trackRecord.unresolved}</span> unresolved
+          </span>
+        )}
+      </div>
+      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-2)]">
+        {ARCHIVE_CASES_LABEL}
+      </div>
+      {cases.length > 0 ? (
+        <div className="divide-y divide-[color:var(--so-rule)] overflow-hidden rounded-[4px] border border-[color:var(--so-rule)]">
+          {cases.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onAnalyze?.(c.headline, { eventId: c.id })}
+              className="group grid w-full grid-cols-[64px_1fr_auto] items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[var(--so-bg-2)]"
+            >
+              <span className="font-mono text-[11px] tabular-nums text-[var(--so-ink-3)]">{c.eventDate ?? "—"}</span>
+              <span className="min-w-0 truncate font-[family-name:var(--so-serif)] text-[12.5px] text-[var(--so-ink-1)]">
+                {c.ticker && <span className="font-mono text-[var(--so-ink-2)]">{c.ticker} </span>}
+                {c.headline}
+              </span>
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
+                {c.isObservation ? "observation" : c.statusLabel}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-[4px] border border-dashed border-[color:var(--so-rule)] px-4 py-3 font-[family-name:var(--so-serif)] text-[13px] italic text-[var(--so-ink-3)]">
+          No analyzed cases in the archive.
+        </div>
+      )}
+      <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {ARCHIVE_FRAMING_NOTE}
+      </p>
+    </div>
+  );
+}
+
+function QualityTierBreakdown({
+  breakdown,
+  isLoading,
+}: {
+  breakdown?: TrackRecordBreakdown;
+  isLoading: boolean;
+}) {
+  if (isLoading) return null;
+  const buckets = qualityTierBuckets(breakdown);
+  if (buckets.length === 0) return null;
+  return (
+    <div className="mt-3.5">
+      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
+        Outcomes by evidence-quality tier
+      </div>
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[4px] bg-[color:var(--so-rule)] sm:grid-cols-2">
+        {buckets.map((b, i) => (
+          <div key={b.tier ?? i} className="bg-[var(--so-bg-1)] px-3.5 py-2.5">
+            <div className="flex items-baseline justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+                {b.tier ? _titleCase(b.tier) : "tier"}
+              </span>
+              <span className="font-mono text-[11px] tabular-nums text-[var(--so-citrine)]">{b.total}</span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-3 font-mono text-[11px] tabular-nums">
+              <span className="text-[var(--so-jade-ink)]">{b.validated} val</span>
+              <span className="text-[var(--so-rust-ink)]">{b.contradicted} con</span>
+              <span className="ml-auto text-[var(--so-ink-3)]">
+                {b.hit_rate != null ? `${Math.round(b.hit_rate * 100)}% hit` : "—"}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 font-[family-name:var(--so-serif)] text-[11.5px] italic leading-relaxed text-[var(--so-ink-3)]">
+        {OUTCOME_BREAKDOWN_NOTE}
+      </p>
+    </div>
+  );
+}
+
+function EvidenceNonClaims() {
+  return (
+    <div className="mt-3 rounded-[4px] border border-dashed border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-4 py-3">
+      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+        {EVIDENCE_NONCLAIMS_LABEL}
+      </div>
+      <ul className="space-y-1">
+        {EVIDENCE_NONCLAIMS.map((c) => (
+          <li
+            key={c}
+            className="font-[family-name:var(--so-serif)] text-[12px] italic leading-snug text-[var(--so-ink-3)]"
+          >
+            <span className="text-[var(--so-citrine)]">·</span> {c}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -1047,18 +1125,22 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
     staleTime: 30_000,
   });
 
-  // Persistent movers stays on its own endpoint — different selection algorithm
-  // than today's highlights, so it cannot share /market-context.
-  const { data: persistent, isLoading: persistentLoading, error: persistentError } = useQuery({
-    queryKey: qk.moversPersistent(),
-    queryFn: () => api.moversPersistent(),
-    staleTime: 1_800_000,
+  // The frozen research archive itself — the active-listing page feeds both the
+  // at-a-glance count and the "latest analyzed cases" list (sorted client-side
+  // by event_date; /events has no sort param).
+  const { data: archive, isLoading: archiveLoading, error: archiveError } = useQuery({
+    queryKey: ["market-overview-archive-events", 50] as const,
+    queryFn: () => api.events({ limit: 50 }),
+    staleTime: 300_000,
   });
 
-  const { data: weekly, isLoading: weeklyLoading, error: weeklyError } = useQuery({
-    queryKey: qk.moversWeekly(),
-    queryFn: () => api.moversWeekly(),
-    staleTime: 1_800_000,
+  // Outcome breakdown — only the verified-populated by_quality_tier slice is
+  // read (see qualityTierBuckets); the family/subtype/tradable slices are
+  // degenerate on this archive and intentionally unused.
+  const { data: breakdown, isLoading: breakdownLoading } = useQuery({
+    queryKey: ["market-overview-track-record-breakdown"] as const,
+    queryFn: () => api.trackRecordBreakdown(),
+    staleTime: 300_000,
   });
 
   const { data: trackRecord, isLoading: trackLoading } = useQuery({
@@ -1093,14 +1175,15 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   const snapshots = ctx?.snapshots ?? null;
   const uncertaintyConcentration = ctx?.uncertainty_concentration ?? null;
   const contextExplanations = ctx?.context_explanations ?? {};
-  const todaysHighlights = ctx?.highlights ?? [];
+  const archiveTotal = archive?.total ?? null;
+  const latestCases = pickLatestAnalyzedCases(archive?.items ?? [], 5);
 
   // Surface a single inline error banner when any of the top-level queries
   // fail.  Without this, a backend that's unreachable on first start would
   // render the page completely blank (every section gracefully hides on
   // empty data) and the user would have no idea something went wrong.
   // Picks the first error so the banner is one line, not three.
-  const firstError = ctxError ?? persistentError ?? weeklyError;
+  const firstError = ctxError ?? archiveError;
   const errorMessage = firstError instanceof Error ? firstError.message : null;
 
   // True cold-start empty: every archive-derived channel finished loading
@@ -1109,7 +1192,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   // nudge; if a channel is still loading we treat it as "might have data" and
   // hide the nudge rather than risk a false cold-start message.
   const allLoaded =
-    !ctxLoading && !persistentLoading && !weeklyLoading
+    !ctxLoading && !archiveLoading && !breakdownLoading
     && !trackLoading && !trackedEvidenceLoading;
   const hasTrackRecord = !!trackRecord && trackRecord.total > 0;
   const hasTrackedEvidence =
@@ -1119,9 +1202,8 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
   const isColdStart =
     allLoaded
     && !firstError
-    && (!persistent || persistent.length === 0)
-    && (!weekly || weekly.length === 0)
-    && todaysHighlights.length === 0
+    && (archive?.total ?? 0) === 0
+    && latestCases.length === 0
     && !hasTrackRecord
     && !hasTrackedEvidence;
 
@@ -1209,23 +1291,16 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
         />
       </div>
 
-      {/* ────────────── 2 · EVENT ACTIVITY ────────────── */}
-      <SectionHead kicker="Activity" n="2" title="Event activity" className="mt-14" />
+      {/* ────────────── 2 · THE ARCHIVE ────────────── */}
+      <SectionHead kicker="Archive" n="2" title={ARCHIVE_SECTION_TITLE} className="mt-14" />
 
-      {/* Three stacked sub-windows: Today (4-up cards) → This week
-          (2-up editorial cards) → Still moving (horizontal rows).
-          Backend already gates persistent to high-impact conviction
-          items, so empty there is correct, not a bug.  Operator
-          scaffolding — registry candidates, candidate queue, backfill
-          preview — has been removed from this surface per Slice 2;
-          those concerns belong on an operator workbench page. */}
-      <MoversChapter
-        today={todaysHighlights}
-        weekly={weekly}
-        persistent={persistent}
-        todayLoading={ctxLoading}
-        weeklyLoading={weeklyLoading}
-        persistentLoading={persistentLoading}
+      {/* The frozen research corpus, not a live feed: an at-a-glance count +
+          the most recent analyzed cases (sorted by event_date, never insertion
+          order; curated rows are flagged as observations, not theses). */}
+      <ArchiveCasesPanel
+        cases={latestCases}
+        total={archiveTotal}
+        trackRecord={trackRecord}
         onAnalyze={onAnalyze}
       />
 
@@ -1236,12 +1311,16 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
           (no resolved events yet); the note keeps the section honestly
           labelled either way. */}
       <TrackRecordStrip data={trackRecord} isLoading={trackLoading} />
+      <QualityTierBreakdown breakdown={breakdown} isLoading={breakdownLoading} />
       <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
         {OUTCOME_LEDGER_NOTE}
       </p>
 
-      {/* ────────────── 4 · EVIDENCE LAYER ────────────── */}
-      <SectionHead kicker="Evidence" n="4" title="Evidence layer" className="mt-11" />
+      {/* ────────────── 4 · EVIDENCE & LIMITS ────────────── */}
+      <SectionHead kicker="Evidence" n="4" title={EVIDENCE_LIMITS_TITLE} className="mt-11" />
+      <div className="mt-2.5 mb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--so-ink-2)]">
+        {EVIDENCE_ESTABLISHES_LABEL}
+      </div>
 
       {/* Tracked evidence layer — Phase 1 + Phase 2 evidence read
           straight from the tracked ``GET /evidence/summary`` route.  The
@@ -1259,6 +1338,7 @@ export function MarketOverview({ onAnalyze, failedHeadlines }: {
       <p className="mt-2.5 font-[family-name:var(--so-serif)] text-[12px] italic leading-relaxed text-[var(--so-ink-3)]">
         {EVIDENCE_LAYER_NOTE}
       </p>
+      <EvidenceNonClaims />
 
       {/* Recent headlines — kept as a quiet footer per the Slice 2
           design package; the next slice moves this surface onto the
