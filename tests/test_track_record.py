@@ -70,6 +70,7 @@ class TestTrackRecordAggregation(_IsolatedDb):
         r = compute_track_record()
         self.assertEqual(r["total"], 0)
         self.assertEqual(r["validated"], 0)
+        self.assertEqual(r["any_supporting_count"], 0)
         self.assertEqual(r["contradicted"], 0)
         self.assertEqual(r["unresolved"], 0)
         self.assertIsNone(r["avg_support_ratio"])
@@ -83,8 +84,22 @@ class TestTrackRecordAggregation(_IsolatedDb):
         r = compute_track_record()
         self.assertEqual(r["total"], 1)
         self.assertEqual(r["validated"], 1)
+        self.assertEqual(r["any_supporting_count"], 1)
         self.assertEqual(r["contradicted"], 0)
         self.assertEqual(r["unresolved"], 0)
+
+    def test_any_supporting_count_is_honest_alias_of_validated(self):
+        """``any_supporting_count`` mirrors the OR-rule ``validated`` count
+        (>=1 supporting ticker) — an honest label for the same value."""
+        save_event(_event("Mixed event", [
+            {"symbol": "AAPL", "role": "beneficiary",
+             "direction_tag": "supports ↑", "return_5d": 2.0, "spark": []},
+            {"symbol": "MSFT", "role": "loser",
+             "direction_tag": "contradicts ↓", "return_5d": -2.0, "spark": []},
+        ]))
+        r = compute_track_record()
+        self.assertEqual(r["any_supporting_count"], r["validated"])
+        self.assertEqual(r["any_supporting_count"], 1)
 
     def test_single_contradicted_event(self):
         save_event(_event("Contradicted event", [

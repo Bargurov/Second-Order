@@ -93,7 +93,7 @@ export const HOWTO_MARKET_BACKDROP =
 export const HOWTO_ARCHIVE =
   "How to read: the frozen research corpus and its most recent analyzed cases — a record of past work, not current activity.";
 export const HOWTO_OUTCOME_LEDGER =
-  "How to read: descriptive archive reads; the hit rate is over resolved cases only, and unresolved cases stay visible.";
+  "How to read: descriptive archive reads, not a verdict; support is measured over resolved cases only, and unresolved cases stay visible.";
 export const HOWTO_EVIDENCE =
   "How to read: what the evidence supports, kept separate from what the project explicitly does not claim.";
 
@@ -1241,18 +1241,26 @@ export function buildUncertaintyConcentrationView(
   };
 }
 
-/** Compute display values for the track record strip.  Exported for tests. */
+/**
+ * Compute display values for the track-record strip.  Exported for tests.
+ *
+ * ``avgSupport`` (mean per-event fraction of directional tickers that support
+ * the thesis) is the honest lead metric.  ``anySupporting`` is the OR-rule
+ * count of events with >=1 supporting ticker — descriptive context only, NOT a
+ * validation verdict, since one supporting ticker can outweigh several
+ * contradicting ones.  ``anySupportingRate`` keeps the OR-rule rate available
+ * but it is deliberately no longer the headline.
+ */
 export function computeTrackRecordDisplay(data: TrackRecord) {
   const resolved = data.validated + data.contradicted;
-  const hitRate = resolved > 0
-    ? Math.round((data.validated / resolved) * 100)
-    : null;
-  const hitTone: "positive" | "neutral" | "warn" =
-    hitRate === null ? "neutral" : hitRate >= 60 ? "positive" : hitRate >= 40 ? "neutral" : "warn";
   const avgSupport = data.avg_support_ratio !== null
     ? Math.round(data.avg_support_ratio * 100)
     : null;
-  return { resolved, hitRate, hitTone, avgSupport };
+  const anySupporting = data.validated;
+  const anySupportingRate = resolved > 0
+    ? Math.round((data.validated / resolved) * 100)
+    : null;
+  return { resolved, avgSupport, anySupporting, anySupportingRate };
 }
 
 // Public-facing non-claim notes for the split lower sections.  Exported so
@@ -1262,7 +1270,7 @@ export const OUTCOME_LEDGER_NOTE =
 export const EVIDENCE_LAYER_NOTE =
   "Evidence pools remain separated by phase and denominator; closed FDR pools are not recomputed here.";
 
-function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
+export function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: boolean }) {
   if (isLoading) {
     return (
       <section className="mb-6">
@@ -1274,16 +1282,18 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
   // at least one resolved event lands.
   if (!data || data.total === 0) return null;
 
-  const { hitRate, avgSupport } = computeTrackRecordDisplay(data);
+  const { avgSupport } = computeTrackRecordDisplay(data);
 
-  // Four hairline-gridded cells, design palette per the package:
-  // validated (jade) / contradicted (rust) / unresolved (amber) / hit rate
-  // (jade).  A quiet mono footer carries analyzed + avg support.
+  // Lead with the honest support-strength metric (avg support ratio); the
+  // any-supporting / contradicted / unresolved counts follow as descriptive
+  // context.  The binary OR-rule "hit rate" is deliberately NOT the headline —
+  // one supporting ticker can outweigh several contradicting ones, so an
+  // any-supporting count is evidence, not a validation verdict.
   const cells: Array<{ k: string; v: string | number; cls: string }> = [
-    { k: "Validated", v: data.validated, cls: "text-[var(--so-jade-ink)]" },
+    { k: "Avg support", v: avgSupport == null ? "—" : `${avgSupport}%`, cls: "text-[var(--so-citrine)]" },
+    { k: "Any-supporting", v: data.validated, cls: "text-[var(--so-ink-1)]" },
     { k: "Contradicted", v: data.contradicted, cls: "text-[var(--so-rust-ink)]" },
     { k: "Unresolved", v: data.unresolved, cls: "text-[var(--so-amber)]" },
-    { k: "Hit rate", v: hitRate == null ? "—" : `${hitRate}%`, cls: "text-[var(--so-jade-ink)]" },
   ];
 
   return (
@@ -1310,8 +1320,8 @@ function TrackRecordStrip({ data, isLoading }: { data?: TrackRecord; isLoading: 
       </div>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-3)]">
         <span>{data.total} analyzed</span>
-        {avgSupport !== null && <span>avg support {avgSupport}%</span>}
         {data.revisit_scored > 0 && <span>{data.revisit_scored} revisit-scored</span>}
+        <span>Descriptive evidence, not a verdict</span>
       </div>
     </section>
   );
@@ -1503,7 +1513,7 @@ export const ARCHIVE_CASES_LABEL = "Latest analyzed cases";
 
 export const OUTCOME_BREAKDOWN_DIMENSION = "by_quality_tier" as const;
 export const OUTCOME_BREAKDOWN_NOTE =
-  "Outcomes by evidence-quality tier — descriptive; hit rate is over resolved events only.";
+  "Outcomes by evidence-quality tier — descriptive; any-supporting rate is over resolved events only.";
 
 export const EVIDENCE_LIMITS_TITLE = "Evidence & limits";
 export const EVIDENCE_ESTABLISHES_LABEL = "What the evidence establishes";
@@ -1661,7 +1671,7 @@ function ArchiveCasesPanel({
         )}
         {trackRecord && (
           <span>
-            <span className="tabular-nums text-[var(--so-jade-ink)]">{trackRecord.validated}</span> validated ·{" "}
+            <span className="tabular-nums text-[var(--so-jade-ink)]">{trackRecord.validated}</span> any-supporting ·{" "}
             <span className="tabular-nums text-[var(--so-rust-ink)]">{trackRecord.contradicted}</span> contradicted ·{" "}
             <span className="tabular-nums">{trackRecord.unresolved}</span> unresolved
           </span>
@@ -1768,10 +1778,10 @@ function QualityTierBreakdown({
               <span className="font-mono text-[11px] tabular-nums text-[var(--so-citrine)]">{b.total}</span>
             </div>
             <div className="mt-1.5 flex items-baseline gap-3 font-mono text-[11px] tabular-nums">
-              <span className="text-[var(--so-jade-ink)]">{b.validated} val</span>
+              <span className="text-[var(--so-jade-ink)]">{b.validated} any-sup</span>
               <span className="text-[var(--so-rust-ink)]">{b.contradicted} con</span>
               <span className="ml-auto text-[var(--so-ink-3)]">
-                {b.hit_rate != null ? `${Math.round(b.hit_rate * 100)}% hit` : "—"}
+                {b.hit_rate != null ? `${Math.round(b.hit_rate * 100)}% any-sup` : "—"}
               </span>
             </div>
           </div>

@@ -2498,9 +2498,10 @@ def track_record():
 
 @app.get("/stats/confidence-calibration")
 def confidence_calibration():
-    """Historical validation rate per confidence bucket (low/medium/high).
+    """Historical any-supporting rate per confidence bucket (low/medium/high).
 
-    Returns per-bucket hit_rate (fraction of events with ≥1 supporting ticker)
+    Returns per-bucket hit_rate — the OR-rule fraction of events with ≥1
+    supporting ticker (descriptive context, not a confirmed validation rate) —
     and sample size n.  Buckets with fewer than 3 usable events are omitted.
     """
     return _sanitize_floats(get_confidence_calibration_stats())

@@ -1535,16 +1535,22 @@ def compute_track_record() -> dict:
          snapshot (20d > 5d > 1d) to classify the outcome.
       2. Otherwise fall back to the initial market_tickers direction_tag.
 
-    Classification (same for both sources):
-      validated    = at least 1 ticker direction starts with "supports"
+    Classification (same for both sources) — an ANY-SUPPORTING OR-rule, not a
+    confirmed verdict.  One supporting ticker can outweigh several contradicting
+    ones, so ``avg_support_ratio`` (the mean per-event support fraction) is the
+    honest evidence-strength metric; the binary count below is descriptive
+    context only:
+      validated / any_supporting_count = at least 1 ticker direction "supports"
       contradicted = at least 1 "contradicts" AND zero "supports"
       unresolved   = all direction tags are null / empty
 
     Returns a flat dict of counts + avg_support_ratio + revisit_scored.
+    ``any_supporting_count`` is an honest alias of ``validated``.
     """
     if not _db_ready:
         return {
-            "total": 0, "validated": 0, "contradicted": 0, "unresolved": 0,
+            "total": 0, "validated": 0, "any_supporting_count": 0,
+            "contradicted": 0, "unresolved": 0,
             "avg_support_ratio": None, "revisit_scored": 0,
             "rated_good": 0, "rated_mixed": 0, "rated_poor": 0,
         }
@@ -1635,6 +1641,9 @@ def compute_track_record() -> dict:
     return {
         "total": total,
         "validated": validated,
+        # Honest alias — ``validated`` is an any-supporting OR-rule count
+        # (>=1 supporting ticker), not a confirmed verdict.
+        "any_supporting_count": validated,
         "contradicted": contradicted,
         "unresolved": unresolved,
         "avg_support_ratio": avg_sr,
