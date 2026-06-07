@@ -46,8 +46,9 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
+import api as _api
 import db
 
 
@@ -461,7 +462,7 @@ def preview_candidates() -> dict[str, Any]:
     }
 
 
-@router.post("/curated/candidates/stage")
+@router.post("/curated/candidates/stage", dependencies=[Depends(_api.require_admin_token)])
 def stage_candidates(
     confirm: bool = Query(
         False,

@@ -4,7 +4,7 @@ import io
 import zipfile
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Depends
 from fastapi.responses import Response
 
 from db import (
@@ -769,7 +769,7 @@ def get_event_detail(event_id: int = Path(..., ge=1)):
     return _api._sanitize_floats(ev)
 
 
-@router.patch("/events/{event_id}/review")
+@router.patch("/events/{event_id}/review", dependencies=[Depends(_api.require_admin_token)])
 def review(
     event_id: int = Path(..., ge=1),
     req: _api.ReviewRequest = ...,
@@ -782,7 +782,7 @@ def review(
     return {"ok": True, "event_id": event_id}
 
 
-@router.delete("/events/{event_id}")
+@router.delete("/events/{event_id}", dependencies=[Depends(_api.require_admin_token)])
 def delete_event_endpoint(event_id: int):
     deleted = delete_event(event_id)
     if not deleted:
@@ -1000,7 +1000,7 @@ def backtest(event_id: int, force: bool = Query(False)):
     return _api._sanitize_floats(result)
 
 
-@router.post("/events/{event_id}/refresh-market")
+@router.post("/events/{event_id}/refresh-market", dependencies=[Depends(_api.require_admin_token)])
 def refresh_market_endpoint(event_id: int, force: bool = Query(False)):
     target = _api.load_event_by_id(event_id)
     if not target:
@@ -1036,7 +1036,7 @@ def refresh_market_endpoint(event_id: int, force: bool = Query(False)):
     })
 
 
-@router.post("/events/{event_id}/refresh-overlays")
+@router.post("/events/{event_id}/refresh-overlays", dependencies=[Depends(_api.require_admin_token)])
 def refresh_overlays_endpoint(event_id: int):
     """Recompute macro-tier overlays on a saved event against today's tape.
 
@@ -1082,7 +1082,7 @@ def get_revisit_timeline(event_id: int):
     return _api._sanitize_floats({"event_id": event_id, "snapshots": load_revisit_snapshots(event_id)})
 
 
-@router.post("/events/{event_id}/revisit")
+@router.post("/events/{event_id}/revisit", dependencies=[Depends(_api.require_admin_token)])
 def capture_revisit_snapshot(event_id: int):
     target = _api.load_event_by_id(event_id)
     if not target:

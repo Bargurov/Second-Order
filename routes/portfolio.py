@@ -1,6 +1,6 @@
 """Route handler for GET /portfolio — ranked research portfolio."""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
 from cohort_research import SCENARIO_PACKS, run_batch_research
 from db import load_recent_events, load_event_by_id, dedup_events
@@ -634,7 +634,7 @@ def get_saved_study(study_id: int):
     return _api._sanitize_floats(row)
 
 
-@router.post("/portfolio/saved-studies")
+@router.post("/portfolio/saved-studies", dependencies=[Depends(_api.require_admin_token)])
 def save_saved_study(req: _api.SavedStudyCreate):
     import saved_studies as _ss
     try:
@@ -647,7 +647,7 @@ def save_saved_study(req: _api.SavedStudyCreate):
     return _api._sanitize_floats(row)
 
 
-@router.patch("/portfolio/saved-studies/{study_id}")
+@router.patch("/portfolio/saved-studies/{study_id}", dependencies=[Depends(_api.require_admin_token)])
 def update_saved_study(study_id: int, req: _api.SavedStudyUpdate):
     """Update a saved study by id.
 
@@ -673,7 +673,7 @@ def update_saved_study(study_id: int, req: _api.SavedStudyUpdate):
     return _api._sanitize_floats(row)
 
 
-@router.delete("/portfolio/saved-studies/{study_id}")
+@router.delete("/portfolio/saved-studies/{study_id}", dependencies=[Depends(_api.require_admin_token)])
 def delete_saved_study(study_id: int):
     import saved_studies as _ss
     removed = _ss.delete_study(study_id)

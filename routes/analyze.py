@@ -9,7 +9,7 @@ calls.  Direct imports would bypass the patches.
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from analyze_event import AnalyzeEventInput, is_mock as _is_mock_analysis
@@ -446,7 +446,7 @@ def _enrich_macro_context_with_country(
 router = APIRouter()
 
 
-@router.post("/analyze")
+@router.post("/analyze", dependencies=[Depends(_api.require_paid_analysis)])
 def analyze(req: _api.AnalyzeRequest):
     """Classify, analyze via LLM, and run market check for one headline."""
     headline = normalize_headline(req.headline)
@@ -530,7 +530,7 @@ def analyze(req: _api.AnalyzeRequest):
     })
 
 
-@router.post("/analyze/stream")
+@router.post("/analyze/stream", dependencies=[Depends(_api.require_paid_analysis)])
 def analyze_stream(req: _api.AnalyzeRequest):
     """Progressive analysis via Server-Sent Events."""
     headline = normalize_headline(req.headline)

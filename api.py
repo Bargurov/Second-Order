@@ -36,7 +36,7 @@ for _ln in ("second_order.news", "second_order.cluster"):
 from logging_config import setup_logging as _setup_logging  # noqa: E402
 _setup_logging()
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -85,9 +85,76 @@ from surprise_vs_anticipation import compute_surprise_vs_anticipation
 from terms_of_trade import compute_terms_of_trade
 from reserve_stress_overlay import compute_reserve_stress
 import os
+import hmac
 from news_sources import fetch_all, cluster_headlines, normalize_headline
 
 _log = logging.getLogger("second_order.api")
+
+# ---------------------------------------------------------------------------
+# Admin-token guard (Q4) — protects the paid /analyze and the mutating routes
+# (events / portfolio / curated) on a public deploy.  The guard is INERT when
+# ``SECOND_ORDER_ADMIN_TOKEN`` is unset (local dev / the existing test suite),
+# so nothing else changes; set the token on a deploy to activate it (see
+# render.yaml, where it is marked required).  No accounts, no sessions — a
+# single shared secret compared in constant time.
+# ---------------------------------------------------------------------------
+
+_ADMIN_TOKEN_HEADER = "X-Second-Order-Admin-Token"
+
+
+def _admin_token_configured() -> str:
+    """The configured admin token, or "" when the guard is unconfigured."""
+    return (os.getenv("SECOND_ORDER_ADMIN_TOKEN") or "").strip()
+
+
+def _paid_analysis_enabled() -> bool:
+    """True only when ENABLE_PAID_ANALYSIS is explicitly 'true'."""
+    return (os.getenv("ENABLE_PAID_ANALYSIS") or "").strip().lower() == "true"
+
+
+def _real_api_key_present() -> bool:
+    """True when a real (non-placeholder) Anthropic key is configured — i.e.
+    the process CAN make a billed call."""
+    from analyze_event import _has_real_api_key
+    return _has_real_api_key(os.getenv("ANTHROPIC_API_KEY") or "")
+
+
+def require_admin_token(
+    x_admin_token: str | None = Header(default=None, alias=_ADMIN_TOKEN_HEADER),
+) -> None:
+    """Guard for protected (mutating) operations.
+
+    Inert when ``SECOND_ORDER_ADMIN_TOKEN`` is unset.  When set, the
+    ``X-Second-Order-Admin-Token`` header must match it (constant-time) or the
+    request is rejected with 403 before the handler runs.
+    """
+    admin = _admin_token_configured()
+    if not admin:
+        return
+    if not x_admin_token or not hmac.compare_digest(x_admin_token, admin):
+        raise HTTPException(status_code=403, detail="admin token required")
+
+
+def require_paid_analysis(
+    x_admin_token: str | None = Header(default=None, alias=_ADMIN_TOKEN_HEADER),
+) -> None:
+    """Double guard for the paid ``/analyze`` endpoints.
+
+    Inert when ``SECOND_ORDER_ADMIN_TOKEN`` is unset.  When set, BOTH
+    ``ENABLE_PAID_ANALYSIS=true`` AND a valid admin token are required — else
+    403 before any provider call.
+    """
+    admin = _admin_token_configured()
+    if not admin:
+        return
+    if not _paid_analysis_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail="paid analysis disabled (set ENABLE_PAID_ANALYSIS=true)",
+        )
+    if not x_admin_token or not hmac.compare_digest(x_admin_token, admin):
+        raise HTTPException(status_code=403, detail="admin token required")
+
 
 # ---------------------------------------------------------------------------
 # App & startup
@@ -108,6 +175,15 @@ async def _lifespan(app: FastAPI):
             "%s. Set EVENTS_DB_FILE to a copy for dev / verification runs "
             "(see README 'Dev / verification DB safety').",
             get_db_path(),
+        )
+    # Q4 deploy-posture warning: serving with a real (billable) API key but no
+    # admin token means the mutating + paid routes are UNPROTECTED.  Acceptable
+    # for local dev; on a public deploy set SECOND_ORDER_ADMIN_TOKEN (render.yaml).
+    if _real_api_key_present() and not _admin_token_configured():
+        _log.warning(
+            "Serving with a billable API key but SECOND_ORDER_ADMIN_TOKEN is "
+            "unset — mutation and /analyze routes are UNPROTECTED. Set the "
+            "token to protect a public deploy (see render.yaml).",
         )
     # Optional background snapshot refresh — gated by env var so the test
     # suite (which uses TestClient) does not spin up a background thread.

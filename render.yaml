@@ -15,3 +15,15 @@ services:
       # Anthropic key - required for live analysis, optional locally.
       - key: ANTHROPIC_API_KEY
         sync: false
+      # REQUIRED for a public deploy. Shared admin secret that guards the paid
+      # /analyze endpoint and every mutating route (events / portfolio /
+      # curated): when set, those routes require the X-Second-Order-Admin-Token
+      # header. If left UNSET the guard is inert and those routes are
+      # UNPROTECTED — never expose this service publicly without setting it.
+      - key: SECOND_ORDER_ADMIN_TOKEN
+        sync: false
+      # Must be "true" (alongside SECOND_ORDER_ADMIN_TOKEN) to allow the paid
+      # /analyze endpoint. Defaults to off, so /analyze stays blocked unless
+      # paid analysis is explicitly enabled.
+      - key: ENABLE_PAID_ANALYSIS
+        sync: false
