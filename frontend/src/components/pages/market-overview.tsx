@@ -22,6 +22,7 @@ import { pct } from "@/lib/ticker-utils";
 import { buildClusterContext } from "@/lib/cluster-context";
 import { BenchmarkSnapshotsStrip } from "@/components/ui/benchmark-snapshots-strip";
 import { TrackedEvidenceCard } from "@/components/ui/tracked-evidence-card";
+import { EvidenceCoverageCard } from "@/components/ui/evidence-coverage-card";
 import { DegradedContextNotice } from "@/components/ui/degraded-data-notice";
 
 // ---------------------------------------------------------------------------
@@ -2151,7 +2152,18 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
           references, and surfaces the envelope's ``fdr_scope_note``
           verbatim so the FDR-scope disclaimer never drifts between the
           backend and the UI. */}
+      {/* Denominator visibility (R4C) — screened track-record coverage beside
+          the closed FDR pools, kept as two separate bands so a reader sees how
+          few events reach the rigorous pool without reading the gates as one
+          funnel.  Composes data already fetched above; no new request. */}
       <div className="pt-1">
+        <EvidenceCoverageCard
+          trackRecord={trackRecord}
+          evidence={trackedEvidence}
+          isLoading={trackLoading || trackedEvidenceLoading}
+        />
+      </div>
+      <div className="pt-2.5">
         <TrackedEvidenceCard
           data={trackedEvidence}
           isLoading={trackedEvidenceLoading}
