@@ -105,8 +105,12 @@ describe("F1 — claim copy is honest", () => {
   });
   it("v2 caveat bounds the verdict as non-inferential without overclaiming", () => {
     expect(VALIDATION_V2_SCOPE_CAVEAT).toContain("not benchmark-adjusted event-study inference");
+    // Word-boundary match (Q1 L8): catches a standalone overclaim word but
+    // does not false-match an innocent superset ("alpha" in "alphanumeric",
+    // "significant" in "insignificant", etc.).
+    const lc = VALIDATION_V2_SCOPE_CAVEAT.toLowerCase();
     for (const w of ["proof", "proven", "confirmed", "significant", "alpha"]) {
-      expect(VALIDATION_V2_SCOPE_CAVEAT.toLowerCase()).not.toContain(w);
+      expect(lc, `overclaim word "${w}" leaked into the caveat`).not.toMatch(new RegExp(`\\b${w}\\b`));
     }
   });
 });
