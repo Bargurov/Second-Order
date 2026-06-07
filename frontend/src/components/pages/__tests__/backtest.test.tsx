@@ -8,8 +8,14 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { EventScorecard, roleLabel } from "../backtest";
+import { AggregateSummary, EventScorecard, roleLabel } from "../backtest";
 import type { SavedEvent, BacktestResult } from "@/lib/api";
+
+// R2C — the denominator footnote copy.  Kept here as the single assertion
+// target so a future copy edit can't silently drift the wording.
+const DENOMINATOR_FOOTNOTE =
+  "Directional agreement (support ratio) is measured over tickers with " +
+  "assigned roles and available price data.";
 
 function ev(): SavedEvent {
   return {
@@ -58,5 +64,37 @@ describe("EventScorecard render", () => {
   it("renders a real em dash in the no-data cell, not the literal escape", () => {
     expect(html).toContain("—"); // real em dash present
     expect(html).not.toContain("\\u2014"); // literal backslash-u escape absent
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R2C — aggregate summary carries a quiet denominator footnote, so a skeptic
+// can see what the support/agreement metric is measured over, while the
+// honest "directional agreement" framing (Q5C) stays intact.
+// ---------------------------------------------------------------------------
+
+describe("AggregateSummary — denominator footnote (R2C)", () => {
+  const results = new Map<number, BacktestResult>([[1, result()]]);
+  const html = renderToStaticMarkup(<AggregateSummary results={results} />);
+
+  it("renders the compact denominator footnote", () => {
+    expect(html).toContain(DENOMINATOR_FOOTNOTE);
+  });
+
+  it("keeps the honest 'directional agreement' framing", () => {
+    expect(html).toContain("directional agreement");
+  });
+
+  it("does not reintroduce the old Backtest overclaim framing", () => {
+    for (const phrase of ["Validation", "direction accuracy", "accuracy", "hit rate"]) {
+      expect(html, `banned framing "${phrase}" returned`).not.toContain(phrase);
+    }
+  });
+
+  it("the footnote copy carries no trade / signal framing", () => {
+    const lc = DENOMINATOR_FOOTNOTE.toLowerCase();
+    for (const w of ["buy", "sell", "long", "short", "signal", "alpha", "proof", "proven", "validated"]) {
+      expect(lc, `banned word "${w}" in the footnote`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
   });
 });

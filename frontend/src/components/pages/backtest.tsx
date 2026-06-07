@@ -223,7 +223,8 @@ export function EventScorecard({
 // Aggregate summary
 // ---------------------------------------------------------------------------
 
-function AggregateSummary({ results }: { results: Map<number, BacktestResult> }) {
+// Exported for the R2C denominator-footnote test.
+export function AggregateSummary({ results }: { results: Map<number, BacktestResult> }) {
   let totalSupporting = 0;
   let totalTickers = 0;
   let eventsScored = 0;
@@ -255,6 +256,11 @@ function AggregateSummary({ results }: { results: Map<number, BacktestResult> })
               <span className="font-num">{eventsScored}</span> scored events
             </span>
           </div>
+          {/* R2C — quiet denominator footnote: names what the agreement metric
+              is measured over (no logic / denominator / scoring change). */}
+          <p className="text-[10.5px] leading-4 text-foreground/45">
+            Directional agreement (support ratio) is measured over tickers with assigned roles and available price data.
+          </p>
         </div>
       </CardContent>
     </Card>
