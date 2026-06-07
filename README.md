@@ -10,6 +10,91 @@ The system is designed for analyst workflows: ingest live headlines, cluster
 overlapping coverage, run classify -> analysis -> market stages, layer in macro
 and market-context overlays, save the result locally, and revisit dated events.
 
+## What this is — for a finance reader
+
+Second Order is a research dashboard for geopolitical, macro, and policy events:
+it traces an event's plausible second-order transmission to assets and reads the
+market's event-window reaction honestly — as descriptive evidence, never as a
+forecast or a recommendation.
+
+It is a research-craftsmanship piece, not a trading product. It works one event
+at a time: what changed, the mechanism (who benefits, who is exposed, and the
+transmission chain), the affected assets, and how those assets actually moved in
+the days after the event.
+
+## What it does / what it does not do
+
+**It does:**
+
+- ingest live headlines and events and cluster overlapping coverage
+- articulate a mechanism and the affected assets for each event
+- read the raw 1-day / 5-day / 20-day event-window reaction of the named assets
+- show a benchmark-adjusted event-study readout (abnormal return, standardized
+  AR, cumulative AR vs SPY) wherever the price data allows
+- score tape-direction agreement on the scored names, descriptively
+- package each event as a single research note (an *EventDossier*)
+
+**It does not:**
+
+- issue directional recommendations of any kind
+- claim statistical significance at a single event (`n = 1`: no confidence
+  interval, p-value, or false-discovery control on a single-event readout)
+- claim a permanent asset forecast
+- merge the descriptive archive with the closed Phase 1 / Phase 2 FDR pools —
+  those denominators stay separate
+
+## Five-minute walkthrough
+
+1. **Market Overview** (the landing page) — read the market backdrop, recent
+   event activity, and the *Track record & evidence* framing.
+2. **Case Library** (Research nav) — five representative cases, one per outcome
+   type, with the denominator anchor and the standing non-claims on the page.
+3. **Open #105 — OPEC output cuts** (strong support): the in-app Archive / Event
+   Detail dossier, where the tape agreed with the thesis direction across several
+   legs.
+4. **Open #29 — Strait of Hormuz** (contradiction): the canonical oil-shock
+   thesis the tape rejected — the honest counterweight to a winners-only read.
+5. **Read one EventDossier** end to end: mechanism, affected assets and their
+   realized move, the event-study readout (at `n = 1`), the scored outcome where
+   available, and the standing claim boundary.
+6. **Evidence Coverage / denominators** — the *Track record & evidence* card and
+   the funnel below: which gates apply and how many events clear each.
+7. **Backtest** *(optional)* — the descriptive directional-agreement review
+   across saved events; a track record, not a strategy result.
+8. **End on the boundary** — every read is descriptive event-window evidence at
+   `n = 1`, not a recommendation and not a claim of predictive power.
+
+## How the surfaces fit
+
+- **EventDossier** — the shared research note for one event; it leads both the
+  Share page and the Archive / Event Detail view.
+- **Case Library** — a guided, representative entry point (five real cases).
+- **Archive / Event Detail** — the full in-app dossier, including the scored
+  outcome (`validation_status_v2`) when the archive row carries it.
+- **Share page (`/share/:id`)** — the same dossier, shell-free for linking; it
+  may omit the scored outcome because the export payload does not carry it.
+- **Market Overview — Evidence Coverage** — the denominators and the evidence
+  gates, kept phase-separated from the closed FDR pools.
+- **Backtest** — a descriptive directional-agreement review, not strategy
+  validation.
+
+## The funnel — denominators, honestly
+
+Freshly verified against the local archive (2026-06-08); a clean clone starts
+empty, so re-run the read-only reports for live figures.
+
+- **166 events saved** in the archive (the readiness report counts **165**,
+  excluding one source-anchored `curated_intake` stub).
+- **81 market-scored** (events carrying scored market data): **19 any-supporting
+  · 35 contradicted · 27 unresolved**.
+- **71 archive-ready** and **71 event-study compute-ready** (per-horizon point
+  estimates computable vs SPY).
+
+Denominators differ by gate and data availability, and the gates are **not
+pooled**. The closed Phase 1 and Phase 2 FDR pools (five rows each) are a
+**separate** evidence track with their own frozen q-values — they are not
+derived from the saved-event archive.
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide
@@ -110,14 +195,15 @@ so the earlier "every compute-ready event is on matched *adjusted* basis"
 no longer holds — but no row mixes flags, so no splice caveat applies.
 
 Current verified counts from
-`python scripts/stat_validation_readiness_report.py --json --limit 0`:
+`python scripts/stat_validation_readiness_report.py --json --limit 0` (2026-06-08):
 
 - total archive events: 165
 - archive-ready events: 71
-- event-study compute-ready events: 70 (was 62 after the Batch-1 coverage
-  repair documented below, and 44 before it; the +8 are the Phase-K
-  `curated_observation` promotions)
-- matched-basis events: 70
+- event-study compute-ready events: 71 (was 62 after the Batch-1 coverage
+  repair documented below, and 44 before it; +8 from the Phase-K
+  `curated_observation` promotions, and +1 as #280's 20-day forward bar has
+  since printed)
+- matched-basis events: 71
 - cross-flag caveats: 0
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
@@ -164,20 +250,20 @@ It is **not a new FDR pool** and never reads, modifies, or reopens the
 closed Phase 1 / Phase 2 pools (`demo_artifacts` / `cohort_evidence` are a
 separate scope). It reuses the same gate as the event-detail route, so its
 `event_study_available` count matches the readiness report's
-`event_study_compute_ready` exactly (70 = 70).
+`event_study_compute_ready` exactly (71 = 71).
 
 **Single-event output is point estimates only.** At `n=1` there is no
 confidence interval, no p-value, and no FDR; the report makes no
 `confirmed` / `validated` / "significant" claim. Each JSON payload carries
 an explicit `non_claims` block stating this.
 
-Current live coverage (after the Batch-1 coverage repair below and the
-Phase-K `curated_observation` promotions):
+Current live coverage (2026-06-08, after the Batch-1 coverage repair below and
+the Phase-K `curated_observation` promotions):
 
-- event_study_available: 70
-- insufficient_data: 95
+- event_study_available: 71
+- insufficient_data: 94
 - curated_intake excluded: 1
-- auto_adjust basis: matched 70, cross_flag 0
+- auto_adjust basis: matched 71, cross_flag 0
 
 The dominant blocker is `no_primary_ticker` (84) — a **coverage gap, not a
 statistics failure**: those events never reach the engine because they
@@ -255,6 +341,12 @@ untouched. No replacement events were cherry-picked to inflate the pass
 rate; the one failure (#280) stays on the record.
 
 ### Archive data-hygiene & denominator policy
+
+> The coverage ratios in this section are a dated snapshot (2026-06-03) from
+> `scripts/data_hygiene_report.py`. The live readiness counts above were
+> refreshed 2026-06-08 (event-study compute-ready 70 → 71, as #280's 20-day
+> forward bar has since printed); re-run the report for current figures. The
+> denominator *policy* below is unchanged.
 
 `scripts/data_hygiene_report.py` is the read-only, reproducible **source of
 truth** for which archive rows are genuine research events and which are

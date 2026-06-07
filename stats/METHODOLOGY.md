@@ -62,7 +62,10 @@ the 62 legacy/organic compute-ready rows plus the 8 Phase-K
 inference is on hold. The block is **labeling and independence, not the
 event-study engine**. (The counts below are a dated snapshot — run
 `scripts/event_study_coverage_report.py` for live figures, which drift with
-every coverage repair.)
+every coverage repair.) The wider-app archive funnel (saved → market-scored →
+archive-ready → compute-ready) is described in the project `README.md`; a
+single-event EventDossier read is one descriptive event-window observation at
+`n = 1`, never a cohort result.
 
 - **`mechanism_family` is unpopulated for the legacy/organic compute-ready
   rows, and the 8 labeled Phase-K rows do not rescue a pooled read.** The 62
