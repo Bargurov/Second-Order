@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from stats.baseline_characterization import (  # noqa: E402
     build_baseline_characterization,
+    build_ar_sign_report,
     event_study_split,
 )
 
@@ -57,8 +58,11 @@ def build_report(db_path: str, *, seed: int, n_sims: int) -> dict:
     try:
         from event_study_validation import build_event_study_validation
         payload["event_study_split"] = event_study_split(events, build_event_study_validation)
+        payload["ar_sign_disentangler"] = build_ar_sign_report(
+            events, build_event_study_validation, seed=seed, n_sims=n_sims)
     except Exception as exc:  # pragma: no cover - defensive; report still ships
         payload["event_study_split"] = {"error": f"event-study split unavailable: {exc}"}
+        payload["ar_sign_disentangler"] = {"error": f"AR-sign disentangler unavailable: {exc}"}
     return payload
 
 
@@ -94,6 +98,15 @@ def main() -> int:
           f"percentile {b['observed_validated_percentile']}")
     print(f"  verdict: {report['interpretation']}")
     print(f"  event-study split: {report.get('event_study_split')}")
+    ar = report.get("ar_sign_disentangler") or {}
+    if "horizons" in ar:
+        print(f"  AR-sign disentangler (vs {ar['benchmark']}): reliable={ar['reliable']} "
+              f"({ar['interpretation']})")
+        for h in ("1", "5", "20"):
+            hd = ar["horizons"][h]
+            print(f"    {h}d: eligible {hd['eligible']} | support {hd['observed_support_fraction']} "
+                  f"| predicted-up {hd['predicted_up_fraction']} | AR-up {hd['ar_up_fraction']} "
+                  f"| reliable {hd['reliable']}")
     print("  non-claims:")
     for nc in report["non_claims"]:
         print(f"    - {nc}")

@@ -27,6 +27,9 @@ from stats.baseline_characterization import (
     is_null_validated,
     build_baseline_characterization,
     event_study_split,
+    ar_sign_observation,
+    build_ar_sign_characterization,
+    build_ar_sign_report,
 )
 
 
@@ -136,6 +139,116 @@ class TestEventStudySplit(unittest.TestCase):
         split = event_study_split([A_VALIDATED], boom)
         self.assertEqual(split["event_study_available"], 0)
         self.assertEqual(split["event_study_unavailable"], 1)
+
+
+# ---------------------------------------------------------------------------
+# T2B — benchmark-adjusted AR-sign disentangler
+# ---------------------------------------------------------------------------
+
+
+def _es_block(ar_by_h, primary="X"):
+    return {
+        "status": "event_study_available",
+        "primary_ticker": primary,
+        "per_horizon": [{"horizon": h, "abnormal_return": ar} for h, ar in ar_by_h.items()],
+    }
+
+
+def _ev_primary(role, sym="X"):
+    return {"id": 1, "market_tickers": [{"symbol": sym, "role": role, "direction_tag": "supports"}],
+            "mechanism_summary": "m", "event_date": "2026-01-01"}
+
+
+class TestArSignMapping(unittest.TestCase):
+    def test_beneficiary_with_positive_ar_is_support(self):
+        self.assertEqual(ar_sign_observation(_ev_primary("beneficiary"), _es_block({1: 0.02}), 1),
+                         (True, True))
+
+    def test_beneficiary_with_negative_ar_is_contradiction(self):
+        self.assertEqual(ar_sign_observation(_ev_primary("beneficiary"), _es_block({1: -0.02}), 1),
+                         (True, False))
+
+    def test_loser_with_negative_ar_is_support(self):
+        self.assertEqual(ar_sign_observation(_ev_primary("loser"), _es_block({1: -0.02}), 1),
+                         (False, False))
+
+    def test_loser_with_positive_ar_is_contradiction(self):
+        self.assertEqual(ar_sign_observation(_ev_primary("loser"), _es_block({1: 0.02}), 1),
+                         (False, True))
+
+    def test_zero_ar_is_excluded(self):
+        self.assertIsNone(ar_sign_observation(_ev_primary("beneficiary"), _es_block({1: 0.0}), 1))
+
+    def test_missing_ar_for_horizon_is_excluded(self):
+        self.assertIsNone(ar_sign_observation(_ev_primary("beneficiary"), _es_block({5: 0.02}), 1))
+
+    def test_primary_without_beneficiary_or_loser_role_is_excluded(self):
+        self.assertIsNone(ar_sign_observation(_ev_primary("primary"), _es_block({1: 0.02}), 1))
+
+
+class TestArSignCharacterization(unittest.TestCase):
+    def _events(self, specs):
+        # specs: list of (role, ar) -> one event each; injected es_fn returns the AR.
+        evs = []
+        for i, (role, ar) in enumerate(specs):
+            ev = _ev_primary(role, sym=f"T{i}")
+            ev["_ar"] = ar
+            evs.append(ev)
+        return evs
+
+    def _es_fn(self, ev):
+        return _es_block({1: ev["_ar"], 5: ev["_ar"], 20: ev["_ar"]}, primary=ev["market_tickers"][0]["symbol"])
+
+    def test_deterministic_with_fixed_seed(self):
+        evs = self._events([("beneficiary", 0.02), ("loser", -0.01), ("beneficiary", -0.03), ("loser", 0.04)])
+        r1 = build_ar_sign_characterization(evs, self._es_fn, horizon=1, seed=3, n_sims=300)
+        r2 = build_ar_sign_characterization(evs, self._es_fn, horizon=1, seed=3, n_sims=300)
+        self.assertEqual(r1["baseline"], r2["baseline"])
+
+    def test_degenerate_predicted_marginal_is_flagged_not_reliable(self):
+        # All beneficiaries -> predicted-up marginal == 1.0 -> permutation null degenerate.
+        evs = self._events([("beneficiary", 0.02), ("beneficiary", -0.01), ("beneficiary", -0.03)])
+        res = build_ar_sign_characterization(evs, self._es_fn, horizon=1, seed=1, n_sims=200)
+        self.assertEqual(res["predicted_up_fraction"], 1.0)
+        self.assertFalse(res["reliable"])
+
+    def test_mixed_roles_with_enough_observations_is_reliable(self):
+        specs = [("beneficiary", 0.02)] * 8 + [("loser", -0.02)] * 8
+        res = build_ar_sign_characterization(self._events(specs), self._es_fn, horizon=1, seed=1, n_sims=200)
+        self.assertGreater(res["predicted_up_fraction"], 0.0)
+        self.assertLess(res["predicted_up_fraction"], 1.0)
+        self.assertTrue(res["reliable"])
+
+    def test_counts_split_into_supporting_contradicting(self):
+        evs = self._events([("beneficiary", 0.02), ("beneficiary", -0.01)])
+        res = build_ar_sign_characterization(evs, self._es_fn, horizon=1, seed=1, n_sims=50)
+        self.assertEqual(res["eligible"], 2)
+        self.assertEqual(res["any_supporting"], 1)   # +AR beneficiary supports
+        self.assertEqual(res["contradicted"], 1)     # -AR beneficiary contradicts
+
+
+class TestArSignReport(unittest.TestCase):
+    def _es_fn(self, ev):
+        return _es_block({1: 0.02, 5: -0.01, 20: 0.03}, primary=ev["market_tickers"][0]["symbol"])
+
+    def test_report_covers_all_three_horizons_with_non_claims(self):
+        evs = [_ev_primary("beneficiary", sym=f"T{i}") for i in range(4)]
+        rep = build_ar_sign_report(evs, self._es_fn, seed=1, n_sims=100)
+        self.assertEqual(set(rep["horizons"].keys()), {"1", "5", "20"})
+        self.assertEqual(rep["benchmark"], "SPY")
+        self.assertTrue(rep["non_claims"])
+        self.assertTrue(rep["falsifier"].strip())
+
+
+class TestT2ARawBaselineUnchanged(unittest.TestCase):
+    def test_raw_observed_block_is_stable(self):
+        res = build_baseline_characterization(
+            [A_VALIDATED, B_CONTRA, C_UNRESOLVED, D_NO_TICKERS], seed=20260608, n_sims=200)
+        self.assertEqual(res["observed"]["total_scored"], 3)
+        self.assertEqual(res["observed"]["any_supporting"], 1)
+        self.assertEqual(res["observed"]["contradicted"], 1)
+        self.assertEqual(res["observed"]["unresolved"], 1)
+        self.assertEqual(res["observed"]["directional_events"], 2)
 
 
 class TestHonestyContract(unittest.TestCase):

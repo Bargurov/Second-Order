@@ -134,6 +134,216 @@ def event_study_split(events: Any, event_study_fn) -> dict:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# T2B — benchmark-adjusted AR-sign disentangler
+#
+# The event-study (build_event_study_validation) computes an abnormal return
+# (vs SPY) for the PRIMARY ticker only, so this comparison is one observation
+# per event (not the full directional ticker set used above).  It asks whether
+# benchmark adjustment changes the raw directional picture — but is only a
+# usable baseline test when the predicted-direction marginal is non-degenerate.
+# ---------------------------------------------------------------------------
+
+_AR_BENCHMARK = "SPY"
+_AR_MIN_RELIABLE_ELIGIBLE = 10
+
+
+def ar_sign_observation(event: Any, es_block: Any, horizon: int):
+    """``(predicted_up, ar_up)`` for the primary ticker, or ``None`` to exclude.
+
+    Predicted direction comes from the primary ticker's role (beneficiary =>
+    up, loser => down); realized direction comes from the benchmark-adjusted
+    abnormal-return sign at ``horizon`` (NOT the raw return).  A missing /
+    NaN / exactly-zero AR, or a primary without a beneficiary/loser role, is
+    excluded.
+    """
+    if not isinstance(event, dict) or not isinstance(es_block, dict):
+        return None
+    tickers = event.get("market_tickers")
+    if not isinstance(tickers, list) or not tickers:
+        return None
+
+    role = None
+    primary_sym = es_block.get("primary_ticker")
+    if isinstance(primary_sym, str) and primary_sym.strip():
+        target = primary_sym.strip().upper()
+        for t in tickers:
+            if (isinstance(t, dict) and isinstance(t.get("symbol"), str)
+                    and t["symbol"].strip().upper() == target):
+                role = t.get("role")
+                break
+    if role is None:
+        first = tickers[0]
+        role = first.get("role") if isinstance(first, dict) else None
+    role = role.strip().lower() if isinstance(role, str) else ""
+    if role not in ("beneficiary", "loser"):
+        return None
+
+    ar = None
+    for h in es_block.get("per_horizon") or []:
+        if isinstance(h, dict) and h.get("horizon") == horizon:
+            ar = h.get("abnormal_return")
+            break
+    try:
+        ar = float(ar)
+    except (TypeError, ValueError):
+        return None
+    if ar != ar or ar == 0.0:  # NaN or exactly zero -> no usable direction
+        return None
+    return (role == "beneficiary", ar > 0.0)
+
+
+def build_ar_sign_characterization(
+    events: Any,
+    event_study_fn,
+    *,
+    horizon: int,
+    seed: int = 20260608,
+    n_sims: int = 2000,
+) -> dict:
+    """One-horizon AR-sign characterization with a marginal-preserving null.
+
+    ``event_study_fn(event)`` returns the gated event-study block.  The null is
+    flagged ``reliable=False`` when the predicted-direction marginal is
+    degenerate (no role variation to permute) or the eligible set is too small.
+    """
+    n_sims = int(max(1, n_sims))
+    obs: list[tuple[bool, bool]] = []
+    ready = excluded = 0
+    for ev in events if isinstance(events, list) else []:
+        tickers = ev.get("market_tickers") if isinstance(ev, dict) else None
+        if not isinstance(tickers, list) or len(tickers) == 0:
+            continue
+        try:
+            block = event_study_fn(ev) or {}
+        except Exception:
+            continue
+        if block.get("status") != "event_study_available":
+            continue
+        ready += 1
+        o = ar_sign_observation(ev, block, horizon)
+        if o is None:
+            excluded += 1
+        else:
+            obs.append(o)
+
+    D = len(obs)
+    a = (sum(1 for p, _ in obs if p) / D) if D else 0.0
+    b = (sum(1 for _, u in obs if u) / D) if D else 0.0
+    supporting = sum(1 for p, u in obs if p == u)
+    reliable = D >= _AR_MIN_RELIABLE_ELIGIBLE and 0.0 < a < 1.0
+
+    pred = [p for p, _ in obs]
+    real = [u for _, u in obs]
+    rng = random.Random(seed)
+    nv_dist: list[int] = []
+    rate_dist: list[float] = []
+    for _ in range(n_sims):
+        perm = pred[:]
+        rng.shuffle(perm)
+        bits = [1 if perm[i] == real[i] else 0 for i in range(D)]
+        rate_dist.append((sum(bits) / D) if D else 0.0)
+        nv_dist.append(sum(bits))  # size-1 events: validated == support
+
+    ordered = sorted(nv_dist)
+
+    def _pct(p: float) -> float:
+        if not ordered:
+            return 0.0
+        k = int(round(p * (len(ordered) - 1)))
+        return float(ordered[max(0, min(len(ordered) - 1, k))])
+
+    null_mean = (sum(nv_dist) / len(nv_dist)) if nv_dist else 0.0
+    null_rate = (sum(rate_dist) / len(rate_dist)) if rate_dist else 0.0
+    ci_hi = _pct(0.975)
+
+    if reliable:
+        reason = None
+    elif not (0.0 < a < 1.0):
+        reason = (
+            f"predicted-up marginal is degenerate (a={a:.2f}): the event-study computes "
+            "abnormal return only for the primary ticker, which here is always one role, so "
+            "the permutation null has no predicted-direction variation to shuffle and "
+            "collapses to the observed value."
+        )
+    else:
+        reason = f"fewer than {_AR_MIN_RELIABLE_ELIGIBLE} eligible observations (D={D})."
+
+    return {
+        "horizon": horizon,
+        "benchmark": _AR_BENCHMARK,
+        "ready_events": ready,
+        "eligible": D,
+        "excluded": excluded,
+        "observed_support_fraction": round((supporting / D) if D else 0.0, 4),
+        "predicted_up_fraction": round(a, 4),
+        "ar_up_fraction": round(b, 4),
+        "any_supporting": supporting,
+        "contradicted": D - supporting,
+        "unresolved": excluded,
+        "baseline": {
+            "definition": ("marginal-preserving permutation null on primary-ticker AR signs: "
+                           "predicted-direction (role) labels are shuffled while AR signs are "
+                           "held fixed; each event contributes one observation."),
+            "seed": seed,
+            "n_sims": n_sims,
+            "null_support_rate_mean": round(null_rate, 4),
+            "observed_validated": supporting,
+            "null_validated_mean": round(null_mean, 4),
+            "null_validated_ci95": [_pct(0.025), ci_hi],
+            "observed_above_null_ci95": bool(supporting > ci_hi),
+        },
+        "reliable": bool(reliable),
+        "reason": reason,
+    }
+
+
+def build_ar_sign_report(events: Any, event_study_fn, *, seed: int = 20260608, n_sims: int = 2000) -> dict:
+    """All three horizons (1d / 5d / 20d) + reliability verdict and non-claims."""
+    horizons = {
+        str(h): build_ar_sign_characterization(events, event_study_fn, horizon=h, seed=seed, n_sims=n_sims)
+        for h in (1, 5, 20)
+    }
+    any_reliable = any(h["reliable"] for h in horizons.values())
+    return {
+        "schema": "ar_sign_disentangler.v1",
+        "benchmark": _AR_BENCHMARK,
+        "horizons": horizons,
+        "reliable": bool(any_reliable),
+        "interpretation": "see_per_horizon" if any_reliable else "not_reliable_degenerate_null",
+        "comparison_to_t2a": (
+            "Benchmark adjustment does not overturn T2A's 'not_above_baseline' conclusion. As a "
+            "permutation-baseline skill test it is unusable when the predicted-direction marginal "
+            "is degenerate (the event-study scores only the primary ticker, which is always the "
+            "beneficiary, so a ~= 1.0 and the null collapses to the observed value). Descriptively, "
+            "where the benchmark-adjusted support rate falls well below 0.5 (5d / 20d) most "
+            "beneficiary primaries underperformed SPY — reinforcing, not rescuing, the T2A drift "
+            "picture."
+        ),
+        "limitations": [
+            "The event-study abnormal return exists only for the primary ticker, so this "
+            "disentangler covers one observation per event (not the full directional ticker set "
+            "used in T2A); the two are not directly comparable.",
+            "Single-event AR signs are n=1 point estimates; no confidence interval, p-value, or "
+            "false-discovery control applies at the single-event level.",
+            "Events are date-clustered with overlapping forward windows (see stats/METHODOLOGY.md "
+            "'Cohort inference — currently blocked'); any gap from the null is descriptive only.",
+        ],
+        "falsifier": (
+            "This disentangler is unreliable as a skill test whenever the predicted-direction "
+            "marginal is degenerate (all primaries one role) or eligible observations are too few; "
+            "it would become usable only with abnormal returns for both beneficiary and exposed "
+            "names on an independent, drift-balanced event set."
+        ),
+        "non_claims": [
+            "Descriptive characterization of the local archive only.",
+            "Not a trading signal and not a measure of edge.",
+            "Single-event AR signs are n=1 point estimates, not a statistical-significance test.",
+            "Separate from the closed Phase 1 / Phase 2 FDR pools; no pool q-values are used or implied.",
+        ],
+    }
+
+
 def build_baseline_characterization(
     events: Any,
     *,
