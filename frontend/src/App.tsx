@@ -8,6 +8,7 @@ import { MarketOverview } from "@/components/pages/market-overview";
 import { InboxWorkbench } from "@/components/pages/inbox-workbench";
 import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
+import { CaseLibrary } from "@/components/pages/case-library";
 import { Backtest } from "@/components/pages/backtest";
 import { PortfolioPage } from "@/components/pages/portfolio-page";
 import { SectionCDemo } from "@/components/pages/section-c-demo";
@@ -163,6 +164,7 @@ export default function App() {
                     />
                   )}
                   {page === "events" && <RecentEvents />}
+                  {page === "cases" && <CaseLibrary />}
                   {page === "backtest" && <Backtest />}
                   {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
                   {page === "demo" && <SectionCDemo />}

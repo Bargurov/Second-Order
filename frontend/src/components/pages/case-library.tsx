@@ -1,0 +1,149 @@
+/**
+ * Case Library (R6B) — a guided, honest entry point.
+ *
+ * Five real representative archived events (one per role) that show the RANGE
+ * of outcomes — strong support, contradiction, unresolved, data-limited,
+ * mechanism-rich — without implying cherry-picked proof.  Each card links into
+ * the existing EventDossier surface via the URL-addressable /share/:id route
+ * (chosen over an in-app Archive deep-link, which would need a fetch-by-id path
+ * since Archive resolves the detail only from its currently-loaded page).
+ *
+ * Pure / presentational: it renders the editorial `CURATED_CASES` registry plus
+ * the standing denominator + non-claim copy.  It adds NO new analytics and no
+ * new claims; live returns / event-study / scored outcome are read by the
+ * dossier surface each card links to.
+ */
+import { ArrowUpRight } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CURATED_CASES, type CaseRole, type CuratedCase } from "@/lib/curated-cases";
+
+// Muted, institutional role accents — teal for support, coral for the
+// contradiction, slate for the unresolved / data-limited reads.
+const ROLE_ACCENT: Record<CaseRole, string> = {
+  "strong-support": "border-primary/30 bg-primary/[0.07] text-primary",
+  contradiction: "border-[#ee7d77]/30 bg-[#ee7d77]/[0.07] text-[#ee7d77]",
+  unresolved: "border-border bg-surface-container text-on-surface-variant",
+  "data-limited": "border-border bg-surface-container text-on-surface-variant",
+  "mechanism-rich": "border-primary/25 bg-primary/[0.05] text-primary/85",
+};
+
+const NON_CLAIMS = [
+  "Representative cases — selected to show the range of outcomes, not a best-of.",
+  "Each case is a descriptive event-window read at n = 1, not benchmark-adjusted significance.",
+  "Not exhaustive; denominators differ by gate and data availability.",
+  "Separate from the closed Phase 1 / Phase 2 FDR pools; no pooled denominator is implied.",
+];
+
+function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-on-surface-variant/55">{label}</p>
+      <p className="mt-0.5 text-[12.5px] leading-relaxed text-on-surface/85">{children}</p>
+    </div>
+  );
+}
+
+function CaseCard({ c }: { c: CuratedCase }) {
+  return (
+    <Card className="overflow-hidden border-border/50 bg-surface-container-low">
+      <CardHeader className="gap-2 border-b border-border/40 bg-surface-container-highest/50">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]",
+              ROLE_ACCENT[c.role],
+            )}
+          >
+            {c.roleLabel}
+          </span>
+          <span className="font-mono text-[10px] tabular-nums text-on-surface-variant/45">#{c.eventId}</span>
+          {!c.rawReturnsAvailable && (
+            <Badge variant="outline" className="ml-auto text-[9.5px] font-normal text-on-surface-variant/70">
+              Event-study readout carries the read
+            </Badge>
+          )}
+        </div>
+        <a
+          href={`/share/${c.eventId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface hover:text-primary"
+        >
+          {c.headline}
+        </a>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 pt-3">
+        <p className="text-[12.5px] leading-relaxed text-on-surface/80">{c.mechanism}</p>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Labelled label="Outcome">{c.outcome}</Labelled>
+          <Labelled label="Event-study">{c.eventStudyNote}</Labelled>
+          <Labelled label="Why selected">{c.whySelected}</Labelled>
+          <Labelled label="What it does not prove">{c.doesNotProve}</Labelled>
+        </div>
+
+        <p className="border-t border-border/40 pt-2 text-[11px] italic leading-relaxed text-on-surface-variant/70">
+          {c.caveat}
+        </p>
+
+        <a
+          href={`/share/${c.eventId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex w-fit items-center gap-1 text-[11.5px] font-medium text-primary hover:underline"
+        >
+          Open dossier
+          <ArrowUpRight className="h-3 w-3" />
+        </a>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function CaseLibrary() {
+  return (
+    <div className="mx-auto w-full max-w-5xl">
+      {/* Header */}
+      <header className="mb-5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-on-surface-variant/55">Research</p>
+        <h1 className="mt-1 font-headline text-[22px] font-bold leading-tight tracking-[-0.01em] text-on-surface">
+          Case Library
+        </h1>
+        <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-on-surface-variant/85">
+          A guided, five-case walkthrough of representative real events — how the same method reads strong
+          support, contradiction, unresolved, data-limited, and mechanism-rich cases.
+        </p>
+
+        {/* Denominator anchor + outcome split */}
+        <div className="mt-3 flex flex-col gap-1 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-2.5">
+          <p className="text-[12px] font-medium text-on-surface/85">
+            5 representative cases drawn from 81 market-scored events of 166 saved.
+          </p>
+          <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
+            19 any-supporting · 35 contradicted · 27 unresolved.
+          </p>
+        </div>
+
+        {/* Standing non-claims */}
+        <ul className="mt-2.5 flex flex-col gap-1">
+          {NON_CLAIMS.map((line) => (
+            <li key={line} className="flex items-start gap-1.5 text-[11px] leading-relaxed text-on-surface-variant/65">
+              <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-on-surface-variant/40" aria-hidden />
+              {line}
+            </li>
+          ))}
+        </ul>
+      </header>
+
+      {/* Case cards */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {CURATED_CASES.map((c) => (
+          <CaseCard key={c.eventId} c={c} />
+        ))}
+      </div>
+    </div>
+  );
+}
