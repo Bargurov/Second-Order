@@ -740,5 +740,76 @@ class TestRoutesDirectoryFullyMounted(unittest.TestCase):
         )
 
 
+class TestNoRouteBypassesPaidSeam(unittest.TestCase):
+    """Defense-in-depth for the ``api.*`` patch gap (Q1 L1).
+
+    The no-paid invariant above patches ``api.analyze_event`` /
+    ``api.market_check`` on the ``api`` module namespace.  A route that bound
+    the paid callables directly — ``from market_check import market_check`` or
+    a dotted call on any module other than ``_api`` / ``api`` — would hold its
+    own reference and bypass that patch.  This static AST check pins that
+    every ``routes/*.py`` reaches the paid callables ONLY through the
+    ``_api.`` / ``api.`` seam, so the runtime invariant can never be silently
+    out-flanked.  Pure source analysis: no app boot, no DB, no network.
+    """
+
+    _PAID_CALLABLES = ("market_check", "analyze_event")
+    _ALLOWED_BASES = ("_api", "api")
+
+    @classmethod
+    def _offenders(cls, src: str, label: str) -> list[str]:
+        import ast
+        out: list[str] = []
+        tree = ast.parse(src, filename=label)
+        for node in ast.walk(tree):
+            # Direct from-import binding of a paid callable.
+            if isinstance(node, ast.ImportFrom) and node.module in ("market_check", "analyze_event"):
+                for alias in node.names:
+                    if alias.name in cls._PAID_CALLABLES:
+                        out.append(f"{label}: from {node.module} import {alias.name}")
+            # Calls to a paid callable.
+            if isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Name) and func.id in cls._PAID_CALLABLES:
+                    out.append(f"{label}: bare call {func.id}(...)")
+                elif isinstance(func, ast.Attribute) and func.attr in cls._PAID_CALLABLES:
+                    base = func.value.id if isinstance(func.value, ast.Name) else "<expr>"
+                    if base not in cls._ALLOWED_BASES:
+                        out.append(f"{label}: {base}.{func.attr}(...)")
+        return out
+
+    def test_detector_flags_a_direct_paid_binding(self) -> None:
+        # Self-check: the detector MUST flag a route that binds + calls the
+        # paid callable directly, otherwise the invariant below is vacuous.
+        from_import = (
+            "from market_check import market_check\n\n"
+            "def h():\n    return market_check([], [])\n"
+        )
+        self.assertTrue(self._offenders(from_import, "synthetic_from.py"))
+        dotted = (
+            "import market_check as mc\n\n"
+            "def h():\n    return mc.market_check([], [])\n"
+        )
+        self.assertTrue(self._offenders(dotted, "synthetic_dotted.py"))
+
+    def test_detector_allows_the_api_seam(self) -> None:
+        # The sanctioned pattern must NOT be flagged (no false positives).
+        ok = "import api as _api\n\ndef h():\n    return _api.market_check([], [])\n"
+        self.assertEqual(self._offenders(ok, "ok.py"), [])
+
+    def test_no_route_module_bypasses_the_paid_seam(self) -> None:
+        import pathlib
+        routes_dir = pathlib.Path(__file__).resolve().parent.parent / "routes"
+        self.assertTrue(routes_dir.is_dir(), "routes/ directory not found")
+        offenders: list[str] = []
+        for path in sorted(routes_dir.glob("*.py")):
+            offenders.extend(self._offenders(path.read_text(encoding="utf-8"), path.name))
+        self.assertEqual(
+            offenders, [],
+            "routes bypass the patched api.* paid seam (would evade the "
+            f"no-paid invariant): {offenders}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

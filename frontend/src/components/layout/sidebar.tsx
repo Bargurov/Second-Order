@@ -172,7 +172,7 @@ export function Sidebar({ current, onNavigate, collapsed = false }: SidebarProps
               className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(147,209,211,0.6)]"
               aria-hidden
             />
-            <span className="text-[10.5px] text-on-surface-variant/60">Live</span>
+            <span className="text-[10.5px] text-on-surface-variant/60">Research</span>
             <span className="ml-auto font-num text-[10px] tabular-nums text-on-surface-variant/45">
               v0.1.0
             </span>
