@@ -6,10 +6,10 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { api, type SavedEvent, type Ticker } from "@/lib/api";
+import { api, type SavedEvent, type Ticker, type EventStudyBlock } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
-import { EventStudyCard } from "@/components/ui/event-study-card";
+import { EventDossier } from "@/components/ui/event-dossier";
 import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL } from "@/lib/claim-copy";
 
 // ---------------------------------------------------------------------------
@@ -35,28 +35,6 @@ function fmtDate(s: string | null | undefined): string {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
-function capitalize(s: string): string {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
-}
-
-function stageColor(stage: string): string {
-  switch (stage?.toLowerCase()) {
-    case "realized": return "border-[#93d1d3]/40 bg-[#93d1d3]/8 text-[#93d1d3]";
-    case "anticipated": return "border-amber-500/30 bg-amber-500/8 text-amber-400";
-    case "speculative": return "border-purple-400/30 bg-purple-400/8 text-purple-300";
-    default: return "border-border bg-surface-container text-muted-foreground";
-  }
-}
-
-function confidenceColor(c: string): string {
-  switch (c?.toLowerCase()) {
-    case "high": return "text-[#93d1d3]";
-    case "medium": return "text-amber-400";
-    case "low": return "text-[#ee7d77]";
-    default: return "text-muted-foreground";
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -66,20 +44,6 @@ function SectionHeader({ label }: { label: string }) {
     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50 mb-3">
       {label}
     </p>
-  );
-}
-
-function ListBlock({ items, accent }: { items: string[]; accent?: boolean }) {
-  if (!items?.length) return <p className="text-xs text-muted-foreground italic">None identified.</p>;
-  return (
-    <ul className="space-y-1.5">
-      {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2 text-sm leading-snug text-muted-foreground">
-          <span className={cn("mt-[5px] h-1 w-1 shrink-0 rounded-full", accent ? "bg-[#93d1d3]" : "bg-[#ee7d77]")} />
-          {item}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -222,104 +186,63 @@ export function SharePage({ eventId }: { eventId: number }) {
 // ---------------------------------------------------------------------------
 
 export function ShareContent({ ev }: { ev: SavedEvent }) {
-  const tickers = ev.market_tickers ?? [];
-  const beneficiaryTickers = tickers.filter((t) => t.role === "beneficiary");
-  const loserTickers = tickers.filter((t) => t.role !== "beneficiary");
-
   // Read-only event-study readout (AR / SAR / CAR point estimates) for this
   // saved event.  Fetched from the gated, tracked-only GET — no paid calls,
-  // no scoring.  Renders nothing until the block resolves so the snapshot
-  // stays calm on load and for events that are not computable.
+  // no scoring.  Stays absent until the block resolves and for events that
+  // are not computable, so the dossier's event-study section degrades by
+  // omission rather than showing a fabricated readout.
   const { data: eventStudy } = useQuery({
     queryKey: qk.eventStudy(ev.id),
     queryFn: () => api.getEventStudy(ev.id),
     staleTime: 300_000,
   });
 
+  return <ShareDossierView ev={ev} eventStudy={eventStudy} />;
+}
+
+// ---------------------------------------------------------------------------
+// Share dossier view — pure presentation (no data fetching), so it renders
+// the same on the server snapshot and in tests.
+//
+// The shared EventDossier leads as the research note (R5B): it consolidates
+// the headline, mechanism, what-changed, affected assets + realized move, the
+// optional benchmark-adjusted event-study readout, the scored outcome, and the
+// standing claim boundary from this saved event.  Share carries no horizon /
+// falsifier payload, so `horizons` is intentionally NOT passed — the dossier's
+// "Thesis fails if" section degrades by omission, never faked.
+//
+// The "Market reaction (raw)" table stays below as supporting tape: it keeps
+// the raw, not-benchmark-adjusted framing (honesty guard) the dossier's
+// compact line does not spell out, with the same per-ticker figures.
+// ---------------------------------------------------------------------------
+
+export function ShareDossierView({
+  ev,
+  eventStudy,
+}: {
+  ev: SavedEvent;
+  eventStudy?: EventStudyBlock | null;
+}) {
+  const tickers = ev.market_tickers ?? [];
+  const beneficiaryTickers = tickers.filter((t) => t.role === "beneficiary");
+  const loserTickers = tickers.filter((t) => t.role !== "beneficiary");
+
   return (
     <div className="space-y-0">
-      {/* ── Hero ── */}
-      <section
-        className="pt-10 pb-8 border-b border-white/[0.06]"
-        style={{ animation: "page-in 300ms ease-out" }}
-      >
-        {/* Meta strip */}
-        <div className="flex flex-wrap items-center gap-2 mb-5">
-          {ev.stage && (
-            <span className={cn(
-              "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border",
-              stageColor(ev.stage),
-            )}>
-              {ev.stage}
-            </span>
-          )}
-          {ev.confidence && (
-            <span className={cn("text-[10px] font-semibold uppercase tracking-widest", confidenceColor(ev.confidence))}>
-              {capitalize(ev.confidence)} conviction
-            </span>
-          )}
-          {(ev.event_date || ev.timestamp) && (
-            <span className="text-[11px] text-white/25 ml-auto tabular-nums">
-              {fmtDate(ev.event_date ?? ev.timestamp)}
-            </span>
-          )}
-        </div>
-
-        {/* Headline */}
-        <h1
-          className="text-[22px] sm:text-[28px] font-bold leading-tight text-white/90 mb-4 tracking-tight"
-          style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-        >
-          {ev.headline}
-        </h1>
-
-        {/* Mechanism */}
-        {ev.mechanism_summary && (
-          <p className="text-sm leading-relaxed text-white/50 max-w-2xl">
-            {ev.mechanism_summary}
-          </p>
-        )}
+      {/* ── Research note (EventDossier) ── */}
+      <section className="pt-10 pb-8" style={{ animation: "page-in 300ms ease-out" }}>
+        <EventDossier
+          event={ev}
+          eventStudy={eventStudy}
+          className="border-white/[0.08] bg-white/[0.02]"
+        />
       </section>
 
-      {/* ── Thesis — beneficiaries + exposed ── */}
-      {((ev.beneficiaries?.length ?? 0) > 0 || (ev.losers?.length ?? 0) > 0) && (
-        <section
-          className="py-8 border-b border-white/[0.06]"
-          style={{ animation: "page-in 350ms ease-out" }}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            {(ev.beneficiaries?.length ?? 0) > 0 && (
-              <div>
-                <SectionHeader label="Beneficiaries" />
-                <ListBlock items={ev.beneficiaries} accent={true} />
-              </div>
-            )}
-            {(ev.losers?.length ?? 0) > 0 && (
-              <div>
-                <SectionHeader label="Exposed" />
-                <ListBlock items={ev.losers} accent={false} />
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ── What changed ── */}
-      {ev.what_changed && (
-        <section
-          className="py-8 border-b border-white/[0.06]"
-          style={{ animation: "page-in 400ms ease-out" }}
-        >
-          <SectionHeader label="What Changed" />
-          <p className="text-sm leading-relaxed text-white/55">{ev.what_changed}</p>
-        </section>
-      )}
-
-      {/* ── Market validation ── */}
+      {/* ── Market reaction (raw) — supporting tape, honestly labelled ── */}
       {tickers.length > 0 && (
         <section
-          className="py-8 border-b border-white/[0.06]"
-          style={{ animation: "page-in 450ms ease-out" }}
+          className="py-8 border-t border-white/[0.06]"
+          style={{ animation: "page-in 400ms ease-out" }}
         >
           <SectionHeader label={MARKET_REACTION_LABEL} />
           <p className="text-[11px] text-white/30 mb-3 leading-relaxed max-w-2xl">
@@ -337,7 +260,7 @@ export function ShareContent({ ev }: { ev: SavedEvent }) {
                   <th className="py-2 pr-4 text-right text-[10px] font-bold uppercase tracking-widest text-white/25">1d</th>
                   <th className="py-2 pr-4 text-right text-[10px] font-bold uppercase tracking-widest text-white/25">5d</th>
                   <th className="py-2 text-right text-[10px] font-bold uppercase tracking-widest text-white/25">20d</th>
-                  <th className="py-2 pl-4 text-[10px] font-bold uppercase tracking-widest text-white/25 hidden sm:table-cell">Signal</th>
+                  <th className="py-2 pl-4 text-[10px] font-bold uppercase tracking-widest text-white/25 hidden sm:table-cell">Direction</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -349,20 +272,10 @@ export function ShareContent({ ev }: { ev: SavedEvent }) {
         </section>
       )}
 
-      {/* ── Event-study readout ── */}
-      {eventStudy && (
-        <section
-          className="py-8 border-b border-white/[0.06]"
-          style={{ animation: "page-in 475ms ease-out" }}
-        >
-          <EventStudyCard block={eventStudy} />
-        </section>
-      )}
-
       {/* ── Assets to watch ── */}
       {(ev.assets_to_watch?.length ?? 0) > 0 && (
         <section
-          className="py-8"
+          className="py-8 border-t border-white/[0.06]"
           style={{ animation: "page-in 500ms ease-out" }}
         >
           <SectionHeader label="Assets to Watch" />
@@ -380,7 +293,7 @@ export function ShareContent({ ev }: { ev: SavedEvent }) {
       )}
 
       {/* ── Footer ── */}
-      <div className="pt-4 pb-8 flex items-center justify-between border-t border-white/[0.04]">
+      <div className="pt-4 pb-8 mt-8 flex items-center justify-between border-t border-white/[0.04]">
         <span className="text-[10px] text-white/15 uppercase tracking-widest">
           Second Order · Read-only snapshot
         </span>

@@ -32,15 +32,17 @@ import { EventDossier } from "../event-dossier";
 // Fixtures
 // ---------------------------------------------------------------------------
 
+// market_tickers returns are PERCENT units (market_check.py * 100), e.g. 3.1
+// means +3.1% — NOT fractions.  Fixtures mirror the real data contract.
 function _ticker(over: Partial<Ticker> = {}): Ticker {
   return {
     symbol: "XLE",
     role: "beneficiary",
     label: "supports",
     direction_tag: "supports",
-    return_1d: 0.012,
-    return_5d: 0.031,
-    return_20d: 0.058,
+    return_1d: 1.2,
+    return_5d: 3.1,
+    return_20d: 5.8,
     volume_ratio: null,
     vs_xle_5d: null,
     spark: [],
@@ -65,7 +67,7 @@ function _event(over: Partial<SavedEvent> = {}): SavedEvent {
     market_note: "",
     market_tickers: [
       _ticker(),
-      _ticker({ symbol: "USO", role: "loser", direction_tag: "contradicts", return_1d: -0.004, return_5d: -0.011, return_20d: 0.002 }),
+      _ticker({ symbol: "USO", role: "loser", direction_tag: "contradicts", return_1d: -0.4, return_5d: -1.1, return_20d: 0.2 }),
     ],
     event_date: "2026-03-02",
     notes: "",
@@ -185,6 +187,35 @@ describe("EventDossier — missing optional fields degrade honestly (R5A)", () =
   });
   it("keeps the standing claim boundary even on the minimal payload", () => {
     expect(html).toContain(VALIDATION_V2_NOT_CLAIMED);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Affected-asset return units (R5B)
+//
+// market_tickers returns arrive as PERCENT (market_check.py computes
+// (end - start) / start * 100), e.g. -2.9 means -2.9%.  The dossier must
+// render them at face value — never re-scaled by 100, which would print a
+// -290.0% move on a publicly shareable note.  (Event-study AR / CAR are
+// fractional BHAR values and keep their own ×100 formatter — pinned above.)
+// ---------------------------------------------------------------------------
+
+describe("EventDossier — affected-asset returns are percent units (R5B)", () => {
+  const ev = _event({
+    market_tickers: [
+      _ticker({ symbol: "ZZZ", role: "beneficiary", return_1d: 1.4, return_5d: -2.9, return_20d: 7.3 }),
+    ],
+  });
+  const html = renderToStaticMarkup(<EventDossier event={ev} />);
+  const visible = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  it("renders percent returns at face value", () => {
+    expect(visible).toContain("-2.9%");
+    expect(visible).toContain("+7.3%");
+  });
+  it("does not multiply percent returns by 100", () => {
+    expect(visible).not.toContain("-290.0%");
+    expect(visible).not.toContain("+730.0%");
   });
 });
 

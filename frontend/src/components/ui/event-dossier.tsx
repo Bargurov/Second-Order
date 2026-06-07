@@ -32,10 +32,21 @@ function roleLabel(role: string | null | undefined): string {
   return role ? role.charAt(0).toUpperCase() + role.slice(1) : "—";
 }
 
+// Event-study AR / CAR are fractional BHAR values (raw_return - benchmark
+// return, e.g. 0.012) — render as signed percent by ×100.
 function fmtPct(x: number | null | undefined): string {
   if (x === null || x === undefined || Number.isNaN(x)) return "—";
   const pct = x * 100;
   return `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
+}
+
+// market_tickers 1d / 5d / 20d returns already arrive as PERCENT
+// (market_check.py computes (end - start) / start * 100), e.g. -2.9 == -2.9%.
+// Render at face value — never ×100 — and mirror the raw-table formatter so
+// the same figure reads identically on both Share surfaces.
+function fmtTickerPct(x: number | null | undefined): string {
+  if (x === null || x === undefined || Number.isNaN(x)) return "—";
+  return `${x > 0 ? "+" : ""}${x.toFixed(1)}%`;
 }
 
 // Honest status labels — "validated" is shown as "Any-supporting" (Q3), never
@@ -134,7 +145,8 @@ export function EventDossier({ event, eventStudy, horizons, className }: EventDo
                     <span className="font-semibold tabular-nums text-foreground">{t.symbol}</span>
                     <span className="text-muted-foreground">{roleLabel(t.role)}</span>
                     <span className="tabular-nums text-foreground/70">
-                      1d {fmtPct(t.return_1d)} · 5d {fmtPct(t.return_5d)} · 20d {fmtPct(t.return_20d)}
+                      1d {fmtTickerPct(t.return_1d)} · 5d {fmtTickerPct(t.return_5d)} · 20d{" "}
+                      {fmtTickerPct(t.return_20d)}
                     </span>
                   </li>
                 ))}
