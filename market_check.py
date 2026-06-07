@@ -1594,6 +1594,8 @@ def classify_rates_regime(
     # Directional thresholds — small moves are noise.
     # For nominal_5d (pp): 0.3 = 30 bps threshold.
     # For tip_5d (%): 0.3 = 0.3% TIP price move threshold.
+    # Judgment noise-floor (filters day-to-day jitter without discarding
+    # modest real moves); not an empirically calibrated cutoff.
     THRESH = 0.3
 
     nom_up   = nominal_5d >  THRESH
@@ -1962,7 +1964,9 @@ _INVENTORY_PROXIES: list[tuple[set[str], str, str]] = [
       "dram", "nand", "hbm"},                               "SMH",  "Semiconductors (SMH)"),
 ]
 
-# Thresholds for 20-day return classification.
+# Thresholds for 20-day return classification.  Judgment-set; their fire-rate
+# is audited by calibrate_thresholds.py (20d-return exceedance on the USO / XLE
+# commodity proxies), so the ±3% cutoff is checked rather than just asserted.
 _TIGHT_THRESHOLD = 3.0    # >+3% in 20d → supply tightening signal
 _COMFORT_THRESHOLD = -3.0 # <-3% in 20d → supply easing signal
 
@@ -2162,6 +2166,8 @@ def compute_stress_regime() -> dict:
                 vix_5d = None
             if vix_5d is not None:
                 raw["vix_change_5d"] = round(vix_5d, 2)
+            # 1.20 = VIX running 20% above its 20d average.  Judgment-set ratio;
+            # its fire-rate is audited by calibrate_thresholds.py (VIX elevation).
             signals["vix_elevated"] = vix_now > vix_avg20 * 1.20
 
             ratio_pct = round((vix_now / vix_avg20 - 1) * 100, 1) if vix_avg20 else 0
@@ -2253,6 +2259,8 @@ def compute_stress_regime() -> dict:
                 raw["credit_spread_5d"] = round(spread_move, 2)
                 raw["hyg_5d"] = round(hyg_5d, 2)
                 raw["shy_5d"] = round(shy_5d, 2)
+                # 0.5pp = SHY outperforming HYG by 0.5pp/5d.  Judgment-set; its
+                # fire-rate is audited by calibrate_thresholds.py (target < ~20%).
                 signals["credit_widening"] = spread_move > 0.5
                 if signals["credit_widening"]:
                     expl = f"High-yield bonds underperforming treasuries by {abs(raw['credit_spread_5d']):.1f}pp over 5d — credit stress rising"

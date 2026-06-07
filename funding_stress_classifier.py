@@ -61,14 +61,18 @@ from typing import Any, Optional
 
 
 # ---------------------------------------------------------------------------
-# Thresholds — calibrated against the same empirical distributions the
-# existing composers use.  Each severity tier is documented with the
-# rough move percentile it corresponds to.
+# Thresholds — judgment-set against the same empirical 5d move distributions
+# the shock / reaction composers use.  The per-tier percentile labels below
+# (~p85 / ~p95) are APPROXIMATE orientation against those distributions —
+# calibrate_thresholds_pass2.py computes the |TNX 5d| / |HYG 5d| / |DXY 5d|
+# move distributions — NOT a pinned calibration target: this module is not
+# named in that script's targets, so read the percentiles as orientation,
+# not asserted calibration.
 # ---------------------------------------------------------------------------
 
 # Duration shock: 10Y nominal 5d change, measured in pp (basis points / 100).
-_DURATION_ELEVATED_PP: float = 0.25   # ~p85 of |TNX 5d|
-_DURATION_ACUTE_PP:    float = 0.45   # ~p95 of |TNX 5d|
+_DURATION_ELEVATED_PP: float = 0.25   # ~p85 of |TNX 5d| (approx.)
+_DURATION_ACUTE_PP:    float = 0.45   # ~p95 of |TNX 5d| (approx.)
 
 # Credit widening: HYG ETF 5d %-change.  Sign matters (negative = spreads
 # wider).  Magnitudes documented at the rough percentile they fire at.

@@ -164,6 +164,14 @@ def _stress_dollar_5d(stress_regime: Optional[dict]) -> Optional[float]:
 
 # ---------------------------------------------------------------------------
 # Per-axis classifiers
+#
+# The per-axis cutoffs below (inflation breakeven ±0.15pp, real-rate ±0.3%,
+# nominal ±0.25pp, DXY ±1.0%) are judgment-set "modest move" filters chosen in
+# line with the 5d move scales the shock / reaction composers use (those scales
+# are computed in calibrate_thresholds_pass2.py).  They are not separately
+# calibration-audited here; only the rerank WEIGHTS are checked, in
+# validate_regime_rerank.py.  Treat the cutoffs as convention, not asserted
+# calibration.
 # ---------------------------------------------------------------------------
 
 def _inflation_axis(rates_context: Optional[dict]) -> str:

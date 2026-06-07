@@ -50,9 +50,11 @@ from typing import Optional
 
 
 # ---------------------------------------------------------------------------
-# Thresholds — calibrated to the 5y empirical distribution of HYG/LQD/SHY 5d
-# % moves.  p75 of |HYG 5d| is ≈ 0.9%; p75 of |LQD 5d| is ≈ 0.8%.  A 0.5%
-# absolute move is clearly above noise without being a tail event.
+# Thresholds — judgment-set against the 5y |HYG/LQD/SHY 5d| %-move
+# distribution.  The ≈p75 figures (|HYG 5d| ≈ 0.9%, |LQD 5d| ≈ 0.8%) are
+# APPROXIMATE orientation, not a pinned calibration target — this module is
+# not named in calibrate_thresholds_pass2.py's targets.  A 0.5% absolute move
+# is clearly above noise without being a tail event.
 # ---------------------------------------------------------------------------
 _MOVE_FLOOR: float = 0.5           # % — individual HY / IG move to count
 _DIFFERENTIAL_FLOOR: float = 0.3   # % — HY − IG gap to call it default-driven
