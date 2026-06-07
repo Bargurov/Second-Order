@@ -2572,6 +2572,51 @@ def track_record():
     return _sanitize_floats(compute_track_record())
 
 
+@app.get("/stats/coverage")
+def stats_coverage():
+    """Event-study readiness coverage — COUNTS only, a separate gate.
+
+    Reports how many archived analysis-stage events are event-study-ready
+    (per-event abnormal-return / SAR / CAR computable through the gated
+    single-event validator) versus not, plus the blocking-reason buckets
+    the gate already aggregates.
+
+    This is ONE eligibility gate, computed independently.  It is NOT a
+    stage in a single linear funnel, is NOT combined with track-record
+    coverage, and NEVER reads or merges the closed Phase 1 / Phase 2 FDR
+    pools (which keep their own separate denominators).
+
+    Read-only: delegates to the read-only coverage summarizer, which loops
+    ``event_study_validation.build_event_study_validation`` (plain
+    ``price_cache`` SELECTs, the same gate the single-event
+    ``/events/{id}/event-study`` route uses) over the analysis-stage
+    archive.  No provider / network / yfinance / LLM call and no DB
+    mutation.  ``limit=0`` keeps the payload counts-only — the per-event
+    lists the CLI report carries are dropped.
+    """
+    from scripts.event_study_coverage_report import (
+        summarize_event_study_coverage,
+    )
+    report = summarize_event_study_coverage(limit=0)
+    return _sanitize_floats({
+        "ok":                            True,
+        "section":                       "event_study_coverage",
+        "schema_version":                "v1",
+        "total_events":                  report["total_events"],
+        "event_study_ready_count":       report["event_study_available_count"],
+        "unavailable_count":             report["insufficient_data_count"],
+        "curated_intake_excluded_count": report["curated_intake_excluded_count"],
+        "blocking_reasons":              report["blocking_reasons"],
+        "not_a_funnel_note": (
+            "Event-study readiness is one eligibility gate, computed "
+            "independently. It is not a stage in a single linear funnel, is "
+            "not combined with track-record coverage, and never reads or "
+            "merges the closed Phase 1 / Phase 2 FDR pools."
+        ),
+        "non_claims":                    report["non_claims"],
+    })
+
+
 @app.get("/stats/confidence-calibration")
 def confidence_calibration():
     """Historical any-supporting rate per confidence bucket (low/medium/high).
