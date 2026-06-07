@@ -78,6 +78,15 @@ const CONF_ICON: Record<string, React.ElementType> = {
   low: ShieldAlert,
 };
 
+/**
+ * Research role label — viewer-facing wording for a ticker's research role,
+ * never a directional trade-position (long/short/L/S).  Second Order reports
+ * research roles, not trade legs.
+ */
+export function roleLabel(role: string | null | undefined): string {
+  return role === "beneficiary" ? "Beneficiary" : "Exposed";
+}
+
 // ---------------------------------------------------------------------------
 // Scorecard badge
 // ---------------------------------------------------------------------------
@@ -97,7 +106,7 @@ function ScoreBadge({ score }: { score: { supporting: number; total: number } | 
 // Row for a single event with its backtest result
 // ---------------------------------------------------------------------------
 
-function EventScorecard({
+export function EventScorecard({
   event,
   result,
   loading,
@@ -176,7 +185,7 @@ function EventScorecard({
                 >
                   <span className="font-num text-2xs font-semibold">{o.symbol}</span>
                   <Badge variant={o.role === "beneficiary" ? "secondary" : "outline"}>
-                    {o.role === "beneficiary" ? "L" : "S"}
+                    {roleLabel(o.role)}
                   </Badge>
                   {!noData && (
                     <>
@@ -190,7 +199,7 @@ function EventScorecard({
                     </>
                   )}
                   {noData && (
-                    <span className="text-2xs text-foreground/55">\u2014</span>
+                    <span className="text-2xs text-foreground/55">{"\u2014"}</span>
                   )}
                 </div>
               );

@@ -51,6 +51,15 @@ function isContradicting(extra?: AnalysisExtra): boolean {
   return d === "contradicting" || (d?.startsWith("contradicts") ?? false);
 }
 
+/**
+ * Research role label.  Maps a ticker's research role to viewer-facing wording
+ * — never directional trade-position framing (long/short): Second Order is a
+ * research artifact, not a buy/sell tool.
+ */
+export function roleLabel(role: string | null | undefined): string {
+  return role === "beneficiary" ? "Beneficiary" : "Exposed";
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -111,7 +120,7 @@ export function TickerDetailPanel({ ticker, eventDate, extra, moverExtra }: Tick
           <span className="truncate text-xs text-muted-foreground">{info.name}</span>
         )}
         <Badge variant={ticker.role === "beneficiary" ? "secondary" : "outline"}>
-          {ticker.role === "beneficiary" ? "long" : "short"}
+          {roleLabel(ticker.role)}
         </Badge>
         {extra?.label && (
           <span className="ml-auto text-2xs text-muted-foreground">{extra.label}</span>

@@ -83,7 +83,15 @@ function ListBlock({ items, accent }: { items: string[]; accent?: boolean }) {
   );
 }
 
-function TickerRow({ ticker }: { ticker: Ticker }) {
+/**
+ * Research role label — research wording, never directional long/short
+ * framing.  The /share route is publicly linkable, so the copy rule applies.
+ */
+export function roleLabel(role: string | null | undefined): string {
+  return role === "beneficiary" ? "Beneficiary" : "Exposed";
+}
+
+export function TickerRow({ ticker }: { ticker: Ticker }) {
   const supports = (ticker.direction_tag ?? "").startsWith("supports");
   const contradicts = (ticker.direction_tag ?? "").startsWith("contradicts");
   return (
@@ -106,7 +114,7 @@ function TickerRow({ ticker }: { ticker: Ticker }) {
             ? "border-[#93d1d3]/20 bg-[#93d1d3]/5 text-[#93d1d3]/70"
             : "border-[#ee7d77]/20 bg-[#ee7d77]/5 text-[#ee7d77]/70",
         )}>
-          {ticker.role === "beneficiary" ? "long" : "short"}
+          {roleLabel(ticker.role)}
         </span>
       </td>
       <td className={cn("py-2 pr-4 text-right font-mono text-xs tabular-nums", retClass(ticker.return_1d))}>
