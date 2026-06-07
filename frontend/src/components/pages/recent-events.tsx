@@ -4,9 +4,7 @@ import { qk } from "@/lib/queryKeys";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +22,6 @@ import {
   ShieldCheck,
   Shield,
   ShieldAlert,
-  Calendar,
   Clock,
   Network,
   Save,
@@ -40,9 +37,9 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/sparkline";
-import { EventStudyCard } from "@/components/ui/event-study-card";
+import { EventDossier } from "@/components/ui/event-dossier";
 import { ResearchPageShell } from "@/components/ui/research-page-shell";
-import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality, type ValidationStatusV2 } from "@/lib/api";
+import { api, ApiError, type SavedEvent, type Ticker, type ExportFormat, type CascadeNode, type PersistenceSignal, getStaleDisplay, type EventsQuery, type EventsPage, type ArchiveQuality, type ValidationStatusV2, type EventStudyBlock } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -945,6 +942,83 @@ function CascadeView({ event }: { event: SavedEvent }) {
 // Detail panel
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Event-detail research note (R5C)
+//
+// Pure, read-only section of the archive event-detail view: the shared
+// EventDossier leads as the research note, the raw "Market Check" table stays
+// below as supporting tape (sparkline + volume the dossier's compact line
+// lacks), then assets-to-watch.  Hook-free so it renders identically in the
+// detail view and in render-smoke tests.
+//
+// Existing archive data only.  `eventStudy` is the already-fetched event-study
+// block (passed when resolved); `horizons` is intentionally NOT passed —
+// archive carries no typed horizon/falsifier payload, so the dossier's
+// "Thesis fails if" section degrades by omission, never faked.  Archive rows
+// DO carry `validation_status_v2`, so the dossier's scored outcome renders.
+// ---------------------------------------------------------------------------
+
+export function EventDetailDossierView({
+  event,
+  eventStudy,
+}: {
+  event: SavedEvent;
+  eventStudy?: EventStudyBlock | null;
+}) {
+  return (
+    <div className="space-y-3">
+      {/* Slim archive meta strip — persistence + saved timestamp.  The dossier
+          eyebrow carries stage · conviction · event date, so this adds only the
+          two tracked archive dimensions it does not: persistence and save time. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline">{event.persistence}</Badge>
+        <span className="inline-flex items-center gap-1 font-num text-2xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          {formatTimestamp(event.timestamp)}
+        </span>
+      </div>
+
+      {/* Lead research note */}
+      <EventDossier
+        event={event}
+        eventStudy={eventStudy}
+        className="border-border/40 bg-surface-container-low"
+      />
+
+      {/* Market Check — raw supporting tape (sparkline + volume ratio + the
+          richer per-ticker columns the dossier's compact line does not show). */}
+      {event.market_tickers.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <SectionLabel>Market Check</SectionLabel>
+            <span className="font-num text-2xs text-muted-foreground">
+              {event.market_tickers.length} ticker{event.market_tickers.length !== 1 && "s"}
+            </span>
+          </div>
+          {event.market_note && (
+            <p className="text-2xs text-muted-foreground">{event.market_note}</p>
+          )}
+          <MarketTable tickers={event.market_tickers} />
+        </div>
+      )}
+
+      {/* Assets to Watch — the one field the dossier does not carry. */}
+      {event.assets_to_watch.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-border/40 bg-surface-container-highest/60"><SectionLabel>Assets to Watch</SectionLabel></CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-1">
+              {event.assets_to_watch.map((a) => (
+                <Badge key={a} variant="outline" className="font-num">{a}</Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 function EventDetail({
   event,
   onBack,
@@ -973,10 +1047,7 @@ function EventDetail({
     staleTime: 300_000,
   });
 
-  const conf = CONFIDENCE_META[event.confidence] ?? { icon: ShieldAlert, color: "val-neg" };
-  const ConfIcon = conf.icon;
   const rating = event.rating ? (RATING_META[event.rating] ?? null) : null;
-
 
   const setRating = async (r: string) => {
     const newRating = r === event.rating ? undefined : r;
@@ -1050,31 +1121,8 @@ function EventDetail({
 
       <div className="min-h-0 flex-1">
         <div className="fade-in space-y-3 pb-4 pr-2">
-          {/* Header */}
-          <Card className="overflow-hidden border-border/40 bg-surface-container-low shadow-[inset_0_0_0_1px_rgba(71,70,86,0.28),0_4px_12px_rgba(0,0,0,0.18)]">
-            <CardHeader className="gap-3 border-b border-border/40 bg-surface-container-highest/70">
-              <p className="section-kicker">Saved research</p>
-              <CardTitle className="text-sm leading-snug">{event.headline}</CardTitle>
-              <CardDescription className="flex flex-wrap items-center gap-1.5 pt-1">
-                <Badge variant="outline">{event.stage}</Badge>
-                <Badge variant="outline">{event.persistence}</Badge>
-                <Badge variant="secondary" className={cn("gap-1", conf.color)}>
-                  <ConfIcon className="h-3 w-3" />
-                  {event.confidence}
-                </Badge>
-                {event.event_date && (
-                  <span className="inline-flex items-center gap-1 font-num text-2xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    {event.event_date}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1 font-num text-2xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {formatTimestamp(event.timestamp)}
-                </span>
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          {/* Lead research note — EventDossier + raw Market Check supporting tape */}
+          <EventDetailDossierView event={event} eventStudy={eventStudy} />
 
           {/* Rating */}
           <Card className="overflow-hidden">
@@ -1111,102 +1159,6 @@ function EventDetail({
               </div>
             </CardContent>
           </Card>
-
-          {/* Mechanism grid */}
-          <div className="grid gap-3 lg:grid-cols-3">
-            <div className="space-y-3 lg:col-span-2">
-              {event.what_changed && (
-                <Card className="overflow-hidden">
-                  <CardHeader className="border-b border-border/40 bg-surface-container-highest/60"><SectionLabel>What Changed</SectionLabel></CardHeader>
-                  <CardContent>
-                    <p className="text-[13px] leading-relaxed">{event.what_changed}</p>
-                  </CardContent>
-                </Card>
-              )}
-              {event.mechanism_summary && (
-                <Card className="overflow-hidden">
-                  <CardHeader className="border-b border-border/40 bg-surface-container-highest/60"><SectionLabel>Mechanism Summary</SectionLabel></CardHeader>
-                  <CardContent>
-                    <p className="text-[13px] leading-relaxed whitespace-pre-line">{event.mechanism_summary}</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <Card className="overflow-hidden">
-                <CardHeader className="border-b border-border/40 bg-surface-container-highest/60"><SectionLabel>Beneficiaries</SectionLabel></CardHeader>
-                <CardContent>
-                  {event.beneficiaries.length > 0 ? (
-                    <ul className="space-y-0.5">
-                      {event.beneficiaries.map((b) => (
-                        <li key={b} className="flex items-center gap-1.5 text-[13px]">
-                          <TrendingUp className="h-3 w-3 shrink-0 val-pos" />{b}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-2xs text-muted-foreground">No clear beneficiaries identified.</p>
-                  )}
-                </CardContent>
-              </Card>
-              <Card className="overflow-hidden">
-                <CardHeader className="border-b border-border/40 bg-surface-container-highest/60"><SectionLabel>Losers</SectionLabel></CardHeader>
-                <CardContent>
-                  {event.losers.length > 0 ? (
-                    <ul className="space-y-0.5">
-                      {event.losers.map((l) => (
-                        <li key={l} className="flex items-center gap-1.5 text-[13px]">
-                          <TrendingDown className="h-3 w-3 shrink-0 val-neg" />{l}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-2xs text-muted-foreground">No clear losers identified.</p>
-                  )}
-                </CardContent>
-              </Card>
-              {event.assets_to_watch.length > 0 && (
-                <Card className="overflow-hidden">
-                  <CardHeader className="border-b border-border/40 bg-surface-container-highest/60"><SectionLabel>Assets to Watch</SectionLabel></CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-1">
-                      {event.assets_to_watch.map((a) => (
-                        <Badge key={a} variant="outline" className="font-num">{a}</Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-
-          {/* Market */}
-          {event.market_tickers.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <SectionLabel>Market Check</SectionLabel>
-                  <span className="font-num text-2xs text-muted-foreground">
-                    {event.market_tickers.length} ticker{event.market_tickers.length !== 1 && "s"}
-                  </span>
-                </div>
-                {event.market_note && (
-                  <p className="text-2xs text-muted-foreground">{event.market_note}</p>
-                )}
-                <MarketTable tickers={event.market_tickers} />
-              </div>
-            </>
-          )}
-
-          {/* Event-study readout — AR / SAR / CAR point estimates (n = 1). */}
-          {eventStudy && (
-            <>
-              <Separator />
-              <EventStudyCard block={eventStudy} />
-            </>
-          )}
 
           {/* Notes */}
           <Separator />
