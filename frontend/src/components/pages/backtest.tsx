@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ResearchPageShell } from "@/components/ui/research-page-shell";
 import {
   RefreshCw,
   TrendingUp,
@@ -298,10 +299,14 @@ export function Backtest() {
 
   return (
     // Page-level scroll: dropped `h-full` so the page is normal flow.
-    <div className="flex flex-col gap-3">
+    // ResearchPageShell scopes the Direction-C ``--so-*`` palette and remaps
+    // the shadcn theme tokens (``--card`` / ``--border`` / ``--secondary`` …)
+    // so this page's existing token-based chrome inherits the new look — the
+    // same harmonization used by Recent Events / Market Movers / Portfolio.
+    <ResearchPageShell className="flex flex-col gap-3">
       <div className="soft-panel flex shrink-0 flex-col gap-3 rounded-[22px] px-4 py-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary/35">
             <Target className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="min-w-0 space-y-1">
@@ -352,7 +357,7 @@ export function Backtest() {
       {!loading && events.length === 0 && (
         <Card className="empty-surface flex flex-1 items-center justify-center">
           <CardContent className="flex max-w-md flex-col items-center gap-3 py-12 text-center text-muted-foreground">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-white">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-secondary/35">
               <Target className="h-6 w-6 opacity-70" />
             </div>
             <div className="space-y-1.5">
@@ -394,6 +399,6 @@ export function Backtest() {
           </div>
         </ScrollArea>
       )}
-    </div>
+    </ResearchPageShell>
   );
 }
