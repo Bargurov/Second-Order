@@ -39,7 +39,7 @@ import { MarketValidationStatus } from "@/components/ui/market-validation-status
 import { EventStudyCard } from "@/components/ui/event-study-card";
 import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
-import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT, VALIDATION_V2_NOT_CLAIMED } from "@/lib/claim-copy";
+import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT, VALIDATION_V2_NOT_CLAIMED, HORIZON_DISCIPLINE_NOTE } from "@/lib/claim-copy";
 
 /*
   Tonal hierarchy (from Stitch reference):
@@ -2746,7 +2746,8 @@ function HorizonRow({ h }: { h: HorizonCheckpoint }) {
   );
 }
 
-function HorizonCheckpointsBlock({ data }: { data: HorizonCheckpoints }) {
+// Exported for the R2B horizon-discipline / falsifier-legibility test.
+export function HorizonCheckpointsBlock({ data }: { data: HorizonCheckpoints }) {
   if (!data || !data.horizons || data.horizons.length === 0) return null;
   // Suppress the block entirely when every horizon is empty on all three
   // axes AND the timing profile is unknown — nothing finance-real to show.
@@ -2759,6 +2760,18 @@ function HorizonCheckpointsBlock({ data }: { data: HorizonCheckpoints }) {
   const profile =
     _TIMING_PROFILE_LABEL[data.timing_profile]
     ?? _TIMING_PROFILE_LABEL.unknown!;
+
+  // R2B — lift the clearest EXISTING falsifier into a compact headline so a
+  // skeptic sees "what would prove this wrong" without scanning every row.
+  // Earliest horizon with a non-empty falsifies_if wins; payload text only —
+  // never invented.  The full per-horizon falsifiers stay in the rows below.
+  const primaryFalsifier = (() => {
+    for (const h of data.horizons) {
+      const text = h.falsifies_if[0];
+      if (text) return { horizon: h.horizon, text };
+    }
+    return null;
+  })();
 
   return (
     <section className={cn(SECTION_CARD, "p-6")}>
@@ -2789,6 +2802,27 @@ function HorizonCheckpointsBlock({ data }: { data: HorizonCheckpoints }) {
           </div>
         </div>
       </div>
+
+      {/* R2B — horizon discipline + a compact headline falsifier, kept above
+          the per-horizon rows.  The note frames the read as a bounded
+          event-window / transmission check (not a permanent forecast); the
+          summary lifts the clearest existing falsifies_if.  Both are additive
+          — the full Expected / Confirms-if / Falsifies-if rows stay below. */}
+      <p className="mb-3 text-[10.5px] italic leading-relaxed text-on-surface-variant/55">
+        {HORIZON_DISCIPLINE_NOTE}
+      </p>
+      {primaryFalsifier && (
+        <div className="mb-3 flex items-baseline gap-2 rounded-[6px] border border-[#c07070]/25 bg-[#c07070]/[0.06] px-3 py-2">
+          <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.16em] text-[#c07070]">
+            Thesis fails if
+          </span>
+          <span className="text-[10.5px] leading-snug text-on-surface/90">
+            <span className="tabular-nums text-on-surface-variant/70">{primaryFalsifier.horizon}</span>
+            {" · "}
+            {primaryFalsifier.text}
+          </span>
+        </div>
+      )}
 
       <div className="space-y-2.5">
         {data.horizons.map((h) => (

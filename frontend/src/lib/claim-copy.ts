@@ -42,3 +42,16 @@ export const VALIDATION_V2_SCOPE_CAVEAT =
 export const VALIDATION_V2_NOT_CLAIMED =
   "Not claimed: statistical significance, benchmark-adjusted inference, or a " +
   "permanent asset forecast.";
+
+/**
+ * Horizon-discipline note for the Analyze HorizonCheckpoints section (R2B).
+ * Frames an event read as a bounded event-window transmission check across
+ * 1d / 5d / 20d — immediate repricing, confirmation / fade, persistence — and
+ * NOT a permanent asset forecast.  Copy/legibility only: it labels the
+ * existing horizons, it does not change any payload or scoring.  Kept
+ * banned-word-clean (no buy / sell / long / short / trade / signal / alpha /
+ * proof / confirmed) and carries no forward-forecast framing.
+ */
+export const HORIZON_DISCIPLINE_NOTE =
+  "Event-window read: 1d immediate repricing, 5d confirmation / fade, 20d " +
+  "persistence — a transmission check, not a permanent asset forecast.";
