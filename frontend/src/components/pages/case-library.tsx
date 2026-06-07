@@ -46,7 +46,7 @@ function Labelled({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function CaseCard({ c }: { c: CuratedCase }) {
+function CaseCard({ c, onOpenCase }: { c: CuratedCase; onOpenCase?: (eventId: number) => void }) {
   return (
     <Card className="overflow-hidden border-border/50 bg-surface-container-low">
       <CardHeader className="gap-2 border-b border-border/40 bg-surface-container-highest/50">
@@ -66,14 +66,16 @@ function CaseCard({ c }: { c: CuratedCase }) {
             </Badge>
           )}
         </div>
-        <a
-          href={`/share/${c.eventId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface hover:text-primary"
+        {/* Primary action — open the in-app Archive/Event Detail dossier (richer
+            than /share: it renders the validation_status_v2 outcome). */}
+        <button
+          type="button"
+          data-open-event-id={c.eventId}
+          onClick={() => onOpenCase?.(c.eventId)}
+          className="text-left font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface hover:text-primary"
         >
           {c.headline}
-        </a>
+        </button>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-3">
         <p className="text-[12.5px] leading-relaxed text-on-surface/80">{c.mechanism}</p>
@@ -89,21 +91,33 @@ function CaseCard({ c }: { c: CuratedCase }) {
           {c.caveat}
         </p>
 
-        <a
-          href={`/share/${c.eventId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex w-fit items-center gap-1 text-[11.5px] font-medium text-primary hover:underline"
-        >
-          Open dossier
-          <ArrowUpRight className="h-3 w-3" />
-        </a>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            data-open-event-id={c.eventId}
+            onClick={() => onOpenCase?.(c.eventId)}
+            className="inline-flex w-fit items-center gap-1 text-[11.5px] font-medium text-primary hover:underline"
+          >
+            Open dossier
+            <ArrowUpRight className="h-3 w-3" />
+          </button>
+          {/* Secondary — the shell-free /share view (may omit the scored
+              outcome, which the card above already states). */}
+          <a
+            href={`/share/${c.eventId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10.5px] text-on-surface-variant/55 hover:text-on-surface-variant/85"
+          >
+            Share link
+          </a>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-export function CaseLibrary() {
+export function CaseLibrary({ onOpenCase }: { onOpenCase?: (eventId: number) => void } = {}) {
   return (
     <div className="mx-auto w-full max-w-5xl">
       {/* Header */}
@@ -141,7 +155,7 @@ export function CaseLibrary() {
       {/* Case cards */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {CURATED_CASES.map((c) => (
-          <CaseCard key={c.eventId} c={c} />
+          <CaseCard key={c.eventId} c={c} onOpenCase={onOpenCase} />
         ))}
       </div>
     </div>

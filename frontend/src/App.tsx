@@ -47,6 +47,8 @@ export default function App() {
   const [pendingHeadline, setPendingHeadline] = useState<string | undefined>();
   const [pendingContext, setPendingContext] = useState<string | undefined>();
   const [pendingEventId, setPendingEventId] = useState<number | undefined>();
+  // Case Library deep-link target — the archive event id to open in detail.
+  const [pendingArchiveId, setPendingArchiveId] = useState<number | undefined>();
   const [failedHeadlines, setFailedHeadlines] = useState<Set<string>>(new Set());
 
   const handleAnalysisFailed = useCallback((headline: string) => {
@@ -79,6 +81,12 @@ export default function App() {
   const navigate = useCallback((p: Page) => {
     setPage(p);
     setMobileOpen(false);
+  }, []);
+
+  // Open a Case Library card in the in-app Archive/Event Detail view.
+  const openCase = useCallback((eventId: number) => {
+    setPendingArchiveId(eventId);
+    setPage("events");
   }, []);
 
   return (
@@ -163,8 +171,13 @@ export default function App() {
                       onAnalysisSucceeded={handleAnalysisSucceeded}
                     />
                   )}
-                  {page === "events" && <RecentEvents />}
-                  {page === "cases" && <CaseLibrary />}
+                  {page === "events" && (
+                    <RecentEvents
+                      openEventId={pendingArchiveId}
+                      onEventOpened={() => setPendingArchiveId(undefined)}
+                    />
+                  )}
+                  {page === "cases" && <CaseLibrary onOpenCase={openCase} />}
                   {page === "backtest" && <Backtest />}
                   {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
                   {page === "demo" && <SectionCDemo />}

@@ -51,6 +51,22 @@ describe("CaseLibrary — page renders the five curated cases (R6B)", () => {
   });
 });
 
+describe("CaseLibrary — in-app Archive deep-link (R6C)", () => {
+  it("renders a primary in-app open control carrying each case's event id", () => {
+    // The card requests in-app Archive/Event Detail navigation via onOpenCase,
+    // not only a /share link — the control encodes the target event id.
+    for (const id of APPROVED_IDS) {
+      expect(html).toContain(`data-open-event-id="${id}"`);
+    }
+  });
+
+  it("keeps /share/:id available as a secondary link, not the only target", () => {
+    for (const id of APPROVED_IDS) {
+      expect(html).toContain(`/share/${id}`);
+    }
+  });
+});
+
 describe("CaseLibrary — denominator + non-claim copy stays visible (R6B)", () => {
   it("renders the denominator anchor and the outcome split", () => {
     expect(visible).toContain("5 representative cases drawn from 81 market-scored events of 166 saved.");

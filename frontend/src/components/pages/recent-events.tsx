@@ -1214,10 +1214,40 @@ function EventDetail({
 }
 
 // ---------------------------------------------------------------------------
+// Deep-link resolution (R6C)
+//
+// The archive detail opens for whichever event id is selected.  A Case Library
+// deep-link can request an id that is NOT on the currently-loaded page, so the
+// resolver falls back to a read-only fetch-by-id (GET /events/{id}, decorated
+// with validation_status_v2).  It never fabricates: an empty or id-mismatched
+// fetch resolves to null.  In-page always wins (no extra fetch on row clicks).
+// ---------------------------------------------------------------------------
+
+export function resolveSelectedEvent(
+  selectedId: number | null,
+  loadedEvents: SavedEvent[],
+  fetchedEvent: SavedEvent | null | undefined,
+): SavedEvent | null {
+  if (selectedId == null) return null;
+  const inPage = loadedEvents.find((e) => e.id === selectedId);
+  if (inPage) return inPage;
+  if (fetchedEvent && fetchedEvent.id === selectedId) return fetchedEvent;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
-export function RecentEvents() {
+export function RecentEvents({
+  openEventId,
+  onEventOpened,
+}: {
+  /** Case Library deep-link: open this event id in the detail view. */
+  openEventId?: number;
+  /** Called once the deep-link is consumed so it can re-fire for the same id. */
+  onEventOpened?: () => void;
+} = {}) {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -1253,6 +1283,16 @@ export function RecentEvents() {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Consume a Case Library deep-link: open the requested event id, then clear
+  // it upstream so re-requesting the SAME id later re-fires.  Guard keeps
+  // normal row clicks unaffected.
+  useEffect(() => {
+    if (openEventId != null) {
+      setSelectedId(openEventId);
+      onEventOpened?.();
+    }
+  }, [openEventId, onEventOpened]);
 
   // Reset to page 0 whenever any filter changes.
   useEffect(() => {
@@ -1313,7 +1353,17 @@ export function RecentEvents() {
     [displayed, pinnedIds],
   );
 
-  const selectedEvent = events.find((e) => e.id === selectedId) ?? null;
+  // Fetch the selected event by id only when a deep-link targets one that is
+  // not on the loaded page — read-only GET /events/{id} (decorated with
+  // validation_status_v2).  Normal row clicks resolve in-page and never fetch.
+  const inPageSelected = events.find((e) => e.id === selectedId) ?? null;
+  const { data: fetchedSelected } = useQuery({
+    queryKey: qk.eventById(selectedId ?? -1),
+    queryFn: () => api.getEvent(selectedId!),
+    enabled: selectedId != null && !inPageSelected,
+    staleTime: 300_000,
+  });
+  const selectedEvent = resolveSelectedEvent(selectedId, events, fetchedSelected);
 
   const updateEvent = useCallback((updated: SavedEvent) => {
     queryClient.setQueriesData<EventsPage>(

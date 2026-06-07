@@ -3162,6 +3162,16 @@ export const api = {
   getEventJson: (eventId: number) =>
     request<SavedEvent>(`/events/${eventId}/export/json`),
 
+  /**
+   * Fetch one decorated saved event by id (read-only GET /events/{id}).
+   * Returns the SAME shape the listing surfaces bind to — including
+   * ``validation_status_v2`` — so a deep-link can open the archive detail with
+   * the scored outcome even when the event is off the currently-loaded page.
+   * (``getEventJson`` hits /export/json, which omits ``validation_status_v2``.)
+   */
+  getEvent: (eventId: number) =>
+    request<SavedEvent>(`/events/${eventId}`),
+
   /** Gated single-event event-study readout (AR/SAR/CAR point estimates,
    *  or insufficient_data + blocking_reasons).  Read-only backend route. */
   getEventStudy: (eventId: number) =>
