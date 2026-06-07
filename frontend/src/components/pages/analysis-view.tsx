@@ -39,7 +39,7 @@ import { MarketValidationStatus } from "@/components/ui/market-validation-status
 import { EventStudyCard } from "@/components/ui/event-study-card";
 import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
-import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT } from "@/lib/claim-copy";
+import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT, VALIDATION_V2_NOT_CLAIMED } from "@/lib/claim-copy";
 
 /*
   Tonal hierarchy (from Stitch reference):
@@ -226,6 +226,19 @@ export function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResp
         </div>
       </div>
 
+      {/* Claim boundary, kept WITH the verdict (R2A): the scope caveat and an
+          explicit "Not claimed" line sit directly under the verdict + ratio so
+          a reader sees what the scored verdict does and does not assert without
+          scrolling to a footer. */}
+      <div className="mb-4 border-t border-[color:var(--so-rule)] pt-3">
+        <p className="font-[family-name:var(--so-serif)] text-[11px] font-light italic leading-relaxed text-[var(--so-ink-3)]">
+          {VALIDATION_V2_SCOPE_CAVEAT}
+        </p>
+        <p className="mt-1.5 font-mono text-[10px] tracking-[0.02em] text-[var(--so-ink-3)]">
+          {VALIDATION_V2_NOT_CLAIMED}
+        </p>
+      </div>
+
       <p className="mb-4 font-[family-name:var(--so-serif)] text-[12.5px] font-light italic leading-relaxed text-[var(--so-ink-2)]">
         {block.reason || "No validation reason available."}
       </p>
@@ -248,10 +261,6 @@ export function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResp
       <p className="mt-3 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--so-ink-3)]">
         {total} ticker{total === 1 ? "" : "s"} checked
         {block.event_age_days != null ? ` · ${block.event_age_days}d since event` : ""}
-      </p>
-
-      <p className="mt-3 border-t border-[color:var(--so-rule)] pt-3 font-[family-name:var(--so-serif)] text-[11px] font-light italic leading-relaxed text-[var(--so-ink-3)]">
-        {VALIDATION_V2_SCOPE_CAVEAT}
       </p>
     </section>
   );

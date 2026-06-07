@@ -27,6 +27,7 @@ import {
   MARKET_REACTION_LABEL,
   MARKET_REACTION_SUBLABEL,
   VALIDATION_V2_SCOPE_CAVEAT,
+  VALIDATION_V2_NOT_CLAIMED,
 } from "@/lib/claim-copy";
 import { ShareContent } from "../share-page";
 import { ValidationStatusCard } from "../analysis-view";
@@ -146,5 +147,27 @@ describe("F1 — validation_status_v2 verdict is bounded, not changed", () => {
   it("leaves the scored status label and ratio unchanged", () => {
     expect(html).toContain("Validated");
     expect(html).toContain("80%");
+  });
+
+  // R2A — claim-boundary honesty placement.  The caveat and an explicit
+  // "Not claimed" line must sit in the verdict area (above the counts grid),
+  // not be buried in a lower footer.  ``"Directional"`` is the first counts-row
+  // label, so it marks the start of the mid-card block.
+  it("places the scope caveat in the verdict area, above the counts grid (not only a footer)", () => {
+    const caveatAt = html.indexOf(VALIDATION_V2_SCOPE_CAVEAT);
+    const countsAt = html.indexOf("Directional");
+    expect(caveatAt).toBeGreaterThan(-1);
+    expect(countsAt).toBeGreaterThan(-1);
+    expect(caveatAt).toBeLessThan(countsAt);
+  });
+  it("renders an explicit 'Not claimed' line in the verdict area", () => {
+    expect(html).toContain(VALIDATION_V2_NOT_CLAIMED);
+    expect(html.indexOf(VALIDATION_V2_NOT_CLAIMED)).toBeLessThan(html.indexOf("Directional"));
+  });
+  it("the not-claimed copy carries no banned framing", () => {
+    const lc = VALIDATION_V2_NOT_CLAIMED.toLowerCase();
+    for (const w of ["buy", "sell", "long", "short", "alpha", "signal", "proof", "proves", "confirmed", "prediction", "live trading"]) {
+      expect(lc, `banned word "${w}" in the not-claimed copy`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
   });
 });

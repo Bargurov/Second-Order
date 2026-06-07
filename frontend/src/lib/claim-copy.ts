@@ -31,3 +31,14 @@ export const MARKET_REACTION_SUBLABEL =
 export const VALIDATION_V2_SCOPE_CAVEAT =
   "Tape-direction agreement on scored directional names — descriptive, " +
   "not benchmark-adjusted event-study inference.";
+
+/**
+ * Explicit claim-boundary line shown next to the scored validation verdict
+ * (R2A).  States what the verdict does NOT assert, so a reader sees the
+ * boundary without a guided tour.  Kept banned-word-clean (no proof / proven /
+ * confirmed / significant / alpha) and free of any forward / permanent-forecast
+ * framing — "significance" here is an explicit non-claim, not an assertion.
+ */
+export const VALIDATION_V2_NOT_CLAIMED =
+  "Not claimed: statistical significance, benchmark-adjusted inference, or a " +
+  "permanent asset forecast.";
