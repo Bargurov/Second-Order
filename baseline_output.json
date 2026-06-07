@@ -1,5 +1,5 @@
 {
-  "db_path": "C:/Users/Bar/desktop/geo_mechanism_project/events.db",
+  "db_path": "events.db",
   "computed_at": "2026-05-05T10:57:38",
   "risk1_cluster_ranking_weights": {
     "n_clusters": 6255,

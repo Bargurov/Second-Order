@@ -251,7 +251,7 @@ function AggregateSummary({ results }: { results: Map<number, BacktestResult> })
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="font-num text-xl font-semibold text-foreground">{hitRate}%</span>
             <span className="text-[12px] leading-5 text-foreground/74">
-              direction accuracy across <span className="font-num">{totalTickers}</span> tickers in{" "}
+              directional agreement across <span className="font-num">{totalTickers}</span> tickers in{" "}
               <span className="font-num">{eventsScored}</span> scored events
             </span>
           </div>
@@ -319,7 +319,7 @@ export function Backtest() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="min-w-0 space-y-1">
-            <p className="section-kicker">Validation</p>
+            <p className="section-kicker">Reaction review</p>
             <h2 className="truncate text-lg font-semibold tracking-[-0.02em] text-foreground">Backtest</h2>
             <p className="text-[12px] leading-5 text-foreground/78">
               {loading ? "Loading backtests..." : <><span className="font-num">{allTestable.length}</span> event{allTestable.length !== 1 && "s"} ready for dated review, with macro context alongside each scorecard.</>}

@@ -34,7 +34,10 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-DB_PATH = "C:/Users/Bar/desktop/geo_mechanism_project/events.db"
+# Resolve the archive relative to the repo root (computed above) so the script
+# carries no operator-specific absolute path.  as_posix() keeps forward slashes
+# for the sqlite ``file:`` URI (str() would yield backslashes on Windows).
+DB_PATH = (_REPO_ROOT / "events.db").as_posix()
 
 # ---------------------------------------------------------------------------
 # Constants verbatim from routes/movers.py:614-679 (DO NOT EDIT here — edit
@@ -429,7 +432,7 @@ def baseline_risk5(con) -> dict:
 def main() -> None:
     con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     out = {
-        "db_path": DB_PATH,
+        "db_path": Path(DB_PATH).name,  # filename only — no operator path in output
         "computed_at": datetime.now().isoformat(timespec="seconds"),
         "risk1_cluster_ranking_weights": baseline_risk1(con),
         "risk2_jaccard_family":          baseline_risk2(con),
