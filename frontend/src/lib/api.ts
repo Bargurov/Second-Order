@@ -1129,6 +1129,9 @@ export interface SavedEvent {
   validation_status?: "validated" | "contradicted" | "unresolved";
   validation_status_v2?: ValidationStatusV2Block;
   reaction_profile_v1?: ReactionProfileV1Block;
+  /** Ordered prose transmission-chain steps (served by /export/json and
+   *  /events/{id}); present for ~59% of scored events, absent otherwise. */
+  transmission_chain?: string[];
 }
 
 export type ValidationStatusV2 =

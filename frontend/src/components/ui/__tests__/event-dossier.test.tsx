@@ -220,6 +220,58 @@ describe("EventDossier — affected-asset returns are percent units (R5B)", () =
 });
 
 // ---------------------------------------------------------------------------
+// Transmission chain — ordered prose steps (T6B-A)
+//
+// `transmission_chain` is the one real structured-ish field (ordered prose
+// steps, 48/81 scored).  The block surfaces it when present and is omitted
+// otherwise — never an empty placeholder, never a typed taxonomy or falsifier.
+// ---------------------------------------------------------------------------
+
+describe("EventDossier — transmission chain (T6B-A)", () => {
+  const steps = [
+    "Export limits cut seaborne crude flows.",
+    "Physical supply tightens; benchmark crude firms.",
+    "Refiners with alternate sourcing gain; import-reliant names carry the cost.",
+  ];
+  const strip = (h: string) => h.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const withVisible = strip(
+    renderToStaticMarkup(<EventDossier event={_event({ transmission_chain: steps } as Partial<SavedEvent>)} />),
+  );
+
+  it("renders a Transmission block with the prose steps in order", () => {
+    expect(withVisible).toContain("Transmission");
+    for (const s of steps) expect(withVisible).toContain(s);
+    expect(withVisible.indexOf(steps[0]!)).toBeLessThan(withVisible.indexOf(steps[1]!));
+    expect(withVisible.indexOf(steps[1]!)).toBeLessThan(withVisible.indexOf(steps[2]!));
+  });
+
+  it("renders the prose / not-a-taxonomy caveat", () => {
+    expect(withVisible).toContain(
+      "Descriptive transmission narrative — prose, n = 1, not a structured taxonomy or falsifier.",
+    );
+  });
+
+  it("omits the block entirely when transmission_chain is absent", () => {
+    const v = strip(renderToStaticMarkup(<EventDossier event={_event()} />));
+    expect(v).not.toContain("Descriptive transmission narrative");
+  });
+
+  it("omits the block when transmission_chain is empty or blank-only", () => {
+    const v = strip(
+      renderToStaticMarkup(<EventDossier event={_event({ transmission_chain: ["", "   "] } as Partial<SavedEvent>)} />),
+    );
+    expect(v).not.toContain("Descriptive transmission narrative");
+  });
+
+  it("carries no banned framing in the transmission block", () => {
+    const lc = withVisible.toLowerCase();
+    for (const w of ["buy", "sell", "long", "short", "alpha", "signal", "trade", "live trading", "proof", "proves", "confirmed"]) {
+      expect(lc, `banned word "${w}"`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Copy honesty
 // ---------------------------------------------------------------------------
 

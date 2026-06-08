@@ -115,6 +115,13 @@ export function EventDossier({ event, eventStudy, horizons, className }: EventDo
   const hasAssetBlock =
     tickers.length > 0 || (event.beneficiaries?.length ?? 0) > 0 || (event.losers?.length ?? 0) > 0;
 
+  // The one real structured-ish field (T6B-A): ordered prose transmission
+  // steps.  Blank / whitespace-only entries are dropped; an all-blank chain
+  // omits the block entirely (no empty placeholder).  Prose, not a taxonomy.
+  const transmissionSteps = (event.transmission_chain ?? [])
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter(Boolean);
+
   return (
     <article className={cn("rounded-[6px] border border-border bg-card/40 p-5", className)}>
       <header className="mb-4">
@@ -131,6 +138,23 @@ export function EventDossier({ event, eventStudy, horizons, className }: EventDo
       <div className="flex flex-col gap-3.5">
         {event.mechanism_summary && <Field label="Mechanism">{event.mechanism_summary}</Field>}
         {event.what_changed && <Field label="What changed">{event.what_changed}</Field>}
+
+        {transmissionSteps.length > 0 && (
+          <div>
+            <FieldLabel>Transmission</FieldLabel>
+            <ol className="mt-1 flex flex-col gap-1">
+              {transmissionSteps.map((step, i) => (
+                <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-foreground/80">
+                  <span className="mt-px font-mono text-[10px] tabular-nums text-muted-foreground">{i + 1}</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-1 text-[10.5px] italic leading-relaxed text-muted-foreground">
+              Descriptive transmission narrative — prose, n = 1, not a structured taxonomy or falsifier.
+            </p>
+          </div>
+        )}
 
         {hasAssetBlock && (
           <div>
