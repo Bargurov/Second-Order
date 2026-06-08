@@ -187,6 +187,44 @@ export function EvidenceOverview() {
         </CardContent>
       </Card>
 
+      {/* How to read the event-study rows (U2) — defines the per-horizon
+          measures the EventDossier table displays.  Surfaces existing
+          methodology only; adds no new statistic and no new claim. */}
+      <Card className="mt-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Methodology · event-study readout</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            How to read the event-study rows
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
+            Benchmark {F.methodology.benchmark} · horizons {F.methodology.horizons} · estimation window{" "}
+            {F.methodology.estimationWindow} pre-event bars
+          </p>
+          <p className="text-on-surface-variant/80">{F.methodology.intro}</p>
+          <dl className="flex flex-col gap-1.5">
+            {F.methodology.terms.map((t) => (
+              <div key={t.term} className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
+                <dt className="w-14 shrink-0 font-mono text-[12px] text-on-surface">{t.term}</dt>
+                <dd className="text-[12px] text-on-surface-variant/85">{t.def}</dd>
+              </div>
+            ))}
+          </dl>
+          <ul className="flex flex-col gap-1 border-t border-border/40 pt-2">
+            {F.methodology.limits.map((line) => (
+              <li
+                key={line}
+                className="flex items-start gap-1.5 text-[11px] leading-relaxed text-on-surface-variant/70"
+              >
+                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-on-surface-variant/40" aria-hidden />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
       {/* Standing non-claims */}
       <div className="mt-4 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-3">
         <Kicker>What this is not</Kicker>

@@ -122,6 +122,56 @@ describe("EvidenceOverview — mechanism-family breakdown (T7B-A)", () => {
   });
 });
 
+describe("EvidenceOverview — how to read the event-study rows (U2)", () => {
+  it("renders the methodology section title", () => {
+    expect(visible).toContain("How to read the event-study rows");
+  });
+
+  it("defines Raw / Bench / AR / CAR / SAR", () => {
+    expect(visible).toContain("Raw");
+    expect(visible).toContain("Bench");
+    expect(visible).toMatch(/\bAR\b/);
+    expect(visible).toMatch(/\bCAR\b/);
+    expect(visible).toMatch(/\bSAR\b/);
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("abnormal return");
+    expect(lc).toContain("cumulative abnormal return");
+    expect(lc).toContain("standardized abnormal return");
+  });
+
+  it("states SAR is a ratio, not a percent", () => {
+    expect(visible.toLowerCase()).toContain("ratio, not a percent");
+  });
+
+  it("states the SPY benchmark, 1d / 5d / 20d horizons, and 60-bar estimation window", () => {
+    expect(visible).toContain("SPY");
+    expect(visible).toContain("1d / 5d / 20d");
+    expect(visible).toContain("60");
+    expect(visible.toLowerCase()).toContain("estimation window");
+  });
+
+  it("states the n = 1 single-event limits, not statistical significance", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("n = 1");
+    expect(lc).toContain("not statistical significance");
+  });
+
+  it("states no CI / p-value / FDR at the single-event level", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("confidence interval");
+    expect(lc).toContain("p-value");
+    expect(lc).toContain("false-discovery");
+  });
+
+  it("states the Phase 1 / Phase 2 FDR pools are a separate track", () => {
+    expect(visible.toLowerCase()).toContain("phase 1 / phase 2 fdr pools are a separate");
+  });
+
+  it("states the definitions add no new claim", () => {
+    expect(visible.toLowerCase()).toContain("add no new claim");
+  });
+});
+
 describe("EvidenceOverview — non-claims visible (T5A)", () => {
   it("renders every standing non-claim", () => {
     const lc = visible.toLowerCase();

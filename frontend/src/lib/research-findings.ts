@@ -89,6 +89,36 @@ export const RESEARCH_FINDINGS = {
     ],
   },
 
+  // U2 — definitions for the per-horizon measures the EventDossier event-study
+  // table displays.  Surfaces existing methodology only (stats/METHODOLOGY.md +
+  // event_study_validation.py constants: SPY, 60-bar window, horizons 1/5/20);
+  // adds no new statistic and no new claim.
+  methodology: {
+    benchmark: "SPY",
+    horizons: "1d / 5d / 20d",
+    estimationWindow: 60,
+    intro:
+      "The EventDossier event-study table reports these per-horizon measures vs the benchmark. The definitions below explain the displayed numbers only — they add no new claim.",
+    terms: [
+      { term: "Raw", def: "The primary ticker's own move over the event window." },
+      { term: "Bench", def: "The benchmark (SPY) move over the same window." },
+      { term: "AR", def: "Abnormal return — raw minus benchmark over the horizon." },
+      {
+        term: "CAR",
+        def: "Cumulative abnormal return — the additive accumulation of daily abnormal returns across the horizon.",
+      },
+      {
+        term: "SAR",
+        def: "Standardized abnormal return — AR divided by the daily abnormal-return volatility over the 60-bar pre-event window, scaled by the square root of the horizon. Shown as a ratio, not a percent.",
+      },
+    ],
+    limits: [
+      "Single-event rows are n = 1 descriptive readouts of one event window.",
+      "Not statistical significance: no confidence interval, p-value, or false-discovery (FDR) control at the single-event level.",
+      "The closed Phase 1 / Phase 2 FDR pools are a separate evidence track with their own frozen q-values.",
+    ],
+  },
+
   nonClaims: [
     "Descriptive archive characterization only.",
     "Not a trading or prediction surface, and not a recommendation.",
