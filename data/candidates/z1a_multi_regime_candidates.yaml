@@ -1,0 +1,375 @@
+# Z1A — Multi-regime expansion candidate pack (REVIEWABLE SOURCE INPUT, NOT INGESTED)
+#
+# Purpose: a source-backed, multi-regime shortlist to lift the corpus off its
+# 2026-04/05 oil/war concentration. Every candidate is a real historical event
+# with a verified primary-source URL. NOTHING here has been ingested, scored, or
+# written to events.db / price_cache. review_status is candidate_only_not_ingested
+# on every row; ingestion is a separate, operator-gated, DB-copy-first step (Z1B).
+#
+# Verification depth (honest log — Z1A built without DB/cache/provider/paid calls):
+#   * Discovered via WebSearch restricted to the official domain (the search index
+#     returns the canonical official-domain URL + a content summary).
+#   * WebFetch full-content confirmed: bis.gov (Oct-2022, Oct-2023 rules) and the
+#     Section 232 Federal Register proclamation (federalregister.gov).
+#   * WebSearch-on-official-domain only (WebFetch returned HTTP 403 on these hosts,
+#     i.e. the pages EXIST but block the fetch client): justice.gov, ftc.gov,
+#     sec.gov, uaw.org, sagaftra.org, congress.gov, bidenwhitehouse.archives.gov.
+#     Exact event dates for these were cross-checked against the official-domain
+#     search summaries (e.g. the ftc.gov timeline item dated 2023-09-26).
+#
+# Distribution: 15 candidates / 5 canonical mechanism_family values
+# (regulation, sanction, tariff, industrial_policy, labor_inflation) /
+# 6 calendar years (2018, 2020, 2022, 2023, 2024, 2025) / 0 oil-complex / 0 from
+# the 2026-04/05 cluster. Max month share = 2/15 (13%); max category share = 5/15
+# (33%). Deferred on benchmark-defensibility grounds (NOT included): pure-rates /
+# FOMC surprises (SPY is not a clean benchmark for a market-wide rate shock) and
+# bank-stress epicenter names (SIVB/SBNY/FRC halted+delisted; survivors moved with
+# a sector-wide panic, confounding AR-vs-SPY exactly like a rate shock).
+
+candidates:
+  # ---- regulation (antitrust) -- family: regulation ----
+  - id: ftc-v-amazon-monopoly-2023-09-26
+    event_date: "2023-09-26"
+    title: "FTC sues Amazon.com for illegally maintaining monopoly power"
+    source_url: "https://www.ftc.gov/news-events/news/press-releases/2023/09/ftc-sues-amazon-illegally-maintaining-monopoly-power"
+    source_type: regulator
+    category: antitrust
+    mechanism_family: regulation
+    mechanism_summary: >-
+      The FTC and 17 state attorneys general filed in the Western District of
+      Washington alleging Amazon unlawfully maintains monopoly power in online
+      superstore and marketplace-services markets. A structural-remedy antitrust
+      complaint reprices the regulatory and breakup risk attached to the platform.
+    affected_assets:
+      - ticker: AMZN
+        role: exposed
+        rationale: "Amazon is the direct defendant; the complaint targets its marketplace and Prime-linked conduct, so regulatory and remedy risk attaches to the name."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "n=1 descriptive event-window read vs SPY; antitrust filings are partly anticipated and the remedy horizon is multi-year, so any window move is not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: doj-v-apple-smartphones-2024-03-21
+    event_date: "2024-03-21"
+    title: "Justice Department sues Apple for monopolizing smartphone markets"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-sues-apple-monopolizing-smartphone-markets"
+    source_type: official
+    category: antitrust
+    mechanism_family: regulation
+    mechanism_summary: >-
+      DOJ and 16 state and district attorneys general filed in the District of
+      New Jersey alleging Apple maintains an iPhone monopoly through developer
+      restrictions, in violation of Sherman Act Section 2. The filing reprices
+      antitrust and remedy risk on the named device maker.
+    affected_assets:
+      - ticker: AAPL
+        role: exposed
+        rationale: "Apple is the named defendant; the action bears directly on its App Store and device-ecosystem economics."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; the case targets a single segment of a diversified mega-cap, so any window effect is small and not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: doj-v-google-adtech-2023-01-24
+    event_date: "2023-01-24"
+    title: "Justice Department sues Google for monopolizing digital advertising technologies"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-sues-google-monopolizing-digital-advertising-technologies"
+    source_type: official
+    category: antitrust
+    mechanism_family: regulation
+    mechanism_summary: >-
+      DOJ and eight states filed in the Eastern District of Virginia alleging
+      Google monopolizes the advertising-technology stack (publisher ad server,
+      ad exchange, advertiser network). The complaint reprices structural-remedy
+      risk on the parent.
+    affected_assets:
+      - ticker: GOOGL
+        role: exposed
+        rationale: "Alphabet is the defendant; the advertising-technology business at issue is a core revenue segment, so divestiture risk attaches to the name."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; a second, earlier search case (2020) was already pending, so the marginal information in this filing may be muted. Not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: doj-v-livenation-ticketmaster-2024-05-23
+    event_date: "2024-05-23"
+    title: "Justice Department sues Live Nation-Ticketmaster for monopolizing live-concert markets"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-sues-live-nation-ticketmaster-monopolizing-markets-across-live-concert"
+    source_type: official
+    category: antitrust
+    mechanism_family: regulation
+    mechanism_summary: >-
+      DOJ and 30 state and district attorneys general filed in the Southern
+      District of New York seeking structural relief against Live Nation-
+      Ticketmaster's concert-promotion and primary-ticketing dominance. The
+      filing reprices breakup risk on the named operator.
+    affected_assets:
+      - ticker: LYV
+        role: exposed
+        rationale: "Live Nation is the named defendant; a request for structural relief bears directly on its integrated promotion-and-ticketing model."
+    benchmark: SPY
+    placebo_feasibility_guess: uncertain
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; LYV is mid-cap with event-specific volatility, complicating a clean placebo comparator. Not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: doj-v-visa-debit-2024-09-24
+    event_date: "2024-09-24"
+    title: "Justice Department sues Visa for monopolizing debit-network markets"
+    source_url: "https://www.justice.gov/archives/opa/pr/justice-department-sues-visa-monopolizing-debit-markets"
+    source_type: official
+    category: antitrust
+    mechanism_family: regulation
+    mechanism_summary: >-
+      DOJ filed in the Southern District of New York alleging Visa unlawfully
+      maintains a debit-network monopoly through exclusionary merchant and bank
+      agreements. The action reprices antitrust risk on the named network.
+    affected_assets:
+      - ticker: V
+        role: exposed
+        rationale: "Visa is the named defendant; the debit-network conduct at issue is central to its volume-based fee revenue."
+      - ticker: MA
+        role: beneficiary
+        rationale: "Mastercard is a competing network whose relative positioning could improve if Visa's debit exclusivity is curtailed; included as a comparator name."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; payments-network names co-move, so isolating a Visa-specific effect from a sector move is difficult. Not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  # ---- export controls -- family: sanction ----
+  - id: bis-advanced-computing-controls-2022-10-07
+    event_date: "2022-10-07"
+    title: "Commerce/BIS implements advanced-computing and semiconductor-manufacturing export controls on the PRC"
+    source_url: "https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples"
+    source_type: regulator
+    category: export_controls
+    mechanism_family: sanction
+    mechanism_summary: >-
+      BIS added advanced logic, DRAM, and NAND performance thresholds plus
+      manufacturing-equipment controls to the Commerce Control List, gating sales
+      into PRC fabrication facilities. The rule reprices China-revenue exposure
+      for US chip and equipment names.
+    affected_assets:
+      - ticker: NVDA
+        role: exposed
+        rationale: "Nvidia data-center accelerators fell under the new performance thresholds, exposing a portion of its China data-center revenue."
+      - ticker: AMD
+        role: exposed
+        rationale: "AMD high-end accelerators face the same threshold-based licensing, exposing China sales."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; semiconductor names are cyclical and co-move, so a chip-cycle move can masquerade as an event response. Not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: bis-advanced-computing-controls-update-2023-10-17
+    event_date: "2023-10-17"
+    title: "Commerce/BIS strengthens advanced-computing and semiconductor-equipment export controls"
+    source_url: "https://www.bis.gov/press-release/commerce-strengthens-restrictions-advanced-computing-semiconductors-semiconductor-manufacturing-equipment"
+    source_type: regulator
+    category: export_controls
+    mechanism_family: sanction
+    mechanism_summary: >-
+      BIS tightened the October 2022 controls, broadened the performance criteria,
+      and expanded equipment licensing to additional countries. The update
+      reprices residual China-revenue exposure for accelerator and equipment makers.
+    affected_assets:
+      - ticker: NVDA
+        role: exposed
+        rationale: "The tightened thresholds captured Nvidia China-tailored accelerators, exposing further China revenue."
+      - ticker: AMAT
+        role: exposed
+        rationale: "Applied Materials faces broadened semiconductor-equipment licensing, exposing equipment sales into restricted destinations."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; this is an update to a pre-existing 2022 rule, so the marginal information may be partly anticipated. Not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: bis-huawei-fdpr-entity-list-2020-05-15
+    event_date: "2020-05-15"
+    title: "Commerce amends Foreign Direct Product Rule and Entity List targeting Huawei chip sourcing"
+    source_url: "https://www.commerce.gov/news/press-releases/2020/05/commerce-addresses-huaweis-efforts-undermine-entity-list-restricts"
+    source_type: regulator
+    category: export_controls
+    mechanism_family: sanction
+    mechanism_summary: >-
+      Commerce extended the Foreign-Produced Direct Product Rule so foreign
+      foundry output built to Huawei design specifications using US-origin
+      technology requires a license. The rule reprices Huawei-linked revenue
+      exposure for US chip suppliers.
+    affected_assets:
+      - ticker: QCOM
+        role: exposed
+        rationale: "Qualcomm modem and RF content tied to Huawei handsets faced disrupted licensing, exposing a revenue channel."
+      - ticker: SMH
+        role: exposed
+        rationale: "The semiconductor basket carries broad exposure to the supply-chain disruption the rule introduced."
+    benchmark: SPY
+    placebo_feasibility_guess: uncertain
+    limitation_or_falsifier: "n=1 descriptive read vs SPY; the May-2020 window sits inside COVID-era volatility, which confounds a clean placebo comparator. Not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  - id: nvidia-h20-export-license-2025-04-15
+    event_date: "2025-04-15"
+    title: "NVIDIA discloses US license requirement for H20 China exports and an estimated multi-billion-dollar charge (8-K)"
+    source_url: "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000082/nvda-20250409.htm"
+    source_type: filing
+    category: export_controls
+    mechanism_family: sanction
+    mechanism_summary: >-
+      NVIDIA's 8-K reports that on 2025-04-09 the US government required a license
+      for H20 exports to China, with an estimated ~$5.5B first-quarter charge; the
+      requirement was made indefinite on 2025-04-14. Public 8-K disclosure reprices
+      China-AI-revenue exposure on the name.
+    affected_assets:
+      - ticker: NVDA
+        role: exposed
+        rationale: "Nvidia is the filer; H20 was its primary China data-center product, so the license requirement directly reduces a disclosed revenue line."
+      - ticker: AMD
+        role: exposed
+        rationale: "AMD China-tailored MI-series accelerators faced parallel licensing exposure disclosed around the same window."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_good
+    limitation_or_falsifier: "Event-window choice is sensitive: the 8-K reports a USG notice dated 2025-04-09 (period of report) but public disclosure and the first full reaction fell ~Apr 15-16, 2025; confirm the exact EDGAR filing timestamp before fixing the window. n=1 descriptive read vs SPY; not an established mechanism."
+    review_status: candidate_only_not_ingested
+
+  # ---- tariff (non-oil) -- family: tariff ----
+  - id: section232-steel-proclamation-9705-2018-03-08
+    event_date: "2018-03-08"
+    title: "Presidential Proclamation 9705: Section 232 25% steel import duties (signed Mar 8 2018; duties effective Mar 23)"
+    source_url: "https://www.federalregister.gov/documents/2018/03/15/2018-05478/adjusting-imports-of-steel-into-the-united-states"
+    source_type: official
+    category: tariff
+    mechanism_family: tariff
+    mechanism_summary: >-
+      Proclamation 9705 imposed a 25% Section 232 duty on covered steel imports
+      from most countries, citing national security. Domestic mills gain pricing
+      room while steel-consuming manufacturers face input-cost exposure.
+    affected_assets:
+      - ticker: NUE
+        role: beneficiary
+        rationale: "Nucor is a domestic steel producer that gains relative pricing room under import duties."
+      - ticker: X
+        role: beneficiary
+        rationale: "United States Steel is a domestic producer positioned to benefit from reduced import competition."
+      - ticker: F
+        role: exposed
+        rationale: "Ford is a large steel consumer whose input costs rise under the duty."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_poor
+    limitation_or_falsifier: "Confounded: the action was telegraphed verbally on Mar 1 2018 before the Mar 8 proclamation, so the window straddles two dates; steel-name moves also track commodity prices, leaving no clean placebo comparator. n=1 descriptive read."
+    review_status: candidate_only_not_ingested
+
+  - id: section301-china-tariff-increase-2024-05-14
+    event_date: "2024-05-14"
+    title: "USTR/White House Section 301 tariff increases on Chinese EVs, solar cells, semiconductors, and steel"
+    source_url: "https://bidenwhitehouse.archives.gov/briefing-room/statements-releases/2024/05/14/fact-sheet-president-biden-takes-action-to-protect-american-workers-and-businesses-from-chinas-unfair-trade-practices/"
+    source_type: official
+    category: tariff
+    mechanism_family: tariff
+    mechanism_summary: >-
+      The administration directed Section 301 tariff increases across strategic
+      categories (EVs to 100%, solar cells to 50%, semiconductors to 50% in 2025).
+      Domestic solar manufacturers gain relative protection; the action reprices
+      import-cost dynamics for affected categories.
+    affected_assets:
+      - ticker: FSLR
+        role: beneficiary
+        rationale: "First Solar is a US-based panel manufacturer positioned to gain relative protection from higher duties on Chinese solar cells."
+    benchmark: SPY
+    placebo_feasibility_guess: uncertain
+    limitation_or_falsifier: "Confounded: the increases were pre-announced and phased over 2024-2026, so the announcement-window reaction may be muted by anticipation. n=1 descriptive read vs SPY."
+    review_status: candidate_only_not_ingested
+
+  # ---- industrial policy -- family: industrial_policy ----
+  - id: chips-and-science-act-enacted-2022-08-09
+    event_date: "2022-08-09"
+    title: "CHIPS and Science Act signed into law (Public Law 117-167)"
+    source_url: "https://www.congress.gov/bill/117th-congress/house-bill/4346"
+    source_type: official
+    category: industrial_policy
+    mechanism_family: industrial_policy
+    mechanism_summary: >-
+      The Act authorized semiconductor manufacturing incentives and an investment
+      tax credit. Domestic fabrication and equipment names gain a subsidy tailwind
+      under the industrial-policy program.
+    affected_assets:
+      - ticker: INTC
+        role: beneficiary
+        rationale: "Intel US fab expansion is a primary intended recipient of CHIPS manufacturing incentives."
+      - ticker: MU
+        role: beneficiary
+        rationale: "Micron domestic memory-fab plans align with the Act's incentive structure."
+    benchmark: SPY
+    placebo_feasibility_guess: uncertain
+    limitation_or_falsifier: "Confounded: enactment was widely anticipated after Senate passage on Aug 4 2022, so the signing-window reaction may be muted by anticipation. n=1 descriptive read."
+    review_status: candidate_only_not_ingested
+
+  - id: inflation-reduction-act-enacted-2022-08-16
+    event_date: "2022-08-16"
+    title: "Inflation Reduction Act of 2022 signed into law (Public Law 117-169)"
+    source_url: "https://www.congress.gov/bill/117th-congress/house-bill/5376"
+    source_type: official
+    category: industrial_policy
+    mechanism_family: industrial_policy
+    mechanism_summary: >-
+      The Act created clean-energy production and investment credits. US solar and
+      clean-energy manufacturers gain a multi-year incentive tailwind under the
+      industrial-policy program.
+    affected_assets:
+      - ticker: FSLR
+        role: beneficiary
+        rationale: "First Solar is a domestic panel maker positioned to benefit from the Act's manufacturing and investment credits."
+      - ticker: ENPH
+        role: beneficiary
+        rationale: "Enphase residential-solar demand is supported by the Act's clean-energy credits."
+    benchmark: SPY
+    placebo_feasibility_guess: uncertain
+    limitation_or_falsifier: "Confounded: the deal framework was public from late July 2022 and Senate passage preceded signing, so anticipation may mute the signing-window reaction. n=1 descriptive read."
+    review_status: candidate_only_not_ingested
+
+  # ---- labor / ports / transport -- family: labor_inflation ----
+  - id: uaw-standup-strike-big-three-2023-09-15
+    event_date: "2023-09-15"
+    title: "UAW Stand Up Strike begins against GM, Ford, and Stellantis"
+    source_url: "https://uaw.org/backgrounder-big-3-bargaining/"
+    source_type: other_primary
+    category: labor
+    mechanism_family: labor_inflation
+    mechanism_summary: >-
+      The UAW began simultaneous targeted work stoppages at the three Detroit
+      automakers on 2023-09-15, halting select-plant production. Affected
+      automakers face production and margin exposure while the stoppage holds.
+    affected_assets:
+      - ticker: GM
+        role: exposed
+        rationale: "General Motors is a struck automaker facing lost production at named plants."
+      - ticker: F
+        role: exposed
+        rationale: "Ford is a struck automaker with production exposure at named plants."
+    benchmark: SPY
+    placebo_feasibility_guess: uncertain
+    limitation_or_falsifier: "Family is debatable: labeled labor_inflation for corpus diversity, though a production halt is also defensible as supply_shock (documented per H8-style override discipline). The strike escalated in phases with no single clean window, and auto names co-move. n=1 descriptive read."
+    review_status: candidate_only_not_ingested
+
+  - id: sag-aftra-tv-theatrical-strike-2023-07-14
+    event_date: "2023-07-14"
+    title: "SAG-AFTRA TV/Theatrical/Streaming strike order takes effect"
+    source_url: "https://www.sagaftra.org/sag-aftra-strike-order-tvtheatricalstreaming-contracts-0"
+    source_type: other_primary
+    category: labor
+    mechanism_family: labor_inflation
+    mechanism_summary: >-
+      After the National Board issued a strike order on 2023-07-13, the SAG-AFTRA
+      work stoppage took effect 2023-07-14, halting scripted film and television
+      production. Studio and streaming names face content-pipeline exposure while
+      the stoppage holds.
+    affected_assets:
+      - ticker: NFLX
+        role: exposed
+        rationale: "Netflix scripted-content pipeline is exposed to an extended production halt."
+      - ticker: WBD
+        role: exposed
+        rationale: "Warner Bros. Discovery film and television production is exposed to the stoppage."
+    benchmark: SPY
+    placebo_feasibility_guess: likely_poor
+    limitation_or_falsifier: "Family is debatable: labeled labor_inflation for corpus diversity, though a content-pipeline halt is also defensible as supply_shock (documented). The WGA strike was already ongoing (since 2023-05-02), confounding any SAG-AFTRA-specific window. n=1 descriptive read vs SPY."
+    review_status: candidate_only_not_ingested
