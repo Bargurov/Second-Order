@@ -186,16 +186,57 @@ export function EventDossier({ event, eventStudy, horizons, className }: EventDo
         {esAvailable && (
           <div>
             <FieldLabel>Event-study · benchmark-adjusted</FieldLabel>
-            <ul className="mt-1 flex flex-col gap-0.5 font-mono text-[11px] text-foreground/75">
-              {eventStudy!.per_horizon!.map((h) => (
-                <li key={h.horizon} className="tabular-nums">
-                  {h.horizon}d — AR {fmtPct(h.abnormal_return)} · CAR {fmtPct(h.car)} · SAR{" "}
-                  {h.sar === null || h.sar === undefined ? "—" : h.sar.toFixed(2)}
-                </li>
-              ))}
-            </ul>
+            <p className="mt-1 font-mono text-[10.5px] text-muted-foreground">
+              {eventStudy!.primary_ticker ?? "primary"} vs {eventStudy!.benchmark ?? "benchmark"}
+              {typeof eventStudy!.estimation_window_used === "number"
+                ? ` · est. window ${eventStudy!.estimation_window_used}`
+                : ""}
+            </p>
+            <table className="mt-1 w-full border-collapse font-mono text-[11px] tabular-nums">
+              <thead>
+                <tr className="text-muted-foreground">
+                  <th className="py-0.5 pr-3 text-left font-medium">Horizon</th>
+                  <th className="py-0.5 pr-3 text-right font-medium">Raw</th>
+                  <th className="py-0.5 pr-3 text-right font-medium">Bench</th>
+                  <th className="py-0.5 pr-3 text-right font-medium">AR</th>
+                  <th className="py-0.5 pr-3 text-right font-medium">CAR</th>
+                  <th className="py-0.5 text-right font-medium">SAR</th>
+                </tr>
+              </thead>
+              <tbody className="text-foreground/80">
+                {[...eventStudy!.per_horizon!]
+                  .sort((a, b) => a.horizon - b.horizon)
+                  .map((h) => (
+                    <tr key={h.horizon}>
+                      <td className="py-0.5 pr-3 text-left text-foreground">{h.horizon}d</td>
+                      <td className="py-0.5 pr-3 text-right">{fmtPct(h.raw_return)}</td>
+                      <td className="py-0.5 pr-3 text-right">{fmtPct(h.benchmark_return)}</td>
+                      <td className="py-0.5 pr-3 text-right">{fmtPct(h.abnormal_return)}</td>
+                      <td className="py-0.5 pr-3 text-right">{fmtPct(h.car)}</td>
+                      <td className="py-0.5 text-right">
+                        {h.sar === null || h.sar === undefined ? "—" : h.sar.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+              Raw and benchmark moves with abnormal return (AR = raw − benchmark); cumulative AR (CAR) and standardized AR (SAR).
+            </p>
             <p className="mt-1 text-[10.5px] italic leading-relaxed text-muted-foreground">
-              Point estimates at n=1 — descriptive, not statistical significance.
+              Single-event readout — n = 1, descriptive only; not statistical significance or a permanent asset forecast.
+            </p>
+          </div>
+        )}
+
+        {/* Honest missingness: the surface fetched the event-study and it
+            reports insufficient_data — show a compact note, never blank metric
+            rows.  Absent (not-fetched) eventStudy omits the section entirely. */}
+        {eventStudy && !esAvailable && (
+          <div>
+            <FieldLabel>Event-study readout</FieldLabel>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-foreground/70">
+              Event-study readout unavailable — a benchmark-adjusted read could not be computed from the cached price history.
             </p>
           </div>
         )}

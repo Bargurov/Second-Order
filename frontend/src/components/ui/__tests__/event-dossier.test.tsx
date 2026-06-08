@@ -1,17 +1,17 @@
 /**
- * R5A — EventDossier shared research-note render smoke.
+ * R5A / T9A — EventDossier shared research-note render smoke.
  *
  * The dossier consolidates substance that already exists on the frontend
  * (event metadata, mechanism, affected assets + realized move, the optional
- * event-study readout, the optional horizon falsifier, the scored outcome and
- * the standing claim boundary) into one coherent research note — it adds NO
- * new analytics and no new claims.
+ * finance-native event-study readout, the optional horizon falsifier, the
+ * scored outcome and the standing claim boundary) into one coherent research
+ * note — it adds NO new analytics and no new claims.
  *
- * Two render paths are pinned:
- *   - a FULL fixture (event + event-study + horizons) renders all ten
- *     professional-reader items;
- *   - a MINIMAL fixture (event only) renders the always-available items and
- *     OMITS the optional sections — honest degradation, never a fake stub.
+ * T9A upgrades the event-study section to a finance-native, horizon-by-horizon
+ * readout: raw move, benchmark move, abnormal return, plus CAR / SAR when
+ * present — using only fields already on the EventStudyBlock payload.  When the
+ * payload reports insufficient_data, a compact unavailable note replaces the
+ * metric rows (never blank metrics, never a fake stub).
  *
  * Presentational only — no React Query, no network.  vitest +
  * renderToStaticMarkup, no jsdom.
@@ -27,6 +27,10 @@ import type {
 } from "@/lib/api";
 import { VALIDATION_V2_SCOPE_CAVEAT, VALIDATION_V2_NOT_CLAIMED } from "@/lib/claim-copy";
 import { EventDossier } from "../event-dossier";
+
+// The required, exact n=1 caveat for the finance-native readout.
+const ES_CAVEAT =
+  "Single-event readout — n = 1, descriptive only; not statistical significance or a permanent asset forecast.";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -82,6 +86,9 @@ function _event(over: Partial<SavedEvent> = {}): SavedEvent {
   } as unknown as SavedEvent;
 }
 
+// Available readout — every horizon carries raw / benchmark / abnormal / SAR /
+// CAR.  Values chosen so each rendered percent is distinct from the ticker
+// fixture's percents, so a presence assertion pins the event-study cell.
 function _eventStudy(): EventStudyBlock {
   return {
     status: "event_study_available",
@@ -89,10 +96,21 @@ function _eventStudy(): EventStudyBlock {
     benchmark: "SPY",
     estimation_window_used: 120,
     per_horizon: [
-      { horizon: 1, abnormal_return: 0.009, sar: 1.2, car: 0.009 },
-      { horizon: 5, abnormal_return: 0.021, sar: 1.6, car: 0.028 },
-      { horizon: 20, abnormal_return: 0.034, sar: 1.1, car: 0.041 },
+      { horizon: 1, raw_return: 0.021, benchmark_return: 0.006, abnormal_return: 0.015, sar: 0.65, car: 0.015 },
+      { horizon: 5, raw_return: 0.044, benchmark_return: 0.019, abnormal_return: 0.025, sar: 1.6, car: 0.027 },
+      { horizon: 20, raw_return: 0.083, benchmark_return: 0.026, abnormal_return: 0.057, sar: 1.1, car: 0.06 },
     ],
+  };
+}
+
+// Unavailable readout — payload reports insufficient_data with blocking reasons
+// (the #1 / thin-cache case).  No per_horizon rows.
+function _eventStudyUnavailable(): EventStudyBlock {
+  return {
+    status: "insufficient_data",
+    primary_ticker: "TSLA",
+    benchmark: "SPY",
+    blocking_reasons: ["no_cached_prices_for_primary_ticker", "missing_forward_cache_5d"],
   };
 }
 
@@ -107,10 +125,12 @@ function _horizons(): HorizonCheckpoints {
   };
 }
 
+const strip = (h: string) => h.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
 const fullHtml = renderToStaticMarkup(
   <EventDossier event={_event()} eventStudy={_eventStudy()} horizons={_horizons()} />,
 );
-const fullVisible = fullHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const fullVisible = strip(fullHtml);
 
 // ---------------------------------------------------------------------------
 // Full payload — all ten professional-reader items
@@ -138,14 +158,14 @@ describe("EventDossier — full payload renders the ten reader items (R5A)", () 
     expect(fullVisible).toContain("New export limits cut seaborne crude flows.");
   });
   it("6 · realized 1d / 5d / 20d move", () => {
-    expect(fullVisible).toMatch(/\+3\.1%/); // XLE 5d 0.031
-    expect(fullVisible).toMatch(/-1\.1%/);  // USO 5d -0.011
+    expect(fullVisible).toMatch(/\+3\.1%/); // XLE 5d ticker percent
+    expect(fullVisible).toMatch(/-1\.1%/);  // USO 5d ticker percent
   });
-  it("7 · event-study AR / SAR / CAR with an n=1 caveat", () => {
+  it("7 · event-study readout with AR / CAR and the n=1 caveat", () => {
     expect(fullVisible.toLowerCase()).toContain("event-study");
     expect(fullVisible).toMatch(/\bAR\b/);
     expect(fullVisible).toMatch(/\bCAR\b/);
-    expect(fullVisible.toLowerCase()).toContain("n=1");
+    expect(fullVisible).toContain(ES_CAVEAT);
   });
   it("8 · falsifier (thesis fails if) from existing falsifies_if text", () => {
     expect(fullVisible).toContain("Thesis fails if");
@@ -162,22 +182,95 @@ describe("EventDossier — full payload renders the ten reader items (R5A)", () 
 });
 
 // ---------------------------------------------------------------------------
+// T9A — finance-native event-study readout
+// ---------------------------------------------------------------------------
+
+describe("EventDossier — finance-native event-study readout (T9A)", () => {
+  it("names the primary ticker and benchmark", () => {
+    expect(fullVisible).toContain("XLE");
+    expect(fullVisible).toContain("SPY");
+  });
+
+  it("renders the 1d / 5d / 20d horizon labels", () => {
+    expect(fullVisible).toContain("1d");
+    expect(fullVisible).toContain("5d");
+    expect(fullVisible).toContain("20d");
+  });
+
+  it("renders horizon rows in ascending order (via the distinct raw moves)", () => {
+    // raw_return 0.021 / 0.044 / 0.083 → +2.1% / +4.4% / +8.3% are unique to
+    // the event-study rows, so their order pins the row order.
+    const i1 = fullVisible.indexOf("+2.1%");
+    const i5 = fullVisible.indexOf("+4.4%");
+    const i20 = fullVisible.indexOf("+8.3%");
+    expect(i1).toBeGreaterThan(-1);
+    expect(i1).toBeLessThan(i5);
+    expect(i5).toBeLessThan(i20);
+  });
+
+  it("renders the raw move per horizon", () => {
+    expect(fullVisible).toContain("+2.1%"); // 1d raw
+    expect(fullVisible).toContain("+8.3%"); // 20d raw
+  });
+
+  it("renders the benchmark move per horizon", () => {
+    expect(fullVisible).toContain("+0.6%"); // 1d benchmark
+    expect(fullVisible).toContain("+1.9%"); // 5d benchmark
+  });
+
+  it("renders the abnormal return per horizon", () => {
+    expect(fullVisible).toContain("+1.5%"); // 1d AR
+    expect(fullVisible).toContain("+5.7%"); // 20d AR
+  });
+
+  it("renders CAR and SAR when present", () => {
+    expect(fullVisible).toContain("+6.0%"); // 20d CAR
+    expect(fullVisible).toContain("1.60");  // 5d SAR (point estimate, not percent)
+  });
+
+  it("carries the exact n=1 descriptive caveat", () => {
+    expect(fullVisible).toContain(ES_CAVEAT);
+  });
+});
+
+describe("EventDossier — event-study unavailable degrades honestly (T9A)", () => {
+  const visible = strip(
+    renderToStaticMarkup(<EventDossier event={_event()} eventStudy={_eventStudyUnavailable()} />),
+  );
+
+  it("renders a compact unavailable note", () => {
+    expect(visible.toLowerCase()).toContain("event-study readout unavailable");
+  });
+
+  it("does not render the metric readout (no legend / no n=1 readout caveat)", () => {
+    expect(visible).not.toContain("AR = raw");
+    expect(visible).not.toContain(ES_CAVEAT);
+  });
+
+  it("still shows the separate raw affected-asset tape (missingness is scoped to the event-study)", () => {
+    expect(visible).toContain("XLE");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Minimal payload — honest degradation
 // ---------------------------------------------------------------------------
 
 describe("EventDossier — missing optional fields degrade honestly (R5A)", () => {
   const minimal = _event({ validation_status_v2: undefined });
   const html = renderToStaticMarkup(<EventDossier event={minimal} />);
-  const visible = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const visible = strip(html);
 
   it("still renders the always-available items", () => {
     expect(visible).toContain("Sanctions tighten on seaborne crude exports");
     expect(visible).toContain("refiners with alternate sourcing benefit");
     expect(visible).toContain("XLE");
   });
-  it("omits the event-study section when no event-study is supplied (no fake stub)", () => {
+  it("omits the event-study section entirely when no event-study is supplied (no fake stub)", () => {
     expect(visible).not.toMatch(/\bAR\b/);
     expect(visible).not.toMatch(/\bCAR\b/);
+    expect(visible).not.toContain(ES_CAVEAT);
+    expect(visible.toLowerCase()).not.toContain("event-study readout unavailable");
   });
   it("omits the falsifier section when no horizons are supplied (no fake stub)", () => {
     expect(visible).not.toContain("Thesis fails if");
@@ -196,8 +289,8 @@ describe("EventDossier — missing optional fields degrade honestly (R5A)", () =
 // market_tickers returns arrive as PERCENT (market_check.py computes
 // (end - start) / start * 100), e.g. -2.9 means -2.9%.  The dossier must
 // render them at face value — never re-scaled by 100, which would print a
-// -290.0% move on a publicly shareable note.  (Event-study AR / CAR are
-// fractional BHAR values and keep their own ×100 formatter — pinned above.)
+// -290.0% move on a publicly shareable note.  (Event-study fields are
+// fractional and keep their own ×100 formatter — pinned above.)
 // ---------------------------------------------------------------------------
 
 describe("EventDossier — affected-asset returns are percent units (R5B)", () => {
@@ -206,8 +299,7 @@ describe("EventDossier — affected-asset returns are percent units (R5B)", () =
       _ticker({ symbol: "ZZZ", role: "beneficiary", return_1d: 1.4, return_5d: -2.9, return_20d: 7.3 }),
     ],
   });
-  const html = renderToStaticMarkup(<EventDossier event={ev} />);
-  const visible = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const visible = strip(renderToStaticMarkup(<EventDossier event={ev} />));
 
   it("renders percent returns at face value", () => {
     expect(visible).toContain("-2.9%");
@@ -221,10 +313,6 @@ describe("EventDossier — affected-asset returns are percent units (R5B)", () =
 
 // ---------------------------------------------------------------------------
 // Transmission chain — ordered prose steps (T6B-A)
-//
-// `transmission_chain` is the one real structured-ish field (ordered prose
-// steps, 48/81 scored).  The block surfaces it when present and is omitted
-// otherwise — never an empty placeholder, never a typed taxonomy or falsifier.
 // ---------------------------------------------------------------------------
 
 describe("EventDossier — transmission chain (T6B-A)", () => {
@@ -233,7 +321,6 @@ describe("EventDossier — transmission chain (T6B-A)", () => {
     "Physical supply tightens; benchmark crude firms.",
     "Refiners with alternate sourcing gain; import-reliant names carry the cost.",
   ];
-  const strip = (h: string) => h.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   const withVisible = strip(
     renderToStaticMarkup(<EventDossier event={_event({ transmission_chain: steps } as Partial<SavedEvent>)} />),
   );
@@ -275,14 +362,26 @@ describe("EventDossier — transmission chain (T6B-A)", () => {
 // Copy honesty
 // ---------------------------------------------------------------------------
 
-describe("EventDossier — no banned framing (R5A)", () => {
-  it("carries no buy / sell / trade / signal / overclaim framing", () => {
+describe("EventDossier — no banned framing (R5A / T9A)", () => {
+  it("carries no buy / sell / trade / signal / overclaim framing on the full readout", () => {
     const lc = fullVisible.toLowerCase();
     for (const w of [
       "buy", "sell", "long", "short", "alpha", "signal", "trade",
       "live trading", "proof", "proves", "confirmed", "validated",
     ]) {
       expect(lc, `banned word "${w}" in the dossier`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
+  });
+
+  it("carries no banned framing on the unavailable readout", () => {
+    const lc = strip(
+      renderToStaticMarkup(<EventDossier event={_event()} eventStudy={_eventStudyUnavailable()} />),
+    ).toLowerCase();
+    for (const w of [
+      "buy", "sell", "long", "short", "alpha", "signal", "trade",
+      "live trading", "proof", "proves", "confirmed", "validated",
+    ]) {
+      expect(lc, `banned word "${w}" in the unavailable dossier`).not.toMatch(new RegExp(`\\b${w}\\b`));
     }
   });
 });
