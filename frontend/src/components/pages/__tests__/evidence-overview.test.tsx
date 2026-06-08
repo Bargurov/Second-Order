@@ -172,6 +172,58 @@ describe("EvidenceOverview — how to read the event-study rows (U2)", () => {
   });
 });
 
+describe("EvidenceOverview — coverage repair plan, not executed (V3A)", () => {
+  it("renders the section titled as not executed", () => {
+    expect(visible).toContain("Coverage repair plan — not executed");
+  });
+
+  it("shows the current unchanged exposed-name limitation", () => {
+    expect(visible).toContain("31 / 113");   // loser/exposed coverage (unchanged)
+    expect(visible).toContain("149 / 329");  // total coverage (unchanged)
+  });
+
+  it("shows the V2A dry-run worklist", () => {
+    expect(visible).toContain("180"); // missing units
+    expect(visible).toContain("87");  // distinct symbols / est requests
+    expect(visible).toContain("171"); // fixable symbol-date windows
+    expect(visible).toContain("7,830"); // approximate cache rows
+  });
+
+  it("shows the full fixability split", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("backfill_forward");
+    expect(visible).toContain("55");
+    expect(lc).toContain("gap_fill_maybe");
+    expect(visible).toContain("53");
+    expect(lc).toContain("backfill_earlier");
+    expect(visible).toContain("44");
+    expect(lc).toContain("no_cache_backfill");
+    expect(visible).toContain("19");
+    expect(lc).toContain("alias_manual_review");
+    expect(lc).toContain("future_not_yet");
+    expect(lc).toContain("delisted_stale");
+  });
+
+  it("states the strict V2B gate", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("not executed");
+    expect(lc).toContain("confirm_paid");
+    expect(lc).toContain("db copy");
+    expect(lc).toContain("never mutated first");
+  });
+
+  it("states no coverage numbers changed", () => {
+    expect(visible.toLowerCase()).toContain("no coverage numbers above have changed");
+  });
+
+  it("states representativeness only, not significance or edge", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("representativeness");
+    expect(lc).toContain("does not create statistical significance");
+    expect(lc).toContain("edge");
+  });
+});
+
 describe("EvidenceOverview — non-claims visible (T5A)", () => {
   it("renders every standing non-claim", () => {
     const lc = visible.toLowerCase();

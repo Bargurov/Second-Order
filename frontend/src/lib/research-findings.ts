@@ -119,6 +119,40 @@ export const RESEARCH_FINDINGS = {
     ],
   },
 
+  // V3A — surfaces the V2A *dry-run* coverage repair plan (commit c77a4ec).
+  // Static snapshot of the read-only planner output: NOTHING has been
+  // executed, no coverage number above has changed, and no provider/cache
+  // write has occurred.  V2B (the actual backfill) stays gated behind a DB
+  // copy + explicit operator confirm_paid.
+  coverageRepairPlan: {
+    status: "not executed",
+    currentLoser: "31 / 113",
+    currentTotal: "149 / 329",
+    worklist: {
+      missingUnits: 180,
+      distinctSymbols: 87,
+      fixableWindows: 171,
+      estRequests: 87,
+      estCacheRows: "7,830",
+    },
+    fixability: [
+      { id: "backfill_forward", count: 55, fixable: true },
+      { id: "gap_fill_maybe", count: 53, fixable: true },
+      { id: "backfill_earlier", count: 44, fixable: true },
+      { id: "no_cache_backfill", count: 19, fixable: true },
+      { id: "alias_manual_review", count: 6, fixable: false },
+      { id: "future_not_yet", count: 2, fixable: false },
+      { id: "delisted_stale", count: 1, fixable: false },
+    ],
+    gate: [
+      "Not executed — no coverage numbers above have changed.",
+      "V2B runs against a DB copy only; the live archive is never mutated first.",
+      "V2B requires explicit operator confirm_paid=true before any provider or cache write.",
+    ],
+    nonClaim:
+      "Filling exposed-name coverage may improve representativeness of the descriptive reads. It does not create statistical significance, an edge, or a directional claim; a single-event AR stays an n = 1 descriptive point estimate.",
+  },
+
   nonClaims: [
     "Descriptive archive characterization only.",
     "Not a trading or prediction surface, and not a recommendation.",

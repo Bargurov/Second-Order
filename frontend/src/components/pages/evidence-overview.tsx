@@ -225,6 +225,65 @@ export function EvidenceOverview() {
         </CardContent>
       </Card>
 
+      {/* Coverage repair plan (V3A) — surfaces the V2A dry-run worklist.  This
+          is a read-only PLAN, not an executed repair: no coverage number above
+          changed, and V2B stays gated behind a DB copy + operator confirm_paid. */}
+      <Card className="mt-3 overflow-hidden border-[#ee7d77]/25 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Coverage repair · dry-run plan</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Coverage repair plan — not executed
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            Exposed/loser AR coverage is{" "}
+            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.currentLoser}</span>{" "}
+            and total ticker-level AR coverage is{" "}
+            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.currentTotal}</span>{" "}
+            — a coverage limitation, not a failed claim.
+          </p>
+
+          <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+            <Stat label="Missing units" value={F.coverageRepairPlan.worklist.missingUnits} />
+            <Stat label="Distinct symbols" value={F.coverageRepairPlan.worklist.distinctSymbols} />
+            <Stat label="Fixable symbol-date windows" value={F.coverageRepairPlan.worklist.fixableWindows} />
+            <Stat label="Est. provider requests" value={`~${F.coverageRepairPlan.worklist.estRequests}`} />
+            <Stat label="Est. cache rows" value={`~${F.coverageRepairPlan.worklist.estCacheRows}`} />
+          </div>
+
+          <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+            {F.coverageRepairPlan.fixability.map((f) => (
+              <li key={f.id} className="flex items-baseline justify-between gap-3 border-b border-border/30 py-1">
+                <span className="font-mono text-[12px] text-on-surface-variant/85">
+                  {f.id}
+                  <span className="ml-1.5 text-[10px] text-on-surface-variant/55">
+                    {f.fixable ? "fixable" : "not-fixable"}
+                  </span>
+                </span>
+                <span className="font-mono tabular-nums text-on-surface">{f.count}</span>
+              </li>
+            ))}
+          </ul>
+
+          <ul className="flex flex-col gap-1 border-t border-border/40 pt-2">
+            {F.coverageRepairPlan.gate.map((line) => (
+              <li
+                key={line}
+                className="flex items-start gap-1.5 text-[11px] leading-relaxed text-on-surface-variant/75"
+              >
+                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-[#ee7d77]/60" aria-hidden />
+                {line}
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-[11px] italic leading-relaxed text-on-surface-variant/70">
+            {F.coverageRepairPlan.nonClaim}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Standing non-claims */}
       <div className="mt-4 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-3">
         <Kicker>What this is not</Kicker>
