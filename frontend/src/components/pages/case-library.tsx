@@ -1,9 +1,10 @@
 /**
  * Case Library (R6B) — a guided, honest entry point.
  *
- * Five real representative archived events (one per role) that show the RANGE
- * of outcomes — strong support, contradiction, unresolved, data-limited,
- * mechanism-rich — without implying cherry-picked proof.  Each card links into
+ * Fifteen real representative archived events that show the RANGE of outcomes —
+ * strong support, contradiction, unresolved, data-limited, mechanism-rich (only
+ * three any-supporting, the rest contradictions or unresolved/data-limited) —
+ * without implying cherry-picked proof.  Each card links into
  * the existing EventDossier surface via the URL-addressable /share/:id route
  * (chosen over an in-app Archive deep-link, which would need a fetch-by-id path
  * since Archive resolves the detail only from its currently-loaded page).

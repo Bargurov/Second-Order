@@ -47,8 +47,9 @@ the days after the event.
 
 1. **Market Overview** (the landing page) — read the market backdrop, recent
    event activity, and the *Track record & evidence* framing.
-2. **Case Library** (Research nav) — five representative cases, one per outcome
-   type, with the denominator anchor and the standing non-claims on the page.
+2. **Case Library** (Research nav) — fifteen representative cases (only three
+   any-supporting; the rest contradictions or unresolved / data-limited reads),
+   with the denominator anchor and the standing non-claims on the page.
 3. **Open #105 — OPEC output cuts** (strong support): the in-app Archive / Event
    Detail dossier, where the tape agreed with the thesis direction across several
    legs.
@@ -68,7 +69,9 @@ the days after the event.
 
 - **EventDossier** — the shared research note for one event; it leads both the
   Share page and the Archive / Event Detail view.
-- **Case Library** — a guided, representative entry point (five real cases).
+- **Case Library** — a guided, representative entry point (fifteen real cases;
+  only three any-supporting, the rest contradictions or unresolved / data-limited
+  reads).
 - **Archive / Event Detail** — the full in-app dossier, including the scored
   outcome (`validation_status_v2`) when the archive row carries it.
 - **Share page (`/share/:id`)** — the same dossier, shell-free for linking; it
