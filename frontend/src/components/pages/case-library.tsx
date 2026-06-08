@@ -60,6 +60,10 @@ function CaseCard({ c, onOpenCase }: { c: CuratedCase; onOpenCase?: (eventId: nu
             {c.roleLabel}
           </span>
           <span className="font-mono text-[10px] tabular-nums text-on-surface-variant/45">#{c.eventId}</span>
+          {/* Deterministic mechanism family (family_inference), not a typed extraction. */}
+          <span className="rounded border border-border/60 bg-surface-container px-1.5 py-0.5 font-mono text-[9.5px] text-on-surface-variant/70">
+            {c.family}
+          </span>
           {!c.rawReturnsAvailable && (
             <Badge variant="outline" className="ml-auto text-[9.5px] font-normal text-on-surface-variant/70">
               Event-study readout carries the read

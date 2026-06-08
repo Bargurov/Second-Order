@@ -99,6 +99,26 @@ describe("CaseLibrary — no banned framing across the whole page (R6B)", () => 
   });
 });
 
+describe("CaseLibrary — mechanism-family label per case (T7B-A)", () => {
+  it("renders each case's deterministic mechanism family", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("commodity_squeeze"); // 105, 29
+    expect(lc).toContain("tariff");            // 240, 238
+    expect(lc).toContain("sanction");          // 300
+  });
+});
+
+describe("CURATED_CASES registry — mechanism family field (T7B-A)", () => {
+  it("carries the deterministic effective family for every case", () => {
+    const byId = Object.fromEntries(CURATED_CASES.map((c) => [c.eventId, c.family]));
+    expect(byId[105]).toBe("commodity_squeeze");
+    expect(byId[29]).toBe("commodity_squeeze");
+    expect(byId[240]).toBe("tariff");
+    expect(byId[300]).toBe("sanction");
+    expect(byId[238]).toBe("tariff");
+  });
+});
+
 describe("CURATED_CASES registry — integrity + cherry-pick guard (R6B)", () => {
   it("contains exactly the five approved, unique event ids", () => {
     const ids = CURATED_CASES.map((c) => c.eventId);

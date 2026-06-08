@@ -27,6 +27,8 @@ export type CaseRole =
 export interface CuratedCase {
   /** Archive event id — the card links to /share/{eventId}. */
   eventId: number;
+  /** Deterministic effective mechanism family (family_inference.resolve_effective_family). */
+  family: string;
   role: CaseRole;
   /** Human-facing role label shown on the card. */
   roleLabel: string;
@@ -53,6 +55,7 @@ export interface CuratedCase {
 export const CURATED_CASES: CuratedCase[] = [
   {
     eventId: 105,
+    family: "commodity_squeeze",
     role: "strong-support",
     roleLabel: "Strong support",
     headline: "OPEC extends voluntary oil output cuts through next quarter",
@@ -70,6 +73,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 29,
+    family: "commodity_squeeze",
     role: "contradiction",
     roleLabel: "Contradiction",
     headline: "Iran threatens to 'completely' close the Strait of Hormuz",
@@ -86,6 +90,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 240,
+    family: "tariff",
     role: "unresolved",
     roleLabel: "Unresolved",
     headline: "GM raises 2026 guidance amid a $500M tariff refund",
@@ -101,6 +106,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 300,
+    family: "sanction",
     role: "data-limited",
     roleLabel: "Data-limited",
     headline: "US license requirement on NVIDIA A100/H100 exports to China",
@@ -118,6 +124,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 238,
+    family: "tariff",
     role: "mechanism-rich",
     roleLabel: "Mechanism-rich",
     headline: "China scraps tariffs on 53 African nations",

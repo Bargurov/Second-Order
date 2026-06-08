@@ -157,6 +157,36 @@ export function EvidenceOverview() {
         </Card>
       </div>
 
+      {/* Mechanism families — deterministic inference (T7B-A) */}
+      <Card className="mt-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Mechanism families · deterministic inference</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Mechanism-family grouping
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            <span className="font-mono tabular-nums text-on-surface">
+              {F.mechanismFamilies.nonNone} / {F.mechanismFamilies.scoredTotal}
+            </span>{" "}
+            scored events carry a deterministic family.
+          </p>
+          <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+            {F.mechanismFamilies.families.map((fam) => (
+              <li key={fam.id} className="flex items-baseline justify-between gap-3 border-b border-border/30 py-1">
+                <span className="font-mono text-[12px] text-on-surface-variant/85">
+                  {fam.id}{fam.id === "none" ? " / unclassified" : ""}
+                </span>
+                <span className="font-mono tabular-nums text-on-surface">{fam.count}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] italic text-on-surface-variant/70">{F.mechanismFamilies.label}</p>
+          <p className="text-[11px] italic text-on-surface-variant/70">{F.mechanismFamilies.caveat}</p>
+        </CardContent>
+      </Card>
+
       {/* Standing non-claims */}
       <div className="mt-4 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-3">
         <Kicker>What this is not</Kicker>

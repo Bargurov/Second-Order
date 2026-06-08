@@ -69,6 +69,26 @@ export const RESEARCH_FINDINGS = {
       "Repair requires a separate price-cache backfill with operator approval for network/provider calls and DB/cache writes.",
   },
 
+  mechanismFamilies: {
+    scoredTotal: 81,
+    nonNone: 57,
+    none: 24,
+    label:
+      "Deterministic mechanism-family inference — keyword/asset based, not paid structured extraction.",
+    caveat:
+      "This is a family grouping, not a first/second-order channel taxonomy or falsifier layer.",
+    families: [
+      { id: "commodity_squeeze", count: 26 },
+      { id: "tariff", count: 13 },
+      { id: "sanction", count: 9 },
+      { id: "supply_shock", count: 3 },
+      { id: "industrial_policy", count: 3 },
+      { id: "ceasefire_deescalation", count: 2 },
+      { id: "policy_surprise", count: 1 },
+      { id: "none", count: 24 },
+    ],
+  },
+
   nonClaims: [
     "Descriptive archive characterization only.",
     "Not a trading or prediction surface, and not a recommendation.",

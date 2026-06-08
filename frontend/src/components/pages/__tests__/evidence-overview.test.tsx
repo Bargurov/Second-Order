@@ -93,6 +93,35 @@ describe("EvidenceOverview — T4A coverage limitation (T5A)", () => {
   });
 });
 
+describe("EvidenceOverview — mechanism-family breakdown (T7B-A)", () => {
+  it("renders the deterministic scored family distribution", () => {
+    expect(visible).toContain("57"); // non-none of 81
+    expect(visible.toLowerCase()).toContain("commodity_squeeze");
+    expect(visible).toContain("26");
+    expect(visible.toLowerCase()).toContain("tariff");
+    expect(visible).toContain("13");
+    expect(visible.toLowerCase()).toContain("sanction");
+    expect(visible).toContain("9");
+    expect(visible.toLowerCase()).toContain("supply_shock");
+    expect(visible.toLowerCase()).toContain("industrial_policy");
+    expect(visible.toLowerCase()).toContain("ceasefire_deescalation");
+    expect(visible.toLowerCase()).toContain("policy_surprise");
+  });
+
+  it("shows the none / unclassified count honestly", () => {
+    expect(visible.toLowerCase()).toContain("none");
+    expect(visible).toContain("24");
+  });
+
+  it("labels it as deterministic inference, not paid extraction", () => {
+    expect(visible).toContain("Deterministic mechanism-family inference — keyword/asset based, not paid structured extraction.");
+  });
+
+  it("caveats that it is a grouping, not a channel taxonomy or falsifier layer", () => {
+    expect(visible).toContain("This is a family grouping, not a first/second-order channel taxonomy or falsifier layer.");
+  });
+});
+
 describe("EvidenceOverview — non-claims visible (T5A)", () => {
   it("renders every standing non-claim", () => {
     const lc = visible.toLowerCase();
