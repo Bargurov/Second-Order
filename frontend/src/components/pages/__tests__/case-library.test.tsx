@@ -196,10 +196,10 @@ describe("CaseLibrary — per-case evidence density (W1A)", () => {
     }
   });
 
-  it("surfaces an event-study availability cue (available + unavailable)", () => {
+  it("surfaces an event-study availability cue (all available after V2C)", () => {
     const lc = visible.toLowerCase();
     expect(lc).toContain("event-study: available");
-    expect(lc).toContain("event-study: unavailable");
+    expect(lc).not.toContain("event-study: unavailable");
   });
 
   it("renders each case's deterministic mechanism family cue", () => {
@@ -234,12 +234,10 @@ describe("CaseLibrary — per-case evidence density (W1A)", () => {
   });
 });
 
-describe("CURATED_CASES registry — event-study availability flag (W1A)", () => {
-  it("flags exactly the ES-unavailable case (#1) and marks the rest available", () => {
-    const byId = Object.fromEntries(CURATED_CASES.map((c) => [c.eventId, c.eventStudyAvailable]));
-    expect(byId[1]).toBe(false);
+describe("CURATED_CASES registry — event-study availability flag (V2D)", () => {
+  it("marks all 15 cases event-study-available after the V2C coverage repair", () => {
     for (const c of CURATED_CASES) {
-      if (c.eventId !== 1) expect(c.eventStudyAvailable, `#${c.eventId} ES`).toBe(true);
+      expect(c.eventStudyAvailable, `#${c.eventId} ES`).toBe(true);
     }
   });
 });

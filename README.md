@@ -90,8 +90,15 @@ empty, so re-run the read-only reports for live figures.
   excluding one source-anchored `curated_intake` stub).
 - **81 market-scored** (events carrying scored market data): **19 any-supporting
   · 35 contradicted · 27 unresolved**.
-- **71 archive-ready** and **71 event-study compute-ready** (per-horizon point
-  estimates computable vs SPY).
+- **78 archive-ready** and **78 event-study compute-ready** (per-horizon point
+  estimates computable vs SPY; both lifted **71 → 78** by the 2026-06-09 V2C
+  exposed-name coverage backfill — see the dated note below).
+- **Exposed-name AR coverage** (multi-ticker, vs SPY): after the V2C backfill,
+  beneficiary **197 / 216**, exposed/loser **95 / 113**, total **292 / 329**
+  (was 118 / 216, 31 / 113, 149 / 329). The baseline conclusion is **unchanged
+  but now coverage-credible**: `not_above_baseline` / no robust above-baseline
+  directional skill. The temporal-clustering ceiling (≈90% one 2-month window)
+  is not lifted by coverage repair.
 
 Denominators differ by gate and data availability, and the gates are **not
 pooled**. The closed Phase 1 and Phase 2 FDR pools (five rows each) are a
@@ -198,15 +205,15 @@ so the earlier "every compute-ready event is on matched *adjusted* basis"
 no longer holds — but no row mixes flags, so no splice caveat applies.
 
 Current verified counts from
-`python scripts/stat_validation_readiness_report.py --json --limit 0` (2026-06-08):
+`python scripts/stat_validation_readiness_report.py --json --limit 0`
+(refreshed 2026-06-09 after the V2C exposed-name coverage backfill):
 
 - total archive events: 165
-- archive-ready events: 71
-- event-study compute-ready events: 71 (was 62 after the Batch-1 coverage
-  repair documented below, and 44 before it; +8 from the Phase-K
-  `curated_observation` promotions, and +1 as #280's 20-day forward bar has
-  since printed)
-- matched-basis events: 71
+- archive-ready events: 78
+- event-study compute-ready events: 78 (was 71 on 2026-06-08, lifted by the
+  2026-06-09 V2C exposed-name coverage backfill; earlier 62 after Batch-1 and
+  44 before it; +8 from the Phase-K `curated_observation` promotions)
+- matched-basis events: 78
 - cross-flag caveats: 0
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
@@ -411,7 +418,9 @@ primary ticker and are insufficient — none is compute-ready.
 **Real duplicates: 27 rows across 12 headlines (15 redundant copies).** Even
 within the 94 real rows, the same genuine headline is sometimes analysed on
 multiple dates (e.g. "AP News: OPEC members discuss extending output cuts" ×4),
-so the 70 compute-ready *rows* are only **60 distinct events**. Duplicates
+so, as of the 2026-06-08 Batch-1 snapshot, the 70 compute-ready *rows* were
+only **60 distinct events** (the 2026-06-09 V2C backfill later lifted
+compute-ready to 78). Duplicates
 barely move the coverage *ratio* (the redundancy nearly cancels between
 numerator and denominator); their real cost is to the independent-observation
 count any cohort claim would need.

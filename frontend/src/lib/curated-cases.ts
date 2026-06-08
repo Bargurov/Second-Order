@@ -183,7 +183,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 1,
-    eventStudyAvailable: false,
+    eventStudyAvailable: true,
     family: "tariff",
     role: "strong-support",
     roleLabel: "Strong support",
@@ -193,12 +193,12 @@ export const CURATED_CASES: CuratedCase[] = [
     outcome:
       "Any-supporting, but thin — agreement on the single directional name captured (ratio 1.00 on one tagged ticker).",
     eventStudyNote:
-      "Event-study readout unavailable; the raw event-window returns carry the read — the inverse of the unresolved tariff cases.",
+      "Event-study readout available (vs SPY, n = 1) — its names were backfilled by the V2C coverage repair.",
     whySelected:
-      "The inverse-missingness case: raw returns present but no event-study, the opposite gap from the unresolved tariff cases.",
-    demonstrates: "Missingness cuts both ways; each card labels which read is carrying the case.",
-    doesNotProve: "One directional name with no benchmark-adjusted read is the thinnest of the supporting cases.",
-    caveat: "Single tagged name; event-study unavailable; descriptive read at n = 1.",
+      "A non-oil tariff read scored any-supporting on a single directional name; the V2C coverage repair backfilled its names, so it now also carries an event-study readout.",
+    demonstrates: "A thin single-name read that the coverage repair made event-study-readable.",
+    doesNotProve: "One directional name is still the thinnest of the supporting cases; an event-study readout does not make it generalisable.",
+    caveat: "Single tagged name; descriptive read at n = 1.",
     rawReturnsAvailable: true,
   },
   {

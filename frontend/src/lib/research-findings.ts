@@ -19,8 +19,8 @@ export const RESEARCH_FINDINGS = {
     anySupporting: 19,
     contradicted: 35,
     unresolved: 27,
-    eventStudyAvailable: 71,
-    eventStudyUnavailable: 10,
+    eventStudyAvailable: 78,
+    eventStudyUnavailable: 3,
   },
 
   t2aBaseline: {
@@ -34,39 +34,39 @@ export const RESEARCH_FINDINGS = {
 
   t2bPrimary: {
     benchmark: "SPY",
-    eligiblePerHorizon: 63,
-    support: { "1d": "0.508", "5d": "0.206", "20d": "0.222" } as Record<string, string>,
+    eligiblePerHorizon: 70,
+    support: { "1d": "0.500", "5d": "0.214", "20d": "0.200" } as Record<string, string>,
     reliability: "not reliable — degenerate null",
     reason:
       "The primary-ticker event-study is degenerate because the eligible primaries are all beneficiaries (predicted-up marginal 1.00), so the permutation null has nothing to shuffle.",
   },
 
   t3aMulti: {
-    eligibleObs: 149,
-    eligibleEvents: 69,
-    predictedUpMarginal: "0.792",
+    eligibleObs: 292,
+    eligibleEvents: 72,
+    predictedUpMarginal: "0.675",
     verdict: "Mixed — no consistent above-baseline result across horizons",
-    reliability: "Reliable but thin (exposed-name coverage is the binding constraint)",
+    reliability: "Reliable — exposed-name coverage repaired (V2C); no longer thin",
     horizons: [
-      { h: "1d", support: "0.524", nullMean: "0.440", ci: "[0.376, 0.510]" },
-      { h: "5d", support: "0.302", nullMean: "0.358", ci: "[0.302, 0.409]" },
-      { h: "20d", support: "0.356", nullMean: "0.326", ci: "[0.275, 0.383]" },
+      { h: "1d", support: "0.531", nullMean: "0.455", ci: "[0.401, 0.503]" },
+      { h: "5d", support: "0.339", nullMean: "0.422", ci: "[0.373, 0.469]" },
+      { h: "20d", support: "0.397", nullMean: "0.399", ci: "[0.356, 0.438]" },
     ],
     interpretation:
-      "Multi-ticker AR fixes the degeneracy, but does not show robust above-baseline directional skill: the 1d result does not hold at 5d / 20d.",
+      "Multi-ticker AR fixes the degeneracy on now-repaired coverage, but still shows no robust above-baseline directional skill: the 1d result does not hold at 5d / 20d.",
   },
 
   t4aCoverage: {
-    beneficiary: "118 / 216",
-    beneficiaryPct: "54.6%",
-    loser: "31 / 113",
-    loserPct: "27.4%",
-    total: "149 / 329",
-    totalPct: "45.3%",
+    beneficiary: "197 / 216",
+    beneficiaryPct: "91.2%",
+    loser: "95 / 113",
+    loserPct: "84.1%",
+    total: "292 / 329",
+    totalPct: "88.8%",
     limitation:
-      "The exposed-name side is thin because cached price history and forward bars are missing, not because of a simple alias or code fix.",
+      "Exposed-name coverage was repaired by an additive price-cache backfill (V2C); the residual gap is delisted / proxy-alias / holiday, not a fixable cache hole.",
     repairBoundary:
-      "Repair requires a separate price-cache backfill with operator approval for network/provider calls and DB/cache writes.",
+      "Repair executed: V2C promoted 8,538 additive price-cache rows into live (operator-approved daily-close provider); only price_cache changed.",
   },
 
   mechanismFamilies: {
@@ -119,38 +119,34 @@ export const RESEARCH_FINDINGS = {
     ],
   },
 
-  // V3A — surfaces the V2A *dry-run* coverage repair plan (commit c77a4ec).
-  // Static snapshot of the read-only planner output: NOTHING has been
-  // executed, no coverage number above has changed, and no provider/cache
-  // write has occurred.  V2B (the actual backfill) stays gated behind a DB
-  // copy + explicit operator confirm_paid.
+  // V2C — the V2A worklist was EXECUTED and promoted to live (the V2B gated
+  // backfill ran on a DB copy; V2C promoted the additive price-cache rows into
+  // live after operator approval).  Live coverage now reflects the repair; the
+  // numbers below are the residual (still-missing) worklist on live.
   coverageRepairPlan: {
-    status: "not executed",
-    currentLoser: "31 / 113",
-    currentTotal: "149 / 329",
-    worklist: {
-      missingUnits: 180,
-      distinctSymbols: 87,
-      fixableWindows: 171,
-      estRequests: 87,
-      estCacheRows: "7,830",
+    status: "executed",
+    rowsInserted: "8,538",
+    liveLoser: "95 / 113",
+    liveTotal: "292 / 329",
+    remaining: {
+      units: 37,
+      distinctSymbols: 26,
+      windows: 28,
     },
     fixability: [
-      { id: "backfill_forward", count: 55, fixable: true },
-      { id: "gap_fill_maybe", count: 53, fixable: true },
-      { id: "backfill_earlier", count: 44, fixable: true },
-      { id: "no_cache_backfill", count: 19, fixable: true },
+      { id: "gap_fill_maybe", count: 18, fixable: true },
+      { id: "no_cache_backfill", count: 10, fixable: true },
       { id: "alias_manual_review", count: 6, fixable: false },
       { id: "future_not_yet", count: 2, fixable: false },
       { id: "delisted_stale", count: 1, fixable: false },
     ],
-    gate: [
-      "Not executed — no coverage numbers above have changed.",
-      "V2B runs against a DB copy only; the live archive is never mutated first.",
-      "V2B requires explicit operator confirm_paid=true before any provider or cache write.",
+    notes: [
+      "Executed via the V2C operator-approved promotion: +8,538 additive price-cache rows copied into live; only price_cache changed (events and other tables unchanged).",
+      "Daily-close provider only; no existing live row was overwritten (48 existing-key value differences were kept as-is).",
+      "Residual missingness is delisted / proxy-alias / residual gaps — not a simple backfill.",
     ],
     nonClaim:
-      "Filling exposed-name coverage may improve representativeness of the descriptive reads. It does not create statistical significance, an edge, or a directional claim; a single-event AR stays an n = 1 descriptive point estimate.",
+      "The repair improves coverage / representativeness only. It does not create statistical significance, an edge, or a directional claim; a single-event AR stays an n = 1 descriptive point estimate. The temporal-clustering ceiling — the corpus is ~90% one 2-month window — is NOT lifted by coverage repair.",
   },
 
   nonClaims: [

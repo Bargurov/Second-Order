@@ -31,8 +31,7 @@ describe("EvidenceOverview — title + purpose + corpus snapshot (T5A)", () => {
     expect(visible).toContain("19");  // any-supporting
     expect(visible).toContain("35");  // contradicted
     expect(visible).toContain("27");  // unresolved
-    expect(visible).toContain("71");  // event-study available
-    expect(visible).toContain("10");  // event-study unavailable
+    expect(visible).toContain("78");  // event-study available (post-V2C: 71 -> 78)
   });
 });
 
@@ -48,31 +47,31 @@ describe("EvidenceOverview — T2A baseline (T5A)", () => {
 describe("EvidenceOverview — T2B primary-only AR-sign (T5A)", () => {
   it("renders the SPY/63 figures and the degenerate-null explanation", () => {
     expect(visible).toContain("SPY");
-    expect(visible).toContain("63");
-    expect(visible).toContain("0.508");
-    expect(visible).toContain("0.206");
-    expect(visible).toContain("0.222");
+    expect(visible).toContain("70");
+    expect(visible).toContain("0.500");
+    expect(visible).toContain("0.214");
+    expect(visible).toContain("0.200");
     expect(visible.toLowerCase()).toContain("degenerate");
     expect(visible.toLowerCase()).toContain("all beneficiaries");
   });
 });
 
 describe("EvidenceOverview — T3A multi-ticker AR (T5A)", () => {
-  it("renders the headline figures and the reliable-but-thin status", () => {
-    expect(visible).toContain("149");
-    expect(visible).toContain("69");
-    expect(visible).toContain("0.792");
-    expect(visible.toLowerCase()).toContain("reliable but thin");
+  it("renders the post-V2C headline figures and the no-longer-thin status", () => {
+    expect(visible).toContain("292");
+    expect(visible).toContain("72");
+    expect(visible).toContain("0.675");
+    expect(visible.toLowerCase()).toContain("no longer thin");
   });
 
-  it("renders the per-horizon support-vs-null table", () => {
-    expect(visible).toContain("0.524");
-    expect(visible).toContain("0.440");
-    expect(visible).toContain("[0.376, 0.510]");
-    expect(visible).toContain("0.302");
-    expect(visible).toContain("0.358");
-    expect(visible).toContain("0.356");
-    expect(visible).toContain("0.326");
+  it("renders the per-horizon support-vs-null table (promoted-live)", () => {
+    expect(visible).toContain("0.531");
+    expect(visible).toContain("0.455");
+    expect(visible).toContain("[0.401, 0.503]");
+    expect(visible).toContain("0.339");
+    expect(visible).toContain("0.422");
+    expect(visible).toContain("0.397");
+    expect(visible).toContain("0.399");
   });
 
   it("states the mixed result honestly without claiming a 1d discovery", () => {
@@ -81,15 +80,15 @@ describe("EvidenceOverview — T3A multi-ticker AR (T5A)", () => {
 });
 
 describe("EvidenceOverview — T4A coverage limitation (T5A)", () => {
-  it("renders the coverage figures and the repair boundary", () => {
-    expect(visible).toContain("118 / 216");
-    expect(visible).toContain("54.6%");
-    expect(visible).toContain("31 / 113");
-    expect(visible).toContain("27.4%");
-    expect(visible).toContain("149 / 329");
-    expect(visible).toContain("45.3%");
-    expect(visible.toLowerCase()).toContain("price-cache backfill");
-    expect(visible.toLowerCase()).toContain("operator approval");
+  it("renders the promoted-live coverage figures and the repaired boundary", () => {
+    expect(visible).toContain("197 / 216");
+    expect(visible).toContain("91.2%");
+    expect(visible).toContain("95 / 113");
+    expect(visible).toContain("84.1%");
+    expect(visible).toContain("292 / 329");
+    expect(visible).toContain("88.8%");
+    expect(visible.toLowerCase()).toContain("repaired");
+    expect(visible.toLowerCase()).toContain("additive");
   });
 });
 
@@ -172,55 +171,45 @@ describe("EvidenceOverview — how to read the event-study rows (U2)", () => {
   });
 });
 
-describe("EvidenceOverview — coverage repair plan, not executed (V3A)", () => {
-  it("renders the section titled as not executed", () => {
-    expect(visible).toContain("Coverage repair plan — not executed");
+describe("EvidenceOverview — coverage repair executed (V2C)", () => {
+  it("renders the section titled as executed", () => {
+    expect(visible).toContain("Coverage repair — executed");
   });
 
-  it("shows the current unchanged exposed-name limitation", () => {
-    expect(visible).toContain("31 / 113");   // loser/exposed coverage (unchanged)
-    expect(visible).toContain("149 / 329");  // total coverage (unchanged)
+  it("shows the promoted-live coverage and the rows inserted", () => {
+    expect(visible).toContain("95 / 113");   // loser/exposed coverage (now)
+    expect(visible).toContain("292 / 329");  // total coverage (now)
+    expect(visible).toContain("8,538");      // additive rows promoted into live
   });
 
-  it("shows the V2A dry-run worklist", () => {
-    expect(visible).toContain("180"); // missing units
-    expect(visible).toContain("87");  // distinct symbols / est requests
-    expect(visible).toContain("171"); // fixable symbol-date windows
-    expect(visible).toContain("7,830"); // approximate cache rows
+  it("shows the residual (still-missing) worklist", () => {
+    expect(visible).toContain("37"); // remaining missing units
+    expect(visible).toContain("26"); // remaining distinct symbols
+    expect(visible).toContain("28"); // remaining windows
   });
 
-  it("shows the full fixability split", () => {
+  it("shows the residual fixability split", () => {
     const lc = visible.toLowerCase();
-    expect(lc).toContain("backfill_forward");
-    expect(visible).toContain("55");
     expect(lc).toContain("gap_fill_maybe");
-    expect(visible).toContain("53");
-    expect(lc).toContain("backfill_earlier");
-    expect(visible).toContain("44");
     expect(lc).toContain("no_cache_backfill");
-    expect(visible).toContain("19");
     expect(lc).toContain("alias_manual_review");
     expect(lc).toContain("future_not_yet");
     expect(lc).toContain("delisted_stale");
   });
 
-  it("states the strict V2B gate", () => {
+  it("states the additive, price_cache-only promotion", () => {
     const lc = visible.toLowerCase();
-    expect(lc).toContain("not executed");
-    expect(lc).toContain("confirm_paid");
-    expect(lc).toContain("db copy");
-    expect(lc).toContain("never mutated first");
+    expect(lc).toContain("executed");
+    expect(lc).toContain("additive");
+    expect(lc).toContain("only price_cache");
   });
 
-  it("states no coverage numbers changed", () => {
-    expect(visible.toLowerCase()).toContain("no coverage numbers above have changed");
-  });
-
-  it("states representativeness only, not significance or edge", () => {
+  it("states the conclusion is unchanged and the clustering ceiling is not lifted", () => {
     const lc = visible.toLowerCase();
     expect(lc).toContain("representativeness");
     expect(lc).toContain("does not create statistical significance");
     expect(lc).toContain("edge");
+    expect(lc).toContain("clustering");
   });
 });
 

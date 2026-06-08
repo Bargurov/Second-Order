@@ -140,9 +140,9 @@ export function EvidenceOverview() {
         {/* T4A coverage limitation — full width */}
         <Card className="overflow-hidden border-[#ee7d77]/25 bg-surface-container-low lg:col-span-2">
           <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
-            <Kicker>T4A · coverage limitation</Kicker>
+            <Kicker>T4A · coverage (repaired)</Kicker>
             <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
-              Exposed-name AR coverage is the binding constraint
+              Exposed-name AR coverage — repaired (V2C)
             </h2>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
@@ -225,31 +225,32 @@ export function EvidenceOverview() {
         </CardContent>
       </Card>
 
-      {/* Coverage repair plan (V3A) — surfaces the V2A dry-run worklist.  This
-          is a read-only PLAN, not an executed repair: no coverage number above
-          changed, and V2B stays gated behind a DB copy + operator confirm_paid. */}
-      <Card className="mt-3 overflow-hidden border-[#ee7d77]/25 bg-surface-container-low">
+      {/* Coverage repair — EXECUTED (V2C).  The V2A worklist was backfilled on a
+          DB copy and the additive price-cache rows were promoted into live after
+          operator approval.  The figures below are the residual (still-missing)
+          worklist; the live coverage above already reflects the repair. */}
+      <Card className="mt-3 overflow-hidden border-border/50 bg-surface-container-low">
         <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
-          <Kicker>Coverage repair · dry-run plan</Kicker>
+          <Kicker>Coverage repair · executed</Kicker>
           <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
-            Coverage repair plan — not executed
+            Coverage repair — executed (V2C)
           </h2>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
           <p className="text-on-surface-variant/80">
-            Exposed/loser AR coverage is{" "}
-            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.currentLoser}</span>{" "}
+            Live exposed/loser AR coverage is now{" "}
+            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.liveLoser}</span>{" "}
             and total ticker-level AR coverage is{" "}
-            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.currentTotal}</span>{" "}
-            — a coverage limitation, not a failed claim.
+            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.liveTotal}</span>{" "}
+            after promoting{" "}
+            <span className="font-mono tabular-nums text-on-surface">{F.coverageRepairPlan.rowsInserted}</span>{" "}
+            additive price-cache rows into live.
           </p>
 
-          <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-            <Stat label="Missing units" value={F.coverageRepairPlan.worklist.missingUnits} />
-            <Stat label="Distinct symbols" value={F.coverageRepairPlan.worklist.distinctSymbols} />
-            <Stat label="Fixable symbol-date windows" value={F.coverageRepairPlan.worklist.fixableWindows} />
-            <Stat label="Est. provider requests" value={`~${F.coverageRepairPlan.worklist.estRequests}`} />
-            <Stat label="Est. cache rows" value={`~${F.coverageRepairPlan.worklist.estCacheRows}`} />
+          <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+            <Stat label="Residual missing units" value={F.coverageRepairPlan.remaining.units} />
+            <Stat label="Residual distinct symbols" value={F.coverageRepairPlan.remaining.distinctSymbols} />
+            <Stat label="Residual windows" value={F.coverageRepairPlan.remaining.windows} />
           </div>
 
           <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
@@ -267,12 +268,12 @@ export function EvidenceOverview() {
           </ul>
 
           <ul className="flex flex-col gap-1 border-t border-border/40 pt-2">
-            {F.coverageRepairPlan.gate.map((line) => (
+            {F.coverageRepairPlan.notes.map((line) => (
               <li
                 key={line}
                 className="flex items-start gap-1.5 text-[11px] leading-relaxed text-on-surface-variant/75"
               >
-                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-[#ee7d77]/60" aria-hidden />
+                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-on-surface-variant/40" aria-hidden />
                 {line}
               </li>
             ))}
