@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from stats.baseline_characterization import (  # noqa: E402
     build_baseline_characterization,
     build_ar_sign_report,
+    build_multi_ticker_ar_report,
     event_study_split,
 )
 
@@ -56,13 +57,27 @@ def build_report(db_path: str, *, seed: int, n_sims: int) -> dict:
     events = _load_events_readonly(db_path)
     payload = build_baseline_characterization(events, seed=seed, n_sims=n_sims)
     try:
-        from event_study_validation import build_event_study_validation
+        from event_study_validation import build_event_study_validation, event_study_ar_for_symbol
         payload["event_study_split"] = event_study_split(events, build_event_study_validation)
         payload["ar_sign_disentangler"] = build_ar_sign_report(
             events, build_event_study_validation, seed=seed, n_sims=n_sims)
+
+        # Memoise the per-symbol AR so the three horizons reuse one read per
+        # (symbol, event_date) instead of recomputing the event-study three times.
+        _ar_cache: dict = {}
+
+        def _ar_fn(symbol, event_date):
+            key = (str(symbol).upper(), event_date)
+            if key not in _ar_cache:
+                _ar_cache[key] = event_study_ar_for_symbol(symbol, event_date)
+            return _ar_cache[key]
+
+        payload["multi_ticker_ar"] = build_multi_ticker_ar_report(
+            events, _ar_fn, seed=seed, n_sims=n_sims)
     except Exception as exc:  # pragma: no cover - defensive; report still ships
         payload["event_study_split"] = {"error": f"event-study split unavailable: {exc}"}
         payload["ar_sign_disentangler"] = {"error": f"AR-sign disentangler unavailable: {exc}"}
+        payload["multi_ticker_ar"] = {"error": f"multi-ticker AR unavailable: {exc}"}
     return payload
 
 
@@ -107,6 +122,20 @@ def main() -> int:
             print(f"    {h}d: eligible {hd['eligible']} | support {hd['observed_support_fraction']} "
                   f"| predicted-up {hd['predicted_up_fraction']} | AR-up {hd['ar_up_fraction']} "
                   f"| reliable {hd['reliable']}")
+    mt = report.get("multi_ticker_ar") or {}
+    if "horizons" in mt:
+        cov = mt["coverage"]
+        print(f"  multi-ticker AR (vs {mt['benchmark']}): {mt['interpretation']} "
+              f"| reliable={mt['reliable']} thin={mt['reliable_but_thin']}")
+        print(f"    coverage: beneficiary {cov['beneficiary_ar']}/{cov['beneficiary_slots']} "
+              f"({cov['beneficiary_coverage']}), loser {cov['loser_ar']}/{cov['loser_slots']} "
+              f"({cov['loser_coverage']})")
+        for h in ("1", "5", "20"):
+            hd = mt["horizons"][h]
+            tl = hd["ticker_level"]
+            print(f"    {h}d: obs {hd['eligible_ticker_obs']} | pred-up {hd['predicted_up_fraction']} "
+                  f"| support {tl['observed_support_fraction']} vs null {tl['null_support_rate_mean']} "
+                  f"{tl['null_support_rate_ci95']} | dir {tl['direction_vs_null']}")
     print("  non-claims:")
     for nc in report["non_claims"]:
         print(f"    - {nc}")

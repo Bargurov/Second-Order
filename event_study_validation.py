@@ -411,8 +411,26 @@ def build_event_study_validation(event: dict) -> dict[str, Any]:
     )
 
 
+def event_study_ar_for_symbol(symbol: str, event_date: Any) -> dict[str, Any]:
+    """Read-only per-horizon abnormal return for ONE arbitrary symbol vs SPY.
+
+    An argument adapter (not synthetic data): it computes a real ticker's real
+    abnormal return on a real event date by running the existing primary-ticker
+    gate with ``symbol`` placed as the sole/primary ticker.  Same output shape,
+    same read-only price-cache access — no DB write, no provider, no network.
+    Lets the T3 multi-ticker baseline score every affected name, not only the
+    first one.
+    """
+    if not isinstance(symbol, str) or not symbol.strip():
+        return _insufficient(_base({}, None), ["no_primary_ticker"])
+    return build_event_study_validation(
+        {"event_date": event_date, "market_tickers": [{"symbol": symbol.strip()}]}
+    )
+
+
 __all__ = (
     "build_event_study_validation",
+    "event_study_ar_for_symbol",
     "BENCHMARK_TICKER",
     "ESTIMATION_WINDOW",
     "HORIZONS",

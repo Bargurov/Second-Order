@@ -344,6 +344,282 @@ def build_ar_sign_report(events: Any, event_study_fn, *, seed: int = 20260608, n
     }
 
 
+# ---------------------------------------------------------------------------
+# T3A — multi-ticker AR-sign (all affected names, not only the primary)
+#
+# T2B degenerated because the event-study scored only the primary ticker (always
+# a beneficiary => predicted-up marginal 1.0).  Here ``ar_fn(symbol, event_date)``
+# returns an abnormal-return block for ANY affected ticker, so exposed/loser
+# names enter the sample and the marginal-preserving null becomes usable.  Read
+# the result PER HORIZON and judge consistency across horizons — a sign that
+# flips with horizon is the signature of no stable effect, not a discovery.
+# ---------------------------------------------------------------------------
+
+_MULTI_MIN_ELIGIBLE = 20
+_MULTI_MIN_MINORITY = 10
+_MULTI_MIN_COVERAGE = 0.40
+
+
+def multi_ticker_ar_observations(event: Any, ar_fn, horizon: int) -> list[tuple[bool, bool]]:
+    """``(predicted_up, ar_up)`` for every affected beneficiary/loser ticker.
+
+    ``ar_fn(symbol, event_date)`` returns the gated event-study block for that
+    symbol.  Predicted direction is from role; realized direction is the
+    abnormal-return sign at ``horizon``.  Missing / NaN / exactly-zero AR, a
+    non-beneficiary/loser role, or a duplicate symbol is excluded.
+    """
+    out: list[tuple[bool, bool]] = []
+    if not isinstance(event, dict):
+        return out
+    tickers = event.get("market_tickers")
+    if not isinstance(tickers, list):
+        return out
+    event_date = event.get("event_date")
+    seen: set[str] = set()
+    for t in tickers:
+        if not isinstance(t, dict):
+            continue
+        role = t.get("role")
+        role = role.strip().lower() if isinstance(role, str) else ""
+        sym = t.get("symbol")
+        sym = sym.strip() if isinstance(sym, str) else ""
+        if role not in ("beneficiary", "loser") or not sym or sym.upper() in seen:
+            continue
+        seen.add(sym.upper())
+        try:
+            block = ar_fn(sym, event_date) or {}
+        except Exception:
+            continue
+        if block.get("status") != "event_study_available":
+            continue
+        ar = None
+        for h in block.get("per_horizon") or []:
+            if isinstance(h, dict) and h.get("horizon") == horizon:
+                ar = h.get("abnormal_return")
+                break
+        try:
+            ar = float(ar)
+        except (TypeError, ValueError):
+            continue
+        if ar != ar or ar == 0.0:
+            continue
+        out.append((role == "beneficiary", ar > 0.0))
+    return out
+
+
+def event_level_ar_status(observations: list) -> str:
+    """``any_supporting`` (>=1 supporting ticker) / ``contradicted`` (directional
+    tickers but none supporting) / ``unresolved`` (no eligible observation)."""
+    if not observations:
+        return "unresolved"
+    supporting = sum(1 for p, u in observations if p == u)
+    return "any_supporting" if supporting >= 1 else "contradicted"
+
+
+def build_multi_ticker_ar_characterization(
+    events: Any,
+    ar_fn,
+    *,
+    horizon: int,
+    seed: int = 20260608,
+    n_sims: int = 2000,
+) -> dict:
+    """One-horizon multi-ticker AR-sign characterization (ticker- and event-level)."""
+    n_sims = int(max(1, n_sims))
+    total_events = 0
+    per_event_obs: list[list[tuple[bool, bool]]] = []
+    pred: list[bool] = []
+    real: list[bool] = []
+    member: list[int] = []
+    ben_slots = los_slots = 0
+
+    for ev in events if isinstance(events, list) else []:
+        tickers = ev.get("market_tickers") if isinstance(ev, dict) else None
+        if not isinstance(tickers, list) or len(tickers) == 0:
+            continue
+        total_events += 1
+        seen: set[str] = set()
+        for t in tickers:
+            if not isinstance(t, dict):
+                continue
+            role = t.get("role")
+            role = role.strip().lower() if isinstance(role, str) else ""
+            sym = t.get("symbol")
+            sym = sym.strip().upper() if isinstance(sym, str) else ""
+            if role not in ("beneficiary", "loser") or not sym or sym in seen:
+                continue
+            seen.add(sym)
+            if role == "beneficiary":
+                ben_slots += 1
+            else:
+                los_slots += 1
+        obs = multi_ticker_ar_observations(ev, ar_fn, horizon)
+        if obs:
+            idx = len(per_event_obs)
+            per_event_obs.append(obs)
+            for p, u in obs:
+                pred.append(p)
+                real.append(u)
+                member.append(idx)
+
+    D = len(pred)
+    ben_ar = sum(1 for p in pred if p)
+    los_ar = D - ben_ar
+    a = (ben_ar / D) if D else 0.0
+    b = (sum(1 for u in real if u) / D) if D else 0.0
+    supporting = sum(1 for p, u in zip(pred, real) if p == u)
+    support_frac = (supporting / D) if D else 0.0
+
+    eligible_events = len(per_event_obs)
+    any_sup = sum(1 for o in per_event_obs if event_level_ar_status(o) == "any_supporting")
+    contra = sum(1 for o in per_event_obs if event_level_ar_status(o) == "contradicted")
+    unresolved = total_events - eligible_events
+
+    rng = random.Random(seed)
+    sup_rate_dist: list[float] = []
+    any_sup_dist: list[int] = []
+    for _ in range(n_sims):
+        perm = pred[:]
+        rng.shuffle(perm)
+        bits = [1 if perm[i] == real[i] else 0 for i in range(D)]
+        sup_rate_dist.append((sum(bits) / D) if D else 0.0)
+        per_ev = [0] * eligible_events
+        for i in range(D):
+            per_ev[member[i]] += bits[i]
+        any_sup_dist.append(sum(1 for j in range(eligible_events) if per_ev[j] >= 1))
+
+    def _stats(dist):
+        if not dist:
+            return 0.0, 0.0, 0.0
+        ordered = sorted(dist)
+
+        def pc(p):
+            k = int(round(p * (len(ordered) - 1)))
+            return float(ordered[max(0, min(len(ordered) - 1, k))])
+
+        return sum(dist) / len(dist), pc(0.025), pc(0.975)
+
+    sr_mean, sr_lo, sr_hi = _stats(sup_rate_dist)
+    as_mean, as_lo, as_hi = _stats(any_sup_dist)
+
+    reliable = D >= _MULTI_MIN_ELIGIBLE and 0.0 < a < 1.0
+    # Thin / selection-biased minority — by count OR by low AR coverage of
+    # either role (the binding constraint is usually exposed-name coverage).
+    ben_cov = (ben_ar / ben_slots) if ben_slots else None
+    los_cov = (los_ar / los_slots) if los_slots else None
+    covs = [c for c in (ben_cov, los_cov) if c is not None]
+    thin_minority = (
+        min(ben_ar, los_ar) < _MULTI_MIN_MINORITY
+        or (bool(covs) and min(covs) < _MULTI_MIN_COVERAGE)
+    )
+    direction = 1 if support_frac > sr_hi else (-1 if support_frac < sr_lo else 0)
+
+    return {
+        "horizon": horizon,
+        "benchmark": "SPY",
+        "total_events": total_events,
+        "eligible_events": eligible_events,
+        "eligible_ticker_obs": D,
+        "coverage": {
+            "beneficiary_slots": ben_slots, "beneficiary_ar": ben_ar,
+            "loser_slots": los_slots, "loser_ar": los_ar,
+            "beneficiary_coverage": round(ben_ar / ben_slots, 4) if ben_slots else None,
+            "loser_coverage": round(los_ar / los_slots, 4) if los_slots else None,
+        },
+        "predicted_up_fraction": round(a, 4),
+        "ar_up_fraction": round(b, 4),
+        "observed_support_fraction": round(support_frac, 4),
+        "ticker_level": {
+            "observed_support_fraction": round(support_frac, 4),
+            "null_support_rate_mean": round(sr_mean, 4),
+            "null_support_rate_ci95": [round(sr_lo, 4), round(sr_hi, 4)],
+            "observed_minus_null": round(support_frac - sr_mean, 4),
+            "direction_vs_null": direction,
+        },
+        "event_level": {
+            "any_supporting": any_sup,
+            "contradicted": contra,
+            "unresolved": unresolved,
+            "observed_any_supporting": any_sup,
+            "null_any_supporting_mean": round(as_mean, 4),
+            "null_any_supporting_ci95": [as_lo, as_hi],
+            "observed_above_null_ci95": bool(any_sup > as_hi),
+            "rule": "any_supporting = >=1 supporting ticker (more lenient than T2A's majority rule; not comparable to T2A event counts)",
+        },
+        "reliable": bool(reliable),
+        "thin_minority": bool(thin_minority),
+    }
+
+
+def build_multi_ticker_ar_report(events: Any, ar_fn, *, seed: int = 20260608, n_sims: int = 2000) -> dict:
+    """All three horizons + a consistency-based top-line verdict and non-claims."""
+    horizons = {
+        str(h): build_multi_ticker_ar_characterization(events, ar_fn, horizon=h, seed=seed, n_sims=n_sims)
+        for h in (1, 5, 20)
+    }
+    reliables = [h["reliable"] for h in horizons.values()]
+    thins = [h["thin_minority"] for h in horizons.values()]
+    signs = [horizons[k]["ticker_level"]["direction_vs_null"] for k in ("1", "5", "20")]
+
+    if not any(reliables):
+        interpretation = "not_reliable"
+    elif all(s == 1 for s in signs):
+        interpretation = "above_baseline"
+    elif len(set(signs)) > 1:
+        interpretation = "mixed_no_consistent_signal"
+    else:
+        interpretation = "not_above_baseline"
+
+    return {
+        "schema": "multi_ticker_ar.v1",
+        "benchmark": "SPY",
+        "horizons": horizons,
+        "coverage": horizons["1"]["coverage"],
+        "reliable": bool(any(reliables)),
+        "reliable_but_thin": bool(any(reliables) and all(thins)),
+        "interpretation": interpretation,
+        "comparison_to_t2a_t2b": (
+            "T2A (raw direction, all directional tickers, majority rule) found the corpus "
+            "indistinguishable from its null. T2B (benchmark-adjusted, primary ticker only) was "
+            "unusable — degenerate null (predicted-up = 1.0). T3A scores benchmark-adjusted "
+            "abnormal returns for ALL affected beneficiary and exposed names, making the "
+            "predicted-direction marginal non-degenerate (~0.8) and the permutation null usable. "
+            "The only cross-comparable statistic is the TICKER-LEVEL support fraction vs its own "
+            "permutation null; the event-level '>=1 supporting' rule is more lenient than T2A's "
+            "majority and its event counts are NOT comparable across tasks. Across horizons the "
+            "observed-vs-null sign is not consistent — no robust above-baseline signal, consistent "
+            "with T2."
+        ),
+        "limitations": [
+            "Coverage asymmetry is the binding constraint: beneficiary names are far better "
+            "AR-covered than exposed names, so the minority that breaks degeneracy rests on a "
+            "thin, selection-biased set (reliable_but_thin).",
+            "Observations are not independent — multiple tickers share an event and events are "
+            "date-clustered with overlapping windows (see stats/METHODOLOGY.md 'Cohort inference "
+            "— currently blocked'); the permutation CI is descriptive, not an inferential test.",
+            "Single-event AR signs are n=1 point estimates; a support sign that flips across "
+            "1d / 5d / 20d indicates no stable effect, not a horizon-specific discovery.",
+            "The event-level '>=1 supporting' rule is more lenient than T2A's majority rule, so "
+            "its event counts must not be compared to T2A's.",
+        ],
+        "falsifier": (
+            "The multi-ticker null is only a usable skill test while BOTH roles are adequately "
+            "AR-covered on an independent event set. With thin, selection-biased exposed-name "
+            "coverage and date-clustered events, any single-horizon gap from the null is "
+            "descriptive and must not be read as edge. The minimum bar to revisit is a consistent, "
+            "same-sign above-null result across all three horizons on an independent, "
+            "balanced-coverage sample."
+        ),
+        "non_claims": [
+            "Descriptive characterization of the local archive only.",
+            "Not a trading signal and not a measure of edge.",
+            "Single-event AR signs are n=1 point estimates, not a statistical-significance test.",
+            "Events are date-clustered / not independent.",
+            "Separate from the closed Phase 1 / Phase 2 FDR pools; no pool q-values are used or implied.",
+        ],
+    }
+
+
 def build_baseline_characterization(
     events: Any,
     *,

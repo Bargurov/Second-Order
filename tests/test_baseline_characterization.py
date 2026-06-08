@@ -30,6 +30,10 @@ from stats.baseline_characterization import (
     ar_sign_observation,
     build_ar_sign_characterization,
     build_ar_sign_report,
+    multi_ticker_ar_observations,
+    event_level_ar_status,
+    build_multi_ticker_ar_characterization,
+    build_multi_ticker_ar_report,
 )
 
 
@@ -238,6 +242,143 @@ class TestArSignReport(unittest.TestCase):
         self.assertEqual(rep["benchmark"], "SPY")
         self.assertTrue(rep["non_claims"])
         self.assertTrue(rep["falsifier"].strip())
+
+
+# ---------------------------------------------------------------------------
+# T3A — multi-ticker AR-sign (all affected tickers, not only the primary)
+# ---------------------------------------------------------------------------
+
+
+def _ev_multi(role_specs, event_date="2026-01-01"):
+    # role_specs: list of (symbol, role)
+    return {"id": 1, "event_date": event_date, "mechanism_summary": "m",
+            "market_tickers": [{"symbol": s, "role": r, "direction_tag": "supports"} for s, r in role_specs]}
+
+
+def _fake_ar_fn(ar_by_symbol):
+    """Injected AR fn: symbol -> abnormal return (same at all horizons); missing => insufficient."""
+    def fn(symbol, event_date):
+        key = symbol.upper()
+        if key in ar_by_symbol:
+            ar = ar_by_symbol[key]
+            return {"status": "event_study_available", "primary_ticker": key,
+                    "per_horizon": [{"horizon": h, "abnormal_return": ar} for h in (1, 5, 20)]}
+        return {"status": "insufficient_data", "blocking_reasons": ["no_cached_prices_for_primary_ticker"]}
+    return fn
+
+
+class TestMultiTickerArMapping(unittest.TestCase):
+    def test_collects_all_affected_tickers_with_ar(self):
+        ev = _ev_multi([("AAA", "beneficiary"), ("BBB", "loser")])
+        fn = _fake_ar_fn({"AAA": 0.02, "BBB": -0.01})  # both support
+        self.assertEqual(multi_ticker_ar_observations(ev, fn, 1), [(True, True), (False, False)])
+
+    def test_excludes_tickers_without_ar_or_with_zero_ar(self):
+        ev = _ev_multi([("AAA", "beneficiary"), ("BBB", "loser"), ("CCC", "beneficiary")])
+        fn = _fake_ar_fn({"AAA": 0.02, "BBB": 0.0})  # BBB zero, CCC missing
+        self.assertEqual(multi_ticker_ar_observations(ev, fn, 1), [(True, True)])
+
+    def test_excludes_non_beneficiary_loser_roles(self):
+        ev = _ev_multi([("AAA", "primary"), ("BBB", "loser")])
+        fn = _fake_ar_fn({"AAA": 0.02, "BBB": -0.01})
+        self.assertEqual(multi_ticker_ar_observations(ev, fn, 1), [(False, False)])
+
+
+class TestEventLevelArStatus(unittest.TestCase):
+    def test_any_supporting_requires_at_least_one_support(self):
+        self.assertEqual(event_level_ar_status([(True, False), (False, False)]), "any_supporting")  # 2nd supports
+
+    def test_contradicted_requires_directional_tickers_but_no_support(self):
+        self.assertEqual(event_level_ar_status([(True, False), (False, True)]), "contradicted")
+
+    def test_no_observations_is_unresolved(self):
+        self.assertEqual(event_level_ar_status([]), "unresolved")
+
+
+class TestMultiTickerArCharacterization(unittest.TestCase):
+    def _events(self, n_ben, n_los, ar):
+        evs = []
+        amap = {}
+        for i in range(n_ben):
+            sym = f"B{i}"; evs.append(_ev_multi([(sym, "beneficiary")])); amap[sym] = ar
+        for i in range(n_los):
+            sym = f"L{i}"; evs.append(_ev_multi([(sym, "loser")])); amap[sym] = ar
+        return evs, _fake_ar_fn(amap)
+
+    def test_mixed_roles_make_marginal_non_degenerate_and_reliable(self):
+        evs, fn = self._events(12, 12, 0.01)  # a = 0.5
+        res = build_multi_ticker_ar_characterization(evs, fn, horizon=1, seed=1, n_sims=200)
+        self.assertGreater(res["predicted_up_fraction"], 0.0)
+        self.assertLess(res["predicted_up_fraction"], 1.0)
+        self.assertTrue(res["reliable"])
+
+    def test_all_beneficiary_is_degenerate_not_reliable(self):
+        evs, fn = self._events(12, 0, 0.01)  # a = 1.0
+        res = build_multi_ticker_ar_characterization(evs, fn, horizon=1, seed=1, n_sims=200)
+        self.assertEqual(res["predicted_up_fraction"], 1.0)
+        self.assertFalse(res["reliable"])
+
+    def test_thin_loser_minority_is_flagged_by_count(self):
+        evs, fn = self._events(40, 3, 0.01)  # only 3 loser obs
+        res = build_multi_ticker_ar_characterization(evs, fn, horizon=1, seed=1, n_sims=200)
+        self.assertTrue(res["thin_minority"])
+
+    def test_thin_minority_is_flagged_by_low_coverage_even_when_count_is_adequate(self):
+        # 20 beneficiary events (all AR), 30 loser events but only 11 have AR ->
+        # loser count 11 (>=10) yet loser coverage 11/30 = 0.37 (< 0.40) -> thin.
+        evs = []
+        amap = {}
+        for i in range(20):
+            s = f"B{i}"; evs.append(_ev_multi([(s, "beneficiary")])); amap[s] = 0.01
+        for i in range(30):
+            s = f"L{i}"; evs.append(_ev_multi([(s, "loser")]))
+            if i < 11:
+                amap[s] = -0.01  # only 11 losers have AR
+        res = build_multi_ticker_ar_characterization(evs, _fake_ar_fn(amap), horizon=1, seed=1, n_sims=100)
+        self.assertGreaterEqual(res["coverage"]["loser_ar"], 10)
+        self.assertLess(res["coverage"]["loser_coverage"], 0.40)
+        self.assertTrue(res["thin_minority"])
+
+    def test_deterministic_with_fixed_seed(self):
+        evs, fn = self._events(8, 8, 0.02)
+        r1 = build_multi_ticker_ar_characterization(evs, fn, horizon=1, seed=5, n_sims=300)
+        r2 = build_multi_ticker_ar_characterization(evs, fn, horizon=1, seed=5, n_sims=300)
+        self.assertEqual(r1["ticker_level"], r2["ticker_level"])
+        self.assertEqual(r1["event_level"], r2["event_level"])
+
+    def test_unresolved_events_not_dropped_from_event_totals(self):
+        # one event whose ticker has no AR -> unresolved, must still be counted.
+        evs = [_ev_multi([("AAA", "beneficiary")]), _ev_multi([("ZZZ", "loser")])]
+        fn = _fake_ar_fn({"AAA": 0.02})  # ZZZ missing
+        res = build_multi_ticker_ar_characterization(evs, fn, horizon=1, seed=1, n_sims=50)
+        ev = res["event_level"]
+        self.assertEqual(ev["any_supporting"] + ev["contradicted"] + ev["unresolved"], res["total_events"])
+        self.assertEqual(ev["unresolved"], 1)
+
+
+class TestMultiTickerArReport(unittest.TestCase):
+    def test_report_top_line_is_mixed_when_horizon_signs_flip(self):
+        # AR positive at 1d (beneficiaries support), negative at 5d/20d -> sign flip.
+        def fn(symbol, event_date):
+            ar = {"1": 0.02, "5": -0.02, "20": 0.02}
+            return {"status": "event_study_available", "primary_ticker": symbol.upper(),
+                    "per_horizon": [{"horizon": int(h), "abnormal_return": a} for h, a in ar.items()]}
+        evs = [_ev_multi([(f"B{i}", "beneficiary"), (f"L{i}", "loser")]) for i in range(12)]
+        rep = build_multi_ticker_ar_report(evs, fn, seed=1, n_sims=200)
+        self.assertEqual(set(rep["horizons"].keys()), {"1", "5", "20"})
+        self.assertIn(rep["interpretation"], ("mixed_no_consistent_signal", "not_above_baseline", "not_reliable"))
+        self.assertNotEqual(rep["interpretation"], "above_baseline")
+        self.assertTrue(rep["non_claims"])
+        self.assertTrue(rep["falsifier"].strip())
+        self.assertIn("coverage", rep)
+
+
+class TestEventStudyArForSymbolWrapper(unittest.TestCase):
+    def test_delegates_with_symbol_as_primary(self):
+        from event_study_validation import event_study_ar_for_symbol
+        block = event_study_ar_for_symbol("ZZZZNOPE", "2026-01-01")
+        self.assertEqual(block.get("primary_ticker"), "ZZZZNOPE")
+        self.assertIn("status", block)
 
 
 class TestT2ARawBaselineUnchanged(unittest.TestCase):
