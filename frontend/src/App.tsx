@@ -9,6 +9,7 @@ import { InboxWorkbench } from "@/components/pages/inbox-workbench";
 import { AnalysisView } from "@/components/pages/analysis-view";
 import { RecentEvents } from "@/components/pages/recent-events";
 import { CaseLibrary } from "@/components/pages/case-library";
+import { EvidenceOverview } from "@/components/pages/evidence-overview";
 import { Backtest } from "@/components/pages/backtest";
 import { PortfolioPage } from "@/components/pages/portfolio-page";
 import { SectionCDemo } from "@/components/pages/section-c-demo";
@@ -178,6 +179,7 @@ export default function App() {
                     />
                   )}
                   {page === "cases" && <CaseLibrary onOpenCase={openCase} />}
+                  {page === "evidence" && <EvidenceOverview />}
                   {page === "backtest" && <Backtest />}
                   {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
                   {page === "demo" && <SectionCDemo />}

@@ -7,6 +7,7 @@ import {
   Target,
   BookOpen,
   Library,
+  ClipboardList,
   LayoutGrid,
 } from "lucide-react";
 import type { Page } from "./sidebar";
@@ -22,6 +23,7 @@ const TABS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "headlines", label: "Headlines", icon: Newspaper },
   { id: "analyze",   label: "Analyze",   icon: FlaskConical },
   { id: "cases",     label: "Case Library", icon: Library },
+  { id: "evidence",  label: "Evidence Overview", icon: ClipboardList },
   { id: "events",    label: "Archive",   icon: Clock },
   { id: "backtest",  label: "Backtest",  icon: Target },
   { id: "demo",      label: "Section C Demo", icon: LayoutGrid },

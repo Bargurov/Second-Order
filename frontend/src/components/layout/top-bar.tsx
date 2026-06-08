@@ -18,9 +18,10 @@ const PAGE_META: Record<Page, { group: string; title: string }> = {
   portfolio: { group: "Workspace", title: "Portfolio"      },
   headlines: { group: "Workspace", title: "Headlines"      },
   analyze:   { group: "Workspace", title: "Analyze"        },
-  events:    { group: "Research",  title: "Archive"        },
-  cases:     { group: "Research",  title: "Case Library"   },
-  backtest:  { group: "Research",  title: "Backtest"       },
+  events:    { group: "Research",  title: "Archive"          },
+  cases:     { group: "Research",  title: "Case Library"     },
+  evidence:  { group: "Research",  title: "Evidence Overview" },
+  backtest:  { group: "Research",  title: "Backtest"         },
   demo:      { group: "Demo",      title: "Section C Demo" },
 };
 
