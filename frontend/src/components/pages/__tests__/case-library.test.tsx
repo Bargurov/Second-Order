@@ -188,3 +188,58 @@ describe("CaseLibrary — no banned framing across the whole page (T8B)", () => 
     }
   });
 });
+
+describe("CaseLibrary — per-case evidence density (W1A)", () => {
+  it("surfaces a compact research-read line for every case", () => {
+    for (const c of CURATED_CASES) {
+      expect(visible, `read line for #${c.eventId}`).toContain(c.demonstrates);
+    }
+  });
+
+  it("surfaces an event-study availability cue (available + unavailable)", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("event-study: available");
+    expect(lc).toContain("event-study: unavailable");
+  });
+
+  it("renders each case's deterministic mechanism family cue", () => {
+    for (const c of CURATED_CASES) {
+      expect(visible, `family cue for #${c.eventId}`).toContain(c.family);
+    }
+  });
+
+  it("renders each case's outcome/role label cue", () => {
+    for (const c of CURATED_CASES) {
+      expect(visible, `role cue for #${c.eventId}`).toContain(c.roleLabel);
+    }
+  });
+
+  it("keeps the 15 / 81 / 166 denominator visible", () => {
+    expect(visible).toContain("15 representative cases drawn from 81 market-scored events of 166 saved.");
+  });
+
+  it("states the cases are illustrative, not a validation pool", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("illustrative");
+    expect(lc).toContain("not a validation pool");
+    expect(lc).toContain("3/15");
+    expect(lc).toContain("do not replace the corpus-level denominators");
+  });
+
+  it("keeps contradiction, unresolved, and data-limited cases first-class/visible", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("contradiction");
+    expect(lc).toContain("unresolved");
+    expect(lc).toContain("data-limited");
+  });
+});
+
+describe("CURATED_CASES registry — event-study availability flag (W1A)", () => {
+  it("flags exactly the ES-unavailable case (#1) and marks the rest available", () => {
+    const byId = Object.fromEntries(CURATED_CASES.map((c) => [c.eventId, c.eventStudyAvailable]));
+    expect(byId[1]).toBe(false);
+    for (const c of CURATED_CASES) {
+      if (c.eventId !== 1) expect(c.eventStudyAvailable, `#${c.eventId} ES`).toBe(true);
+    }
+  });
+});

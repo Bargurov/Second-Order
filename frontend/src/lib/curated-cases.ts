@@ -38,6 +38,8 @@ export type CaseRole =
 export interface CuratedCase {
   /** Archive event id — the card links to /share/{eventId}. */
   eventId: number;
+  /** True when GET /events/{id}/event-study returns event_study_available. */
+  eventStudyAvailable: boolean;
   /** Deterministic effective mechanism family (family_inference.resolve_effective_family). */
   family: string;
   role: CaseRole;
@@ -69,6 +71,7 @@ export const CURATED_CASES: CuratedCase[] = [
   // ── commodity_squeeze (4) — oil capped at 5/15 by theme (incl. #72) ──────────
   {
     eventId: 105,
+    eventStudyAvailable: true,
     family: "commodity_squeeze",
     role: "strong-support",
     roleLabel: "Strong support",
@@ -87,6 +90,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 29,
+    eventStudyAvailable: true,
     family: "commodity_squeeze",
     role: "contradiction",
     roleLabel: "Contradiction",
@@ -104,6 +108,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 85,
+    eventStudyAvailable: true,
     family: "commodity_squeeze",
     role: "contradiction",
     roleLabel: "Contradiction",
@@ -122,6 +127,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 215,
+    eventStudyAvailable: true,
     family: "commodity_squeeze",
     role: "unresolved",
     roleLabel: "Unresolved",
@@ -140,6 +146,7 @@ export const CURATED_CASES: CuratedCase[] = [
   // ── supply_shock (1) — oil-refining in this corpus, disclosed ────────────────
   {
     eventId: 72,
+    eventStudyAvailable: true,
     family: "supply_shock",
     role: "contradiction",
     roleLabel: "Contradiction",
@@ -159,6 +166,7 @@ export const CURATED_CASES: CuratedCase[] = [
   // ── tariff (6) — the largest non-oil family in the slate ─────────────────────
   {
     eventId: 84,
+    eventStudyAvailable: true,
     family: "tariff",
     role: "strong-support",
     roleLabel: "Strong support",
@@ -175,6 +183,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 1,
+    eventStudyAvailable: false,
     family: "tariff",
     role: "strong-support",
     roleLabel: "Strong support",
@@ -194,6 +203,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 94,
+    eventStudyAvailable: true,
     family: "tariff",
     role: "contradiction",
     roleLabel: "Contradiction",
@@ -212,6 +222,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 80,
+    eventStudyAvailable: true,
     family: "tariff",
     role: "contradiction",
     roleLabel: "Contradiction",
@@ -228,6 +239,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 240,
+    eventStudyAvailable: true,
     family: "tariff",
     role: "unresolved",
     roleLabel: "Unresolved",
@@ -244,6 +256,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 238,
+    eventStudyAvailable: true,
     family: "tariff",
     role: "mechanism-rich",
     roleLabel: "Mechanism-rich",
@@ -262,6 +275,7 @@ export const CURATED_CASES: CuratedCase[] = [
   // ── sanction (2) ─────────────────────────────────────────────────────────────
   {
     eventId: 300,
+    eventStudyAvailable: true,
     family: "sanction",
     role: "data-limited",
     roleLabel: "Data-limited",
@@ -280,6 +294,7 @@ export const CURATED_CASES: CuratedCase[] = [
   },
   {
     eventId: 211,
+    eventStudyAvailable: true,
     family: "sanction",
     role: "unresolved",
     roleLabel: "Unresolved",
@@ -297,6 +312,7 @@ export const CURATED_CASES: CuratedCase[] = [
   // ── policy_surprise (1) — monetary, the only one in the corpus ───────────────
   {
     eventId: 239,
+    eventStudyAvailable: true,
     family: "policy_surprise",
     role: "unresolved",
     roleLabel: "Unresolved",
@@ -315,6 +331,7 @@ export const CURATED_CASES: CuratedCase[] = [
   // ── ceasefire_deescalation (1) — irreducibly thin, flagged ───────────────────
   {
     eventId: 214,
+    eventStudyAvailable: true,
     family: "ceasefire_deescalation",
     role: "unresolved",
     roleLabel: "Unresolved",

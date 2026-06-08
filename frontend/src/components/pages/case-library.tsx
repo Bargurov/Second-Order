@@ -36,6 +36,7 @@ const NON_CLAIMS = [
   "Each case is a descriptive event-window read at n = 1, not benchmark-adjusted significance.",
   "Not exhaustive; denominators differ by gate and data availability.",
   "Separate from the closed Phase 1 / Phase 2 FDR pools; no pooled denominator is implied.",
+  "Illustrative reads, not a validation pool — only 3/15 are any-supporting, and representative cases do not replace the corpus-level denominators above.",
 ];
 
 function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
@@ -65,6 +66,17 @@ function CaseCard({ c, onOpenCase }: { c: CuratedCase; onOpenCase?: (eventId: nu
           <span className="rounded border border-border/60 bg-surface-container px-1.5 py-0.5 font-mono text-[9.5px] text-on-surface-variant/70">
             {c.family}
           </span>
+          {/* Event-study availability cue (W1A) — coral when unavailable. */}
+          <span
+            className={cn(
+              "rounded border px-1.5 py-0.5 font-mono text-[9.5px]",
+              c.eventStudyAvailable
+                ? "border-border/60 bg-surface-container text-on-surface-variant/70"
+                : "border-[#ee7d77]/30 bg-[#ee7d77]/[0.07] text-[#ee7d77]",
+            )}
+          >
+            event-study: {c.eventStudyAvailable ? "available" : "unavailable"}
+          </span>
           {!c.rawReturnsAvailable && (
             <Badge variant="outline" className="ml-auto text-[9.5px] font-normal text-on-surface-variant/70">
               Event-study readout carries the read
@@ -83,6 +95,8 @@ function CaseCard({ c, onOpenCase }: { c: CuratedCase; onOpenCase?: (eventId: nu
         </button>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-3">
+        {/* Compact research-read — what this case shows (W1A). */}
+        <p className="text-[12px] font-medium leading-relaxed text-on-surface/90">{c.demonstrates}</p>
         <p className="text-[12.5px] leading-relaxed text-on-surface/80">{c.mechanism}</p>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
