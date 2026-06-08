@@ -131,17 +131,21 @@ export function CaseLibrary({ onOpenCase }: { onOpenCase?: (eventId: number) => 
           Case Library
         </h1>
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-on-surface-variant/85">
-          A guided, five-case walkthrough of representative real events — how the same method reads strong
-          support, contradiction, unresolved, data-limited, and mechanism-rich cases.
+          A guided, fifteen-case walkthrough of representative real events spanning the range of
+          outcomes and mechanisms. Only three of the fifteen are any-supporting; the rest are
+          contradictions or unresolved / data-limited reads.
         </p>
 
-        {/* Denominator anchor + outcome split */}
+        {/* Denominator anchor + corpus split + slate mix (anti-cherry-pick) */}
         <div className="mt-3 flex flex-col gap-1 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-2.5">
           <p className="text-[12px] font-medium text-on-surface/85">
-            5 representative cases drawn from 81 market-scored events of 166 saved.
+            15 representative cases drawn from 81 market-scored events of 166 saved.
           </p>
           <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
             19 any-supporting · 35 contradicted · 27 unresolved.
+          </p>
+          <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/60">
+            This slate: 3 any-supporting · 5 contradicted · 7 unresolved (incl. 1 data-limited, 1 mechanism-rich) · 5 of 15 oil/energy by theme.
           </p>
         </div>
 
