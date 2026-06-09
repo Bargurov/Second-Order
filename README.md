@@ -220,21 +220,31 @@ so the earlier "every compute-ready event is on matched *adjusted* basis"
 no longer holds — but no row mixes flags, so no splice caveat applies.
 
 Readiness-report counts from
-`python scripts/stat_validation_readiness_report.py --json --limit 0`, **as of
-the 2026-06-09 readiness run** (after the V2C exposed-name coverage backfill).
-This is the event-study **coverage** lens — a data-coverage gate that does NOT
-apply the AP3b `event_hygiene` synthetic-seed exclusion; for the accepted-corpus
-denominators (180 saved / 86 track-record / 94 coverage) see the restatement at
-the top of "The funnel" above. Re-run the command for live figures (the archive
-has since grown; this readiness section is itself due a refresh):
+`python scripts/stat_validation_readiness_report.py --json --limit 0`, refreshed
+**2026-06-10**. This is the event-study **coverage / readiness lens** — a
+data-coverage gate (does the engine have enough cached history to score a row),
+**distinct from the accepted-corpus denominators**. Two cautions:
 
-- total archive events: 165
-- archive-ready events: 78
-- event-study compute-ready events: 78 (was 71 on 2026-06-08, lifted by the
-  2026-06-09 V2C exposed-name coverage backfill; earlier 62 after Batch-1 and
-  44 before it; +8 from the Phase-K `curated_observation` promotions)
-- matched-basis events: 78
-- cross-flag caveats: 0
+- It does **NOT** apply the AP3b `event_hygiene` synthetic-seed exclusion: it is a
+  raw coverage scan over every stage and still counts the 71 flagged seed rows and
+  the staged candidates. For the honesty-critical accepted-corpus numbers (180
+  saved / 86 track-record / 94 coverage) see the restatement at the top of "The
+  funnel" above; the synthetic-**excluding** coverage figure (94) comes from
+  `scripts/event_study_coverage_report.py`, not from this report.
+- Its fields and counts drift with every coverage repair, so re-run the command
+  for live figures rather than trusting any number frozen here.
+
+Current run (2026-06-10):
+
+- events scanned: **179** (all stages except the 1 source-anchored `curated_intake` stub)
+- with a primary ticker: **95**
+- event-study compute-ready (per-horizon SAR/CAR computable): **91**
+- missing benchmark proxy: **2**; insufficient estimation window: **87**
+
+(Earlier runs reported fewer compute-ready rows — 78 after the 2026-06-09 V2C
+exposed-name backfill, 71 on 2026-06-08, 62 after Batch-1, 44 before it — those
+are dated snapshots, not current. A future cleanup could wire this report to the
+same `event_hygiene` lens the accepted-corpus denominators use.)
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
 mean cohort-level statistical inference is available for a single
@@ -376,7 +386,14 @@ rate; the one failure (#280) stays on the record.
 > `scripts/data_hygiene_report.py`. The live readiness counts above were
 > refreshed 2026-06-08 (event-study compute-ready 70 → 71, as #280's 20-day
 > forward bar has since printed); re-run the report for current figures. The
-> denominator *policy* below is unchanged.
+> denominator *policy* described below is the **pre-AP3b** approach (report
+> against the full 165 first, keeping the seed/test contamination visible).
+> **AP3b (2026-06-09) superseded it:** the 71 synthetic seeds are now flagged in
+> `event_hygiene` and excluded by default, so the live accepted-corpus
+> denominators are **86** (track-record) and **94** (coverage) — the "94 real
+> rows" below is that coverage figure. The **157** thesis figure below is the
+> pre-AP3b 166-archive arithmetic; the current thesis / track-record total is
+> **86**. See the restatement at the top of "The funnel".
 
 `scripts/data_hygiene_report.py` is the read-only, reproducible **source of
 truth** for which archive rows are genuine research events and which are
