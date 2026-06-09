@@ -4,9 +4,12 @@
  *
  * Fifteen real, representative archived events, selected in T8A to show the
  * RANGE of outcomes a reviewer should expect — not a best-of and not proof.
- * The slate is contradiction-led to mirror the scored archive (35 contradicted
- * is the modal real outcome), spans six deterministic mechanism families, caps
- * oil at 5 of 15 by theme, and discloses both directions of missingness.  This
+ * The slate is deliberately NOT distribution-proportional: it over-weights
+ * contradictions and unresolved reads (the accepted corpus is any-supporting-
+ * modal) so the library is not a wall of agreement — chosen for mechanism /
+ * evidence clarity, not as a sample. It spans six deterministic mechanism
+ * families, caps oil at 5 of 15 by theme, and discloses both directions of
+ * missingness.  This
  * module carries only editorial framing (role, why-selected, caveats) plus the
  * event id; the live event payload, returns, event-study, and scored outcome
  * are read from the existing backend via the dossier surface the card links to.
@@ -19,10 +22,12 @@
  * line is explicitly marked editorial and derived only from headline /
  * what_changed / transmission text — never implied as a typed extraction.
  *
- * Outcomes were derived read-only from the archive: 166 saved events, 81 with
- * market data scored (19 any-supporting / 35 contradicted / 27 unresolved).
- * These are descriptive archive denominators, separate from the closed
- * Phase 1 / Phase 2 FDR pools.
+ * Outcomes were derived read-only from the archive. As of 2026-06-09 the live
+ * archive holds 180 saved events; the accepted track-record corpus is 86 events
+ * (46 any-supporting / 8 contradicted / 32 unresolved) after excluding 71
+ * synthetic/test seed rows flagged in event_hygiene (kept in the archive,
+ * never deleted). These are descriptive archive denominators, separate from the
+ * closed Phase 1 / Phase 2 FDR pools.
  *
  * Copy carries no buy/sell/long/short/alpha/signal/trade framing and no
  * proof/confirmed/validated-as-success framing.

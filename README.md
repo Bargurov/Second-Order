@@ -83,8 +83,23 @@ the days after the event.
 
 ## The funnel — denominators, honestly
 
-Freshly verified against the local archive (2026-06-08); a clean clone starts
-empty, so re-run the read-only reports for live figures.
+> **Denominator restatement (AP3b, 2026-06-09).** The accepted-corpus
+> denominators have been restated: **71 synthetic/test seed rows** are now
+> flagged in the `event_hygiene` sidecar (`override_class = 'synthetic_seed'`)
+> and **excluded** from the accepted-corpus denominators while remaining in the
+> archive — keep-and-flag, never deleted. Current live figures: **180 saved
+> events**; an **accepted track-record corpus of 86** (46 any-supporting · 8
+> contradicted · 32 unresolved); a **coverage / analysis denominator of 94**;
+> **60 realized accepted**; and **49 event-study-available realized** rows. This
+> supersedes the earlier "keep the contamination visible inside the 165
+> denominator" approach — the seeds are now explicitly flagged and excluded
+> (still auditable by id). Phase 1 and Phase 2 remain separate FDR pools.
+> The detailed figures in the rest of this section are the **pre-restatement
+> snapshot as of 2026-06-08** plus the dated coverage-repair records, kept for
+> the operational history; a clean clone is empty, so re-run the read-only
+> reports for live numbers.
+
+Pre-restatement funnel snapshot (local archive, 2026-06-08):
 
 - **166 events saved** in the archive (the readiness report counts **165**,
   excluding one source-anchored `curated_intake` stub).
@@ -204,9 +219,14 @@ repair (below) the 18 repaired events resolved on matched **raw** basis,
 so the earlier "every compute-ready event is on matched *adjusted* basis"
 no longer holds — but no row mixes flags, so no splice caveat applies.
 
-Current verified counts from
-`python scripts/stat_validation_readiness_report.py --json --limit 0`
-(refreshed 2026-06-09 after the V2C exposed-name coverage backfill):
+Readiness-report counts from
+`python scripts/stat_validation_readiness_report.py --json --limit 0`, **as of
+the 2026-06-09 readiness run** (after the V2C exposed-name coverage backfill).
+This is the event-study **coverage** lens — a data-coverage gate that does NOT
+apply the AP3b `event_hygiene` synthetic-seed exclusion; for the accepted-corpus
+denominators (180 saved / 86 track-record / 94 coverage) see the restatement at
+the top of "The funnel" above. Re-run the command for live figures (the archive
+has since grown; this readiness section is itself due a refresh):
 
 - total archive events: 165
 - archive-ready events: 78

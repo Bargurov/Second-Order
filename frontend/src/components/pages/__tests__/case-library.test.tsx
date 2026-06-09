@@ -2,12 +2,14 @@
  * T8B — Curated Case Library page, expanded 5 → 15 representative cases.
  *
  * A guided, honest entry point: fifteen real representative cases drawn from
- * the scored archive, each linking into the existing EventDossier surface via
+ * the archive, each linking into the existing EventDossier surface via
  * the URL-addressable /share/:id route AND an in-app open control.  The slate
- * is contradiction-led to mirror the scored archive (35 contradicted is the
- * modal real outcome), spans six deterministic mechanism families, and discloses
- * both directions of missingness — so the denominator anchor, the slate outcome
- * mix, the standing non-claims, and the banned-framing discipline stay visible.
+ * is deliberately NOT distribution-proportional — it over-weights contradictions
+ * and unresolved reads (the accepted corpus is any-supporting-modal) so the
+ * library is not a wall of agreement, spans six deterministic mechanism families,
+ * and discloses both directions of missingness — so the denominator anchor, the
+ * slate outcome mix, the standing non-claims, and the banned-framing discipline
+ * stay visible.
  *
  * Families are the deterministic effective family (family_inference.
  * resolve_effective_family) as the backend emits it — never hand-relabelled.
@@ -77,12 +79,21 @@ describe("CaseLibrary — page renders the expanded curated slate (T8B)", () => 
 });
 
 describe("CaseLibrary — denominator + anti-cherry-pick copy stays visible (T8B)", () => {
-  it("renders the expanded denominator anchor", () => {
-    expect(visible).toContain("15 representative cases drawn from 81 market-scored events of 166 saved.");
+  it("renders the current accepted-corpus denominator anchor", () => {
+    expect(visible).toContain("180-event archive");
+    expect(visible).toContain("accepted track-record corpus 86");
+    expect(visible).toContain("flagged in event_hygiene and excluded");
+    // stale pre-AP3b denominator must be gone
+    expect(visible).not.toContain("81 market-scored events of 166 saved");
   });
 
-  it("keeps the corpus outcome split visible", () => {
-    expect(visible).toContain("19 any-supporting · 35 contradicted · 27 unresolved.");
+  it("keeps the current accepted-corpus outcome split visible", () => {
+    expect(visible).toContain("46 any-supporting · 8 contradicted · 32 unresolved.");
+    expect(visible).not.toContain("19 any-supporting · 35 contradicted · 27 unresolved.");
+  });
+
+  it("frames the slate as deliberately not distribution-proportional", () => {
+    expect(visible.toLowerCase()).toContain("not distribution-proportional");
   });
 
   it("states the slate is representative, not best-of", () => {
@@ -169,7 +180,11 @@ describe("CURATED_CASES registry — outcome mix + cherry-pick guard (T8B)", () 
     expect(roles.has("data-limited")).toBe(true);
   });
 
-  it("is contradiction-led: contradiction count >= supporting count", () => {
+  it("deliberately over-weights contradictions vs strong-support (not distribution-proportional)", () => {
+    // The accepted corpus is any-supporting-modal; the slate intentionally
+    // carries at least as many contradiction cases as strong-support ones so
+    // it is not a wall of agreement. This is a design choice, not a claim that
+    // the slate mirrors the archive distribution.
     const contradiction = CURATED_CASES.filter((c) => c.role === "contradiction").length;
     const supporting = CURATED_CASES.filter((c) => c.role === "strong-support").length;
     expect(contradiction).toBeGreaterThanOrEqual(supporting);
@@ -214,8 +229,9 @@ describe("CaseLibrary — per-case evidence density (W1A)", () => {
     }
   });
 
-  it("keeps the 15 / 81 / 166 denominator visible", () => {
-    expect(visible).toContain("15 representative cases drawn from 81 market-scored events of 166 saved.");
+  it("keeps the current accepted-corpus denominator visible", () => {
+    expect(visible).toContain("180-event archive");
+    expect(visible).toContain("accepted track-record corpus 86");
   });
 
   it("states the cases are illustrative, not a validation pool", () => {

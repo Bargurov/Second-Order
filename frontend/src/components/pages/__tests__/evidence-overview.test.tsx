@@ -26,12 +26,26 @@ describe("EvidenceOverview — title + purpose + corpus snapshot (T5A)", () => {
     expect(visible.toLowerCase()).toContain("not a trading or prediction surface");
   });
 
-  it("renders the corpus snapshot", () => {
+  it("renders the dated (2026-06-08) corpus snapshot", () => {
+    // RESEARCH_FINDINGS is a coherent as-of-2026-06-08 snapshot (the T2/T3/T4
+    // baselines below cannot be recomputed here), so its corpus figures stay
+    // at their real date rather than being half-updated.
     expect(visible).toContain("81");  // market-scored
     expect(visible).toContain("19");  // any-supporting
     expect(visible).toContain("35");  // contradicted
     expect(visible).toContain("27");  // unresolved
     expect(visible).toContain("78");  // event-study available (post-V2C: 71 -> 78)
+    expect(visible).toContain("2026-06-08");  // the snapshot date is shown
+  });
+
+  it("shows the current accepted-corpus restatement (post-AP3b, 2026-06-09)", () => {
+    expect(visible).toContain("180");  // saved events (current)
+    expect(visible).toContain("86");   // accepted track-record total (current)
+    expect(visible).toContain("94");   // coverage / analysis denominator (current)
+    expect(visible.toLowerCase()).toContain("restated");
+    expect(visible.toLowerCase()).toContain("flagged");   // synthetic seeds flagged
+    expect(visible.toLowerCase()).toContain("excluded");  // ...and excluded
+    expect(visible).toContain("2026-06-09");              // restatement date
   });
 });
 

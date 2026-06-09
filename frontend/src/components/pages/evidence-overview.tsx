@@ -10,6 +10,7 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
+import { ACCEPTED_CORPUS as AC } from "@/lib/accepted-corpus";
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -67,14 +68,28 @@ export function EvidenceOverview() {
       </header>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {/* Corpus snapshot */}
+        {/* Corpus snapshot — the dated F.asOf figures, with the current
+            post-AP3b restatement stated separately below (the T2/T3/T4
+            baselines are an as-of-F.asOf snapshot and are not recomputed here,
+            so the snapshot figures stay at their real date). */}
         <Section tag="Corpus" title="Scored-archive snapshot">
+          <p className="text-[11px] text-on-surface-variant/70">
+            {`Snapshot as of ${F.asOf} (pre-restatement):`}
+          </p>
           <Stat label="Market-scored events" value={F.corpus.marketScored} />
           <Stat label="Any-supporting" value={F.corpus.anySupporting} />
           <Stat label="Contradicted" value={F.corpus.contradicted} />
           <Stat label="Unresolved" value={F.corpus.unresolved} />
           <Stat label="Event-study available" value={F.corpus.eventStudyAvailable} />
           <Stat label="Event-study unavailable" value={F.corpus.eventStudyUnavailable} />
+          <p className="border-t border-border/40 pt-2 text-[12px] leading-relaxed text-on-surface/85">
+            {`Restated ${AC.restatedOn} (AP3b): the live archive now holds ${AC.savedEvents} saved events; ` +
+              `the accepted track-record corpus is ${AC.trackRecordTotal} ` +
+              `(${AC.anySupporting} any-supporting / ${AC.contradicted} contradicted / ${AC.unresolved} unresolved) ` +
+              `and the coverage / analysis denominator is ${AC.coverageDenominator}, after ` +
+              `${AC.syntheticSeedFlagged} synthetic/test seed rows were flagged in event_hygiene and excluded ` +
+              `(kept in the archive, never deleted). Phase 1 and Phase 2 remain separate pools.`}
+          </p>
         </Section>
 
         {/* T2A baseline */}

@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CURATED_CASES, type CaseRole, type CuratedCase } from "@/lib/curated-cases";
+import { ACCEPTED_CORPUS } from "@/lib/accepted-corpus";
 
 // Muted, institutional role accents — teal for support, coral for the
 // contradiction, slate for the unresolved / data-limited reads.
@@ -153,14 +154,20 @@ export function CaseLibrary({ onOpenCase }: { onOpenCase?: (eventId: number) => 
 
         {/* Denominator anchor + corpus split + slate mix (anti-cherry-pick) */}
         <div className="mt-3 flex flex-col gap-1 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-2.5">
+          {/* Current accepted-corpus denominator (single template-literal text
+              node so renderToStaticMarkup never splits "180-event"). Sourced
+              from the shared ACCEPTED_CORPUS constant; restated date shown. */}
           <p className="text-[12px] font-medium text-on-surface/85">
-            15 representative cases drawn from 81 market-scored events of 166 saved.
+            {`15 representative cases drawn from the ${ACCEPTED_CORPUS.savedEvents}-event archive ` +
+              `(accepted track-record corpus ${ACCEPTED_CORPUS.trackRecordTotal}; ` +
+              `${ACCEPTED_CORPUS.syntheticSeedFlagged} synthetic/test seeds flagged in event_hygiene ` +
+              `and excluded, kept in the archive). Restated ${ACCEPTED_CORPUS.restatedOn}.`}
           </p>
           <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
-            19 any-supporting · 35 contradicted · 27 unresolved.
+            {`${ACCEPTED_CORPUS.anySupporting} any-supporting · ${ACCEPTED_CORPUS.contradicted} contradicted · ${ACCEPTED_CORPUS.unresolved} unresolved.`}
           </p>
           <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/60">
-            This slate: 3 any-supporting · 5 contradicted · 7 unresolved (incl. 1 data-limited, 1 mechanism-rich) · 5 of 15 oil/energy by theme.
+            This slate is deliberately not distribution-proportional: 3 any-supporting · 5 contradicted · 7 unresolved (incl. 1 data-limited, 1 mechanism-rich) · 5 of 15 oil/energy by theme.
           </p>
         </div>
 
