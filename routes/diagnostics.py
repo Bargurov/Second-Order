@@ -502,9 +502,11 @@ def _compute_archive_aggregates() -> dict:
         import db as _db
         if not _db._db_ready:
             return blocks
+        synthetic: frozenset[int] = frozenset()
         with _db.connect_db() as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute("SELECT * FROM events").fetchall()
+            synthetic = _db.synthetic_seed_ids(conn)
     except Exception:
         return blocks
 
@@ -557,9 +559,10 @@ def _compute_archive_aggregates() -> dict:
             # Curated rows (intake stubs AND promoted observations) are kept
             # in the stage / persistence inventory histograms above but carry
             # no thesis to classify — exclude every non-thesis stage from the
-            # outcome (thesis-state) block.
+            # outcome (thesis-state) block.  AP3a: synthetic_seed hygiene rows
+            # are likewise excluded (kept in the inventory histograms above).
             stage = (event.get("stage") or "").strip()
-            if stage in _db.NON_THESIS_STAGES:
+            if stage in _db.NON_THESIS_STAGES or event.get("id") in synthetic:
                 continue
             try:
                 state = derive_thesis_state(event)
@@ -646,6 +649,7 @@ def _compute_validation_status_stats() -> dict:
     with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
+        synthetic = _db.synthetic_seed_ids(conn)
 
     counts_by_status: dict[str, int] = {s: 0 for s in VALID_STATUSES}
     counts_by_reason: dict[str, int] = {}
@@ -661,9 +665,10 @@ def _compute_validation_status_stats() -> dict:
 
         # Curated rows (intake stubs AND promoted observations) are real
         # archived rows with no thesis to validate; exclude every non-thesis
-        # stage from the denominator and every bucket.
+        # stage from the denominator and every bucket.  AP3a: synthetic_seed
+        # hygiene rows are excluded too (kept in the archive, never validated).
         stage = (event.get("stage") or "").strip()
-        if stage in _db.NON_THESIS_STAGES:
+        if stage in _db.NON_THESIS_STAGES or event.get("id") in synthetic:
             curated_intake_excluded += 1
             continue
 
@@ -1189,6 +1194,7 @@ def _compute_track_record() -> dict:
     with _db.connect_db() as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT * FROM events").fetchall()
+        synthetic = _db.synthetic_seed_ids(conn)
 
     counts_by_status: dict[str, int] = {s: 0 for s in VALID_STATUSES}
     sum_5d:   dict[str, float] = {s: 0.0 for s in VALID_STATUSES}
@@ -1217,9 +1223,10 @@ def _compute_track_record() -> dict:
         # Curated rows (intake stubs AND promoted observations) are real
         # archived rows with no thesis to score; exclude every non-thesis
         # stage from every outcome count and disclose the tally separately so
-        # they are never silently hidden.
+        # they are never silently hidden.  AP3a: synthetic_seed hygiene rows
+        # are excluded too (kept in the archive, never scored as evidence).
         stage = (event.get("stage") or "").strip()
-        if stage in _db.NON_THESIS_STAGES:
+        if stage in _db.NON_THESIS_STAGES or event.get("id") in synthetic:
             curated_intake_excluded += 1
             continue
 

@@ -128,6 +128,7 @@ def _load_events(path: str) -> tuple[list[dict[str, Any]], int]:
         conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     except sqlite3.Error:
         return [], 0
+    synthetic: frozenset[int] = frozenset()
     try:
         conn.row_factory = sqlite3.Row
         try:
@@ -137,6 +138,12 @@ def _load_events(path: str) -> tuple[list[dict[str, Any]], int]:
             ).fetchall()
         except sqlite3.Error:
             return [], 0
+        # AP3a synthetic-seed exclusion source — read on the SAME open
+        # connection before it closes (degrade to empty if the table is absent).
+        try:
+            synthetic = db.synthetic_seed_ids(conn)
+        except Exception:
+            synthetic = frozenset()
     finally:
         conn.close()
 
@@ -145,7 +152,10 @@ def _load_events(path: str) -> tuple[list[dict[str, Any]], int]:
     excluded = 0
     for r in rows:
         stage = r["stage"]
-        if isinstance(stage, str) and stage in non_analysis:
+        # AP3a: synthetic_seed hygiene rows stay in the archive but are excluded
+        # from the analysis/coverage denominator (kept distinct from the
+        # NON_ANALYSIS stage stubs but counted in the same ``excluded`` tally).
+        if (isinstance(stage, str) and stage in non_analysis) or r["id"] in synthetic:
             excluded += 1
             continue
         events.append({

@@ -578,10 +578,18 @@ def compute_track_record_breakdown(events: Iterable[dict]) -> dict:
     # SAME outcome set as db.compute_track_record rather than counting an
     # outcome-less row in a mechanism-family group.
     _non_thesis = getattr(db, "NON_THESIS_STAGES", frozenset())
+    # AP3a: also exclude event_hygiene synthetic_seed rows so the breakdown
+    # slices the SAME accepted-corpus set as db.compute_track_record.
+    try:
+        _synthetic = db.synthetic_seed_ids()
+    except Exception:
+        _synthetic = frozenset()
     for ev in events or []:
         if isinstance(ev, dict):
             _stage = ev.get("stage") or ""
             if isinstance(_stage, str) and _stage in _non_thesis:
+                continue
+            if ev.get("id") in _synthetic:
                 continue
         total_events += 1
         tickers     = _loads(ev.get("market_tickers"), [])

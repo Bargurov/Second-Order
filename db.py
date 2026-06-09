@@ -789,6 +789,37 @@ def get_event_hygiene(event_id: int, conn=None):
             conn.close()
 
 
+# Override class (AP2/AP3) marking a synthetic/test SEED row — kept in the
+# archive but excluded from accepted-corpus denominators.
+SYNTHETIC_SEED_OVERRIDE = "synthetic_seed"
+
+
+def synthetic_seed_ids(conn=None) -> frozenset[int]:
+    """Event ids flagged ``override_class='synthetic_seed'`` in ``event_hygiene``.
+
+    The SINGLE source of the accepted-corpus synthetic-seed exclusion (AP3a):
+    every accepted-corpus denominator loader subtracts these ids, but the rows
+    stay in the archive (still retrievable by id).  Empty sidecar → empty set →
+    behavior identical to before the wiring.  Read-only; degrades to an empty
+    set if the table is missing.
+    """
+    own = conn is None
+    if own:
+        conn = _connect_db()
+    try:
+        try:
+            rows = conn.execute(
+                "SELECT event_id FROM event_hygiene WHERE override_class = ?",
+                (SYNTHETIC_SEED_OVERRIDE,),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return frozenset()
+        return frozenset(int(r[0]) for r in rows)
+    finally:
+        if own:
+            conn.close()
+
+
 # ---------------------------------------------------------------------------
 # price_cache — source-provider read helper (D2B).  No writer/stamping here.
 # ---------------------------------------------------------------------------
@@ -1595,26 +1626,31 @@ def compute_track_record() -> dict:
         }
 
     with _connect_db() as conn:
-        # Include revisit_snapshots + stage in the query.
+        # Include revisit_snapshots + stage in the query.  ``id`` is appended
+        # LAST so the positional ``row[0..3]`` indexing below is unchanged.
         try:
             rows = conn.execute(
-                "SELECT market_tickers, rating, revisit_snapshots, stage "
+                "SELECT market_tickers, rating, revisit_snapshots, stage, id "
                 "FROM events"
             ).fetchall()
         except sqlite3.OperationalError:
             # revisit_snapshots may not exist on ancient DBs; ``stage`` is a
             # core column that has always existed, so it stays in the fallback.
             rows = conn.execute(
-                "SELECT market_tickers, rating, stage FROM events"
+                "SELECT market_tickers, rating, stage, id FROM events"
             ).fetchall()
-            rows = [(r[0], r[1], None, r[2]) for r in rows]
+            rows = [(r[0], r[1], None, r[2], r[3]) for r in rows]
+        synthetic = synthetic_seed_ids(conn)
 
     # Curated rows (intake stubs AND promoted observations) carry no thesis
     # outcome — exclude every non-thesis stage from the denominator so they
-    # neither inflate ``total`` nor land in the ``unresolved`` bucket.
+    # neither inflate ``total`` nor land in the ``unresolved`` bucket.  AP3a:
+    # also exclude ``event_hygiene`` synthetic_seed rows (kept in the archive,
+    # never counted as accepted evidence).
     rows = [
         r for r in rows
         if not (isinstance(r[3], str) and r[3] in NON_THESIS_STAGES)
+        and r[4] not in synthetic
     ]
 
     total = len(rows)
