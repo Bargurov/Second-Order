@@ -5,7 +5,7 @@ import os
 import re
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from mover_card_normalizer import (
     apply_diversity_guardrails,
@@ -1371,7 +1371,7 @@ def _backfill_preview_item(
     }
 
 
-@router.post("/movers/backfill-recent")
+@router.post("/movers/backfill-recent", dependencies=[Depends(_api.require_admin_token)])
 def movers_backfill_recent(
     limit: int = Query(
         3, ge=1, le=20,
@@ -2102,7 +2102,7 @@ def movers_backfill_preview(
     })
 
 
-@router.post("/movers/backfill-candidate")
+@router.post("/movers/backfill-candidate", dependencies=[Depends(_api.require_admin_token)])
 def movers_backfill_candidate(
     headline: str = Query(
         ...,
