@@ -55,7 +55,19 @@ _db_ready: bool = False
 # curated-intake writer and every aggregator key off these names rather than
 # re-spelling the literal.
 CURATED_INTAKE_STAGE = "curated_intake"
-NON_ANALYSIS_STAGES = frozenset({CURATED_INTAKE_STAGE})
+
+# A ``z1a_candidate_pack`` row is a CANDIDATE-ONLY staging stub produced by the
+# Z1B copy-ingest harness for copy-side measurement.  It carries no LLM thesis
+# and is not part of the curated archive, so — like ``curated_intake`` — it must
+# never enter an analysis / coverage / outcome denominator.  Unlike
+# ``curated_intake`` (a real, if thesis-less, archived stub) it is *candidate
+# only*: ``CANDIDATE_ONLY_STAGES`` is the narrow set the default ``/events``
+# listing hides so a candidate is never rendered as an analyzed case.  Keep the
+# two notions distinct — a candidate is not a curated row.
+CANDIDATE_PACK_STAGE = "z1a_candidate_pack"
+CANDIDATE_ONLY_STAGES = frozenset({CANDIDATE_PACK_STAGE})
+
+NON_ANALYSIS_STAGES = frozenset({CURATED_INTAKE_STAGE}) | CANDIDATE_ONLY_STAGES
 
 # A promoted curated row (Phase K).  Unlike a ``curated_intake`` stub it
 # carries a primary ticker and a canonical ``mechanism_family``, so it IS a

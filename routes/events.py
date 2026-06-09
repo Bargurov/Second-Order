@@ -12,6 +12,7 @@ from db import (
     find_related_events, find_similar_events,
     get_event_cascade, append_revisit_snapshot, load_revisit_snapshots,
     dedup_events, query_events_filtered,
+    CANDIDATE_ONLY_STAGES,
 )
 from market_check import (
     _suppress_duplicate_tickers, _scrub_implausible_ticker_returns,
@@ -443,6 +444,17 @@ def events(
             ]
         else:
             rows = [r for r in rows if not _is_mock_demo_or_degraded(r)]
+
+    # Candidate-only staging suppression — a ``z1a_candidate_pack`` row is a
+    # candidate stub from the Z1B copy-ingest harness, NOT an analyzed event.
+    # Hide it from the default listing so it never renders as an analyzed case;
+    # an explicit ``stage=`` request for a candidate-only stage (operator
+    # deliberately inspecting) still surfaces it, and ``/events/{id}`` always
+    # serves it.  Applied BEFORE the offset/limit slice so ``total`` reflects
+    # the post-suppression universe; independent of ``include_mock`` (that flag
+    # is wired to mock/demo/degraded only).
+    if stage not in CANDIDATE_ONLY_STAGES:
+        rows = [r for r in rows if r.get("stage") not in CANDIDATE_ONLY_STAGES]
 
     # Quality bucket filter — operator-driven narrowing on top of the
     # suppression above.  Applied BEFORE the offset/limit slice so

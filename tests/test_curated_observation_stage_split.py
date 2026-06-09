@@ -16,6 +16,10 @@ notions.  K3 splits them:
 ``curated_observation`` is in the second set but not the first, so it counts
 as an observation yet never lands in a thesis denominator.
 
+AB1 later added the candidate-only stage ``z1a_candidate_pack`` to
+``NON_ANALYSIS_STAGES`` (see ``test_candidate_stage_policy``); the K3 split
+semantics above are unchanged.
+
 Read-only / temp-DB only: every test builds a throwaway events.db; the live
 archive is never touched.
 """
@@ -79,13 +83,19 @@ class CuratedObservationStageSplitTest(unittest.TestCase):
     def test_curated_observation_stage_constant(self) -> None:
         self.assertEqual(db.CURATED_OBSERVATION_STAGE, "curated_observation")
 
-    def test_non_analysis_stages_unchanged(self) -> None:
-        self.assertEqual(db.NON_ANALYSIS_STAGES, frozenset({"curated_intake"}))
+    def test_non_analysis_stages_membership(self) -> None:
+        # AB1 added the candidate-only stage ``z1a_candidate_pack`` to the
+        # non-analysis set (see test_candidate_stage_policy); ``curated_intake``
+        # stays a member, so the K3 split semantics are unchanged.
+        self.assertEqual(
+            db.NON_ANALYSIS_STAGES,
+            frozenset({"curated_intake", "z1a_candidate_pack"}),
+        )
 
     def test_non_thesis_stages_is_superset(self) -> None:
         self.assertEqual(
             db.NON_THESIS_STAGES,
-            frozenset({"curated_intake", "curated_observation"}),
+            frozenset({"curated_intake", "curated_observation", "z1a_candidate_pack"}),
         )
 
     def test_curated_observation_not_excluded_from_observation(self) -> None:

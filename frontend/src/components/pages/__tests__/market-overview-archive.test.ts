@@ -60,6 +60,25 @@ describe("pickLatestAnalyzedCases", () => {
     expect(obs.isObservation).toBe(true);
   });
 
+  it("classifies a z1a_candidate_pack row as a non-analysis observation, never analyzed", () => {
+    // AB1 Lane A: a candidate-only staging row must not be grouped with (or
+    // sorted ahead of) analyzed cases — flag it as an observation even though
+    // it carries the later date.  Defence-in-depth behind the backend /events
+    // candidate suppression; candidate-only is a distinct stage, not the same
+    // thing as a curated_observation.
+    const out = pickLatestAnalyzedCases(
+      [
+        ev({ id: 7, stage: "z1a_candidate_pack", event_date: "2026-05-30" }),
+        ev({ id: 4, stage: "initial", event_date: "2026-01-01" }),
+      ],
+      5,
+    );
+    expect(out[0]!.id).toBe(4); // analyzed case leads despite the older date
+    expect(out[0]!.isObservation).toBe(false);
+    const cand = out.find((c) => c.id === 7)!;
+    expect(cand.isObservation).toBe(true);
+  });
+
   it("respects the limit and carries display fields", () => {
     const out = pickLatestAnalyzedCases(
       [ev({ id: 1 }), ev({ id: 2 }), ev({ id: 3 })],
