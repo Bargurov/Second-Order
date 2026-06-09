@@ -712,6 +712,16 @@ Backend research filters on `/portfolio`: `quality_tier`, `tradable`, and
 `mechanism_subtype`. Track-record cuts should use the same frozen-engine
 dimensions: `quality_tier`, `mechanism_subtype`, and `tradable`.
 
+These `/portfolio` filter names are internal engine vocabulary for slicing the
+research archive — not trade instructions. `quality_tier` buckets the engine's
+own assessed quality of a study (`actionable` / `watch_only` /
+`low_information`); `tradable` exposes the engine's `actionability_check` flag
+(paired with its `why_tradable_or_not` rationale); and the `conviction` gate
+below governs which persistent movers are surfaced. None of them is a buy/sell
+call, a trading signal, or a forecast — the dashboard renders them only as
+research filters over past, dated events, and the viewer-facing labels are
+softened accordingly (e.g. the `actionable` tier surfaces as "high-quality").
+
 Completed backend productization scope:
 
 - `/portfolio` filters: `quality_tier`, `tradable`, `mechanism_subtype`

@@ -144,7 +144,7 @@ describe("_studyConfigChips for portfolio_view", () => {
         mechanism_subtype: "tariff_cycle",
       },
     });
-    expect(_studyConfigChips(study)).toEqual(["actionable", "tariff cycle"]);
+    expect(_studyConfigChips(study)).toEqual(["high-quality", "tariff cycle"]);
   });
 
   it("emits a tradable / not tradable chip from a boolean", () => {
@@ -285,7 +285,7 @@ describe("_portfolioViewConfigToFilters", () => {
     const chips = _studyConfigChips(study);
     const filters = _portfolioViewConfigToFilters(study.config);
 
-    expect(chips).toContain("actionable");
+    expect(chips).toContain("high-quality");
     expect(chips).toContain("not tradable");
     expect(chips).toContain("tariff cycle");
 

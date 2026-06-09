@@ -98,7 +98,7 @@ export function formatQualityTier(
 ): string | null {
   switch (tier) {
     case "actionable":
-      return "actionable";
+      return "high-quality";
     case "watch_only":
       return "watch";
     case "low_information":
@@ -2344,7 +2344,15 @@ export function _studyConfigChips(study: SavedStudy): string[] {
       // every filter that is set becomes a chip; an all-empty config
       // means "default portfolio" so we render that explicitly.
       const chips: string[] = [];
-      if (typeof c.quality_tier === "string") chips.push(_humanize(c.quality_tier));
+      if (typeof c.quality_tier === "string") {
+        // Show the same compact label the portfolio row renders so the
+        // saved-view chip matches the engine-phase strip and keeps the raw
+        // ``actionable`` engine token out of viewer-facing copy.
+        chips.push(
+          formatQualityTier(c.quality_tier as PortfolioEntry["quality_tier"]) ??
+            _humanize(c.quality_tier),
+        );
+      }
       if (typeof c.tradable === "boolean") chips.push(c.tradable ? "tradable" : "not tradable");
       if (typeof c.mechanism_subtype === "string" && c.mechanism_subtype) {
         chips.push(_humanize(c.mechanism_subtype));
@@ -3385,7 +3393,7 @@ const QUALITY_TIER_OPTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { value: "all",             label: "All" },
-  { value: "actionable",      label: "Actionable" },
+  { value: "actionable",      label: "High-quality" },
   { value: "watch_only",      label: "Watch" },
   { value: "low_information", label: "Low info" },
 ];

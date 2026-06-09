@@ -13,7 +13,7 @@ import {
 
 describe("formatQualityTier", () => {
   it("maps known tiers to short labels", () => {
-    expect(formatQualityTier("actionable")).toBe("actionable");
+    expect(formatQualityTier("actionable")).toBe("high-quality");
     expect(formatQualityTier("watch_only")).toBe("watch");
     expect(formatQualityTier("low_information")).toBe("low info");
   });
