@@ -79,6 +79,24 @@ describe("pickLatestAnalyzedCases", () => {
     expect(cand.isObservation).toBe(true);
   });
 
+  it("classifies an analysis_pending_review row as a non-analysis observation, never analyzed", () => {
+    // AJ1: a real analyzed row held in pending-review quarantine is NOT yet
+    // accepted corpus evidence — the client must never render it as an analyzed
+    // thesis case.  Defence-in-depth behind the backend /events default-hide;
+    // it is its own stage, distinct from curated_observation/candidate.
+    const out = pickLatestAnalyzedCases(
+      [
+        ev({ id: 8, stage: "analysis_pending_review", event_date: "2026-05-30" }),
+        ev({ id: 4, stage: "initial", event_date: "2026-01-01" }),
+      ],
+      5,
+    );
+    expect(out[0]!.id).toBe(4); // analyzed case leads despite the older date
+    expect(out[0]!.isObservation).toBe(false);
+    const review = out.find((c) => c.id === 8)!;
+    expect(review.isObservation).toBe(true);
+  });
+
   it("respects the limit and carries display fields", () => {
     const out = pickLatestAnalyzedCases(
       [ev({ id: 1 }), ev({ id: 2 }), ev({ id: 3 })],

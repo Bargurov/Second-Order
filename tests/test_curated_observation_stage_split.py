@@ -84,18 +84,22 @@ class CuratedObservationStageSplitTest(unittest.TestCase):
         self.assertEqual(db.CURATED_OBSERVATION_STAGE, "curated_observation")
 
     def test_non_analysis_stages_membership(self) -> None:
-        # AB1 added the candidate-only stage ``z1a_candidate_pack`` to the
-        # non-analysis set (see test_candidate_stage_policy); ``curated_intake``
+        # AB1 added the candidate-only stage ``z1a_candidate_pack``; AJ1 added
+        # the pending-review quarantine stage ``analysis_pending_review`` (a real
+        # analyzed row not yet accepted into the corpus).  ``curated_intake``
         # stays a member, so the K3 split semantics are unchanged.
         self.assertEqual(
             db.NON_ANALYSIS_STAGES,
-            frozenset({"curated_intake", "z1a_candidate_pack"}),
+            frozenset({"curated_intake", "z1a_candidate_pack", "analysis_pending_review"}),
         )
 
     def test_non_thesis_stages_is_superset(self) -> None:
         self.assertEqual(
             db.NON_THESIS_STAGES,
-            frozenset({"curated_intake", "curated_observation", "z1a_candidate_pack"}),
+            frozenset({
+                "curated_intake", "curated_observation",
+                "z1a_candidate_pack", "analysis_pending_review",
+            }),
         )
 
     def test_curated_observation_not_excluded_from_observation(self) -> None:
@@ -103,6 +107,44 @@ class CuratedObservationStageSplitTest(unittest.TestCase):
 
     def test_curated_observation_excluded_from_thesis(self) -> None:
         self.assertIn(db.CURATED_OBSERVATION_STAGE, db.NON_THESIS_STAGES)
+
+    # ----- AJ1: analysis_pending_review quarantine stage ------------------
+    # A real analyzed /analyze row held back from the accepted corpus pending
+    # human review.  Unlike curated_observation (human-gated → ACCEPTED → counts
+    # as an observation), a pending-review row is NOT yet accepted, so it must be
+    # excluded from EVERY accepted-corpus denominator (coverage AND thesis).
+    def test_analysis_pending_review_stage_constant(self) -> None:
+        self.assertEqual(db.ANALYSIS_PENDING_REVIEW_STAGE, "analysis_pending_review")
+
+    def test_analysis_pending_review_in_non_analysis(self) -> None:
+        self.assertIn(db.ANALYSIS_PENDING_REVIEW_STAGE, db.NON_ANALYSIS_STAGES)
+
+    def test_analysis_pending_review_in_non_thesis(self) -> None:
+        self.assertIn(db.ANALYSIS_PENDING_REVIEW_STAGE, db.NON_THESIS_STAGES)
+
+    def test_pending_review_excluded_where_accepted_observation_is_not(self) -> None:
+        # The "pending ≠ accepted" line: a pending-review row is in NON_ANALYSIS
+        # (counts nowhere) while an accepted curated_observation is not.
+        self.assertIn(db.ANALYSIS_PENDING_REVIEW_STAGE, db.NON_ANALYSIS_STAGES)
+        self.assertNotIn(db.CURATED_OBSERVATION_STAGE, db.NON_ANALYSIS_STAGES)
+
+    def test_track_record_excludes_analysis_pending_review(self) -> None:
+        self._insert_event(stage="realized", market_tickers=_SUPPORTS)
+        self._insert_event(stage="analysis_pending_review", market_tickers=_SUPPORTS)
+        tr = db.compute_track_record()
+        self.assertEqual(tr["total"], 1)        # only the realized thesis row
+        self.assertEqual(tr["unresolved"], 0)   # review row NOT scored unresolved
+
+    def test_coverage_loader_excludes_analysis_pending_review(self) -> None:
+        realized_id = self._insert_event(stage="realized", market_tickers=_SUPPORTS)
+        review_id = self._insert_event(
+            stage="analysis_pending_review", market_tickers=_PRIMARY_ONLY,
+        )
+        events, excluded = cov._load_events(self._tmp)
+        ids = [e["id"] for e in events]
+        self.assertIn(realized_id, ids)
+        self.assertNotIn(review_id, ids)
+        self.assertGreaterEqual(excluded, 1)
 
     # ----- thesis surfaces EXCLUDE curated_observation --------------------
     def test_track_record_excludes_curated_observation(self) -> None:

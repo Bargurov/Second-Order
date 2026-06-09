@@ -1503,16 +1503,19 @@ function SectionHead({
 // itself rather than rolling mover windows.
 // ---------------------------------------------------------------------------
 
-// Stages that carry no scored thesis (curated stubs / promoted observations).
-// Stages that are NOT scoreable analyzed theses: curated stubs/observations
-// plus candidate-only staging rows.  `z1a_candidate_pack` is a Z1B candidate
-// stub (NOT a curated_observation — a distinct, pre-analysis category); the
-// backend /events listing already hides candidates, so this is defence-in-depth
-// keeping the client from ever rendering one as an analyzed case.
+// Stages that are NOT scoreable analyzed theses: curated stubs/observations,
+// candidate-only staging rows, and pending-review quarantined rows.
+// `z1a_candidate_pack` is a Z1B candidate stub; `analysis_pending_review` is a
+// real analyzed row held back from the accepted corpus pending human review
+// (neither is a curated_observation — both are distinct categories).  The
+// backend /events listing already hides candidate and pending-review stages, so
+// this is defence-in-depth keeping the client from ever rendering one as an
+// analyzed case.
 const _NON_THESIS_STAGES = new Set([
   "curated_intake",
   "curated_observation",
   "z1a_candidate_pack",
+  "analysis_pending_review",
 ]);
 
 export const ARCHIVE_SECTION_TITLE = "The archive";

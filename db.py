@@ -67,7 +67,34 @@ CURATED_INTAKE_STAGE = "curated_intake"
 CANDIDATE_PACK_STAGE = "z1a_candidate_pack"
 CANDIDATE_ONLY_STAGES = frozenset({CANDIDATE_PACK_STAGE})
 
-NON_ANALYSIS_STAGES = frozenset({CURATED_INTAKE_STAGE}) | CANDIDATE_ONLY_STAGES
+# An ``analysis_pending_review`` row is a REAL analyzed event (LLM thesis,
+# market check, tickers) produced by ``/analyze`` but held in review
+# quarantine: a human has NOT yet accepted it into the corpus.  It is neither a
+# ``curated_intake`` stub nor a ``curated_observation`` (those are accepted in
+# their roles) — it is *analyzed-but-not-yet-accepted*.  Quarantine is
+# reversible: a reviewer who accepts it restores the original analyzed stage
+# (e.g. ``realized``).  See ``DEFAULT_HIDDEN_STAGES`` for the default-listing
+# suppression and ``NON_ANALYSIS_STAGES`` for the denominator exclusion.
+ANALYSIS_PENDING_REVIEW_STAGE = "analysis_pending_review"
+
+# A stage is excluded from the analysis / coverage denominator if EITHER it
+# carries no analysis (``curated_intake`` stub, ``z1a_candidate_pack`` candidate
+# stub) OR it IS analyzed but held in pending-review quarantine and not yet
+# accepted into the corpus (``analysis_pending_review``).  ``curated_observation``
+# is deliberately NOT here: it was human-gated and ACCEPTED, so it counts as an
+# observation; a pending-review row is NOT yet accepted, so it counts nowhere
+# until reviewed.  The set is an exclusion policy, not a type — membership, not
+# stage spelling, is what every aggregator keys off, so the split stays here.
+NON_ANALYSIS_STAGES = (
+    frozenset({CURATED_INTAKE_STAGE, ANALYSIS_PENDING_REVIEW_STAGE})
+    | CANDIDATE_ONLY_STAGES
+)
+
+# Stages hidden from the DEFAULT ``/events`` listing so they never render as an
+# accepted analyzed case: candidate-only stubs and pending-review analyzed rows.
+# An explicit ``?stage=`` request or ``/events/{id}`` still serves them (the
+# suppression keys off the requested stage, mirroring the candidate pattern).
+DEFAULT_HIDDEN_STAGES = CANDIDATE_ONLY_STAGES | frozenset({ANALYSIS_PENDING_REVIEW_STAGE})
 
 # A promoted curated row (Phase K).  Unlike a ``curated_intake`` stub it
 # carries a primary ticker and a canonical ``mechanism_family``, so it IS a
