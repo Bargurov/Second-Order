@@ -3725,7 +3725,7 @@ def _call_anthropic(api_key: str, model: str, prompt: str) -> str | None:
         import anthropic
     except ImportError:
         print("[analyze_event] 'anthropic' package not installed.")
-        print("  → Run: pip install anthropic python-dotenv\n")
+        print("  -> Run: pip install anthropic python-dotenv\n")
         return None
 
     client = anthropic.Anthropic(api_key=api_key)
@@ -3745,7 +3745,7 @@ def _call_openai(api_key: str, model: str, prompt: str) -> str | None:
         from openai import OpenAI
     except ImportError:
         print("[analyze_event] 'openai' package not installed.")
-        print("  → Run: pip install openai python-dotenv\n")
+        print("  -> Run: pip install openai python-dotenv\n")
         return None
 
     client = OpenAI(api_key=api_key)
@@ -3813,7 +3813,7 @@ def analyze_event(
     if not _has_real_api_key(api_key):
         print(f"[analyze_event] No {provider} API key found. Returning mock response.")
         key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
-        print(f"  → Set {key_name} in your .env file to get real analysis.\n")
+        print(f"  -> Set {key_name} in your .env file to get real analysis.\n")
         return _mock(f"no {provider} API key")
 
     prompt = EVENT_ANALYSIS_PROMPT.format(
@@ -3841,7 +3841,7 @@ def analyze_event(
 
             if parsed is None:
                 print("[analyze_event] Could not parse LLM response as JSON.")
-                print(f"  → Raw response: {raw}\n")
+                print(f"  -> Raw response: {raw}\n")
                 return _mock("JSON parse error")
 
             return _finalize_analysis(parsed, headline, stage, persistence)

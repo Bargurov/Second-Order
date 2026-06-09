@@ -273,5 +273,30 @@ class TestExhaustedRetries(unittest.TestCase):
             self.assertAlmostEqual(s, expected, places=1)
 
 
+# ---------------------------------------------------------------------------
+# 4) Fallback prints encode under a cp1252 (Windows redirected) stdout
+# ---------------------------------------------------------------------------
+
+class TestFallbackPrintsCp1252Safe(unittest.TestCase):
+    """The no-API-key fallback prints guidance to stdout.  Under `python -m
+    unittest` with stdout redirected to a file on Windows the stream encoding is
+    cp1252, and a non-ASCII arrow in that guidance raised UnicodeEncodeError —
+    crashing analyze_event before it could return its mock (AA1: 9 errored
+    retry tests).  Reproduce the cp1252 stream and assert the path returns a
+    mock instead of raising.
+    """
+
+    def test_no_api_key_path_encodes_under_cp1252_stdout(self):
+        import io
+
+        cp1252_stdout = io.TextIOWrapper(
+            io.BytesIO(), encoding="cp1252", errors="strict", newline="",
+        )
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "", "OPENAI_API_KEY": ""}), \
+                patch.object(sys, "stdout", cp1252_stdout):
+            result = analyze_event("Cp1252 guard headline", "developing", "medium")
+        self.assertTrue(is_mock(result))
+
+
 if __name__ == "__main__":
     unittest.main()

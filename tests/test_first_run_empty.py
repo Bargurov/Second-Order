@@ -528,10 +528,14 @@ class TestMarketOverviewFirstRunStates(unittest.TestCase):
             self.src = f.read()
 
     def test_reads_query_errors(self):
-        """All three top-level queries must expose their error state."""
+        """Both top-level queries must expose their error state.
+
+        P5B retired the live mover-window queries (persistent / weekly) from the
+        overview — Section 2 now reads the frozen archive — so the remaining
+        top-level queries are the market context and the archive.
+        """
         self.assertIn("error: ctxError", self.src)
-        self.assertIn("error: persistentError", self.src)
-        self.assertIn("error: weeklyError", self.src)
+        self.assertIn("error: archiveError", self.src)
 
     def test_renders_error_banner(self):
         """When any query errors, an inline alert must render."""

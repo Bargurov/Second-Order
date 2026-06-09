@@ -207,6 +207,11 @@ def redirect_db_constants() -> str:
 
     import db  # noqa: E402 — deliberate late import; see comment above
     db.DB_FILE = TEMP_DB_PATH
+    # Export the redirected path so a CHILD process (a CLI test or a spawned
+    # tool) doing a fresh ``import db`` resolves ``DB_FILE`` to this isolated
+    # temp DB, not the live archive.  The in-process monkeypatch above does not
+    # reach subprocesses; ``EVENTS_DB_FILE`` does — children inherit os.environ.
+    os.environ["EVENTS_DB_FILE"] = TEMP_DB_PATH
     _ensure_temp_db_file()
     _ensure_temp_yfinance_cache_dir()
     # ``_db_ready`` is the gate save_event / load_recent_events check

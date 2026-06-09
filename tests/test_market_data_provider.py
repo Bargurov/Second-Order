@@ -63,11 +63,11 @@ class _FakeProvider:
         return self.info_response
 
 
-def _make_df(closes, volumes=None):
+def _make_df(closes, volumes=None, start_date="2026-03-01"):
     n = len(closes)
     if volumes is None:
         volumes = [1_000_000.0] * n
-    dates = pd.date_range("2026-03-01", periods=n, freq="B")
+    dates = pd.date_range(start_date, periods=n, freq="B")
     return pd.DataFrame({"Close": closes, "Volume": volumes}, index=dates)
 
 
@@ -287,7 +287,11 @@ class TestMarketCheckDelegation(unittest.TestCase):
                 pass
 
     def test_fetch_uses_provider(self):
-        df = _make_df([100.0] * 10)
+        # Dynamic recent start so all 10 bars fall inside _fetch's rolling
+        # 3-month window regardless of the calendar (AB1 Lane E stale-fixture
+        # repair — a fixed past start_date silently aged out).
+        start = (pd.Timestamp.today().normalize() - pd.Timedelta(days=30)).strftime("%Y-%m-%d")
+        df = _make_df([100.0] * 10, start_date=start)
         fake = _FakeProvider(daily_response=df)
         set_provider(fake)
         result = market_check._fetch("AAPL")

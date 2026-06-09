@@ -271,30 +271,15 @@ class TestPersistentSliceSupplementsFallback(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 3. Frontend: StillMovingSection has no mechanism-text filter
+# 3. (removed) Frontend "Still moving" double-filter guard.
+# The live mover-window sections — including the persistent "Still moving
+# markets" surface this test grepped (``const persistentList`` /
+# ``PersistentMoverRow``) — were retired from market-overview.tsx in P5B
+# (Section 2 now reads the frozen archive; see the file's module note).  The
+# compute_slice fallback behaviour the guard actually cared about is covered by
+# TestPersistentSliceSupplementsFallback above; the brittle TSX source-grep had
+# no surface left to anchor on, so it was removed rather than re-pinned.
 # ---------------------------------------------------------------------------
-
-class TestStillMovingSectionNoDoubleFilter(unittest.TestCase):
-
-    def test_no_insufficient_evidence_filter(self):
-        content = _read_frontend(
-            "frontend", "src", "components", "pages", "market-overview.tsx",
-        )
-        # The persistent ("Still moving markets") section renders from
-        # ``persistentList`` inside ``MoversChapter``; the backend already
-        # gates /movers/persistent, so the surface shows the response
-        # verbatim.  Re-anchor on the binding and assert no insufficient-
-        # evidence filter appears between it and the row render.
-        start = content.find("const persistentList")
-        self.assertNotEqual(start, -1, "persistent movers binding not found")
-        end = content.find("PersistentMoverRow", start)
-        self.assertNotEqual(end, -1, "persistent movers render not found")
-        body = content[start:end]
-        self.assertNotIn(
-            "insufficient evidence",
-            body.lower(),
-            "Persistent section must not filter on 'insufficient evidence'",
-        )
 
 
 # ---------------------------------------------------------------------------

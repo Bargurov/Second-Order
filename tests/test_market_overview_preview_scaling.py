@@ -358,24 +358,14 @@ class TestMarketOverviewFrontendNoSparkline(unittest.TestCase):
     def test_persistent_card_still_renders_symbol_and_return(self):
         """The cleanup removed the chart but kept symbol + value chips.
 
-        The persistent-mover card rendering moved out of
-        ``market-overview.tsx`` and into the dedicated
-        ``mover-cards.tsx`` component (``PersistentMoverRow``); the
-        page-level file now imports the row instead of rendering it
-        inline.  Inspect the row component directly so this regression
+        The persistent-mover card rendering was retired from
+        ``market-overview.tsx`` in P5B and now lives only in the dedicated
+        ``mover-cards.tsx`` component (``PersistentMoverRow``) for other
+        surfaces.  Inspect the row component directly so this regression
         guard survives the refactor.  The lead-ticker shape replaces
         the raw ``{t.symbol}`` / ``{pct(t.return_5d)}`` references with
         ``lead`` + ``pct(r5)`` — same chips, different binding.
         """
-        page_path = os.path.join(
-            os.path.dirname(__file__), "..", "frontend", "src",
-            "components", "pages", "market-overview.tsx",
-        )
-        with open(page_path, "r", encoding="utf-8") as f:
-            page_src = f.read()
-        # Page still wires PersistentMoverRow into the persistent grid.
-        self.assertIn("PersistentMoverRow", page_src)
-
         row_path = os.path.join(
             os.path.dirname(__file__), "..", "frontend", "src",
             "components", "ui", "mover-cards.tsx",

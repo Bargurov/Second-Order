@@ -385,7 +385,11 @@ class TestRestartPersistence(_CacheTestBase):
 class TestOutputContractUnchanged(_CacheTestBase):
 
     def test_market_check_fetch_returns_close_and_volume(self) -> None:
-        df = _make_df([100.0] * 8)
+        # Dynamic recent start so all 8 bars fall inside _fetch's rolling 3-month
+        # window regardless of the calendar (a fixed past start_date silently
+        # aged out of the window — AB1 Lane E stale-fixture repair).
+        start = (pd.Timestamp.today().normalize() - pd.Timedelta(days=30)).strftime("%Y-%m-%d")
+        df = _make_df([100.0] * 8, start_date=start)
         provider = _RecordingProvider(df=df)
         set_provider(provider)
 
