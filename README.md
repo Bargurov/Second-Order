@@ -821,10 +821,25 @@ The bot uses `SECOND_ORDER_API_URL` to call the local FastAPI service.
 
 ## Deploy
 
-For a minimal public API deploy on Render, use `render.yaml`.
-Set the API key for the selected `ANALYSIS_PROVIDER` only if you want real
-model output in the deployed app; otherwise the API still boots with
-mock-analysis fallback. Render injects `PORT` automatically.
+For a minimal public API deploy on Render, use `render.yaml`. Render injects
+`PORT` automatically. With no provider key the API boots with the
+mock-analysis fallback (no billing, nothing persisted), which is the safe
+default for a public demo.
+
+**Do not expose a real provider key on a public deploy without the paid-route
+guard.** The `/analyze` (and `/analyze/stream`) routes can make billed provider
+calls, and they fail **closed**: when a real (billable) `ANTHROPIC_API_KEY` is
+configured, a request is rejected with `403` unless **both**
+
+- `ENABLE_PAID_ANALYSIS=true`, **and**
+- `SECOND_ORDER_ADMIN_TOKEN` is set and the request sends a matching
+  `X-Second-Order-Admin-Token` header
+
+are present. A real key with no admin token therefore leaves the paid routes
+locked, not open. Only set `ANALYSIS_PROVIDER` + the provider key on a public
+deploy if you have also set `SECOND_ORDER_ADMIN_TOKEN` (and want paid analysis
+enabled); otherwise leave the key unset and run the mock fallback.
+
 For a split frontend/backend deploy, set `VITE_API_BASE_URL` on the frontend and
 set `CORS_ALLOWED_ORIGINS` on the backend to the frontend origin.
 
