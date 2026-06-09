@@ -104,6 +104,71 @@ class PaidAnalysisGuardUnit(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+class PaidAnalysisFailClosedUnit(unittest.TestCase):
+    """AP1 — fail CLOSED when a real (billable) key is present.
+
+    The old guard returned early when ``SECOND_ORDER_ADMIN_TOKEN`` was unset
+    ("inert"), so a real Anthropic key + no admin token left ``/analyze``
+    unprotected.  A missing admin token must never be a free pass when the
+    process can actually bill.  No-real-key (mock) mode stays open so local
+    dev / the test suite are unaffected.
+    """
+
+    # Real-SHAPED but fake key — never a live secret.  The guard rejects
+    # before any provider call, so no billing can occur from these tests.
+    _REAL_KEY = "sk-ant-fake-not-a-real-key-do-not-use"
+
+    def test_real_key_no_admin_token_rejected(self):
+        with mock.patch.dict(os.environ, {
+            "ANTHROPIC_API_KEY": self._REAL_KEY,
+            "SECOND_ORDER_ADMIN_TOKEN": "",
+            "ENABLE_PAID_ANALYSIS": "",
+        }):
+            with self.assertRaises(HTTPException) as ctx:
+                api.require_paid_analysis(x_admin_token=None)
+            self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_real_key_paid_disabled_rejected(self):
+        with mock.patch.dict(os.environ, {
+            "ANTHROPIC_API_KEY": self._REAL_KEY,
+            "SECOND_ORDER_ADMIN_TOKEN": "",
+            "ENABLE_PAID_ANALYSIS": "false",
+        }):
+            with self.assertRaises(HTTPException) as ctx:
+                api.require_paid_analysis(x_admin_token=None)
+            self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_real_key_paid_enabled_but_no_admin_token_rejected(self):
+        # Even with paid explicitly enabled, no CONFIGURED admin token means
+        # there is nothing to authenticate against → fail closed.
+        with mock.patch.dict(os.environ, {
+            "ANTHROPIC_API_KEY": self._REAL_KEY,
+            "SECOND_ORDER_ADMIN_TOKEN": "",
+            "ENABLE_PAID_ANALYSIS": "true",
+        }):
+            with self.assertRaises(HTTPException) as ctx:
+                api.require_paid_analysis(x_admin_token=None)
+            self.assertEqual(ctx.exception.status_code, 403)
+
+    def test_real_key_with_admin_paid_and_header_allowed(self):
+        with mock.patch.dict(os.environ, {
+            "ANTHROPIC_API_KEY": self._REAL_KEY,
+            "SECOND_ORDER_ADMIN_TOKEN": _TOKEN,
+            "ENABLE_PAID_ANALYSIS": "true",
+        }):
+            self.assertIsNone(api.require_paid_analysis(x_admin_token=_TOKEN))
+
+    def test_no_real_key_no_admin_allowed_mock_safe(self):
+        # Local mock mode: no billable key, no admin token → allowed (the
+        # /analyze path returns a mock and never bills).
+        with mock.patch.dict(os.environ, {
+            "ANTHROPIC_API_KEY": "",
+            "SECOND_ORDER_ADMIN_TOKEN": "",
+            "ENABLE_PAID_ANALYSIS": "",
+        }):
+            self.assertIsNone(api.require_paid_analysis(x_admin_token=None))
+
+
 class AnalyzeRouteGuardIntegration(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(api.app)

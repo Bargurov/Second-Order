@@ -17,6 +17,13 @@ from __future__ import annotations
 import os
 import sys
 
+# Test safety (AP1): pin a mock (empty) Anthropic key for the whole pytest
+# session BEFORE any module imports ``load_dotenv()`` — otherwise the real
+# ``.env`` key leaks into ``os.environ`` and the fail-closed paid-analysis
+# guard 403s every tokenless /analyze test.  Mirrors tests/__init__.py for the
+# unittest path.  Tests needing a real-shaped key set it locally.
+os.environ["ANTHROPIC_API_KEY"] = ""
+
 # Make the project root importable BEFORE we resolve ``tests``.  Some
 # test files use ``sys.path.insert`` themselves; this just guarantees
 # the early redirect path works even if pytest is invoked from a

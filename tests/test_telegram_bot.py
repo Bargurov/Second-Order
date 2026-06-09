@@ -1040,5 +1040,97 @@ class TestFormatMarketContext(unittest.TestCase):
         self.assertIsNone(result)
 
 
+# ---------------------------------------------------------------------------
+# AP1 — Telegram allowlist (defense-in-depth; the bot can trigger paid /analyze).
+# ---------------------------------------------------------------------------
+
+class TestTelegramAllowlistParsing(unittest.TestCase):
+    def test_parse_csv(self):
+        from telegram_bot import _parse_allowed_chat_ids
+        self.assertEqual(_parse_allowed_chat_ids("123, 456"), frozenset({123, 456}))
+
+    def test_parse_handles_semicolons_and_blanks(self):
+        from telegram_bot import _parse_allowed_chat_ids
+        self.assertEqual(_parse_allowed_chat_ids("123; ; 456,"), frozenset({123, 456}))
+
+    def test_parse_empty(self):
+        from telegram_bot import _parse_allowed_chat_ids
+        self.assertEqual(_parse_allowed_chat_ids(""), frozenset())
+
+    def test_parse_ignores_non_numeric(self):
+        from telegram_bot import _parse_allowed_chat_ids
+        self.assertEqual(_parse_allowed_chat_ids("123, abc"), frozenset({123}))
+
+
+class TestTelegramIsAuthorizedChat(unittest.TestCase):
+    def test_listed_chat_authorized(self):
+        from telegram_bot import is_authorized_chat
+        self.assertTrue(is_authorized_chat(123, frozenset({123, 456})))
+
+    def test_unlisted_chat_rejected(self):
+        from telegram_bot import is_authorized_chat
+        self.assertFalse(is_authorized_chat(999, frozenset({123, 456})))
+
+    def test_empty_allowlist_rejects_all(self):
+        from telegram_bot import is_authorized_chat
+        self.assertFalse(is_authorized_chat(123, frozenset()))
+
+    def test_none_chat_rejected(self):
+        from telegram_bot import is_authorized_chat
+        self.assertFalse(is_authorized_chat(None, frozenset({123})))
+
+
+class TestTelegramAllowlistConfigured(unittest.TestCase):
+    def test_unconfigured_when_empty(self):
+        from telegram_bot import _allowlist_configured
+        self.assertFalse(_allowlist_configured(frozenset()))
+
+    def test_configured_when_populated(self):
+        from telegram_bot import _allowlist_configured
+        self.assertTrue(_allowlist_configured(frozenset({1})))
+
+
+class TestHandleMessageAllowlist(unittest.TestCase):
+    """The bot's analyze trigger must reject unlisted chats without billing."""
+
+    def _fake_update(self, chat_id: int):
+        from unittest.mock import AsyncMock
+        from types import SimpleNamespace
+        msg = SimpleNamespace(
+            text="US imposes new tariffs on steel imports",
+            caption=None,
+            chat=SimpleNamespace(id=chat_id, send_action=AsyncMock()),
+            reply_text=AsyncMock(),
+        )
+        return SimpleNamespace(message=msg), msg
+
+    def test_unauthorized_chat_does_not_call_analyze(self):
+        import asyncio
+        import telegram_bot
+        from unittest.mock import patch
+        update, msg = self._fake_update(chat_id=999)
+        with patch.object(telegram_bot, "ALLOWED_CHAT_IDS", frozenset({123})), \
+                patch.object(telegram_bot, "call_analyze") as ca:
+            asyncio.run(telegram_bot.handle_message(update, None))
+        ca.assert_not_called()
+        msg.reply_text.assert_awaited()  # the user got a rejection reply
+
+    def test_authorized_chat_calls_analyze(self):
+        import asyncio
+        import telegram_bot
+        from unittest.mock import patch
+        update, msg = self._fake_update(chat_id=123)
+        with patch.object(telegram_bot, "ALLOWED_CHAT_IDS", frozenset({123})), \
+                patch.object(telegram_bot, "call_analyze", return_value={
+                    "is_mock": True, "headline": "x", "analysis": {},
+                    "market": {"note": "", "tickers": []}, "stage": "realized",
+                    "persistence": "medium", "event_date": "2025-01-01",
+                }) as ca, \
+                patch.object(telegram_bot, "format_analysis", return_value="ok"), \
+                patch.object(telegram_bot, "call_market_context", return_value={}):
+            asyncio.run(telegram_bot.handle_message(update, None))
+        ca.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()

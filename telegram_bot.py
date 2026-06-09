@@ -48,6 +48,58 @@ from telegram.ext import (
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
+
+# ---------------------------------------------------------------------------
+# Chat allowlist — the bot forwards arbitrary text into the (billable)
+# /analyze endpoint, so only explicitly allowlisted chats may trigger it.
+# The backend require_paid_analysis guard is the real billing protection
+# (the bot sends no admin token, so its /analyze POST is rejected when a real
+# key is configured); this allowlist is defense-in-depth at the bot edge.
+# Fail-closed: an empty allowlist authorizes NO chat at runtime, and main()
+# refuses to start (loud) rather than running and silently rejecting everyone.
+# ---------------------------------------------------------------------------
+
+def _parse_allowed_chat_ids(raw: str | None = None) -> frozenset[int]:
+    """Parse ``TELEGRAM_ALLOWED_CHAT_IDS`` (comma/semicolon-separated ints)."""
+    if raw is None:
+        raw = os.getenv("TELEGRAM_ALLOWED_CHAT_IDS", "")
+    out: set[int] = set()
+    for part in (raw or "").replace(";", ",").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.add(int(part))
+        except ValueError:
+            continue
+    return frozenset(out)
+
+
+ALLOWED_CHAT_IDS = _parse_allowed_chat_ids()
+
+
+def _allowlist_configured(allowed_ids: frozenset[int] | None = None) -> bool:
+    """True iff at least one chat id is allowlisted."""
+    if allowed_ids is None:
+        allowed_ids = ALLOWED_CHAT_IDS
+    return bool(allowed_ids)
+
+
+def is_authorized_chat(chat_id, allowed_ids: frozenset[int] | None = None) -> bool:
+    """Fail closed: only allowlisted chat ids may trigger analysis.
+
+    An empty allowlist authorizes no one (the bot must be explicitly
+    configured via ``TELEGRAM_ALLOWED_CHAT_IDS``).
+    """
+    if allowed_ids is None:
+        allowed_ids = ALLOWED_CHAT_IDS
+    if not allowed_ids:
+        return False
+    try:
+        return int(chat_id) in allowed_ids
+    except (TypeError, ValueError):
+        return False
+
 # ---------------------------------------------------------------------------
 # URL resolution — guard against .env.example placeholder trap
 # ---------------------------------------------------------------------------
@@ -854,6 +906,16 @@ async def cmd_brief(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle any text message — extract a headline and analyze it."""
     msg = update.message
+    # Allowlist gate — the analyze call is billable; reject unlisted chats
+    # before any /analyze POST.  Fail closed (empty allowlist → reject all).
+    chat_id = msg.chat.id if (msg and getattr(msg, "chat", None)) else None
+    if not is_authorized_chat(chat_id):
+        if msg:
+            await msg.reply_text(
+                "This bot is private and your chat is not authorized."
+            )
+        logger.warning("Rejected unauthorized chat %s", chat_id)
+        return
     headline = extract_headline(
         text=msg.text,
         caption=msg.caption,
@@ -893,6 +955,16 @@ def main() -> None:
     if not BOT_TOKEN:
         print("Error: TELEGRAM_BOT_TOKEN not set in .env")
         print("Get a token from @BotFather on Telegram and add it to your .env file.")
+        sys.exit(1)
+
+    # Fail closed and LOUD: the bot triggers the billable /analyze endpoint, so
+    # it must not run without an explicit chat allowlist (otherwise any user who
+    # finds the bot could trigger paid analysis).
+    if not _allowlist_configured():
+        print("Error: TELEGRAM_ALLOWED_CHAT_IDS not set in .env")
+        print("The bot triggers paid analysis, so it refuses to start without an")
+        print("explicit chat allowlist. Set TELEGRAM_ALLOWED_CHAT_IDS to a comma-")
+        print("separated list of authorized chat ids.")
         sys.exit(1)
 
     logger.info(f"Starting bot, API URL: {API_URL}")

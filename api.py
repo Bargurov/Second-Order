@@ -138,19 +138,35 @@ def require_admin_token(
 def require_paid_analysis(
     x_admin_token: str | None = Header(default=None, alias=_ADMIN_TOKEN_HEADER),
 ) -> None:
-    """Double guard for the paid ``/analyze`` endpoints.
+    """Fail-CLOSED guard for the paid ``/analyze`` endpoints.
 
-    Inert when ``SECOND_ORDER_ADMIN_TOKEN`` is unset.  When set, BOTH
-    ``ENABLE_PAID_ANALYSIS=true`` AND a valid admin token are required — else
-    403 before any provider call.
+    The ONLY unauthenticated path is local mock mode — no real (billable)
+    Anthropic key AND no configured admin token — where ``/analyze`` returns a
+    mock and can never bill, so local dev / the test suite stay open.
+
+    In every other state the route CAN bill (a real key is present) or the
+    deploy is protected (an admin token is configured), so BOTH conditions are
+    required, checked before any provider call:
+      * ``ENABLE_PAID_ANALYSIS=true`` (explicit opt-in), AND
+      * a configured ``SECOND_ORDER_ADMIN_TOKEN`` matched by the request header.
+
+    A missing admin token is NEVER a free pass when a real key is present —
+    that was the prior fail-OPEN bug (it returned early when the token was
+    unset, leaving a billable key unprotected).
     """
     admin = _admin_token_configured()
-    if not admin:
+    if not _real_api_key_present() and not admin:
+        # Local mock mode: no billing risk, no deploy protection expected.
         return
     if not _paid_analysis_enabled():
         raise HTTPException(
             status_code=403,
             detail="paid analysis disabled (set ENABLE_PAID_ANALYSIS=true)",
+        )
+    if not admin:
+        raise HTTPException(
+            status_code=403,
+            detail="paid analysis requires SECOND_ORDER_ADMIN_TOKEN",
         )
     if not x_admin_token or not hmac.compare_digest(x_admin_token, admin):
         raise HTTPException(status_code=403, detail="admin token required")

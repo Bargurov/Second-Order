@@ -17,7 +17,21 @@ from unittest.mock import patch, MagicMock, PropertyMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# These tests drive ``analyze_event`` down its real-key branch (then mock the
+# provider client), so they need a non-placeholder key.  Set it here but
+# CONFINE it: ``tearDownModule`` restores the prior value so this module does
+# not leak a "real" key into later modules in the same process — otherwise the
+# fail-closed paid-analysis guard would 403 their tokenless /analyze tests.
+_PRIOR_ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY")
 os.environ["ANTHROPIC_API_KEY"] = "test-key-for-retry-tests"
+
+
+def tearDownModule():
+    if _PRIOR_ANTHROPIC_KEY is None:
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+    else:
+        os.environ["ANTHROPIC_API_KEY"] = _PRIOR_ANTHROPIC_KEY
+
 
 import anthropic
 from analyze_event import (
