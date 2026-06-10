@@ -400,6 +400,35 @@ blocked unless explicitly approved later.
 python scripts/research_queue_report.py --json
 ```
 
+### Track-record scoring-rule sensitivity (disclosure, not a truth claim)
+
+`scripts/track_record_sensitivity_report.py` recomputes the accepted
+track-record outcomes under several transparent scoring rules side-by-side. The
+canonical headline rule is unchanged — a generous **ANY-support** OR-rule (one
+supporting ticker makes an event count as validated, even against several
+contradictions). The report shows how sensitive the validated / contradicted /
+unresolved split is to that generosity, over the **same** accepted denominator
+(86) for every rule:
+
+- `any_support` (canonical) — matches `compute_track_record` exactly.
+- `majority` — supporting vs contradicting count; ties unresolved.
+- `evidence_weighted` — supporting vs contradicting weight; with no per-ticker
+  evidence weight in the corpus it reduces to majority on the live archive,
+  reported as an explicit `changed_vs_majority = 0` delta rather than hidden.
+- `all_support_strict` — validated only if no ticker contradicts.
+
+On the live archive the generous rule's **46 validated collapses to 19 under
+majority and 11 under strict** — a large sensitivity that the report surfaces
+with representative disagreement cases. This is disclosure: **no rule is claimed
+"correct"**, the canonical labels and headline rule are preserved, the
+representative cases are illustrative not evidence, no single-event significance
+is claimed, and the closed Phase 1 / Phase 2 FDR pools are untouched. See
+`stats/METHODOLOGY.md` for the rule definitions.
+
+```powershell
+python scripts/track_record_sensitivity_report.py --json
+```
+
 ### Batch-1 event-study coverage repair (H1 → H3, 2026-06-03)
 
 The first bounded coverage-repair batch lifted event-study compute-ready

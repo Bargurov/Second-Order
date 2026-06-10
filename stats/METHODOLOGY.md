@@ -105,6 +105,35 @@ Overlap here is an independence caveat, not a new statistic of significance: the
 readiness counts and the placebo null comparison stay descriptive, and no
 single-event significance is claimed.
 
+## Track-record scoring-rule sensitivity (AV3)
+
+`scripts/track_record_sensitivity_report.py` recomputes the accepted
+track-record outcomes under several transparent rules side-by-side. The
+canonical headline rule in `db.compute_track_record` is unchanged: a generous
+**ANY-support** OR-rule (one supporting ticker -> validated, even against several
+contradictions). The report shows how sensitive the validated / contradicted /
+unresolved split is to that generosity:
+
+- `any_support` — canonical; matches `compute_track_record` exactly (same
+  source selection: longest-horizon revisit snapshot when directional, else
+  `market_tickers`).
+- `majority` — supporting count vs contradicting count; tie / no direction ->
+  unresolved.
+- `evidence_weighted` — supporting weight vs contradicting weight. No canonical
+  per-ticker evidence weight exists in the corpus, so every directional ticker
+  defaults to 1.0 and this rule **reduces to majority on the live archive**
+  (reported as an explicit `changed_vs_majority = 0` delta, not hidden). It
+  diverges from majority only when per-ticker weights are introduced.
+- `all_support_strict` — validated only if every directional ticker supports;
+  any contradiction -> contradicted. The sharpest contrast to ANY-support.
+
+Every rule is scored over the **same** accepted track-record set (one
+denominator, 86 as of 2026-06-10) so the columns are comparable. This is
+disclosure, not a truth claim: **no rule is asserted "correct"**, the canonical
+labels (validated / contradicted / unresolved) are preserved, representative
+disagreement cases are illustrative not evidence, and no single-event
+significance is claimed. The closed Phase 1 / Phase 2 FDR pools are untouched.
+
 ## Cohort inference — currently blocked (not by the engine)
 
 A compute-ready event-study row (per-horizon BHAR / SAR / CAR point
