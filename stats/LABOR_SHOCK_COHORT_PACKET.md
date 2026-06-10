@@ -78,9 +78,14 @@ different timing and even different signs of near-term cash impact.
 | 314 | context | SPY (yes) |
 | 314 | excluded | CMCSA (diversified; channel diluted) |
 
-Notable: the supplier legs **LEA and APTV already have local price data**, so
-a future *no-paid* supplier-transmission read of 313 is locally feasible —
-unlike the 314 studio legs (DIS/PARA), which would need a cache backfill.
+Notable: the supplier legs **LEA and APTV have local price rows** — but the
+follow-up C2A packet
+([`stats/UAW_SUPPLIER_TRANSMISSION_PACKET.md`](UAW_SUPPLIER_TRANSMISSION_PACKET.md))
+gate-checked them and found those caches cover **2026 only (zero pre-event
+dates for 2023-09-15)**: the supplier read is *not* computable at the event
+date without a bounded pre-event backfill. What is readable now is the direct
+OEM pair, including a GM-vs-F intra-OEM contrast. The 314 studio legs
+(DIS/PARA) have no local data at all.
 
 ## How C4 changes interpretation
 
