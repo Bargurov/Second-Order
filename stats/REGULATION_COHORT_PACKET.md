@@ -108,6 +108,9 @@ surprise only.
 
 - **303 / 304** — useful clean anchors for future no-paid comparison (the
   conduct-vs-structural contrast); **304's paid path stays closed-deferred**.
+  That comparison now exists:
+  [`stats/REGULATION_CONDUCT_VS_STRUCTURAL.md`](REGULATION_CONDUCT_VS_STRUCTURAL.md)
+  (F1, read-only, no-paid).
 - **302** — remains a deferred duplicate; retired from paid consideration.
 - **305 / 306** — clean dates per C4, but Tier-2 shortlist priority: cautious
   no-paid review before any future consideration (the antitrust family is

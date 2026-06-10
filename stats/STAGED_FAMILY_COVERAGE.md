@@ -80,7 +80,11 @@ locally today; the only failures are transmission legs:
    verdict: keep staged/deferred, re-anchor path is price-side ready but
    milestone event rows are missing locally.
 2. **Regulation conduct-vs-structural comparison memo** over clean anchors
-   303/304; cautious Tier-2 review of 305/306 after. Read-only.
+   303/304; cautious Tier-2 review of 305/306 after. Read-only. — **DONE
+   (F1):** see
+   [`stats/REGULATION_CONDUCT_VS_STRUCTURAL.md`](REGULATION_CONDUCT_VS_STRUCTURAL.md);
+   key point: 304's stronger negative readout is confounded with exposure
+   share and does not establish mechanism strength.
 3. **Design the bounded LEA/APTV pre-event backfill** for the 313 supplier
    read (~85 bars each around 2023-09-15) — *the backfill writes price_cache
    and requires its own approval gate.*
