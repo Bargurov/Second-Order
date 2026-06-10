@@ -167,6 +167,15 @@ Run from the repo root:
   `validated` count moves **46 → 19 → 11** across any-support → majority →
   strict. No rule is claimed correct; the canonical headline rule is unchanged.
 
+- **Mechanism-family coverage map** —
+  `python scripts/mechanism_family_overview_report.py --db-path events.db --json`
+  Shows which mechanism families carry accepted evidence vs staged no-paid
+  candidates, with the untagged bucket disclosed as a limitation. Narrative
+  context: [`stats/MECHANISM_FAMILY_OVERVIEW.md`](stats/MECHANISM_FAMILY_OVERVIEW.md);
+  candidate-review decisions:
+  [`stats/STAGED_CANDIDATE_SHORTLIST.md`](stats/STAGED_CANDIDATE_SHORTLIST.md).
+  Staged candidates never enter accepted denominators.
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide
