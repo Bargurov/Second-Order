@@ -88,7 +88,10 @@ Event-date anchor quality for every row above (clean filing vs scheduled
 signing vs thread sibling vs duplicate) is classified read-only in
 [`stats/EVENT_DATE_QUALITY.md`](EVENT_DATE_QUALITY.md) /
 `scripts/event_date_quality_report.py` — read it before interpreting any
-1d/5d/20d window.
+1d/5d/20d window. The staged regulation cases are compared as a family
+(taxonomy, anchors, descriptive readouts, still no-paid) in
+[`stats/REGULATION_COHORT_PACKET.md`](REGULATION_COHORT_PACKET.md) /
+`scripts/regulation_cohort_packet.py`.
 
 ## Limitations and non-claims
 
