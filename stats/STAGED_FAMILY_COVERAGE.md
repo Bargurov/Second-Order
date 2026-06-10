@@ -85,7 +85,10 @@ locally today; the only failures are transmission legs:
    read (~85 bars each around 2023-09-15) — *the backfill writes price_cache
    and requires its own approval gate.*
 4. **Thread-collapse note** grouping 307–310 with curated anchors 298/300/301
-   as one export-control thread. Read-only.
+   as one export-control thread. Read-only. — **DONE (E1):** see
+   [`stats/SANCTION_THREAD_COLLAPSE.md`](SANCTION_THREAD_COLLAPSE.md);
+   verdict: raw 4 staged rows → **0 independent events**, 2 effective threads
+   ([298, 309] and [300, 307, 308, 310]); collapse/defer all four.
 
 ## Non-claims
 
