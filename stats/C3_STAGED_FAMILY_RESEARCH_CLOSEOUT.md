@@ -123,7 +123,8 @@ decision.** → `stats/UAW_SUPPLIER_BACKFILL_GATE.md`
   write; the preview itself needs its own task and approval).
 - **Option C — new arc.** Start a different research-depth direction (e.g.
   re-anchoring industrial_policy on milestone evidence, or a thread-level
-  sanction observation design).
+  sanction observation design). *(Taken — J1, the accepted-corpus family
+  overlay: [`stats/ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md).)*
 
 ## Recommendation
 

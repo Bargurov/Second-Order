@@ -176,6 +176,14 @@ Run from the repo root:
   [`stats/STAGED_CANDIDATE_SHORTLIST.md`](stats/STAGED_CANDIDATE_SHORTLIST.md).
   Staged candidates never enter accepted denominators.
 
+- **Accepted-corpus family overlay** —
+  `python scripts/accepted_family_overlay_report.py --db-path events.db --json`
+  Classifies the **86** untagged accepted thesis rows with deterministic
+  whole-token headline rules, entirely in memory (no DB write). Expect
+  single + multi + unclassified to sum to **86**; ambiguous rows are
+  surfaced, never forced. Coverage decomposition only — see
+  [`stats/ACCEPTED_FAMILY_OVERLAY.md`](stats/ACCEPTED_FAMILY_OVERLAY.md).
+
 - **Event-date quality / anticipation risk** —
   `python scripts/event_date_quality_report.py --db-path events.db --json`
   Classifies each row's event-date anchor (clean filing vs partial

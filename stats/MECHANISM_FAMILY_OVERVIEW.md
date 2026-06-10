@@ -56,6 +56,10 @@ Two structural facts a reviewer should read directly off this table:
 2. **Every thesis-outcome row (the 86-row track-record corpus) is untagged**
    (`none`). Per-family track-record splits are therefore structurally
    degenerate today — a data limitation this project states rather than hides.
+   A read-only overlay now measures this limitation's shape with
+   deterministic headline rules (no DB write, no inference):
+   [`stats/ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md) /
+   `scripts/accepted_family_overlay_report.py`.
 
 ## Tier-1 shortlist bridge (staged / no-paid only)
 
