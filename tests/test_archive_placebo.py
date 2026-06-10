@@ -201,5 +201,91 @@ class TestCLI(unittest.TestCase):
             self.assertNotRegex(lc, rf"\b{w}\b")
 
 
+def _make_thin_only_fixture() -> str:
+    """One event referencing only a too-short ticker -> no placebo-feasible
+    observation -> overlap disclosure must degrade, not crash."""
+    fd, path = tempfile.mkstemp(suffix=".db", prefix="placebo_thin_")
+    os.close(fd)
+    con = sqlite3.connect(path)
+    con.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY, event_date TEXT, market_tickers TEXT)"
+    )
+    con.execute(
+        "CREATE TABLE price_cache (ticker TEXT, date TEXT, close REAL, volume REAL, "
+        "auto_adjust INTEGER, fetched_at TEXT, source_provider TEXT, UNIQUE(ticker,date,auto_adjust))"
+    )
+    bars = _bdays(date(2025, 1, 1), 220)
+    rows = [("SPY", bars[i].isoformat(), 100.0, 5.0e6, 0, "t", "test") for i in range(220)]
+    rows += [("THIN", bars[i].isoformat(), 100.0 + i, 5.0e6, 0, "t", "test") for i in range(20)]
+    con.executemany("INSERT INTO price_cache VALUES (?,?,?,?,?,?,?)", rows)
+    import json
+    con.execute("INSERT INTO events VALUES (?,?,?)",
+                (1, bars[10].isoformat(), json.dumps([{"symbol": "THIN", "role": "loser"}])))
+    con.commit(); con.close()
+    return path
+
+
+class TestObservedWindowOverlap(unittest.TestCase):
+    def setUp(self):
+        self.db = _make_fixture()
+
+    def tearDown(self):
+        try:
+            os.remove(self.db)
+        except OSError:
+            pass
+
+    def test_build_report_includes_observed_window_overlap(self):
+        r = AP.build_report(self.db, draws=10, seed=1)
+        self.assertIn("observed_window_overlap", r)
+        wo = r["observed_window_overlap"]
+        # Denominator is the placebo-feasible role-observations (the pooled
+        # unit of the observed support statistic), not distinct events.
+        self.assertIn("role", wo["denominator"])
+        self.assertEqual(wo["n_with_date"], r["observed_eligible"])
+        self.assertIn("n_distinct_event_dates", wo)
+        for h in ("1", "5", "20"):
+            for k in ("n_windows", "overlapping_pairs", "max_concurrent",
+                      "fraction_in_overlap", "status"):
+                self.assertIn(k, wo["horizons"][h])
+        self.assertTrue(wo["caveat"])
+
+    def test_same_date_role_observations_overlap_fully(self):
+        # UP + DN are two role-observations on the SAME event date -> identical
+        # windows -> they overlap at every horizon by construction.
+        r = AP.build_report(self.db, draws=10, seed=1)
+        wo = r["observed_window_overlap"]
+        self.assertEqual(wo["n_distinct_event_dates"], 1)
+        self.assertGreaterEqual(wo["horizons"]["1"]["max_concurrent"], 2)
+
+    def test_overlap_caveat_flags_independence_and_descriptive(self):
+        r = AP.build_report(self.db, draws=10, seed=1)
+        cav = r["observed_window_overlap"]["caveat"].lower()
+        self.assertIn("overlap", cav)
+        self.assertTrue("independ" in cav or "descriptive" in cav)
+
+    def test_no_usable_obs_degrades_to_insufficient_not_crash(self):
+        thin_db = _make_thin_only_fixture()
+        try:
+            r = AP.build_report(thin_db, draws=5, seed=1)
+            self.assertEqual(r["observed_eligible"], 0)
+            wo = r["observed_window_overlap"]
+            self.assertEqual(wo["horizons"]["5"]["status"], "insufficient_n")
+        finally:
+            os.remove(thin_db)
+
+    def test_summarize_text_surfaces_overlap_without_banned_framing(self):
+        text = AP.summarize(AP.build_report(self.db, draws=10, seed=1))
+        self.assertIn("overlap", text.lower())
+        import re
+        lc = text.lower()
+        # Mirrors the project's existing placebo banned-framing list
+        # (test_cli_output_has_no_banned_framing). "forecast" is intentionally
+        # absent: the standing NON_CLAIM disclaimer says "not a ... forecast".
+        for w in ["buy", "sell", "long", "short", "alpha", "signal", "trade",
+                  "proof", "proves", "confirmed"]:
+            self.assertNotRegex(lc, rf"\b{w}\b")
+
+
 if __name__ == "__main__":
     unittest.main()

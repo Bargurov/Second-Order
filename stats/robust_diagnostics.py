@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from datetime import date as _date
 from typing import Any, Iterable, Sequence
 
 __all__ = (
@@ -42,7 +43,9 @@ __all__ = (
     "window_overlap_summary",
     "sar_convention_summary",
     "build_diagnostics_block",
+    "build_overlap_disclosure",
     "ROBUST_DIAGNOSTICS_NON_CLAIMS",
+    "OVERLAP_DISCLOSURE_CAVEAT",
 )
 
 
@@ -321,6 +324,76 @@ def window_overlap_summary(
     return {**base, "status": "ok", "overlapping_pairs": pairs,
             "max_concurrent": mx,
             "fraction_in_overlap": sum(1 for o in overlaps if o) / n}
+
+
+# ---------------------------------------------------------------------------
+# Overlap disclosure — reusable across reports (readiness, placebo, baseline)
+# ---------------------------------------------------------------------------
+
+OVERLAP_DISCLOSURE_CAVEAT: str = (
+    "Overlapping event windows violate the independence that cross-event "
+    "sign, rank, and placebo readouts assume, so those readouts overstate "
+    "certainty. This is a descriptive independence caveat, not a significance "
+    "statistic."
+)
+
+
+def _date_ordinal(value: Any) -> int | None:
+    """Ordinal day for an ISO ``YYYY-MM-DD`` (or longer) string, else ``None``."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return _date.fromisoformat(value.strip()[:10]).toordinal()
+    except (ValueError, TypeError):
+        return None
+
+
+def build_overlap_disclosure(
+    event_dates: Iterable[Any],
+    *,
+    horizons: Sequence[int] = (1, 5, 20),
+    denominator_label: str,
+    caveat: str | None = None,
+) -> dict[str, Any]:
+    """Per-horizon event-window overlap disclosure over ``event_dates``.
+
+    ``event_dates`` is an iterable of ISO date strings for the events that
+    would actually be pooled into a cross-event statistic (the caller's own
+    universe — reuse the report's denominator, do not invent a third one).
+    Unparseable / missing dates are dropped and counted in ``n_without_date``;
+    ``n_distinct_event_dates`` exposes how many windows share a date (those are
+    identically overlapping by construction). The window length per horizon is
+    the horizon in days, a calendar-day proxy for the trading-day horizon
+    (errs toward UNDERstating overlap). Each horizon entry is a
+    :func:`window_overlap_summary` block. The ``caveat`` travels with the block
+    so any p-value or null comparison carries its independence qualifier.
+    """
+    ordinals: list[int] = []
+    distinct: set[int] = set()
+    n_without = 0
+    for d in event_dates if event_dates is not None else []:
+        o = _date_ordinal(d)
+        if o is None:
+            n_without += 1
+        else:
+            ordinals.append(o)
+            distinct.add(o)
+
+    horizons_out: dict[str, Any] = {}
+    for h in horizons:
+        horizons_out[str(int(h))] = window_overlap_summary(
+            ordinals, window_length=int(h),
+        )
+
+    return {
+        "denominator":            denominator_label,
+        "n_with_date":            len(ordinals),
+        "n_without_date":         n_without,
+        "n_distinct_event_dates": len(distinct),
+        "window_length_basis":    "calendar_days_proxy_for_trading_day_horizon",
+        "horizons":               horizons_out,
+        "caveat":                 caveat or OVERLAP_DISCLOSURE_CAVEAT,
+    }
 
 
 # ---------------------------------------------------------------------------

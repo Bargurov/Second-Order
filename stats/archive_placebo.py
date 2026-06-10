@@ -24,6 +24,8 @@ import sqlite3
 from datetime import date, timedelta
 from typing import Any, Optional
 
+from stats.robust_diagnostics import build_overlap_disclosure
+
 BENCHMARK = "SPY"
 HORIZONS = (1, 5, 20)
 ESTIMATION_WINDOW = 60
@@ -244,6 +246,7 @@ def build_report(db_path: str, *, draws: int = 1000, seed: int = 20260608) -> di
     # denominators, not 239-vs-50.
     event_anchor_eligible = 0
     usable_obs = []  # (predicted_up, cd, a, s, aidx, seq, symbol)
+    usable_event_dates: list[str] = []  # parallel to usable_obs (observed side)
     for o in obs:
         cd, a, s = series_cache[o["symbol"].upper()]
         if len(cd) < ESTIMATION_WINDOW + 1:
@@ -264,6 +267,7 @@ def build_report(db_path: str, *, draws: int = 1000, seed: int = 20260608) -> di
                              "reason": "no_eligible_placebo_dates"})
             continue
         usable_obs.append((predicted_up(o["role"]), cd, a, s, aidx, seq, o["symbol"].upper()))
+        usable_event_dates.append(o["event_date"])
 
     observed_pairs: dict[str, list] = {str(h): [] for h in HORIZONS}
     for pu, cd, a, s, aidx, seq, sym in usable_obs:
@@ -307,6 +311,15 @@ def build_report(db_path: str, *, draws: int = 1000, seed: int = 20260608) -> di
         }
 
     conclusion = _conclude(observed_support, placebo, observed_eligible, event_anchor_eligible)
+    # Event-window overlap disclosure (AV2) over the OBSERVED side — the
+    # placebo-feasible role-observations whose real-event-date windows are
+    # compared to the placebo draws.  Role-observations (not distinct events)
+    # are the pooled unit of the observed support statistic; observations
+    # sharing an event date have identical windows by construction.
+    observed_window_overlap = build_overlap_disclosure(
+        usable_event_dates,
+        denominator_label="placebo_feasible_observed_role_observations",
+    )
     return {
         "archive_denominator": {"scored_events": len({o["event_id"] for o in obs}),
                                 "role_observations": len(obs)},
@@ -318,6 +331,7 @@ def build_report(db_path: str, *, draws: int = 1000, seed: int = 20260608) -> di
         "seed": seed,
         "observed_support": observed_support,
         "placebo": placebo,
+        "observed_window_overlap": observed_window_overlap,
         "excluded": excluded,
         "residual_coverage_note": (
             f"Matched negative control: only {observed_eligible} of {event_anchor_eligible} "
@@ -377,6 +391,24 @@ def summarize(r: dict) -> str:
             f"    {h:>2}d   | {o['support']:.4f} (n={o['n']:>3}) | "
             f"{p['mean']} [{p['q05']}, {p['q95']}] | pct {p['observed_percentile']}"
         )
+    wo = r.get("observed_window_overlap") or {}
+    who = wo.get("horizons") or {}
+    if who:
+        lines.append("")
+        lines.append(
+            f"  observed event-window overlap (over {wo.get('n_with_date', 0)} "
+            f"placebo-feasible role-observations on {wo.get('n_distinct_event_dates', 0)} "
+            f"distinct dates) - independence qualifier:"
+        )
+        for h in (1, 5, 20):
+            hb = who.get(str(h)) or {}
+            lines.append(
+                f"    {h:>2}d  | pairs={hb.get('overlapping_pairs')} "
+                f"max_concurrent={hb.get('max_concurrent')} "
+                f"frac_in_overlap={hb.get('fraction_in_overlap')}"
+            )
+        if wo.get("caveat"):
+            lines.append(f"    {wo['caveat']}")
     lines += [
         "",
         f"  conclusion: {r['conclusion']}",

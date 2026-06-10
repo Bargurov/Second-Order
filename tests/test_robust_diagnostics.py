@@ -13,6 +13,7 @@ import pytest
 from stats.robust_diagnostics import (
     ROBUST_DIAGNOSTICS_NON_CLAIMS,
     build_diagnostics_block,
+    build_overlap_disclosure,
     exact_sign_test,
     rank_test_summary,
     sar_convention_summary,
@@ -325,6 +326,61 @@ def test_build_diagnostics_block_reuses_denominator():
     assert block["sar_convention"]["status"] == "ok"
     sar_h = {r["horizon"] for r in block["sar_convention"]["per_horizon"]}
     assert sar_h == {1, 5}
+
+
+def test_overlap_disclosure_known_dates():
+    # 3 consecutive business days (Mon/Tue/Wed). At horizon 5 all three
+    # windows overlap; at horizon 1 the half-open windows merely abut.
+    out = build_overlap_disclosure(
+        ["2026-03-02", "2026-03-03", "2026-03-04"],
+        denominator_label="test_universe",
+    )
+    assert out["denominator"] == "test_universe"
+    assert out["n_with_date"] == 3
+    assert out["n_without_date"] == 0
+    assert out["n_distinct_event_dates"] == 3
+    h5 = out["horizons"]["5"]
+    assert h5["overlapping_pairs"] == 3
+    assert h5["max_concurrent"] == 3
+    assert h5["fraction_in_overlap"] == pytest.approx(1.0)
+    assert out["horizons"]["1"]["overlapping_pairs"] == 0
+
+
+def test_overlap_disclosure_drops_unparseable_dates():
+    out = build_overlap_disclosure(
+        ["2026-03-02", None, "not-a-date", "2026-03-03"],
+        denominator_label="u",
+    )
+    assert out["n_with_date"] == 2
+    assert out["n_without_date"] == 2
+    assert out["n_distinct_event_dates"] == 2
+
+
+def test_overlap_disclosure_counts_distinct_dates():
+    out = build_overlap_disclosure(
+        ["2026-03-02", "2026-03-02"], denominator_label="u",
+    )
+    assert out["n_with_date"] == 2
+    assert out["n_distinct_event_dates"] == 1
+    h1 = out["horizons"]["1"]
+    assert h1["overlapping_pairs"] == 1      # identical windows
+    assert h1["max_concurrent"] == 2
+    assert h1["fraction_in_overlap"] == pytest.approx(1.0)
+
+
+def test_overlap_disclosure_empty_is_insufficient():
+    out = build_overlap_disclosure([], denominator_label="u")
+    assert out["n_with_date"] == 0
+    assert out["n_distinct_event_dates"] == 0
+    assert out["horizons"]["5"]["status"] == "insufficient_n"
+    assert isinstance(out["caveat"], str) and out["caveat"]
+
+
+def test_overlap_disclosure_caveat_flags_independence():
+    out = build_overlap_disclosure(["2026-03-02"], denominator_label="u")
+    cav = out["caveat"].lower()
+    assert "overlap" in cav
+    assert "independ" in cav
 
 
 def test_build_diagnostics_block_handles_empty_horizon():

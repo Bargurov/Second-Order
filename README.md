@@ -361,6 +361,17 @@ diagnostics: no single-event significance is claimed, the SAR audit changes no
 event-study math, and the closed Phase 1 / Phase 2 FDR pools are untouched. See
 `stats/METHODOLOGY.md` for the full convention notes.
 
+That same overlap caveat is also wired (read-only, additive) into the readiness
+and placebo reports. `scripts/stat_validation_readiness_report.py` carries a
+`window_overlap` block scoped to the **compute-ready** events (the poolable set)
+and labeled by lens — accepted and raw report their own compute-ready universe,
+so their overlap denominators differ (e.g. accepted 78 vs raw 91). The archive
+placebo report (`stats/archive_placebo.py`) carries an `observed_window_overlap`
+block over the placebo-feasible role-observations on the real event dates, so
+the observed-vs-placebo comparison is read with its independence caveat. Both
+reuse the shared `build_overlap_disclosure` helper; neither invents a new
+denominator or claims significance.
+
 ### Research queue report — staged candidates, no paid call
 
 `scripts/research_queue_report.py` (AT1, 2026-06-10) is a read-only triage

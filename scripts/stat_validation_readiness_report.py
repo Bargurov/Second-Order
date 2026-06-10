@@ -446,10 +446,23 @@ def summarize_readiness(
     truncated = per_event[:capped_limit]
 
     # Strict event-study compute readiness over EVERY event (not the
-    # truncated list), via the same gate the live route uses.
-    compute_readiness = _summarize_compute_readiness(
+    # truncated list), via the same gate the live route uses.  The same loop
+    # yields the compute-ready (id, date) pairs the overlap disclosure scopes to.
+    compute_readiness, ready_pairs = _summarize_compute_readiness(
         per_event, db_path=path, archive_ready_count=n_fully_ready,
     )
+
+    # Event-window overlap disclosure (AV2) — an independence qualifier over
+    # the COMPUTE-READY set (the events that could actually be pooled into a
+    # cross-event statistic), reusing that existing universe rather than a new
+    # denominator.  Labeled with the active lens so accepted vs raw never
+    # silently share a denominator when their compute-ready universes differ.
+    from stats.robust_diagnostics import build_overlap_disclosure
+    window_overlap = build_overlap_disclosure(
+        [event_date for (_eid, event_date) in ready_pairs],
+        denominator_label="compute_ready_events_with_event_date",
+    )
+    window_overlap["lens"] = lens
 
     total_excluded = sum(excluded.values())
     included_stages = sorted({
@@ -494,6 +507,7 @@ def summarize_readiness(
         "events_fully_ready":                          n_fully_ready,
         "curated_intake_excluded_count":               excluded["curated_intake_excluded"],
         "compute_readiness":                           compute_readiness,
+        "window_overlap":                              window_overlap,
         "events":                                      truncated,
         "recommended_next_action": (
             _RECOMMENDED_OK
@@ -600,6 +614,11 @@ def _summarize_compute_readiness(
     basis_counts = {"matched": 0, "cross_flag": 0}
     blocking: dict[str, int] = {}
     cross_flag_caveat = 0
+    # Compute-ready (event_id, event_date) pairs — the set that could actually
+    # be pooled into a cross-event statistic.  Collected in this single gate
+    # loop (no second pass) so the overlap disclosure reuses the exact
+    # compute-ready universe, not a third denominator.
+    ready_pairs: list[tuple[Any, Any]] = []
 
     # ``build`` reads price_cache through the global ``db.DB_FILE``; point
     # it at the same archive this report summarizes for the loop, then
@@ -618,6 +637,7 @@ def _summarize_compute_readiness(
             out = build_event_study_validation(event)
             if out.get("status") == STATUS_AVAILABLE:
                 status_counts[STATUS_AVAILABLE] += 1
+                ready_pairs.append((entry.get("event_id"), entry.get("event_date")))
                 basis = out.get("auto_adjust_basis") or {}
                 if basis.get("asset") == basis.get("benchmark"):
                     basis_counts["matched"] += 1
@@ -638,7 +658,7 @@ def _summarize_compute_readiness(
     top = dict(
         sorted(blocking.items(), key=lambda kv: (-kv[1], kv[0]))[:_COMPUTE_TOP_REASONS]
     )
-    return {
+    summary = {
         "archive_ready_count":             archive_ready_count,
         "event_study_compute_ready_count": status_counts[STATUS_AVAILABLE],
         "status_counts":                   dict(status_counts),
@@ -646,6 +666,7 @@ def _summarize_compute_readiness(
         "auto_adjust_basis_counts":        dict(basis_counts),
         "cross_flag_caveat_count":         cross_flag_caveat,
     }
+    return summary, ready_pairs
 
 
 def _empty_report(*, lens: str = LENS_ACCEPTED) -> dict[str, Any]:
@@ -685,6 +706,7 @@ def _empty_report(*, lens: str = LENS_ACCEPTED) -> dict[str, Any]:
         "events_fully_ready":                          0,
         "curated_intake_excluded_count":               0,
         "compute_readiness":                           _compute_readiness_empty(),
+        "window_overlap":                              _empty_window_overlap(lens=lens),
         "events":                                      [],
         # An empty archive isn't "fully ready" for downstream
         # event-study work — there's nothing to validate.  The gaps
@@ -692,6 +714,16 @@ def _empty_report(*, lens: str = LENS_ACCEPTED) -> dict[str, Any]:
         # phrasing would be a separate label without operator value.
         "recommended_next_action":                     _RECOMMENDED_GAPS,
     }
+
+
+def _empty_window_overlap(*, lens: str = LENS_ACCEPTED) -> dict[str, Any]:
+    """Shaped empty overlap block (no compute-ready events to disclose)."""
+    from stats.robust_diagnostics import build_overlap_disclosure
+    block = build_overlap_disclosure(
+        [], denominator_label="compute_ready_events_with_event_date",
+    )
+    block["lens"] = lens
+    return block
 
 
 def _resolve_db_path(db_path: str | None) -> str | None:
@@ -919,6 +951,23 @@ def _render_text(report: dict[str, Any]) -> str:
         lines.append("  top compute blockers:")
         for reason, count in tbr.items():
             lines.append(f"    {reason}: {count}")
+    wo = report.get("window_overlap") or {}
+    who = wo.get("horizons") or {}
+    if who:
+        lines.append(
+            f"  event-window overlap (compute-ready set, n={wo.get('n_with_date', 0)} "
+            f"over {wo.get('n_distinct_event_dates', 0)} distinct dates) "
+            f"- independence qualifier:"
+        )
+        for h in ("1", "5", "20"):
+            hb = who.get(h) or {}
+            lines.append(
+                f"    {h}d: pairs={hb.get('overlapping_pairs')} "
+                f"max_concurrent={hb.get('max_concurrent')} "
+                f"frac_in_overlap={hb.get('fraction_in_overlap')}"
+            )
+        if wo.get("caveat"):
+            lines.append(f"    {wo['caveat']}")
     lines.append("")
 
     events = report["events"]

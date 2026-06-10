@@ -1599,5 +1599,113 @@ class TestLensCli(_LensBase):
         self.assertIn("diagnostic", out_r)
 
 
+# ---------------------------------------------------------------------------
+# AV2 — event-window overlap disclosure (independence qualifier)
+# ---------------------------------------------------------------------------
+#
+# Overlap is scoped to the COMPUTE-READY set (the events that could actually
+# be pooled into a cross-event statistic) with valid event dates — not the
+# full lens denominator, which includes never-poolable rows.
+
+
+def _seed_compute_ready_event(
+    conn: sqlite3.Connection, *, ticker: str, event_date: date,
+    benchmark_seeded: bool,
+) -> None:
+    """Seed one event + a full contiguous series so the strict event-study
+    gate marks it event_study_available (matched raw/raw basis vs SPY)."""
+    dates = _contiguous_window(event_date, 65, 22)
+    _seed_event(conn, event_date=event_date.isoformat(),
+                market_tickers=json.dumps([{"symbol": ticker}]))
+    _seed_series(conn, ticker=ticker, dates=dates, base=50.0, noise=True,
+                 auto_adjust=0, jump_from=66)
+    if not benchmark_seeded:
+        _seed_series(conn, ticker=_BENCHMARK_TICKER, dates=dates, base=100.0,
+                     noise=False, auto_adjust=0)
+
+
+class TestReadinessWindowOverlap(_Base):
+    _ED = date(2026, 4, 15)
+
+    def _seed_two_ready_plus_one_unready(self) -> None:
+        with self._conn() as conn:
+            _seed_compute_ready_event(conn, ticker="XLE", event_date=self._ED,
+                                      benchmark_seeded=False)
+            _seed_compute_ready_event(conn, ticker="XOM", event_date=self._ED,
+                                      benchmark_seeded=True)
+            # A third event with no cache at all — archive-listed but never
+            # compute-ready, so it must NOT enter the overlap denominator.
+            _seed_event(conn, event_date=self._ED.isoformat(),
+                        market_tickers=json.dumps([{"symbol": "ZZZ"}]))
+            conn.commit()
+
+    def test_window_overlap_block_present_and_scoped_to_compute_ready(self) -> None:
+        self._seed_two_ready_plus_one_unready()
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        self.assertEqual(
+            result["compute_readiness"]["event_study_compute_ready_count"], 2,
+        )
+        self.assertIn("window_overlap", result)
+        wo = result["window_overlap"]
+        self.assertEqual(wo["lens"], "accepted")
+        self.assertIn("compute_ready", wo["denominator"])
+        # Only the 2 compute-ready events count — the no-cache ZZZ is excluded.
+        self.assertEqual(wo["n_with_date"], 2)
+        self.assertEqual(wo["n_distinct_event_dates"], 1)
+        for h in ("1", "5", "20"):
+            hb = wo["horizons"][h]
+            for k in ("n_windows", "overlapping_pairs", "max_concurrent",
+                      "fraction_in_overlap", "status"):
+                self.assertIn(k, hb)
+        # Two events on the same date share an identical window at every horizon.
+        self.assertEqual(wo["horizons"]["1"]["overlapping_pairs"], 1)
+        self.assertEqual(wo["horizons"]["1"]["max_concurrent"], 2)
+        self.assertTrue(wo["caveat"])
+
+    def test_window_overlap_raw_lens_is_labeled_raw(self) -> None:
+        self._seed_two_ready_plus_one_unready()
+        result = report.summarize_readiness(db_path=self._tmp, lens="raw")
+        self.assertEqual(result["window_overlap"]["lens"], "raw")
+
+    def test_text_output_surfaces_overlap_caveat(self) -> None:
+        self._seed_two_ready_plus_one_unready()
+        text = report._render_text(
+            report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        )
+        self.assertIn("overlap", text.lower())
+
+
+class TestReadinessOverlapLensDivergence(_LensBase):
+    """Accepted and raw overlap denominators must differ when the
+    compute-ready universe differs (a synthetic_seed compute-ready row is in
+    raw but excluded from accepted)."""
+
+    _ED = date(2026, 4, 15)
+
+    def test_accepted_and_raw_overlap_denominators_diverge(self) -> None:
+        real = self._seed(stage="realized", event_date=self._ED.isoformat(),
+                          market_tickers=json.dumps([{"symbol": "XLE"}]))
+        synth = self._seed(stage="realized", event_date=self._ED.isoformat(),
+                           market_tickers=json.dumps([{"symbol": "XOM"}]))
+        self._flag(synth)  # synthetic_seed -> excluded from accepted only
+        with sqlite3.connect(self._tmp) as conn:
+            dates = _contiguous_window(self._ED, 65, 22)
+            _seed_series(conn, ticker="XLE", dates=dates, base=50.0, noise=True,
+                         auto_adjust=0, jump_from=66)
+            _seed_series(conn, ticker="XOM", dates=dates, base=60.0, noise=True,
+                         auto_adjust=0, jump_from=66)
+            _seed_series(conn, ticker=_BENCHMARK_TICKER, dates=dates, base=100.0,
+                         noise=False, auto_adjust=0)
+            conn.commit()
+        acc = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        raw = report.summarize_readiness(db_path=self._tmp, lens="raw")
+        self.assertEqual(acc["window_overlap"]["n_with_date"], 1)  # synth dropped
+        self.assertEqual(raw["window_overlap"]["n_with_date"], 2)  # synth included
+        self.assertNotEqual(
+            acc["window_overlap"]["n_with_date"],
+            raw["window_overlap"]["n_with_date"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

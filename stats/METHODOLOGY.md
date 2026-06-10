@@ -80,6 +80,31 @@ These are descriptive supplements, not significance claims. No single-event
 significance is asserted at any horizon, and the closed Phase 1 / Phase 2 FDR
 pools are neither read nor implied.
 
+### Overlap disclosure in the readiness and placebo reports (AV2)
+
+The same `window_overlap_summary` independence caveat is wired (additively,
+read-only) into two more surfaces via the shared
+`stats.robust_diagnostics.build_overlap_disclosure` helper. Each scopes overlap
+to the set that would actually be **pooled** into a cross-event statistic — the
+report's own universe, never a third denominator:
+
+- **`scripts/stat_validation_readiness_report.py`** adds a `window_overlap`
+  block over the **compute-ready** events (those the strict event-study gate
+  can score) with valid event dates, labeled with the active lens. Accepted and
+  raw lenses report their own compute-ready universe, so their overlap
+  denominators differ and say so (e.g. accepted 78 vs raw 91). Events blocked by
+  no-ticker / no-cache can never enter a pool, so they are excluded — including
+  them would report a scarier overlap over never-poolable rows.
+- **`stats/archive_placebo.py`** adds an `observed_window_overlap` block over the
+  placebo-feasible **role-observations** (the pooled unit of the observed
+  support statistic) on the real event dates; `n_distinct_event_dates` is
+  surfaced alongside because observations sharing an event date have identical
+  windows by construction.
+
+Overlap here is an independence caveat, not a new statistic of significance: the
+readiness counts and the placebo null comparison stay descriptive, and no
+single-event significance is claimed.
+
 ## Cohort inference — currently blocked (not by the engine)
 
 A compute-ready event-study row (per-horizon BHAR / SAR / CAR point
