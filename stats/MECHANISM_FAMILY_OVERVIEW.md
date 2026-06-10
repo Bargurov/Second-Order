@@ -84,6 +84,12 @@ archive and curated anchors currently emphasize. The remaining staged
 semiconductor-export candidates (308/309/310) are deliberately deferred as
 near-siblings of existing curated anchors; see the shortlist note.
 
+Event-date anchor quality for every row above (clean filing vs scheduled
+signing vs thread sibling vs duplicate) is classified read-only in
+[`stats/EVENT_DATE_QUALITY.md`](EVENT_DATE_QUALITY.md) /
+`scripts/event_date_quality_report.py` — read it before interpreting any
+1d/5d/20d window.
+
 ## Limitations and non-claims
 
 - Many accepted rows (86 of 94) remain untagged (`none`); family-level

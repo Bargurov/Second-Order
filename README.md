@@ -176,6 +176,13 @@ Run from the repo root:
   [`stats/STAGED_CANDIDATE_SHORTLIST.md`](stats/STAGED_CANDIDATE_SHORTLIST.md).
   Staged candidates never enter accepted denominators.
 
+- **Event-date quality / anticipation risk** —
+  `python scripts/event_date_quality_report.py --db-path events.db --json`
+  Classifies each row's event-date anchor (clean filing vs partial
+  anticipation vs scheduled signing vs thread sibling vs duplicate) with
+  explainable rules, before any window is interpreted. Caution layer, not
+  proof; see [`stats/EVENT_DATE_QUALITY.md`](stats/EVENT_DATE_QUALITY.md).
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide
