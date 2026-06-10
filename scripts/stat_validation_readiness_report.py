@@ -5,6 +5,28 @@ Walks the events archive once and answers, per event, "could the
 event-study engine in :mod:`stats.event_study` actually produce a
 record for this row given what the price cache currently has?"
 
+Denominator lenses (AT1)
+------------------------
+The report runs under one of two explicit denominator lenses:
+
+  * ``accepted`` (default) — the canonical hygiene-aware accepted-corpus
+    analysis / coverage denominator.  Excludes every
+    ``db.NON_ANALYSIS_STAGES`` row (``curated_intake`` stubs,
+    ``z1a_candidate_pack`` staged candidates, ``analysis_pending_review``
+    quarantined rows) and every ``event_hygiene``
+    ``override_class='synthetic_seed'`` row (AP3a/AP3b).  This matches
+    ``scripts/event_study_coverage_report.py`` exactly, so the two
+    reports share one denominator.
+  * ``raw`` — an all-stage diagnostic data-coverage scan over every
+    archive row, including synthetic seeds, staged candidates, and
+    pending-review rows.  Diagnostic only: its counts must never be
+    quoted as accepted-corpus numbers.
+
+Every payload carries a ``denominator`` metadata block (active lens,
+included/excluded stages, excluded override classes, and explicit
+excluded/population counts — exclusions are disclosed, never silent)
+plus a ``non_claims`` block.
+
 Five binary readiness checks are computed per event:
 
   * ``has_event_date``                — non-empty ISO event_date.
@@ -41,6 +63,27 @@ by ``id`` ascending so the surfaced sample is deterministic.
 Output contract::
 
     {
+      "denominator": {                     # active-lens metadata (AT1)
+        "lens":                      "accepted" | "raw",
+        "description":               str,
+        "included_stages":           [str, ...],   # observed, post-exclusion
+        "excluded_stages":           [str, ...],   # policy; [] for raw
+        "excluded_override_classes": [str, ...],   # ["synthetic_seed"] / []
+        "counts": {
+          "archive_rows":               int,   # every parseable events row
+          "denominator_events":         int,   # == total_events
+          "synthetic_seed_flagged":     int,   # archive-wide population
+          "synthetic_seed_excluded":    int,   # dropped under this lens
+          "staged_candidates":          int,
+          "staged_candidates_excluded": int,
+          "pending_review":             int,
+          "pending_review_excluded":    int,
+          "curated_intake":             int,
+          "curated_intake_excluded":    int,
+          "total_excluded":             int,
+        },
+      },
+      "non_claims":                              {...},  # see _NON_CLAIMS
       "total_events":                            int,
       "events_with_event_date":                  int,
       "events_with_market_tickers":              int,
@@ -80,6 +123,9 @@ Output contract::
       "recommended_next_action": str,
     }
 
+Per-event entries also carry the row's ``stage`` (or ``None``) so a raw
+scan never shows a quarantined or staged row unlabeled.
+
 Out of scope (deliberately)
 ---------------------------
 * Read-only.  Issues only ``SELECT`` statements; never INSERT /
@@ -102,6 +148,8 @@ Usage::
     python scripts/stat_validation_readiness_report.py
     python scripts/stat_validation_readiness_report.py --json
     python scripts/stat_validation_readiness_report.py --json --limit 20
+    python scripts/stat_validation_readiness_report.py --json --lens accepted
+    python scripts/stat_validation_readiness_report.py --json --lens raw
     python scripts/stat_validation_readiness_report.py --db-path ./events.db --json
 """
 from __future__ import annotations
@@ -130,12 +178,58 @@ _ESTIMATION_WINDOW: int = 60
 _BENCHMARK_TICKER:  str = "SPY"
 _HORIZONS:          tuple[int, ...] = (1, 5, 20)
 
-# Mirrors ``db.CURATED_INTAKE_STAGE`` — kept inline (not imported) for the
+# Mirror ``db.CURATED_INTAKE_STAGE`` / ``db.CANDIDATE_PACK_STAGE`` /
+# ``db.ANALYSIS_PENDING_REVIEW_STAGE`` — kept inline (not imported) for the
 # same reason as the constants above: the SELECT path stays project-import
-# free.  Curated-intake rows are operator-curated stubs with no analysis
-# output, so they are excluded from the readiness denominator and disclosed
-# separately via ``curated_intake_excluded_count`` (never silently dropped).
-_CURATED_INTAKE_STAGE: str = "curated_intake"
+# free.  At run time the accepted lens prefers ``db.NON_ANALYSIS_STAGES``
+# (the single source of truth) and falls back to the inline mirror only if
+# ``db`` cannot be imported.  Excluded rows are always disclosed via the
+# ``denominator`` counts (never silently dropped).
+_CURATED_INTAKE_STAGE:  str = "curated_intake"
+_CANDIDATE_PACK_STAGE:  str = "z1a_candidate_pack"
+_PENDING_REVIEW_STAGE:  str = "analysis_pending_review"
+_FALLBACK_NON_ANALYSIS_STAGES: frozenset[str] = frozenset({
+    _CURATED_INTAKE_STAGE, _CANDIDATE_PACK_STAGE, _PENDING_REVIEW_STAGE,
+})
+_SYNTHETIC_SEED_OVERRIDE: str = "synthetic_seed"
+
+# Denominator lenses (AT1).  ``accepted`` is the canonical hygiene-aware
+# accepted-corpus analysis / coverage denominator (matches
+# ``scripts/event_study_coverage_report.py``); ``raw`` is an all-stage
+# diagnostic scan that must never masquerade as the accepted corpus.
+LENS_ACCEPTED = "accepted"
+LENS_RAW = "raw"
+_VALID_LENSES: tuple[str, ...] = (LENS_ACCEPTED, LENS_RAW)
+
+_LENS_DESCRIPTIONS: dict[str, str] = {
+    LENS_ACCEPTED: (
+        "Hygiene-aware accepted-corpus analysis/coverage denominator: "
+        "excludes non-analysis stages (curated_intake, z1a_candidate_pack, "
+        "analysis_pending_review) and event_hygiene synthetic_seed rows "
+        "(AP3a/AP3b). Matches scripts/event_study_coverage_report.py."
+    ),
+    LENS_RAW: (
+        "All-stage diagnostic data-coverage scan over every archive row, "
+        "including synthetic seeds, staged candidates, and pending-review "
+        "rows. Diagnostic only - never an accepted-corpus denominator."
+    ),
+}
+
+_NON_CLAIMS: dict[str, Any] = {
+    "not_a_trade_recommendation": True,
+    "not_a_prediction": True,
+    "no_statistical_significance_claim": True,
+    "descriptive_coverage_only": True,
+    "raw_lens_is_diagnostic_only": True,
+    "notes": (
+        "Readiness counts are descriptive data-coverage diagnostics only. "
+        "They are not statistical evidence, carry no significance claim, "
+        "are not a prediction, and are not advice to transact in any "
+        "instrument. The raw lens is an all-stage diagnostic scan and must "
+        "never be quoted as the accepted corpus; accepted-corpus numbers "
+        "use the accepted lens."
+    ),
+}
 
 
 _RECOMMENDED_OK = (
@@ -156,6 +250,7 @@ _RECOMMENDED_GAPS = (
 
 def summarize_readiness(
     *, db_path: str | None = None, limit: int = _DEFAULT_LIMIT,
+    lens: str = LENS_ACCEPTED,
 ) -> dict[str, Any]:
     """Return the statistical-readiness coverage report dict.
 
@@ -172,9 +267,17 @@ def summarize_readiness(
         ``events``.  The aggregate counts always reflect every event
         in the archive — only the listed examples are truncated.
         Negative values are clamped to ``0``.
+    lens
+        Denominator lens: ``"accepted"`` (default — hygiene-aware
+        accepted-corpus denominator) or ``"raw"`` (all-stage diagnostic
+        scan).  Unknown values raise ``ValueError``.
     """
+    if lens not in _VALID_LENSES:
+        raise ValueError(
+            f"unknown lens {lens!r}; expected one of {_VALID_LENSES}"
+        )
     capped_limit = max(int(limit), 0)
-    empty: dict[str, Any] = _empty_report()
+    empty: dict[str, Any] = _empty_report(lens=lens)
 
     path = _resolve_db_path(db_path)
     if path is None:
@@ -187,6 +290,7 @@ def summarize_readiness(
     except sqlite3.Error:
         return empty
 
+    synthetic: frozenset[int] = frozenset()
     try:
         try:
             event_rows = conn.execute(
@@ -213,25 +317,72 @@ def summarize_readiness(
             ).fetchall()
         except sqlite3.Error:
             cache_rows = []
+
+        # AP3a synthetic-seed flags — read on the SAME read-only connection
+        # before it closes (degrades to empty when the sidecar is absent).
+        synthetic = _load_synthetic_seed_ids(conn)
     finally:
         conn.close()
 
     cache_dates_by_ticker = _group_cache_dates(cache_rows)
+    excluded_stages = _excluded_stages_for(lens)
 
     # Per-event compute -------------------------------------------------------
-    # Curated-intake rows are real archived stubs with no analysis output;
-    # drop them from the per-event readiness universe (denominator + listing)
-    # and disclose the count separately so they are never silently hidden.
-    curated_intake_excluded_count = 0
+    # Under the ``accepted`` lens, non-analysis-stage rows (curated_intake
+    # stubs, staged candidates, pending-review quarantine) and synthetic-seed
+    # hygiene rows are dropped from the readiness universe (denominator +
+    # listing); every exclusion is tallied in the ``denominator`` block so
+    # nothing is silently hidden.  The ``raw`` lens excludes nothing.
+    population = {
+        "synthetic_seed_flagged":     0,
+        "staged_candidates":          0,
+        "pending_review":             0,
+        "curated_intake":             0,
+    }
+    excluded = {
+        "synthetic_seed_excluded":    0,
+        "staged_candidates_excluded": 0,
+        "pending_review_excluded":    0,
+        "curated_intake_excluded":    0,
+        "other_stage_excluded":       0,
+    }
+    archive_rows = 0
     per_event: list[dict[str, Any]] = []
     for raw_id, raw_event_date, raw_market_tickers, raw_stage in event_rows:
-        if isinstance(raw_stage, str) and raw_stage == _CURATED_INTAKE_STAGE:
-            curated_intake_excluded_count += 1
-            continue
         try:
             event_id = int(raw_id)
         except (TypeError, ValueError):
             continue
+        archive_rows += 1
+        stage = raw_stage if isinstance(raw_stage, str) else None
+
+        # Archive-wide population disclosure — counted regardless of lens.
+        if event_id in synthetic:
+            population["synthetic_seed_flagged"] += 1
+        if stage == _CANDIDATE_PACK_STAGE:
+            population["staged_candidates"] += 1
+        elif stage == _PENDING_REVIEW_STAGE:
+            population["pending_review"] += 1
+        elif stage == _CURATED_INTAKE_STAGE:
+            population["curated_intake"] += 1
+
+        # Lens exclusion — stage policy first, then the synthetic-seed flag
+        # (the flag tally counts only rows not already stage-excluded, so
+        # ``total_excluded`` is a plain sum without double counting).
+        if stage is not None and stage in excluded_stages:
+            if stage == _CURATED_INTAKE_STAGE:
+                excluded["curated_intake_excluded"] += 1
+            elif stage == _CANDIDATE_PACK_STAGE:
+                excluded["staged_candidates_excluded"] += 1
+            elif stage == _PENDING_REVIEW_STAGE:
+                excluded["pending_review_excluded"] += 1
+            else:
+                excluded["other_stage_excluded"] += 1
+            continue
+        if lens == LENS_ACCEPTED and event_id in synthetic:
+            excluded["synthetic_seed_excluded"] += 1
+            continue
+
         event_date_str = raw_event_date if isinstance(raw_event_date, str) else None
         primary_ticker = _primary_ticker(raw_market_tickers)
         has_event_date = _parse_iso_date(event_date_str) is not None
@@ -266,6 +417,7 @@ def summarize_readiness(
             "event_id":       event_id,
             "event_date":     event_date_str if isinstance(event_date_str, str) and event_date_str else None,
             "primary_ticker": primary_ticker,
+            "stage":          stage,
             "checks":         checks,
             "fully_ready":    fully_ready,
         })
@@ -299,7 +451,37 @@ def summarize_readiness(
         per_event, db_path=path, archive_ready_count=n_fully_ready,
     )
 
+    total_excluded = sum(excluded.values())
+    included_stages = sorted({
+        (e["stage"] if e["stage"] is not None else "<untagged>")
+        for e in per_event
+    })
+    denominator = {
+        "lens":                      lens,
+        "description":               _LENS_DESCRIPTIONS[lens],
+        "included_stages":           included_stages,
+        "excluded_stages":           sorted(excluded_stages),
+        "excluded_override_classes": (
+            [_SYNTHETIC_SEED_OVERRIDE] if lens == LENS_ACCEPTED else []
+        ),
+        "counts": {
+            "archive_rows":               archive_rows,
+            "denominator_events":         total_events,
+            "synthetic_seed_flagged":     population["synthetic_seed_flagged"],
+            "synthetic_seed_excluded":    excluded["synthetic_seed_excluded"],
+            "staged_candidates":          population["staged_candidates"],
+            "staged_candidates_excluded": excluded["staged_candidates_excluded"],
+            "pending_review":             population["pending_review"],
+            "pending_review_excluded":    excluded["pending_review_excluded"],
+            "curated_intake":             population["curated_intake"],
+            "curated_intake_excluded":    excluded["curated_intake_excluded"],
+            "total_excluded":             total_excluded,
+        },
+    }
+
     return {
+        "denominator":                                 denominator,
+        "non_claims":                                  dict(_NON_CLAIMS),
         "total_events":                                total_events,
         "events_with_event_date":                      n_event_date,
         "events_with_market_tickers":                  n_market_tickers,
@@ -310,7 +492,7 @@ def summarize_readiness(
         "events_missing_benchmark_proxy":              n_missing_benchmark,
         "events_with_insufficient_estimation_window":  n_insufficient_est,
         "events_fully_ready":                          n_fully_ready,
-        "curated_intake_excluded_count":               curated_intake_excluded_count,
+        "curated_intake_excluded_count":               excluded["curated_intake_excluded"],
         "compute_readiness":                           compute_readiness,
         "events":                                      truncated,
         "recommended_next_action": (
@@ -319,6 +501,48 @@ def summarize_readiness(
             else _RECOMMENDED_GAPS
         ),
     }
+
+
+def _excluded_stages_for(lens: str) -> frozenset[str]:
+    """Stage names excluded from the denominator under ``lens``.
+
+    The accepted lens keys off ``db.NON_ANALYSIS_STAGES`` (the single
+    source of truth shared with every accepted-corpus loader); the inline
+    mirror is only a fallback for environments where ``db`` is not
+    importable.  The raw lens excludes nothing.
+    """
+    if lens != LENS_ACCEPTED:
+        return frozenset()
+    try:
+        import db as _dbmod
+        return frozenset(getattr(
+            _dbmod, "NON_ANALYSIS_STAGES", _FALLBACK_NON_ANALYSIS_STAGES,
+        ))
+    except Exception:
+        return _FALLBACK_NON_ANALYSIS_STAGES
+
+
+def _load_synthetic_seed_ids(conn: sqlite3.Connection) -> frozenset[int]:
+    """Event ids flagged ``override_class='synthetic_seed'`` (AP3a).
+
+    Prefers ``db.synthetic_seed_ids`` (the canonical helper) on the
+    already-open read-only connection; falls back to the equivalent
+    inline SELECT when ``db`` is not importable.  Both paths degrade to
+    an empty set when the ``event_hygiene`` sidecar is absent.
+    """
+    try:
+        import db as _dbmod
+        return _dbmod.synthetic_seed_ids(conn)
+    except Exception:
+        pass
+    try:
+        rows = conn.execute(
+            "SELECT event_id FROM event_hygiene WHERE override_class = ?",
+            (_SYNTHETIC_SEED_OVERRIDE,),
+        ).fetchall()
+        return frozenset(int(r[0]) for r in rows)
+    except sqlite3.Error:
+        return frozenset()
 
 
 # ---------------------------------------------------------------------------
@@ -424,8 +648,31 @@ def _summarize_compute_readiness(
     }
 
 
-def _empty_report() -> dict[str, Any]:
+def _empty_report(*, lens: str = LENS_ACCEPTED) -> dict[str, Any]:
     return {
+        "denominator": {
+            "lens":                      lens,
+            "description":               _LENS_DESCRIPTIONS[lens],
+            "included_stages":           [],
+            "excluded_stages":           sorted(_excluded_stages_for(lens)),
+            "excluded_override_classes": (
+                [_SYNTHETIC_SEED_OVERRIDE] if lens == LENS_ACCEPTED else []
+            ),
+            "counts": {
+                "archive_rows":               0,
+                "denominator_events":         0,
+                "synthetic_seed_flagged":     0,
+                "synthetic_seed_excluded":    0,
+                "staged_candidates":          0,
+                "staged_candidates_excluded": 0,
+                "pending_review":             0,
+                "pending_review_excluded":    0,
+                "curated_intake":             0,
+                "curated_intake_excluded":    0,
+                "total_excluded":             0,
+            },
+        },
+        "non_claims":                                  dict(_NON_CLAIMS),
         "total_events":                                0,
         "events_with_event_date":                      0,
         "events_with_market_tickers":                  0,
@@ -610,8 +857,39 @@ def _has_estimation_window(
 # ---------------------------------------------------------------------------
 
 
+_LENS_TEXT_LABELS: dict[str, str] = {
+    LENS_ACCEPTED: "accepted (hygiene-aware accepted-corpus denominator)",
+    LENS_RAW:      "raw (all-stage diagnostic scan - NOT the accepted corpus)",
+}
+
+
 def _render_text(report: dict[str, Any]) -> str:
     lines: list[str] = ["Archive statistical-readiness coverage report", ""]
+    denom = report.get("denominator") or {}
+    lens = denom.get("lens", LENS_ACCEPTED)
+    counts = denom.get("counts") or {}
+    lines.append(f"Lens: {_LENS_TEXT_LABELS.get(lens, lens)}")
+    lines.append(
+        f"  denominator events:                          "
+        f"{counts.get('denominator_events', 0)} "
+        f"(of {counts.get('archive_rows', 0)} archive rows; "
+        f"{counts.get('total_excluded', 0)} excluded)"
+    )
+    lines.append(
+        f"  excluded:                                    "
+        f"synthetic_seed={counts.get('synthetic_seed_excluded', 0)} "
+        f"staged_candidates={counts.get('staged_candidates_excluded', 0)} "
+        f"pending_review={counts.get('pending_review_excluded', 0)} "
+        f"curated_intake={counts.get('curated_intake_excluded', 0)}"
+    )
+    lines.append(
+        f"  archive populations:                         "
+        f"synthetic_seed={counts.get('synthetic_seed_flagged', 0)} "
+        f"staged_candidates={counts.get('staged_candidates', 0)} "
+        f"pending_review={counts.get('pending_review', 0)} "
+        f"curated_intake={counts.get('curated_intake', 0)}"
+    )
+    lines.append("")
     lines.append(f"Total events:                                  {report['total_events']}")
     lines.append(f"  with event_date:                             {report['events_with_event_date']}")
     lines.append(f"  with market_tickers:                         {report['events_with_market_tickers']}")
@@ -661,6 +939,11 @@ def _render_text(report: dict[str, Any]) -> str:
         lines.append("  -")
     lines.append("")
     lines.append(f"Recommended next action: {report['recommended_next_action']}")
+    lines.append(
+        "Non-claims: descriptive coverage diagnostics only - no "
+        "statistical-significance claim, not a prediction, not advice to "
+        "transact; the raw lens is diagnostic and never the accepted corpus."
+    )
     return "\n".join(lines)
 
 
@@ -708,6 +991,19 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             "configured archive."
         ),
     )
+    parser.add_argument(
+        "--lens",
+        choices=_VALID_LENSES,
+        default=LENS_ACCEPTED,
+        help=(
+            "Denominator lens.  'accepted' (default) is the hygiene-aware "
+            "accepted-corpus analysis/coverage denominator (excludes "
+            "non-analysis stages and event_hygiene synthetic_seed rows, "
+            "matching scripts/event_study_coverage_report.py).  'raw' is "
+            "an all-stage diagnostic scan over every archive row - "
+            "diagnostic only, never an accepted-corpus number."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -715,7 +1011,9 @@ def main(argv: Sequence[str] | None = None, *, out: Any = None) -> int:
     args = _parse_args(argv)
     output = out if out is not None else sys.stdout
 
-    report = summarize_readiness(db_path=args.db_path, limit=args.limit)
+    report = summarize_readiness(
+        db_path=args.db_path, limit=args.limit, lens=args.lens,
+    )
     if args.json:
         print(_render_json(report), file=output)
     else:

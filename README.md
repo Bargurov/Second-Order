@@ -101,8 +101,9 @@ the days after the event.
 
 Pre-restatement funnel snapshot (local archive, 2026-06-08):
 
-- **166 events saved** in the archive (the readiness report counts **165**,
-  excluding one source-anchored `curated_intake` stub).
+- **166 events saved** in the archive (the readiness report then counted
+  **165**, excluding one source-anchored `curated_intake` stub; since AT1 it
+  defaults to the accepted lens — see the compute-readiness contract below).
 - **81 market-scored** (events carrying scored market data): **19 any-supporting
   · 35 contradicted · 27 unresolved**.
 - **78 archive-ready** and **78 event-study compute-ready** (per-horizon point
@@ -219,32 +220,47 @@ repair (below) the 18 repaired events resolved on matched **raw** basis,
 so the earlier "every compute-ready event is on matched *adjusted* basis"
 no longer holds — but no row mixes flags, so no splice caveat applies.
 
-Readiness-report counts from
-`python scripts/stat_validation_readiness_report.py --json --limit 0`, refreshed
-**2026-06-10**. This is the event-study **coverage / readiness lens** — a
-data-coverage gate (does the engine have enough cached history to score a row),
-**distinct from the accepted-corpus denominators**. Two cautions:
+The readiness report (`scripts/stat_validation_readiness_report.py`) runs
+under an explicit **denominator lens** (`--lens accepted` | `--lens raw`,
+AT1 2026-06-10):
 
-- It does **NOT** apply the AP3b `event_hygiene` synthetic-seed exclusion: it is a
-  raw coverage scan over every stage and still counts the 71 flagged seed rows and
-  the staged candidates. For the honesty-critical accepted-corpus numbers (180
-  saved / 86 track-record / 94 coverage) see the restatement at the top of "The
-  funnel" above; the synthetic-**excluding** coverage figure (94) comes from
-  `scripts/event_study_coverage_report.py`, not from this report.
-- Its fields and counts drift with every coverage repair, so re-run the command
-  for live figures rather than trusting any number frozen here.
+- `--lens accepted` (the **default**) is the canonical hygiene-aware
+  accepted-corpus analysis/coverage denominator: it excludes the
+  non-analysis stages (`curated_intake`, `z1a_candidate_pack` staged
+  candidates, `analysis_pending_review` quarantine) and the 71 AP3b
+  `event_hygiene` synthetic-seed rows. This is the **same lens** as
+  `scripts/event_study_coverage_report.py`, so the two reports share one
+  denominator.
+- `--lens raw` is an all-stage **diagnostic** data-coverage scan over every
+  archive row, including the flagged seed rows, staged candidates, and the
+  pending-review row. Diagnostic only — its counts must never be quoted as
+  accepted-corpus numbers.
+- Every payload carries a `denominator` metadata block (active lens,
+  included/excluded stages, excluded override classes, per-class excluded
+  and population counts) plus a `non_claims` block, so exclusions are
+  disclosed rather than silent.
+- Counts drift with every coverage repair, so re-run the commands for live
+  figures rather than trusting any number frozen here:
+  `python scripts/stat_validation_readiness_report.py --json --lens accepted --limit 0`
+  (and `--lens raw`).
 
 Current run (2026-06-10):
 
-- events scanned: **179** (all stages except the 1 source-anchored `curated_intake` stub)
-- with a primary ticker: **95**
-- event-study compute-ready (per-horizon SAR/CAR computable): **91**
-- missing benchmark proxy: **2**; insufficient estimation window: **87**
+- **accepted lens: 94 denominator events** (180 archive rows − 86 excluded:
+  71 synthetic-seed + 13 staged candidates + 1 pending-review + 1
+  `curated_intake`); with a primary ticker: **81**; event-study
+  compute-ready: **78** — matching the coverage report's
+  `event_study_available` count exactly (78 = 78) because the two now share
+  the accepted lens.
+- **raw lens (diagnostic): 180 scanned**; with a primary ticker: **95**;
+  compute-ready: **91**. The 13 extra compute-ready rows are the staged
+  candidates plus the pending-review row — review staging, not accepted
+  evidence.
 
-(Earlier runs reported fewer compute-ready rows — 78 after the 2026-06-09 V2C
-exposed-name backfill, 71 on 2026-06-08, 62 after Batch-1, 44 before it — those
-are dated snapshots, not current. A future cleanup could wire this report to the
-same `event_hygiene` lens the accepted-corpus denominators use.)
+(Earlier runs reported other compute-ready counts — 91 on the pre-lens
+2026-06-10 all-stage scan, 78 after the 2026-06-09 V2C exposed-name backfill,
+71 on 2026-06-08, 62 after Batch-1, 44 before it — those are dated snapshots
+under drifting denominators, not current.)
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
 mean cohort-level statistical inference is available for a single
@@ -288,35 +304,66 @@ estimates.
 
 It is **not a new FDR pool** and never reads, modifies, or reopens the
 closed Phase 1 / Phase 2 pools (`evidence_artifacts` / `cohort_evidence` are a
-separate scope). It reuses the same gate as the event-detail route, so its
-`event_study_available` count matches the readiness report's
-`event_study_compute_ready` exactly (71 = 71).
+separate scope). It reuses the same gate as the event-detail route and the
+same accepted lens as the readiness report's default, so its
+`event_study_available` count matches the readiness report's accepted-lens
+`event_study_compute_ready` exactly (78 = 78, 2026-06-10).
 
 **Single-event output is point estimates only.** At `n=1` there is no
 confidence interval, no p-value, and no FDR; the report makes no
 `confirmed` / `validated` / "significant" claim. Each JSON payload carries
 an explicit `non_claims` block stating this.
 
-Current live coverage (2026-06-08, after the Batch-1 coverage repair below and
-the Phase-K `curated_observation` promotions):
+Current live coverage (2026-06-10, accepted lens, after AP3b):
 
-- event_study_available: 71
-- insufficient_data: 94
-- curated_intake excluded: 1
-- auto_adjust basis: matched 71, cross_flag 0
+- analysis-stage denominator: 94 (86 excluded and disclosed: 71
+  synthetic-seed + 13 staged candidates + 1 pending-review + 1
+  `curated_intake`)
+- event_study_available: 78
+- insufficient_data: 16
+- auto_adjust basis: matched 78, cross_flag 0
 
-The dominant blocker is `no_primary_ticker` (84) — a **coverage gap, not a
+The dominant blocker is `no_primary_ticker` (13) — a **coverage gap, not a
 statistics failure**: those events never reach the engine because they
-carry no primary ticker, and that pool was left untouched (see the repair
-note below). The remaining cache/window blockers are
-`insufficient_estimation_window_primary` (9), `missing_forward_cache_20d`
-(9), `missing_forward_cache_5d` (5), `no_cached_prices_for_primary_ticker`
-(4), `missing_forward_cache_1d` (4), `no_contiguous_aligned_window` (1),
-and `missing_benchmark_proxy` (1). None is an engine error; each is a
+carry no primary ticker. (The pre-AP3b scans reported 84–85 here; most of
+those were the 71 synthetic seeds, which the accepted lens now excludes
+instead of counting — the raw diagnostic lens still shows them.) The
+remaining cache/window blockers are `missing_forward_cache_20d` (3),
+`insufficient_estimation_window_primary` (2), `missing_forward_cache_5d`
+(2), `missing_forward_cache_1d` (2), `no_cached_prices_for_primary_ticker`
+(2), and `missing_benchmark_proxy` (1). None is an engine error; each is a
 data-coverage or contiguity precondition.
 
 ```powershell
 python scripts/event_study_coverage_report.py --json
+```
+
+### Research queue report — staged candidates, no paid call
+
+`scripts/research_queue_report.py` (AT1, 2026-06-10) is a read-only triage
+view over the `z1a_candidate_pack` staged candidates — the rows that are
+**excluded from every accepted-corpus denominator**. For each staged
+candidate it surfaces event-study readiness on the staged primary ticker,
+the per-horizon (1d / 5d / 20d) AR / SAR / CAR point estimates already
+computable from the cache, `event_provenance` source metadata, and
+near-duplicate collisions against the non-candidate, non-synthetic corpus
+(reusing the deterministic `z1b_candidate_collision_report` signals), then
+assigns one deterministic classification (`defer_near_duplicate` >
+`data_limited` > `defer_low_identification` > `needs_manual_review` >
+`ready_for_no_paid_review`).
+
+The classification **orders human review only**: `ready_for_no_paid_review`
+means ready for a human no-paid review, not approval for a paid run. The
+collision signals catch same-announcement duplicates (e.g. staged 302 vs
+the pending-review analyzed row 315), not same-policy-thread relatedness —
+thread-level calls (e.g. 307 vs the curated NVDA export-control
+observation 300) stay with the reviewer. Each payload carries a
+`non_claims` block: not a trade recommendation, not a prediction, no
+significance claim (n=1 point estimates), and paid `/analyze` stays
+blocked unless explicitly approved later.
+
+```powershell
+python scripts/research_queue_report.py --json
 ```
 
 ### Batch-1 event-study coverage repair (H1 → H3, 2026-06-03)
@@ -329,9 +376,10 @@ is a data-coverage fix, not new evidence.
 
 **Denominator at repair time.** 157 analysis-stage events as of 2026-06-03;
 curated_intake stubs are excluded separately (1 at repair time) and never
-enter this count. (The live analysis-stage denominator is now 165 after the
-Phase-K promotions — see the data-hygiene section below for the current
-split.)
+enter this count. (The analysis-stage count reached 165 after the Phase-K
+promotions; the live accepted-corpus analysis denominator is now **94**
+after the AP3b synthetic-seed exclusion — see the restatement at the top
+of "The funnel".)
 
 **Frozen baseline (H1).** The 113 insufficient rows split into 84 with no
 primary ticker and 29 that already carried a primary ticker but failed a

@@ -59,9 +59,14 @@ row is independent of the others.
 As of a 2026-06-09 readiness snapshot the matched compute-ready set — **70 rows:
 the 62 legacy/organic compute-ready rows plus the 8 Phase-K
 `curated_observation` rows** — does not meet that assumption, so cohort
-inference is on hold. (Compute-readiness is a coverage lens, separate from the
-accepted-corpus denominators restated in `README.md`; the AP3b `event_hygiene`
-synthetic-seed exclusion applies to the latter, not to this readiness count.) The block is **labeling and independence, not the
+inference is on hold. (Compute-readiness is a coverage lens, distinct from the
+accepted-corpus denominators restated in `README.md`. Since AT1 (2026-06-10)
+`scripts/stat_validation_readiness_report.py` defaults to the canonical
+hygiene-aware **accepted** lens — excluding non-analysis stages and the AP3b
+`event_hygiene` synthetic-seed rows, the same denominator as
+`scripts/event_study_coverage_report.py` — while `--lens raw` remains an
+all-stage diagnostic scan that must never be quoted as accepted-corpus
+numbers.) The block is **labeling and independence, not the
 event-study engine**. (The counts below are a dated snapshot — run
 `scripts/event_study_coverage_report.py` for live figures, which drift with
 every coverage repair.) The wider-app archive funnel (saved → market-scored →

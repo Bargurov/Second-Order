@@ -1236,5 +1236,368 @@ class TestComputeReadiness(_Base):
         self.assertEqual(cr["event_study_compute_ready_count"], 1)
 
 
+# ---------------------------------------------------------------------------
+# Denominator lens (AT1) — accepted (hygiene-aware) vs raw (diagnostic)
+# ---------------------------------------------------------------------------
+#
+# The ``accepted`` lens mirrors the canonical accepted-corpus analysis /
+# coverage denominator (``db.NON_ANALYSIS_STAGES`` stage exclusion plus the
+# AP3a/AP3b ``event_hygiene`` synthetic_seed exclusion), matching
+# ``scripts/event_study_coverage_report.py``.  The ``raw`` lens is an
+# all-stage diagnostic scan that includes every archive row and must be
+# loudly labeled so it never masquerades as the accepted corpus.
+
+_EVENT_HYGIENE_DDL = """
+CREATE TABLE event_hygiene (
+    event_id        INTEGER PRIMARY KEY,
+    override_class  TEXT,
+    override_reason TEXT,
+    created_at      TEXT
+)
+""".strip()
+
+_DENOMINATOR_KEYS = (
+    "lens",
+    "description",
+    "included_stages",
+    "excluded_stages",
+    "excluded_override_classes",
+    "counts",
+)
+
+_DENOMINATOR_COUNT_KEYS = (
+    "archive_rows",
+    "denominator_events",
+    "synthetic_seed_flagged",
+    "synthetic_seed_excluded",
+    "staged_candidates",
+    "staged_candidates_excluded",
+    "pending_review",
+    "pending_review_excluded",
+    "curated_intake",
+    "curated_intake_excluded",
+    "total_excluded",
+)
+
+_NON_CLAIM_KEYS = (
+    "not_a_trade_recommendation",
+    "not_a_prediction",
+    "no_statistical_significance_claim",
+    "descriptive_coverage_only",
+    "raw_lens_is_diagnostic_only",
+    "notes",
+)
+
+_STAGE_CANDIDATE = "z1a_candidate_pack"
+_STAGE_PENDING = "analysis_pending_review"
+_STAGE_INTAKE = "curated_intake"
+
+
+class _LensBase(unittest.TestCase):
+    """Fixture with the full lens surface: stage column + event_hygiene."""
+
+    def setUp(self) -> None:
+        self._tmp = os.path.join(
+            tempfile.gettempdir(), f"test_svrr_lens_{uuid.uuid4().hex}.db",
+        )
+        conn = sqlite3.connect(self._tmp)
+        try:
+            conn.execute(_EVENTS_DDL_WITH_STAGE)
+            conn.execute(_PRICE_CACHE_DDL)
+            conn.execute(_EVENT_HYGIENE_DDL)
+            conn.commit()
+        finally:
+            conn.close()
+
+    def tearDown(self) -> None:
+        try:
+            os.remove(self._tmp)
+        except (OSError, PermissionError):
+            pass
+
+    def _seed(
+        self,
+        *,
+        stage: str = "realized",
+        event_id: int | None = None,
+        event_date: str = "2026-04-15",
+        market_tickers: str | None = None,
+    ) -> int:
+        tickers = (
+            market_tickers
+            if market_tickers is not None
+            else json.dumps([{"symbol": "AAPL"}])
+        )
+        with sqlite3.connect(self._tmp) as conn:
+            if event_id is None:
+                cur = conn.execute(
+                    "INSERT INTO events (headline, event_date, market_tickers, "
+                    "stage) VALUES (?, ?, ?, ?)",
+                    ("headline", event_date, tickers, stage),
+                )
+                rid = int(cur.lastrowid)
+            else:
+                conn.execute(
+                    "INSERT INTO events (id, headline, event_date, "
+                    "market_tickers, stage) VALUES (?, ?, ?, ?, ?)",
+                    (event_id, "headline", event_date, tickers, stage),
+                )
+                rid = event_id
+            conn.commit()
+            return rid
+
+    def _flag(self, event_id: int, override_class: str = "synthetic_seed") -> None:
+        with sqlite3.connect(self._tmp) as conn:
+            conn.execute(
+                "INSERT INTO event_hygiene (event_id, override_class, "
+                "override_reason, created_at) VALUES (?, ?, ?, ?)",
+                (event_id, override_class, "AP2 synthetic seed",
+                 "2026-06-09T00:00:00"),
+            )
+            conn.commit()
+
+    def _listed_ids(self, result: dict) -> list[int]:
+        return [e["event_id"] for e in result["events"]]
+
+
+class TestAcceptedLens(_LensBase):
+    def test_default_lens_is_accepted(self) -> None:
+        self._seed()
+        result = report.summarize_readiness(db_path=self._tmp)
+        self.assertEqual(result["denominator"]["lens"], "accepted")
+
+    def test_accepted_excludes_synthetic_seed_rows(self) -> None:
+        real = self._seed()
+        synth_a = self._seed()
+        synth_b = self._seed()
+        self._flag(synth_a)
+        self._flag(synth_b)
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        self.assertEqual(result["total_events"], 1)
+        listed = self._listed_ids(result)
+        self.assertIn(real, listed)
+        self.assertNotIn(synth_a, listed)
+        self.assertNotIn(synth_b, listed)
+        counts = result["denominator"]["counts"]
+        self.assertEqual(counts["synthetic_seed_flagged"], 2)
+        self.assertEqual(counts["synthetic_seed_excluded"], 2)
+
+    def test_accepted_excludes_staged_candidate_and_pending_review(self) -> None:
+        # Mirrors the live quarantine boundary: row 302 stays a staged
+        # candidate, row 315 stays analysis_pending_review — neither may
+        # leak into the accepted/hygiene-aware denominator or listing.
+        real = self._seed(event_id=1)
+        self._seed(event_id=302, stage=_STAGE_CANDIDATE)
+        self._seed(event_id=315, stage=_STAGE_PENDING)
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        self.assertEqual(result["total_events"], 1)
+        listed = self._listed_ids(result)
+        self.assertIn(real, listed)
+        self.assertNotIn(302, listed)
+        self.assertNotIn(315, listed)
+        counts = result["denominator"]["counts"]
+        self.assertEqual(counts["staged_candidates"], 1)
+        self.assertEqual(counts["staged_candidates_excluded"], 1)
+        self.assertEqual(counts["pending_review"], 1)
+        self.assertEqual(counts["pending_review_excluded"], 1)
+
+    def test_accepted_excludes_curated_intake_with_compat_count(self) -> None:
+        self._seed()
+        self._seed(stage=_STAGE_INTAKE, market_tickers="[]")
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        self.assertEqual(result["total_events"], 1)
+        # Back-compat top-level key keeps its literal curated_intake meaning.
+        self.assertEqual(result["curated_intake_excluded_count"], 1)
+        counts = result["denominator"]["counts"]
+        self.assertEqual(counts["curated_intake"], 1)
+        self.assertEqual(counts["curated_intake_excluded"], 1)
+
+    def test_other_override_classes_do_not_exclude(self) -> None:
+        row = self._seed()
+        self._flag(row, override_class="real_duplicate")
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        self.assertEqual(result["total_events"], 1)
+        self.assertIn(row, self._listed_ids(result))
+        self.assertEqual(
+            result["denominator"]["counts"]["synthetic_seed_flagged"], 0,
+        )
+
+    def test_accepted_compute_readiness_covers_only_accepted_rows(self) -> None:
+        self._seed()
+        synth = self._seed()
+        self._flag(synth)
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        status = result["compute_readiness"]["status_counts"]
+        self.assertEqual(sum(status.values()), 1)
+
+    def test_seventy_one_synthetic_rows_excluded_at_scale(self) -> None:
+        # The live AP3b condition: 71 flagged seed rows must drop out of
+        # the accepted denominator while staying in the raw scan.
+        for _ in range(9):
+            self._seed()
+        for _ in range(71):
+            self._flag(self._seed())
+        accepted = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        raw = report.summarize_readiness(db_path=self._tmp, lens="raw")
+        self.assertEqual(accepted["total_events"], 9)
+        self.assertEqual(
+            accepted["denominator"]["counts"]["synthetic_seed_excluded"], 71,
+        )
+        self.assertEqual(raw["total_events"], 80)
+
+    def test_excluded_stage_names_never_listed_as_included(self) -> None:
+        self._seed()
+        self._seed(stage=_STAGE_CANDIDATE)
+        self._seed(stage=_STAGE_PENDING)
+        self._seed(stage=_STAGE_INTAKE, market_tickers="[]")
+        result = report.summarize_readiness(db_path=self._tmp, lens="accepted")
+        included = result["denominator"]["included_stages"]
+        for stage in (_STAGE_CANDIDATE, _STAGE_PENDING, _STAGE_INTAKE):
+            self.assertNotIn(stage, included)
+        self.assertIn("realized", included)
+
+
+class TestRawLens(_LensBase):
+    def _seed_mixed(self) -> None:
+        self._seed(event_id=1)
+        self._seed(event_id=302, stage=_STAGE_CANDIDATE)
+        self._seed(event_id=315, stage=_STAGE_PENDING)
+        self._seed(event_id=400, stage=_STAGE_INTAKE, market_tickers="[]")
+        synth = self._seed(event_id=401)
+        self._flag(synth)
+
+    def test_raw_includes_every_archive_row(self) -> None:
+        self._seed_mixed()
+        result = report.summarize_readiness(db_path=self._tmp, lens="raw")
+        self.assertEqual(result["total_events"], 5)
+        denom = result["denominator"]
+        self.assertEqual(denom["lens"], "raw")
+        self.assertEqual(denom["excluded_stages"], [])
+        self.assertEqual(denom["excluded_override_classes"], [])
+        self.assertEqual(denom["counts"]["total_excluded"], 0)
+        self.assertEqual(result["curated_intake_excluded_count"], 0)
+
+    def test_raw_still_discloses_hygiene_populations(self) -> None:
+        self._seed_mixed()
+        counts = report.summarize_readiness(
+            db_path=self._tmp, lens="raw",
+        )["denominator"]["counts"]
+        self.assertEqual(counts["synthetic_seed_flagged"], 1)
+        self.assertEqual(counts["staged_candidates"], 1)
+        self.assertEqual(counts["pending_review"], 1)
+        self.assertEqual(counts["curated_intake"], 1)
+        self.assertEqual(counts["synthetic_seed_excluded"], 0)
+        self.assertEqual(counts["staged_candidates_excluded"], 0)
+        self.assertEqual(counts["pending_review_excluded"], 0)
+
+    def test_raw_lists_quarantined_rows_with_stage_label(self) -> None:
+        self._seed_mixed()
+        result = report.summarize_readiness(db_path=self._tmp, lens="raw")
+        listed = {e["event_id"]: e for e in result["events"]}
+        self.assertIn(302, listed)
+        self.assertIn(315, listed)
+        self.assertEqual(listed[302]["stage"], _STAGE_CANDIDATE)
+        self.assertEqual(listed[315]["stage"], _STAGE_PENDING)
+
+
+class TestLensMetadataAndNonClaims(_LensBase):
+    def test_denominator_metadata_contract(self) -> None:
+        self._seed()
+        for lens in ("accepted", "raw"):
+            result = report.summarize_readiness(db_path=self._tmp, lens=lens)
+            denom = result["denominator"]
+            for key in _DENOMINATOR_KEYS:
+                self.assertIn(key, denom, f"[{lens}] missing key: {key}")
+            for key in _DENOMINATOR_COUNT_KEYS:
+                self.assertIn(
+                    key, denom["counts"], f"[{lens}] missing count: {key}",
+                )
+            self.assertEqual(
+                denom["counts"]["denominator_events"], result["total_events"],
+            )
+
+    def test_non_claims_block_present(self) -> None:
+        self._seed()
+        for lens in ("accepted", "raw"):
+            result = report.summarize_readiness(db_path=self._tmp, lens=lens)
+            self.assertIn("non_claims", result)
+            for key in _NON_CLAIM_KEYS:
+                self.assertIn(
+                    key, result["non_claims"], f"[{lens}] missing: {key}",
+                )
+
+    def test_missing_db_keeps_lens_metadata(self) -> None:
+        missing = os.path.join(
+            tempfile.gettempdir(), f"nocreate_svrr_lens_{uuid.uuid4().hex}.db",
+        )
+        self.addCleanup(lambda: os.path.exists(missing) and os.remove(missing))
+        result = report.summarize_readiness(db_path=missing, lens="raw")
+        self.assertEqual(result["denominator"]["lens"], "raw")
+        self.assertIn("non_claims", result)
+
+    def test_unknown_lens_raises_value_error(self) -> None:
+        self._seed()
+        with self.assertRaises(ValueError):
+            report.summarize_readiness(db_path=self._tmp, lens="everything")
+
+
+class TestLensCli(_LensBase):
+    def _run_cli(self, argv: list[str]) -> tuple[int, str]:
+        out = StringIO()
+        try:
+            rc = report.main(argv, out=out)
+        except SystemExit as exc:
+            rc = exc.code
+        return rc, out.getvalue()
+
+    def _seed_mixed(self) -> None:
+        self._seed(event_id=1)
+        self._seed(event_id=302, stage=_STAGE_CANDIDATE)
+        synth = self._seed(event_id=401)
+        self._flag(synth)
+
+    def test_cli_lens_flag_switches_denominator(self) -> None:
+        self._seed_mixed()
+        rc_a, out_a = self._run_cli(
+            ["--db-path", self._tmp, "--json", "--lens", "accepted"],
+        )
+        rc_r, out_r = self._run_cli(
+            ["--db-path", self._tmp, "--json", "--lens", "raw"],
+        )
+        self.assertEqual(rc_a, 0)
+        self.assertEqual(rc_r, 0)
+        body_a = json.loads(out_a)
+        body_r = json.loads(out_r)
+        self.assertEqual(body_a["total_events"], 1)
+        self.assertEqual(body_r["total_events"], 3)
+        self.assertEqual(body_a["denominator"]["lens"], "accepted")
+        self.assertEqual(body_r["denominator"]["lens"], "raw")
+
+    def test_cli_default_lens_is_accepted(self) -> None:
+        self._seed_mixed()
+        rc, output = self._run_cli(["--db-path", self._tmp, "--json"])
+        self.assertEqual(rc, 0)
+        body = json.loads(output)
+        self.assertEqual(body["denominator"]["lens"], "accepted")
+        self.assertEqual(body["total_events"], 1)
+
+    def test_cli_rejects_unknown_lens(self) -> None:
+        rc, _ = self._run_cli(
+            ["--db-path", self._tmp, "--json", "--lens", "everything"],
+        )
+        self.assertEqual(rc, 2)
+
+    def test_text_output_names_active_lens(self) -> None:
+        self._seed_mixed()
+        rc_a, out_a = self._run_cli(["--db-path", self._tmp, "--lens", "accepted"])
+        rc_r, out_r = self._run_cli(["--db-path", self._tmp, "--lens", "raw"])
+        self.assertEqual(rc_a, 0)
+        self.assertEqual(rc_r, 0)
+        self.assertIn("accepted", out_a)
+        self.assertIn("hygiene-aware", out_a)
+        self.assertIn("raw", out_r)
+        self.assertIn("diagnostic", out_r)
+
+
 if __name__ == "__main__":
     unittest.main()
