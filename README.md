@@ -183,6 +183,14 @@ Run from the repo root:
   explainable rules, before any window is interpreted. Caution layer, not
   proof; see [`stats/EVENT_DATE_QUALITY.md`](stats/EVENT_DATE_QUALITY.md).
 
+- **Staged-family coverage board** —
+  `python scripts/staged_family_coverage_report.py --db-path events.db --json`
+  One cross-family view of the 13 staged/no-paid candidates: anchor quality,
+  family-packet coverage, local computability (cached rows are not the same
+  as computable-at-date), and ranked no-paid next moves. Staged candidates
+  never enter accepted denominators; see
+  [`stats/STAGED_FAMILY_COVERAGE.md`](stats/STAGED_FAMILY_COVERAGE.md).
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide

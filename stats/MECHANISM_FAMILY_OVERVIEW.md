@@ -94,7 +94,11 @@ signing vs thread sibling vs duplicate) is classified read-only in
 `scripts/regulation_cohort_packet.py`; the staged labor cases (UAW goods
 strike vs SAG-AFTRA media pipeline) likewise in
 [`stats/LABOR_SHOCK_COHORT_PACKET.md`](LABOR_SHOCK_COHORT_PACKET.md) /
-`scripts/labor_shock_cohort_packet.py`.
+`scripts/labor_shock_cohort_packet.py`. The cross-family consolidation —
+anchor quality, packet coverage, computability, and ranked no-paid next
+moves over all 13 staged candidates — is
+[`stats/STAGED_FAMILY_COVERAGE.md`](STAGED_FAMILY_COVERAGE.md) /
+`scripts/staged_family_coverage_report.py`.
 
 ## Limitations and non-claims
 
