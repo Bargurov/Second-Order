@@ -121,6 +121,52 @@ pooled**. The closed Phase 1 and Phase 2 FDR pools (five rows each) are a
 **separate** evidence track with their own frozen q-values — they are not
 derived from the saved-event archive.
 
+## Verify it yourself: read-only research reports
+
+Every figure above recomputes from the live archive. The methods spine is
+[`stats/METHODOLOGY.md`](stats/METHODOLOGY.md) — the abnormal-return / SAR /
+p-value / FDR conventions plus the statistical-honesty layer (small-sample
+robust diagnostics, event-window overlap disclosure, and track-record
+scoring-rule sensitivity).
+
+These reports are **read-only**: they open `events.db` with `mode=ro`, never
+mutate it, never call a paid provider, and never run `/analyze`. They never
+reopen or recompute the **frozen** Phase 1 / Phase 2 FDR pools. Every payload
+carries a `non_claims` block — the numbers are descriptive coverage and
+sensitivity diagnostics, not significance results. (These surfaces live in the
+reports and `stats/METHODOLOGY.md`; the app does not expose this layer yet.)
+
+Run from the repo root:
+
+- **Accepted denominators + event-study reach** —
+  `python scripts/event_study_coverage_report.py --json`
+  Verifies the accepted coverage denominator. Expect **94** accepted events,
+  **78** event-study compute-ready.
+
+- **Compute-readiness + window-overlap caveat** —
+  `python scripts/stat_validation_readiness_report.py --json --lens accepted --limit 0`
+  Verifies per-event compute-readiness and the event-window overlap caveat,
+  scoped to the compute-ready set. Expect compute-ready **78**, `window_overlap`
+  n **78**, lens `accepted`.
+
+- **Small-sample robust diagnostics** —
+  `python scripts/baseline_characterization_report.py --db events.db --sims 60 --json`
+  Verifies the `robust_diagnostics` block: an exact sign test, a Wilcoxon
+  signed-rank summary, the overlap caveat co-located with each p-value as its
+  independence qualifier, and the SAR-convention audit.
+
+- **Event-date placebo / negative control** *(text mode — no `--json`)* —
+  `python scripts/archive_placebo_report.py --db events.db --draws 1000 --seed 20260608`
+  A null / negative-control readout. Expect the observed event-window overlap
+  caveat over the placebo-feasible role-observations.
+
+- **Track-record scoring-rule sensitivity** —
+  `python scripts/track_record_sensitivity_report.py --db-path events.db --json --limit 5`
+  Verifies how the accepted track-record split moves under stricter scoring
+  rules over one shared denominator. Expect denominator **86**; the canonical
+  `validated` count moves **46 → 19 → 11** across any-support → majority →
+  strict. No rule is claimed correct; the canonical headline rule is unchanged.
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide
