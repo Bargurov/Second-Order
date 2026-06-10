@@ -91,7 +91,10 @@ signing vs thread sibling vs duplicate) is classified read-only in
 1d/5d/20d window. The staged regulation cases are compared as a family
 (taxonomy, anchors, descriptive readouts, still no-paid) in
 [`stats/REGULATION_COHORT_PACKET.md`](REGULATION_COHORT_PACKET.md) /
-`scripts/regulation_cohort_packet.py`.
+`scripts/regulation_cohort_packet.py`; the staged labor cases (UAW goods
+strike vs SAG-AFTRA media pipeline) likewise in
+[`stats/LABOR_SHOCK_COHORT_PACKET.md`](LABOR_SHOCK_COHORT_PACKET.md) /
+`scripts/labor_shock_cohort_packet.py`.
 
 ## Limitations and non-claims
 
