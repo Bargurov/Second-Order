@@ -41,7 +41,9 @@ including an intra-OEM contrast (GM vs F) that C2 did not surface.
 
 Closing the supplier gap is a **bounded, separately-approved free backfill**
 (~85 daily bars per supplier around 2023-09-15) — a concrete no-paid next
-step, not a vague aspiration.
+step, not a vague aspiration. The gate/design for that backfill now exists:
+[`stats/UAW_SUPPLIER_BACKFILL_GATE.md`](UAW_SUPPLIER_BACKFILL_GATE.md)
+(G1, read-only; mutation stays not approved).
 
 ## Descriptive readout (n=1, AR vs SPY, partial-anticipation caveat)
 

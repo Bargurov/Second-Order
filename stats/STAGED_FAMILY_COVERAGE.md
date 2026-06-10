@@ -87,7 +87,10 @@ locally today; the only failures are transmission legs:
    share and does not establish mechanism strength.
 3. **Design the bounded LEA/APTV pre-event backfill** for the 313 supplier
    read (~85 bars each around 2023-09-15) — *the backfill writes price_cache
-   and requires its own approval gate.*
+   and requires its own approval gate.* — **DESIGN DONE (G1):** see
+   [`stats/UAW_SUPPLIER_BACKFILL_GATE.md`](UAW_SUPPLIER_BACKFILL_GATE.md);
+   bounded scope = LEA/APTV daily bars 2023-05-30..2023-10-27 (~212 rows
+   max, price_cache only); the backfill itself stays **not approved**.
 4. **Thread-collapse note** grouping 307–310 with curated anchors 298/300/301
    as one export-control thread. Read-only. — **DONE (E1):** see
    [`stats/SANCTION_THREAD_COLLAPSE.md`](SANCTION_THREAD_COLLAPSE.md);
