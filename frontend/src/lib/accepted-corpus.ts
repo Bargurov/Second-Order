@@ -32,3 +32,36 @@ export const ACCEPTED_CORPUS = {
   /** Synthetic/test seed rows flagged in event_hygiene and excluded (kept in archive). */
   syntheticSeedFlagged: 71,
 } as const;
+
+/**
+ * Mechanism-family coverage — accepted vs staged separation (AY1/AZ1).
+ *
+ * Same contract as ACCEPTED_CORPUS above: a DATED snapshot of a derivable
+ * truth. `scripts/mechanism_family_overview_report.py` recomputes every figure
+ * read-only from whatever `events.db` is present; re-derive and bump `asOf`
+ * when the archive moves. Staged `z1a_candidate_pack` rows are review staging
+ * — never accepted evidence, never inside accepted denominators.
+ */
+export const FAMILY_COVERAGE = {
+  /** Date the family-coverage figures below were derived from the live archive. */
+  asOf: "2026-06-10",
+  /** Staged candidates (excluded from every accepted denominator). */
+  stagedCandidates: 13,
+  /** Accepted family-labeled rows — all curated observations (no thesis outcome). */
+  acceptedFamilyLabeled: "tariff 4 · sanction 4",
+  /** Accepted rows with no mechanism_family label (limitation bucket). */
+  untaggedAccepted: 86,
+  /** Staged-only families (zero accepted rows) with staged counts. */
+  stagedOnlyFamilies: "regulation 5 · labor_inflation 2 · industrial_policy 2",
+  /** Tier-1 staged/no-paid shortlist (stats/STAGED_CANDIDATE_SHORTLIST.md). */
+  tier1: [
+    { id: 303, family: "regulation", label: "DOJ v Apple — conduct antitrust" },
+    { id: 304, family: "regulation", label: "DOJ v Google ad-tech — structural antitrust" },
+    { id: 313, family: "labor_inflation", label: "UAW strike — production / wage-cost shock" },
+  ],
+  /** Read-only reproduce command for every figure in this block. */
+  reproCommand:
+    "python scripts/mechanism_family_overview_report.py --db-path events.db --json",
+  overviewNote: "stats/MECHANISM_FAMILY_OVERVIEW.md",
+  shortlistNote: "stats/STAGED_CANDIDATE_SHORTLIST.md",
+} as const;

@@ -10,7 +10,7 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
-import { ACCEPTED_CORPUS as AC } from "@/lib/accepted-corpus";
+import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -199,6 +199,67 @@ export function EvidenceOverview() {
           </ul>
           <p className="text-[11px] italic text-on-surface-variant/70">{F.mechanismFamilies.label}</p>
           <p className="text-[11px] italic text-on-surface-variant/70">{F.mechanismFamilies.caveat}</p>
+        </CardContent>
+      </Card>
+
+      {/* Mechanism-family coverage — accepted vs staged separation (AZ1).
+          Static dated snapshot from FAMILY_COVERAGE; the read-only report
+          named below recomputes every figure. Staged candidates are review
+          staging only and never enter accepted denominators. */}
+      <Card className="mt-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Mechanism families · accepted vs staged</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Mechanism-family coverage
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            {`The archive separates accepted evidence from staged no-paid candidates by mechanism `}
+            {`family (as of ${FC.asOf}). Family labels are a research taxonomy, not a causal claim.`}
+          </p>
+
+          <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+            <Stat label="Coverage / analysis denominator" value={AC.coverageDenominator} />
+            <Stat label="Accepted track-record denominator" value={AC.trackRecordTotal} />
+            <Stat label="Staged candidates (excluded from accepted)" value={FC.stagedCandidates} />
+            <Stat label="Accepted family-labeled rows" value={FC.acceptedFamilyLabeled} />
+          </div>
+
+          <p className="text-on-surface/80">
+            {`The accepted family-labeled rows are all curated observations (no thesis outcome), and `}
+            <span className="font-mono tabular-nums text-on-surface">{FC.untaggedAccepted}</span>
+            {` accepted rows remain untagged — a data limitation this page states rather than hides.`}
+          </p>
+
+          <div className="flex flex-col gap-1 border-t border-border/40 pt-2">
+            <p className="text-on-surface-variant/80">
+              {`Staged-only families (zero accepted rows): `}
+              <span className="font-mono text-[12px] text-on-surface">{FC.stagedOnlyFamilies}</span>
+              {` — industrial_policy is staged with a weak event-date caveat (anticipated bill signings).`}
+            </p>
+            <ul className="flex flex-col">
+              {FC.tier1.map((c) => (
+                <li key={c.id} className="flex items-baseline justify-between gap-3 border-b border-border/30 py-1 last:border-0">
+                  <span className="text-on-surface-variant/85">
+                    <span className="font-mono text-[12px] text-on-surface">#{c.id}</span>
+                    {` ${c.label}`}
+                  </span>
+                  <span className="font-mono text-[11px] text-on-surface-variant">{c.family} · staged</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="text-[11.5px] italic text-on-surface-variant/75">
+            Staged candidates are not accepted evidence and never enter accepted denominators;
+            representative cases are illustrative, not evidence.
+          </p>
+
+          <p className="font-mono text-[11px] leading-relaxed text-on-surface-variant/70">
+            {`Reproduce read-only: ${FC.reproCommand} · context: ${FC.overviewNote} · `}
+            {`decisions: ${FC.shortlistNote}`}
+          </p>
         </CardContent>
       </Card>
 

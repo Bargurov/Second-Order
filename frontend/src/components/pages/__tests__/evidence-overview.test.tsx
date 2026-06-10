@@ -252,6 +252,51 @@ describe("EvidenceOverview — no banned framing (T5A)", () => {
   });
 });
 
+describe("EvidenceOverview — mechanism-family coverage: accepted vs staged (AZ1)", () => {
+  it("renders the accepted-vs-staged coverage card with its taxonomy framing", () => {
+    expect(visible).toContain("Mechanism-family coverage");
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("research taxonomy, not a causal claim");
+  });
+
+  it("separates the staged candidate count from the accepted denominators", () => {
+    expect(visible).toContain("Staged candidates (excluded from accepted) 13");
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("not accepted evidence");
+    expect(lc).toContain("never enter accepted denominators");
+  });
+
+  it("shows the thin accepted family evidence and the untagged limitation", () => {
+    expect(visible).toContain("tariff 4 · sanction 4");
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("curated observations");
+    expect(lc).toContain("untagged");
+  });
+
+  it("names the Tier-1 staged/no-paid bridge candidates", () => {
+    expect(visible).toContain("#303");
+    expect(visible).toContain("#304");
+    expect(visible).toContain("#313");
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("regulation");
+    expect(lc).toContain("labor_inflation");
+    expect(lc).toContain("industrial_policy");
+    expect(lc).toContain("weak event-date caveat");
+  });
+
+  it("keeps representative cases illustrative, not evidence", () => {
+    expect(visible.toLowerCase()).toContain("illustrative, not evidence");
+  });
+
+  it("shows the read-only reproduce command and names both research notes", () => {
+    expect(visible).toContain(
+      "python scripts/mechanism_family_overview_report.py --db-path events.db --json",
+    );
+    expect(visible).toContain("stats/MECHANISM_FAMILY_OVERVIEW.md");
+    expect(visible).toContain("stats/STAGED_CANDIDATE_SHORTLIST.md");
+  });
+});
+
 describe("EvidenceOverview — navigation (T5A)", () => {
   it("appears under the Research group in the sidebar", () => {
     const nav = renderToStaticMarkup(<Sidebar current="market" onNavigate={() => {}} />);
