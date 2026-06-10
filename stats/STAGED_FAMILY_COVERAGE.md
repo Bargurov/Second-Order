@@ -73,6 +73,11 @@ locally today; the only failures are transmission legs:
 
 ## Ranked no-paid next moves
 
+**Arc closed (H1):** all four ranked moves below are DONE — see the closeout
+memo
+[`stats/C3_STAGED_FAMILY_RESEARCH_CLOSEOUT.md`](C3_STAGED_FAMILY_RESEARCH_CLOSEOUT.md).
+The live LEA/APTV backfill remains **not approved**.
+
 1. **industrial_policy anchor-quality / policy-timeline review** (311/312):
    find the genuine information-shock dates inside each bill's path before
    reading any window. Read-only. — **DONE (D1):** see
