@@ -124,20 +124,20 @@ derived from the saved-event archive.
 
 The tracked evidence track is complete through Phase 4. The cohort-wide
 methodology and the Phase 1–4 arc are documented at
-[`demo_artifacts/section_c_v2/phase_evidence_methodology.md`](demo_artifacts/section_c_v2/phase_evidence_methodology.md)
+[`evidence_artifacts/section_c_v2/phase_evidence_methodology.md`](evidence_artifacts/section_c_v2/phase_evidence_methodology.md)
 and
-[`demo_artifacts/section_c_v2/phase_history.md`](demo_artifacts/section_c_v2/phase_history.md).
+[`evidence_artifacts/section_c_v2/phase_history.md`](evidence_artifacts/section_c_v2/phase_history.md).
 
 - **Phase 1** — a five-row freeze-candidate cohort
   (WHR / TXT / FSLR / RIO / LITE) is tracked at
-  `demo_artifacts/section_c_v2/freeze_candidate_evidence.json`. Each row
+  `evidence_artifacts/section_c_v2/freeze_candidate_evidence.json`. Each row
   carries a pre-registered canonical test at the claimed horizon h = 1
   with a BH-adjusted q-value frozen at the original five-row Phase 1
   denominator. Phase 1 q-values are never recomputed against any later
   scope.
 - **Phase 2** — a closed five-row BH/FDR pool
   (BA / ALB / NVDA / AMAT / CF) is tracked at
-  `demo_artifacts/section_c_v2/phase2_pool_v1.json`. BA, ALB, and NVDA
+  `evidence_artifacts/section_c_v2/phase2_pool_v1.json`. BA, ALB, and NVDA
   are BH/FDR discoveries at the q ≤ 0.05 threshold. AMAT and CF did not
   pass the screen but remain denominator members per the closed-pool
   policy. Phase 2 is a separate FDR scope from Phase 1.
@@ -150,10 +150,10 @@ and
   `.github/workflows/ci.yml` protect the tracked artifacts from silent
   regression. Deferred methodology lessons (CENX, NUE, NOC) are
   recorded in
-  `demo_artifacts/section_c_v2/rejection_log_summary_v1.json`.
+  `evidence_artifacts/section_c_v2/rejection_log_summary_v1.json`.
 - **Phase 4** — `GET /evidence/summary` exposes the tracked evidence
   layer as a read-only JSON view. The route reads only from
-  `demo_artifacts/section_c_v2/`; it does not read local operator
+  `evidence_artifacts/section_c_v2/`; it does not read local operator
   artifact paths, the events database, the price cache, any provider,
   or the network. It preserves Phase 1 and Phase 2 as separate FDR
   scopes.
@@ -173,7 +173,7 @@ This repository is local-first, and its two kinds of numbers reproduce
 differently from a clean clone:
 
 - **The closed Phase 1–4 evidence track is clean-clone reproducible.** Its
-  artifacts (`demo_artifacts/section_c_v2/`) and the three schema validators
+  artifacts (`evidence_artifacts/section_c_v2/`) and the three schema validators
   are tracked, and `.github/workflows/ci.yml` re-runs them on every push
   against a fixture database it builds on the CI runner — it never needs a
   local archive. A fresh clone reproduces the Phase 1 / Phase 2 pool counts
@@ -287,7 +287,7 @@ estimates; for every other event it lists the `blocking_reasons` and no
 estimates.
 
 It is **not a new FDR pool** and never reads, modifies, or reopens the
-closed Phase 1 / Phase 2 pools (`demo_artifacts` / `cohort_evidence` are a
+closed Phase 1 / Phase 2 pools (`evidence_artifacts` / `cohort_evidence` are a
 separate scope). It reuses the same gate as the event-detail route, so its
 `event_study_available` count matches the readiness report's
 `event_study_compute_ready` exactly (71 = 71).
@@ -634,7 +634,7 @@ questions and must not be conflated:
 The tracked evidence track is closed at Phase 4. No new candidates, new
 pools, or new validators are scheduled by this README. Deferred
 methodology lessons (CENX, NUE, NOC) are recorded separately in
-`demo_artifacts/section_c_v2/rejection_log_summary_v1.json` and are not
+`evidence_artifacts/section_c_v2/rejection_log_summary_v1.json` and are not
 denominator members of any open pool. No UI surface is claimed for the
 tracked-evidence layer; the only public consumption surface is the
 read-only `GET /evidence/summary` route.

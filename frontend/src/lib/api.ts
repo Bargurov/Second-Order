@@ -3264,7 +3264,7 @@ export const api = {
 
   /** ``GET /evidence/summary`` — tracked Phase 1 freeze cohort + closed
    *  Phase 2 BH/FDR pool, returned as separate arrays.  Read-only
-   *  endpoint backed by ``demo_artifacts/section_c_v2/`` only; no DB
+   *  endpoint backed by ``evidence_artifacts/section_c_v2/`` only; no DB
    *  reads, no provider, no network. */
   trackedEvidenceSummary: () =>
     request<TrackedEvidenceSummaryResponse>("/evidence/summary"),

@@ -95,9 +95,9 @@ The NVDA / SMH Oct 17 2023 BIS-update candidate has:
 At the time NVDA was screened, no tracked Phase 2 pool spec existed. Under Section 2 of this policy, NVDA's screen does not have a defensible BH q-value because no pool was locked. Under Section 5, the recommended interim state is:
 
 - **Do not assign `h1_q_bh` for NVDA.**
-- **Hold tracked promotion of NVDA into `demo_artifacts/section_c_v2/freeze_candidate_evidence.json`**, OR promote only with `q_bh = null` and an explicit `fdr_status = phase2_fdr_pending` field pointing to this policy.
+- **Hold tracked promotion of NVDA into `evidence_artifacts/section_c_v2/freeze_candidate_evidence.json`**, OR promote only with `q_bh = null` and an explicit `fdr_status = phase2_fdr_pending` field pointing to this policy.
 
-The preferred posture is to hold promotion until the Phase 2 pool is formally declared in a tracked artifact (e.g., `demo_artifacts/section_c_v2/phase2_pool_v1.json`) and at least one additional canonical test has been screened against it. That mirrors the Phase 1 pool-then-promote pattern and provides a non-trivial BH denominator.
+The preferred posture is to hold promotion until the Phase 2 pool is formally declared in a tracked artifact (e.g., `evidence_artifacts/section_c_v2/phase2_pool_v1.json`) and at least one additional canonical test has been screened against it. That mirrors the Phase 1 pool-then-promote pattern and provides a non-trivial BH denominator.
 
 NVDA's raw p of 0.0081 will clear BH at any reasonably-sized Phase 2 pool (BH-adjusted q at n=5 is approximately 0.04; at n=10 approximately 0.081, which would require operator reconsideration). This expectation is not a substitute for the actual q computation against a locked pool.
 
@@ -105,9 +105,9 @@ NVDA's raw p of 0.0081 will clear BH at any reasonably-sized Phase 2 pool (BH-ad
 
 This policy is read alongside:
 
-- `demo_artifacts/section_c_v2/methodology_acceptance_rubric_v1.md` — defines the per-candidate eight-gate rule and the graduation / post-acceptance vocabulary. G5 (FDR significant) references the FDR pool defined by this policy.
-- `demo_artifacts/section_c_v2/rejection_log_summary_v1.json` — sanitized public summary of rejection decisions including deferred-methodology-lesson candidates.
-- `demo_artifacts/section_c_v2/freeze_candidate_evidence.json` — the Phase 1 frozen 5-event cohort, whose q-values are pinned and not affected by this policy.
+- `evidence_artifacts/section_c_v2/methodology_acceptance_rubric_v1.md` — defines the per-candidate eight-gate rule and the graduation / post-acceptance vocabulary. G5 (FDR significant) references the FDR pool defined by this policy.
+- `evidence_artifacts/section_c_v2/rejection_log_summary_v1.json` — sanitized public summary of rejection decisions including deferred-methodology-lesson candidates.
+- `evidence_artifacts/section_c_v2/freeze_candidate_evidence.json` — the Phase 1 frozen 5-event cohort, whose q-values are pinned and not affected by this policy.
 
 ## Version history
 

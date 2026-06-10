@@ -3,7 +3,7 @@
 The launch helper is a local pre-launch wrapper that combines:
 
 1. A read-only inspection of the stable demo artifact bundle on
-   disk (``demo_artifacts/section_c_v1/``).
+   disk (``evidence_artifacts/section_c_v1/``).
 2. The seven local acceptance checks already run by
    ``scripts.run_section_c_demo_checks.run_section_c_demo_checks``.
 
@@ -174,7 +174,7 @@ def _one_fail_envelope(failing_check_id: str) -> dict[str, Any]:
 
 def _make_bundle(repo_root: Path) -> Path:
     """Create the stable demo bundle inside ``repo_root``."""
-    bundle = repo_root / "demo_artifacts" / "section_c_v1"
+    bundle = repo_root / "evidence_artifacts" / "section_c_v1"
     bundle.mkdir(parents=True, exist_ok=True)
     for name in _REQUIRED_BUNDLE_FILES:
         (bundle / name).write_text("{}", encoding="utf-8")
@@ -320,7 +320,7 @@ class TestBundleInspection(unittest.TestCase):
             _make_bundle(root)
             report = _run(repo_root=root)
         bs = report["demo_artifact_bundle_status"]
-        self.assertIn("demo_artifacts", bs["bundle_path"])
+        self.assertIn("evidence_artifacts", bs["bundle_path"])
         self.assertIn("section_c_v1", bs["bundle_path"])
 
 
@@ -404,7 +404,7 @@ class TestRecommendedNextAction(unittest.TestCase):
             report = _run(repo_root=root)
         action = report["recommended_next_action"].lower()
         self.assertIn("bundle", action)
-        self.assertIn("demo_artifacts", action)
+        self.assertIn("evidence_artifacts", action)
 
     def test_failed_check_action_points_at_failed_check(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -503,7 +503,7 @@ class TestReadOnlySourceLevel(unittest.TestCase):
     def test_source_has_no_artifact_mutation_call_site(self) -> None:
         text = self._source()
         # The helper inspects the bundle read-only; it must not
-        # write, copy, or delete anything inside ``demo_artifacts/``
+        # write, copy, or delete anything inside ``evidence_artifacts/``
         # or ``artifacts/``.
         for banned in (
             "shutil.copy(",

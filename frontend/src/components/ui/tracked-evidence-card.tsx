@@ -46,10 +46,10 @@ export const TRACKED_EVIDENCE_COPY = {
   scopeStamp:       "fdr_scope_note · verbatim from /evidence/summary",
   methodologyLabel: "Methodology",
   methodologyPath:
-    "demo_artifacts/section_c_v2/phase_evidence_methodology.md",
+    "evidence_artifacts/section_c_v2/phase_evidence_methodology.md",
   phaseHistoryLabel: "Phase history",
   phaseHistoryPath:
-    "demo_artifacts/section_c_v2/phase_history.md",
+    "evidence_artifacts/section_c_v2/phase_history.md",
 } as const;
 
 export interface TrackedEvidenceCardProps {

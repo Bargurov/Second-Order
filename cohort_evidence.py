@@ -7,11 +7,11 @@ re-implementing the JSON walk every time.
 Two artifacts, two scopes
 -------------------------
 
-* Phase 1 — ``demo_artifacts/section_c_v2/freeze_candidate_evidence.json``.
+* Phase 1 — ``evidence_artifacts/section_c_v2/freeze_candidate_evidence.json``.
   Five-row freeze-candidate cohort (WHR / TXT / FSLR / RIO / LITE)
   with frozen BH q-values computed against a five-row Phase 1
   denominator.
-* Phase 2 — ``demo_artifacts/section_c_v2/phase2_pool_v1.json``. Closed
+* Phase 2 — ``evidence_artifacts/section_c_v2/phase2_pool_v1.json``. Closed
   Phase 2 BH/FDR pool (BA / ALB / NVDA / AMAT / CF) with q-values
   computed against an independent five-row Phase 2 denominator.
 
@@ -106,7 +106,7 @@ __all__ = [
 
 
 _THIS_DIR = Path(__file__).resolve().parent
-_SECTION_C_DIR = _THIS_DIR / "demo_artifacts" / "section_c_v2"
+_SECTION_C_DIR = _THIS_DIR / "evidence_artifacts" / "section_c_v2"
 
 
 DEFAULT_PHASE1_PATH: str = str(_SECTION_C_DIR / "freeze_candidate_evidence.json")

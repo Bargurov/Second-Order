@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Phase 2 BH/FDR pool artifact schema validator.
 
-Validates a ``demo_artifacts/section_c_v2/phase2_pool_v1.json``-shaped
+Validates a ``evidence_artifacts/section_c_v2/phase2_pool_v1.json``-shaped
 artifact against the Phase 2 pool schema.  The validator is read-only:
 it opens the artifact, walks its structure, and emits a structured
 ``ok`` / ``errors`` / ``warnings`` envelope.  The artifact file itself
@@ -48,9 +48,9 @@ What the validator checks
 5. References:
 
    * ``policy_reference ==
-     "demo_artifacts/section_c_v2/phase2_fdr_policy_v1.md"``
+     "evidence_artifacts/section_c_v2/phase2_fdr_policy_v1.md"``
    * ``phase1_freeze_artifact_reference ==
-     "demo_artifacts/section_c_v2/freeze_candidate_evidence.json"``
+     "evidence_artifacts/section_c_v2/freeze_candidate_evidence.json"``
 
    Phase 1 q-values are intentionally not recomputed by this
    validator — that scope belongs to the freeze-candidate validator.
@@ -88,9 +88,9 @@ Output contract (JSON)::
 Usage::
 
     python scripts/validate_phase2_pool.py \\
-        --artifact demo_artifacts/section_c_v2/phase2_pool_v1.json
+        --artifact evidence_artifacts/section_c_v2/phase2_pool_v1.json
     python scripts/validate_phase2_pool.py \\
-        --artifact demo_artifacts/section_c_v2/phase2_pool_v1.json --json
+        --artifact evidence_artifacts/section_c_v2/phase2_pool_v1.json --json
 """
 from __future__ import annotations
 
@@ -121,10 +121,10 @@ _DENOMINATOR_COUNT: int = 5
 _BH_ALPHA: float = 0.05
 _FDR_METHOD: str = "Benjamini-Hochberg"
 _POLICY_REFERENCE: str = (
-    "demo_artifacts/section_c_v2/phase2_fdr_policy_v1.md"
+    "evidence_artifacts/section_c_v2/phase2_fdr_policy_v1.md"
 )
 _PHASE1_FREEZE_REFERENCE: str = (
-    "demo_artifacts/section_c_v2/freeze_candidate_evidence.json"
+    "evidence_artifacts/section_c_v2/freeze_candidate_evidence.json"
 )
 
 

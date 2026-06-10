@@ -34,7 +34,7 @@ every payload)
   performs NO cross-sectional inference.
 * No "confirmed" / "validated" / "significant" language for any event.
 * Never reads, modifies, or reopens the closed Phase 1 / Phase 2 FDR
-  pools (``demo_artifacts`` / ``cohort_evidence`` are a separate scope).
+  pools (``evidence_artifacts`` / ``cohort_evidence`` are a separate scope).
 * Provider provenance for the current live cache is ``legacy_unknown``
   unless separately reported (see
   ``scripts/price_provider_coverage_report.py``).

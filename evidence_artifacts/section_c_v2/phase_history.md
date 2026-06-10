@@ -80,7 +80,7 @@ layer from silent regression:
 `GET /evidence/summary` exposes the tracked evidence layer as a
 read-only JSON view. The route:
 
-- reads only from `demo_artifacts/section_c_v2/`;
+- reads only from `evidence_artifacts/section_c_v2/`;
 - does not read from local operator artifact paths under
   `artifacts/` or from any per-row operator writeup;
 - does not touch the events database, the price cache, any external

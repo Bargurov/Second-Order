@@ -3627,7 +3627,7 @@ app.include_router(_playbook_router)
 #
 # The demo Daily and Evidence Summary endpoints load from a stable
 # on-disk demo artifact bundle.  By default the bundle is
-# ``demo_artifacts/section_c_v1/`` — a tracked input the operator can
+# ``evidence_artifacts/section_c_v1/`` — a tracked input the operator can
 # rely on even when the local ``artifacts/`` directory is empty.  An
 # operator can point the demo backend at a different bundle (e.g. a
 # local experiment) by exporting the ``SECOND_ORDER_DEMO_ARTIFACT_DIR``
@@ -3650,12 +3650,12 @@ from routes import (
 
 _DEMO_ARTIFACT_DIR_ENV_VAR: str = "SECOND_ORDER_DEMO_ARTIFACT_DIR"
 _DEMO_ARTIFACT_DIR_DEFAULT: _Path = (
-    _Path(__file__).resolve().parent / "demo_artifacts" / "section_c_v1"
+    _Path(__file__).resolve().parent / "evidence_artifacts" / "section_c_v1"
 )
 _DEMO_FREEZE_ARTIFACT_FILENAME: str = "freeze_candidate_evidence.json"
 
 _TRACKED_EVIDENCE_DIR_DEFAULT: _Path = (
-    _Path(__file__).resolve().parent / "demo_artifacts" / "section_c_v2"
+    _Path(__file__).resolve().parent / "evidence_artifacts" / "section_c_v2"
 )
 _TRACKED_EVIDENCE_FREEZE_FILENAME:    str = "freeze_candidate_evidence.json"
 _TRACKED_EVIDENCE_PHASE2_FILENAME:    str = "phase2_pool_v1.json"
@@ -3666,7 +3666,7 @@ def _resolve_demo_artifact_dir() -> _Path:
     """Return the on-disk directory the demo Section C endpoints
     should load from.
 
-    Default: ``demo_artifacts/section_c_v1`` under the repo root.
+    Default: ``evidence_artifacts/section_c_v1`` under the repo root.
     Override: the value of ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` when
     set to a non-blank string.  Read at call time so an operator can
     swap bundles between requests; never cached at import time.
@@ -3680,7 +3680,7 @@ def _resolve_demo_artifact_dir() -> _Path:
 # The tracked-evidence endpoint deliberately does NOT resolve any
 # environment variable. The Phase 4 contract requires the public
 # tracked-evidence route to read only from the tracked
-# ``demo_artifacts/section_c_v2/`` bundle, never from a caller-supplied
+# ``evidence_artifacts/section_c_v2/`` bundle, never from a caller-supplied
 # alternate path. An env-var override would let an operator repoint the
 # route at a local / experimental bundle, which the contract forbids.
 # Use ``_TRACKED_EVIDENCE_DIR_DEFAULT`` directly in the endpoint.
@@ -3692,7 +3692,7 @@ def _demo_daily_market_endpoint():
 
     Reads ``analyzed_event_artifact_*.json`` files from the demo
     artifact bundle resolved by :func:`_resolve_demo_artifact_dir`
-    (default ``demo_artifacts/section_c_v1``; honors the
+    (default ``evidence_artifacts/section_c_v1``; honors the
     ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` env var when set).  No DB
     write, no provider call, no LLM call, no artifact mutation.
     """
@@ -3737,7 +3737,7 @@ def _demo_evidence_summary_endpoint():
 
     Reads ``freeze_candidate_evidence.json`` from the demo artifact
     bundle resolved by :func:`_resolve_demo_artifact_dir` (default
-    ``demo_artifacts/section_c_v1``; honors the
+    ``evidence_artifacts/section_c_v1``; honors the
     ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` env var when set).
     """
     return _demo_evidence_summary_mod.build_demo_evidence_summary(
@@ -3758,7 +3758,7 @@ def _evidence_summary_endpoint():
     surfaced verbatim from each tracked artifact and are never
     recomputed across phases.
 
-    Reads only from the tracked ``demo_artifacts/section_c_v2/``
+    Reads only from the tracked ``evidence_artifacts/section_c_v2/``
     bundle. The endpoint deliberately ignores the
     ``SECOND_ORDER_DEMO_ARTIFACT_DIR`` env var that the demo Section
     C endpoints honor; the tracked-evidence contract must not be

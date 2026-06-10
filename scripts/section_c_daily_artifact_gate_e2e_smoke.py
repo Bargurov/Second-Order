@@ -23,7 +23,7 @@ Read-only by construction
 * Every file the smoke writes lives under a single
   :class:`tempfile.TemporaryDirectory` that is destroyed when the
   smoke exits.  The live ``artifacts/``, ``events.db``,
-  ``price_cache``, ``backups/``, ``demo_artifacts/``, ``frontend/``,
+  ``price_cache``, ``backups/``, ``evidence_artifacts/``, ``frontend/``,
   and operator-note paths are never opened for writing.
 * No provider call, no LLM call, no FastAPI surface (the gate module
   imports stdlib only at module load — see its docstring).

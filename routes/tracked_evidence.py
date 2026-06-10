@@ -276,7 +276,7 @@ def build_tracked_evidence_summary(
     phase1_path, phase2_path, rejection_path:
         Optional explicit paths. ``None`` resolves to the corresponding
         :data:`cohort_evidence.DEFAULT_*` constant
-        (``demo_artifacts/section_c_v2/``).
+        (``evidence_artifacts/section_c_v2/``).
 
     Returns
     -------

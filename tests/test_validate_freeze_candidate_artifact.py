@@ -1528,7 +1528,7 @@ class TestV2ReadOnly(unittest.TestCase):
 
 _V2_LIVE_BUNDLE = str(
     Path(__file__).resolve().parents[1]
-    / "demo_artifacts" / "section_c_v2" / "freeze_candidate_evidence.json"
+    / "evidence_artifacts" / "section_c_v2" / "freeze_candidate_evidence.json"
 )
 
 

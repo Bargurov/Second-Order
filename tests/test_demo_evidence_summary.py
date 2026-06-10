@@ -692,12 +692,12 @@ class TestImportIsolation(unittest.TestCase):
 
 _V2_BUNDLE_PATH = os.path.join(
     os.path.dirname(__file__), "..",
-    "demo_artifacts", "section_c_v2", "freeze_candidate_evidence.json",
+    "evidence_artifacts", "section_c_v2", "freeze_candidate_evidence.json",
 )
 
 _V1_DEMO_PATH = os.path.join(
     os.path.dirname(__file__), "..",
-    "demo_artifacts", "section_c_v1", "freeze_candidate_evidence.json",
+    "evidence_artifacts", "section_c_v1", "freeze_candidate_evidence.json",
 )
 
 

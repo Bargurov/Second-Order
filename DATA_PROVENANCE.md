@@ -36,10 +36,12 @@ the repo.
   is present and are the source of truth.
 - **No secrets are shipped.** `.env`, provider API keys (`ANTHROPIC_API_KEY`,
   etc.), and `backups/` are gitignored and have never been committed.
-- **The closed Phase 1–4 evidence artifacts ARE shipped** (under
-  `demo_artifacts/section_c_v2/`, despite the legacy directory name they are real
-  frozen, source-anchored research artifacts — see README) and are clean-clone
-  reproducible via CI against a fixture database.
+- **The closed Phase 1–4 evidence artifacts ARE shipped** under
+  `evidence_artifacts/section_c_v2/` — real frozen, source-anchored research
+  artifacts (see README), clean-clone reproducible via CI against a fixture
+  database. (`evidence_artifacts/section_c_v1/` is a separate demo-walkthrough
+  input bundle, labelled as such in its own README — not part of the frozen
+  evidence pools.)
 
 ## Data sources
 

@@ -5,7 +5,7 @@ Pin the contract:
 * Read-only validator.  No DB writes, no provider, no LLM, no
   ``yfinance``, no FastAPI surface.  The artifact file is never
   mutated by validation.
-* Validates ``demo_artifacts/section_c_v2/phase2_pool_v1.json``
+* Validates ``evidence_artifacts/section_c_v2/phase2_pool_v1.json``
   (or any artifact passed via ``--artifact``) against the
   ``phase2_pool`` schema.
 * Output dict has EXACTLY these 5 keys::
@@ -14,7 +14,7 @@ Pin the contract:
 
 * ``ok`` is True iff ``errors`` is empty.
 * The validator must accept the live tracked artifact at
-  ``demo_artifacts/section_c_v2/phase2_pool_v1.json``.  Rejection of
+  ``evidence_artifacts/section_c_v2/phase2_pool_v1.json``.  Rejection of
   the live artifact means the validator is the suspect, not the
   artifact (the live artifact is in the immutable list for this task).
 * The validator recomputes BH q-values from candidate ``raw_p``
@@ -54,7 +54,7 @@ _REQUIRED_KEYS = (
 
 _LIVE_ARTIFACT_PATH = str(
     Path(__file__).resolve().parents[1]
-    / "demo_artifacts" / "section_c_v2" / "phase2_pool_v1.json"
+    / "evidence_artifacts" / "section_c_v2" / "phase2_pool_v1.json"
 )
 
 
@@ -154,9 +154,9 @@ def _good_pool(**overrides: Any) -> dict[str, Any]:
         "denominator_count": 5,
         "fdr_method": "Benjamini-Hochberg",
         "policy_reference":
-            "demo_artifacts/section_c_v2/phase2_fdr_policy_v1.md",
+            "evidence_artifacts/section_c_v2/phase2_fdr_policy_v1.md",
         "phase1_freeze_artifact_reference":
-            "demo_artifacts/section_c_v2/freeze_candidate_evidence.json",
+            "evidence_artifacts/section_c_v2/freeze_candidate_evidence.json",
         "phase1_scope_note":
             "Phase 1 q-values are frozen and are NOT recomputed.",
         "candidates": [
@@ -547,7 +547,7 @@ class TestReferences(unittest.TestCase):
 
     def test_wrong_policy_reference_fails(self) -> None:
         pool = _good_pool()
-        pool["policy_reference"] = "demo_artifacts/some_other_file.md"
+        pool["policy_reference"] = "evidence_artifacts/some_other_file.md"
         path = _write_artifact(pool)
         try:
             report = cli.run_validate_phase2_pool(artifact_path=path)

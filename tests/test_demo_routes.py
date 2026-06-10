@@ -336,7 +336,7 @@ class TestNoProviderOrLlmCoupling(unittest.TestCase):
 
 
 _ENV_VAR_NAME = "SECOND_ORDER_DEMO_ARTIFACT_DIR"
-_EXPECTED_DEFAULT_RELATIVE = ("demo_artifacts", "section_c_v1")
+_EXPECTED_DEFAULT_RELATIVE = ("evidence_artifacts", "section_c_v1")
 
 
 def _clear_demo_env():
@@ -352,7 +352,7 @@ def _clear_demo_env():
 
 class TestDemoArtifactDirResolver(unittest.TestCase):
     """Pin the resolver's contract: default lands on the stable
-    ``demo_artifacts/section_c_v1`` bundle; the env override wins
+    ``evidence_artifacts/section_c_v1`` bundle; the env override wins
     when present.  The resolver must read the env var at call time
     so a test setting the variable after ``import api`` sees the
     override.

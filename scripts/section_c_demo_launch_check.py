@@ -5,7 +5,7 @@ Tells the operator whether the Section C demo is ready to open and
 rehearse.  Combines two read-only inspections:
 
 1. **Demo artifact bundle** — verifies that
-   ``demo_artifacts/section_c_v1/`` exists and contains the five
+   ``evidence_artifacts/section_c_v1/`` exists and contains the five
    tracked bundle files (three Daily demo artifacts, the freeze-
    candidate evidence artifact, and the reviewed-candidate CSV).
 2. **Local acceptance checks** — delegates to
@@ -85,7 +85,7 @@ if str(ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 
 
-_BUNDLE_DIR_RELATIVE: tuple[str, ...] = ("demo_artifacts", "section_c_v1")
+_BUNDLE_DIR_RELATIVE: tuple[str, ...] = ("evidence_artifacts", "section_c_v1")
 
 
 _REQUIRED_BUNDLE_FILES: tuple[str, ...] = (

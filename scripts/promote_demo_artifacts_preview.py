@@ -70,9 +70,9 @@ Usage::
 
     python scripts/promote_demo_artifacts_preview.py --json
     python scripts/promote_demo_artifacts_preview.py \\
-        --output-dir demo_artifacts/
+        --output-dir evidence_artifacts/
     python scripts/promote_demo_artifacts_preview.py \\
-        --output-dir demo_artifacts/ --overwrite
+        --output-dir evidence_artifacts/ --overwrite
 """
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ _DEMO_INPUT_DISCLAIMER: str = (
 # Default destination shown when --output-dir is not supplied.  The
 # preview uses this so an operator can see the conceptual layout
 # without having to invoke the write path.
-_DEFAULT_PREVIEW_DIR: str = "demo_artifacts"
+_DEFAULT_PREVIEW_DIR: str = "evidence_artifacts"
 
 
 # ---------------------------------------------------------------------------

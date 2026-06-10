@@ -6,7 +6,7 @@ Pin the contract for the sanitized rejection-log summary validator:
   ``yfinance``, no FastAPI surface.  The artifact file is never
   mutated by validation.
 * Validates the tracked sanitized rejection summary at
-  ``demo_artifacts/section_c_v2/rejection_log_summary_v1.json``
+  ``evidence_artifacts/section_c_v2/rejection_log_summary_v1.json``
   against the public-summary schema:
 
   - identifiable_rejections_count equals len(identifiable_rejections)
@@ -54,7 +54,7 @@ def _good_summary() -> dict[str, Any]:
     """Build a sanitized rejection summary the validator must accept.
 
     Matches the public schema of
-    ``demo_artifacts/section_c_v2/rejection_log_summary_v1.json``.
+    ``evidence_artifacts/section_c_v2/rejection_log_summary_v1.json``.
     """
     return {
         "artifact_type": "rejection_log_summary",
@@ -169,7 +169,7 @@ class TrackedArtifactPasses(unittest.TestCase):
         )
         tracked = os.path.join(
             repo_root,
-            "demo_artifacts",
+            "evidence_artifacts",
             "section_c_v2",
             "rejection_log_summary_v1.json",
         )

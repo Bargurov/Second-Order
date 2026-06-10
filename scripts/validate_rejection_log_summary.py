@@ -2,7 +2,7 @@
 """Sanitized rejection-log summary validator.
 
 Validates the tracked sanitized rejection summary at
-``demo_artifacts/section_c_v2/rejection_log_summary_v1.json`` against
+``evidence_artifacts/section_c_v2/rejection_log_summary_v1.json`` against
 the public-summary schema.  Read-only by construction: opens the
 artifact, walks its structure, and emits a structured ``ok`` /
 ``errors`` / ``warnings`` envelope.  The artifact file itself is never
@@ -71,9 +71,9 @@ Output contract (JSON)::
 Usage::
 
     python scripts/validate_rejection_log_summary.py \\
-        --artifact demo_artifacts/section_c_v2/rejection_log_summary_v1.json
+        --artifact evidence_artifacts/section_c_v2/rejection_log_summary_v1.json
     python scripts/validate_rejection_log_summary.py \\
-        --artifact demo_artifacts/section_c_v2/rejection_log_summary_v1.json \\
+        --artifact evidence_artifacts/section_c_v2/rejection_log_summary_v1.json \\
         --json
 """
 from __future__ import annotations

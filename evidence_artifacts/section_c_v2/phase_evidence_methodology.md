@@ -11,17 +11,17 @@ Four tracked artifacts plus their schema validators plus the project
 health smoke:
 
 - **Phase 1 freeze bundle** —
-  `demo_artifacts/section_c_v2/freeze_candidate_evidence.json`. Five
+  `evidence_artifacts/section_c_v2/freeze_candidate_evidence.json`. Five
   rows (WHR / TXT / FSLR / RIO / LITE), per-row pre-registered
   canonical test at h=1, BH q-values computed within the five-row
   Phase 1 denominator.
 - **Phase 2 pool** —
-  `demo_artifacts/section_c_v2/phase2_pool_v1.json` (closed pool)
+  `evidence_artifacts/section_c_v2/phase2_pool_v1.json` (closed pool)
   governed by
-  `demo_artifacts/section_c_v2/phase2_fdr_policy_v1.md` (pool lock,
+  `evidence_artifacts/section_c_v2/phase2_fdr_policy_v1.md` (pool lock,
   candidate inclusion, deferred-row treatment, q-value timing).
 - **Rejection / deferred summary** —
-  `demo_artifacts/section_c_v2/rejection_log_summary_v1.json`.
+  `evidence_artifacts/section_c_v2/rejection_log_summary_v1.json`.
   Sanitized public summary of rejections plus deferred methodology
   lessons.
 - **Validators and health smoke** —
@@ -32,7 +32,7 @@ health smoke:
 
 The eight-gate acceptance rubric (G1–G8) and the post-acceptance
 vocabulary used to describe each tracked row live at
-`demo_artifacts/section_c_v2/methodology_acceptance_rubric_v1.md`.
+`evidence_artifacts/section_c_v2/methodology_acceptance_rubric_v1.md`.
 
 ## Phase 1 (freeze bundle)
 
@@ -123,9 +123,9 @@ structured `{ok, errors, warnings}` envelope.
 
 ```
 python scripts/project_health_check.py --json
-python scripts/validate_freeze_candidate_artifact.py --artifact demo_artifacts/section_c_v2/freeze_candidate_evidence.json --json
-python scripts/validate_phase2_pool.py --artifact demo_artifacts/section_c_v2/phase2_pool_v1.json --json
-python scripts/validate_rejection_log_summary.py --artifact demo_artifacts/section_c_v2/rejection_log_summary_v1.json --json
+python scripts/validate_freeze_candidate_artifact.py --artifact evidence_artifacts/section_c_v2/freeze_candidate_evidence.json --json
+python scripts/validate_phase2_pool.py --artifact evidence_artifacts/section_c_v2/phase2_pool_v1.json --json
+python scripts/validate_rejection_log_summary.py --artifact evidence_artifacts/section_c_v2/rejection_log_summary_v1.json --json
 ```
 
 `project_health_check.py` is the umbrella health smoke; the three
@@ -133,5 +133,5 @@ artifact validators each pin one artifact's schema. The
 eight-gate rubric is read alongside these as documentation only —
 it is not a runtime check.
 
-See also: `demo_artifacts/section_c_v2/methodology_acceptance_rubric_v1.md`
-and `demo_artifacts/section_c_v2/phase2_fdr_policy_v1.md`.
+See also: `evidence_artifacts/section_c_v2/methodology_acceptance_rubric_v1.md`
+and `evidence_artifacts/section_c_v2/phase2_fdr_policy_v1.md`.

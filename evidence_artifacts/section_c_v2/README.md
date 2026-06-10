@@ -38,9 +38,9 @@ same directory.
 ## Validation
 
 ```
-python scripts/validate_freeze_candidate_artifact.py --artifact demo_artifacts/section_c_v2/freeze_candidate_evidence.json --json
-python scripts/validate_phase2_pool.py --artifact demo_artifacts/section_c_v2/phase2_pool_v1.json --json
-python scripts/validate_rejection_log_summary.py --artifact demo_artifacts/section_c_v2/rejection_log_summary_v1.json --json
+python scripts/validate_freeze_candidate_artifact.py --artifact evidence_artifacts/section_c_v2/freeze_candidate_evidence.json --json
+python scripts/validate_phase2_pool.py --artifact evidence_artifacts/section_c_v2/phase2_pool_v1.json --json
+python scripts/validate_rejection_log_summary.py --artifact evidence_artifacts/section_c_v2/rejection_log_summary_v1.json --json
 python scripts/project_health_check.py --json
 ```
 
@@ -49,4 +49,4 @@ python scripts/project_health_check.py --json
 - `bundle_scope`: `whr_txt_fslr_rio_lite_five_row` (Phase 1 freeze cohort)
 - Phase 1 freeze status: `freeze_ready_pending_operator_review` for all five Phase 1 rows
 - Phase 2 pool: closed 2026-05-28 with three BH/FDR discoveries
-- Read-only consumption surface: the tracked `GET /evidence/summary` route (Phase 4). Section C Demo v1 (`demo_artifacts/section_c_v1/`) is unchanged.
+- Read-only consumption surface: the tracked `GET /evidence/summary` route (Phase 4). Section C Demo v1 (`evidence_artifacts/section_c_v1/`) is unchanged.

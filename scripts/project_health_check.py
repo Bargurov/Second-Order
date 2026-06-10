@@ -77,13 +77,13 @@ _DEFAULT_BACKUP_DIR = "backups"
 #
 # Composes three read-only artifact validators plus the cohort_evidence
 # summary helper into one section.  The artifacts under
-# ``demo_artifacts/section_c_v2/`` are tracked, immutable inputs; the
+# ``evidence_artifacts/section_c_v2/`` are tracked, immutable inputs; the
 # aggregator never mutates them and never recomputes Phase 1 q-values
 # against the Phase 2 pool.  Phase 1 and Phase 2 stay separate FDR
 # scopes by construction — this section only reports each phase's
 # pinned counts side by side.
 
-_EVIDENCE_DIR = ROOT / "demo_artifacts" / "section_c_v2"
+_EVIDENCE_DIR = ROOT / "evidence_artifacts" / "section_c_v2"
 _FREEZE_CANDIDATE_ARTIFACT_PATH = str(
     _EVIDENCE_DIR / "freeze_candidate_evidence.json"
 )

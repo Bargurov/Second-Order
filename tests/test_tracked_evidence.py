@@ -574,7 +574,7 @@ class TestExistingDemoEndpointUntouched(unittest.TestCase):
 
 class TestTrackedOnlyEnforcement(unittest.TestCase):
     """The Phase 4 contract requires ``/evidence/summary`` to read only
-    from the tracked ``demo_artifacts/section_c_v2/`` bundle.
+    from the tracked ``evidence_artifacts/section_c_v2/`` bundle.
 
     The endpoint must NOT honor ``SECOND_ORDER_DEMO_ARTIFACT_DIR``.
     Setting that env var to a tempdir with different (or empty)
@@ -649,7 +649,7 @@ class TestTrackedOnlyEnforcement(unittest.TestCase):
         self.assertFalse(
             hasattr(api, "_resolve_tracked_evidence_dir"),
             "_resolve_tracked_evidence_dir must not be defined; the "
-            "tracked-evidence endpoint must pin demo_artifacts/section_c_v2",
+            "tracked-evidence endpoint must pin evidence_artifacts/section_c_v2",
         )
 
     def test_tracked_default_points_at_section_c_v2(self) -> None:
@@ -660,7 +660,7 @@ class TestTrackedOnlyEnforcement(unittest.TestCase):
         default = self._api._TRACKED_EVIDENCE_DIR_DEFAULT
         # Path object; compare on the last two segments for portability.
         parts = default.parts
-        self.assertEqual(parts[-2], "demo_artifacts")
+        self.assertEqual(parts[-2], "evidence_artifacts")
         self.assertEqual(parts[-1], "section_c_v2")
 
     def test_env_var_does_not_make_route_read_local_artifacts(self) -> None:

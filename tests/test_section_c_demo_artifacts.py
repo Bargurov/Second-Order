@@ -1,6 +1,6 @@
 """Tests for the tracked Section C demo artifact bundle.
 
-Pin the contract that ``demo_artifacts/section_c_v1/`` is a stable
+Pin the contract that ``evidence_artifacts/section_c_v1/`` is a stable
 on-disk demo input set the Section C demo backend can rely on even
 when the operator's local ``artifacts/`` directory is empty or
 untracked.
@@ -52,7 +52,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 ROOT = Path(__file__).resolve().parents[1]
-BUNDLE_DIR = ROOT / "demo_artifacts" / "section_c_v1"
+BUNDLE_DIR = ROOT / "evidence_artifacts" / "section_c_v1"
 
 _DAILY_FILES = (
     "analyzed_event_artifact_daily-demo-001.json",

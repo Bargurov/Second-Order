@@ -242,9 +242,9 @@ describe("TrackedEvidenceCard — happy path", () => {
   it("renders muted repo-path captions, not clickable external links", () => {
     const html = renderCard(_baselineEnvelope());
     expect(html).toContain(
-      "demo_artifacts/section_c_v2/phase_evidence_methodology.md",
+      "evidence_artifacts/section_c_v2/phase_evidence_methodology.md",
     );
-    expect(html).toContain("demo_artifacts/section_c_v2/phase_history.md");
+    expect(html).toContain("evidence_artifacts/section_c_v2/phase_history.md");
     expect(html).not.toContain("github.com/anthropics/claude-code");
     expect(html).not.toContain("<a ");
     expect(html).not.toContain("href=");

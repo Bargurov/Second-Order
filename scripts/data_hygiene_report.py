@@ -35,7 +35,7 @@ them.
 What this report explicitly does NOT do (see the ``non_claims`` block)
 ----------------------------------------------------------------------
 * Never reads, modifies, or reopens the closed Phase 1 / Phase 2 FDR pools
-  (``demo_artifacts`` / ``cohort_evidence`` are a separate scope).
+  (``evidence_artifacts`` / ``cohort_evidence`` are a separate scope).
 * Never deletes, edits, or mutates any row — read-only.
 * The classification is a documented heuristic, surfaced per-group so a
   reviewer can audit it; it is not a stored label.

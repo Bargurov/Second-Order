@@ -8,8 +8,8 @@
   "denominator_count": 5,
   "fdr_method": "Benjamini-Hochberg",
   "fdr_method_note": "Step-up procedure with monotone running-min adjustment (matches R's p.adjust(p, method='BH')). Computed via stats.fdr.bh_adjust at pool closure. Discovery rule: q_bh <= bh_alpha.",
-  "policy_reference": "demo_artifacts/section_c_v2/phase2_fdr_policy_v1.md",
-  "phase1_freeze_artifact_reference": "demo_artifacts/section_c_v2/freeze_candidate_evidence.json",
+  "policy_reference": "evidence_artifacts/section_c_v2/phase2_fdr_policy_v1.md",
+  "phase1_freeze_artifact_reference": "evidence_artifacts/section_c_v2/freeze_candidate_evidence.json",
   "phase1_scope_note": "Phase 1 q-values (WHR / TXT / FSLR / RIO / LITE) are frozen and are NOT recomputed against the Phase 2 pool. Phase 2 is a separate FDR scope per phase2_fdr_policy_v1.md Sections 2 and 6.",
   "denominator_inclusion_note": "All five entries have a valid pre-registered canonical test committed before any cache backfill or data inspection, were screened against the cohort-default 60-bar BHAR event-study engine, and contribute their primary claimed-horizon raw_p to the denominator. Candidates that failed G5 (AMAT, CF) still count in the denominator per policy Section 3 — removing a failed canonical test after the fact would be selection bias.",
   "claimed_horizon_pool_note": "Only the primary claimed horizon h=1 enters the BH calculation for each candidate. Sibling-benchmark p-values, diagnostic-horizon p-values, and restricted-horizon p-values do not enter this pool; they are reported in per-row writeups as supporting context only.",
@@ -143,7 +143,7 @@
     "summary_language": "BA, ALB, and NVDA pass Phase 2 BH/FDR at q<=0.05. AMAT and CF are valid Phase 2 BH denominator members that failed G5 and the BH step-up; they remain in the denominator per policy Section 3."
   },
   "revision_history": [],
-  "downstream_promotion_note": "This artifact records the closed Phase 2 BH/FDR pool. Tracked promotion of any phase2_pool_v1 row into demo_artifacts/section_c_v2/freeze_candidate_evidence.json is a separate explicit operator step and is not performed here. Phase 1 q-values in freeze_candidate_evidence.json are unchanged.",
+  "downstream_promotion_note": "This artifact records the closed Phase 2 BH/FDR pool. Tracked promotion of any phase2_pool_v1 row into evidence_artifacts/section_c_v2/freeze_candidate_evidence.json is a separate explicit operator step and is not performed here. Phase 1 q-values in freeze_candidate_evidence.json are unchanged.",
   "demo_wiring_note": "Not wired to the Section C Demo. Per-row q_bh values are mirrored back into the local post-screen artifacts for self-consistency, with this file as the source of record.",
   "limitations": [
     "Five-row pool with mixed mechanism families; no cross-row mechanism-family claim is defensible.",

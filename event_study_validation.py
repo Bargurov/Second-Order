@@ -50,7 +50,7 @@ through ``db.connect_db()`` (the same path resolver tests rebind via
 ``_ensure_table`` write path.  No provider, no ``yfinance``,
 ``market_check`` / ``market_data``, no LLM, no archive mutation, no
 FastAPI surface here (the route lives in ``routes/events.py``).  Reads no
-``demo_artifacts`` / ``cohort_evidence`` — the Phase 1 / Phase 2 FDR pools
+``evidence_artifacts`` / ``cohort_evidence`` — the Phase 1 / Phase 2 FDR pools
 are a separate scope and are never mixed into this event-level surface.
 
 Readiness gate parity

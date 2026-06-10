@@ -117,7 +117,7 @@ def _archive_with(**counts) -> dict:
 def _ok_freeze_candidate_envelope() -> dict:
     return {
         "ok":            True,
-        "artifact_path": "demo_artifacts/section_c_v2/freeze_candidate_evidence.json",
+        "artifact_path": "evidence_artifacts/section_c_v2/freeze_candidate_evidence.json",
         "records_count": 5,
         "errors":        [],
         "warnings":      [],
@@ -127,7 +127,7 @@ def _ok_freeze_candidate_envelope() -> dict:
 def _ok_phase2_pool_envelope() -> dict:
     return {
         "ok":            True,
-        "artifact_path": "demo_artifacts/section_c_v2/phase2_pool_v1.json",
+        "artifact_path": "evidence_artifacts/section_c_v2/phase2_pool_v1.json",
         "records_count": 5,
         "errors":        [],
         "warnings":      [],
@@ -137,7 +137,7 @@ def _ok_phase2_pool_envelope() -> dict:
 def _ok_rejection_log_envelope() -> dict:
     return {
         "ok":                            True,
-        "artifact_path":                 "demo_artifacts/section_c_v2/rejection_log_summary_v1.json",
+        "artifact_path":                 "evidence_artifacts/section_c_v2/rejection_log_summary_v1.json",
         "identifiable_rejections_count": 10,
         "errors":                        [],
         "warnings":                      [],

@@ -266,11 +266,11 @@ jobs:
       - name: Run evidence-layer validators on tracked artifacts
         run: |
           python scripts/validate_freeze_candidate_artifact.py \
-              --artifact demo_artifacts/section_c_v2/freeze_candidate_evidence.json --json
+              --artifact evidence_artifacts/section_c_v2/freeze_candidate_evidence.json --json
           python scripts/validate_phase2_pool.py \
-              --artifact demo_artifacts/section_c_v2/phase2_pool_v1.json --json
+              --artifact evidence_artifacts/section_c_v2/phase2_pool_v1.json --json
           python scripts/validate_rejection_log_summary.py \
-              --artifact demo_artifacts/section_c_v2/rejection_log_summary_v1.json --json
+              --artifact evidence_artifacts/section_c_v2/rejection_log_summary_v1.json --json
 
       - name: Assert evidence_layer pinned counts in project health
         run: |

@@ -3,7 +3,7 @@
 
 Tests whether the per-record abnormal-return signals recorded in
 the tracked demo evidence bundle
-(``demo_artifacts/section_c_v1/freeze_candidate_evidence.json``)
+(``evidence_artifacts/section_c_v1/freeze_candidate_evidence.json``)
 also appear at nearby non-event "placebo" dates.  The smoke reads
 from the tracked demo bundle by default so a fresh clone produces
 the same comparison without depending on the local untracked
@@ -187,7 +187,7 @@ _DEFAULT_ALPHA:                  float           = 0.05
 _DEFAULT_ESTIMATION_WINDOW:      int             = 60
 _DEFAULT_MIN_ESTIMATION_WINDOW:  int             = 5
 _DEFAULT_EVIDENCE_PATH:          str             = (
-    "demo_artifacts/section_c_v1/freeze_candidate_evidence.json"
+    "evidence_artifacts/section_c_v1/freeze_candidate_evidence.json"
 )
 _DEFAULT_DB_PATH:                str             = "events.db"
 

@@ -13,7 +13,7 @@ already computes. Pins:
 * the report mutates nothing and restores ``db.DB_FILE``;
 * every payload carries an explicit non-claim block;
 * the report imports no provider / network / FDR-pool seam and never reads
-  demo_artifacts;
+  evidence_artifacts;
 * ``--json`` / text CLI plumbing.
 
 The ready-event fixture reuses the same seeding shape as
@@ -319,7 +319,7 @@ class IsolationTest(unittest.TestCase):
     def test_does_not_read_demo_artifacts_or_cohort_evidence(self) -> None:
         # The report's only I/O is sqlite (the events table) plus the
         # read-only gate (price_cache).  It opens NO files, so it cannot
-        # read demo_artifacts / cohort_evidence artifacts.  (The docstring
+        # read evidence_artifacts / cohort_evidence artifacts.  (The docstring
         # names them only to DECLARE it avoids them; that's documentation,
         # not access — so we assert the real property: no open()/read_text
         # calls, and no cohort_evidence import.)  The cohort_evidence import

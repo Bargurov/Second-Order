@@ -869,7 +869,7 @@ class TestDefaultEvidencePath(unittest.TestCase):
     def test_default_evidence_path_is_demo_bundle(self) -> None:
         self.assertEqual(
             smoke._DEFAULT_EVIDENCE_PATH,
-            "demo_artifacts/section_c_v1/freeze_candidate_evidence.json",
+            "evidence_artifacts/section_c_v1/freeze_candidate_evidence.json",
         )
 
     def test_default_evidence_path_resolves_against_repo_root(self) -> None:
