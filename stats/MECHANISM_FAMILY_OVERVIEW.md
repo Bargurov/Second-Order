@@ -69,7 +69,9 @@ analysis**:
   accepted rows.
 - **#304 — DOJ v Google ad-tech (2023-01-24, GOOGL, regulation):**
   structural-remedy / divestiture antitrust; pairs with 303 as a
-  conduct-vs-structural contrast within the same new family.
+  conduct-vs-structural contrast within the same new family. A read-only
+  paid-gate packet (still no-paid, blocked by default) is at
+  [`stats/CANDIDATE_304_PAID_GATE_PACKET.md`](CANDIDATE_304_PAID_GATE_PACKET.md).
 - **#313 — UAW Stand Up Strike (2023-09-15, GM/F, labor_inflation):**
   production-disruption / wage-cost shock; the labor family has zero accepted
   rows and sits furthest from the archive's existing concentration.
