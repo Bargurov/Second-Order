@@ -135,3 +135,20 @@ remedy mechanism in the regulation family. That makes it eligible for paid-
 gate *design* only: the gate above stays blocked until the operator phrase,
 backup, and dry run all exist, and the no-paid review path (free local
 evidence first) remains the default.
+
+## Operator decision (post-review disposition)
+
+**2026-06-10 — paid analysis deferred.** The operator reviewed this packet and
+decided that candidate 304 is not worth paid analysis at this time.
+
+- Paid `/analyze` remains **blocked**; no approval phrase is granted and no paid
+  run is authorized.
+- Candidate 304 remains **staged / no-paid** in `z1a_candidate_pack`; it is not
+  promoted.
+- No DB mutation, no promotion, and no stage or `event_hygiene` change is
+  authorized; the accepted denominators (coverage 94, track-record 86) stay
+  unchanged.
+- This deferral does **not** retract the mechanism hypothesis or the descriptive
+  n=1 readout above. It records only that the case is not worth paid spend now.
+  The free, no-paid local-evidence path stays the default, and the candidate can
+  be reconsidered later without re-deriving this packet.
