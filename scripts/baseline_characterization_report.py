@@ -23,15 +23,23 @@ import json
 import os
 import sqlite3
 import sys
+from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from stats.baseline_characterization import (  # noqa: E402
+    ar_sign_observation,
     build_baseline_characterization,
     build_ar_sign_report,
     build_multi_ticker_ar_report,
     event_study_split,
 )
+from stats.robust_diagnostics import build_diagnostics_block  # noqa: E402
+
+# Horizons mirror stats.baseline_characterization's AR-sign report.  The overlap
+# window length reuses the horizon value as a calendar-day proxy for the
+# trading-day horizon (disclosed in the robust-diagnostics non-claims).
+_ROBUST_HORIZONS: tuple[int, ...] = (1, 5, 20)
 
 
 def _load_events_readonly(db_path: str) -> list[dict]:
@@ -51,6 +59,67 @@ def _load_events_readonly(db_path: str) -> list[dict]:
             d["market_tickers"] = []
         events.append(d)
     return events
+
+
+def _event_ordinal(event: dict):
+    """Event date as an integer day ordinal, or ``None`` if unparseable."""
+    raw = event.get("event_date") if isinstance(event, dict) else None
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        return date.fromisoformat(raw.strip()[:10]).toordinal()
+    except ValueError:
+        return None
+
+
+def _robust_per_horizon(events, event_study_fn) -> dict:
+    """Extract per-horizon eligible abnormal returns + window starts + SAR rows.
+
+    Eligibility is decided by ``ar_sign_observation`` — the SAME gate the
+    AR-sign report uses — so the diagnostics' ``n`` matches the report's
+    ``eligible`` count exactly (no third denominator).
+    """
+    per: dict[int, dict] = {
+        h: {"ar_values": [], "window_starts": [], "window_length": h, "es_rows": []}
+        for h in _ROBUST_HORIZONS
+    }
+    for ev in events if isinstance(events, list) else []:
+        tickers = ev.get("market_tickers") if isinstance(ev, dict) else None
+        if not isinstance(tickers, list) or not tickers:
+            continue
+        try:
+            block = event_study_fn(ev) or {}
+        except Exception:
+            continue
+        if block.get("status") != "event_study_available":
+            continue
+        sigma = block.get("sigma_ar_daily")
+        ordn = _event_ordinal(ev)
+        by_h: dict[int, dict] = {}
+        for r in block.get("per_horizon") or []:
+            if isinstance(r, dict):
+                try:
+                    by_h[int(r.get("horizon"))] = r
+                except (TypeError, ValueError):
+                    pass
+        for h in _ROBUST_HORIZONS:
+            obs = ar_sign_observation(ev, block, h)
+            if obs is None:
+                continue  # not eligible — keeps n aligned with the AR-sign report
+            row = by_h.get(h) or {}
+            try:
+                ar = float(row.get("abnormal_return"))
+            except (TypeError, ValueError):
+                continue
+            per[h]["ar_values"].append(ar)
+            if ordn is not None:
+                per[h]["window_starts"].append(ordn)
+            per[h]["es_rows"].append({
+                "abnormal_return": row.get("abnormal_return"),
+                "car": row.get("car"),
+                "sigma_ar_daily": sigma,
+            })
+    return per
 
 
 def build_report(db_path: str, *, seed: int, n_sims: int) -> dict:
@@ -74,10 +143,16 @@ def build_report(db_path: str, *, seed: int, n_sims: int) -> dict:
 
         payload["multi_ticker_ar"] = build_multi_ticker_ar_report(
             events, _ar_fn, seed=seed, n_sims=n_sims)
+
+        # Small-sample robustness diagnostics — descriptive supplements over the
+        # SAME eligible AR set as the AR-sign report (additive, read-only).
+        payload["robust_diagnostics"] = build_diagnostics_block(
+            _robust_per_horizon(events, build_event_study_validation))
     except Exception as exc:  # pragma: no cover - defensive; report still ships
         payload["event_study_split"] = {"error": f"event-study split unavailable: {exc}"}
         payload["ar_sign_disentangler"] = {"error": f"AR-sign disentangler unavailable: {exc}"}
         payload["multi_ticker_ar"] = {"error": f"multi-ticker AR unavailable: {exc}"}
+        payload["robust_diagnostics"] = {"error": f"robust diagnostics unavailable: {exc}"}
     return payload
 
 
@@ -136,6 +211,33 @@ def main() -> int:
             print(f"    {h}d: obs {hd['eligible_ticker_obs']} | pred-up {hd['predicted_up_fraction']} "
                   f"| support {tl['observed_support_fraction']} vs null {tl['null_support_rate_mean']} "
                   f"{tl['null_support_rate_ci95']} | dir {tl['direction_vs_null']}")
+    rd = report.get("robust_diagnostics") or {}
+    if "horizons" in rd:
+        print(f"  robust diagnostics (vs {rd.get('benchmark')}) - descriptive "
+              f"supplements; overlap is the independence qualifier:")
+        for h in ("1", "5", "20"):
+            hd = rd["horizons"].get(h) or {}
+            st = hd.get("sign_test") or {}
+            rk = hd.get("rank_test") or {}
+            ov = hd.get("overlap") or {}
+            print(f"    {h}d: sign-test n={st.get('n')} "
+                  f"(+{st.get('n_pos')}/-{st.get('n_neg')}) "
+                  f"p={st.get('p_value')} [{st.get('status')}] "
+                  f"| signed-rank p={rk.get('p_value')} "
+                  f"[{rk.get('method')}/{rk.get('status')}] "
+                  f"| overlap pairs={ov.get('overlapping_pairs')} "
+                  f"max_concurrent={ov.get('max_concurrent')} "
+                  f"frac_in_overlap={ov.get('fraction_in_overlap')}")
+        sar = rd.get("sar_convention") or {}
+        print(f"    SAR convention: {sar.get('numerator_convention')} numerator / "
+              f"{sar.get('denominator_convention')} denominator "
+              f"(match={sar.get('conventions_match')}, status={sar.get('status')})")
+        for r in sar.get("per_horizon") or []:
+            print(f"      h{r['horizon']}: mean SAR-delta {round(r['mean_sar_delta'], 4)} "
+                  f"| max|SAR-delta| {round(r['max_abs_sar_delta'], 4)} (n={r['n']})")
+        print("    robust-diagnostics non-claims:")
+        for nc in rd.get("non_claims") or []:
+            print(f"      - {nc}")
     print("  non-claims:")
     for nc in report["non_claims"]:
         print(f"    - {nc}")

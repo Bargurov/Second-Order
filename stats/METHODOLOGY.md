@@ -24,7 +24,10 @@ compare.
 `sigma_ar_daily` is the sample standard deviation (ddof=1) of the
 daily AR series over a 60-bar pre-event estimation window. The
 BHAR/sigma mismatch (compounded numerator, additive denominator) is
-small at h <= 20 and is documented in `event_study.py`.
+small at h <= 20 and is documented in `event_study.py`. The SAR-convention
+audit in the robust-diagnostics block (below) recomputes `SAR_car = CAR /
+(sigma * sqrt h)` and reports the per-horizon gap so the mismatch is
+auditable; it changes no engine math.
 
 ## P-values
 
@@ -45,6 +48,37 @@ events. Default: 2000 resamples, 95% confidence, deterministic seed.
 
 This is **not** a time-series or block bootstrap. The sampling unit
 is independent events, not correlated daily returns.
+
+## Robust small-sample diagnostics (descriptive supplements)
+
+`scripts/baseline_characterization_report.py` surfaces a read-only
+`robust_diagnostics` block (helpers in `stats/robust_diagnostics.py`, pure
+stdlib) over the **same eligible primary-ticker AR set** the AR-sign report
+uses — no new denominator. Per horizon (1d / 5d / 20d):
+
+- **Exact binomial sign test** on the abnormal-return signs (`p=0.5` null: "no
+  directional abnormal tendency"). This is a different, weaker null than the
+  marginal-preserving permutation baseline; a fair coin is defensible for
+  market-adjusted AR signs but **not** for prediction-skewed
+  support/contradiction outcomes (those keep the permutation null).
+- **Wilcoxon signed-rank** (exact enumeration for small n; continuity-corrected
+  normal approximation above the cap). It adds a symmetry-about-zero assumption
+  the data may not satisfy, so it is a second lens, not strictly "more robust"
+  than the sign test.
+- **Event-window overlap disclosure** — overlapping pairs, peak concurrency,
+  and the share of windows that overlap another. This is the actual hardening:
+  it is reported **next to** the p-values as their independence qualifier,
+  because the sign / rank tests (and the cross-sectional bootstrap above) assume
+  independent events that the archive's date-clustered, window-overlapping rows
+  violate. A small sign-test p-value sitting beside near-total overlap is a
+  caveat, not a discovery.
+- **SAR-convention audit** — recomputes `SAR_car = CAR / (sigma * sqrt h)`
+  alongside the engine's `SAR_bhar` and reports the per-horizon `sar_delta`.
+  Report-only; it changes no event-study math.
+
+These are descriptive supplements, not significance claims. No single-event
+significance is asserted at any horizon, and the closed Phase 1 / Phase 2 FDR
+pools are neither read nor implied.
 
 ## Cohort inference — currently blocked (not by the engine)
 

@@ -338,6 +338,29 @@ data-coverage or contiguity precondition.
 python scripts/event_study_coverage_report.py --json
 ```
 
+### Robust small-sample diagnostics (descriptive supplements)
+
+`scripts/baseline_characterization_report.py` now carries a read-only
+`robust_diagnostics` block (helpers in `stats/robust_diagnostics.py`, pure
+stdlib) that **supplements** the existing cross-sectional z-test, not replaces
+it. Over the **same eligible primary-ticker AR set** as the AR-sign report (no
+new denominator), per horizon it reports an exact binomial sign test on the
+abnormal-return signs (`p=0.5` null = "no directional abnormal tendency"), a
+Wilcoxon signed-rank summary (exact for small n, normal approximation above the
+cap), an **event-window overlap disclosure** (overlapping pairs, peak
+concurrency, share of windows overlapping another), and a SAR-convention audit
+(recomputing `SAR_car = CAR / (sigma * sqrt h)` against the engine's BHAR-based
+SAR to show the per-horizon gap).
+
+The overlap disclosure is the point: the archive's rows are date-clustered with
+heavily overlapping forward windows, so the sign / rank p-values (and the
+cross-sectional bootstrap) overstate certainty. The overlap summary is printed
+**next to** each p-value as its independence qualifier — a small p-value beside
+near-total overlap is a caveat, not a discovery. These are descriptive
+diagnostics: no single-event significance is claimed, the SAR audit changes no
+event-study math, and the closed Phase 1 / Phase 2 FDR pools are untouched. See
+`stats/METHODOLOGY.md` for the full convention notes.
+
 ### Research queue report — staged candidates, no paid call
 
 `scripts/research_queue_report.py` (AT1, 2026-06-10) is a read-only triage
