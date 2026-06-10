@@ -75,7 +75,10 @@ locally today; the only failures are transmission legs:
 
 1. **industrial_policy anchor-quality / policy-timeline review** (311/312):
    find the genuine information-shock dates inside each bill's path before
-   reading any window. Read-only.
+   reading any window. Read-only. — **DONE (D1):** see
+   [`stats/INDUSTRIAL_POLICY_ANCHOR_PACKET.md`](INDUSTRIAL_POLICY_ANCHOR_PACKET.md);
+   verdict: keep staged/deferred, re-anchor path is price-side ready but
+   milestone event rows are missing locally.
 2. **Regulation conduct-vs-structural comparison memo** over clean anchors
    303/304; cautious Tier-2 review of 305/306 after. Read-only.
 3. **Design the bounded LEA/APTV pre-event backfill** for the 313 supplier
