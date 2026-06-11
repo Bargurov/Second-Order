@@ -233,6 +233,15 @@ and
   see
   [`stats/TRANSMISSION_CASE_WALKTHROUGH.md`](stats/TRANSMISSION_CASE_WALKTHROUGH.md).
 
+- **Sector-baseline availability** —
+  `python scripts/sector_baseline_availability_report.py --db-path events.db --json`
+  For each accepted row, reports whether a *suggested* sector ETF baseline is
+  locally cached and **computable at the 1d/5d/20d event windows** (cached is
+  not computable-at-date), plus the sector ETF's own raw window move as
+  descriptive context. SPY stays the canonical abnormal-return benchmark; the
+  sector is a hint, never a sector-relative abnormal return. See
+  [`stats/SECTOR_BASELINE_AVAILABILITY.md`](stats/SECTOR_BASELINE_AVAILABILITY.md).
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide

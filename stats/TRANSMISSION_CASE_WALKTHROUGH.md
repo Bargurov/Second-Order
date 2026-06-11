@@ -101,6 +101,14 @@ and mechanism text (0 / 0 / 0). When a selected row lacks an event-study
 window, the report surfaces the `blocking_reasons` as a `missingness_note`
 rather than silently dropping the horizons.
 
+> **Sector backdrop (O1):** the SPY-relative readouts here can be read beside
+> a read-only sector-baseline availability map
+> ([`SECTOR_BASELINE_AVAILABILITY.md`](SECTOR_BASELINE_AVAILABILITY.md) /
+> `scripts/sector_baseline_availability_report.py`), which reports whether each
+> case's suggested sector ETF window is locally computable and what that ETF's
+> own move was. SPY stays canonical; the sector move is descriptive context,
+> not a sector-relative abnormal return.
+
 ## Taxonomy lessons
 
 - **What the cases show:** a recomputable, end-to-end transmission read per

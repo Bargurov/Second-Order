@@ -17,6 +17,13 @@ same window. At h=1 the two are identical; at h>1 they diverge by
 compounding. Both are reported per horizon so the operator can
 compare.
 
+`P_bench` is **SPY** (`BENCHMARK_TICKER`) — one consistent, broad benchmark
+for every event; this is the canonical abnormal-return benchmark and is not
+swapped per event. Sector-ETF alternatives are mapped read-only for
+*availability and descriptive context only* (see
+`stats/SECTOR_BASELINE_AVAILABILITY.md`), never substituted into the abnormal
+return.
+
 ## SAR (standardized abnormal return)
 
 `SAR_h = BHAR_h / (sigma_ar_daily * sqrt(h))`
