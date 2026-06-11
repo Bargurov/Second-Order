@@ -3073,7 +3073,7 @@ function ResearchTab({
           Track record
         </h3>
         <span className="text-[11px] text-muted-foreground/55">
-          how mechanisms, regimes, and proof disciplines actually resolved
+          how mechanisms, regimes, and claim-boundary checks actually resolved
         </span>
       </div>
 
