@@ -95,10 +95,16 @@ They are **not** the named asset's return minus the sector's return.
 
 ## What this enables later (and what it does not do now)
 
-This report **enables** a future, separately-gated decision (a possible
-**O2**): a side-by-side asset-move-vs-SPY and asset-move-vs-sector comparison,
-*if* O1 shows enough computable coverage (it shows ~half) and the
-benchmark-choice disclosure is acceptable. O1 deliberately **does not**:
+These descriptive sector fields are now **embedded into the N1 case
+walkthrough** ([`TRANSMISSION_CASE_WALKTHROUGH.md`](TRANSMISSION_CASE_WALKTHROUGH.md))
+as a per-case `sector_backdrop` block, beside the canonical SPY readout — a
+read-only reuse of this report's `build_report`, still descriptive-only.
+
+That embedding is distinct from the still-**deferred** sector-relative
+abnormal-return step: a side-by-side asset-move-vs-SPY and asset-move-vs-sector
+comparison, *if* this report shows enough computable coverage (it shows ~half)
+and the benchmark-choice disclosure is acceptable. This report deliberately
+**does not**:
 
 - change the SPY engine or `BENCHMARK_TICKER`;
 - recompute any asset's abnormal return vs a sector ETF;

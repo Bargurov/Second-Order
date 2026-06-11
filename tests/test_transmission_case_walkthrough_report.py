@@ -477,6 +477,128 @@ class TestRendering(unittest.TestCase):
         self.assertEqual(W.main(["--db-path", _NONEXISTENT]), 0)
 
 
+# ---------------------------------------------------------------------------
+# O2 - sector backdrop embedded from O1 (sector_baseline_availability_report)
+# ---------------------------------------------------------------------------
+
+
+def _o1_row(eid, *, etf="XLE", conf="high", available=True,
+            moves=(0.011, 0.022, 0.033)):
+    """An O1-shaped sector-availability row, for injection."""
+    if available:
+        av = {f"horizon_{h}d": {"available": True, "reason": None}
+              for h in (1, 5, 20)}
+        rm = {f"horizon_{h}d": m for h, m in zip((1, 5, 20), moves)}
+        note = ""
+    else:
+        av = {f"horizon_{h}d": {"available": False,
+                                "reason": f"forward_window_not_cached_{h}d"}
+              for h in (1, 5, 20)}
+        rm = {f"horizon_{h}d": None for h in (1, 5, 20)}
+        note = f"Sector ETF {etf} has no computable window."
+    return {
+        "event_id": eid, "headline": "h", "event_date": "2025-06-01",
+        "suggested_sector_etf": etf, "suggestion_confidence": conf,
+        "suggestion_reason": "ticker_match_energy",
+        "availability": av, "sector_raw_moves": rm,
+        "missingness_note": note,
+        "spy_canonical_note": ("Abnormal return remains SPY-relative "
+                               "(canonical); the sector move above is the "
+                               "ETF's own raw window change."),
+    }
+
+
+class TestSectorBackdrop(unittest.TestCase):
+    _ETF_BY_ID = {1: "XLE", 2: "XLK", 3: "XLF", 4: "XLI", 5: "XLV", 6: "XLU"}
+
+    def _rep(self, sector_by_id):
+        rows = _diverse_pool()
+        edq = _edq_report([_edq_event(r["event_id"]) for r in rows])
+        es_av = {}
+        for i in (1, 2, 3, 4, 5):
+            es_av.update(_es_available(i))
+        return W.build_walkthrough(rows=rows, edq_report=edq,
+                                   es_available=es_av, es_insufficient={},
+                                   sector_by_id=sector_by_id)
+
+    def _all_available(self):
+        return {i: _o1_row(i, etf=etf) for i, etf in self._ETF_BY_ID.items()}
+
+    def test_each_selected_case_has_sector_backdrop(self):
+        rep = self._rep(self._all_available())
+        for c in rep["selected_cases"]:
+            self.assertIn("sector_backdrop", c)
+
+    def test_sector_backdrop_required_subfields(self):
+        rep = self._rep(self._all_available())
+        for c in rep["selected_cases"]:
+            sb = c["sector_backdrop"]
+            for key in ("suggested_sector_etf", "suggestion_confidence",
+                        "suggestion_reason", "availability",
+                        "sector_raw_moves", "missingness_note",
+                        "spy_canonical_note", "interpretation_note"):
+                self.assertIn(key, sb, key)
+            for h in ("horizon_1d", "horizon_5d", "horizon_20d"):
+                self.assertIn(h, sb["availability"])
+                self.assertIn(h, sb["sector_raw_moves"])
+
+    def test_sector_backdrop_sourced_from_injected_o1_data(self):
+        # The backdrop must echo the O1 row for that event_id, not recompute it.
+        rep = self._rep(self._all_available())
+        for c in rep["selected_cases"]:
+            self.assertEqual(c["sector_backdrop"]["suggested_sector_etf"],
+                             self._ETF_BY_ID[c["event_id"]])
+
+    def test_no_sector_relative_abnormal_return_key(self):
+        rep = self._rep(self._all_available())
+        for c in rep["selected_cases"]:
+            sb = c["sector_backdrop"]
+            self.assertNotIn("sector_relative_abnormal_return", sb)
+            for key in list(sb.keys()):
+                low = key.lower()
+                self.assertNotIn("abnormal", low)
+                self.assertNotIn("sector_sar", low)
+                self.assertNotIn("sector_car", low)
+
+    def test_unavailable_sector_window_surfaced_not_omitted(self):
+        sector_by_id = {i: _o1_row(i, etf=etf, available=False)
+                        for i, etf in self._ETF_BY_ID.items()}
+        rep = self._rep(sector_by_id)
+        any_case = rep["selected_cases"][0]["sector_backdrop"]
+        self.assertFalse(any_case["availability"]["horizon_1d"]["available"])
+        self.assertTrue(any_case["missingness_note"])
+        self.assertIsNone(any_case["sector_raw_moves"]["horizon_1d"])
+
+    def test_missing_o1_row_degrades_to_unavailable(self):
+        rep = self._rep({})  # no O1 rows for any id
+        for c in rep["selected_cases"]:
+            sb = c["sector_backdrop"]
+            self.assertFalse(sb["availability"]["horizon_20d"]["available"])
+            self.assertTrue(sb["missingness_note"])
+
+    def test_spy_reaction_readout_unchanged_alongside_backdrop(self):
+        rep = self._rep(self._all_available())
+        for c in rep["selected_cases"]:
+            rr = c["reaction_readout"]
+            self.assertIn("ar_sar_car_if_available", rr)
+            for h in ("horizon_1d", "horizon_5d", "horizon_20d"):
+                self.assertIn(h, rr)
+
+    def test_interpretation_note_states_spy_canonical_and_descriptive(self):
+        rep = self._rep(self._all_available())
+        for c in rep["selected_cases"]:
+            note = c["sector_backdrop"]["interpretation_note"].lower()
+            self.assertIn("descriptive", note)
+            self.assertIn("spy", note)
+            self.assertIn("no sector-relative abnormal return", note)
+            self.assertTrue(c["sector_backdrop"]["spy_canonical_note"])
+
+    def test_text_render_includes_sector_backdrop_line(self):
+        text = W._render_text(self._rep(self._all_available()))
+        self.assertIn("sector backdrop", text.lower())
+        text.encode("cp1252")
+
+
 _NONEXISTENT = os.path.join(tempfile.gettempdir(),
                             f"tcw_absent_{uuid.uuid4().hex}.db")
 

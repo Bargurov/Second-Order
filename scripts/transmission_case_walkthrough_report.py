@@ -410,6 +410,65 @@ def _assemble_case(case: dict, edq_by: dict, es_available: dict,
 
 
 # ---------------------------------------------------------------------------
+# Sector backdrop (O2) - sourced from O1, never recomputed here
+# ---------------------------------------------------------------------------
+
+_SECTOR_SPY_NOTE = (
+    "Abnormal return remains SPY-relative (canonical); the sector move is the "
+    "ETF's own raw window change, descriptive backdrop only.")
+_SECTOR_BACKDROP_INTERP = (
+    "Sector ETF move is descriptive backdrop only; SPY remains canonical; no "
+    "sector-relative abnormal return is computed.")
+
+
+def _sector_backdrop(o1_row: dict | None) -> dict[str, Any]:
+    """Echo O1's per-row sector-availability fields (sourced, not recomputed).
+
+    The fields come verbatim from
+    ``sector_baseline_availability_report.build_report``; O2 only adds the
+    interpretation note. No sector-relative abnormal return is ever produced.
+    """
+    if o1_row is None:
+        unavail = {f"horizon_{h}d": {"available": False,
+                                     "reason": "not_in_sector_report"}
+                   for h in (1, 5, 20)}
+        return {
+            "suggested_sector_etf": None,
+            "suggestion_confidence": "none",
+            "suggestion_reason": "not_in_sector_report",
+            "availability": unavail,
+            "sector_raw_moves": {f"horizon_{h}d": None for h in (1, 5, 20)},
+            "missingness_note": "No sector-baseline row for this event_id.",
+            "spy_canonical_note": _SECTOR_SPY_NOTE,
+            "interpretation_note": _SECTOR_BACKDROP_INTERP,
+        }
+    return {
+        "suggested_sector_etf": o1_row.get("suggested_sector_etf"),
+        "suggestion_confidence": o1_row.get("suggestion_confidence"),
+        "suggestion_reason": o1_row.get("suggestion_reason"),
+        "availability": o1_row.get("availability"),
+        "sector_raw_moves": o1_row.get("sector_raw_moves"),
+        "missingness_note": o1_row.get("missingness_note", ""),
+        "spy_canonical_note": o1_row.get("spy_canonical_note",
+                                        _SECTOR_SPY_NOTE),
+        "interpretation_note": _SECTOR_BACKDROP_INTERP,
+    }
+
+
+def _load_sector_by_id(db_path: str | None) -> dict[int, dict]:
+    """Reuse O1's report read-only. ``walkthrough_case_ids=[]`` breaks the
+    N1<->O1 cycle (O1's default path would otherwise call build_walkthrough)."""
+    try:
+        from scripts.sector_baseline_availability_report import (
+            build_report as _sector_build_report,
+        )
+        rep = _sector_build_report(db_path=db_path, walkthrough_case_ids=[])
+        return {r["event_id"]: r for r in rep.get("rows", [])}
+    except Exception:
+        return {}
+
+
+# ---------------------------------------------------------------------------
 # Report composer
 # ---------------------------------------------------------------------------
 
@@ -419,10 +478,12 @@ def build_walkthrough(db_path: str | None = None, *,
                       edq_report: dict | None = None,
                       es_available: dict | None = None,
                       es_insufficient: dict | None = None,
+                      sector_by_id: dict | None = None,
                       n_cases: int = DEFAULT_CASES,
                       include_examples: int = DEFAULT_EXAMPLES) -> dict[str, Any]:
     """Build the representative-case walkthrough. Read-only; reuses J1/EDQ/
-    track-record/event-study layers and writes nothing."""
+    track-record/event-study layers (and O1 sector backdrop) and writes
+    nothing."""
     if rows is None:
         rows = _load_case_rows(db_path)
     if edq_report is None:
@@ -454,6 +515,13 @@ def build_walkthrough(db_path: str | None = None, *,
     selected = select_cases(enriched, n_cases)
     cases = [_assemble_case(c, edq_by, es_available, es_insufficient)
              for c in selected]
+
+    # O2: attach O1's sector backdrop to each selected case (read-only). The
+    # SPY reaction_readout above is the canonical layer and is unchanged.
+    if sector_by_id is None:
+        sector_by_id = _load_sector_by_id(db_path)
+    for c in cases:
+        c["sector_backdrop"] = _sector_backdrop(sector_by_id.get(c["event_id"]))
 
     sup = sum(1 for c in cases if c["outcome_bucket"] == "support")
     con = sum(1 for c in cases if c["outcome_bucket"] == "contradiction")
@@ -599,6 +667,18 @@ def _render_text(report: dict[str, Any]) -> str:
         add(_h_line("20d", rr["horizon_20d"]))
         if rr["missingness_note"]:
             add(f"      missing: {_safe(rr['missingness_note'])}")
+        sb = c["sector_backdrop"]
+        add(f"  sector backdrop ({sb['suggested_sector_etf'] or 'n/a'}/"
+            f"{sb['suggestion_confidence']}, descriptive only, not "
+            "sector-relative AR):")
+        for hl, hk in (("1d ", "horizon_1d"), ("5d ", "horizon_5d"),
+                       ("20d", "horizon_20d")):
+            cell = sb["availability"][hk]
+            mv = sb["sector_raw_moves"][hk]
+            val = _fmt(mv) if cell["available"] else f"n/a ({cell['reason']})"
+            add(f"      {hl}: {val}")
+        if sb["missingness_note"]:
+            add(f"      sector note: {_safe(_clip(sb['missingness_note'], 80))}")
         add(f"  event-date quality: {c['event_date_quality']} - "
             f"{_safe(_clip(c['event_date_caveat'], 90))}")
         sc = c["sensitivity_or_scoring_caveat"]

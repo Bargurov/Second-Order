@@ -101,13 +101,34 @@ and mechanism text (0 / 0 / 0). When a selected row lacks an event-study
 window, the report surfaces the `blocking_reasons` as a `missingness_note`
 rather than silently dropping the horizons.
 
-> **Sector backdrop (O1):** the SPY-relative readouts here can be read beside
-> a read-only sector-baseline availability map
-> ([`SECTOR_BASELINE_AVAILABILITY.md`](SECTOR_BASELINE_AVAILABILITY.md) /
-> `scripts/sector_baseline_availability_report.py`), which reports whether each
-> case's suggested sector ETF window is locally computable and what that ETF's
-> own move was. SPY stays canonical; the sector move is descriptive context,
-> not a sector-relative abnormal return.
+## Sector backdrop (O2 — embedded from O1)
+
+Each selected case now carries a `sector_backdrop` block, sourced **verbatim**
+from the O1 report
+([`SECTOR_BASELINE_AVAILABILITY.md`](SECTOR_BASELINE_AVAILABILITY.md) /
+`scripts/sector_baseline_availability_report.py`) — O2 imports O1's
+`build_report` read-only (passing `walkthrough_case_ids=[]` to break the
+N1↔O1 cycle) and attaches each case's row; it recomputes no sector logic.
+
+The block sits **beside** the canonical SPY reaction readout, never replacing
+it: `suggested_sector_etf` + `suggestion_confidence`, per-horizon
+`availability`, the sector ETF's **own** raw `sector_raw_moves` (1d/5d/20d),
+a `missingness_note`, the `spy_canonical_note`, and an `interpretation_note`.
+
+- **SPY remains canonical.** The abnormal-return readout is unchanged;
+  `BENCHMARK_TICKER` is untouched.
+- **The sector number is the ETF's own raw window move** — descriptive
+  backdrop only, **not** a sector-relative abnormal return (no asset-minus-sector
+  is computed; no `sector_abnormal`/`sector_sar`/`sector_car` field exists).
+- **Unavailable sector windows are shown as missingness**, not omitted (a
+  broad/SPY fallback or an uncached window renders as `n/a` with its reason).
+
+Live snapshot, per selected case: #1 XLY (high) +0.82%/+4.38%/**+10.26%**;
+#210 XLE (high) −1.92%/−6.20%/**−4.53%**; #66 XLE (high)
+−0.39%/…/**−1.46%**; #46 XLF (medium) unavailable; #61 / #211 broad/SPY
+fallback (no distinct sector). The sector ETF's own move is context a SPY-only
+read does not surface — e.g. energy (XLE) itself fell ~4.5% over the 20d window
+around #210.
 
 ## Taxonomy lessons
 
