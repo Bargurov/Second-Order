@@ -33,8 +33,11 @@ type NavGroup = { group: string; items: NavItem[] };
 // Portfolio, Headlines, and Analyze.  Research holds the historical /
 // validation surfaces — Archive and Backtest.  The previous "Context"
 // group was folded into Workspace so the daily reading flow lives in a
-// single primary nav cluster.  Thesis Module from the design package is
-// a reference / demo surface only and is not included in primary nav.
+// single primary nav cluster.  Section C Demo (and the design package's
+// Thesis Module) are reference / demo surfaces only: they are kept OUT of
+// the primary nav groups so the app does not read as a demo.  Section C
+// Demo stays reachable via the demoted reference link below the nav
+// (rendered in the sidebar footer), and its App.tsx route is unchanged.
 const NAV_GROUPS: NavGroup[] = [
   {
     group: "Workspace",
@@ -52,15 +55,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "evidence", label: "Evidence Overview", icon: ClipboardList },
       { id: "events",   label: "Archive",          icon: Clock },
       { id: "backtest", label: "Backtest",         icon: Target },
-    ],
-  },
-  {
-    // Section C Demo — artifact-backed market headlines and conservative
-    // evidence summary.  Hosts four panels (Daily / Weekly / Still Moving /
-    // Evidence Summary) and reads only from reviewed artifacts on disk.
-    group: "Demo",
-    items: [
-      { id: "demo", label: "Section C Demo", icon: LayoutGrid },
     ],
   },
 ];
@@ -161,6 +155,57 @@ export function Sidebar({ current, onNavigate, collapsed = false }: SidebarProps
           ))}
         </nav>
       </ScrollArea>
+
+      {/* Reference link — Section C Demo is an artifact-backed demo surface,
+          demoted out of the primary nav groups above and kept reachable here
+          as a quiet, de-emphasized reference link (label unchanged). */}
+      <div className="px-2 pb-1 pt-1.5 border-t border-sidebar-border/40">
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 w-full justify-center rounded-md px-0 text-[12px]",
+                  current === "demo"
+                    ? "bg-primary/[0.09] text-on-surface"
+                    : "text-on-surface-variant/55 hover:bg-white/[0.025] hover:text-on-surface-variant/85",
+                )}
+                onClick={() => onNavigate("demo")}
+              >
+                <LayoutGrid
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0",
+                    current === "demo" ? "text-primary" : "text-on-surface-variant/45",
+                  )}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Section C Demo</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-7 w-full justify-start gap-2.5 rounded-md px-2.5 text-[12px] font-medium",
+              current === "demo"
+                ? "bg-primary/[0.09] text-on-surface hover:bg-primary/[0.12]"
+                : "text-on-surface-variant/55 hover:bg-white/[0.025] hover:text-on-surface-variant/85",
+            )}
+            onClick={() => onNavigate("demo")}
+          >
+            <LayoutGrid
+              className={cn(
+                "h-3.5 w-3.5 shrink-0",
+                current === "demo" ? "text-primary" : "text-on-surface-variant/45",
+              )}
+            />
+            <span className="truncate">Section C Demo</span>
+          </Button>
+        )}
+      </div>
 
       {/* Footer */}
       <div
