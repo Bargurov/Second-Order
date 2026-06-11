@@ -233,6 +233,15 @@ and
   see
   [`stats/TRANSMISSION_CASE_WALKTHROUGH.md`](stats/TRANSMISSION_CASE_WALKTHROUGH.md).
 
+- **Case-selection stress** —
+  `python scripts/transmission_case_selection_stress_report.py --db-path events.db --json`
+  Stress-tests the six walkthrough cases under alternative deterministic
+  selection policies (family-first, outcome-first, anchor-quality-first,
+  missingness-aware, reverse tie-break) **without changing the selector or the
+  six cases**. Discloses tie-break sensitivity and an anchor-score doc/impl
+  mismatch; no returns- or sector-based selection. See
+  [`stats/TRANSMISSION_CASE_SELECTION_STRESS.md`](stats/TRANSMISSION_CASE_SELECTION_STRESS.md).
+
 - **Sector-baseline availability** —
   `python scripts/sector_baseline_availability_report.py --db-path events.db --json`
   For each accepted row, reports whether a *suggested* sector ETF baseline is

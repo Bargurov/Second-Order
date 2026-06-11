@@ -53,6 +53,15 @@ gate as `GET /events/{id}/event-study`.
 - **Family diversity preferred**: remaining slots take the most-informative
   row from a not-yet-used family.
 
+> **Selection stress (Q1):** the sensitivity of these six cases to alternative
+> deterministic policies is measured read-only in
+> [`TRANSMISSION_CASE_SELECTION_STRESS.md`](TRANSMISSION_CASE_SELECTION_STRESS.md)
+> / `scripts/transmission_case_selection_stress_report.py` — **without changing
+> the selector or replacing the six**. It finds the six defensible but
+> tie-break-sensitive, all single-family and event-study-covered, and discloses
+> an anchor-score doc/impl mismatch (the `+1 clean anchor` bonus also reaches
+> partial-anticipation / scheduled-weak anchors).
+
 ## Selected-case table (live snapshot, 2026-06-11; default 6 cases)
 
 | id | role | outcome | family overlay | event-date anchor | event |
