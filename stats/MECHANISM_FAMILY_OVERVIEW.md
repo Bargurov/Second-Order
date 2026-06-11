@@ -107,7 +107,11 @@ moves over all 13 staged candidates — is
 ## Limitations and non-claims
 
 - Many accepted rows (86 of 94) remain untagged (`none`); family-level
-  analysis does not yet cover the thesis corpus.
+  analysis does not yet cover the thesis corpus. A read-only overlay
+  ([`ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md)) and its
+  weak-bucket diagnostic
+  ([`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md))
+  classify those rows in memory without writing labels.
 - Staged candidates are review staging, **not evidence**, and never enter
   accepted denominators.
 - Representative cases are **illustrative, not proof** of any mechanism.

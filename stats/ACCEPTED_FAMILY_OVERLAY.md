@@ -119,3 +119,9 @@ stable, and then only as its own gated task. Natural no-mutation next steps:
 curated review of the unclassified/multi buckets, and a second basis-field
 lens (`mechanism_summary`) reported separately. No paid analysis, no
 inference claim.
+
+> **Weak-bucket diagnostics (K1):** a read-only review of the 16 multi-match
+> and 18 unclassified rows — why each landed there, which overlaps are
+> legitimate, and bounded (never-applied) rule refinements — is in
+> [`stats/ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md)
+> / `scripts/accepted_family_overlay_review.py`.
