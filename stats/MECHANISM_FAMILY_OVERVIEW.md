@@ -1,6 +1,6 @@
 # Mechanism-family research overview
 
-**Date:** 2026-06-10 · **Scope:** read-only research-coverage map; not evidence,
+**Date:** 2026-06-11 · **Scope:** read-only research-coverage map; not evidence,
 not promotion, no paid analysis.
 
 Second Order organizes events into a **mechanism-family taxonomy** — the
@@ -56,10 +56,22 @@ Two structural facts a reviewer should read directly off this table:
 2. **Every thesis-outcome row (the 86-row track-record corpus) is untagged**
    (`none`). Per-family track-record splits are therefore structurally
    degenerate today — a data limitation this project states rather than hides.
-   A read-only overlay now measures this limitation's shape with
-   deterministic headline rules (no DB write, no inference):
-   [`stats/ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md) /
-   `scripts/accepted_family_overlay_report.py`.
+   The completed J1/K1/L1 arc measures this limitation in memory only:
+   - **J1:** headline rules produce **52 single-match / 16 multi-match / 18
+     unclassified** across the same 86 rows.
+   - **K1:** **15 of 16** multi-match rows are legitimate overlaps; the other
+     is a `trade war` token overfit. The unclassified bucket contains archive
+     noise, taxonomy gaps, and **2** bounded rule misses.
+   - **L1:** the mechanism-text lens recovers only **3** rows while increasing
+     ambiguity to **30 single / 32 multi / 24 unclassified**.
+
+The headline lens therefore remains the primary descriptive overlay.
+Mechanism text is retained only as a diagnostic lens. Neither writes family
+labels to `events.db`, changes the 86-row denominator, or supports
+family-level inference. The detailed arc is:
+[`ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md),
+[`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md), and
+[`ACCEPTED_FAMILY_SECOND_LENS.md`](ACCEPTED_FAMILY_SECOND_LENS.md).
 
 ## Tier-1 shortlist bridge (staged / no-paid only)
 
@@ -106,14 +118,12 @@ moves over all 13 staged candidates — is
 
 ## Limitations and non-claims
 
-- Many accepted rows (86 of 94) remain untagged (`none`); family-level
-  analysis does not yet cover the thesis corpus. A read-only overlay
-  ([`ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md)) and its
-  weak-bucket diagnostic
-  ([`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md)),
-  plus a mechanism-text second lens
-  ([`ACCEPTED_FAMILY_SECOND_LENS.md`](ACCEPTED_FAMILY_SECOND_LENS.md)),
-  classify those rows in memory without writing labels.
+- Many accepted rows (86 of 94) remain DB-untagged (`none`); family-level
+  analysis does not cover the thesis corpus. The headline overlay and its
+  weak-bucket review explain the coverage and ambiguity in memory. The
+  mechanism-text second lens increases ambiguity and remains diagnostic only.
+  No overlay result is written back as a DB label or used for family-level
+  inference.
 - Staged candidates are review staging, **not evidence**, and never enter
   accepted denominators.
 - Representative cases are **illustrative, not proof** of any mechanism.

@@ -184,6 +184,30 @@ Run from the repo root:
   surfaced, never forced. Coverage decomposition only — see
   [`stats/ACCEPTED_FAMILY_OVERLAY.md`](stats/ACCEPTED_FAMILY_OVERLAY.md).
 
+### Accepted-family overlay arc — reviewer walkthrough
+
+The accepted track-record corpus has **86 thesis rows**, and all 86 remain
+family-untagged in `events.db`. The completed overlay arc measures that
+limitation without changing the database or any accepted denominator:
+
+1. **J1 — headline overlay:** deterministic whole-token rules classify the
+   headlines in memory as **52 single-match / 16 multi-match / 18
+   unclassified**. This is a coverage map, not a family comparison.
+2. **K1 — weak-bucket review:** **15 of 16** multi-match rows are legitimate
+   overlaps; one `trade war` row is a token overfit. The 18 unclassified rows
+   divide into archive noise, taxonomy gaps, and **2** bounded rule misses.
+3. **L1 — mechanism-text second lens:** applying the same rules to richer
+   mechanism text recovers only **3** rows and increases ambiguity to **30
+   single / 32 multi / 24 unclassified**, so it is not used as a replacement.
+
+Final stance: the headline lens remains primary; mechanism text is diagnostic
+only. Neither lens writes DB labels, changes the **86-row** denominator, or
+supports family-level inference. Read the arc in
+[`ACCEPTED_FAMILY_OVERLAY.md`](stats/ACCEPTED_FAMILY_OVERLAY.md),
+[`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](stats/ACCEPTED_FAMILY_OVERLAY_REVIEW.md),
+and
+[`ACCEPTED_FAMILY_SECOND_LENS.md`](stats/ACCEPTED_FAMILY_SECOND_LENS.md).
+
 - **Event-date quality / anticipation risk** —
   `python scripts/event_date_quality_report.py --db-path events.db --json`
   Classifies each row's event-date anchor (clean filing vs partial
