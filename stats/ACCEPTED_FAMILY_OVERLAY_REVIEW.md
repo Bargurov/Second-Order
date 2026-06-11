@@ -199,3 +199,11 @@ adds a read-only diagnostic lens over J1's two weak buckets and records that:
   report**, and only for the bounded, human-reviewed cases (250 `trade war`
   negative phrase; 34 / 218 context-gated phrases). The generic-geopolitics
   catch-all and the noise auto-filter are rejected outright.
+
+> **Second lens (L1):** the mechanism-text lens that K1 suggested has now been
+> tested read-only in
+> [`stats/ACCEPTED_FAMILY_SECOND_LENS.md`](ACCEPTED_FAMILY_SECOND_LENS.md) /
+> `scripts/accepted_family_second_lens_report.py`. It recovers exactly the
+> rule-miss rows named above (218, 34) but doubles multi-match (16 → 32) and
+> needs review on 12 rows — so a K2 should stay narrow to those named rows,
+> not a corpus-wide second-lens reclassification.

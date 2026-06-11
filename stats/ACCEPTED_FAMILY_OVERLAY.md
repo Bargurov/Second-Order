@@ -125,3 +125,10 @@ inference claim.
 > legitimate, and bounded (never-applied) rule refinements — is in
 > [`stats/ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md)
 > / `scripts/accepted_family_overlay_review.py`.
+
+> **Second lens (L1):** a read-only comparison of this headline lens against
+> the same rules over mechanism-text fields is in
+> [`stats/ACCEPTED_FAMILY_SECOND_LENS.md`](ACCEPTED_FAMILY_SECOND_LENS.md) /
+> `scripts/accepted_family_second_lens_report.py`. Finding: mechanism text
+> recovers only 3 unclassified rows while doubling multi-match (16 → 32), so
+> the headline stays the primary lens.

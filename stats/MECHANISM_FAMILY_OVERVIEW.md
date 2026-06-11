@@ -110,7 +110,9 @@ moves over all 13 staged candidates — is
   analysis does not yet cover the thesis corpus. A read-only overlay
   ([`ACCEPTED_FAMILY_OVERLAY.md`](ACCEPTED_FAMILY_OVERLAY.md)) and its
   weak-bucket diagnostic
-  ([`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md))
+  ([`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](ACCEPTED_FAMILY_OVERLAY_REVIEW.md)),
+  plus a mechanism-text second lens
+  ([`ACCEPTED_FAMILY_SECOND_LENS.md`](ACCEPTED_FAMILY_SECOND_LENS.md)),
   classify those rows in memory without writing labels.
 - Staged candidates are review staging, **not evidence**, and never enter
   accepted denominators.
