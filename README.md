@@ -65,6 +65,11 @@ the days after the event.
 8. **End on the boundary** — every read is descriptive event-window evidence at
    `n = 1`, not a recommendation and not a claim of predictive power.
 
+Technical and finance reviewers: the strongest self-verifiable evidence is in
+[**Verify it yourself**](#verify-it-yourself-read-only-research-reports), whose
+read-only reports recompute the family overlay, transmission cases, sector
+backdrop, and case-selection stress.
+
 ## How the surfaces fit
 
 - **EventDossier** — the shared research note for one event; it leads both the

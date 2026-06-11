@@ -46,7 +46,8 @@ gate as `GET /events/{id}/event-study`.
 - **Accepted-only**, deterministic, no randomness. Ranking is
   `info_score` desc, then `event_id` asc. `info_score` rewards a fuller, less
   anticipation-confounded walkthrough: event-study readout available (+2),
-  usable mechanism text (+1), named assets (+1), clean event-date anchor (+1).
+  usable mechanism text (+1), named assets (+1), non-caveated event-date anchor
+  (+1; Q1 discloses that this also rewards partial/scheduled-weak anchors).
 - **Outcome diversity is forced**: the first three picks fill the required
   roles — one support, one contradiction, one unresolved/data-limited — before
   any family-diversity fills. This is the winners-only guard.
