@@ -112,6 +112,32 @@ Overlap here is an independence caveat, not a new statistic of significance: the
 readiness counts and the placebo null comparison stay descriptive, and no
 single-event significance is claimed.
 
+### Independent-window capacity diagnostic (C1)
+
+Each per-horizon overlap block (in `build_overlap_disclosure` and
+`build_diagnostics_block`, so the readiness, placebo, and baseline reports all
+inherit it additively) now carries an `independent_window_diagnostic` that
+turns the qualitative overlap caveat into concrete numbers over the same
+half-open `[start, start + horizon)` calendar-day-proxy windows:
+
+- `overlap_cluster_count` / `largest_overlap_cluster_size` — connected
+  components of the pairwise window-overlap graph (chain overlaps merge into
+  one cluster);
+- `max_non_overlapping_windows` — the **independent-window capacity**: the
+  largest set of mutually non-overlapping windows (greedy earliest-finish
+  interval scheduling, the classical optimum). This is an **upper-bound
+  diagnostic, not a true statistical effective sample size** — windows can be
+  disjoint yet still share an underlying thread or regime;
+- `min_independent_window_gate` = 8, taken from the existing cohort-inference
+  criteria above ("at least 8 independent shocks"), with
+  `meets_min_independent_window_gate` reported per horizon.
+
+This diagnostic quantifies overlap/dependence pressure only. It does **not**
+unblock cohort inference by itself — the other cohort gates (distinct
+underlying events, `mechanism_family` labels, a predeclared denominator and
+exclusion list, a fresh self-contained FDR scope) still bind — and it adds no
+p-value, CI, or FDR and authorizes no pooling.
+
 ## Track-record scoring-rule sensitivity (AV3)
 
 `scripts/track_record_sensitivity_report.py` recomputes the accepted

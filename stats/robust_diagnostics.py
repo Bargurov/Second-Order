@@ -41,11 +41,15 @@ __all__ = (
     "exact_sign_test",
     "rank_test_summary",
     "window_overlap_summary",
+    "independent_window_summary",
+    "independent_window_diagnostic",
     "sar_convention_summary",
     "build_diagnostics_block",
     "build_overlap_disclosure",
     "ROBUST_DIAGNOSTICS_NON_CLAIMS",
     "OVERLAP_DISCLOSURE_CAVEAT",
+    "MIN_INDEPENDENT_WINDOW_GATE",
+    "INDEPENDENT_WINDOW_GATE_SOURCE",
 )
 
 
@@ -327,6 +331,137 @@ def window_overlap_summary(
 
 
 # ---------------------------------------------------------------------------
+# Independent-window capacity diagnostic (C1) — additive, descriptive only.
+# Turns the qualitative overlap caveat into concrete numbers WITHOUT changing
+# any existing field, running cohort inference, or adding p-values.
+# ---------------------------------------------------------------------------
+
+MIN_INDEPENDENT_WINDOW_GATE: int = 8
+INDEPENDENT_WINDOW_GATE_SOURCE: str = (
+    "stats/METHODOLOGY.md - 'Cohort inference - currently blocked' criteria: "
+    "at least 8 independent shocks (distinct underlying events)."
+)
+INDEPENDENT_WINDOW_INTERPRETATION: str = (
+    "max_non_overlapping_windows is the independent-window capacity at this "
+    "horizon: the size of the largest set of mutually non-overlapping "
+    "forward windows (greedy earliest-finish interval scheduling, optimal "
+    "for this problem). It is an upper-bound independent-shock count under "
+    "the window-overlap criterion alone - meeting the gate does not by "
+    "itself unblock cohort inference, because the methodology's other gates "
+    "(distinct underlying events, mechanism_family labels, a predeclared "
+    "denominator and exclusion list, a fresh self-contained FDR scope) "
+    "still bind."
+)
+INDEPENDENT_WINDOW_NON_CLAIM: str = (
+    "Diagnostic only: quantifies overlap/dependence pressure on the nominal "
+    "n. It is an upper-bound count of mutually non-overlapping windows, not "
+    "a true statistical effective sample size; it runs no cohort inference, "
+    "adds no p-value or CI, does not validate any mechanism, changes no FDR "
+    "scope, and does not authorize pooling."
+)
+
+
+def independent_window_summary(
+    start_ordinals: Iterable[Any],
+    *,
+    window_length: int,
+) -> dict[str, Any]:
+    """Independent-window capacity over half-open windows ``[s, s + L)``.
+
+    Same window convention and input coercion as
+    :func:`window_overlap_summary`: ``start_ordinals`` are integer day
+    positions, ``window_length`` is in the same day units (the callers'
+    calendar-day proxy caveat for trading-day horizons applies unchanged).
+
+    Returns ``nominal_n``, ``overlap_cluster_count`` /
+    ``largest_overlap_cluster_size`` (connected components of the pairwise
+    window-overlap graph - for equal-length windows two windows overlap iff
+    their starts differ by less than ``window_length``, so components are
+    exactly the runs of sorted starts whose consecutive gaps are below
+    ``window_length``), and ``max_non_overlapping_windows`` (greedy
+    earliest-finish interval scheduling, the classical optimum). Raises
+    :class:`ValueError` for a non-positive ``window_length``.
+    """
+    if isinstance(window_length, bool) or not isinstance(window_length, int):
+        raise ValueError(
+            f"window_length must be a positive int; got {window_length!r}",
+        )
+    if window_length <= 0:
+        raise ValueError(
+            f"window_length must be positive; got {window_length!r}",
+        )
+
+    starts: list[int] = []
+    for s in start_ordinals if start_ordinals is not None else []:
+        if isinstance(s, bool) or not isinstance(s, (int, float)):
+            continue
+        if isinstance(s, float) and not s.is_integer():
+            continue
+        starts.append(int(s))
+
+    n = len(starts)
+    base: dict[str, Any] = {"nominal_n": n,
+                            "window_length": int(window_length)}
+    if n == 0:
+        return {**base, "status": "insufficient_n",
+                "overlap_cluster_count": 0,
+                "largest_overlap_cluster_size": 0,
+                "max_non_overlapping_windows": 0}
+
+    starts.sort()
+
+    # Connected overlap clusters: split sorted starts wherever the gap to the
+    # previous start is >= window_length (no edge can cross such a gap).
+    clusters = 1
+    largest = cur = 1
+    for prev, nxt in zip(starts, starts[1:]):
+        if nxt - prev < window_length:
+            cur += 1
+        else:
+            clusters += 1
+            cur = 1
+        if cur > largest:
+            largest = cur
+
+    # Maximum mutually non-overlapping windows: greedy earliest finish.
+    count = 1
+    last_end = starts[0] + window_length
+    for s in starts[1:]:
+        if s >= last_end:
+            count += 1
+            last_end = s + window_length
+
+    return {**base, "status": "ok",
+            "overlap_cluster_count": clusters,
+            "largest_overlap_cluster_size": largest,
+            "max_non_overlapping_windows": count}
+
+
+def independent_window_diagnostic(
+    start_ordinals: Iterable[Any],
+    *,
+    window_length: int,
+) -> dict[str, Any]:
+    """:func:`independent_window_summary` plus the methodology gate fields.
+
+    The gate value comes from the existing cohort-inference criteria in
+    ``stats/METHODOLOGY.md`` (">= 8 independent shocks"); it is reported, not
+    invented. Meeting it never unblocks cohort inference by itself - see
+    ``interpretation_note`` / ``non_claim``.
+    """
+    out = independent_window_summary(start_ordinals,
+                                     window_length=window_length)
+    out["min_independent_window_gate"] = MIN_INDEPENDENT_WINDOW_GATE
+    out["gate_source"] = INDEPENDENT_WINDOW_GATE_SOURCE
+    out["meets_min_independent_window_gate"] = (
+        out["max_non_overlapping_windows"] >= MIN_INDEPENDENT_WINDOW_GATE
+    )
+    out["interpretation_note"] = INDEPENDENT_WINDOW_INTERPRETATION
+    out["non_claim"] = INDEPENDENT_WINDOW_NON_CLAIM
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Overlap disclosure — reusable across reports (readiness, placebo, baseline)
 # ---------------------------------------------------------------------------
 
@@ -381,9 +516,13 @@ def build_overlap_disclosure(
 
     horizons_out: dict[str, Any] = {}
     for h in horizons:
-        horizons_out[str(int(h))] = window_overlap_summary(
+        block = window_overlap_summary(ordinals, window_length=int(h))
+        # C1 additive: independent-window capacity beside the overlap
+        # summary. Existing fields are untouched.
+        block["independent_window_diagnostic"] = independent_window_diagnostic(
             ordinals, window_length=int(h),
         )
+        horizons_out[str(int(h))] = block
 
     return {
         "denominator":            denominator_label,
@@ -505,6 +644,11 @@ def build_diagnostics_block(
             "sign_test": exact_sign_test(ar_values),
             "rank_test": rank_test_summary(ar_values),
             "overlap": window_overlap_summary(window_starts, window_length=wl),
+            # C1 additive: independent-window capacity beside the overlap
+            # qualifier. Descriptive only; existing fields untouched.
+            "independent_window_diagnostic": independent_window_diagnostic(
+                window_starts, window_length=wl,
+            ),
         }
         for es in spec.get("es_rows") or []:
             if not isinstance(es, dict):
