@@ -223,6 +223,16 @@ and
   never enter accepted denominators; see
   [`stats/STAGED_FAMILY_COVERAGE.md`](stats/STAGED_FAMILY_COVERAGE.md).
 
+- **Representative transmission-case walkthrough** —
+  `python scripts/transmission_case_walkthrough_report.py --db-path events.db --json`
+  Renders a small, deterministic, outcome-diverse set of accepted cases
+  (forced to include a support, a contradiction, and an unresolved/data-limited
+  case) as full event → mechanism → named-assets → 1d/5d/20d reaction
+  walkthroughs, reusing the J1 overlay, event-date-quality, track-record
+  scoring, and event-study layers. Representative, not proof (n=1 per case);
+  see
+  [`stats/TRANSMISSION_CASE_WALKTHROUGH.md`](stats/TRANSMISSION_CASE_WALKTHROUGH.md).
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide

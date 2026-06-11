@@ -126,7 +126,10 @@ moves over all 13 staged candidates — is
   inference.
 - Staged candidates are review staging, **not evidence**, and never enter
   accepted denominators.
-- Representative cases are **illustrative, not proof** of any mechanism.
+- Representative cases are **illustrative, not proof** of any mechanism. A
+  read-only, outcome-diverse set of per-case transmission walkthroughs is in
+  [`TRANSMISSION_CASE_WALKTHROUGH.md`](TRANSMISSION_CASE_WALKTHROUGH.md) /
+  `scripts/transmission_case_walkthrough_report.py`.
 - No paid analysis was performed; paid `/analyze` remains blocked; no
   candidate was promoted and no stage or hygiene flag was changed.
 - No single-event significance is claimed (n=1: no CI, p-value, or FDR).
