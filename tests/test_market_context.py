@@ -287,9 +287,17 @@ class MarketContextEndpointBase(unittest.TestCase):
         market_check._cache_clear()
         self._saved_provider = get_provider()
         set_provider(YFinanceProvider())
+        # compute_news_uncertainty otherwise lazy-fetches the full live news
+        # pipeline (feeds + clustering) inside the GET — nondeterministic
+        # network latency that can stall a full-suite pytest run (T1).  None
+        # is the route's own degraded value; this file never asserts on the
+        # uncertainty block.  Mirrors tests/test_market_context_contract.py.
+        self._uc_patch = patch("api.compute_news_uncertainty", return_value=None)
+        self._uc_patch.start()
         self.client = TestClient(api_module.app)
 
     def tearDown(self):
+        self._uc_patch.stop()
         stop_background_refresh()
         get_store().clear()
         market_check._cache_clear()
