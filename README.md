@@ -1,14 +1,27 @@
 # Second Order
 
-Second Order is a local-first geopolitical and macro research app. The current
-product is a FastAPI backend with two maintained client surfaces:
+Second Order is an honest research dashboard for geopolitical, macro, and policy
+events. It traces an event's plausible second-order transmission to assets and
+reads the market's event-window reaction descriptively — as evidence, never as a
+forecast or a recommendation. It is a quant-finance research-craftsmanship piece,
+not a trading product.
 
-- a React app for live inbox review, progressive analysis, archive/backtest work, and export
-- a Telegram bot for direct headline analysis, `/brief`, and optional scheduled delivery
+**Current research state.** The tracked Phase 1-4 evidence track is frozen and
+complete; the wider-app archive is descriptive, read-only, and reproducible from
+the read-only reports below. The headline baseline conclusion is
+`not_above_baseline` — no robust above-baseline directional skill — and
+cohort-level inference is currently blocked (see the Compute-Readiness Contract).
 
-The system is designed for analyst workflows: ingest live headlines, cluster
-overlapping coverage, run classify -> analysis -> market stages, layer in macro
-and market-context overlays, save the result locally, and revisit dated events.
+**For a finance reviewer, in five minutes.** Read what Second Order does and does
+not claim, walk the [five-minute walkthrough](#five-minute-walkthrough), skim the
+denominator funnel, then recompute the numbers yourself with the read-only
+commands in [Verify it yourself](#verify-it-yourself-read-only-research-reports).
+
+Second Order runs as a FastAPI backend with a React app and a Telegram bot; local
+setup is in [Run Locally](#run-locally). Detailed operator history and dated
+repair logs are intentionally kept out of this reviewer-facing README; the repo
+preserves that evolution through git history and the durable research reports
+linked below.
 
 ## What this is — for a finance reader
 
@@ -88,43 +101,31 @@ backdrop, and case-selection stress.
 
 ## The funnel — denominators, honestly
 
-> **Denominator restatement (AP3b, 2026-06-09).** The accepted-corpus
-> denominators have been restated: **71 synthetic/test seed rows** are now
-> flagged in the `event_hygiene` sidecar (`override_class = 'synthetic_seed'`)
-> and **excluded** from the accepted-corpus denominators while remaining in the
-> archive — keep-and-flag, never deleted. Current live figures: **180 saved
-> events**; an **accepted track-record corpus of 86** (46 any-supporting · 8
-> contradicted · 32 unresolved); a **coverage / analysis denominator of 94**;
-> **60 realized accepted**; and **49 event-study-available realized** rows. This
-> supersedes the earlier "keep the contamination visible inside the 165
-> denominator" approach — the seeds are now explicitly flagged and excluded
-> (still auditable by id). Phase 1 and Phase 2 remain separate FDR pools.
-> The detailed figures in the rest of this section are the **pre-restatement
-> snapshot as of 2026-06-08** plus the dated coverage-repair records, kept for
-> the operational history; a clean clone is empty, so re-run the read-only
-> reports for live numbers.
+The canonical live denominators (re-run the read-only reports in
+[Verify it yourself](#verify-it-yourself-read-only-research-reports) for current
+figures — a clean clone starts empty):
 
-Pre-restatement funnel snapshot (local archive, 2026-06-08):
+- **180** archive rows — every saved event.
+- **94** accepted coverage / analysis rows.
+- **86** accepted track-record rows (46 any-supporting, 8 contradicted,
+  32 unresolved).
+- **78 of 94** event-study compute-ready — rows with per-horizon (1d / 5d / 20d)
+  point estimates computable against SPY.
+- **13** staged candidates — review staging, excluded from every accepted
+  denominator.
 
-- **166 events saved** in the archive (the readiness report then counted
-  **165**, excluding one source-anchored `curated_intake` stub; since AT1 it
-  defaults to the accepted lens — see the compute-readiness contract below).
-- **81 market-scored** (events carrying scored market data): **19 any-supporting
-  · 35 contradicted · 27 unresolved**.
-- **78 archive-ready** and **78 event-study compute-ready** (per-horizon point
-  estimates computable vs SPY; both lifted **71 → 78** by the 2026-06-09 V2C
-  exposed-name coverage backfill — see the dated note below).
-- **Exposed-name AR coverage** (multi-ticker, vs SPY): after the V2C backfill,
-  beneficiary **197 / 216**, exposed/loser **95 / 113**, total **292 / 329**
-  (was 118 / 216, 31 / 113, 149 / 329). The baseline conclusion is **unchanged
-  but now coverage-credible**: `not_above_baseline` / no robust above-baseline
-  directional skill. The temporal-clustering ceiling (≈90% one 2-month window)
-  is not lifted by coverage repair.
+These gates are **not pooled**, and they differ by data availability. SPY is the
+one canonical abnormal-return benchmark; sector baselines are descriptive context
+only, never a sector-relative abnormal return. The headline baseline conclusion
+is `not_above_baseline` (no robust above-baseline directional skill), and
+cohort-level inference is currently blocked — see the
+[Compute-Readiness Contract](#event-study-compute-readiness-contract). The closed
+Phase 1 and Phase 2 FDR pools (five rows each) are a **separate** evidence track
+with their own frozen q-values, never derived from this saved-event archive.
 
-Denominators differ by gate and data availability, and the gates are **not
-pooled**. The closed Phase 1 and Phase 2 FDR pools (five rows each) are a
-**separate** evidence track with their own frozen q-values — they are not
-derived from the saved-event archive.
+Re-run the read-only reports above for the live figures; the dated
+pre-restatement funnel snapshots and the full AP3b restatement detail are kept
+out of this reviewer-facing README.
 
 ## Verify it yourself: read-only research reports
 
@@ -147,6 +148,15 @@ Run from the repo root:
   `python scripts/event_study_coverage_report.py --json`
   Verifies the accepted coverage denominator. Expect **94** accepted events,
   **78** event-study compute-ready.
+
+- **Archive data-hygiene & denominator provenance** —
+  `python scripts/data_hygiene_report.py --json`
+  The read-only source of truth behind the funnel: it classifies every
+  analysis-stage row (by exact headline + `model` fingerprint) as
+  synthetic-seed / synthetic-test / real-duplicate / real-unique, so the **71**
+  synthetic-seed rows excluded from the accepted denominators are auditable by
+  id. Denominator hygiene, not statistical inference; it mutates nothing and
+  never touches the closed Phase 1 / Phase 2 FDR pools.
 
 - **Compute-readiness + window-overlap caveat** —
   `python scripts/stat_validation_readiness_report.py --json --lens accepted --limit 0`
@@ -256,6 +266,23 @@ and
   sector is a hint, never a sector-relative abnormal return. See
   [`stats/SECTOR_BASELINE_AVAILABILITY.md`](stats/SECTOR_BASELINE_AVAILABILITY.md).
 
+- **Research queue — staged candidates, no paid call** —
+  `python scripts/research_queue_report.py --json`
+  Read-only triage over the 13 staged `z1a_candidate_pack` candidates (excluded
+  from every accepted denominator): per-candidate event-study readiness, the
+  per-horizon point estimates already computable from the cache, source
+  provenance, and near-duplicate collisions, with one deterministic review
+  classification. It orders human review only — `ready_for_no_paid_review` is not
+  approval for a paid run, and paid `/analyze` stays blocked. Staged candidates
+  never enter accepted denominators.
+
+- **Price-provider coverage** *(operational provenance)* —
+  `python scripts/price_provider_coverage_report.py --json`
+  Read-only: groups every cached bar by resolved market-data provider
+  (`legacy_unknown` = provider not recorded at write time, not bad data). It
+  never fetches, mutates, or calls a provider; this is data-provenance plumbing,
+  separate from the research denominators above.
+
 ## Current Status
 
 The tracked evidence track is complete through Phase 4. The cohort-wide
@@ -321,7 +348,7 @@ differently from a clean clone:
   the coverage / hygiene / price-provider figures quoted below reflect the
   maintainer's local archive as of the dates noted, not a fresh checkout.
 
-The read-only report commands in the sections below recompute every archive
+The read-only report commands above recompute every archive
 figure from whatever `events.db` is present, so they — not the numbers frozen
 in this file — are the source of truth. On a clean clone with no archive they
 return an empty (zero-count) report.
@@ -351,7 +378,7 @@ SAR, and CAR point estimates.
 `auto_adjust` flag for the full window the event-study engine consumes
 (no adjusted/raw splice within a series). All compute-ready events sit on
 matched basis (`cross_flag` = 0). Note that since the Batch-1 coverage
-repair (below) the 18 repaired events resolved on matched **raw** basis,
+repair the 18 repaired events resolved on matched **raw** basis,
 so the earlier "every compute-ready event is on matched *adjusted* basis"
 no longer holds — but no row mixes flags, so no splice caveat applies.
 
@@ -379,23 +406,9 @@ AT1 2026-06-10):
   `python scripts/stat_validation_readiness_report.py --json --lens accepted --limit 0`
   (and `--lens raw`).
 
-Current run (2026-06-10):
-
-- **accepted lens: 94 denominator events** (180 archive rows − 86 excluded:
-  71 synthetic-seed + 13 staged candidates + 1 pending-review + 1
-  `curated_intake`); with a primary ticker: **81**; event-study
-  compute-ready: **78** — matching the coverage report's
-  `event_study_available` count exactly (78 = 78) because the two now share
-  the accepted lens.
-- **raw lens (diagnostic): 180 scanned**; with a primary ticker: **95**;
-  compute-ready: **91**. The 13 extra compute-ready rows are the staged
-  candidates plus the pending-review row — review staging, not accepted
-  evidence.
-
-(Earlier runs reported other compute-ready counts — 91 on the pre-lens
-2026-06-10 all-stage scan, 78 after the 2026-06-09 V2C exposed-name backfill,
-71 on 2026-06-08, 62 after Batch-1, 44 before it — those are dated snapshots
-under drifting denominators, not current.)
+The dated per-run snapshots ("Current run" / "Earlier runs reported") and the
+Batch-1 data-frontier note are kept out of this reviewer-facing README; re-run
+the readiness command above for live figures.
 
 Compute-ready means SAR/CAR point estimates are computable. It does not
 mean cohort-level statistical inference is available for a single
@@ -417,463 +430,6 @@ cross-sectional CI, p-value, or FDR over the set would overstate
 precision. The criteria a future cohort phase must meet are recorded in
 `stats/METHODOLOGY.md` ("Cohort inference — currently blocked"). This
 decision does not change the closed Phase 1 or Phase 2 FDR denominators.
-
-After the Batch-1 coverage repair (below) the residual cache/window
-blockers shrank sharply — `no_contiguous_aligned_window` fell from 8 to
-1 and the forward-cache gaps roughly halved. The one remaining Batch-1
-frontier case is #280 (XLE), whose 20th forward trading-day bar had not
-yet printed at repair time. The dominant remaining blocker is still
-`no_primary_ticker` (84) — a coverage gap left deliberately untouched
-(see the repair note below). These archive event-study counts do not
-change the closed Phase 1 or Phase 2 FDR denominators.
-
-### Coverage report — per-event AR/SAR/CAR across the archive
-
-`scripts/event_study_coverage_report.py` makes the engine's reach
-auditable in one place. It loops `build_event_study_validation` over every
-analysis-stage archived event (read-only — plain `SELECT`s, no provider,
-no network, no DB write) and surfaces, for each compute-ready event, the
-per-horizon (1d / 5d / 20d) `abnormal_return`, `sar`, and `car` point
-estimates; for every other event it lists the `blocking_reasons` and no
-estimates.
-
-It is **not a new FDR pool** and never reads, modifies, or reopens the
-closed Phase 1 / Phase 2 pools (`evidence_artifacts` / `cohort_evidence` are a
-separate scope). It reuses the same gate as the event-detail route and the
-same accepted lens as the readiness report's default, so its
-`event_study_available` count matches the readiness report's accepted-lens
-`event_study_compute_ready` exactly (78 = 78, 2026-06-10).
-
-**Single-event output is point estimates only.** At `n=1` there is no
-confidence interval, no p-value, and no FDR; the report makes no
-`confirmed` / `validated` / "significant" claim. Each JSON payload carries
-an explicit `non_claims` block stating this.
-
-Current live coverage (2026-06-10, accepted lens, after AP3b):
-
-- analysis-stage denominator: 94 (86 excluded and disclosed: 71
-  synthetic-seed + 13 staged candidates + 1 pending-review + 1
-  `curated_intake`)
-- event_study_available: 78
-- insufficient_data: 16
-- auto_adjust basis: matched 78, cross_flag 0
-
-The dominant blocker is `no_primary_ticker` (13) — a **coverage gap, not a
-statistics failure**: those events never reach the engine because they
-carry no primary ticker. (The pre-AP3b scans reported 84–85 here; most of
-those were the 71 synthetic seeds, which the accepted lens now excludes
-instead of counting — the raw diagnostic lens still shows them.) The
-remaining cache/window blockers are `missing_forward_cache_20d` (3),
-`insufficient_estimation_window_primary` (2), `missing_forward_cache_5d`
-(2), `missing_forward_cache_1d` (2), `no_cached_prices_for_primary_ticker`
-(2), and `missing_benchmark_proxy` (1). None is an engine error; each is a
-data-coverage or contiguity precondition.
-
-```powershell
-python scripts/event_study_coverage_report.py --json
-```
-
-### Robust small-sample diagnostics (descriptive supplements)
-
-`scripts/baseline_characterization_report.py` now carries a read-only
-`robust_diagnostics` block (helpers in `stats/robust_diagnostics.py`, pure
-stdlib) that **supplements** the existing cross-sectional z-test, not replaces
-it. Over the **same eligible primary-ticker AR set** as the AR-sign report (no
-new denominator), per horizon it reports an exact binomial sign test on the
-abnormal-return signs (`p=0.5` null = "no directional abnormal tendency"), a
-Wilcoxon signed-rank summary (exact for small n, normal approximation above the
-cap), an **event-window overlap disclosure** (overlapping pairs, peak
-concurrency, share of windows overlapping another), and a SAR-convention audit
-(recomputing `SAR_car = CAR / (sigma * sqrt h)` against the engine's BHAR-based
-SAR to show the per-horizon gap).
-
-The overlap disclosure is the point: the archive's rows are date-clustered with
-heavily overlapping forward windows, so the sign / rank p-values (and the
-cross-sectional bootstrap) overstate certainty. The overlap summary is printed
-**next to** each p-value as its independence qualifier — a small p-value beside
-near-total overlap is a caveat, not a discovery. These are descriptive
-diagnostics: no single-event significance is claimed, the SAR audit changes no
-event-study math, and the closed Phase 1 / Phase 2 FDR pools are untouched. See
-`stats/METHODOLOGY.md` for the full convention notes.
-
-That same overlap caveat is also wired (read-only, additive) into the readiness
-and placebo reports. `scripts/stat_validation_readiness_report.py` carries a
-`window_overlap` block scoped to the **compute-ready** events (the poolable set)
-and labeled by lens — accepted and raw report their own compute-ready universe,
-so their overlap denominators differ (e.g. accepted 78 vs raw 91). The archive
-placebo report (`stats/archive_placebo.py`) carries an `observed_window_overlap`
-block over the placebo-feasible role-observations on the real event dates, so
-the observed-vs-placebo comparison is read with its independence caveat. Both
-reuse the shared `build_overlap_disclosure` helper; neither invents a new
-denominator or claims significance.
-
-### Research queue report — staged candidates, no paid call
-
-`scripts/research_queue_report.py` (AT1, 2026-06-10) is a read-only triage
-view over the `z1a_candidate_pack` staged candidates — the rows that are
-**excluded from every accepted-corpus denominator**. For each staged
-candidate it surfaces event-study readiness on the staged primary ticker,
-the per-horizon (1d / 5d / 20d) AR / SAR / CAR point estimates already
-computable from the cache, `event_provenance` source metadata, and
-near-duplicate collisions against the non-candidate, non-synthetic corpus
-(reusing the deterministic `z1b_candidate_collision_report` signals), then
-assigns one deterministic classification (`defer_near_duplicate` >
-`data_limited` > `defer_low_identification` > `needs_manual_review` >
-`ready_for_no_paid_review`).
-
-The classification **orders human review only**: `ready_for_no_paid_review`
-means ready for a human no-paid review, not approval for a paid run. The
-collision signals catch same-announcement duplicates (e.g. staged 302 vs
-the pending-review analyzed row 315), not same-policy-thread relatedness —
-thread-level calls (e.g. 307 vs the curated NVDA export-control
-observation 300) stay with the reviewer. Each payload carries a
-`non_claims` block: not a trade recommendation, not a prediction, no
-significance claim (n=1 point estimates), and paid `/analyze` stays
-blocked unless explicitly approved later.
-
-```powershell
-python scripts/research_queue_report.py --json
-```
-
-### Track-record scoring-rule sensitivity (disclosure, not a truth claim)
-
-`scripts/track_record_sensitivity_report.py` recomputes the accepted
-track-record outcomes under several transparent scoring rules side-by-side. The
-canonical headline rule is unchanged — a generous **ANY-support** OR-rule (one
-supporting ticker makes an event count as validated, even against several
-contradictions). The report shows how sensitive the validated / contradicted /
-unresolved split is to that generosity, over the **same** accepted denominator
-(86) for every rule:
-
-- `any_support` (canonical) — matches `compute_track_record` exactly.
-- `majority` — supporting vs contradicting count; ties unresolved.
-- `evidence_weighted` — supporting vs contradicting weight; with no per-ticker
-  evidence weight in the corpus it reduces to majority on the live archive,
-  reported as an explicit `changed_vs_majority = 0` delta rather than hidden.
-- `all_support_strict` — validated only if no ticker contradicts.
-
-On the live archive the generous rule's **46 validated collapses to 19 under
-majority and 11 under strict** — a large sensitivity that the report surfaces
-with representative disagreement cases. This is disclosure: **no rule is claimed
-"correct"**, the canonical labels and headline rule are preserved, the
-representative cases are illustrative not evidence, no single-event significance
-is claimed, and the closed Phase 1 / Phase 2 FDR pools are untouched. See
-`stats/METHODOLOGY.md` for the rule definitions.
-
-```powershell
-python scripts/track_record_sensitivity_report.py --json
-```
-
-### Batch-1 event-study coverage repair (H1 → H3, 2026-06-03)
-
-The first bounded coverage-repair batch lifted event-study compute-ready
-events from **44 to 62** (insufficient **113 → 95**) against the then-157
-analysis-stage rows, by backfilling missing `price_cache` rows. It added no
-events, changed no thesis text, and reassigned no tickers or benchmarks — it
-is a data-coverage fix, not new evidence.
-
-**Denominator at repair time.** 157 analysis-stage events as of 2026-06-03;
-curated_intake stubs are excluded separately (1 at repair time) and never
-enter this count. (The analysis-stage count reached 165 after the Phase-K
-promotions; the live accepted-corpus analysis denominator is now **94**
-after the AP3b synthetic-seed exclusion — see the restatement at the top
-of "The funnel".)
-
-**Frozen baseline (H1).** The 113 insufficient rows split into 84 with no
-primary ticker and 29 that already carried a primary ticker but failed a
-cache/window precondition. The 84 `no_primary_ticker` rows were left
-untouched — **71 are synthetic/seed/test duplicates** ("OPEC slashes output
-by 2 mbpd", "Macro shock test event", "Test headline", repeated across
-consecutive dates) and **13 are real macro/geopolitical events with no
-single defensible public ticker**. Assigning tickers to them after the fact
-would be survivorship/look-ahead bias, so that pool is explicitly out of
-scope for this batch.
-
-**Frozen Batch-1 selection rule (pre-outcome attributes only).** An event
-qualified iff: (a) it already had a primary ticker chosen at analysis time,
-(b) that ticker is a real US-listed instrument, (c) its blocker was
-cache/window coverage (forward-cache gap or non-contiguous window), not
-ticker assignment, and (d) the event + 20 business-day window was already
-in the past. No ticker or benchmark was reassigned; only price history was
-backfilled.
-
-**Frozen 19 ids:** 2, 42, 45, 80, 94, 211, 212, 213, 214, 232, 233, 234,
-235, 236, 238, 239, 240, 250, 280.
-
-**Result — 18 pass / 1 fail.** Eighteen events flipped to
-`event_study_available` (all on matched raw basis). The single failure is
-**#280 (XLE, 2026-05-05)**: its 20th forward trading-day bar is 2026-06-03,
-which had not yet printed at repair time — a data frontier, not an engine
-error. It is reported as a failure (not dropped or replaced) and becomes
-compute-ready once that bar exists.
-
-**Mutation scope (H3, live, `price_cache` only).** The repair ran first
-against a DB copy (`events.h2.dev.db`, via `EVENTS_DB_FILE`) and was then
-promoted to the live archive as a `price_cache`-only change: **+1,440
-inserted rows** and **15 updated adjusted (`auto_adjust=1`) rows** (14
-`legacy_unknown → yfinance` provider/close refreshes plus one SPY
-2026-06-02 volume refresh). The `events`, `event_provenance`, and
-`movers_cache` tables were unchanged; no headline, ticker, or benchmark was
-edited. Live `events.db` SHA-256 went `c813ad4d…` → `8736908a…`; a
-pre-promotion backup is at
-`backups/pre_h3_price_cache_promote_2026-06-03.db`.
-
-**Non-claims.** This is coverage repair (more rows can now produce point
-estimates), **not** new-evidence discovery and **not** a cohort-level
-inference — the Batch-1 compute-ready rows were concentrated in a few primary
-tickers with `mechanism_family` unpopulated, so no cross-sectional CI,
-p-value, or BH-FDR is claimed and the closed Phase 1 / Phase 2 FDR pools are
-untouched. No replacement events were cherry-picked to inflate the pass
-rate; the one failure (#280) stays on the record.
-
-### Archive data-hygiene & denominator policy
-
-> The coverage ratios in this section are a dated snapshot (2026-06-03) from
-> `scripts/data_hygiene_report.py`. The live readiness counts above were
-> refreshed 2026-06-08 (event-study compute-ready 70 → 71, as #280's 20-day
-> forward bar has since printed); re-run the report for current figures. The
-> denominator *policy* described below is the **pre-AP3b** approach (report
-> against the full 165 first, keeping the seed/test contamination visible).
-> **AP3b (2026-06-09) superseded it:** the 71 synthetic seeds are now flagged in
-> `event_hygiene` and excluded by default, so the live accepted-corpus
-> denominators are **86** (track-record) and **94** (coverage) — the "94 real
-> rows" below is that coverage figure. The **157** thesis figure below is the
-> pre-AP3b 166-archive arithmetic; the current thesis / track-record total is
-> **86**. See the restatement at the top of "The funnel".
-
-`scripts/data_hygiene_report.py` is the read-only, reproducible **source of
-truth** for which archive rows are genuine research events and which are
-seeded/test contamination. It classifies every analysis-stage row by exact
-headline + `model` fingerprint (never by lack of a ticker) into
-`synthetic_seed` / `synthetic_test` / `real_duplicate` / `real_unique`, and
-emits three denominator views so every coverage figure names the base it uses:
-
-- **165 — analysis-stage observation denominator:** 70/165 ≈ 42% event-study
-  coverage. Every analysis-stage row, contamination included. This is the
-  research-*observation* denominator (`db.NON_ANALYSIS_STAGES` excludes only
-  the 1 `curated_intake` stub: 166 − 1 = 165); it **includes** the 8 Phase-K
-  `curated_observation` promotions.
-- **94 — real rows** (165 − 71 synthetic): 70/94 ≈ 74%. Non-synthetic rows.
-- **79 — distinct real events** (the 94 real rows after collapsing duplicate
-  headlines): 60/79 ≈ 76%. The most defensible research-coverage figure.
-
-(Archive raw total is 166, including the one excluded `curated_intake` stub.)
-
-**Two separate denominators — and why 157 is still here.** The 8 Phase-K
-`curated_observation` rows raised the analysis-stage *observation* denominator
-from 157 to **165**, but the *thesis / track-record* denominator stayed at
-exactly **157**, because `db.NON_THESIS_STAGES` excludes **both**
-`curated_intake` (1) **and** `curated_observation` (8): 166 − 1 − 8 = 157.
-Those 8 rows carry a primary ticker and a `mechanism_family`, so they are real
-event-study *observations* (counted in the 165), but they carry no LLM thesis
-(beneficiaries / losers / direction), so they never enter the *outcome* pool
-(the 157). One denominator answers "can the engine read this event"; the other
-answers "did a scored thesis play out". The 8 promotions and their descriptive,
-single-event (h1-only) evidence — explicitly **not** a validation and **not** a
-pooled cohort — are recorded in `stats/PHASE_K_EVIDENCE.md`. A third
-crossed-sign mechanism-family candidate, regulation, was separately sourced,
-source-pinned, timing-audited, and read descriptively h1-only on a DB copy in
-`stats/PHASE_K_REGULATION_EVIDENCE.md`; it was **not** promoted to live
-`curated_observation` and does not enter the analysis, track-record, cohort, or
-FDR denominators.
-
-**Why 165 keeps the contamination visible.** Reporting coverage against the
-full analysis-stage 165 first keeps the legacy/seed/test contamination
-*visible* instead of quietly dropping it — a reader sees that a large share of
-the analysis-stage archive is non-research rows rather than being handed a
-flattering ratio with the noise hidden. Coverage is always reported against
-165 first.
-
-**Why 94 and 79 matter.** They are the honest denominators for any
-coverage/quality *claim*. The 71 synthetic rows never reach the engine (all
-no-ticker, all insufficient), so 70/165 actually *understates* real reach; the
-94-row and 79-event views state it honestly, and the 79-event view
-additionally collapses duplicate headlines so coverage is not double-counted.
-Exclusion here enables *computation*, never silent shrinkage: every ratio is
-reported alongside 165, never instead of it.
-
-**Synthetic / seed / test rows: 71.** 58 are seed/demo headlines run through
-the real model (e.g. "OPEC slashes output by 2 mbpd", "Fed speakers rotate"),
-repeated across consecutive dates; 13 are literal test artifacts ("Macro shock
-test event", "Test headline" / the `test-model` fingerprint). All 71 carry no
-primary ticker and are insufficient — none is compute-ready.
-
-**Real duplicates: 27 rows across 12 headlines (15 redundant copies).** Even
-within the 94 real rows, the same genuine headline is sometimes analysed on
-multiple dates (e.g. "AP News: OPEC members discuss extending output cuts" ×4),
-so, as of the 2026-06-08 Batch-1 snapshot, the 70 compute-ready *rows* were
-only **60 distinct events** (the 2026-06-09 V2C backfill later lifted
-compute-ready to 78). Duplicates
-barely move the coverage *ratio* (the redundancy nearly cancels between
-numerator and denominator); their real cost is to the independent-observation
-count any cohort claim would need.
-
-**Non-claims.** This is denominator *hygiene*, not statistical inference. The
-report deletes and mutates nothing (read-only) and never reads, modifies, or
-reopens the closed Phase 1 / Phase 2 FDR pools; it changes neither the 165
-analysis-stage observation denominator nor the separate 157 thesis denominator.
-The cohort/inference denominator stays **separately gated** by the independence
-and `mechanism_family` rules in `stats/METHODOLOGY.md` and the Phase-K blockers
-in `stats/PHASE_K_EVIDENCE.md` — de-duplicating headlines is necessary but not
-sufficient for cohort eligibility.
-
-```powershell
-python scripts/data_hygiene_report.py --json
-```
-
-### Event detail — the `event_study` block on `GET /events/{id}`
-
-`GET /events/{id}` carries an additive top-level `event_study` block,
-populated by the same `build_event_study_validation` gate as the standalone
-`GET /events/{id}/event-study` route — the two return the **identical**
-payload for a given event, so detail consumers need no second round-trip.
-
-- **Compute-ready events** carry the per-horizon (1d / 5d / 20d)
-  `abnormal_return`, `sar`, and `car` point estimates (alongside
-  `raw_return`, `benchmark_return`, `estimation_window_used`, and
-  `auto_adjust_basis`).
-- **Not-ready events** carry `status = "insufficient_data"` and an explicit
-  `blocking_reasons` list — never point estimates, never a raw-return
-  fallback.
-
-The block is **additive**: it changes nothing that already shipped.
-`validation_status`, `validation_status_v2`, the track record, the movers
-surfaces, and the UI are all unchanged — `event_study` is a new sibling key
-alongside `validation_status_v2` and `reaction_profile_v1`.
-
-It stays **point-estimate-only**. At `n=1` there is no confidence interval,
-no p-value, and no FDR; the payload makes no `confirmed` / `validated` /
-"significant" claim (the gate marks `cross_sectional_inference.available =
-false` and lists those terms under `claims.not_claimed`). It never reads,
-modifies, or reopens the closed Phase 1 / Phase 2 FDR pools.
-
-**`GET /events/{id}` is read-only.** Its `mover_context` block reads the
-cached mover slices without rebuilding or persisting them, so a detail
-request never writes `movers_cache` (or anything else) to the database.
-
-## Curated Intake — Source-Anchored Archive Stubs
-
-Operator-curated events enter the archive through a guarded intake path
-(`scripts/curated_event_intake_apply.py`), which writes one `events` row
-plus one matching `event_provenance` row from a hand-authored YAML
-worksheet.
-
-A `curated_intake` row is a **source-anchored archive stub, not analyzed
-evidence.** It records that a real, primary-source event happened and
-where it came from. It carries no market check, no scored outcome, and no
-validated thesis; it is stamped `stage = "curated_intake"`,
-`persistence = "unscored"`, and must never be read as a confirmed
-mechanism or a trading signal. The curated `predicted_direction` is a
-falsifiable hypothesis recorded for later checking and is deliberately
-**not** persisted, so no directional framing reaches any surface.
-
-**First live curated row** (written 2026-06-01):
-
-- `event_id` 293
-- Federal Reserve FOMC statement, April 29, 2026 — official press release
-  `monetary20260429a.htm`, released 2:00 p.m. EDT
-- `mechanism_family` `policy_surprise` (the canonical family; the narrower
-  "monetary policy rate decision" is descriptive only)
-- `provenance_status` `source_anchored` (both `source_url` and
-  `source_published_at` are recorded)
-
-**Denominator policy.** Curated_intake rows are counted as **archive
-inventory** but excluded from every **outcome / readiness / claim**
-denominator, so they can never inflate or dilute a research finding:
-
-- The **raw archive count includes** curated_intake rows (e.g.
-  `events_by_stage`; the default `GET /events` listing).
-- **Readiness, track-record, and validation-status exclude** them.
-  `db.NON_ANALYSIS_STAGES` is the single source of truth for the filter.
-- Each excluding surface **discloses** the omission via a
-  `curated_intake_excluded_count` field — the rows are separated, never
-  silently hidden.
-
-**Backup policy.** A live intake write requires the full guarded triple —
-`--write`, `--confirm`, and `--backup-path` pointing at a restore point
-distinct from `events.db`. The writer snapshots the database before any
-mutation, runs all inserts in one transaction that rolls back on error,
-and is idempotent by `source_url`. The backup `.db` and `events.db`
-itself are untracked (gitignored) and are never committed.
-
-```powershell
-python scripts/curated_event_intake_apply.py `
-    --yaml examples/curated_events.candidate.yaml `
-    --write --confirm --backup-path backups/pre-intake.db --json
-```
-
-**Current live counts** (live archive, post-Phase-K):
-
-- raw events: 166 (1 `curated_intake` stub + 8 Phase-K `curated_observation`
-  promotions + 157 thesis-eligible analysis-stage rows)
-- readiness `total_events`: 165 (`curated_intake` excluded; the 8
-  `curated_observation` rows are counted here but excluded from the thesis /
-  track-record denominator — see the data-hygiene section)
-- `curated_intake_excluded_count`: 1
-- `source_anchored_promoted_count`: 8 (Phase-K `curated_observation` rows)
-
-## Price-Provider Provenance — Where a Cached Bar Came From
-
-The price cache (`price_cache`) now records **which market-data provider
-served each bar** in a nullable `source_provider` column, read through the
-single helper `db.derive_price_provider`. This is distinct from event
-provenance (below) and never affects whether a bar is used — it only
-records origin.
-
-**`legacy_unknown` is a provenance gap, not bad data.** When
-`source_provider` is NULL or blank, `db.derive_price_provider` returns
-`legacy_unknown`. That means exactly one thing: the provider was **not
-recorded at write time**. It is **not** a claim that the bar is wrong,
-stale, or invalid — these are real cached closes that simply predate
-provider stamping (or came from a writer that does not stamp yet).
-
-**The cache is predominantly `legacy_unknown`, by design — but that share is
-not fixed.** Most cached bars predate the stamping path and carry no recorded
-provider; as provider-stamped reads land, the mix shifts. The Batch-1 coverage
-repair (above) introduced the first `yfinance`-stamped bars through the
-canonical read-through path, so the cache now spans **two** providers
-(`legacy_unknown` and `yfinance`) — 20,118 cached bars across 155 tickers at
-the time of writing. These counts drift with every backfill, so the live split
-is whatever the read-only coverage report below prints, never a number frozen
-in this file. `legacy_unknown` there means the provider was **not recorded at
-write time, not that the data is invalid**.
-
-**Future canonical fetches stamp the provider.** Bars pulled through the
-canonical read-through path (`price_cache.fetch_daily_cached`) are stamped
-with the resolved provider identity:
-
-- `yfinance` — the default provider
-- `polygon` — when configured via `MARKET_DATA_PROVIDER=polygon`
-- `fallback:<arm>` — e.g. `fallback:yfinance` / `fallback:polygon`, when a
-  `FallbackProvider` served the bar through the named arm
-
-An unrecognized or unnamed provider is recorded as `legacy_unknown` rather
-than guessed — provenance is stamped only when it is reliable.
-
-**Repair / backfill / promote writers remain intentionally unstamped** for
-now: `price_cache_refresh.py`, `auto_adjust_mismatch_repair.py`,
-`scripts/adjusted_ticker_backfill.py`,
-`scripts/spy_adjusted_benchmark_backfill.py`, and
-`scripts/xle_live_backfill_promote.py`. Bars these write stay
-`legacy_unknown` until a later step wires them in.
-
-**Coverage report (read-only).** A single `SELECT` groups every cached bar
-by `db.derive_price_provider` and reports per-provider row, ticker, basis,
-and date-range counts. It never fetches, never mutates, and never calls a
-provider:
-
-```powershell
-python scripts/price_provider_coverage_report.py --json
-```
-
-**This is separate from event provenance** — the two answer different
-questions and must not be conflated:
-
-- `event_provenance` / `provenance_status` answers **where the event came
-  from** (the source-anchored origin of an archived event; see *Curated
-  Intake* above).
-- `source_provider` answers **where the price bar came from** (which
-  market-data vendor served a cached daily close).
 
 ## Next Roadmap
 
@@ -934,75 +490,6 @@ Current limitations:
 - `reaction_profile_v1` is read-only and cache-backed; it does not fetch live prices during detail reads.
 - Reaction profiles may be unscorable until enough forward close bars are cached.
 - Paid analysis does not run unless `ENABLE_PAID_ANALYSIS=true` and the paid request is explicitly confirmed.
-
-## Engine Phase v1 / Backend Productization Freeze
-
-Engine Phase v1 and the backend productization slice are frozen. Do not modify
-engine or backend productization logic unless a regression is verified by a
-focused failing test or a reproducible eval/API artifact. The next phase is
-foundation validation: empirical thresholds, clearer validation status,
-reaction profiles, archive aggregates, and migration discipline.
-
-UI/API/export surfaces should preserve and render the engine-visible fields at
-a high level:
-
-- quality and warnings: `quality_tier`, `quality_warnings`
-- mechanism classification: `mechanism_family`, `mechanism_subtype`
-- asset/proxy discipline: primary, secondary, signal, rejected, and proxy eligibility fields
-- thesis status: `thesis_state`, `thesis_state_reason`, `validation_rationale`
-- actionability and counterfactuals: `actionability_check`, `counterfactual_check`
-- support status and falsification: `proof_status`, `falsifier_status`
-- traceability: `evidence_sources`
-
-Backend research filters on `/portfolio`: `quality_tier`, `tradable`, and
-`mechanism_subtype`. Track-record cuts should use the same frozen-engine
-dimensions: `quality_tier`, `mechanism_subtype`, and `tradable`.
-
-These `/portfolio` filter names are internal engine vocabulary for slicing the
-research archive — not trade instructions. `quality_tier` buckets the engine's
-own assessed quality of a study (`actionable` / `watch_only` /
-`low_information`); `tradable` exposes the engine's `actionability_check` flag
-(paired with its `why_tradable_or_not` rationale); and the `conviction` gate
-below governs which persistent movers are surfaced. None of them is a buy/sell
-call, a trading signal, or a forecast — the dashboard renders them only as
-research filters over past, dated events, and the viewer-facing labels are
-softened accordingly (e.g. the `actionable` tier surfaces as "high-quality").
-
-Completed backend productization scope:
-
-- `/portfolio` filters: `quality_tier`, `tradable`, `mechanism_subtype`
-- saved-study replay/export for those filters
-- track-record dimensions: `quality_tier`, `tradable`, `mechanism_subtype`
-- `portfolio_view` Markdown support in research export
-- high-impact-only Still Moving Markets (`/movers/persistent`)
-
-Still Moving Markets (`/movers/persistent`) is a high-bar surface. Eligible
-entries are high-impact + thesis-relevant + persistent + non-low-information.
-It requires `conviction.conviction_class == "conviction"` and
-`conviction.impact_level == "high"`. `/movers/persistent` must not backfill
-with low/medium-impact filler when too few events qualify. `/movers/yearly` is
-a separate surface and may document different behavior if its eligibility or
-fill policy diverges.
-
-Focused freeze verification commands (targeted, not a full-suite claim):
-
-```powershell
-python -m unittest discover -s tests -p "test_*movers*.py" -v
-python -m unittest discover -s tests -p "test_*portfolio*.py" -v
-python -m unittest discover -s tests -p "test_track_record*.py" -v
-python -m unittest tests.test_research_export -v
-python eval.py --preset targeted
-```
-
-Compact local API examples:
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/portfolio?quality_tier=actionable"
-Invoke-RestMethod "http://127.0.0.1:8000/portfolio?tradable=true"
-Invoke-RestMethod "http://127.0.0.1:8000/portfolio?mechanism_subtype=import_tariff_china"
-# Still Moving Markets
-Invoke-RestMethod "http://127.0.0.1:8000/movers/persistent"
-```
 
 ## Run Locally
 

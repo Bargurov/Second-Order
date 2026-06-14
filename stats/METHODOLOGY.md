@@ -24,6 +24,22 @@ swapped per event. Sector-ETF alternatives are mapped read-only for
 `stats/SECTOR_BASELINE_AVAILABILITY.md`), never substituted into the abnormal
 return.
 
+### Beta convention — market-adjusted, beta fixed at 1
+
+The abnormal return is a **SPY-relative market-adjusted return with beta fixed
+at 1**: the raw asset return minus the SPY return, with no estimated
+market-sensitivity coefficient. This is deliberate, and it is **not** a
+market-model regression — no per-event intercept or slope is fitted.
+
+A read-only C2A preflight found that local 60-bar beta estimates are unstable in
+the current date-clustered archive (the same clustering surfaced by the
+event-window overlap disclosure). Estimating per-event betas now would add
+researcher degrees of freedom and false precision rather than accuracy, so the
+market-adjusted (beta = 1) convention is used instead. Market-model sensitivity
+stays deferred (see "What is intentionally absent" below) and should remain so
+unless a future cohort first clears the data-readiness and validation gates
+("Cohort inference — currently blocked").
+
 ## SAR (standardized abnormal return)
 
 `SAR_h = BHAR_h / (sigma_ar_daily * sqrt(h))`
@@ -260,7 +276,7 @@ explicitly **not** a validation and **not** a pooled cohort.
 
 | Item | Status | Condition for revisiting |
 |---|---|---|
-| Market-model OLS (alpha + beta regression) | Not production standard | Only if a future cohort requires beta-adjusted residuals |
+| Market-model OLS (alpha + beta regression) | Not production standard | Only if a future cohort requires beta-adjusted residuals; see "Beta convention — market-adjusted, beta fixed at 1" above |
 | Block bootstrap | Deferred | Cohort grows to 20+ events with calendar clustering |
 | CAAR (cross-sectional average CAR) | Deferred | After CAR is consumed by at least one archive runner |
 | BCa / bias-corrected bootstrap | Deferred | n is too small for the correction to matter |
