@@ -51,6 +51,38 @@ function Verdict({ children }: { children: React.ReactNode }) {
   );
 }
 
+// D1 — the canonical denominator funnel.  Every figure is composed from the
+// shared accepted-corpus constants (no number is retyped here), so the ledger
+// cannot drift from the cards below.  Each step is a DIFFERENT denominator
+// answering a DIFFERENT question — not a competing estimate of one number.
+const LEDGER: ReadonlyArray<{ value: React.ReactNode; label: string; note: string }> = [
+  {
+    value: AC.savedEvents,
+    label: "archive rows",
+    note: "Full local archive — every saved event, including flagged seeds and staged / pending rows.",
+  },
+  {
+    value: AC.coverageDenominator,
+    label: "accepted coverage rows",
+    note: "Accepted rows eligible for coverage / event-date reporting.",
+  },
+  {
+    value: AC.trackRecordTotal,
+    label: "accepted track-record rows",
+    note: "Accepted rows used for support / contradiction / unresolved accounting.",
+  },
+  {
+    value: `${AC.eventStudyAvailable} / ${AC.coverageDenominator}`,
+    label: "event-study available",
+    note: "Accepted coverage rows with a SPY-relative event-study readout — a coverage denominator, not a significance claim.",
+  },
+  {
+    value: FC.stagedCandidates,
+    label: "staged candidates",
+    note: "Outside the accepted and FDR pools; never merged into accepted claims.",
+  },
+];
+
 export function EvidenceOverview() {
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -67,6 +99,52 @@ export function EvidenceOverview() {
         </p>
       </header>
 
+      {/* D1 — canonical denominator ledger / evidence funnel.  A single anchor
+          for the project's denominator accounting so the figures in the cards
+          below read as answers to different questions, not as competing
+          estimates of one unstable number.  All figures are the current
+          accepted-lens snapshot (AC.restatedOn), recomputed read-only by
+          scripts/stat_validation_readiness_report.py --lens accepted and
+          scripts/event_study_coverage_report.py. */}
+      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Denominator ledger · evidence funnel</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Canonical denominators
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            {`Each step is a different denominator answering a different question — not competing ` +
+              `estimates of one number. Current accepted-lens snapshot as of ${AC.restatedOn}.`}
+          </p>
+          <ol className="flex flex-col">
+            {LEDGER.map((row, i) => (
+              <li
+                key={row.label}
+                className="flex items-baseline gap-3 border-b border-border/30 py-1.5 last:border-0"
+              >
+                <span className="w-4 shrink-0 font-mono text-[10px] tabular-nums text-on-surface-variant/45">
+                  {i + 1}
+                </span>
+                <span className="w-[4.5rem] shrink-0 font-mono text-[13px] tabular-nums text-on-surface">
+                  {row.value}
+                </span>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-on-surface">{row.label}</span>
+                  <span className="text-[11px] text-on-surface-variant/70">{row.note}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="text-[11.5px] italic leading-relaxed text-on-surface-variant/75">
+            Staged candidates sit outside the accepted and FDR pools and never enter accepted
+            denominators or claims. Event-study availability is a coverage denominator, not a
+            significance claim; representative cases are illustrative, not evidence.
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Corpus snapshot — the dated F.asOf figures, with the current
             post-AP3b restatement stated separately below (the T2/T3/T4
@@ -74,7 +152,8 @@ export function EvidenceOverview() {
             so the snapshot figures stay at their real date). */}
         <Section tag="Corpus" title="Scored-archive snapshot">
           <p className="text-[11px] text-on-surface-variant/70">
-            {`Snapshot as of ${F.asOf} (pre-restatement):`}
+            {`Snapshot as of ${F.asOf} (pre-restatement · superseded — AP3b-era; see the ` +
+              `canonical denominators above):`}
           </p>
           <Stat label="Market-scored events" value={F.corpus.marketScored} />
           <Stat label="Any-supporting" value={F.corpus.anySupporting} />

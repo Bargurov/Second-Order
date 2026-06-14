@@ -29,6 +29,17 @@ export const ACCEPTED_CORPUS = {
   coverageDenominator: 94,
   /** Realized accepted rows with a computable event-study readout. */
   eventStudyAvailableRealized: 49,
+  /**
+   * Accepted coverage rows with a computable SPY-relative event-study readout —
+   * the readiness `event_study_available` status count, 78 of the 94 coverage
+   * denominator (accepted lens). A coverage figure, NOT a significance claim and
+   * distinct from `eventStudyAvailableRealized` (49, rows with a stored readout).
+   * Re-derive read-only:
+   *   python scripts/stat_validation_readiness_report.py --db-path events.db --json --lens accepted
+   *     -> compute_readiness.event_study_compute_ready_count / total_events (94)
+   *   python scripts/event_study_coverage_report.py
+   */
+  eventStudyAvailable: 78,
   /** Synthetic/test seed rows flagged in event_hygiene and excluded (kept in archive). */
   syntheticSeedFlagged: 71,
 } as const;

@@ -297,6 +297,66 @@ describe("EvidenceOverview — mechanism-family coverage: accepted vs staged (AZ
   });
 });
 
+describe("EvidenceOverview — canonical denominator ledger (D1)", () => {
+  it("renders the denominator ledger / evidence funnel section", () => {
+    expect(visible).toContain("Canonical denominators");
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("denominator ledger");
+    // the carousel cure: state that different denominators answer different questions
+    expect(lc).toContain("different denominator");
+    expect(lc).toContain("different question");
+  });
+
+  it("shows all five canonical funnel numbers with their labels", () => {
+    expect(visible).toContain("180");
+    expect(visible.toLowerCase()).toContain("archive rows");
+    expect(visible).toContain("94");
+    expect(visible.toLowerCase()).toContain("accepted coverage rows");
+    expect(visible).toContain("86");
+    expect(visible.toLowerCase()).toContain("accepted track-record rows");
+    expect(visible).toContain("78 / 94"); // event-study available, paired with its denominator
+    expect(visible.toLowerCase()).toContain("event-study available");
+    expect(visible).toContain("13");
+    expect(visible.toLowerCase()).toContain("staged candidates");
+  });
+
+  it("keeps staged candidates explicitly separate from the accepted / FDR pools", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("outside the accepted and fdr pools");
+    expect(lc).toContain("never");
+    expect(lc).toContain("accepted denominators");
+  });
+
+  it("frames event-study availability as coverage, not significance", () => {
+    expect(visible.toLowerCase()).toContain("coverage denominator, not a significance claim");
+  });
+
+  it("keeps representative cases illustrative, not evidence (no proof framing)", () => {
+    expect(visible.toLowerCase()).toContain("illustrative, not evidence");
+  });
+
+  it("labels the pre-restatement snapshot as superseded / AP3b-era", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("superseded");
+    expect(lc).toContain("ap3b-era");
+  });
+
+  it("introduces no forecast / proven / trading-signal / validated-as-success framing", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).not.toMatch(/\bforecast\b/);
+    expect(lc).not.toMatch(/\bproven\b/);
+    expect(lc).not.toMatch(/trading[\s-]?signal/);
+    expect(lc).not.toMatch(/validated[\s-]?as[\s-]?success/);
+  });
+
+  it("does not pull Section C demo content into the research overview", () => {
+    // The demo Evidence Summary panel (Section C) is decoupled (pure API
+    // projection, no accepted-corpus import); its signature eyebrow must
+    // never appear on this research page.
+    expect(visible).not.toContain("Demo · Read-only");
+  });
+});
+
 describe("EvidenceOverview — navigation (T5A)", () => {
   it("appears under the Research group in the sidebar", () => {
     const nav = renderToStaticMarkup(<Sidebar current="market" onNavigate={() => {}} />);
