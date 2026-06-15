@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
 import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
+import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "@/lib/representative-case-library";
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -251,6 +252,78 @@ export function EvidenceOverview() {
 
           <p className="font-mono text-[10px] leading-relaxed text-on-surface-variant/55">
             {`Surface of the read-only E1 report · source ${MFE.sourceDoc} @ ${MFE.sourceCommit} · ${MFE.reproCommand}`}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* F3 — surface of the F1/F2 representative case library. Static snapshot
+          from REPRESENTATIVE_CASE_LIBRARY (no browser recompute, no network);
+          figures trace to stats/REPRESENTATIVE_CASE_EXPANSION.md (F1) and
+          stats/EXPANDED_CASE_NOTES.md (F2) @ RCL.sourceCommit. The 6 N1 anchors
+          are already-covered (kept in the transmission walkthrough, not
+          rewritten here); the 9 new cases have expanded F2 notes. */}
+      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Representative cases · walkthrough library</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Representative case library
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            {`${RCL.totals.total} illustrative cases across ${RCL.totals.familiesTotal} mechanism families: `}
+            {`${RCL.totals.anchors} already-covered N1 anchors + ${RCL.totals.newNotes} newly proposed F1/F2 cases. `}
+            {`Representative cases are for walkthrough depth, not family-level inference.`}
+          </p>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] tabular-nums text-on-surface-variant/80">
+            <span>total <span className="text-on-surface">{RCL.totals.total}</span></span>
+            <span>anchors <span className="text-on-surface">{RCL.totals.anchors}</span></span>
+            <span>new notes <span className="text-on-surface">{RCL.totals.newNotes}</span></span>
+            <span>event-study readout <span className="text-on-surface">{RCL.totals.eventStudyAvailable} / {RCL.totals.eventStudyOf}</span></span>
+            <span>families <span className="text-on-surface">{RCL.totals.familiesRepresented} / {RCL.totals.familiesTotal}</span></span>
+          </div>
+
+          <div className="overflow-hidden rounded-md border border-border/40">
+            <table className="w-full text-left font-mono text-[11px] tabular-nums">
+              <thead>
+                <tr className="border-b border-border/40 bg-surface-container-highest/40 text-on-surface-variant/60">
+                  <th className="px-2.5 py-1.5 font-medium">Case</th>
+                  <th className="px-2.5 py-1.5 font-medium">Role</th>
+                  <th className="px-2.5 py-1.5 font-medium">Family</th>
+                  <th className="px-2.5 py-1.5 font-medium">Outcome</th>
+                  <th className="px-2.5 py-1.5 font-medium">Event-study</th>
+                  <th className="px-2.5 py-1.5 font-medium">Caveats</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {RCL.cases.map((c) => (
+                  <tr key={c.id}>
+                    <td className="px-2.5 py-1.5 text-on-surface">#{c.id}</td>
+                    <td className="px-2.5 py-1.5 text-on-surface-variant/85">
+                      {c.role === "anchor" ? "already-covered anchor" : "newly proposed"}
+                    </td>
+                    <td className="px-2.5 py-1.5 text-on-surface-variant/85">{c.family}</td>
+                    <td className="px-2.5 py-1.5 text-on-surface">{c.outcome}</td>
+                    <td className="px-2.5 py-1.5 text-on-surface-variant">{c.eventStudy ? "yes" : "no"}</td>
+                    <td className="px-2.5 py-1.5 text-[10px] text-on-surface-variant/70">
+                      {c.caveats.length ? c.caveats.join(" · ") : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="text-[11.5px] italic leading-relaxed text-on-surface-variant/75">
+            Readout availability is not the same as thesis support. Outcome is thesis-direction
+            scoring of the named tickers; the event-study readout is the primary ticker vs SPY - a
+            different lens (cases 29 and 38 share a readout but have opposite outcomes).
+          </p>
+
+          <p className="font-mono text-[10px] leading-relaxed text-on-surface-variant/55">
+            {`Source: ${RCL.sources[0]} and ${RCL.sources[1]} @ ${RCL.sourceCommit}. ` +
+              `N1 anchors stay in the transmission walkthrough; the 9 new cases have expanded notes.`}
           </p>
         </CardContent>
       </Card>

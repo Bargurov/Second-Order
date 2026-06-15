@@ -447,6 +447,86 @@ describe("EvidenceOverview — mechanism-family evidence inventory (E2)", () => 
   });
 });
 
+describe("EvidenceOverview — representative case library (F3)", () => {
+  it("renders the representative case library section", () => {
+    expect(visible).toContain("Representative case library");
+    expect(visible.toLowerCase()).toContain("illustrative");
+  });
+
+  it("renders the summary numbers", () => {
+    expect(visible).toContain("15 illustrative cases across 6 mechanism families");
+    expect(visible).toContain("6 already-covered");
+    expect(visible).toContain("9 newly proposed");
+    expect(visible).toContain("12 / 15");   // event-study readout
+    expect(visible).toContain("6 / 6");      // families represented
+  });
+
+  it("renders all 15 case ids", () => {
+    for (const id of [1, 46, 61, 66, 210, 211, 7, 29, 38, 71, 153, 154, 160, 212, 239]) {
+      expect(visible, `case id #${id}`).toContain(`#${id}`);
+    }
+  });
+
+  it("ties one anchor row per family together (id, role, family, outcome, event-study)", () => {
+    expect(visible).toContain("#210 already-covered anchor supply_shock unresolved yes");
+    expect(visible).toContain("#61 already-covered anchor geopolitical_conflict_context contradiction yes");
+    expect(visible).toContain("#1 already-covered anchor tariff support yes");
+    expect(visible).toContain("#211 already-covered anchor sanction unresolved yes");
+    expect(visible).toContain("#66 already-covered anchor ceasefire_deescalation support yes");
+    expect(visible).toContain("#46 already-covered anchor monetary_policy_or_rates support yes");
+  });
+
+  it("labels new cases as newly proposed and ties their rows", () => {
+    expect(visible.toLowerCase()).toContain("newly proposed");
+    expect(visible).toContain("#38 newly proposed supply_shock support yes");
+    expect(visible).toContain("#153 newly proposed sanction unresolved no");
+  });
+
+  it("marks missing-readout cases explicitly (153, 154, 160)", () => {
+    expect(visible.toLowerCase()).toContain("missing readout");
+    expect(visible).toContain("#153 newly proposed sanction unresolved no");
+    expect(visible).toContain("#154 newly proposed sanction unresolved no");
+    expect(visible).toContain("#160 newly proposed ceasefire_deescalation unresolved no");
+  });
+
+  it("marks thin-family and overlay-only cases", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("thin family");
+    expect(lc).toContain("overlay-only");
+  });
+
+  it("renders the readout-vs-outcome lens warning", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("readout availability is not the same as thesis support");
+    expect(lc).toContain("thesis-direction scoring");
+    expect(lc).toContain("primary ticker vs spy");
+  });
+
+  it("renders the source line pointing at both reports", () => {
+    expect(visible).toContain("stats/REPRESENTATIVE_CASE_EXPANSION.md");
+    expect(visible).toContain("stats/EXPANDED_CASE_NOTES.md");
+  });
+
+  it("keeps the D1 denominator ledger and E2 inventory rendering", () => {
+    expect(visible).toContain("Canonical denominators");
+    expect(visible).toContain("Mechanism-family evidence inventory");
+  });
+
+  it("introduces no banned framing in the new section", () => {
+    const lc = visible.toLowerCase();
+    for (const w of ["proof", "proven", "statistically significant", "trading signal", "forecast", "alpha"]) {
+      expect(lc, `banned word "${w}"`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
+    for (const phrase of ["validated-as-success", "best case", "strongest case", "outperforming"]) {
+      expect(lc, `banned phrase "${phrase}"`).not.toContain(phrase);
+    }
+  });
+
+  it("does not pull Section C demo content into the overview", () => {
+    expect(visible).not.toContain("Demo · Read-only");
+  });
+});
+
 describe("EvidenceOverview — navigation (T5A)", () => {
   it("appears under the Research group in the sidebar", () => {
     const nav = renderToStaticMarkup(<Sidebar current="market" onNavigate={() => {}} />);
