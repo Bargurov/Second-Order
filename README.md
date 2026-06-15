@@ -76,7 +76,12 @@ A skeptical reviewer can follow the intended order without a guided tour:
    notes for the 9 newly proposed cases. Each note keeps the readout lens (primary
    ticker vs SPY) separate from the thesis-outcome lens (support / contradiction /
    unresolved) — the two can disagree.
-5. **Methodology / non-claims** —
+5. **Optional numeric readout layer** —
+   [`stats/CASE_LIBRARY_REACTION_MATRIX.md`](stats/CASE_LIBRARY_REACTION_MATRIX.md):
+   a compact 1d / 5d / 20d SPY-relative matrix for the 15 representative cases.
+   It shows 12 / 15 available readouts, makes missing readouts explicit, and
+   keeps the readout lens separate from thesis-outcome scoring.
+6. **Methodology / non-claims** —
    [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md): market-adjusted readouts are
    SPY-relative with beta fixed at 1. Representative cases are walkthrough
    material, not family-level inference; not a recommendation, forecast, or
