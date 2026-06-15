@@ -357,6 +357,96 @@ describe("EvidenceOverview — canonical denominator ledger (D1)", () => {
   });
 });
 
+describe("EvidenceOverview — mechanism-family evidence inventory (E2)", () => {
+  it("renders the mechanism-family evidence inventory section", () => {
+    expect(visible).toContain("Mechanism-family evidence inventory");
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("accepted track-record lens");
+    expect(lc).toContain("descriptive inventory");
+  });
+
+  it("renders all six family names", () => {
+    for (const fam of [
+      "supply_shock", "geopolitical_conflict_context", "tariff",
+      "sanction", "ceasefire_deescalation", "monetary_policy_or_rates",
+    ]) {
+      expect(visible).toContain(fam);
+    }
+  });
+
+  it("renders the six support / contradiction / unresolved splits", () => {
+    for (const sp of ["11 / 3 / 6", "7 / 2 / 2", "5 / 0 / 6", "0 / 0 / 4", "2 / 0 / 1", "1 / 0 / 2"]) {
+      expect(visible).toContain(sp);
+    }
+  });
+
+  it("renders the six event-study coverage figures", () => {
+    for (const es of ["20 / 20", "10 / 11", "8 / 11", "1 / 4", "2 / 3"]) {
+      expect(visible).toContain(es);
+    }
+  });
+
+  it("ties the supply_shock row figures together (family, n, split, event-study)", () => {
+    expect(visible).toContain("supply_shock 20 11 / 3 / 6 20 / 20");
+  });
+
+  it("renders the single / multi / unclassified sum-invariant line", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("single-match 52");
+    expect(lc).toContain("multi-match 16");
+    expect(lc).toContain("unclassified 18");
+    expect(visible).toContain("86");
+  });
+
+  it("renders representative case ids labeled illustrative", () => {
+    expect(visible).toContain("29, 38, 210");        // supply_shock
+    expect(visible).toContain("153, 154, 211");      // sanction
+    expect(visible.toLowerCase()).toContain("illustrative case ids");
+  });
+
+  it("marks the two overlay-only buckets", () => {
+    expect(visible.toLowerCase()).toContain("overlay-only");
+    // the overlay-only caveat lists exactly the two overlay families
+    expect(visible).toContain("geopolitical_conflict_context, monetary_policy_or_rates");
+  });
+
+  it("states staged candidates are excluded", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("staged candidates");
+    expect(lc).toContain("excluded");
+  });
+
+  it("frames sectors as descriptive hints only", () => {
+    expect(visible.toLowerCase()).toContain("descriptive hint");
+  });
+
+  it("introduces no proof / forecast / ranking framing in the new section", () => {
+    const lc = visible.toLowerCase();
+    for (const w of ["proof", "proven", "statistically significant", "trading signal", "forecast", "alpha"]) {
+      expect(lc, `banned word "${w}"`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
+    for (const phrase of ["validated-as-success", "best family", "strongest family", "outperforming"]) {
+      expect(lc, `banned phrase "${phrase}"`).not.toContain(phrase);
+    }
+  });
+
+  it("reconciles its lens against the other two mechanism-family cards on the page", () => {
+    const lc = visible.toLowerCase();
+    // disambiguate from the T7B-A grouping card (the sharpest collision:
+    // supply_shock 20-vs-3, tariff 11-vs-13) and the AZ1 coverage card
+    expect(lc).toContain("different lenses, not competing estimates");
+    expect(lc).toContain("market-scored snapshot");
+  });
+
+  it("keeps the D1 denominator ledger rendering", () => {
+    expect(visible).toContain("Canonical denominators");
+  });
+
+  it("does not pull Section C demo content into the overview", () => {
+    expect(visible).not.toContain("Demo · Read-only");
+  });
+});
+
 describe("EvidenceOverview — navigation (T5A)", () => {
   it("appears under the Research group in the sidebar", () => {
     const nav = renderToStaticMarkup(<Sidebar current="market" onNavigate={() => {}} />);

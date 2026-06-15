@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
 import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
+import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -141,6 +142,115 @@ export function EvidenceOverview() {
             Staged candidates sit outside the accepted and FDR pools and never enter accepted
             denominators or claims. Event-study availability is a coverage denominator, not a
             significance claim; representative cases are illustrative, not evidence.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* E2 — surface of the read-only E1 mechanism-family evidence inventory.
+          Static snapshot from MECHANISM_FAMILY_EVIDENCE (no browser recompute,
+          no network); every figure traces to stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md
+          @ MFE.sourceCommit. Family lens = the tested headline overlay over the
+          86 accepted thesis rows (per-family event-study is k-of-n on THAT lens,
+          distinct from the 78/94 coverage lens above). Descriptive inventory,
+          not family-level inference. */}
+      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Mechanism families · evidence inventory</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Mechanism-family evidence inventory
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            {`Accepted track-record lens: ${MFE.buckets.sum} rows grouped by the tested headline ` +
+              `overlay. Family rows are descriptive inventory, not family-level inference.`}
+          </p>
+          <p className="text-[11px] leading-relaxed text-on-surface-variant/70">
+            {`Different denominator from the "Mechanism-family grouping" card (a different keyword ` +
+              `rule set over the 81 market-scored snapshot) and the "Mechanism-family coverage" ` +
+              `card (stored-taxonomy observations) below — different lenses, not competing estimates ` +
+              `of one count.`}
+          </p>
+
+          <div className="overflow-hidden rounded-md border border-border/40">
+            <table className="w-full text-left font-mono text-[11px] tabular-nums">
+              <thead>
+                <tr className="border-b border-border/40 bg-surface-container-highest/40 text-on-surface-variant/60">
+                  <th className="px-2.5 py-1.5 font-medium">Family</th>
+                  <th className="px-2.5 py-1.5 text-right font-medium">n</th>
+                  <th className="px-2.5 py-1.5 text-right font-medium">S / C / U</th>
+                  <th className="px-2.5 py-1.5 text-right font-medium">event-study</th>
+                  <th className="px-2.5 py-1.5 font-medium">sector hint</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {MFE.families.map((f) => (
+                  <tr key={f.family}>
+                    <td className="px-2.5 py-1.5 text-on-surface">
+                      {f.family}
+                      {f.overlayOnly && (
+                        <span className="ml-1.5 text-[10px] text-on-surface-variant/55">overlay-only</span>
+                      )}
+                      {f.thin && (
+                        <span className="ml-1.5 text-[10px] text-on-surface-variant/55">thin family</span>
+                      )}
+                    </td>
+                    <td className="px-2.5 py-1.5 text-right text-on-surface">{f.n}</td>
+                    <td className="px-2.5 py-1.5 text-right text-on-surface">{`${f.s} / ${f.c} / ${f.u}`}</td>
+                    <td className="px-2.5 py-1.5 text-right text-on-surface-variant">{`${f.esAvailable} / ${f.esOf}`}</td>
+                    <td className="px-2.5 py-1.5 text-on-surface-variant/85">{f.sector}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
+            {`single-match ${MFE.buckets.singleMatch} · multi-match ${MFE.buckets.multiMatch} · ` +
+              `unclassified ${MFE.buckets.unclassified} = ${MFE.buckets.sum}`}
+          </p>
+
+          {/* Representative case ids — illustrative only, not evidence. */}
+          <div className="flex flex-col gap-1 border-t border-border/40 pt-2">
+            <Kicker>Illustrative case ids</Kicker>
+            <ul className="flex flex-col gap-0.5">
+              {MFE.families.map((f) => (
+                <li key={f.family} className="flex items-baseline justify-between gap-3 text-[11px]">
+                  <span className="text-on-surface-variant/85">{f.family}</span>
+                  <span className="font-mono tabular-nums text-on-surface-variant">{f.caseIds.join(", ")}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] italic text-on-surface-variant/70">
+              Illustrative case ids only — representative of a family, not evidence for it.
+            </p>
+          </div>
+
+          {/* Caveats */}
+          <ul className="flex flex-col gap-1 border-t border-border/40 pt-2">
+            {[
+              "Family lens is the headline overlay, not the stored mechanism_family taxonomy.",
+              `Overlay-only buckets (outside the canonical taxonomy): ${MFE.families
+                .filter((f) => f.overlayOnly)
+                .map((f) => f.family)
+                .join(", ")}.`,
+              `Multi-match (${MFE.buckets.multiMatch}) and unclassified (${MFE.buckets.unclassified}) rows stay visible, not absorbed.`,
+              "Staged candidates are excluded from this accepted track-record lens.",
+              "Sectors are descriptive hints only; SPY stays the canonical benchmark.",
+              "No family-level causal claim, no p-values, and no FDR here.",
+            ].map((line) => (
+              <li
+                key={line}
+                className="flex items-start gap-1.5 text-[11px] leading-relaxed text-on-surface-variant/70"
+              >
+                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-on-surface-variant/40" aria-hidden />
+                {line}
+              </li>
+            ))}
+          </ul>
+
+          <p className="font-mono text-[10px] leading-relaxed text-on-surface-variant/55">
+            {`Surface of the read-only E1 report · source ${MFE.sourceDoc} @ ${MFE.sourceCommit} · ${MFE.reproCommand}`}
           </p>
         </CardContent>
       </Card>
