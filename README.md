@@ -56,6 +56,32 @@ the days after the event.
 - merge the descriptive archive with the closed Phase 1 / Phase 2 FDR pools —
   those denominators stay separate
 
+## Reviewer reading path
+
+A skeptical reviewer can follow the intended order without a guided tour:
+
+1. **Evidence Overview** (Research nav) — the front-door screen: the denominator
+   ledger, the mechanism-family inventory, and the representative case library on
+   one page.
+2. **Mechanism-family evidence inventory** —
+   [`stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md`](stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md):
+   where the accepted archive has mass, which families are thin, which are
+   overlay-only buckets, and where readouts show missingness.
+3. **Representative case library** —
+   [`stats/REPRESENTATIVE_CASE_EXPANSION.md`](stats/REPRESENTATIVE_CASE_EXPANSION.md):
+   15 illustrative cases across 6 mechanism families — 6 already-covered anchors
+   plus 9 newly proposed cases with expanded notes.
+4. **Expanded case notes** —
+   [`stats/EXPANDED_CASE_NOTES.md`](stats/EXPANDED_CASE_NOTES.md): source-grounded
+   notes for the 9 newly proposed cases. Each note keeps the readout lens (primary
+   ticker vs SPY) separate from the thesis-outcome lens (support / contradiction /
+   unresolved) — the two can disagree.
+5. **Methodology / non-claims** —
+   [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md): market-adjusted readouts are
+   SPY-relative with beta fixed at 1. Representative cases are walkthrough
+   material, not family-level inference; not a recommendation, forecast, or
+   trading signal.
+
 ## Five-minute walkthrough
 
 1. **Market Overview** (the landing page) — read the market backdrop, recent
