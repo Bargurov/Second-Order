@@ -48,6 +48,90 @@ from scripts.case_library_reaction_matrix import build_report as h1_build_report
 from scripts.mechanism_family_evidence_inventory import build_inventory  # noqa: E402
 from scripts.representative_case_expansion_report import THIN_FLOOR  # noqa: E402
 
+# --- Reviewer-facing narrative (I1A): plain-language framing before the table.
+REVIEWER_SUMMARY = {
+    "title": "What to take away first",
+    "points": [
+        "supply_shock is the largest inspectable bucket (n=20) with complete "
+        "event-study coverage, but it is still a descriptive archive read, not "
+        "evidence of a family effect.",
+        "geopolitical_conflict_context is sizable (n=11) but overlay-only - a "
+        "useful conflict-context lens, not part of the stored canonical taxonomy.",
+        "tariff is sizable (n=11) but unresolved-heavy: more cases ended "
+        "unresolved than supported or contradicted.",
+        "sanction, ceasefire_deescalation, and monetary_policy_or_rates are thin "
+        "(n <= 4): useful as walkthrough examples, not family-level evidence.",
+        "Representative cases are walkthrough material, not evidence - they "
+        "illustrate a family, they do not establish it.",
+        "Market readout coverage helps locate where a reaction can be inspected; "
+        "it is availability, not thesis support.",
+    ],
+}
+
+READER_GUIDE = {
+    "title": "How to read the table",
+    "columns": {
+        "n": "accepted track-record rows in that family.",
+        "S / C / U": "support / contradiction / unresolved thesis-direction "
+                     "outcomes (scoring of the named tickers).",
+        "ES": "event-study availability - how many family rows have a "
+              "SPY-relative readout. This is availability, not success.",
+        "selected cases": "the representative walkthrough examples chosen for "
+                          "that family.",
+        "status": "canonical (in the stored taxonomy), overlay-only, or thin.",
+        "readout coverage": "whether the selected examples have 1d / 5d / 20d "
+                            "market reactions available.",
+    },
+    "definitions": {
+        "overlay-only": "an overlay-only bucket is a headline-overlay lens "
+                        "outside the stored canonical taxonomy.",
+        "thin": "thin means too few rows (n <= 4) to read at the family level.",
+    },
+}
+
+FAMILY_NOTES_TEXT = {
+    "supply_shock": (
+        "Largest accepted bucket (n=20) with complete event-study coverage; it "
+        "has support, contradiction, and unresolved outcomes, so it is the most "
+        "inspectable descriptively - still a descriptive archive read, not a "
+        "family-level conclusion."
+    ),
+    "geopolitical_conflict_context": (
+        "Sizable (n=11) but overlay-only: a useful conflict-context lens, not "
+        "part of the stored canonical taxonomy."
+    ),
+    "tariff": (
+        "Sizable (n=11) with partial event-study coverage and unresolved-heavy "
+        "outcomes; useful to inspect, but not a clean family-level read."
+    ),
+    "sanction": (
+        "Thin (n=4) and unresolved-heavy; its examples show missingness and "
+        "limits more than a pattern."
+    ),
+    "ceasefire_deescalation": (
+        "Thin (n=3); useful as de-escalation examples, not a family-level "
+        "conclusion."
+    ),
+    "monetary_policy_or_rates": (
+        "Thin (n=3) and overlay-only; informative as individual cases, not a "
+        "stable family read."
+    ),
+}
+
+READER_GUARDRAILS = {
+    "title": "Reader guardrails",
+    "points": [
+        "Do not rank one family above another; this is a descriptive read, not "
+        "a contest.",
+        "The support count is not a score or a success rate.",
+        "Event-study coverage is availability, not success; it is not evidence "
+        "that a thesis held.",
+        "Do not collapse outcome counts and market readouts into one score.",
+        "The closed Phase 1 / Phase 2 FDR pools remain separate from this "
+        "descriptive read.",
+    ],
+}
+
 LENS_DISCIPLINE = {
     "outcome_lens": (
         "Outcome counts are thesis-direction scoring of the named tickers "
@@ -197,12 +281,22 @@ def build_report(*, db_path: str | None = None) -> dict:
         ),
     }
 
+    family_notes = {
+        "title": "Family-by-family notes",
+        "notes": {r["family"]: FAMILY_NOTES_TEXT[r["family"]]
+                  for r in rows if r["family"] in FAMILY_NOTES_TEXT},
+    }
+
     return {
         "purpose": (
             "Side-by-side descriptive comparison of the accepted mechanism "
             "families; no new score, no ranking, no inference."
         ),
         "denominators": inv["denominators"],
+        "reviewer_summary": REVIEWER_SUMMARY,
+        "reader_guide": READER_GUIDE,
+        "family_notes": family_notes,
+        "reader_guardrails": READER_GUARDRAILS,
         "family_comparison": rows,
         "global_summary": {
             "n_families": len(rows),
@@ -252,6 +346,28 @@ def render_text(report: dict) -> str:
         f"{cl.get('readout_available')} with a readout, missing "
         f"{cl.get('missing_ids')}"
     )
+    lines.append("")
+    rs = report.get("reviewer_summary", {})
+    lines.append(rs.get("title", "What to take away first"))
+    for p in rs.get("points", []):
+        lines.append(f"  - {p}")
+    lines.append("")
+    rg = report.get("reader_guide", {})
+    lines.append(rg.get("title", "How to read the table"))
+    for col, desc in rg.get("columns", {}).items():
+        lines.append(f"  {col}: {desc}")
+    for term, desc in rg.get("definitions", {}).items():
+        lines.append(f"  ({term}) {desc}")
+    lines.append("")
+    fn = report.get("family_notes", {})
+    lines.append(fn.get("title", "Family-by-family notes"))
+    for fam, note in fn.get("notes", {}).items():
+        lines.append(f"  {fam}: {note}")
+    lines.append("")
+    gr = report.get("reader_guardrails", {})
+    lines.append(gr.get("title", "Reader guardrails"))
+    for p in gr.get("points", []):
+        lines.append(f"  - {p}")
     lines.append("")
     lines.append("Family comparison:")
     for r in report.get("family_comparison", []):

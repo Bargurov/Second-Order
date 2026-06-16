@@ -243,5 +243,64 @@ class TestLiveComparison(unittest.TestCase):
             self.assertNotIn(w, residue, f"affirmative {w!r}")
 
 
+@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+class TestReviewerReadability(unittest.TestCase):
+    """I1A: the report must read as a reviewer-facing artifact, not internal."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.report = build_report(db_path=str(LIVE_DB))
+        cls.blob = json.dumps(cls.report).lower()
+        cls.text = render_text(cls.report)
+
+    def test_reviewer_summary_block(self):
+        self.assertEqual(self.report["reviewer_summary"]["title"], "What to take away first")
+        self.assertGreaterEqual(len(self.report["reviewer_summary"]["points"]), 4)
+
+    def test_reader_guide_block(self):
+        self.assertEqual(self.report["reader_guide"]["title"], "How to read the table")
+
+    def test_family_notes_block(self):
+        self.assertEqual(self.report["family_notes"]["title"], "Family-by-family notes")
+
+    def test_reader_guardrails_block(self):
+        self.assertEqual(self.report["reader_guardrails"]["title"], "Reader guardrails")
+
+    def test_plain_overlay_only_definition(self):
+        self.assertIn("a headline-overlay lens outside the stored canonical taxonomy", self.blob)
+
+    def test_plain_thin_family_definition(self):
+        self.assertIn("thin means too few rows (n <= 4)", self.blob)
+
+    def test_es_coverage_is_availability_not_success(self):
+        self.assertIn("availability, not success", self.blob)
+
+    def test_support_count_is_not_a_score(self):
+        self.assertIn("the support count is not a score or a success rate", self.blob)
+
+    def test_readout_coverage_does_not_equal_thesis_support(self):
+        self.assertIn("availability, not thesis support", self.blob)
+
+    def test_do_not_collapse_into_one_score(self):
+        self.assertIn("into one score", self.blob)
+
+    def test_per_family_note_for_each_of_six(self):
+        notes = self.report["family_notes"]["notes"]
+        for fam in ("supply_shock", "geopolitical_conflict_context", "tariff",
+                    "sanction", "ceasefire_deescalation", "monetary_policy_or_rates"):
+            self.assertIn(fam, notes)
+            self.assertTrue(notes[fam].strip())
+
+    def test_explanatory_sections_precede_table(self):
+        self.assertLess(self.text.index("What to take away first"),
+                        self.text.index("Family comparison:"))
+
+    def test_no_ranking_or_works_framing(self):
+        import re
+        for w in ["best", "strongest", "predictive", "performance", "works",
+                  "winner", "loser"]:
+            self.assertIsNone(re.search(rf"\b{w}\b", self.blob), f"banned framing {w!r}")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,13 +1,46 @@
 # Mechanism-family comparison (I1)
 
-A read-only, side-by-side comparison of the six accepted mechanism families so a
-skeptical reviewer can see, in one place, where the accepted archive has mass and
-where the denominators are too thin, overlay-only, or incomplete to say anything
-beyond a descriptive archive read. It reuses E1's family inventory (counts) and
-H1's reaction matrix (selected-case readout coverage); it computes no new score,
-no threshold beyond the established thin-family flag, no inference, and no
+A read-only, side-by-side comparison of the six accepted mechanism families,
+written for a finance reviewer: where the accepted archive has mass and where the
+denominators are too thin, overlay-only, or incomplete to say anything beyond a
+descriptive archive read. It reuses E1's family inventory (counts) and H1's
+reaction matrix (selected-case readout coverage); it computes no new score, no
+threshold beyond the established thin-family flag, no inference, and no
 significance. **No family is ranked, and none is asserted to be a stronger or
 working family** — this is a descriptive read, not a contest.
+
+## What to take away first
+
+- supply_shock is the largest inspectable bucket (n=20) with complete
+  event-study coverage, but it is still a descriptive archive read, not evidence
+  of a family effect.
+- geopolitical_conflict_context is sizable (n=11) but overlay-only — a useful
+  conflict-context lens, not part of the stored canonical taxonomy.
+- tariff is sizable (n=11) but unresolved-heavy: more cases ended unresolved than
+  supported or contradicted.
+- sanction, ceasefire_deescalation, and monetary_policy_or_rates are thin
+  (n <= 4): useful as walkthrough examples, not family-level evidence.
+- Representative cases are walkthrough material, not evidence — they illustrate a
+  family, they do not establish it.
+- Market readout coverage helps locate where a reaction can be inspected; it is
+  availability, not thesis support.
+
+## How to read the table
+
+- **n** — accepted track-record rows in that family.
+- **S / C / U** — support / contradiction / unresolved thesis-direction outcomes
+  (scoring of the named tickers).
+- **ES** — event-study availability: how many family rows have a SPY-relative
+  readout. This is availability, not success.
+- **selected cases** — the representative walkthrough examples chosen for that
+  family.
+- **status** — canonical (in the stored taxonomy), overlay-only, or thin.
+- **readout coverage** — whether the selected examples have 1d / 5d / 20d market
+  reactions available.
+
+Definitions: an *overlay-only* bucket is a headline-overlay lens outside the
+stored canonical taxonomy; *thin* means too few rows (n <= 4) to read at the
+family level.
 
 ## Denominator guardrail (live, unchanged)
 
@@ -16,19 +49,7 @@ event-study **78/94** · staged **13** (excluded). Headline overlay: single **52
 + multi **16** + unclassified **18** = **86**. Case library: **15** selected
 cases, **12** with a readout, missing **153, 154, 160**.
 
-## Reproduce (read-only)
-
-```
-python scripts/mechanism_family_comparison_report.py --db-path events.db --json
-python scripts/mechanism_family_comparison_report.py --db-path events.db
-```
-
 ## Family comparison table
-
-`S/C/U` = support / contradiction / unresolved (thesis-direction scoring). `ES`
-= event-study available / family thesis rows (descriptive coverage only).
-`selected` = representative case ids (F1/H1); `readouts` = how many of those have
-a SPY-relative readout.
 
 | family | status | n | S / C / U | ES | ES coverage | selected (readouts) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -41,22 +62,45 @@ a SPY-relative readout.
 
 (Rows are in the canonical taxonomy order, not a ranking.)
 
+## Family-by-family notes
+
+- **supply_shock** — largest accepted bucket (n=20) with complete event-study
+  coverage; it has support, contradiction, and unresolved outcomes, so it is the
+  most inspectable descriptively — still a descriptive archive read, not a
+  family-level conclusion.
+- **geopolitical_conflict_context** — sizable (n=11) but overlay-only: a useful
+  conflict-context lens, not part of the stored canonical taxonomy.
+- **tariff** — sizable (n=11) with partial event-study coverage and
+  unresolved-heavy outcomes; useful to inspect, but not a clean family-level read.
+- **sanction** — thin (n=4) and unresolved-heavy; its examples show missingness
+  and limits more than a pattern.
+- **ceasefire_deescalation** — thin (n=3); useful as de-escalation examples, not
+  a family-level conclusion.
+- **monetary_policy_or_rates** — thin (n=3) and overlay-only; informative as
+  individual cases, not a stable family read.
+
 ## Comparison notes
 
 - **Enough archive mass to inspect descriptively:** supply_shock, tariff,
-  geopolitical_conflict_context (a larger accepted-family bucket is only more
-  inspectable descriptively — a visible pattern is not inference).
+  geopolitical_conflict_context.
 - **Thin families (n <= 4):** sanction, ceasefire_deescalation,
-  monetary_policy_or_rates — low-n blocks interpretation beyond a descriptive read.
-- **Overlay-only buckets (outside the canonical taxonomy):**
-  geopolitical_conflict_context, monetary_policy_or_rates.
-- **Unresolved-heavy (unresolved >= support + contradiction):** tariff, sanction,
   monetary_policy_or_rates.
+- **Overlay-only buckets:** geopolitical_conflict_context, monetary_policy_or_rates.
+- **Unresolved-heavy:** tariff, sanction, monetary_policy_or_rates.
 - **Contradiction present:** supply_shock, geopolitical_conflict_context.
 - **Missingness blocks interpretation:** sanction (153, 154 missing readouts),
   ceasefire_deescalation (160 missing).
 - Outside the per-family rows: 16 multi-match + 18 unclassified accepted thesis
   rows remain, not assigned to a single family.
+
+## Reader guardrails
+
+- Do not rank one family above another; this is a descriptive read, not a contest.
+- The support count is not a score or a success rate.
+- Event-study coverage is availability, not success; it is not evidence that a
+  thesis held.
+- Do not collapse outcome counts and market readouts into one score.
+- The closed Phase 1 / Phase 2 FDR pools remain separate from this descriptive read.
 
 ## Lens discipline
 
@@ -77,3 +121,10 @@ a SPY-relative readout.
 - Not a recommendation, forecast, or trading signal.
 - Denominators unchanged: 94 accepted coverage / 86 accepted track-record;
   staged candidates (13) are excluded.
+
+## Reproduce (read-only)
+
+```
+python scripts/mechanism_family_comparison_report.py --db-path events.db --json
+python scripts/mechanism_family_comparison_report.py --db-path events.db
+```
