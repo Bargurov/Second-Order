@@ -44,8 +44,10 @@ if str(ROOT) not in sys.path:
 
 from scripts.event_date_quality_distribution_report import (  # noqa: E402
     FAMILY_ORDER,
+    LABEL_DISPLAY_MAP,
     LABELS,
     LABEL_DEFINITIONS,
+    POSTURE_DEFS,
     build_report,
     format_count_pct,
     main,
@@ -464,6 +466,187 @@ class TestLiveReport(unittest.TestCase):
         build_report(db_path=str(LIVE_DB))
         after = hashlib.sha256(LIVE_DB.read_bytes()).hexdigest()
         self.assertEqual(before, after)
+
+
+# --------------------------------------------------------------------------- #
+# Reviewer legibility constants (J1B) -- no DB needed                          #
+# --------------------------------------------------------------------------- #
+class TestReviewerLegibilityConstants(unittest.TestCase):
+    EXPECTED_DISPLAY = {
+        "clean_discrete_anchor": "clear anchor",
+        "partial_anticipation": "partly anticipated",
+        "scheduled_or_weak_anchor": "scheduled / weak anchor",
+        "continuation_or_thread_sibling": "thread continuation",
+        "duplicate_or_deferred": "duplicate / deferred reaction",
+        "manual_review_needed": "needs human anchor review",
+    }
+
+    def test_label_display_map_covers_all_raw_labels(self):
+        self.assertEqual(set(LABEL_DISPLAY_MAP), set(LABELS))
+        for raw, plain in self.EXPECTED_DISPLAY.items():
+            self.assertEqual(LABEL_DISPLAY_MAP[raw], plain, raw)
+
+    def test_raw_labels_preserved_not_replaced(self):
+        # the display map is additive; raw labels remain the data-model keys
+        self.assertEqual(tuple(LABELS), tuple(LABEL_DEFINITIONS))
+
+    def test_posture_defs_partition_labels_canonically(self):
+        # three postures, a complete + disjoint partition of the six labels,
+        # each posture's labels in canonical order (no ranking, no sorting)
+        names = [p[0] for p in POSTURE_DEFS]
+        self.assertEqual(names, [
+            "Clearer anchor",
+            "Caveated but inspectable",
+            "Needs caution before interpretation",
+        ])
+        seen = []
+        for _, labels in POSTURE_DEFS:
+            seen.extend(labels)
+        self.assertEqual(sorted(seen), sorted(LABELS))      # complete
+        self.assertEqual(len(seen), len(set(seen)))         # disjoint
+        # each group's labels appear in canonical LABELS order
+        for _, labels in POSTURE_DEFS:
+            idx = [LABELS.index(x) for x in labels]
+            self.assertEqual(idx, sorted(idx))
+
+
+# --------------------------------------------------------------------------- #
+# Reviewer legibility -- live wiring (J1B)                                     #
+# --------------------------------------------------------------------------- #
+@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+class TestReviewerLegibilityLive(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.report = build_report(db_path=str(LIVE_DB))
+        cls.text = render_text(cls.report)
+        cls.headline = " ".join(cls.report["reviewer_headline"]).lower()
+
+    def test_text_opens_with_takeaway_before_disclaimers(self):
+        t = self.text
+        i_take = t.find("What a reviewer should take away first")
+        self.assertGreaterEqual(i_take, 0)
+        # the takeaway leads; denominators reconciliation comes after it
+        self.assertLess(i_take, t.find("Denominators"))
+        # and it is near the very top (after the title only)
+        self.assertLess(i_take, 200)
+
+    def test_headline_leads_with_manual_review_fact(self):
+        self.assertIn("57 of 86", self.headline)
+        self.assertIn("66.3%", self.headline)
+
+    def test_headline_has_clean_anchor_minority_fact(self):
+        self.assertIn("5 of 86", self.headline)
+        self.assertIn("5.8%", self.headline)
+
+    def test_headline_frames_manual_review_as_anchor_confidence(self):
+        self.assertIn("manual_review_needed", self.headline)
+        self.assertIn("human", self.headline)
+        self.assertTrue("anchor" in self.headline)
+        # honesty floor, not overclaim
+        self.assertNotIn("proof", self.headline)
+
+    def test_manual_review_explanation_negates_false_failed_bad(self):
+        e = self.report["manual_review_explanation"].lower()
+        self.assertIn("does not mean", e)
+        self.assertIn("false", e)
+        self.assertIn("fail", e)
+        self.assertIn("bad", e)
+        self.assertIn("human", e)
+        # still useful as evidence / case
+        self.assertTrue("archive" in e or "representative" in e)
+
+    def test_report_carries_label_display_map(self):
+        self.assertEqual(set(self.report["label_display_map"]), set(LABELS))
+
+    def test_posture_groups_descriptive_composition(self):
+        pg = self.report["posture_groups"]
+        self.assertEqual(pg["denominator"], 86)
+        groups = {g["posture"]: g for g in pg["groups"]}
+        self.assertEqual(groups["Clearer anchor"]["count"], 5)
+        self.assertEqual(groups["Clearer anchor"]["percent"], 5.8)
+        self.assertEqual(groups["Caveated but inspectable"]["count"], 16)
+        self.assertEqual(groups["Caveated but inspectable"]["percent"], 18.6)
+        self.assertEqual(
+            groups["Needs caution before interpretation"]["count"], 65)
+        self.assertEqual(
+            groups["Needs caution before interpretation"]["percent"], 75.6)
+        # groups partition the 86 track-record rows exactly
+        self.assertEqual(sum(g["count"] for g in pg["groups"]), 86)
+
+    def test_posture_group_counts_derived_from_track_record(self):
+        # not hardcoded: each posture count == sum of its labels' track counts
+        track = {d["subset"]: d for d in self.report["distributions"]}[
+            "accepted_track_record"]["counts"]
+        pg = {g["posture"]: g for g in self.report["posture_groups"]["groups"]}
+        for name, labels in POSTURE_DEFS:
+            self.assertEqual(pg[name]["count"], sum(track[l] for l in labels), name)
+
+    def test_posture_is_not_a_score_or_rank(self):
+        g = self.report["posture_groups"]["guardrail"].lower()
+        self.assertIn("not a score", g)
+        self.assertIn("rank", g)
+        # postures are not ordered by a quality metric / no numeric grade key
+        for grp in self.report["posture_groups"]["groups"]:
+            for k in grp:
+                self.assertNotIn("score", k.lower())
+
+    def test_vocabulary_glossary_glosses_internal_terms(self):
+        gloss = {g["term"].lower(): g["plain"].lower()
+                 for g in self.report["vocabulary_glossary"]}
+        joined = " ".join(f"{k} {v}" for k, v in gloss.items())
+        for term in ("event-study available", "representative case",
+                     "family cross-section", "single-match", "curated"):
+            self.assertIn(term, joined)
+        # the key honesty gloss survives
+        es = next(v for k, v in gloss.items() if "event-study" in k)
+        self.assertIn("not thesis support", es)
+
+    def test_e1_h1_jargon_not_foregrounded(self):
+        # no E1/H1 internal artifact names in the reviewer headline
+        self.assertNotIn("e1", self.headline)
+        self.assertNotIn("h1", self.headline)
+        # if they appear in the text at all, only after the takeaway
+        t = self.text
+        i_take = t.find("What a reviewer should take away first")
+        for token in ("(E1)", "(H1)"):
+            j = t.find(token)
+            if j >= 0:
+                self.assertGreater(j, i_take, token)
+
+    def test_legibility_did_not_change_data(self):
+        dists = {d["subset"]: d for d in self.report["distributions"]}
+        self.assertEqual(dists["accepted_track_record"]["counts"][
+            "manual_review_needed"], 57)
+        self.assertEqual(dists["accepted_track_record"]["counts"][
+            "clean_discrete_anchor"], 5)
+        self.assertEqual(sum(dists["archive"]["counts"].values()), 108)
+        ids = {c["event_id"] for c in self.report["representative_cases"]}
+        self.assertEqual(ids, REPRESENTATIVE_IDS)
+        self.assertEqual(self.report["missing_readout_ids"], MISSING_READOUT_IDS)
+
+    def test_no_banned_framing_j1b(self):
+        blob = json.dumps(self.report).lower() + "\n" + self.text.lower()
+        hard = ["proof", "proven", "statistically significant",
+                "validated-as-success", "alpha", "strongest", "predictive",
+                "performance", "winner", "loser", "worst"]
+        for w in hard:
+            self.assertNotIn(w, blob, f"banned term {w!r}")
+        for w in ["best", "works", "buy", "sell"]:
+            self.assertIsNone(re.search(rf"\b{w}\b", blob), f"banned word {w!r}")
+        # negation-sensitive: allowed only inside an explicit negated non-claim
+        residue = blob
+        for neg in (
+            "not a recommendation, forecast, or trading signal",
+            "does not mean the event is false, the thesis failed, "
+            "or the data is bad",
+            "not bad data",
+            "not a failed thesis",
+            "not evidence that an anchor type is better",
+        ):
+            residue = residue.replace(neg, "")
+        for w in ("forecast", "recommendation", "trading signal",
+                  "failed", "bad data"):
+            self.assertNotIn(w, residue, f"affirmative {w!r}")
 
 
 if __name__ == "__main__":

@@ -92,6 +92,29 @@ LABEL_DEFINITIONS: dict[str, dict[str, str]] = {
     for label in LABELS
 }
 
+# Plain-English reader names for the raw labels. Display only -- the raw labels
+# remain the data-model keys everywhere (counts, percentages, per-case rows).
+LABEL_DISPLAY_MAP: dict[str, str] = {
+    "clean_discrete_anchor": "clear anchor",
+    "partial_anticipation": "partly anticipated",
+    "scheduled_or_weak_anchor": "scheduled / weak anchor",
+    "continuation_or_thread_sibling": "thread continuation",
+    "duplicate_or_deferred": "duplicate / deferred reaction",
+    "manual_review_needed": "needs human anchor review",
+}
+
+# Reviewer-posture grouping: a fixed, descriptive reading aid that partitions the
+# six labels into plain interpretation postures. It is NOT a score, NOT a rank,
+# and nothing is sorted by it; label order inside each posture stays canonical.
+POSTURE_DEFS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Clearer anchor", ("clean_discrete_anchor",)),
+    ("Caveated but inspectable",
+     ("partial_anticipation", "scheduled_or_weak_anchor")),
+    ("Needs caution before interpretation",
+     ("continuation_or_thread_sibling", "duplicate_or_deferred",
+      "manual_review_needed")),
+)
+
 _RISK_GUARDRAIL = (
     "anticipation_risk is a per-label research caution reused from the "
     "event-date quality report; this report does not sum it, weight it, or "
@@ -101,6 +124,40 @@ _RISK_GUARDRAIL = (
 _PCT_GUARDRAIL = (
     "Percentages are descriptive composition shares within each denominator. "
     "They are not scores, ranks, or evidence of stronger anchor quality."
+)
+
+_POSTURE_GUARDRAIL = (
+    "Reviewer posture is a reading aid, not a score and not a rank; no case, "
+    "family, or subset is sorted or ranked by it. It only groups the same "
+    "labels into plain reading postures so the eye lands faster."
+)
+
+_MANUAL_REVIEW_EXPLANATION = (
+    # negated non-claim kept contiguous on one line so a file-grep sees the "not"
+    "manual_review_needed does not mean the event is false, the thesis failed, or the data is bad. "  # noqa: E501
+    "It means the stored fields and headline are not enough for the system to "
+    "treat the date as a clean anchor without human review. The row can still "
+    "serve as archive evidence or a representative walkthrough case; only the "
+    "market window around it should be read cautiously."
+)
+
+# Plain-English glosses for internal vocabulary a finance reader meets below.
+VOCABULARY_GLOSSARY: tuple[dict[str, str], ...] = (
+    {"term": "event-study available",
+     "plain": "a price window can be computed around the date; it is not "
+              "thesis support."},
+    {"term": "representative case",
+     "plain": "a walkthrough example chosen to illustrate a family; it is not "
+              "evidence and not a claim."},
+    {"term": "family cross-section",
+     "plain": "a mechanism-family lens for side-by-side comparison; it is not "
+              "a causal model."},
+    {"term": "single-match / multi-match / unclassified",
+     "plain": "headline-overlay taxonomy coverage categories (one family, "
+              "several families, or none); they are not quality grades."},
+    {"term": "curated / accepted / staged",
+     "plain": "corpus-status buckets marking where a row sits in the pipeline; "
+              "they are not market outcomes."},
 )
 
 READER_TAKEAWAYS: tuple[str, ...] = (
@@ -337,7 +394,60 @@ def build_report(*, db_path: str | None = None) -> dict[str, Any]:
         "accepted_total": single_total + multi + unclassified,
     }
 
+    # -- reviewer-facing legibility layer (descriptive only, no new metric) -- #
+    track_dist = next(
+        d for d in distributions if d["subset"] == "accepted_track_record")
+    track_counts = track_dist["counts"]
+    track_denom = denominators["accepted_track_record"]
+    manual_n = track_counts["manual_review_needed"]
+    clean_n = track_counts["clean_discrete_anchor"]
+
+    reviewer_headline = [
+        f"{manual_n} of {track_denom} accepted track-record rows "
+        f"({percent(manual_n, track_denom):.1f}%) are labelled "
+        f"manual_review_needed: the row is kept, but its event-date anchor "
+        f"should be checked by a human before anyone leans on the market "
+        f"window around it.",
+        # negated non-claim kept contiguous on one line for a clean file-grep
+        "That is an anchor-confidence warning, not a failed thesis and not bad data -- "  # noqa: E501
+        "the stored fields and headline are simply not enough to treat the "
+        "date as a clean anchor without review.",
+        f"Only {clean_n} of {track_denom} accepted track-record rows "
+        f"({percent(clean_n, track_denom):.1f}%) are clean discrete anchors; "
+        f"the rest carry an anticipation, scheduling, duplicate, or review "
+        f"caveat.",
+        "Read this as the archive being more honest, not weaker: it marks "
+        "where the date is solid enough to inspect a window and where "
+        "interpretation must stay cautious.",
+    ]
+
+    posture_groups = {
+        "denominator": track_denom,
+        "scope": "accepted track-record rows",
+        "guardrail": _POSTURE_GUARDRAIL,
+        "groups": [
+            {
+                "posture": name,
+                "labels": list(labels),
+                "display": [LABEL_DISPLAY_MAP[l] for l in labels],
+                "count": sum(track_counts[l] for l in labels),
+                "percent": percent(sum(track_counts[l] for l in labels),
+                                   track_denom),
+                "members": [
+                    {"label": l, "display": LABEL_DISPLAY_MAP[l],
+                     "count": track_counts[l]} for l in labels
+                ],
+            }
+            for name, labels in POSTURE_DEFS
+        ],
+    }
+
     return {
+        "reviewer_headline": reviewer_headline,
+        "manual_review_explanation": _MANUAL_REVIEW_EXPLANATION,
+        "label_display_map": dict(LABEL_DISPLAY_MAP),
+        "posture_groups": posture_groups,
+        "vocabulary_glossary": [dict(g) for g in VOCABULARY_GLOSSARY],
         "purpose": (
             "Read-only event-date quality distribution: how reliable the event "
             "anchors are across the archive, the accepted corpus, the "
@@ -389,8 +499,39 @@ def _counts_pct_row(counts: dict[str, int], pcts: dict[str, float]) -> str:
 def render_text(report: dict[str, Any]) -> str:
     out: list[str] = []
     out.append("Event-date quality distribution (J1)")
-    out.append("=" * 52)
-    out.append(report["purpose"])
+    out.append("")
+
+    # -- reviewer takeaway first, before any methodology / denominators ------ #
+    out.append("What a reviewer should take away first")
+    out.append("-" * 38)
+    for line in report["reviewer_headline"]:
+        out.append(f"  - {line}")
+    out.append("")
+    out.append("What `manual_review_needed` means")
+    out.append(f"  {report['manual_review_explanation']}")
+    out.append("")
+
+    out.append("Plain-English label map (display names; raw labels unchanged):")
+    for raw in LABELS:
+        out.append(f"  {raw:<32} = {report['label_display_map'][raw]}")
+    out.append("")
+
+    pg = report["posture_groups"]
+    out.append(f"Reviewer posture, not a score "
+               f"(over {pg['denominator']} accepted track-record rows):")
+    for g in pg["groups"]:
+        breakdown = ", ".join(
+            f"{m['display']} {m['count']}" for m in g["members"])
+        out.append(
+            f"  {g['posture']}: {g['count']} ({g['percent']:.1f}%)  "
+            f"[{breakdown}]"
+        )
+    out.append(f"  Note: {pg['guardrail']}")
+    out.append("")
+
+    out.append("Project vocabulary used below:")
+    for g in report["vocabulary_glossary"]:
+        out.append(f"  {g['term']} -- {g['plain']}")
     out.append("")
 
     d = report["denominators"]
@@ -477,7 +618,9 @@ def render_text(report: dict[str, Any]) -> str:
     for t in report["non_claims"]:
         out.append(f"  - {t}")
     out.append("")
-    out.append(f"Reproduce: {report['reproduce_command']}")
+    out.append("About this report (source / method):")
+    out.append(f"  {report['purpose']}")
+    out.append(f"  Reproduce: {report['reproduce_command']}")
     return "\n".join(out) + "\n"
 
 

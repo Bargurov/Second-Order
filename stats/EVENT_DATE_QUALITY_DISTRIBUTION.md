@@ -1,24 +1,85 @@
 # Event-date quality distribution (J1)
 
-A read-only honesty layer that shows **how reliable the event-date anchors are**
-across the archive, the accepted corpus, the event-study-available subset, and
-the 15-case representative library. When we read a market window around an
-event, this report says how trustworthy the date the window is anchored on
-actually is.
+How reliable are the event-date anchors that this research reads market windows
+around? This is a read-only honesty layer over the existing event-date quality
+labels. It adds **no new score, no ranking, and no inference** — anchor quality
+is tabulated, never aggregated into a quality number.
 
-It reuses the existing event-date quality labels and their definitions
-(`scripts/event_date_quality_report.py`), the event-study coverage report, the
-representative case matrix (H1), and the headline family overlay (E1). It
-computes **no new score, no ranking, no ordering by anchor quality, no
-inference, no p-value, and no FDR**. Anchor quality is an inherent per-event
-gradient; this
-report tabulates it and never aggregates it into a per-subset or per-family
-quality number.
+## What a reviewer should take away first
+
+- **57 of 86 accepted track-record rows (66.3%) are labelled
+  `manual_review_needed`:** the row is kept, but its event-date anchor should be
+  checked by a human before anyone leans on the market window around it.
+- That is an **anchor-confidence warning, not a failed thesis and not bad
+  data** — the stored fields and headline are simply not enough to treat the
+  date as a clean anchor without review.
+- Only **5 of 86 accepted track-record rows (5.8%) are clean discrete
+  anchors**; the rest carry an anticipation, scheduling, duplicate, or review
+  caveat.
+- Read this as the archive being **more honest, not weaker**: it marks where the
+  date is solid enough to inspect a window and where interpretation must stay
+  cautious.
+
+### What `manual_review_needed` means
+
+`manual_review_needed` does not mean the event is false, the thesis failed, or
+the data is bad. It means the stored fields and headline are not enough for the
+system to treat the date as a clean anchor without human review. The row can
+still serve as archive evidence or a representative walkthrough case; only the
+market window around it should be read cautiously.
+
+## Plain-English label map
+
+The raw labels are machine identifiers and stay unchanged in the data model.
+These reader-facing names and the `risk` column are a display aid only; the full
+definitions are reused verbatim from the event-date quality report and listed in
+the **Event-date quality labels** note further down.
+
+| raw label | reads as | risk |
+| --- | --- | --- |
+| clean_discrete_anchor | clear anchor | low |
+| partial_anticipation | partly anticipated | elevated |
+| scheduled_or_weak_anchor | scheduled / weak anchor | high |
+| continuation_or_thread_sibling | thread continuation | thread_dependent |
+| duplicate_or_deferred | duplicate / deferred reaction | deferred |
+| manual_review_needed | needs human anchor review | unknown |
+
+## Reviewer posture, not a score
+
+A plain reading aid that groups the same six labels into interpretation postures,
+over the **86 accepted track-record rows**. **It is not a score and not a rank;
+no case, family, or subset is sorted or ranked by it** — it only groups the
+labels so the eye lands faster.
+
+| posture | rows | share | labels (count) |
+| --- | --- | --- | --- |
+| Clearer anchor | 5 | 5.8% | clear anchor 5 |
+| Caveated but inspectable | 16 | 18.6% | partly anticipated 8, scheduled / weak anchor 8 |
+| Needs caution before interpretation | 65 | 75.6% | thread continuation 0, duplicate / deferred reaction 8, needs human anchor review 57 |
+
+Descriptive composition only: 5 + 16 + 65 = 86.
+
+## Project vocabulary used below
+
+- **event-study available** — a price window can be computed around the date; it
+  is not thesis support.
+- **representative case** — a walkthrough example chosen to illustrate a family;
+  it is not evidence and not a claim.
+- **family cross-section** — a mechanism-family lens for side-by-side
+  comparison; it is not a causal model.
+- **single-match / multi-match / unclassified** — headline-overlay taxonomy
+  coverage categories (one family, several families, or none); they are not
+  quality grades.
+- **curated / accepted / staged** — corpus-status buckets marking where a row
+  sits in the pipeline; they are not market outcomes.
+
+---
 
 ## Denominators (live, unchanged)
 
 archive **180** · accepted coverage **94** · accepted track-record **86** ·
-event-study **78/94** · staged **13** (excluded).
+event-study **78/94** · staged **13** (excluded). The event-study-available
+subset is **70 accepted + 8 curated** rows.
 
 ## Event-date quality labels
 
@@ -157,7 +218,14 @@ family and are outside the per-family rows.
   read; nothing here is merged into them.
 - Not a recommendation, forecast, or trading signal.
 
-## Reproduce (read-only)
+## About this report (source / method)
+
+Read-only honesty layer. It reuses the existing event-date quality labels and
+definitions (`scripts/event_date_quality_report.py`), the event-study coverage
+report, the representative case matrix (H1), and the headline family overlay
+(E1). It computes no new score, no ranking, no inference, no p-value, and no FDR.
+
+### Reproduce (read-only)
 
 ```
 python scripts/event_date_quality_distribution_report.py --db-path events.db --json
