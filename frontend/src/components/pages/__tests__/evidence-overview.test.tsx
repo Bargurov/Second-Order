@@ -527,6 +527,72 @@ describe("EvidenceOverview — representative case library (F3)", () => {
   });
 });
 
+describe("EvidenceOverview — effective independent evidence (K3B)", () => {
+  it("renders the effective independent evidence card", () => {
+    expect(visible).toContain("Effective independent evidence");
+  });
+
+  it("shows the 86 nominal accepted track-record rows", () => {
+    expect(visible).toContain("86");
+    expect(visible.toLowerCase()).toContain("accepted track-record rows");
+  });
+
+  it("shows 5 descriptive market-story clusters", () => {
+    expect(visible).toContain("5");
+    expect(visible.toLowerCase()).toContain("descriptive market-story clusters");
+  });
+
+  it("shows the largest cluster of 81 rows", () => {
+    expect(visible).toContain("81");
+    expect(visible.toLowerCase()).toContain("largest cluster");
+  });
+
+  it("shows 14 / 15 representative cases in the largest cluster", () => {
+    expect(visible).toContain("14 / 15");
+    expect(visible.toLowerCase()).toContain("representative cases");
+  });
+
+  it("explains clustered evidence, not 86 separate market stories", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("clustered evidence");
+    expect(lc).toContain("not 86 separate market stories");
+  });
+
+  it("references the K2 report path", () => {
+    expect(visible).toContain("stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md");
+  });
+
+  it("carries the descriptive independence-caution non-claim", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("descriptive independence-caution");
+    expect(lc).toContain("not an inferential effective sample size");
+    expect(lc).toContain("score");
+    expect(lc).toContain("rank");
+    expect(lc).toContain("p-value");
+    expect(lc).toContain("fdr pool");
+    // House copy rule (matching the rest of the page): convey the trading /
+    // prediction / recommendation non-claim WITHOUT the banned standalone
+    // words "signal" / "forecast".
+    expect(lc).toContain("not a trading, prediction, or recommendation surface");
+  });
+
+  it("introduces no banned affirmative framing in the new card", () => {
+    const lc = visible.toLowerCase();
+    for (const w of [
+      "proof", "proven", "statistically significant", "trading signal",
+      "alpha", "forecast", "predictive", "performance",
+    ]) {
+      expect(lc, `banned word "${w}"`).not.toMatch(new RegExp(`\\b${w}\\b`));
+    }
+  });
+
+  it("keeps the denominator ledger and existing cards rendering", () => {
+    expect(visible).toContain("Canonical denominators");
+    expect(visible).toContain("Mechanism-family evidence inventory");
+    expect(visible).toContain("Representative case library");
+  });
+});
+
 describe("EvidenceOverview — navigation (T5A)", () => {
   it("appears under the Research group in the sidebar", () => {
     const nav = renderToStaticMarkup(<Sidebar current="market" onNavigate={() => {}} />);

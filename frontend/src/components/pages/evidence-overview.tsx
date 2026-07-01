@@ -13,6 +13,7 @@ import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
 import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
 import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "@/lib/representative-case-library";
+import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "@/lib/effective-independent-evidence";
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -143,6 +144,54 @@ export function EvidenceOverview() {
             Staged candidates sit outside the accepted and FDR pools and never enter accepted
             denominators or claims. Event-study availability is a coverage denominator, not a
             significance claim; representative cases are illustrative, not evidence.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* K3B — surface of the read-only K2 effective-independent-evidence
+          report. Static snapshot from EFFECTIVE_INDEPENDENT_EVIDENCE (no browser
+          recompute, no network); figures trace to
+          stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md @ EIE.sourceCommit. Placed
+          directly under the denominator ledger so the independence caution lands
+          where the 86 accepted track-record rows are introduced. Descriptive
+          independence-caution layer, not an inferential effective sample size. */}
+      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Effective independent evidence · independence caution</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Effective independent evidence
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            {`The ${EIE.acceptedTrackRecordRows} accepted track-record rows group into ` +
+              `${EIE.clusterCount} descriptive market-story clusters under transparent ` +
+              `same-date / same-primary-ticker-window / duplicate-link rules. The largest ` +
+              `cluster holds ${EIE.largestClusterRows} rows and ` +
+              `${EIE.representativeCasesInLargest} / ${EIE.representativeCasesTotal} representative cases.`}
+          </p>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] tabular-nums text-on-surface-variant/80">
+            <span>accepted track-record rows <span className="text-on-surface">{EIE.acceptedTrackRecordRows}</span></span>
+            <span>market-story clusters <span className="text-on-surface">{EIE.clusterCount}</span></span>
+            <span>largest cluster <span className="text-on-surface">{EIE.largestClusterRows} rows</span></span>
+            <span>representative cases in largest <span className="text-on-surface">{EIE.representativeCasesInLargest} / {EIE.representativeCasesTotal}</span></span>
+          </div>
+
+          <p className="text-on-surface/80">
+            {`Read the support / contradiction / unresolved counts as clustered evidence — a ` +
+              `small number of market tapes observed many ways — not ` +
+              `${EIE.acceptedTrackRecordRows} separate market stories.`}
+          </p>
+
+          <p className="text-[11.5px] italic leading-relaxed text-on-surface-variant/75">
+            Descriptive independence-caution only — not an inferential effective sample size,
+            score, rank, p-value, or FDR pool, and not a trading, prediction, or recommendation
+            surface.
+          </p>
+
+          <p className="font-mono text-[10px] leading-relaxed text-on-surface-variant/55">
+            {`Surface of the read-only K2 report · source ${EIE.sourceDoc} @ ${EIE.sourceCommit} · ${EIE.reproCommand}`}
           </p>
         </CardContent>
       </Card>
