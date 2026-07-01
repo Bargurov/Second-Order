@@ -148,7 +148,13 @@ def get_all_snapshots() -> list[MarketSnapshot]:
 # ---------------------------------------------------------------------------
 
 def _provider_name() -> str:
-    p = get_provider()
+    try:
+        p = get_provider()
+    except Exception:
+        return "unknown"
+    # Unwrap the no-provider-fetch proxy so naming reflects the real
+    # provider even inside a blocked (GET-handler) context.
+    p = getattr(p, "_wrapped", p)
     if isinstance(p, PolygonProvider):
         return "polygon"
     cls = type(p).__name__

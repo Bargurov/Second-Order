@@ -148,7 +148,9 @@ class TestNoPaidSmokeRunner(_Base):
         after = _snapshot_db(self._tmp)
 
         expected_total = (
-            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
+            len(no_paid_smoke.ENDPOINTS)
+            + len(no_paid_smoke.SCRIPTS)
+            + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
         )
         failures = [r for r in results if not r.ok and not r.skipped]
         self.assertEqual(failures, [])
@@ -159,7 +161,9 @@ class TestNoPaidSmokeRunner(_Base):
         results = no_paid_smoke.run_smoke(client=client)
         payload = no_paid_smoke.summarize(results)
         expected_total = (
-            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
+            len(no_paid_smoke.ENDPOINTS)
+            + len(no_paid_smoke.SCRIPTS)
+            + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
         )
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["summary"]["failed"], 0)
@@ -195,7 +199,9 @@ class TestNoPaidSmokeRunner(_Base):
             guard_provider_seams=False,
         )
         expected_total = (
-            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS)
+            len(no_paid_smoke.ENDPOINTS)
+            + len(no_paid_smoke.SCRIPTS)
+            + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
         )
         self.assertEqual(len(results), expected_total)
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])
@@ -1292,11 +1298,13 @@ class TestNoPaidSmokeScriptRunner(_Base):
         if script_indices and endpoint_indices:
             self.assertGreater(min(script_indices), max(endpoint_indices))
 
-    def test_total_results_equals_endpoints_plus_scripts(self) -> None:
+    def test_total_results_equals_endpoints_plus_scripts_plus_boundary(self) -> None:
         results = no_paid_smoke.run_smoke(client=client)
         self.assertEqual(
             len(results),
-            len(no_paid_smoke.ENDPOINTS) + len(no_paid_smoke.SCRIPTS),
+            len(no_paid_smoke.ENDPOINTS)
+            + len(no_paid_smoke.SCRIPTS)
+            + len(no_paid_smoke._GET_BOUNDARY_ROUTES),
         )
 
     def test_failed_script_main_is_reported_as_failed_result(self) -> None:
@@ -3020,3 +3028,85 @@ class TestSkipMissingFixtureEndToEnd(_Base):
         ]
         self.assertEqual(len(manual), 1)
         self.assertFalse(manual[0].skipped)
+
+
+class TestMarketGetBoundaryCheck(unittest.TestCase):
+    """K1B: the smoke must cover the previously excluded market GET routes
+    with a recording-provider boundary check that fails on any provider
+    fetch or price-cache write reached from a GET handler."""
+
+    def test_boundary_route_inventory_covers_k0_routes(self) -> None:
+        paths = [path for _name, path in no_paid_smoke._GET_BOUNDARY_ROUTES]
+        for required in (
+            "/market-context",
+            "/snapshots",
+            "/snapshots?refresh=true",
+            "/ticker/AAPL/chart?event_date=2026-04-15",
+            "/ticker/AAPL/info",
+        ):
+            self.assertIn(required, paths)
+
+    def test_boundary_check_passes_with_the_boundary_in_place(self) -> None:
+        results = no_paid_smoke.run_market_get_boundary_check(client=client)
+        self.assertEqual(
+            len(results), len(no_paid_smoke._GET_BOUNDARY_ROUTES),
+        )
+        for r in results:
+            self.assertTrue(r.ok, f"{r.path}: {r.error}")
+
+    def test_boundary_check_fails_when_provider_is_reached(self) -> None:
+        # Simulate a regression that removes the GET guard: the recording
+        # provider becomes reachable again and the check must fail loudly.
+        import contextlib
+
+        import routes.market as routes_market
+
+        saved = routes_market.no_provider_fetch
+        routes_market.no_provider_fetch = contextlib.nullcontext
+        try:
+            results = no_paid_smoke.run_market_get_boundary_check(
+                client=client,
+            )
+        finally:
+            routes_market.no_provider_fetch = saved
+        self.assertTrue(
+            any(
+                (not r.ok) and r.error and "provider fetch" in r.error
+                for r in results
+            ),
+            "an unguarded GET reaching the provider must fail the check",
+        )
+
+    def test_boundary_check_fails_on_price_cache_write(self) -> None:
+        # A client whose GET handler writes to the price cache must trip
+        # the write detector even when no provider fetch happens.
+        import price_cache as price_cache_module
+
+        class _WritingFakeClient:
+            def get(self, path):
+                price_cache_module._write_rows("FAKE", None, True)
+
+                class _Resp:
+                    status_code = 200
+
+                return _Resp()
+
+        results = no_paid_smoke.run_market_get_boundary_check(
+            client=_WritingFakeClient(),
+        )
+        self.assertTrue(
+            any(
+                (not r.ok) and r.error and "price-cache write" in r.error
+                for r in results
+            ),
+            "a GET-time price-cache write must fail the check",
+        )
+
+    def test_run_smoke_includes_boundary_rows(self) -> None:
+        results = no_paid_smoke.run_smoke(client=client)
+        boundary_rows = [
+            r for r in results if r.name.startswith("GET boundary")
+        ]
+        self.assertEqual(
+            len(boundary_rows), len(no_paid_smoke._GET_BOUNDARY_ROUTES),
+        )

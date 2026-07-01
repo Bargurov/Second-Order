@@ -2740,7 +2740,11 @@ def ticker_info(symbol: str) -> dict:
     if cached is not None:
         return cached
 
-    from market_data import get_provider
+    from market_data import get_provider, provider_fetch_blocked
     result = get_provider().fetch_info(symbol)
+    if provider_fetch_blocked():
+        # A blocked (GET-boundary) fetch returns an empty stand-in; do not
+        # let it poison the shared 10-minute ticker cache for real callers.
+        return result
     _cache_set(key, result)
     return result

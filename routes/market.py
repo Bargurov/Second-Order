@@ -5,10 +5,18 @@ from typing import Optional
 from fastapi import APIRouter, Query
 
 from market_check import macro_snapshot, ticker_chart, ticker_info, _clean_fetch_symbol
+from market_data import no_provider_fetch
 
 import api as _api
 
 router = APIRouter()
+
+# GET boundary rule: every GET handler in this router wraps its body in
+# ``no_provider_fetch()``.  GET routes serve locally cached data (or explicit
+# unavailable/stale metadata) and must never trigger a provider-backed
+# market-data fetch or a price-cache write — structurally, not by config.
+# Provider-backed refresh stays on non-GET surfaces (the snapshot warmer,
+# admin/refresh routes, POST pipelines).
 
 
 @router.post("/backtest/batch")
@@ -44,7 +52,8 @@ def macro(
         description="Optional YYYY-MM-DD date for anchored macro context",
     ),
 ):
-    return _api._sanitize_floats(macro_snapshot(event_date=event_date))
+    with no_provider_fetch():
+        return _api._sanitize_floats(macro_snapshot(event_date=event_date))
 
 
 @router.get("/ticker/{symbol}/chart")
@@ -55,7 +64,8 @@ def get_ticker_chart(
     symbol = _clean_fetch_symbol(symbol)
     if not symbol:
         return []
-    return _api._sanitize_floats(ticker_chart(symbol, event_date))
+    with no_provider_fetch():
+        return _api._sanitize_floats(ticker_chart(symbol, event_date))
 
 
 @router.get("/ticker/{symbol}/info")
@@ -63,7 +73,8 @@ def get_ticker_info(symbol: str):
     symbol = _clean_fetch_symbol(symbol)
     if not symbol:
         return {}
-    return _api._sanitize_floats(ticker_info(symbol))
+    with no_provider_fetch():
+        return _api._sanitize_floats(ticker_info(symbol))
 
 
 @router.get("/ticker/{symbol}/headlines")
@@ -71,7 +82,8 @@ def get_ticker_headlines(symbol: str, limit: int = 5):
     symbol = _clean_fetch_symbol(symbol)
     if not symbol:
         return []
-    info = ticker_info(symbol)
+    with no_provider_fetch():
+        info = ticker_info(symbol)
     name = info.get("name") or ""
     sym_upper = symbol.upper()
     terms = [sym_upper]
@@ -107,37 +119,39 @@ def get_ticker_headlines(symbol: str, limit: int = 5):
 @router.get("/stress")
 def stress():
     from sector_uncertainty import compute_sector_uncertainty
-    result = dict(_api.compute_stress_regime())
-    # Track which enrichment blocks failed so the frontend can surface an
-    # explicit "degraded" state instead of rendering the fallback as fact.
-    degraded_fields: list[str] = []
-    try:
-        result["sector_uncertainty"] = compute_sector_uncertainty()
-    except Exception:
-        _api._log.warning("stress: sector_uncertainty failed", exc_info=True)
-        result["sector_uncertainty"] = {"available": False}
-        degraded_fields.append("sector_uncertainty")
-    try:
-        result["news_uncertainty"] = _api.compute_news_uncertainty()
-    except Exception:
-        _api._log.warning("stress: news_uncertainty failed", exc_info=True)
-        result["news_uncertainty"] = {"uncertainty_scope": "global", "sector_uncertainty": [], "lead_sector": None}
-        degraded_fields.append("news_uncertainty")
-    result["data_quality"] = "degraded" if degraded_fields else "ok"
-    result["degraded_fields"] = degraded_fields
-    # _sanitize_floats is a last-line scrub for NaN/inf in the raw block —
-    # it operates on the same dict that already carries data_quality /
-    # degraded_fields, so those markers pass through unchanged.
-    return _api._sanitize_floats(result)
+    with no_provider_fetch():
+        result = dict(_api.compute_stress_regime())
+        # Track which enrichment blocks failed so the frontend can surface an
+        # explicit "degraded" state instead of rendering the fallback as fact.
+        degraded_fields: list[str] = []
+        try:
+            result["sector_uncertainty"] = compute_sector_uncertainty()
+        except Exception:
+            _api._log.warning("stress: sector_uncertainty failed", exc_info=True)
+            result["sector_uncertainty"] = {"available": False}
+            degraded_fields.append("sector_uncertainty")
+        try:
+            result["news_uncertainty"] = _api.compute_news_uncertainty()
+        except Exception:
+            _api._log.warning("stress: news_uncertainty failed", exc_info=True)
+            result["news_uncertainty"] = {"uncertainty_scope": "global", "sector_uncertainty": [], "lead_sector": None}
+            degraded_fields.append("news_uncertainty")
+        result["data_quality"] = "degraded" if degraded_fields else "ok"
+        result["degraded_fields"] = degraded_fields
+        # _sanitize_floats is a last-line scrub for NaN/inf in the raw block —
+        # it operates on the same dict that already carries data_quality /
+        # degraded_fields, so those markers pass through unchanged.
+        return _api._sanitize_floats(result)
 
 
 @router.get("/rates-context")
 def rates_context():
-    return _api._sanitize_floats(_api.compute_rates_context())
+    with no_provider_fetch():
+        return _api._sanitize_floats(_api.compute_rates_context())
 
 
-def _padded_snapshots_payload(*, refresh_if_empty: bool = False) -> list[dict]:
-    """Return one shaped row per liquid market.
+def _padded_snapshots_payload() -> list[dict]:
+    """Return one shaped row per liquid market — a pure store read.
 
     Consumers (BenchmarkSnapshotsStrip, /market-context) rely on the
     endpoint always returning the current 8-market contract — never an
@@ -146,16 +160,12 @@ def _padded_snapshots_payload(*, refresh_if_empty: bool = False) -> list[dict]:
     ``error='not_refreshed'`` so the frontend can render a placeholder
     cell instead of dropping the whole strip.
 
-    When ``refresh_if_empty`` is true, a cold or partially populated store
-    gets one synchronous refresh attempt before padding.  Successful
-    provider reads become real benchmark rows; provider failures are stored
-    as explicit per-market error rows by ``market_snapshots.refresh_all``.
+    This helper never refreshes: it is only called from GET handlers,
+    which sit behind the no-provider-fetch boundary.  Populating the
+    store is the snapshot warmer's job (``market_snapshots``), outside
+    any GET request path.
     """
-    from market_snapshots import (
-        _build_empty_snapshot,
-        get_all_snapshots,
-        refresh_all,
-    )
+    from market_snapshots import _build_empty_snapshot, get_all_snapshots
     from market_universe import LIQUID_MARKETS, resolve_symbol
 
     def _row_market(s) -> str | None:
@@ -206,12 +216,6 @@ def _padded_snapshots_payload(*, refresh_if_empty: bool = False) -> list[dict]:
         return out
 
     existing = _index(get_all_snapshots())
-    if refresh_if_empty and len(existing) < len(LIQUID_MARKETS):
-        try:
-            refresh_all()
-        except Exception:
-            _api._log.warning("snapshots: synchronous refresh failed", exc_info=True)
-        existing = _index(get_all_snapshots())
 
     rows: list[dict] = []
     for market in LIQUID_MARKETS:
@@ -226,27 +230,38 @@ def _padded_snapshots_payload(*, refresh_if_empty: bool = False) -> list[dict]:
 
 @router.get("/snapshots")
 def snapshots(refresh: bool = False):
-    from market_snapshots import refresh_all
+    # ``refresh`` is accepted for backward compatibility but deliberately
+    # inert: provider-backed refresh from a GET route is blocked by the
+    # no-provider-fetch boundary.  Staleness stays visible per row via the
+    # ``error`` / ``stale`` / ``fetched_at`` fields; the snapshot warmer
+    # (non-GET) is the surface that populates the store.
     if refresh:
-        refresh_all()
-    return _api._sanitize_floats(_padded_snapshots_payload(refresh_if_empty=True))
+        _api._log.warning(
+            "GET /snapshots?refresh=true requested; refresh via GET is "
+            "disabled (no-provider-fetch boundary) — serving cached store"
+        )
+    with no_provider_fetch():
+        return _api._sanitize_floats(_padded_snapshots_payload())
 
 
 @router.get("/market-context")
 def market_context(highlight_limit: int = 3):
+    # The whole composition runs behind the no-provider-fetch boundary:
+    # cached/stored data plus explicit unavailable/degraded metadata only.
+    with no_provider_fetch():
+        return _compose_market_context_response(highlight_limit)
+
+
+def _compose_market_context_response(highlight_limit: int) -> dict:
     from market_context import compose_market_context
 
     snaps_list: list[dict] = []
     try:
-        # Cold-start auto-warm — when the SnapshotStore is empty (or
-        # partially populated), trigger one synchronous refresh so the
-        # response reflects warmed values instead of placeholder rows.
-        # Provider failures still surface as ``error='fetch error: ...''
-        # per-market rows (the truthful "this market couldn't refresh"
-        # signal stays visible).  ``/snapshots`` remains the explicit
-        # refresh surface for callers that want to force a re-fetch on
-        # an already-populated store.
-        snaps_list = _padded_snapshots_payload(refresh_if_empty=True)
+        # Pure store read — a cold or partially populated store surfaces
+        # as explicit ``not_refreshed`` placeholder rows plus the
+        # snapshot_freshness_note; no refresh happens on a GET path.
+        # The snapshot warmer (non-GET) populates the store.
+        snaps_list = _padded_snapshots_payload()
     except Exception:
         _api._log.warning("market_context: snapshots fetch failed", exc_info=True)
 

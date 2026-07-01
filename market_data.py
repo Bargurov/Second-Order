@@ -21,11 +21,13 @@ and silently falls back to YFinanceProvider so existing flows keep working.
 
 from __future__ import annotations
 
+import contextvars
 import json
 import logging
 import os
 import threading
 import time as _time
+from contextlib import contextmanager
 from datetime import date as _date, timedelta as _timedelta
 from typing import Optional, Protocol, runtime_checkable
 from urllib.error import HTTPError, URLError
@@ -571,8 +573,82 @@ def resolve_provider_identity(provider: object) -> Optional[str]:
     return name or None
 
 
+# ---------------------------------------------------------------------------
+# No-provider-fetch guard — the structural GET-route boundary
+# ---------------------------------------------------------------------------
+# GET request handlers must never cause a provider-backed market-data fetch
+# (billed or live) or a price-cache write, regardless of which provider is
+# configured or whether an API key is present.  Handlers enter
+# ``no_provider_fetch()``; while it is active, ``get_provider()`` hands out a
+# proxy whose fetch methods are no-ops, so every ``get_provider().fetch_*``
+# call site — price_cache gap-fill, ticker info, market_universe helpers —
+# is blocked at one choke point instead of per-call-site convention.
+
+_PROVIDER_FETCH_BLOCKED: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "provider_fetch_blocked", default=False,
+)
+
+
+class NoFetchProviderProxy:
+    """Provider stand-in handed out while ``no_provider_fetch()`` is active.
+
+    ``fetch_daily`` / ``fetch_info`` return empty results without touching
+    the network; everything else (e.g. ``provider_name``) delegates to the
+    wrapped real provider so identity/naming still resolve.
+    """
+
+    def __init__(self, wrapped: MarketDataProvider):
+        self._wrapped = wrapped
+
+    def fetch_daily(self, ticker: str, *, period: Optional[str] = None,
+                    start: Optional[str] = None, end: Optional[str] = None,
+                    auto_adjust: bool = True):
+        _log.info(
+            "no_provider_fetch: blocked fetch_daily(%s) in a no-fetch "
+            "context (GET boundary)", ticker,
+        )
+        return None
+
+    def fetch_info(self, ticker: str) -> dict:
+        _log.info(
+            "no_provider_fetch: blocked fetch_info(%s) in a no-fetch "
+            "context (GET boundary)", ticker,
+        )
+        return {}
+
+    def __getattr__(self, name: str):
+        return getattr(self._wrapped, name)
+
+
+@contextmanager
+def no_provider_fetch():
+    """Block provider-backed fetches for the duration of the context.
+
+    Request handlers that must never fetch (all GET market routes) wrap
+    their body in this guard.  Cache reads still run; only the provider
+    seam is closed.
+    """
+    token = _PROVIDER_FETCH_BLOCKED.set(True)
+    try:
+        yield
+    finally:
+        _PROVIDER_FETCH_BLOCKED.reset(token)
+
+
+def provider_fetch_blocked() -> bool:
+    """True while the current context sits inside ``no_provider_fetch()``."""
+    return _PROVIDER_FETCH_BLOCKED.get()
+
+
 def get_provider() -> MarketDataProvider:
-    """Return the currently active market-data provider."""
+    """Return the currently active market-data provider.
+
+    Inside a ``no_provider_fetch()`` context this returns a
+    :class:`NoFetchProviderProxy` so no caller can reach a live or billed
+    provider fetch from a blocked (GET-handler) context.
+    """
+    if _PROVIDER_FETCH_BLOCKED.get():
+        return NoFetchProviderProxy(_provider)
     return _provider
 
 

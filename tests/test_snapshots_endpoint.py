@@ -10,7 +10,10 @@ Covers:
   - Stale snapshots are returned with stale=true (graceful degradation)
   - Unavailable markets surface as snapshots with error set, not 500
   - Partial availability: some markets fresh, some stale, some unavailable
-  - Refresh query parameter triggers a synchronous refresh
+  - GET is a pure store read behind the no-provider-fetch boundary: a cold
+    store surfaces explicit not_refreshed rows, the ?refresh=true parameter
+    is inert, and populating the store is the (non-GET) warmer's job via
+    refresh_all()
   - Never raises on provider failure
 """
 
@@ -113,8 +116,10 @@ class TestEndpointShape(SnapshotsEndpointBase):
             )
 
     def test_value_change_freshness_present(self):
+        # Warm via the (non-GET) warmer surface; the GET is a pure read.
         with patch("market_check._fetch", return_value=_good_df()):
-            response = self.client.get("/snapshots?refresh=true")
+            refresh_all()
+        response = self.client.get("/snapshots")
         data = response.json()
         for snap in data:
             self.assertIn("value", snap)
@@ -160,29 +165,39 @@ class TestWarmCachePreference(SnapshotsEndpointBase):
         data = response.json()
         self.assertEqual(len(data), 8)
 
-    def test_empty_store_refreshes_synchronously_when_data_available(self):
-        """When the background thread has not run, the endpoint makes one
-        synchronous refresh attempt before padding rows.  If provider data
-        is available, users should see real benchmark values rather than
-        a full slate of ``not_refreshed`` placeholders."""
-        with patch("market_check._fetch", return_value=_good_df()):
+    def test_empty_store_get_returns_explicit_not_refreshed_rows(self):
+        """A cold store is never hidden by a GET-time refresh: the read
+        returns explicit ``not_refreshed`` placeholder rows without calling
+        the provider, and real values appear only after the (non-GET)
+        warmer has run."""
+        with patch("market_check._fetch", return_value=_good_df()) as mock_fetch:
             response = self.client.get("/snapshots")
+            mock_fetch.assert_not_called()
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data), 8)
         self.assertEqual([s["market"] for s in data], list(LIQUID_MARKETS))
         for snap in data:
             self.assertEqual(set(snap.keys()), REQUIRED_KEYS)
+            self.assertEqual(snap["error"], "not_refreshed")
+            self.assertIsNone(snap["value"])
+
+        # Warmer runs outside any GET; the next read serves warm values.
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        data = self.client.get("/snapshots").json()
+        for snap in data:
             self.assertIsNone(snap["error"])
             self.assertIsNotNone(snap["value"])
             self.assertIsNotNone(snap["fetched_at"])
 
-    def test_empty_store_exposes_true_provider_failure(self):
-        """If the cold refresh cannot fetch provider data, the endpoint
-        should expose the actual failure reason from refresh_market rather
-        than leaving every row as ``not_refreshed``."""
+    def test_failed_warmer_run_exposes_true_provider_failure(self):
+        """When the warmer's refresh cannot fetch provider data, the GET
+        read exposes the actual failure reason recorded by refresh_market
+        rather than a generic placeholder."""
         with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
-            response = self.client.get("/snapshots")
+            refresh_all()
+        response = self.client.get("/snapshots")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data), 8)
@@ -192,9 +207,12 @@ class TestWarmCachePreference(SnapshotsEndpointBase):
             self.assertIsNone(snap["fetched_at"])
             self.assertIn("fetch error: provider down", snap["error"])
 
-    def test_force_refresh_query_param(self):
-        with patch("market_check._fetch", return_value=_good_df()):
+    def test_refresh_query_param_is_inert(self):
+        """?refresh=true must not trigger a provider-backed refresh from a
+        GET route (the no-provider-fetch boundary)."""
+        with patch("market_check._fetch", return_value=_good_df()) as mock_fetch:
             response = self.client.get("/snapshots?refresh=true")
+            mock_fetch.assert_not_called()
         self.assertEqual(len(response.json()), 8)
 
 
@@ -259,7 +277,8 @@ class TestPartialAvailability(SnapshotsEndpointBase):
             return _good_df()
 
         with patch("market_check._fetch", side_effect=_flaky):
-            response = self.client.get("/snapshots?refresh=true")
+            refresh_all()
+        response = self.client.get("/snapshots")
 
         data = response.json()
         self.assertEqual(len(data), 8)
@@ -279,7 +298,8 @@ class TestPartialAvailability(SnapshotsEndpointBase):
             return _good_df()
 
         with patch("market_check._fetch", side_effect=_flaky):
-            response = self.client.get("/snapshots?refresh=true")
+            refresh_all()
+        response = self.client.get("/snapshots")
 
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -308,7 +328,8 @@ class TestPartialAvailability(SnapshotsEndpointBase):
             return _good_df()
 
         with patch("market_check._fetch", side_effect=_alternate):
-            response = self.client.get("/snapshots?refresh=true")
+            refresh_all()
+        response = self.client.get("/snapshots")
         data = response.json()
         usable = [s for s in data if s["value"] is not None]
         unusable = [s for s in data if s["value"] is None]

@@ -301,27 +301,57 @@ class TestMarketContextDataIntegrity(_Base):
                     f"non-finite value on snapshot: {row}",
                 )
 
-    def test_market_context_warms_cold_store_synchronously(self):
-        """/market-context must auto-warm an empty SnapshotStore so the
-        first request after a cold start does not have to depend on
-        /snapshots being hit first.  When the refresh itself fails
-        (provider down) the per-market rows still surface their real
-        ``fetch error`` / ``not_refreshed`` reason so the user sees
-        the truthful unavailable state rather than fabricated values."""
+    def test_market_context_cold_store_does_not_refresh_on_get(self):
+        """/market-context must NOT provider-refresh on a GET, even on a
+        cold store.  K1B moved provider-backed refresh off every GET path
+        (the no-provider-fetch boundary): a cold or empty SnapshotStore is
+        served as explicit ``not_refreshed`` placeholder rows plus
+        unavailable metadata, never a silent synchronous warm.  Populating
+        the store stays the non-GET snapshot warmer's job
+        (``market_snapshots.refresh_all``) — that the warmer still reaches
+        the provider off the GET path is covered by
+        ``tests/test_get_provider_boundary.py`` and the no-paid smoke's GET
+        boundary rows, so this contract test does not re-exercise it."""
         with patch("market_snapshots.get_all_snapshots", return_value=[]), \
              patch("market_snapshots.refresh_all") as refresh_mock:
             body = self._get_ok("/market-context")
-        refresh_mock.assert_called_once()
-        # Patched refresh returns nothing, so every padded row stays
-        # ``not_refreshed`` — proving the response reflects the real
-        # post-refresh state, not invented data.
-        for row in body["snapshots"]:
-            self.assertIsNone(row.get("value"))
-            self.assertEqual(row.get("error"), "not_refreshed")
-        self.assertEqual(
-            body["snapshots_meta"]["unavailable"],
-            body["snapshots_meta"]["total"],
+
+        # Core K1B contract: a GET request never triggers the
+        # provider-backed warmer.  (On the old contract this was
+        # asserted the other way — refresh_all called once.)
+        refresh_mock.assert_not_called()
+
+        # The normal market-context payload shape is still returned
+        # (HTTP 200 asserted by _get_ok) with the snapshots contract
+        # present and never collapsed to an empty list.
+        self.assertIsInstance(body, dict)
+        self.assertIn("snapshots", body)
+        self.assertIn("snapshots_meta", body)
+        snaps = body["snapshots"]
+        self.assertIsInstance(snaps, list)
+        self.assertGreater(
+            len(snaps), 0,
+            "padded payload always returns one row per liquid market",
         )
+
+        # Cold rows are explicit placeholders — never fabricated fresh
+        # values that could be mis-rendered as a live print.
+        for row in snaps:
+            self.assertIsNone(
+                row.get("value"),
+                f"cold-store row must not carry a fabricated value: {row}",
+            )
+            self.assertEqual(
+                row.get("error"), "not_refreshed",
+                f"cold-store row must be marked not_refreshed: {row}",
+            )
+
+        # snapshots_meta reflects the fully-unavailable cold store.
+        meta = body["snapshots_meta"]
+        self.assertEqual(meta["total"], len(snaps))
+        self.assertEqual(meta["unavailable"], meta["total"])
+        self.assertEqual(meta["fresh"], 0)
+        self.assertEqual(meta["stale"], 0)
 
     def test_snapshots_meta_counts_match_rows(self):
         body = self._get_ok("/market-context")

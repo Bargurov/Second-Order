@@ -566,7 +566,24 @@ def fetch_daily_cached(
 
     # Late import avoids a circular market_data → market_check → price_cache
     # bootstrap cycle and lets tests swap the provider via set_provider().
-    from market_data import get_provider, resolve_provider_identity
+    from market_data import (
+        get_provider,
+        provider_fetch_blocked,
+        resolve_provider_identity,
+    )
+
+    # Structural GET boundary (defense in depth beside the get_provider()
+    # proxy): in a no-provider-fetch context this function is cache-only —
+    # no gap-fill, no provider call, no _write_rows.  An empty cache reads
+    # as None (unavailable), never as a hidden refresh.
+    if gaps and provider_fetch_blocked():
+        _log.info(
+            "fetch_daily_cached(%s): provider fetch blocked in no-fetch "
+            "context; serving cached subset only", ticker,
+        )
+        if cached is None or cached.empty:
+            return None
+        return cached
 
     if gaps:
         provider = get_provider()

@@ -1582,6 +1582,143 @@ def guard_no_paid_provider_calls():
             setattr(module, attr_name, original)
 
 
+# ---------------------------------------------------------------------------
+# Market GET boundary check (K1B)
+# ---------------------------------------------------------------------------
+# The market GET routes below were historically excluded from ENDPOINTS
+# because a cold cache made them provider-reaching.  Since the
+# no-provider-fetch boundary they must be provably inert: this check drives
+# each route in-process against a *recording* provider and a *recording*
+# price-cache writer (raisers are no use here — route-level try/excepts
+# would swallow them), with the price-cache read patched empty so the
+# provider temptation is maximal.  Any recorded provider fetch or cache
+# write fails the route's row.  News reads are stubbed empty so the probe
+# stays fully offline.
+
+_GET_BOUNDARY_ROUTES: tuple[tuple[str, str], ...] = (
+    ("GET boundary: market-context", "/market-context"),
+    ("GET boundary: snapshots", "/snapshots"),
+    ("GET boundary: snapshots refresh param", "/snapshots?refresh=true"),
+    ("GET boundary: ticker chart", "/ticker/AAPL/chart?event_date=2026-04-15"),
+    ("GET boundary: ticker info", "/ticker/AAPL/info"),
+    ("GET boundary: stress", "/stress"),
+    ("GET boundary: rates-context", "/rates-context"),
+    ("GET boundary: macro", "/macro"),
+)
+
+
+class _RecordingBoundaryProvider:
+    """Records every fetch attempt; returns empty results, never network."""
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def fetch_daily(self, ticker, *, period=None, start=None, end=None,
+                    auto_adjust=True):
+        self.calls.append(f"fetch_daily:{ticker}")
+        return None
+
+    def fetch_info(self, ticker):
+        self.calls.append(f"fetch_info:{ticker}")
+        return {}
+
+
+def run_market_get_boundary_check(client: Any | None = None) -> list[SmokeResult]:
+    """Prove the market GET routes reach no provider fetch and no cache write.
+
+    Returns one SmokeResult per route in ``_GET_BOUNDARY_ROUTES``.  A route
+    fails when it does not answer HTTP 200, when the recording provider
+    logs any fetch during the request, or when a price-cache write is
+    attempted during the request.
+    """
+    import pandas as _pd
+
+    import api as _api_module
+    import market_check as _market_check
+    import market_data as _market_data
+    import market_snapshots as _market_snapshots
+    import price_cache as _price_cache
+
+    if client is None:
+        client = _make_test_client()
+
+    recorder = _RecordingBoundaryProvider()
+    write_calls: list[str] = []
+
+    def _recording_write_rows(*args, **kwargs):
+        write_calls.append(str(args[:1]))
+        return 0
+
+    def _empty_read_range(*_args, **_kwargs):
+        return _pd.DataFrame(columns=["Close", "Volume"])
+
+    saved_provider = _market_data.get_provider()
+    saved_write_rows = _price_cache._write_rows
+    saved_read_range = _price_cache._read_range
+    saved_ensure_table = _price_cache._ensure_table
+    saved_news = _api_module._get_news_cached
+
+    results: list[SmokeResult] = []
+    try:
+        _market_data.set_provider(recorder)
+        _price_cache._write_rows = _recording_write_rows
+        _price_cache._read_range = _empty_read_range
+        _price_cache._ensure_table = lambda: True
+        _api_module._get_news_cached = lambda: {"clusters": []}
+        _market_snapshots.get_store().clear()
+        _market_check._cache_clear()
+
+        with _quiet_request_loggers():
+            for name, path in _GET_BOUNDARY_ROUTES:
+                start = time.perf_counter()
+                status_code: int | None = None
+                ok = False
+                error: str | None = None
+                calls_before = len(recorder.calls)
+                writes_before = len(write_calls)
+                try:
+                    response = client.get(path)
+                    status_code = int(response.status_code)
+                    new_calls = recorder.calls[calls_before:]
+                    new_writes = write_calls[writes_before:]
+                    if status_code != 200:
+                        error = f"expected HTTP 200, got HTTP {status_code}"
+                    elif new_calls:
+                        error = (
+                            "provider fetch reached from GET: "
+                            f"{new_calls[:3]}"
+                        )
+                    elif new_writes:
+                        error = (
+                            "price-cache write attempted from GET "
+                            f"({len(new_writes)} call(s))"
+                        )
+                    else:
+                        ok = True
+                except Exception as exc:
+                    error = f"{type(exc).__name__}: {exc}"
+                elapsed_ms = int((time.perf_counter() - start) * 1000)
+                results.append(
+                    SmokeResult(
+                        name=name,
+                        path=path,
+                        ok=bool(ok and error is None),
+                        status_code=status_code,
+                        elapsed_ms=elapsed_ms,
+                        error=error,
+                    )
+                )
+    finally:
+        _market_data.set_provider(saved_provider)
+        _price_cache._write_rows = saved_write_rows
+        _price_cache._read_range = saved_read_range
+        _price_cache._ensure_table = saved_ensure_table
+        _api_module._get_news_cached = saved_news
+        _market_snapshots.get_store().clear()
+        _market_check._cache_clear()
+    return results
+
+
 @contextlib.contextmanager
 def _quiet_request_loggers():
     names = ("httpx", "second_order.movers_cache")
@@ -1808,6 +1945,13 @@ def run_smoke(
     if client is None:
         client = _LocalHttpClient(base_url, timeout) if base_url else _make_test_client()
 
+    # Import provider-consuming modules BEFORE the raiser guard opens: a
+    # module first imported inside the guard window captures the raiser via
+    # its module-scope ``from market_data import get_provider`` and keeps it
+    # after restore, poisoning the post-guard GET-boundary check below.
+    import market_snapshots  # noqa: F401
+    import market_universe  # noqa: F401
+
     guard = guard_no_paid_provider_calls() if guard_provider_seams and not base_url else contextlib.nullcontext()
     results: list[SmokeResult] = []
     with guard, _quiet_request_loggers():
@@ -1897,6 +2041,14 @@ def run_smoke(
                         error=error,
                     )
                 )
+
+    # Market GET boundary rows (K1B) run AFTER the raiser guard exits: this
+    # check needs the real market_data.get_provider seam so it can install a
+    # recording provider (raisers would be swallowed by route-level
+    # try/excepts and read as degraded-but-passing).  In-process mode only —
+    # a remote --base-url process cannot be seam-patched.
+    if not base_url:
+        results.extend(run_market_get_boundary_check(client=client))
     return results
 
 

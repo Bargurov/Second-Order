@@ -521,18 +521,24 @@ class TestSnapshotsEndpoint(unittest.TestCase):
         get_store().clear()
         market_check._cache_clear()
 
-    def test_empty_store_refreshes_on_read(self):
-        with patch("market_check._fetch", return_value=_good_df()):
+    def test_empty_store_read_does_not_refresh(self):
+        # GET is a pure store read (no-provider-fetch boundary): a cold
+        # store surfaces explicit not_refreshed rows without fetching.
+        with patch("market_check._fetch", return_value=_good_df()) as mock_fetch:
             response = self.client.get("/snapshots")
+            mock_fetch.assert_not_called()
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data), len(LIQUID_MARKETS))
-        self.assertTrue(all(s["value"] is not None for s in data))
-        self.assertTrue(all(s["fetched_at"] is not None for s in data))
+        self.assertTrue(all(s["value"] is None for s in data))
+        self.assertTrue(all(s["error"] == "not_refreshed" for s in data))
 
-    def test_empty_store_exposes_provider_failure_reason(self):
+    def test_failed_warmer_exposes_provider_failure_reason(self):
+        # The (non-GET) warmer records truthful per-market failure
+        # reasons; the GET read surfaces them instead of a placeholder.
         with patch("market_check._fetch", side_effect=RuntimeError("provider down")):
-            response = self.client.get("/snapshots")
+            refresh_all()
+        response = self.client.get("/snapshots")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data), len(LIQUID_MARKETS))
@@ -548,10 +554,12 @@ class TestSnapshotsEndpoint(unittest.TestCase):
         data = response.json()
         self.assertEqual(len(data), len(LIQUID_MARKETS))
 
-    def test_force_refresh_query_param(self):
-        """?refresh=true should populate the store synchronously."""
-        with patch("market_check._fetch", return_value=_good_df()):
+    def test_refresh_query_param_is_inert(self):
+        """?refresh=true is accepted but inert: no provider-backed refresh
+        happens on a GET route (no-provider-fetch boundary)."""
+        with patch("market_check._fetch", return_value=_good_df()) as mock_fetch:
             response = self.client.get("/snapshots?refresh=true")
+            mock_fetch.assert_not_called()
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data), len(LIQUID_MARKETS))

@@ -39,6 +39,9 @@ def _provider_name() -> str:
     try:
         from market_data import PolygonProvider, get_provider
         p = get_provider()
+        # Unwrap the no-provider-fetch proxy so the reported source names
+        # the real provider even inside a blocked (GET-handler) context.
+        p = getattr(p, "_wrapped", p)
         if isinstance(p, PolygonProvider):
             return "polygon"
         cls = type(p).__name__
