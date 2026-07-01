@@ -81,7 +81,18 @@ A skeptical reviewer can follow the intended order without a guided tour:
    a compact 1d / 5d / 20d SPY-relative matrix for the 15 representative cases.
    It shows 12 / 15 available readouts, makes missing readouts explicit, and
    keeps the readout lens separate from thesis-outcome scoring.
-6. **Methodology / non-claims** —
+6. **Effective independent evidence** —
+   [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md):
+   answers the reviewer question "are the 86 accepted track-record rows really 86
+   separate market stories?" They group into 5 descriptive market-story clusters
+   under transparent same-date / same-primary-ticker-window / duplicate-link rules,
+   and the largest cluster holds 81 rows — so the archive reads as a small number
+   of market tapes observed many ways, not 86 separate pieces of evidence. Read it
+   before treating the support / contradiction / unresolved counts as separate
+   evidence; it makes the interpretation more honest, not weaker. A descriptive
+   independence-caution layer — not an inferential effective sample size, score,
+   rank, p-value, or FDR pool.
+7. **Methodology / non-claims** —
    [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md): market-adjusted readouts are
    SPY-relative with beta fixed at 1. Representative cases are walkthrough
    material, not family-level inference; not a recommendation, forecast, or
