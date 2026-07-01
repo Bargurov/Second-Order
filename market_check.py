@@ -1131,6 +1131,38 @@ def _check_one_ticker(
         return no_data_error
 
 
+def _pre_event_cutoff(event_date):
+    """Parse *event_date* into a tz-naive pandas Timestamp for pre-event
+    slicing, or ``None`` when it cannot be parsed/normalised.
+
+    Returning ``None`` (rather than a best-effort value) lets
+    ``compute_pre_event_drift`` fail closed: because the drift is labelled
+    pre-event, an unparseable or timezone-aware date must skip the symbol
+    instead of risking a comparison that silently leaks post-event bars.
+    """
+    import pandas as _pd
+    try:
+        ts = _pd.Timestamp(event_date)
+    except Exception:
+        # Unparseable date — no safe cutoff. Broad catch is unavoidable for
+        # arbitrary input; it fails closed (None), it does not proceed.
+        return None
+    if ts is None or _pd.isna(ts):
+        return None
+    # Normalise tz-aware inputs (e.g. "2026-04-15T14:30:00Z") to tz-naive so
+    # the comparison against the tz-naive price index cannot raise — and so a
+    # tz mismatch can never fall through to the unsliced series.
+    if ts.tz is not None:
+        try:
+            ts = ts.tz_localize(None)
+        except Exception:
+            try:
+                ts = ts.tz_convert(None)
+            except Exception:
+                return None
+    return ts
+
+
 def compute_pre_event_drift(
     symbols: list[str],
     event_date: str | None = None,
@@ -1172,12 +1204,23 @@ def compute_pre_event_drift(
         # return ending at (or before) event_date — this supports backtest
         # / past-event analyses without leaking post-event information.
         if event_date:
+            # This value is labelled *pre-event* drift, so it must never be
+            # computed from the unsliced series.  Fail closed: if the date
+            # cannot be parsed/normalised, or the slice raises (e.g. a
+            # tz-aware vs tz-naive mismatch), skip the symbol rather than
+            # leak post-event bars into a "pre-event" number.
+            cutoff = _pre_event_cutoff(event_date)
+            if cutoff is None:
+                continue
             try:
-                import pandas as _pd
-                cutoff = _pd.Timestamp(event_date)
                 closes = closes[closes.index <= cutoff]
             except Exception:
-                pass
+                _log.warning(
+                    "compute_pre_event_drift: pre-event slice failed for "
+                    "%s @ %r; skipping to avoid post-event leakage",
+                    clean, event_date, exc_info=True,
+                )
+                continue
         if len(closes) < 6:
             continue
 

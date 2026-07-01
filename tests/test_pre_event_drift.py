@@ -225,5 +225,104 @@ class TestComputePreEventDrift(unittest.TestCase):
         self.assertEqual(market_check.compute_pre_event_drift(None), {})
 
 
+# ---------------------------------------------------------------------------
+# compute_pre_event_drift — fail closed on invalid pre-event dates (K1A)
+#
+# The value is labelled *pre-event* drift, so when event_date cannot be
+# parsed / normalised / sliced safely the symbol must be SKIPPED, never
+# computed from the unsliced (post-event-inclusive) series.  K0 confirmed
+# the old `except Exception: pass` slicing path leaked the unsliced drift.
+# ---------------------------------------------------------------------------
+
+class TestPreEventDriftFailsClosed(unittest.TestCase):
+
+    # 8 daily bars 2026-04-08 .. 2026-04-17.  Unsliced 5d drift = 8.37%
+    # (last 6 closes 101.5 -> 110); sliced at 2026-04-15 = 4.0% (100 -> 104).
+    _CLOSES = [100.0, 101.0, 101.5, 102.0, 103.0, 104.0, 105.0, 110.0]
+    _DATES = ["2026-04-08", "2026-04-09", "2026-04-10", "2026-04-11",
+              "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17"]
+    _UNSLICED_LEAK_PCT = 8.37   # the post-event value the pre-fix bug leaked
+    _PRE_EVENT_PCT = 4.0        # correct value sliced at 2026-04-15
+
+    def _naive_df(self) -> pd.DataFrame:
+        idx = pd.DatetimeIndex([pd.Timestamp(d) for d in self._DATES])
+        return pd.DataFrame(
+            {"Close": self._CLOSES, "Volume": [1e6] * len(self._CLOSES)},
+            index=idx,
+        )
+
+    def _tz_aware_df(self) -> pd.DataFrame:
+        idx = pd.DatetimeIndex([pd.Timestamp(d) for d in self._DATES], tz="UTC")
+        return pd.DataFrame(
+            {"Close": self._CLOSES, "Volume": [1e6] * len(self._CLOSES)},
+            index=idx,
+        )
+
+    def test_valid_iso_date_uses_only_pre_event_bars(self):
+        import market_check
+        with patch.object(market_check, "_fetch", return_value=self._naive_df()):
+            out = market_check.compute_pre_event_drift(["AAA"], event_date="2026-04-15")
+        self.assertIn("AAA", out)
+        self.assertAlmostEqual(out["AAA"], self._PRE_EVENT_PCT, places=2)
+        # Explicitly the sliced value, not the unsliced post-event drift.
+        self.assertNotAlmostEqual(out["AAA"], self._UNSLICED_LEAK_PCT, places=1)
+
+    def test_malformed_event_date_skips_symbol(self):
+        import market_check
+        with patch.object(market_check, "_fetch", return_value=self._naive_df()):
+            out = market_check.compute_pre_event_drift(["AAA"], event_date="not-a-date")
+        # Fail closed: an unparseable date must not leak the unsliced series.
+        self.assertNotIn("AAA", out)
+        self.assertEqual(out, {})
+
+    def test_tz_suffixed_iso_datetime_no_post_event_leak(self):
+        import market_check
+        with patch.object(market_check, "_fetch", return_value=self._naive_df()):
+            out = market_check.compute_pre_event_drift(
+                ["AAA"], event_date="2026-04-15T14:30:00Z")
+        # Normalised safely to the same pre-event window — never the leak.
+        self.assertIn("AAA", out)
+        self.assertAlmostEqual(out["AAA"], self._PRE_EVENT_PCT, places=2)
+
+    def test_tz_aware_input_never_falls_through_to_unsliced(self):
+        import market_check
+        with patch.object(market_check, "_fetch", return_value=self._naive_df()):
+            out = market_check.compute_pre_event_drift(
+                ["AAA"], event_date="2026-04-15T14:30:00Z")
+        # Whether the fix normalises or skips, the result must never equal
+        # the unsliced post-event drift.
+        self.assertNotAlmostEqual(
+            out.get("AAA", 0.0), self._UNSLICED_LEAK_PCT, places=1)
+
+    def test_date_before_window_is_honest_skip(self):
+        import market_check
+        with patch.object(market_check, "_fetch", return_value=self._naive_df()):
+            out = market_check.compute_pre_event_drift(["AAA"], event_date="2020-01-01")
+        # No usable pre-event bars -> honest empty, not a leak.
+        self.assertEqual(out, {})
+
+    def test_slice_failure_skips_symbol_not_unsliced(self):
+        # A tz-aware price index vs a naive cutoff makes the ``<=`` compare
+        # raise; the fix must fail closed (skip), not swallow-and-continue
+        # with the unsliced series.
+        import market_check
+        with patch.object(market_check, "_fetch", return_value=self._tz_aware_df()):
+            out = market_check.compute_pre_event_drift(["AAA"], event_date="2026-04-15")
+        self.assertNotIn("AAA", out)
+        self.assertEqual(out, {})
+
+    def test_no_silent_except_pass_in_drift_slicing(self):
+        import inspect
+        import re
+        import market_check
+        src = inspect.getsource(market_check.compute_pre_event_drift)
+        self.assertIsNone(
+            re.search(r"except[^\n]*:\s*\n\s*pass\b", src),
+            "compute_pre_event_drift must not swallow parse/slice failures "
+            "with `except ...: pass` (that leaks post-event bars into a "
+            "value labelled pre-event)",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
