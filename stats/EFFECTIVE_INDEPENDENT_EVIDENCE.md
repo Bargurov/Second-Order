@@ -4,9 +4,9 @@ How many distinct market stories sit behind the accepted track-record rows? This
 
 ## What a reviewer should take away first
 
-- The 86 accepted track-record rows group into 5 descriptive market-story clusters under three transparent rules -- they are not 86 independent market stories.
-- 83 of 86 rows (96.5%) sit in 2 multi-row clusters; the largest single cluster holds 81 rows.
-- The largest clustering pressure is shared event dates: 82 rows are touched by it.
+- The 86 accepted track-record rows group into 7 descriptive market-story clusters under three transparent rules -- they are not 86 independent market stories.
+- 81 of 86 rows (94.2%) sit in 2 multi-row clusters; the largest single cluster holds 79 rows.
+- The largest clustering pressure is shared event dates: 80 rows are touched by it.
 - This does not invalidate the archive; it makes the interpretation more honest. Clustered rows remain real archive evidence -- they are one story observed several times, not several stories.
 
 ## Scope and non-claims
@@ -42,12 +42,12 @@ K2 reads the **accepted track-record** lens (**86** rows): it is the corpus the 
 | measure | value |
 | --- | --- |
 | nominal accepted track-record rows | 86 |
-| market-story clusters | **5** |
-| singleton clusters | 3 |
+| market-story clusters | **7** |
+| singleton clusters | 5 |
 | multi-row clusters | 2 |
-| rows in multi-row clusters | 83 (96.5%) |
-| largest cluster size | 81 |
-| top clustered dates | 2026-04-05 (21 rows), 2026-04-06 (13 rows), 2026-04-29 (12 rows) |
+| rows in multi-row clusters | 81 (94.2%) |
+| largest cluster size | 79 |
+| top clustered dates | 2026-04-05 (21 rows), 2026-04-06 (13 rows), 2026-04-29 (10 rows) |
 | top repeated primary tickers | XLE (25 rows), XOM (8 rows), DRIV (6 rows) |
 | event-study rows inside multi-row clusters | 67 |
 | event-study rows on singletons | 3 |
@@ -59,19 +59,19 @@ The 20d-window capacity line is the stricter cross-ticker caution: even ignoring
 
 | cluster | rows | dates | primary tickers | S / C / U | ES | why grouped |
 | --- | --- | --- | --- | --- | --- | --- |
-| c01 | 81 | 2026-04-04 .. 2026-05-05 | AA, BAC, BDRY, BTU, ... | 42 / 8 / 31 | 67/81 | 12 shared event dates (top: 2026-04-05 x21, 2026-04-06 x13, 2026-04-29 x12); 9 repeated primary tickers (top: XLE x24, XOM x8, DRIV x6); 8 duplicate-linked row(s) |
+| c01 | 79 | 2026-04-04 .. 2026-05-05 | AA, BAC, BDRY, BTU, ... | 42 / 8 / 29 | 67/79 | 12 shared event dates (top: 2026-04-05 x21, 2026-04-06 x13, 2026-04-29 x10); 9 repeated primary tickers (top: XLE x24, XOM x8, DRIV x6); 8 duplicate-linked row(s) |
 | c02 | 2 | 2026-05-30 | XLE | 1 / 0 / 1 | 0/2 | shared event date(s) 2026-05-30 x2 |
 
 Event ids per cluster:
 
-- **c01** (2026-04-04 .. 2026-05-05 / mixed tickers): 2, 3, 4, 7, 8, 9, 11, 12, 16, 17, 25, 26, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 60, 61, 63, 64, 66, 70, 71, 72, 84, 85, 101, 105, 153, 154, 160, 206, 207, 208, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 225, 226, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 250, 280, 281
+- **c01** (2026-04-04 .. 2026-05-05 / mixed tickers): 2, 3, 4, 7, 8, 9, 11, 12, 16, 17, 25, 26, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 60, 61, 63, 64, 66, 70, 71, 72, 84, 85, 101, 105, 153, 206, 207, 208, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 225, 226, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 250, 280, 281
 - **c02** (2026-05-30 / XLE): 291, 292
 
 Interpretation caution, per cluster: rows inside one cluster read overlapping reaction windows on one stretch of tape - weigh each cluster as one market story, not as its row count.
 
 ## Singleton / less-clustered rows
 
-3 rows stand alone under these rules (no shared date, no repeated primary ticker inside the 20-day window, no duplicate link). These rows are **less exposed to this specific clustering issue** - nothing more. A singleton is still one n=1 descriptive read with its own anchor and scoring caveats; it is not proof of anything.
+5 rows stand alone under these rules (no shared date, no repeated primary ticker inside the 20-day window, no duplicate link). These rows are **less exposed to this specific clustering issue** - nothing more. A singleton is still one n=1 descriptive read with its own anchor and scoring caveats; it is not proof of anything.
 
 ## Representative case overlay
 
@@ -80,20 +80,20 @@ Where the 15 representative walkthrough cases fall under the same grouping:
 | case | family | outcome | cluster | cluster size | grouping | readout |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | tariff | support | c03 | 1 | singleton | available |
-| 7 | geopolitical_conflict_context | support | c01 | 81 | multi-row | available |
-| 29 | supply_shock | contradiction | c01 | 81 | multi-row | available |
-| 38 | supply_shock | support | c01 | 81 | multi-row | available |
-| 46 | monetary_policy_or_rates | support | c01 | 81 | multi-row | available |
-| 61 | geopolitical_conflict_context | contradiction | c01 | 81 | multi-row | available |
-| 66 | ceasefire_deescalation | support | c01 | 81 | multi-row | available |
-| 71 | ceasefire_deescalation | support | c01 | 81 | multi-row | available |
-| 153 | sanction | unresolved | c01 | 81 | multi-row | missing |
-| 154 | sanction | unresolved | c01 | 81 | multi-row | missing |
-| 160 | ceasefire_deescalation | unresolved | c01 | 81 | multi-row | missing |
-| 210 | supply_shock | unresolved | c01 | 81 | multi-row | available |
-| 211 | sanction | unresolved | c01 | 81 | multi-row | available |
-| 212 | tariff | unresolved | c01 | 81 | multi-row | available |
-| 239 | monetary_policy_or_rates | unresolved | c01 | 81 | multi-row | available |
+| 7 | geopolitical_conflict_context | support | c01 | 79 | multi-row | available |
+| 29 | supply_shock | contradiction | c01 | 79 | multi-row | available |
+| 38 | supply_shock | support | c01 | 79 | multi-row | available |
+| 46 | monetary_policy_or_rates | support | c01 | 79 | multi-row | available |
+| 61 | geopolitical_conflict_context | contradiction | c01 | 79 | multi-row | available |
+| 66 | ceasefire_deescalation | support | c01 | 79 | multi-row | available |
+| 71 | ceasefire_deescalation | support | c01 | 79 | multi-row | available |
+| 153 | sanction | unresolved | c01 | 79 | multi-row | missing |
+| 154 | sanction | unresolved | c06 | 1 | singleton | missing |
+| 160 | ceasefire_deescalation | unresolved | c07 | 1 | singleton | missing |
+| 210 | supply_shock | unresolved | c01 | 79 | multi-row | available |
+| 211 | sanction | unresolved | c01 | 79 | multi-row | available |
+| 212 | tariff | unresolved | c01 | 79 | multi-row | available |
+| 239 | monetary_policy_or_rates | unresolved | c01 | 79 | multi-row | available |
 
 - **Cases 7 / 29 / 38:** Cases 7, 29 and 38 share the 2026-04-05 event date and the XLE primary readout; under the stated rules they are one market-story cluster, not three separate pieces of market evidence.
 - **Missing market readouts:** 153, 154, 160 - these cases still carry event-date and cluster context even though no window can be read; a missing readout is stated, never hidden.

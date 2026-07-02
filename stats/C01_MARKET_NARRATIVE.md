@@ -15,8 +15,11 @@ Two facts, held together:
   built mechanically: the 86 accepted track-record rows are linked when they
   share an event date, share a primary ticker within a 20-day window, or carry
   an explicit duplicate link. c01 is the connected component that swallows the
-  whole **2026-04-04 -> 2026-05-05** window -- **81 of the 86 rows**. Its size
-  reflects date-and-ticker adjacency, not 81 independent market events.
+  whole **2026-04-04 -> 2026-05-05** window -- **79 of the 86 rows**. Its size
+  reflects date-and-ticker adjacency, not 79 independent market events. (Rows 154
+  and 160 left c01 in the L1B-2C source-pinned split-date repair -- their true
+  dates are 2026-04-23 and 2026-04-24, not the ingestion-lagged 2026-04-29 -- and
+  now sit as two separate singleton clusters.)
 - **Within that window, the dominant coherent throughline is the Iran /
   Strait-of-Hormuz energy-and-geopolitics tape** -- an oil-and-shipping
   war-scare in early April, a de-escalation swing a few days later, and an
@@ -29,7 +32,7 @@ Two facts, held together:
 The single most important caution: **c01 holds almost the entire accepted
 outcome ledger.** Of the 86-row track record's 46 supporting / 8 contradicting /
 32 unresolved rows, c01 alone contains **42 supporting, all 8 contradicting, and
-31 unresolved** (42 / 8 / 31). The accepted track record's outcome distribution
+29 unresolved** (42 / 8 / 29). The accepted track record's outcome distribution
 is, to a first approximation, this one cluster. So the 42 supporting rows are
 not 42 independent confirmations -- they are one calendar window, dominated by
 one macro tape, observed many times.
@@ -77,8 +80,8 @@ Two honest qualifications:
   sanction, monetary_policy_or_rates) are assigned by the J1 / K2 keyword overlay
   on the headline. They are a reading aid, not six confirmed mechanisms. Under
   that lens c01 breaks down roughly as: supply_shock 18, unclassified 20,
-  multi-match 13, geopolitical_conflict_context 12, tariff 8, sanction 4,
-  monetary_policy_or_rates 3, ceasefire_deescalation 3 -- note that 33 of the 81
+  multi-match 13, geopolitical_conflict_context 12, tariff 8, sanction 3,
+  monetary_policy_or_rates 3, ceasefire_deescalation 2 -- note that 33 of the 79
   rows are multi-match or unclassified, i.e. the overlay itself does not cleanly
   resolve them.
 - The Fed / tariff-refund / non-oil-sanction / tech-earnings rows are **not part
@@ -93,7 +96,7 @@ Primary tickers in c01 (rows on which each is the derived primary ticker):
 | Ticker | Rows | Reads as | Note |
 |--------|-----:|----------|------|
 | XLE | 24 | Energy sector (SPDR) | Spine of the oil tape: Iran / Hormuz threats, OPEC cuts, Saudi pricing. |
-| (none) | 12 | -- | Late-April sanctions / general-news rows carry no derived primary ticker. |
+| (none) | 10 | -- | Late-April sanctions / general-news rows carry no derived primary ticker. |
 | XOM | 8 | Integrated oil major | Saudi OSP, OPEC, fighter-jet-over-Iran rows. |
 | DRIV | 6 | auto / EV ETF -- attribution artifact | Its 6 rows are an Iran-rescue item, a Fed-findings release, an Artemis-Moon image, an India feature, and two UK crime items -- none auto / EV. Treat DRIV here as a noisy default primary-ticker assignment, not a channel. |
 | VLO | 5 | Refiner | Russian-refinery drone-strike rows; refiner-output / diplomacy rows. |
@@ -107,10 +110,10 @@ That noise inflates the cluster's size beyond its true macro membership.
 
 ## 5. Outcome split
 
-- **c01: 42 supporting / 8 contradicting / 31 unresolved** (81 rows).
+- **c01: 42 supporting / 8 contradicting / 29 unresolved** (79 rows).
 - Whole accepted track record: 46 / 8 / 32 (86 rows).
 
-So c01 contains **all 8 contradicting rows, 42 of 46 supporting rows, and 31 of
+So c01 contains **all 8 contradicting rows, 42 of 46 supporting rows, and 29 of
 32 unresolved rows** of the entire accepted corpus. The accepted track record's
 outcome distribution essentially *is* c01.
 
@@ -124,9 +127,11 @@ events.
 
 ## 6. Representative cases inside c01
 
-14 of the 15 representative walkthrough cases fall inside c01 (only case 1 sits
-outside, in cluster c03). Compact map (family lens is the headline-overlay
-reading aid, not stored taxonomy):
+12 of the 15 representative walkthrough cases fall inside c01. (Case 1 sits
+outside in cluster c03; cases 154 and 160 left c01 in the L1B-2C split-date
+repair and now sit in their own singleton clusters -- c06 at 2026-04-23 and c07
+at 2026-04-24.) Compact map (family lens is the headline-overlay reading aid, not
+stored taxonomy):
 
 | Case | Date | Ticker | Family lens | Outcome | Readout | Reads as |
 |-----:|------|--------|-------------|---------|:-------:|----------|
@@ -138,16 +143,20 @@ reading aid, not stored taxonomy):
 | 66 | 2026-04-08 | XLE | ceasefire_deescalation | support | yes | "Iran open to negotiations" |
 | 71 | 2026-04-09 | VLO | ceasefire_deescalation | support | yes | same diplomacy leg, refiner |
 | 153 | 2026-04-29 | (none) | sanction | unresolved | no | ICC sanctions order |
-| 154 | 2026-04-29 | (none) | sanction | unresolved | no | Kyrgyzstan / Russia-evasion |
-| 160 | 2026-04-29 | (none) | ceasefire_deescalation | unresolved | no | Iran FM pre-ceasefire-talks |
 | 210 | 2026-04-30 | XOM | supply_shock | unresolved | yes | Saudi crude OSP +USD 2 |
 | 211 | 2026-04-29 | FSLR | sanction | unresolved | yes | US-China Uighur sanctions |
 | 212 | 2026-04-29 | TJX | tariff | unresolved | yes | US tariff-refund launch |
-| 239 | 2026-05-01 | BAC | monetary_policy_or_rates | unresolved | yes | Powell stays; rates held |
+| 239 | 2026-04-29 | BAC | monetary_policy_or_rates | unresolved | yes | Powell stays; rates held |
 
-Cases 153 / 154 / 160 carry no event-study readout (they are among the 14 of 81
-c01 rows without one). The unresolved late-April cases (153 / 154 / 160 / 211 /
-212 / 239) are the adjacent-macro tail, not the oil core.
+Cases 154 and 160 were in this table before the L1B-2C split-date repair; they
+have left c01 and now sit in singleton clusters c06 (2026-04-23) and c07
+(2026-04-24), still no-ticker and no-readout. (The row 239 date is also corrected
+here to its L1B-2A anchor 2026-04-29, a pre-existing carry-over from that slice.)
+
+Case 153 carries no event-study readout (it is among the 12 of 79 c01 rows
+without one); cases 154 and 160, now split-date singletons, also carry none. The
+unresolved late-April cases (153 / 154 / 160 / 211 / 212 / 239) are the
+adjacent-macro tail, not the oil core.
 
 ## 7. The 7 / 29 / 38 caution
 
@@ -179,9 +188,9 @@ Design notes only -- no work is proposed or approved here.
 - **Separate the adjacent-macro tail.** The Fed / tariff-refund /
   non-oil-sanction / tech-earnings rows share only a calendar with the oil tape.
   Splitting them out would leave a cleaner Iran / Hormuz component.
-- **Recover the missing readouts.** 14 of the 81 rows (including 153 / 154 / 160)
-  have no event-study readout; their outcomes stay unresolved partly for that
-  reason.
+- **Recover the missing readouts.** 12 of the 79 c01 rows (including 153) have no
+  event-study readout; their outcomes stay unresolved partly for that reason.
+  (Rows 154 and 160, now split-date singletons, also carry no readout.)
 
 None of these change the accepted corpus; they would only sharpen how the same
 rows are grouped and counted.
@@ -192,11 +201,11 @@ rows are grouped and counted.
   Iran / Hormuz oil narrative is the legible throughline of the window, not a
   validated causal claim.
 - c01 is a **mechanical adjacency cluster** (shared date / shared 20-day-window
-  ticker / duplicate link), so its 81-row size is not a measure of evidence. It
+  ticker / duplicate link), so its 79-row size is not a measure of evidence. It
   mixes one dominant tape, adjacent-but-distinct macro, and general-news noise.
 - The family labels are a **headline-overlay reading lens**, not stored taxonomy
   and not six confirmed mechanisms.
-- The outcome counts (42 / 8 / 31) are **clustered, not independent.** Do not
+- The outcome counts (42 / 8 / 29) are **clustered, not independent.** Do not
   read 42 supports as 42 confirmations.
 - This note is **not an inferential effective sample size, score, rank, p-value,
   or FDR pool, and not a trading, prediction, or recommendation surface.**

@@ -537,18 +537,18 @@ describe("EvidenceOverview — effective independent evidence (K3B)", () => {
     expect(visible.toLowerCase()).toContain("accepted track-record rows");
   });
 
-  it("shows 5 descriptive market-story clusters", () => {
-    expect(visible).toContain("5");
+  it("shows 7 descriptive market-story clusters", () => {
+    expect(visible).toContain("7");
     expect(visible.toLowerCase()).toContain("descriptive market-story clusters");
   });
 
-  it("shows the largest cluster of 81 rows", () => {
-    expect(visible).toContain("81");
+  it("shows the largest cluster of 79 rows", () => {
+    expect(visible).toContain("79");
     expect(visible.toLowerCase()).toContain("largest cluster");
   });
 
-  it("shows 14 / 15 representative cases in the largest cluster", () => {
-    expect(visible).toContain("14 / 15");
+  it("shows 12 / 15 representative cases in the largest cluster", () => {
+    expect(visible).toContain("12 / 15");
     expect(visible.toLowerCase()).toContain("representative cases");
   });
 

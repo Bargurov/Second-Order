@@ -84,9 +84,9 @@ A skeptical reviewer can follow the intended order without a guided tour:
 6. **Effective independent evidence** —
    [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md):
    answers the reviewer question "are the 86 accepted track-record rows really 86
-   separate market stories?" They group into 5 descriptive market-story clusters
+   separate market stories?" They group into 7 descriptive market-story clusters
    under transparent same-date / same-primary-ticker-window / duplicate-link rules,
-   and the largest cluster holds 81 rows — so the archive reads as a small number
+   and the largest cluster holds 79 rows — so the archive reads as a small number
    of market tapes observed many ways, not 86 separate pieces of evidence. Read it
    before treating the support / contradiction / unresolved counts as separate
    evidence; it makes the interpretation more honest, not weaker. A descriptive

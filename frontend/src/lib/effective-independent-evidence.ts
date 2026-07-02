@@ -22,10 +22,10 @@ export const EFFECTIVE_INDEPENDENT_EVIDENCE = {
   /** Nominal accepted track-record rows (the K2 lens; = the ledger's 86). */
   acceptedTrackRecordRows: 86,
   /** Descriptive market-story clusters the 86 rows group into. */
-  clusterCount: 5,
+  clusterCount: 7,
   /** Rows in the single largest cluster (c01). */
-  largestClusterRows: 81,
+  largestClusterRows: 79,
   /** Representative walkthrough cases that fall inside the largest cluster. */
-  representativeCasesInLargest: 14,
+  representativeCasesInLargest: 12,
   representativeCasesTotal: 15,
 } as const;
