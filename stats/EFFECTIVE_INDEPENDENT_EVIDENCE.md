@@ -47,7 +47,7 @@ K2 reads the **accepted track-record** lens (**86** rows): it is the corpus the 
 | multi-row clusters | 2 |
 | rows in multi-row clusters | 83 (96.5%) |
 | largest cluster size | 81 |
-| top clustered dates | 2026-04-05 (21 rows), 2026-04-06 (13 rows), 2026-04-29 (11 rows) |
+| top clustered dates | 2026-04-05 (21 rows), 2026-04-06 (13 rows), 2026-04-29 (12 rows) |
 | top repeated primary tickers | XLE (25 rows), XOM (8 rows), DRIV (6 rows) |
 | event-study rows inside multi-row clusters | 67 |
 | event-study rows on singletons | 3 |
@@ -59,7 +59,7 @@ The 20d-window capacity line is the stricter cross-ticker caution: even ignoring
 
 | cluster | rows | dates | primary tickers | S / C / U | ES | why grouped |
 | --- | --- | --- | --- | --- | --- | --- |
-| c01 | 81 | 2026-04-04 .. 2026-05-05 | AA, BAC, BDRY, BTU, ... | 42 / 8 / 31 | 67/81 | 12 shared event dates (top: 2026-04-05 x21, 2026-04-06 x13, 2026-04-29 x11); 9 repeated primary tickers (top: XLE x24, XOM x8, DRIV x6); 8 duplicate-linked row(s) |
+| c01 | 81 | 2026-04-04 .. 2026-05-05 | AA, BAC, BDRY, BTU, ... | 42 / 8 / 31 | 67/81 | 12 shared event dates (top: 2026-04-05 x21, 2026-04-06 x13, 2026-04-29 x12); 9 repeated primary tickers (top: XLE x24, XOM x8, DRIV x6); 8 duplicate-linked row(s) |
 | c02 | 2 | 2026-05-30 | XLE | 1 / 0 / 1 | 0/2 | shared event date(s) 2026-05-30 x2 |
 
 Event ids per cluster:

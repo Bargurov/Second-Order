@@ -52,7 +52,7 @@ AR% per horizon shown (SPY-relative); full AR% / SAR / CAR% per horizon is in th
 | 154 | new | sanction | unresolved | no | — | unavailable | unavailable | unavailable | manual_review_needed |
 | 160 | new | ceasefire_deescalation | unresolved | no | — | unavailable | unavailable | unavailable | partial_anticipation |
 | 212 | new | tariff | unresolved | yes | TJX | -0.50 | -3.52 | -6.80 | clean_discrete_anchor |
-| 239 | new | monetary_policy_or_rates | unresolved | yes | BAC | -2.03 | -6.38 | -8.89 | manual_review_needed |
+| 239 | new | monetary_policy_or_rates | unresolved | yes | BAC | -0.20 | -1.41 | -10.04 | manual_review_needed |
 
 Caveat markers (from F1/F2, surfaced per row in `--json`): thin family (46, 66,
 71, 153, 154, 160, 211, 239); overlay-only (7, 46, 61, 239); missing readout
