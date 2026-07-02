@@ -62,7 +62,7 @@ size.
 | tariff | canonical | 11 | 5 / 0 / 6 | 8/11 | 9 | 2026-04-03 .. 2026-05-05 | 9 |
 | sanction | canonical | 4 | 0 / 0 / 4 | 1/4 | 1 | 2026-04-29 .. 2026-04-29 | suppressed (n<8) |
 | ceasefire_deescalation | canonical | 3 | 2 / 0 / 1 | 2/3 | 3 | 2026-04-08 .. 2026-04-29 | suppressed (n<8) |
-| monetary_policy_or_rates | overlay-only | 3 | 1 / 0 / 2 | 2/3 | 3 | 2026-04-06 .. 2026-05-01 | suppressed (n<8) |
+| monetary_policy_or_rates | overlay-only | 3 | 1 / 0 / 2 | 2/3 | 3 | 2026-04-06 .. 2026-04-30 | suppressed (n<8) |
 
 `overlay-only` families (geopolitical_conflict_context, monetary_policy_or_rates)
 have no name in the canonical stored taxonomy; they are honest headline buckets

@@ -115,7 +115,7 @@ full field text.
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 
 ### Event 239 — Jerome Powell says he'll stay on Fed board after the FOMC holds rates
-- Family lens: monetary_policy_or_rates (overlay-only, thin) · Outcome: unresolved · Event date: 2026-05-01 (anchor: manual_review_needed)
+- Family lens: monetary_policy_or_rates (overlay-only, thin) · Outcome: unresolved · Event date: 2026-04-29 (anchor: manual_review_needed)
 - Why selected: unresolved example in monetary_policy_or_rates (overlay-only bucket, thin family).
 - Mechanism: Powell's commitment signals Fed independence and reinforces higher-for-longer rate expectations, pressuring duration-sensitive assets while supporting bank NIM prospects.
 - Assets: BAC, KRE, IYR, TLT (event-study primary BAC vs SPY).
