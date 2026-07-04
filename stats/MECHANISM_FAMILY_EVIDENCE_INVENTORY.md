@@ -60,8 +60,8 @@ size.
 | supply_shock | canonical | 20 | 11 / 3 / 6 | 20/20 | 11 | 2026-04-05 .. 2026-05-05 | 11 |
 | geopolitical_conflict_context | overlay-only | 11 | 7 / 2 / 2 | 10/11 | 6 | 2026-04-05 .. 2026-05-01 | 6 |
 | tariff | canonical | 11 | 5 / 0 / 6 | 8/11 | 9 | 2026-04-03 .. 2026-05-05 | 9 |
-| sanction | canonical | 4 | 0 / 0 / 4 | 1/4 | 1 | 2026-04-29 .. 2026-04-29 | suppressed (n<8) |
-| ceasefire_deescalation | canonical | 3 | 2 / 0 / 1 | 2/3 | 3 | 2026-04-08 .. 2026-04-29 | suppressed (n<8) |
+| sanction | canonical | 4 | 0 / 0 / 4 | 1/4 | 2 | 2026-04-23 .. 2026-04-29 | suppressed (n<8) |
+| ceasefire_deescalation | canonical | 3 | 2 / 0 / 1 | 2/3 | 3 | 2026-04-08 .. 2026-04-24 | suppressed (n<8) |
 | monetary_policy_or_rates | overlay-only | 3 | 1 / 0 / 2 | 2/3 | 3 | 2026-04-06 .. 2026-04-30 | suppressed (n<8) |
 
 `overlay-only` families (geopolitical_conflict_context, monetary_policy_or_rates)
@@ -121,9 +121,9 @@ they are not evidence for it.
 
 ## Thin-family caveats
 
-- **sanction (n=4):** every row unresolved (`0/0/4`), a single shared event date
-  (fully clustered), and only 1 of 4 with an event-study readout - the thinnest,
-  most date-collapsed family.
+- **sanction (n=4):** every row unresolved (`0/0/4`), two event dates with 3 of
+  the 4 rows sharing 2026-04-29 (still heavily date-clustered), and only 1 of 4
+  with an event-study readout - the thinnest, most date-collapsed family.
 - **ceasefire_deescalation (n=3), monetary_policy_or_rates (n=3):** below the
   low-n floor (5); independent-window capacity suppressed.
 - **regulation, labor_inflation, industrial_policy:** zero accepted thesis

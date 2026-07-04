@@ -119,7 +119,7 @@ full field text.
 - Why selected: unresolved example in monetary_policy_or_rates (overlay-only bucket, thin family).
 - Mechanism: Powell's commitment signals Fed independence and reinforces higher-for-longer rate expectations, pressuring duration-sensitive assets while supporting bank NIM prospects.
 - Assets: BAC, KRE, IYR, TLT (event-study primary BAC vs SPY).
-- Readout: 1d -2.03 / -1.68 / -2.03 · 5d -6.38 / -2.36 / -6.36 · 20d -8.89 / -1.65 / -8.70.
+- Readout: 1d -0.20 / -0.16 / -0.20 · 5d -1.41 / -0.50 / -1.32 · 20d -10.04 / -1.78 / -9.78.
 - Caveats / falsifier: overlay-only bucket; low-n / thin family; non-supporting (unresolved); manual_review_needed anchor.
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 
