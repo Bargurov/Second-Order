@@ -85,3 +85,86 @@ negative XLE readout. Readout availability and direction are not thesis support.
 - Not a recommendation of any kind, and no forecast.
 - Denominators unchanged: 94 accepted coverage / 86 accepted track-record;
   staged candidates (13) are excluded.
+
+## Sector-relative second lens (F1, additive)
+
+A second descriptive comparison beside the canonical SPY-relative readout:
+absolute return -> vs SPY -> vs the primary ticker's own sector ETF, at the
+same 1d / 5d / 20d horizons, computed by the same gated engine (same
+estimation-window, forward-cache, and contiguity discipline; beta fixed at 1,
+no local beta, no factor model). **SPY stays canonical**; the sector read is a
+lens on how much of a SPY-relative move was the sector tape.
+
+Eligibility is deliberately narrow: the ticker -> sector map is the
+conservative suggestion-layer map (`sector-map v1`), reused verbatim and never
+extended to maximise coverage. Every state is explicit; nothing falls back
+silently.
+
+| case | primary | sector ETF | state | 1d sect-rel | 5d sect-rel | 20d sect-rel |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | TSLA | XLY | available | -2.98% | -7.61% | -1.88% |
+| 46 | DRIV | - | no sector benchmark (SPY-only) | - | - | - |
+| 61 | BTU | - | no sector benchmark (SPY-only) | - | - | - |
+| 66 | XLE | - | asset is a sector ETF | - | - | - |
+| 210 | XOM | XLE | available | +0.32% | +1.18% | +0.39% |
+| 211 | FSLR | - | no sector benchmark (SPY-only) | - | - | - |
+| 7 | XLE | - | asset is a sector ETF | - | - | - |
+| 29 | XLE | - | asset is a sector ETF | - | - | - |
+| 38 | XLE | - | asset is a sector ETF | - | - | - |
+| 71 | VLO | XLE | available | +2.26% | +4.13% | +2.94% |
+| 153 | - | - | no readout primary | - | - | - |
+| 154 | - | - | no readout primary | - | - | - |
+| 160 | - | - | no readout primary | - | - | - |
+| 212 | TJX | - | no sector benchmark (SPY-only) | - | - | - |
+| 239 | BAC | XLF | sector window unavailable (missing benchmark cache) | - | - | - |
+
+What the second lens changes here, descriptively:
+
+- **210 (XOM)**: 5d vs SPY -6.82% reads as sharp underperformance; vs XLE it is
+  **+1.18%** - the SPY-relative move was overwhelmingly the energy-sector tape,
+  and XOM was slightly ahead of its sector.
+- **71 (VLO)**: vs XLE **+4.13%** at 5d - clearly ahead of its own sector.
+  Basis caveat: for this row the two lenses resolved different price bases
+  (SPY read on raw closes, sector read on adjusted), so its -1.61% vs-SPY
+  figure is not basis-comparable with the sector read; on the sector lens's
+  basis the vs-SPY read is ~ -0.4%. Ahead-of-sector stands; the "weak vs
+  market" magnitude does not.
+- **1 (TSLA)**: vs SPY and vs XLY read similarly (5d -6.83% vs -7.61%) - the
+  move is not explained by the consumer-discretionary tape; the second lens
+  adds little and says so.
+- The four XLE-primary cases (7, 29, 38, 66) are the sector benchmark itself;
+  comparing an ETF to itself is degenerate, so they are labeled, not computed.
+
+Archive-wide (all 86 accepted rows, read-only): 20 rows eligible (17
+computable, 3 with an uncached sector window: BA / LMT-late / BAC), 25
+XLE-primary rows labeled asset-is-sector-ETF, 28 unmapped (thematic / country
+ETFs and unmapped single names stay SPY-only), 13 with no readout primary.
+The **sector-vs-market component** (SPY-relative AR minus sector-relative AR;
+on a shared asset basis this equals the sector ETF's own excess return over
+SPY on the window - a tape property of the (sector, window) pair, not an
+asset-specific quantity) has medians of -0.24% at 1d, -7.50% at 5d, and
+-10.36% at 20d across the **13 basis-matched rows**. Four rows (52, 63, 71,
+72) are excluded from these figures because the two lenses resolved different
+price bases or calendars for the same asset (raw-vs-adjusted differences up to
+~1.2pp), and the 17 computable rows span only **8 unique (sector ETF, date)
+windows** - 14 of 17 are XLE across five dates, so duplicate same-window rows
+repeat the same value and these medians describe the XLE tape, not 17
+independent observations (the same independence caution the K2 layer applies
+to row counts). The component is material at 5d / 20d in this energy-dominated
+window and small at 1d.
+
+Sector-lens caveats (in addition to the caveats above):
+
+- A sector-relative residual does not establish company-specific causality; it
+  only describes the move relative to one sector ETF over the window.
+- Missing sector windows are reported unavailable, never approximated; no
+  fetch or backfill is triggered by this layer.
+- The outcome labels, accepted denominators, representative-case selection,
+  and closed FDR pools are unchanged by this lens.
+
+Reproduce (read-only):
+
+```
+python scripts/sector_relative_readout.py --db-path events.db
+python scripts/case_library_reaction_matrix.py --db-path events.db --json
+```

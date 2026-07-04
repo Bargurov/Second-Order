@@ -48,6 +48,10 @@ from scripts.expanded_case_notes_report import (  # noqa: E402
 from scripts.representative_case_expansion_report import (  # noqa: E402
     build_report as f1_build_report,
 )
+from scripts.sector_relative_readout import (  # noqa: E402
+    build_sector_relative_readout,
+    compact_block,
+)
 
 ANCHOR_IDS: tuple[int, ...] = (1, 46, 61, 66, 210, 211)
 NEW_IDS: tuple[int, ...] = (7, 29, 38, 71, 153, 154, 160, 212, 239)
@@ -75,6 +79,10 @@ NON_CLAIMS: tuple[str, ...] = (
     "Not a recommendation of any kind, and no forecast.",
     "Denominators unchanged: 94 accepted coverage / 86 accepted track-record; "
     "staged candidates (13) are excluded.",
+    "Sector-relative column: a second descriptive lens vs the primary's own "
+    "sector ETF (conservative map, reused verbatim); SPY stays the canonical "
+    "benchmark, and a sector-relative residual does not establish "
+    "company-specific causality.",
 )
 
 LENS_WARNING = {
@@ -178,6 +186,28 @@ def build_report(*, db_path: str | None = None) -> dict:
         cases, readout_by_id=readout_by_id, overlay_families=overlay_families
     )
 
+    # F1 sector-relative second lens (additive, descriptive).  The readout
+    # module reads price_cache through db.DB_FILE, so point it at the resolved
+    # path for the loop and restore it — same non-reentrant single-threaded-CLI
+    # contract as the sibling reports.  Read-only throughout.
+    saved_db_file = db.DB_FILE
+    try:
+        if path is not None:
+            db.DB_FILE = path
+        for row in matrix:
+            adapter = {
+                "id": row["event_id"],
+                "event_date": row["event_date"],
+                "market_tickers": (
+                    [{"symbol": row["primary_ticker"]}]
+                    if row["primary_ticker"] else []
+                ),
+            }
+            row["sector_relative"] = compact_block(
+                build_sector_relative_readout(adapter))
+    finally:
+        db.DB_FILE = saved_db_file
+
     missing_ids = sorted(r["event_id"] for r in matrix if not r["readout"]["available"])
     available = sum(1 for r in matrix if r["readout"]["available"])
 
@@ -224,6 +254,25 @@ def _readout_cell(rd: dict) -> str:
     return f"1d {_h('1d')} | 5d {_h('5d')} | 20d {_h('20d')}"
 
 
+def _sector_cell(block: dict | None) -> str:
+    """One-line sector-relative cell: values when available, else the
+    explicit state label (never a silent blank)."""
+    if not block:
+        return "unavailable"
+    status = block.get("status")
+    if status != "sector_relative_available":
+        bench = block.get("sector_benchmark")
+        return f"{status}" + (f" (would be vs {bench})" if bench else "")
+    hz = {p["horizon"]: p for p in block.get("per_horizon") or []}
+
+    def _h(h: int) -> str:
+        v = hz.get(h, {}).get("sector_relative_return")
+        return "-" if v is None else f"{v * 100:+.2f}%"
+
+    return (f"vs {block.get('sector_benchmark')}: "
+            f"1d {_h(1)} | 5d {_h(5)} | 20d {_h(20)}")
+
+
 def render_text(report: dict) -> str:
     d = report.get("denominators", {})
     ms = report.get("missingness_summary", {})
@@ -251,6 +300,7 @@ def render_text(report: dict) -> str:
             f"primary={r['primary_ticker'] or '-'}  {_cp1252(r['headline'])[:50]}"
         )
         lines.append(f"        readout: {_readout_cell(r['readout'])}")
+        lines.append(f"        sector-relative: {_sector_cell(r.get('sector_relative'))}")
         if r["caveats"]:
             lines.append(f"        caveats: {'; '.join(_cp1252(c) for c in r['caveats'])}")
         lines.append(f"        anchor: {r['event_date']} ({r['event_date_quality']})")

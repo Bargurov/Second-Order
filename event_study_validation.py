@@ -209,11 +209,12 @@ def _is_contiguous(window_dates: list[str]) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _base(event: dict, primary: Optional[str]) -> dict[str, Any]:
+def _base(event: dict, primary: Optional[str],
+          benchmark: str = BENCHMARK_TICKER) -> dict[str, Any]:
     return {
         "event_id":         event.get("id"),
         "primary_ticker":   primary,
-        "benchmark":        BENCHMARK_TICKER,
+        "benchmark":        benchmark,
         "estimation_window": ESTIMATION_WINDOW,
         "horizons":         list(HORIZONS),
     }
@@ -302,19 +303,28 @@ def _available(
 # ---------------------------------------------------------------------------
 
 
-def build_event_study_validation(event: dict) -> dict[str, Any]:
+def build_event_study_validation(
+    event: dict, *, benchmark_ticker: str = BENCHMARK_TICKER,
+) -> dict[str, Any]:
     """Return the gated event-study payload for one event.
 
     Ready events get a ``status="event_study_available"`` payload with
     per-horizon AR / SAR / CAR; non-ready events get
     ``status="insufficient_data"`` with ``blocking_reasons``.  Read-only.
+
+    ``benchmark_ticker`` defaults to the canonical SPY benchmark — every
+    existing caller is unchanged.  Passing a different ticker (e.g. a sector
+    ETF) reuses the identical gates, alignment, contiguity guard, and engine
+    with that benchmark instead; the F1 sector-relative layer is the only
+    intended non-default caller.  The canonical archive readout stays
+    SPY-relative.
     """
     if not isinstance(event, dict):
         return _insufficient(_base({}, None), ["no_event"])
 
     primary = _primary_ticker(event.get("market_tickers"))
     event_d = _parse_iso_date(event.get("event_date"))
-    base = _base(event, primary)
+    base = _base(event, primary, benchmark_ticker)
 
     early: list[str] = []
     if event_d is None:
@@ -326,13 +336,13 @@ def build_event_study_validation(event: dict) -> dict[str, Any]:
 
     # Read both auto_adjust flags once for the asset and the benchmark.
     closes = {
-        (primary, False):          _read_closes(primary, auto_adjust=False),
-        (primary, True):           _read_closes(primary, auto_adjust=True),
-        (BENCHMARK_TICKER, False): _read_closes(BENCHMARK_TICKER, auto_adjust=False),
-        (BENCHMARK_TICKER, True):  _read_closes(BENCHMARK_TICKER, auto_adjust=True),
+        (primary, False):           _read_closes(primary, auto_adjust=False),
+        (primary, True):            _read_closes(primary, auto_adjust=True),
+        (benchmark_ticker, False):  _read_closes(benchmark_ticker, auto_adjust=False),
+        (benchmark_ticker, True):   _read_closes(benchmark_ticker, auto_adjust=True),
     }
     tkr_dates = set(closes[(primary, False)]) | set(closes[(primary, True)])
-    spy_dates = set(closes[(BENCHMARK_TICKER, False)]) | set(closes[(BENCHMARK_TICKER, True)])
+    spy_dates = set(closes[(benchmark_ticker, False)]) | set(closes[(benchmark_ticker, True)])
     event_iso = event_d.isoformat()
 
     # Date-union readiness gates (friendly blocking reasons).
@@ -367,7 +377,7 @@ def build_event_study_validation(event: dict) -> dict[str, Any]:
     flag_pairs = [(False, False), (True, True), (True, False), (False, True)]
     for asset_flag, bench_flag in flag_pairs:
         asset_map = closes[(primary, asset_flag)]
-        bench_map = closes[(BENCHMARK_TICKER, bench_flag)]
+        bench_map = closes[(benchmark_ticker, bench_flag)]
         common = sorted(set(asset_map) & set(bench_map))
         idx = _last_index_le(common, event_iso)
         if idx is None:
