@@ -40,8 +40,8 @@ Two denominator lenses are kept separate at every row:
 = `86` = the accepted track-record denominator. This is asserted on every live
 run; it is what proves no thesis row is silently dropped or double-counted.
 
-**Independent-window capacity, global (track-record lens, 86 rows, 17 distinct
-event dates):** 1d `17`, 5d `6`, 20d `3`. Diagnostic only: an upper-bound count
+**Independent-window capacity, global (track-record lens, 86 rows, 19 distinct
+event dates):** 1d `19`, 5d `7`, 20d `3`. Diagnostic only: an upper-bound count
 of mutually non-overlapping windows, not a true effective sample size; it runs
 no cohort inference, adds no p-value or CI, validates no mechanism, changes no
 FDR scope, and authorizes no pooling.
