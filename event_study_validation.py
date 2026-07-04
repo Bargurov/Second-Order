@@ -64,7 +64,7 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import date as _date, timedelta as _timedelta
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 import db as _db
 from stats.event_study import compute_event_study
@@ -305,6 +305,7 @@ def _available(
 
 def build_event_study_validation(
     event: dict, *, benchmark_ticker: str = BENCHMARK_TICKER,
+    flag_pairs: Optional[Sequence[tuple[bool, bool]]] = None,
 ) -> dict[str, Any]:
     """Return the gated event-study payload for one event.
 
@@ -318,6 +319,13 @@ def build_event_study_validation(
     with that benchmark instead; the F1 sector-relative layer is the only
     intended non-default caller.  The canonical archive readout stays
     SPY-relative.
+
+    ``flag_pairs`` defaults to ``None`` — the canonical (asset, benchmark)
+    auto_adjust preference order, unchanged for every existing caller.
+    Passing an explicit sequence (e.g. ``((True, True),)``) restricts the
+    resolution to exactly those pairs with NO silent fallback: if none of the
+    forced pairs is computable the payload is ``insufficient_data``.  The F2
+    basis-integrity comparison is the only intended non-default caller.
     """
     if not isinstance(event, dict):
         return _insufficient(_base({}, None), ["no_event"])
@@ -374,8 +382,9 @@ def build_event_study_validation(
     # then the remaining cross pair.
     max_h = max(HORIZONS)
     compute_failures: list[str] = []
-    flag_pairs = [(False, False), (True, True), (True, False), (False, True)]
-    for asset_flag, bench_flag in flag_pairs:
+    pairs = (list(flag_pairs) if flag_pairs is not None
+             else [(False, False), (True, True), (True, False), (False, True)])
+    for asset_flag, bench_flag in pairs:
         asset_map = closes[(primary, asset_flag)]
         bench_map = closes[(benchmark_ticker, bench_flag)]
         common = sorted(set(asset_map) & set(bench_map))
