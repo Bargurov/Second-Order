@@ -70,6 +70,7 @@ if str(ROOT) not in sys.path:
 
 import db  # noqa: E402  - DB_FILE resolver + NON_ANALYSIS_STAGES
 from event_study_validation import build_event_study_validation  # noqa: E402
+from scripts import materiality_annotation as _materiality  # noqa: E402
 
 
 _DEFAULT_LIMIT = 50
@@ -498,6 +499,10 @@ def summarize_data_hygiene(
         "duplicate_groups": duplicate_groups,
         "real_unique_no_primary_examples": real_unique_no_primary[:capped],
         "real_unique_no_primary_total": len(real_unique_no_primary),
+        # Descriptive L2 materiality-hygiene overlay (read-only).  It surfaces the
+        # firm / held annotations from event_hygiene WITHOUT moving any denominator
+        # above -- see scripts/materiality_annotation.py for why it is safe.
+        "materiality_hygiene_overlay": _materiality.overlay_summary(path),
         "non_claims": dict(_NON_CLAIMS),
     }
 
@@ -517,6 +522,7 @@ def _empty_report() -> dict[str, Any]:
         },
         "synthetic_groups": [], "duplicate_groups": [],
         "real_unique_no_primary_examples": [], "real_unique_no_primary_total": 0,
+        "materiality_hygiene_overlay": _materiality.empty_overlay(),
         "non_claims": dict(_NON_CLAIMS),
     }
 
@@ -562,6 +568,12 @@ def _render_text(report: dict[str, Any]) -> str:
     L.append("Real-duplicate groups:")
     for g in report["duplicate_groups"]:
         L.append(f"  {g['count']:>3}x {g['date_range']} tk={g['primary_tickers']} | {g['headline'][:42]}")
+    L.append("")
+    ov = report.get("materiality_hygiene_overlay") or {}
+    L.append("Materiality-hygiene overlay (L2, descriptive):")
+    L.append(f"  firm hygiene rows:  {ov.get('firm_count', 0)} {ov.get('firm_hygiene_ids', [])}")
+    L.append(f"  held/leaning rows:  {ov.get('held_count', 0)} {ov.get('held_hygiene_ids', [])}")
+    L.append(f"  {ov.get('note', '')}")
     L.append("")
     L.append("Caveat: synthetic/test rows are classified heuristically (exact seed "
              "headline + test-model fingerprint), kept visible, never deleted; the "
