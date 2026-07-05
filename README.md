@@ -98,6 +98,8 @@ A skeptical reviewer can follow the intended order without a guided tour:
    material, not family-level inference; not a recommendation, forecast, or
    trading signal.
 
+Locked protocol for the gated historical-evidence phase (Mission G): [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md) with its standardization spec [`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md).
+
 ## Five-minute walkthrough
 
 1. **Market Overview** (the landing page) — read the market backdrop, recent
