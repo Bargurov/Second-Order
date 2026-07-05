@@ -343,5 +343,74 @@ class IsolationTest(unittest.TestCase):
         self.assertIn("from stats.event_study import compute_event_study", src)
 
 
+class EventDateAnchorInvariantTest(unittest.TestCase):
+    """Event-date normalization invariants for the canonical event-study gate.
+
+    Second Order stores every ``event_date`` as a plain ``YYYY-MM-DD`` calendar
+    date and every ``timestamp`` as a naive ``YYYY-MM-DDTHH:MM:SS`` (no tz).
+    Real archive rows exist whose ``event_date`` differs from ``timestamp[:10]``
+    (the ingestion / headline date), so the two fields are semantically distinct
+    calendar dates and the research gate must anchor on ``event_date``.  These
+    tests pin the load-bearing contract that keeps every research and
+    market-anchoring path in agreement:
+
+      * the gate anchors on ``event_date`` and never rescues from the ingestion
+        ``timestamp`` — so a row whose headline date differs can never be
+        silently re-anchored;
+      * the supported stored shapes (plain ``YYYY-MM-DD`` date; naive
+        ``YYYY-MM-DDTHH:MM:SS``) normalize to their literal calendar date with
+        no host-timezone dependence;
+      * a missing / malformed ``event_date`` fails closed, never a plausible
+        substitute.
+
+    Behavioural, not structural: they assert that the same input yields the
+    same canonical calendar date and that malformed input fails closed — not
+    which helper any particular module happens to call.  Timezone-aware
+    event-date semantics are intentionally left unspecified: no such value is
+    stored or produced, so pinning a rollover rule would define an unsupported
+    future contract.
+    """
+
+    def test_supported_stored_shapes_normalize_to_plain_calendar_date(self):
+        # The only shapes the archive actually holds: a plain YYYY-MM-DD
+        # event_date and a naive YYYY-MM-DDTHH:MM:SS timestamp.  Both normalize
+        # to their literal calendar date with no dependence on the host
+        # timezone (the parser reads no wall clock and converts no zone).
+        # Teeth: fails if a naive value is reinterpreted through the host zone
+        # (e.g. datetime.fromisoformat(...).astimezone(...).date()), which would
+        # make the resolved date host-dependent.  Timezone-aware event-date
+        # inputs are deliberately NOT asserted: none is stored or produced, so
+        # their rollover behaviour is an unsupported future contract.
+        self.assertEqual(esv._parse_iso_date("2026-01-15"), date(2026, 1, 15))
+        self.assertEqual(esv._parse_iso_date("2026-04-03T22:08:35"), date(2026, 4, 3))
+
+    def test_malformed_event_date_fails_closed(self):
+        # Teeth: fails if a silent plausible-date substitute is introduced.
+        for bad in ("2026-13-99", "2026-02-30", "not-a-date", "", None):
+            self.assertIsNone(esv._parse_iso_date(bad), f"expected None for {bad!r}")
+
+    def test_gate_anchors_on_event_date_not_ingestion_timestamp(self):
+        # Mirrors the archive rows where event_date != timestamp[:10]: a valid
+        # ingestion timestamp must NOT rescue a missing or malformed event_date.
+        # Teeth: fails if a ``timestamp`` fallback is added into the gate.
+        with tempfile.TemporaryDirectory() as dtmp:
+            p = os.path.join(dtmp, "events.db")
+            _make_price_db(p, [])
+            with _DbRebind(p):
+                missing_ed = esv.build_event_study_validation({
+                    "id": 900, "event_date": None,
+                    "timestamp": "2026-04-29T15:35:07",
+                    "market_tickers": [{"symbol": "KRE"}],
+                })
+                malformed_ed = esv.build_event_study_validation({
+                    "id": 901, "event_date": "2026-13-99",
+                    "timestamp": "2026-04-29T15:35:07",
+                    "market_tickers": [{"symbol": "KRE"}],
+                })
+        for out in (missing_ed, malformed_ed):
+            self.assertEqual(out["status"], "insufficient_data")
+            self.assertIn("missing_or_malformed_event_date", out["blocking_reasons"])
+
+
 if __name__ == "__main__":
     unittest.main()
