@@ -272,10 +272,18 @@ class LiveBasisReportTests(unittest.TestCase):
                          rec["cohort_size"] + rec["curated_available_excluded"])
 
     def test_current_basis_mixture_reproduced(self):
-        pol = self.report["policy_comparison"]["current_raw_first_fallback"]
+        # post-F3: the canonical default is adjusted-preferred with a single
+        # disclosed matched-raw fallback (#50 GLD)
+        pol = self.report["policy_comparison"]["current_default_policy"]
         self.assertEqual(pol["available"], 70)
-        self.assertEqual(pol["basis_mixture"]["raw"], 39)
-        self.assertEqual(pol["basis_mixture"]["adjusted"], 31)
+        self.assertEqual(pol["basis_mixture"]["adjusted"], 69)
+        self.assertEqual(pol["basis_mixture"]["raw"], 1)
+
+    def test_single_raw_fallback_row_is_50_gld(self):
+        raw_rows = [r for r in self.report["rows"]
+                    if r["default_basis"] == {"asset": False, "benchmark": False}]
+        self.assertEqual([r["event_id"] for r in raw_rows], [50])
+        self.assertEqual(raw_rows[0]["primary_ticker"], "GLD")
 
     def test_every_cohort_row_compared_or_explicitly_incomparable(self):
         rows = self.report["rows"]
@@ -291,11 +299,11 @@ class LiveBasisReportTests(unittest.TestCase):
         for h in ("1d", "5d", "20d"):
             self.assertEqual(sum(dist[h]["buckets"].values()), both)
 
-    def test_canonical_outputs_unchanged_by_this_layer(self):
-        # the default gate still resolves the same mixture as before this slice
+    def test_default_policy_mixture_is_adjusted_preferred(self):
+        # post-F3 canonical default: 69 adjusted / 1 disclosed raw fallback
         self.assertEqual(
-            self.report["policy_comparison"]["current_raw_first_fallback"][
-                "basis_mixture"], {"raw": 39, "adjusted": 31})
+            self.report["policy_comparison"]["current_default_policy"][
+                "basis_mixture"], {"adjusted": 69, "raw": 1})
         self.assertIn("does not restate", " ".join(self.report["non_claims"]).lower())
 
 

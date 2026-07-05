@@ -203,26 +203,88 @@ class NonReadyEventTest(unittest.TestCase):
 
 
 class CrossFlagTest(unittest.TestCase):
-    def test_cross_flag_each_series_single_flag_computes(self):
+    def _cross_rows(self) -> list[tuple]:
         # Asset cached ONLY adjusted (flag=1); benchmark ONLY raw (flag=0).
-        # Each series is internally single-flag and complete, but they sit
-        # on different flags — the matched-flag pairs find nothing and the
-        # cross pair (adj asset / raw bench) must compute, with a caveat.
-        cross: list[tuple] = []
-        for (t, d, c, _aa) in _ready_rows():
-            cross.append((t, d, c, 1 if t == "XLE" else 0))
+        return [(t, d, c, 1 if t == "XLE" else 0) for (t, d, c, _aa) in _ready_rows()]
+
+    def test_cross_flag_split_is_insufficient_under_canonical_policy(self):
+        # F3 canonical policy: the default order carries NO cross-basis pair,
+        # so a series split across flags gates to insufficient rather than
+        # silently mixing an adjusted asset with a raw benchmark.
         with tempfile.TemporaryDirectory() as dtmp:
             p = os.path.join(dtmp, "events.db")
-            _make_price_db(p, cross)
+            _make_price_db(p, self._cross_rows())
             with _DbRebind(p):
                 out = esv.build_event_study_validation({
                     "id": 5, "event_date": _EVENT_ISO,
                     "market_tickers": [{"symbol": "XLE"}],
                 })
+        self.assertEqual(out["status"], "insufficient_data")
+
+    def test_cross_flag_still_computes_when_forced_explicitly(self):
+        # The F2 forced-basis machinery is policy-exempt: an explicit cross
+        # pair still computes (with the cross-basis caveat).
+        with tempfile.TemporaryDirectory() as dtmp:
+            p = os.path.join(dtmp, "events.db")
+            _make_price_db(p, self._cross_rows())
+            with _DbRebind(p):
+                out = esv.build_event_study_validation(
+                    {"id": 5, "event_date": _EVENT_ISO,
+                     "market_tickers": [{"symbol": "XLE"}]},
+                    flag_pairs=((True, False),))
         self.assertEqual(out["status"], "event_study_available")
         self.assertEqual(out["auto_adjust_basis"], {"asset": True, "benchmark": False})
         self.assertIn("basis_caveat", out)
         self.assertGreater(out["sigma_ar_daily"], 0.0)
+
+
+class CanonicalBasisPolicyTests(unittest.TestCase):
+    """F3 canonical default: matched adjusted preferred, matched raw fallback
+    explicitly disclosed, no cross-basis pair."""
+
+    def _both_flag_db(self, dtmp) -> str:
+        rows: list[tuple] = []
+        for (t, d, c, _aa) in _ready_rows():
+            rows.append((t, d, c, 0))
+            rows.append((t, d, round(c * 0.98, 4), 1))
+        p = os.path.join(dtmp, "events.db")
+        _make_price_db(p, rows)
+        return p
+
+    def _event(self) -> dict:
+        return {"id": 7, "event_date": _EVENT_ISO,
+                "market_tickers": [{"symbol": "XLE"}]}
+
+    def test_adjusted_preferred_when_both_matched_bases_compute(self):
+        with tempfile.TemporaryDirectory() as dtmp:
+            with _DbRebind(self._both_flag_db(dtmp)):
+                out = esv.build_event_study_validation(self._event())
+        self.assertEqual(out["status"], "event_study_available")
+        self.assertEqual(out["auto_adjust_basis"], {"asset": True, "benchmark": True})
+        self.assertNotIn("basis_fallback", out)
+
+    def test_raw_fallback_when_adjusted_unavailable_is_explicit(self):
+        # raw-only cache: the canonical default must fall back to matched
+        # raw/raw AND say so in the payload.
+        with tempfile.TemporaryDirectory() as dtmp:
+            p = os.path.join(dtmp, "events.db")
+            _make_price_db(p, _ready_rows())  # aa=0 only
+            with _DbRebind(p):
+                out = esv.build_event_study_validation(self._event())
+        self.assertEqual(out["status"], "event_study_available")
+        self.assertEqual(out["auto_adjust_basis"], {"asset": False, "benchmark": False})
+        self.assertEqual(out["basis_fallback"], "matched_raw_fallback")
+        self.assertIn("adjusted", out["basis_fallback_note"].lower())
+
+    def test_forced_pairs_bypass_policy_without_fallback_disclosure(self):
+        # forced mode is not a policy fallback: no disclosure field
+        with tempfile.TemporaryDirectory() as dtmp:
+            with _DbRebind(self._both_flag_db(dtmp)):
+                out = esv.build_event_study_validation(
+                    self._event(), flag_pairs=((False, False),))
+        self.assertEqual(out["status"], "event_study_available")
+        self.assertEqual(out["auto_adjust_basis"], {"asset": False, "benchmark": False})
+        self.assertNotIn("basis_fallback", out)
 
 
 class ContiguityGuardTest(unittest.TestCase):

@@ -1,11 +1,20 @@
 # F2 basis-integrity report - canonical return-basis policy (read-only)
 
+> **Adopted (F3).** The section 7 recommendation - matched adjusted/adjusted
+> preferred, matched raw/raw as the only disclosed fallback, no cross-basis
+> pair - was adopted as the canonical default gate policy by the F3
+> restatement slice. `stats/BASIS_RESTATEMENT.md` is the adoption record with
+> the final basis split and every restated value. The figures below describe
+> the PRE-adoption state (the 39 raw / 31 adjusted mixture) and the forced-
+> basis comparison that motivated the policy; they are retained unchanged as
+> the decision evidence.
+
 **Status:** read-only comparison exhibit and policy memo. It restates nothing:
 every published readout, outcome label, denominator, representative case, and
 closed Phase 1 / Phase 2 pool is unchanged by this note. `events.db` was read
 via the existing cached-close path only; no provider, fetch, backfill, or
-write of any kind. Any adoption of the recommended policy is a separate,
-explicitly gated restatement slice (section 8 maps its exact surface).
+write of any kind. Adoption of the recommended policy happened in the separate
+F3 restatement slice (section 8 mapped its surface).
 
 ## 1. What a reviewer should take away first
 

@@ -34,11 +34,14 @@ Selected ids — anchors: **1, 46, 61, 66, 210, 211**; new: **7, 29, 38, 71, 153
 ## Reaction matrix
 
 AR% per horizon shown (SPY-relative); full AR% / SAR / CAR% per horizon is in the
-`--json` output. "unavailable" = no event-study readout for the case.
+`--json` output. "unavailable" = no event-study readout for the case. Readouts
+are on the canonical basis policy (matched adjusted closes preferred, matched
+raw fallback disclosed); see `stats/BASIS_RESTATEMENT.md` for the adoption
+record and the exact restated values.
 
 | case | role | family | outcome | ES | primary | 1d AR% | 5d AR% | 20d AR% | event-date anchor |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | anchor | tariff | support | yes | TSLA | -2.63 | -6.83 | -2.08 | partial_anticipation |
+| 1 | anchor | tariff | support | yes | TSLA | -2.63 | -6.83 | -1.50 | partial_anticipation |
 | 46 | anchor | monetary_policy_or_rates | support | yes | DRIV | -0.19 | +4.10 | +11.63 | scheduled_or_weak_anchor |
 | 61 | anchor | geopolitical_conflict_context | contradiction | yes | BTU | -8.76 | -10.66 | -25.85 | partial_anticipation |
 | 66 | anchor | ceasefire_deescalation | support | yes | XLE | -1.82 | -7.48 | -10.36 | scheduled_or_weak_anchor |
@@ -47,12 +50,12 @@ AR% per horizon shown (SPY-relative); full AR% / SAR / CAR% per horizon is in th
 | 7 | new | geopolitical_conflict_context | support | yes | XLE | +0.25 | -7.50 | -10.56 | manual_review_needed |
 | 29 | new | supply_shock | contradiction | yes | XLE | +0.25 | -7.50 | -10.56 | duplicate_or_deferred |
 | 38 | new | supply_shock | support | yes | XLE | +0.25 | -7.50 | -10.56 | manual_review_needed |
-| 71 | new | ceasefire_deescalation | support | yes | VLO | +0.43 | -1.61 | -8.28 | scheduled_or_weak_anchor |
+| 71 | new | ceasefire_deescalation | support | yes | VLO | +1.65 | -0.37 | -7.07 | scheduled_or_weak_anchor |
 | 153 | new | sanction | unresolved | no | — | unavailable | unavailable | unavailable | scheduled_or_weak_anchor |
 | 154 | new | sanction | unresolved | no | — | unavailable | unavailable | unavailable | manual_review_needed |
 | 160 | new | ceasefire_deescalation | unresolved | no | — | unavailable | unavailable | unavailable | partial_anticipation |
-| 212 | new | tariff | unresolved | yes | TJX | -0.50 | -3.52 | -6.80 | clean_discrete_anchor |
-| 239 | new | monetary_policy_or_rates | unresolved | yes | BAC | -0.20 | -1.41 | -10.04 | manual_review_needed |
+| 212 | new | tariff | unresolved | yes | TJX | -0.89 | -3.85 | -6.80 | clean_discrete_anchor |
+| 239 | new | monetary_policy_or_rates | unresolved | yes | BAC | +0.10 | -1.77 | -10.04 | manual_review_needed |
 
 Caveat markers (from F1/F2, surfaced per row in `--json`): thin family (46, 66,
 71, 153, 154, 160, 211, 239); overlay-only (7, 46, 61, 239); missing readout
@@ -123,12 +126,11 @@ What the second lens changes here, descriptively:
 - **210 (XOM)**: 5d vs SPY -6.82% reads as sharp underperformance; vs XLE it is
   **+1.18%** - the SPY-relative move was overwhelmingly the energy-sector tape,
   and XOM was slightly ahead of its sector.
-- **71 (VLO)**: vs XLE **+4.13%** at 5d - clearly ahead of its own sector.
-  Basis caveat: for this row the two lenses resolved different price bases
-  (SPY read on raw closes, sector read on adjusted), so its -1.61% vs-SPY
-  figure is not basis-comparable with the sector read; on the sector lens's
-  basis the vs-SPY read is ~ -0.4%. Ahead-of-sector stands; the "weak vs
-  market" magnitude does not.
+- **71 (VLO)**: 5d vs SPY -0.37% but vs XLE **+4.13%** - a clean,
+  basis-matched sign contrast: roughly flat against the market, clearly ahead
+  of its own sector. (Under the pre-restatement mixed-basis readout this row
+  needed a basis caveat; the canonical adjusted-preferred policy resolved it -
+  both lenses now share the same adjusted asset series.)
 - **1 (TSLA)**: vs SPY and vs XLY read similarly (5d -6.83% vs -7.61%) - the
   move is not explained by the consumer-discretionary tape; the second lens
   adds little and says so.
@@ -142,11 +144,13 @@ ETFs and unmapped single names stay SPY-only), 13 with no readout primary.
 The **sector-vs-market component** (SPY-relative AR minus sector-relative AR;
 on a shared asset basis this equals the sector ETF's own excess return over
 SPY on the window - a tape property of the (sector, window) pair, not an
-asset-specific quantity) has medians of -0.24% at 1d, -7.50% at 5d, and
--10.36% at 20d across the **13 basis-matched rows**. Four rows (52, 63, 71,
-72) are excluded from these figures because the two lenses resolved different
-price bases or calendars for the same asset (raw-vs-adjusted differences up to
-~1.2pp), and the 17 computable rows span only **8 unique (sector ETF, date)
+asset-specific quantity) has medians of -0.61% at 1d, -7.48% at 5d, and
+-10.36% at 20d across **all 17 computable rows, now basis-matched**. Under
+the pre-restatement mixed-basis policy four rows (52, 63, 71, 72) had to be
+excluded because the two lenses resolved different price bases for the same
+asset; the canonical adjusted-preferred policy (see
+`stats/BASIS_RESTATEMENT.md`) removed that artifact and no row is excluded.
+The 17 computable rows still span only **8 unique (sector ETF, date)
 windows** - 14 of 17 are XLE across five dates, so duplicate same-window rows
 repeat the same value and these medians describe the XLE tape, not 17
 independent observations (the same independence caution the K2 layer applies

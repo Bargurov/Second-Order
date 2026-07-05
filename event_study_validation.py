@@ -320,12 +320,14 @@ def build_event_study_validation(
     intended non-default caller.  The canonical archive readout stays
     SPY-relative.
 
-    ``flag_pairs`` defaults to ``None`` — the canonical (asset, benchmark)
-    auto_adjust preference order, unchanged for every existing caller.
-    Passing an explicit sequence (e.g. ``((True, True),)``) restricts the
-    resolution to exactly those pairs with NO silent fallback: if none of the
-    forced pairs is computable the payload is ``insufficient_data``.  The F2
-    basis-integrity comparison is the only intended non-default caller.
+    ``flag_pairs`` defaults to ``None`` — the canonical basis policy (F3):
+    matched adjusted/adjusted preferred (total returns), matched raw/raw as
+    the only fallback (disclosed via ``basis_fallback`` in the payload), no
+    cross-basis pair.  Passing an explicit sequence (e.g. ``((True, True),)``)
+    restricts the resolution to exactly those pairs with NO silent fallback:
+    if none of the forced pairs is computable the payload is
+    ``insufficient_data``.  The F2 basis-integrity comparison is the only
+    intended non-default caller.
     """
     if not isinstance(event, dict):
         return _insufficient(_base({}, None), ["no_event"])
@@ -372,18 +374,19 @@ def build_event_study_validation(
         return _insufficient(base, reasons)
 
     # Correctness pass.  Each series must be INTERNALLY single-flag (so no
-    # splice fakes a split-jump), but the asset and the benchmark may sit
-    # on DIFFERENT flags: an abnormal return differences two
-    # independently-computed return series, so adjusted-asset minus
-    # raw-benchmark is well-formed — it carries only a small dividend-basis
-    # bias over the 1-20d window, surfaced as a caveat.  Preference order:
-    # matched flags first (no bias), then adjusted-asset / raw-benchmark
-    # (adjusted handles asset splits; raw SPY has the broadest coverage),
-    # then the remaining cross pair.
+    # splice fakes a split-jump).  Canonical basis policy (F3, adopted from
+    # the F2 basis-integrity exhibit): matched adjusted/adjusted FIRST (total
+    # returns - the holder outcome including distributions), matched raw/raw
+    # as the ONLY fallback (explicitly disclosed in the payload), and NO
+    # cross-basis pair in the default order - a series split across flags
+    # gates to insufficient rather than silently mixing bases.  Explicit
+    # ``flag_pairs`` callers (the F2 forced-basis comparison) bypass the
+    # policy and may still request cross pairs; those carry the cross-basis
+    # caveat below.
     max_h = max(HORIZONS)
     compute_failures: list[str] = []
     pairs = (list(flag_pairs) if flag_pairs is not None
-             else [(False, False), (True, True), (True, False), (False, True)])
+             else [(True, True), (False, False)])
     for asset_flag, bench_flag in pairs:
         asset_map = closes[(primary, asset_flag)]
         bench_map = closes[(benchmark_ticker, bench_flag)]
@@ -416,13 +419,24 @@ def build_event_study_validation(
                 f"available={es.get('available')} sigma={es.get('sigma_ar_daily')}"
             )
             continue
-        return _available(
+        out = _available(
             base, es,
             asset_flag=asset_flag,
             bench_flag=bench_flag,
             aligned_sample_size=len(common),
             event_index=idx,
         )
+        # Canonical-policy fallback disclosure: only in default mode, and
+        # only when the preferred matched-adjusted pair was not computable.
+        if flag_pairs is None and (asset_flag, bench_flag) == (False, False):
+            out["basis_fallback"] = "matched_raw_fallback"
+            out["basis_fallback_note"] = (
+                "canonical basis policy prefers matched adjusted/adjusted "
+                "(total returns); this readout fell back to matched raw/raw "
+                "(price returns) because the adjusted pair is not computable "
+                "for this window"
+            )
+        return out
 
     return _insufficient(
         base,

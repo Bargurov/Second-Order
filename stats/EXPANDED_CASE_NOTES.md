@@ -35,6 +35,8 @@ N1 anchors carried but not rewritten: **1, 46, 61, 66, 210, 211**.
 
 Readout shown as AR% / SAR / CAR% per horizon (SPY-relative; SAR is a ratio, not
 a percent). "Readout: unavailable" means no event-study readout exists for the case.
+Readouts are on the canonical basis policy (matched adjusted closes preferred,
+matched raw fallback disclosed); see `stats/BASIS_RESTATEMENT.md`.
 
 The mechanism line in each note below is **abridged** from that record's fuller
 `mechanism_summary` field for readability; it asserts nothing the record does
@@ -74,7 +76,7 @@ full field text.
 - Why selected: support example in ceasefire_deescalation (thin family).
 - Mechanism: Iranian diplomatic overtures reduce escalation probability and signal potential sanctions relief, pressuring oil futures as supply expectations rise; refiners benefit, competing exporters lose share.
 - Assets: VLO, PSX, XOM, XLE, XOP, OXY (event-study primary VLO vs SPY).
-- Readout: 1d +0.43 / 0.16 / +0.43 · 5d -1.61 / -0.27 / -1.53 · 20d -8.28 / -0.68 / -7.28.
+- Readout: 1d +1.65 / 0.61 / +1.65 · 5d -0.37 / -0.06 / -0.28 · 20d -7.07 / -0.58 / -6.01.
 - Caveats / falsifier: low-n / thin family; scheduled_or_weak_anchor (anticipated diplomacy).
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 
@@ -110,7 +112,7 @@ full field text.
 - Why selected: unresolved example in tariff.
 - Mechanism: the refund system lets companies recover paid import duties, improving importer cash flow while reducing effective tariff protection for import-competing domestic producers.
 - Assets: TJX, COST, WMT (event-study primary TJX vs SPY).
-- Readout: 1d -0.50 / -0.38 / -0.50 · 5d -3.52 / -1.21 / -3.49 · 20d -6.80 / -1.16 / -6.40.
+- Readout: 1d -0.89 / -0.67 / -0.89 · 5d -3.85 / -1.30 / -3.81 · 20d -6.80 / -1.15 / -6.39.
 - Caveats / falsifier: non-supporting (unresolved). Anchor is clean_discrete_anchor (a cleanly dated case).
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 
@@ -119,7 +121,7 @@ full field text.
 - Why selected: unresolved example in monetary_policy_or_rates (overlay-only bucket, thin family).
 - Mechanism: Powell's commitment signals Fed independence and reinforces higher-for-longer rate expectations, pressuring duration-sensitive assets while supporting bank NIM prospects.
 - Assets: BAC, KRE, IYR, TLT (event-study primary BAC vs SPY).
-- Readout: 1d -0.20 / -0.16 / -0.20 · 5d -1.41 / -0.50 / -1.32 · 20d -10.04 / -1.78 / -9.78.
+- Readout: 1d +0.10 / 0.08 / +0.10 · 5d -1.77 / -0.63 / -1.67 · 20d -10.04 / -1.78 / -9.79.
 - Caveats / falsifier: overlay-only bucket; low-n / thin family; non-supporting (unresolved); manual_review_needed anchor.
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 

@@ -334,9 +334,13 @@ def build_report(*, db_path: str | None = None) -> dict[str, Any]:
     negligible = sum(1 for r in both if _max_abs_delta(r) < 0.001)
 
     policy_comparison = {
-        "current_raw_first_fallback": {
-            "semantics": "mixed: price returns where raw/raw aligns first, "
-                         "total returns otherwise",
+        # Computed from the LIVE default gate, so this row always reflects
+        # whatever canonical policy is in force (post-F3: matched adjusted
+        # preferred, matched raw fallback disclosed, no cross pairs).
+        "current_default_policy": {
+            "semantics": "canonical policy: matched adjusted/adjusted "
+                         "preferred (total returns); matched raw/raw only as "
+                         "a disclosed fallback; no cross-basis pair",
             "available": len(rows_out),
             "basis_mixture": default_mixture,
         },
