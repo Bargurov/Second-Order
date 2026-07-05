@@ -1,0 +1,675 @@
+"""G2 point-in-time state-data acquisition substrate (Mission G, g0-v1).
+
+Implements the acquisition/readiness layer for the five frozen G0 state
+dimensions across the G1 candidate ledgers. Point-in-time discipline:
+
+* conservative cutoff = last completed trading session STRICTLY before the
+  source-pinned event date (reference calendar: the VIX session calendar);
+* same-day availability class (index/ETF closes, FOMC decisions published
+  2 p.m. ET): an observation dated at the cutoff is eligible;
+* next-day availability class (Treasury constant-maturity curve, credit
+  index levels): an observation dated at the cutoff is treated as published
+  AFTER the cutoff close and is NOT eligible - the latest eligible value is
+  the prior session's;
+* trailing windows never shorten silently: a 252-session percentile or a
+  200-session moving average with insufficient eligible history is
+  UNAVAILABLE with a reason, never approximated;
+* a blocked source is reported blocked, never proxied.
+
+Sources (all zero-cost; no paid request; nothing here touches events.db or
+the existing price_cache):
+
+* fed_policy_path  - repo-internal: the G1A FOMC frame's target-range
+  timeline plus the official 2016-2017 pre-frame anchor decisions (policy
+  decisions are published same-day and never revised);
+* vix_level_percentile - Cboe official VIX history CSV (same-day close);
+* spy_trend_ma200  - daily SPY closes via the public Yahoo chart endpoint
+  (same-day close; RAW closes - the market-convention price index for
+  moving-average distance; stated, not silent). The existing price_cache is
+  NOT used for this dimension: it is event-window shaped (about 74 percent
+  session coverage), so trailing windows over it would silently shrink;
+* curve_2s10s      - official Treasury daily yield-curve CSVs ("10 Yr"
+  minus "2 Yr", next-day availability class);
+* credit_hy_oas    - the sole zero-cost distribution channel (FRED) is
+  unreachable from this environment (repeated timeouts recorded); the
+  dimension is BLOCKED, not proxied.
+
+Local cache: ``g_state_cache/`` (gitignored) with per-series retrieval
+metadata (source, URL, observation range, retrieval timestamp). No cache or
+DB in the repository is mutated; no generated data artifact is committed.
+
+Readiness artifacts are outcome-blind by construction: rows carry only the
+whitelisted fields in ``READINESS_FIELDS`` - no market response of any kind.
+
+Usage (read-only unless --fetch):
+
+    python scripts/g_state_acquisition.py --fetch     # bounded acquisition
+    python scripts/g_state_acquisition.py --probe     # 97-candidate readiness
+    python scripts/g_state_acquisition.py --probe --json
+"""
+from __future__ import annotations
+
+import argparse
+import bisect
+import json
+import re
+import sys
+import urllib.request
+from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
+from pathlib import Path
+from typing import Any, Optional, Sequence
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+CACHE_DIR = ROOT / "g_state_cache"
+
+G1A_PATH = ROOT / "stats" / "G1A_FOMC_FRAME_INVENTORY.md"
+G1B_PATH = ROOT / "stats" / "G1B_OPEC_DESIGNED_RESERVOIR.md"
+
+# ---------------------------------------------------------------------------
+# Source contracts (documented constants; the readiness report renders these)
+# ---------------------------------------------------------------------------
+
+SOURCE_CONTRACTS: dict[str, dict[str, str]] = {
+    "fed_policy_path": {
+        "source": "repo-internal: G1A FOMC frame target-range timeline + "
+                  "official 2016-2017 anchor decisions",
+        "series": "FOMC target-range midpoint; net change over a six-month "
+                  "calendar lookback",
+        "frequency": "event-driven (decision dates)",
+        "observation": "decision announcement date",
+        "availability": "same_day (statements publish 2 p.m. ET, before the "
+                        "session close)",
+        "revision": "never revised",
+        "range_needed": "2017-07 onward (six months before the earliest "
+                        "2018-01 cutoff)",
+        "missing_rule": "lookback preceding the timeline start -> "
+                        "insufficient_history",
+    },
+    "vix_level_percentile": {
+        "source": "Cboe official VIX history CSV",
+        "series": "VIX daily close; level at cutoff + trailing 252-session "
+                  "percentile",
+        "frequency": "daily (trading sessions)",
+        "observation": "session date",
+        "availability": "same_day (index close, published at/with the close)",
+        "revision": "not revised",
+        "range_needed": "2017-01 onward (252 sessions before the earliest "
+                        "cutoff)",
+        "missing_rule": "fewer than 252 eligible sessions -> "
+                        "insufficient_history; absent series -> "
+                        "source_missing",
+    },
+    "spy_trend_ma200": {
+        "source": "Yahoo public chart endpoint, SPY daily RAW closes "
+                  "(price-index convention for moving-average distance; the "
+                  "event-study adjusted-preferred policy governs readouts, "
+                  "not this state series - stated, not silent)",
+        "series": "SPY close vs 200-session simple moving average, percent "
+                  "distance",
+        "frequency": "daily (trading sessions)",
+        "observation": "session date",
+        "availability": "same_day",
+        "revision": "not revised",
+        "range_needed": "2017-03 onward (200 sessions before the earliest "
+                        "cutoff)",
+        "missing_rule": "fewer than 200 eligible sessions -> "
+                        "insufficient_history; absent series -> "
+                        "source_missing",
+    },
+    "curve_2s10s": {
+        "source": "U.S. Treasury daily yield-curve CSVs (official CMT rates)",
+        "series": "10 Yr minus 2 Yr constant-maturity spread, level at "
+                  "cutoff",
+        "frequency": "daily (business days)",
+        "observation": "rate date",
+        "availability": "next_day (conservative: the daily rate table is "
+                        "treated as published after that session's close, so "
+                        "the latest eligible value at a cutoff is the PRIOR "
+                        "session's)",
+        "revision": "effectively unrevised; republication is rare and would "
+                    "be visible in retrieval metadata",
+        "range_needed": "2017-12 onward",
+        "missing_rule": "no eligible observation -> source_missing",
+    },
+    "credit_hy_oas": {
+        "source": "ICE BofA US High Yield OAS - distributed zero-cost only "
+                  "via FRED, which is unreachable from this environment "
+                  "(repeated connect/read timeouts recorded 2026-07-05)",
+        "series": "high-yield OAS level at cutoff",
+        "frequency": "daily (business days)",
+        "observation": "index date",
+        "availability": "next_day (index published with a one-business-day "
+                        "lag)",
+        "revision": "effectively unrevised",
+        "range_needed": "2017-12 onward",
+        "missing_rule": "BLOCKED: no zero-cost reachable source; never "
+                        "proxied",
+    },
+}
+
+# FOMC target-range midpoints. 2018-2025 entries are derived from the G1A
+# frame's per-decision target ranges; the 2016-2017 anchors are the official
+# pre-frame decisions needed so a six-month lookback from early-2018 cutoffs
+# has a defined starting level. Policy decisions publish same-day (2 p.m. ET)
+# and are never revised.
+FED_TARGET_TIMELINE: list[tuple[str, float]] = [
+    ("2016-12-14", 0.625),
+    ("2017-03-15", 0.875),
+    ("2017-06-14", 1.125),
+    ("2017-12-13", 1.375),
+    ("2018-03-21", 1.625),
+    ("2018-06-13", 1.875),
+    ("2018-09-26", 2.125),
+    ("2018-12-19", 2.375),
+    ("2019-07-31", 2.125),
+    ("2019-09-18", 1.875),
+    ("2019-10-30", 1.625),
+    ("2020-03-03", 1.125),
+    ("2020-03-15", 0.125),
+    ("2022-03-16", 0.375),
+    ("2022-05-04", 0.875),
+    ("2022-06-15", 1.625),
+    ("2022-07-27", 2.375),
+    ("2022-09-21", 3.125),
+    ("2022-11-02", 3.875),
+    ("2022-12-14", 4.375),
+    ("2023-02-01", 4.625),
+    ("2023-03-22", 4.875),
+    ("2023-05-03", 5.125),
+    ("2023-07-26", 5.375),
+    ("2024-09-18", 4.875),
+    ("2024-11-07", 4.625),
+    ("2024-12-18", 4.375),
+    ("2025-09-17", 4.125),
+    ("2025-10-29", 3.875),
+    ("2025-12-10", 3.625),
+]
+
+# Whitelisted readiness-row fields (outcome-blindness firewall).
+READINESS_FIELDS = frozenset({
+    "candidate_id", "lane", "event_date", "cutoff", "cutoff_resolved",
+    "dimensions", "complete_vector", "dimensions_available",
+})
+
+DIMENSIONS = ("fed_policy_path", "vix_level_percentile", "spy_trend_ma200",
+              "curve_2s10s", "credit_hy_oas")
+
+
+# ---------------------------------------------------------------------------
+# Point-in-time primitives (pure)
+# ---------------------------------------------------------------------------
+
+
+def conservative_cutoff(event_iso: str,
+                        sessions: Sequence[str]) -> Optional[str]:
+    """Last completed session STRICTLY before the event date, or None."""
+    if not sessions:
+        return None
+    i = bisect.bisect_left(list(sessions), event_iso)
+    if i == 0:
+        return None
+    return sessions[i - 1]
+
+
+def latest_eligible(series: dict[str, float], cutoff: str,
+                    *, availability: str) -> Optional[tuple[str, float]]:
+    """Latest observation eligible at the cutoff under the series' class.
+
+    ``same_day``: observation date <= cutoff. ``next_day``: observation date
+    strictly < cutoff (a value dated at the cutoff publishes after the
+    cutoff close). Returns (obs_date, value) or None.
+    """
+    if not series:
+        return None
+    dates = sorted(series)
+    if availability == "same_day":
+        i = bisect.bisect_right(dates, cutoff)
+    elif availability == "next_day":
+        i = bisect.bisect_left(dates, cutoff)
+    else:  # pragma: no cover - contract misuse
+        raise ValueError(f"unknown availability class {availability!r}")
+    if i == 0:
+        return None
+    d = dates[i - 1]
+    return d, series[d]
+
+
+def trailing_percentile(series: dict[str, float], cutoff: str,
+                        *, window: int) -> dict[str, Any]:
+    """Trailing percentile of the cutoff value over the last ``window``
+    eligible observations (same-day class), inclusive rank.
+
+    Never shortens: fewer than ``window`` eligible observations ->
+    ``{"value": None, "reason": "insufficient_history"}``. Future
+    observations cannot affect the result (only dates <= cutoff are read).
+    """
+    dates = sorted(d for d in series if d <= cutoff)
+    if len(dates) < window:
+        return {"value": None, "reason": "insufficient_history"}
+    tail = dates[-window:]
+    values = [series[d] for d in tail]
+    current = values[-1]
+    rank = sum(1 for v in values if v <= current)
+    return {"value": rank / window, "reason": None}
+
+
+def ma_distance(series: dict[str, float], cutoff: str,
+                *, window: int) -> dict[str, Any]:
+    """Percent distance of the cutoff close from its trailing ``window``
+    simple moving average (same-day class). Same no-shortening contract."""
+    dates = sorted(d for d in series if d <= cutoff)
+    if len(dates) < window:
+        return {"value": None, "reason": "insufficient_history"}
+    tail = [series[d] for d in dates[-window:]]
+    ma = sum(tail) / window
+    if ma == 0:  # pragma: no cover - degenerate fixture guard
+        return {"value": None, "reason": "insufficient_history"}
+    return {"value": tail[-1] / ma - 1.0, "reason": None}
+
+
+def _shift_months(iso: str, months: int) -> str:
+    d = date.fromisoformat(iso)
+    m = d.month - months
+    y = d.year
+    while m <= 0:
+        m += 12
+        y -= 1
+    # clamp the day into the target month
+    for day in (d.day, 30, 29, 28):
+        try:
+            return date(y, m, day).isoformat()
+        except ValueError:
+            continue
+    raise AssertionError("unreachable")
+
+
+def fed_net_change(timeline: Sequence[tuple[str, float]], cutoff: str,
+                   *, months: int = 6) -> dict[str, Any]:
+    """Net target-range-midpoint change over the calendar lookback ending at
+    the cutoff. Decisions are same-day eligible (dated <= cutoff). A lookback
+    date preceding the timeline start -> insufficient_history."""
+    def level_at(d: str) -> Optional[float]:
+        lvl = None
+        for dt, mid in timeline:
+            if dt <= d:
+                lvl = mid
+            else:
+                break
+        return lvl
+
+    now = level_at(cutoff)
+    then_date = _shift_months(cutoff, months)
+    then = level_at(then_date)
+    if now is None or then is None:
+        return {"value": None, "reason": "insufficient_history"}
+    return {"value": now - then, "reason": None}
+
+
+# ---------------------------------------------------------------------------
+# Candidate readiness (outcome-blind)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class SourceBundle:
+    """The acquired state sources handed to the readiness probe."""
+    sessions: Sequence[str]
+    vix: Optional[dict[str, float]]
+    spy: Optional[dict[str, float]]
+    curve_2s10s: Optional[dict[str, float]]
+    hy_oas: Optional[dict[str, float]]
+    fed_timeline: Sequence[tuple[str, float]]
+    blocked: dict[str, str] = field(default_factory=dict)
+
+
+def _dim_status(available: bool, reason: Optional[str]) -> dict[str, Any]:
+    return {"available": available, "reason": reason}
+
+
+def candidate_readiness(candidate: dict[str, Any],
+                        bundle: SourceBundle) -> dict[str, Any]:
+    """One whitelisted, outcome-blind readiness row for one candidate."""
+    cutoff = conservative_cutoff(candidate["event_date"], bundle.sessions)
+    dims: dict[str, dict[str, Any]] = {}
+
+    if cutoff is None:
+        for name in DIMENSIONS:
+            dims[name] = _dim_status(False, "cutoff_unresolved")
+    else:
+        # fed policy path
+        out = fed_net_change(bundle.fed_timeline, cutoff, months=6)
+        dims["fed_policy_path"] = _dim_status(out["value"] is not None,
+                                              out["reason"])
+        # vix level + percentile
+        if bundle.vix is None:
+            dims["vix_level_percentile"] = _dim_status(
+                False, bundle.blocked.get("vix", "source_missing"))
+        else:
+            lvl = latest_eligible(bundle.vix, cutoff, availability="same_day")
+            pct = trailing_percentile(bundle.vix, cutoff, window=252)
+            ok = lvl is not None and pct["value"] is not None
+            dims["vix_level_percentile"] = _dim_status(
+                ok, None if ok else (pct["reason"] or "source_missing"))
+        # spy trend
+        if bundle.spy is None:
+            dims["spy_trend_ma200"] = _dim_status(
+                False, bundle.blocked.get("spy", "source_missing"))
+        else:
+            out = ma_distance(bundle.spy, cutoff, window=200)
+            dims["spy_trend_ma200"] = _dim_status(out["value"] is not None,
+                                                  out["reason"])
+        # curve level (next-day class)
+        if bundle.curve_2s10s is None:
+            dims["curve_2s10s"] = _dim_status(
+                False, bundle.blocked.get("curve_2s10s", "source_missing"))
+        else:
+            got = latest_eligible(bundle.curve_2s10s, cutoff,
+                                  availability="next_day")
+            dims["curve_2s10s"] = _dim_status(
+                got is not None, None if got else "source_missing")
+        # credit level (next-day class)
+        if bundle.hy_oas is None:
+            dims["credit_hy_oas"] = _dim_status(
+                False, bundle.blocked.get("hy_oas", "source_missing"))
+        else:
+            got = latest_eligible(bundle.hy_oas, cutoff,
+                                  availability="next_day")
+            dims["credit_hy_oas"] = _dim_status(
+                got is not None, None if got else "source_missing")
+
+    n_ok = sum(1 for d in dims.values() if d["available"])
+    return {
+        "candidate_id": candidate["candidate_id"],
+        "lane": candidate["lane"],
+        "event_date": candidate["event_date"],
+        "cutoff": cutoff,
+        "cutoff_resolved": cutoff is not None,
+        "dimensions": dims,
+        "complete_vector": n_ok == len(DIMENSIONS),
+        "dimensions_available": n_ok,
+    }
+
+
+# ---------------------------------------------------------------------------
+# G1 candidate-ledger parsers (deterministic)
+# ---------------------------------------------------------------------------
+
+_G1A_ROW = re.compile(r"^\|\s*`fomc-policy-decision-(\d{4}-\d{2}-\d{2})`\s*\|")
+_G1B_ROW = re.compile(r"^\|\s*D\d{2}\s*\|")
+_BACKTICKED = re.compile(r"`([a-z0-9][a-z0-9-]+)`")
+
+
+def parse_g1a_candidates(path: str) -> list[dict[str, str]]:
+    rows = []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        m = _G1A_ROW.match(line)
+        if m:
+            d = m.group(1)
+            rows.append({"candidate_id": f"fomc-policy-decision-{d}",
+                         "event_date": d,
+                         "lane": "frame_complete_historical"})
+    return rows
+
+
+def parse_g1b_candidates(path: str) -> list[dict[str, str]]:
+    rows = []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if not _G1B_ROW.match(line):
+            continue
+        cells = [c.strip() for c in line.split("|")]
+        # cells: '', key, date, source ref, title, action, canonical, anchor,
+        #        dup/mirror, ''
+        if len(cells) < 10:
+            continue
+        mirror = cells[8].lower()
+        if mirror not in ("canonical", "none"):
+            continue  # mirrors and held rows never advance
+        ident = _BACKTICKED.search(cells[6])
+        if not ident:
+            continue
+        rows.append({"candidate_id": ident.group(1),
+                     "event_date": cells[2],
+                     "lane": "designed_contrast"})
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Zero-cost acquisition (bounded; writes only the gitignored local cache)
+# ---------------------------------------------------------------------------
+
+_UA = {"User-Agent": "Mozilla/5.0"}
+FETCH_START = "2016-06-01"   # covers 252 sessions + 6-month lookback margins
+FETCH_END = "2025-12-31"
+
+
+def _get(url: str, timeout: int = 30) -> bytes:
+    req = urllib.request.Request(url, headers=_UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def _mmddyyyy_to_iso(s: str) -> str:
+    m, d, y = s.split("/")
+    return f"{y}-{int(m):02d}-{int(d):02d}"
+
+
+def fetch_vix() -> tuple[dict[str, float], dict[str, Any]]:
+    url = ("https://cdn.cboe.com/api/global/us_indices/daily_prices/"
+           "VIX_History.csv")
+    raw = _get(url).decode("utf-8", "replace")
+    series: dict[str, float] = {}
+    for line in raw.splitlines()[1:]:
+        parts = line.split(",")
+        if len(parts) < 5 or "/" not in parts[0]:
+            continue
+        iso = _mmddyyyy_to_iso(parts[0])
+        if FETCH_START <= iso <= FETCH_END:
+            series[iso] = float(parts[4])
+    meta = {"series": "VIX close", "source": "Cboe", "url": url}
+    return series, meta
+
+
+def fetch_spy() -> tuple[dict[str, float], dict[str, Any]]:
+    p1 = int(datetime(2016, 6, 1, tzinfo=timezone.utc).timestamp())
+    p2 = int(datetime(2026, 1, 1, tzinfo=timezone.utc).timestamp())
+    url = (f"https://query1.finance.yahoo.com/v8/finance/chart/SPY"
+           f"?period1={p1}&period2={p2}&interval=1d")
+    payload = json.loads(_get(url).decode("utf-8"))
+    result = payload["chart"]["result"][0]
+    stamps = result["timestamp"]
+    closes = result["indicators"]["quote"][0]["close"]
+    series: dict[str, float] = {}
+    for ts, c in zip(stamps, closes):
+        if c is None:
+            continue
+        iso = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+        if FETCH_START <= iso <= FETCH_END:
+            series[iso] = float(c)
+    meta = {"series": "SPY raw daily close", "source": "Yahoo chart endpoint",
+            "url": url}
+    return series, meta
+
+
+def fetch_curve_2s10s() -> tuple[dict[str, float], dict[str, Any]]:
+    series: dict[str, float] = {}
+    years = range(2016, 2026)
+    base = ("https://home.treasury.gov/resource-center/data-chart-center/"
+            "interest-rates/daily-treasury-rates.csv/{y}/all"
+            "?type=daily_treasury_yield_curve&field_tdr_date_value={y}"
+            "&page&_format=csv")
+    for y in years:
+        raw = _get(base.format(y=y)).decode("utf-8", "replace")
+        lines = raw.splitlines()
+        header = [h.strip().strip('"') for h in lines[0].split(",")]
+        i2, i10 = header.index("2 Yr"), header.index("10 Yr")
+        idate = header.index("Date")
+        for line in lines[1:]:
+            cells = [c.strip().strip('"') for c in line.split(",")]
+            if len(cells) <= max(i2, i10):
+                continue
+            try:
+                iso = _mmddyyyy_to_iso(cells[idate])
+                v2, v10 = float(cells[i2]), float(cells[i10])
+            except (ValueError, IndexError):
+                continue
+            if FETCH_START <= iso <= FETCH_END:
+                series[iso] = v10 - v2
+    meta = {"series": "10 Yr minus 2 Yr CMT spread",
+            "source": "U.S. Treasury daily yield-curve CSVs",
+            "url": base.format(y="<year>")}
+    return series, meta
+
+
+def probe_hy_oas_blocked() -> dict[str, Any]:
+    """Bounded evidence probe for the blocked credit dimension (no proxy)."""
+    url = ("https://fred.stlouisfed.org/graph/fredgraph.csv"
+           "?id=BAMLH0A0HYM2&cosd=2020-01-01&coed=2020-01-15")
+    try:
+        _get(url, timeout=8)
+        return {"blocked": False, "evidence": "reachable"}
+    except Exception as exc:  # noqa: BLE001 - evidence capture
+        return {"blocked": True,
+                "evidence": f"{type(exc).__name__}: {exc}", "url": url}
+
+
+def _save(name: str, series: dict[str, float], meta: dict[str, Any]) -> None:
+    CACHE_DIR.mkdir(exist_ok=True)
+    dates = sorted(series)
+    payload = {
+        "meta": {
+            **meta,
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "observations": len(series),
+            "first": dates[0] if dates else None,
+            "last": dates[-1] if dates else None,
+        },
+        "data": series,
+    }
+    (CACHE_DIR / f"{name}.json").write_text(
+        json.dumps(payload, sort_keys=True), encoding="utf-8")
+
+
+def _load(name: str) -> Optional[dict[str, float]]:
+    p = CACHE_DIR / f"{name}.json"
+    if not p.exists():
+        return None
+    return json.loads(p.read_text(encoding="utf-8"))["data"]
+
+
+def run_fetch() -> None:
+    vix, m = fetch_vix()
+    _save("vix", vix, m)
+    print(f"vix: {len(vix)} obs")
+    spy, m = fetch_spy()
+    _save("spy", spy, m)
+    print(f"spy: {len(spy)} obs")
+    curve, m = fetch_curve_2s10s()
+    _save("curve_2s10s", curve, m)
+    print(f"curve_2s10s: {len(curve)} obs")
+    blocked = probe_hy_oas_blocked()
+    CACHE_DIR.mkdir(exist_ok=True)
+    (CACHE_DIR / "hy_oas.blocked.json").write_text(
+        json.dumps({**blocked,
+                    "checked_at": datetime.now(timezone.utc).isoformat()}),
+        encoding="utf-8")
+    print(f"hy_oas: blocked={blocked['blocked']} ({blocked['evidence'][:60]})")
+
+
+def load_bundle() -> SourceBundle:
+    vix = _load("vix")
+    blocked: dict[str, str] = {}
+    hy_path = CACHE_DIR / "hy_oas.blocked.json"
+    if hy_path.exists():
+        info = json.loads(hy_path.read_text(encoding="utf-8"))
+        if info.get("blocked"):
+            blocked["hy_oas"] = "source_blocked"
+    return SourceBundle(
+        sessions=sorted(vix) if vix else [],
+        vix=vix,
+        spy=_load("spy"),
+        curve_2s10s=_load("curve_2s10s"),
+        hy_oas=_load("hy_oas"),
+        fed_timeline=FED_TARGET_TIMELINE,
+        blocked=blocked,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Readiness probe over the 97 candidates
+# ---------------------------------------------------------------------------
+
+
+def run_probe() -> dict[str, Any]:
+    candidates = (parse_g1a_candidates(str(G1A_PATH))
+                  + parse_g1b_candidates(str(G1B_PATH)))
+    bundle = load_bundle()
+    rows = [candidate_readiness(c, bundle) for c in candidates]
+
+    by_lane: dict[str, int] = {}
+    for r in rows:
+        by_lane[r["lane"]] = by_lane.get(r["lane"], 0) + 1
+    missing_by_dim: dict[str, int] = {d: 0 for d in DIMENSIONS}
+    missing_by_lane_year: dict[str, dict[str, int]] = {}
+    for r in rows:
+        year = r["event_date"][:4]
+        for d in DIMENSIONS:
+            if not r["dimensions"][d]["available"]:
+                missing_by_dim[d] += 1
+                key = f"{r['lane']}/{year}"
+                missing_by_lane_year.setdefault(key, {}).setdefault(d, 0)
+                missing_by_lane_year[key][d] += 1
+    return {
+        "candidates": len(rows),
+        "by_lane": by_lane,
+        "cutoff_resolved": sum(1 for r in rows if r["cutoff_resolved"]),
+        "complete_vector": sum(1 for r in rows if r["complete_vector"]),
+        "partial_vector": sum(1 for r in rows
+                              if 0 < r["dimensions_available"]
+                              < len(DIMENSIONS)),
+        "missing_by_dimension": missing_by_dim,
+        "missing_by_lane_year": dict(sorted(missing_by_lane_year.items())),
+        "rows": rows,
+    }
+
+
+def render_probe(report: dict[str, Any]) -> str:
+    L = ["G2 state-source readiness probe (outcome-blind)", ""]
+    L.append(f"candidates: {report['candidates']} by lane {report['by_lane']}")
+    L.append(f"cutoff resolved: {report['cutoff_resolved']}/"
+             f"{report['candidates']}")
+    L.append(f"complete state vector (5/5): {report['complete_vector']} | "
+             f"partial: {report['partial_vector']}")
+    L.append("missing by dimension:")
+    for d, n in report["missing_by_dimension"].items():
+        L.append(f"  {d}: {n}")
+    L.append("missing by lane/year (dimension: count):")
+    for key, dims in report["missing_by_lane_year"].items():
+        L.append(f"  {key}: {dims}")
+    return "\n".join(L)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="G2 state acquisition substrate (zero-cost sources; "
+                    "no events.db or price_cache mutation).")
+    parser.add_argument("--fetch", action="store_true")
+    parser.add_argument("--probe", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args(argv)
+    if args.fetch:
+        run_fetch()
+    if args.probe:
+        report = run_probe()
+        if args.json:
+            print(json.dumps(report, indent=1, sort_keys=True))
+        else:
+            print(render_probe(report))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

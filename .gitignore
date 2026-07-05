@@ -123,3 +123,6 @@ CLAUDE.md
 CONTRIBUTING.md
 DESIGN.md
 EVALUATION.md
+
+# Mission G local state-series cache (never committed)
+g_state_cache/
