@@ -90,7 +90,7 @@ full field text.
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 
 ### Event 154 — Take action over officials in Kyrgyzstan 'helping Russia evade sanctions'
-- Family lens: sanction (thin) · Outcome: unresolved · Event date: 2026-04-29 (anchor: manual_review_needed)
+- Family lens: sanction (thin) · Outcome: unresolved · Event date: 2026-04-23 (anchor: manual_review_needed)
 - Why selected: unresolved example in sanction (thin family).
 - Mechanism: record returned a thin response ("insufficient evidence...") — surfaced as-is.
 - Assets: no assets in the record.
@@ -99,7 +99,7 @@ full field text.
 - Non-claim: illustrative case note only — not evidence, no family-level inference, no recommendation or forecast.
 
 ### Event 160 — Iran's FM Araghchi arrives in Pakistan ahead of planned US ceasefire talks
-- Family lens: ceasefire_deescalation (thin) · Outcome: unresolved · Event date: 2026-04-29 (anchor: partial_anticipation)
+- Family lens: ceasefire_deescalation (thin) · Outcome: unresolved · Event date: 2026-04-24 (anchor: partial_anticipation)
 - Why selected: unresolved example in ceasefire_deescalation (thin family).
 - Mechanism: record notes "insufficient evidence to identify mechanism"; the recorded chain explicitly states "no clear transmission channel identified" — surfaced as-is.
 - Assets: no assets in the record.
