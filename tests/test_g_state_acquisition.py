@@ -242,7 +242,122 @@ class WhitelistTests(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 7. Deterministic candidate-ledger reconciliation (live artifacts)
+# 7. Authenticated HY OAS acquisition (G2C): credential handling, pinned
+#    series identity, key-free cache metadata, no proxy fallback.
+# ---------------------------------------------------------------------------
+
+
+_FAKE_KEY = "0123456789abcdef0123456789abcdef"
+
+_FRED_PAYLOAD = json.dumps({
+    "observations": [
+        {"date": "2016-05-31", "value": "6.01"},   # before substrate window
+        {"date": "2023-07-04", "value": "."},      # FRED missing marker
+        {"date": "2023-07-05", "value": "3.90"},
+        {"date": "2023-07-06", "value": "3.86"},
+    ]
+}).encode("utf-8")
+
+
+class HyOasCredentialTests(unittest.TestCase):
+    def test_api_key_prefers_environment_over_dotenv(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            dotenv = Path(td) / ".env"
+            dotenv.write_text("FRED_API_KEY=from-file\n", encoding="utf-8")
+            got = gsa._fred_api_key({"FRED_API_KEY": "from-env"}, dotenv)
+        self.assertEqual(got, "from-env")
+
+    def test_api_key_falls_back_to_dotenv_line(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            dotenv = Path(td) / ".env"
+            dotenv.write_text(
+                "# secrets live here\nPOLYGON_API_KEY=zzz\n"
+                "FRED_API_KEY= abc123 \n", encoding="utf-8")
+            got = gsa._fred_api_key({}, dotenv)
+        self.assertEqual(got, "abc123")
+
+    def test_api_key_absent_returns_none(self):
+        got = gsa._fred_api_key({}, Path("Z:/nonexistent/.env"))
+        self.assertIsNone(got)
+
+
+class HyOasRequestContractTests(unittest.TestCase):
+    def test_request_url_pins_series_window_and_embeds_key(self):
+        url = gsa._hy_oas_request_url(_FAKE_KEY)
+        self.assertIn("api.stlouisfed.org/fred/series/observations", url)
+        self.assertIn("series_id=BAMLH0A0HYM2", url)
+        self.assertIn(f"observation_start={gsa.FETCH_START}", url)
+        self.assertIn(f"observation_end={gsa.FETCH_END}", url)
+        self.assertIn("file_type=json", url)
+        self.assertIn(f"api_key={_FAKE_KEY}", url)
+
+    def test_redacted_url_never_contains_key(self):
+        url = gsa._hy_oas_request_url(_FAKE_KEY)
+        redacted = gsa._redact_api_key(url)
+        self.assertNotIn(_FAKE_KEY, redacted)
+        self.assertIn("api_key=REDACTED", redacted)
+        self.assertIn("series_id=BAMLH0A0HYM2", redacted)
+
+    def test_parse_observations_skips_missing_markers_and_clamps_window(self):
+        series = gsa._parse_fred_observations(
+            json.loads(_FRED_PAYLOAD.decode("utf-8")))
+        self.assertEqual(series, {"2023-07-05": 3.90, "2023-07-06": 3.86})
+
+
+class HyOasFetchTests(unittest.TestCase):
+    def test_fetch_meta_is_key_free_and_series_parsed(self):
+        seen: list[str] = []
+
+        def fake_get(url: str, timeout: int = 30) -> bytes:
+            seen.append(url)
+            return _FRED_PAYLOAD
+
+        series, meta = gsa.fetch_hy_oas(_FAKE_KEY, getter=fake_get)
+        self.assertEqual(len(seen), 1)
+        self.assertIn(f"api_key={_FAKE_KEY}", seen[0])  # authenticated call
+        self.assertEqual(series["2023-07-05"], 3.90)
+        dumped = json.dumps(meta)
+        self.assertNotIn(_FAKE_KEY, dumped)  # cache metadata stays key-free
+        self.assertIn("BAMLH0A0HYM2", dumped)
+
+    def test_fetch_without_key_never_touches_network(self):
+        calls: list[str] = []
+
+        def tripwire(url: str, timeout: int = 30) -> bytes:
+            calls.append(url)
+            raise AssertionError("network must not be touched without a key")
+
+        with self.assertRaises(ValueError):
+            gsa.fetch_hy_oas(None, getter=tripwire)
+        self.assertEqual(calls, [])  # no unauthenticated call, no proxy
+
+    def test_truncated_series_head_is_missing_tail_is_available(self):
+        # Pins existing generic behavior against the real-world FRED
+        # truncation shape: history exists only from 2023-07-04 onward, so
+        # earlier cutoffs stay source_missing (never proxied) while later
+        # cutoffs resolve under the next_day class.
+        sessions = ["2023-07-03", "2023-07-05", "2023-07-06", "2023-07-07"]
+        hy = {"2023-07-05": 3.90, "2023-07-06": 3.86}
+        bundle = gsa.SourceBundle(
+            sessions=SESSIONS + sessions, vix=None, spy=None,
+            curve_2s10s=None, hy_oas=hy,
+            fed_timeline=[("2016-12-14", 0.625)], blocked={})
+        head = gsa.candidate_readiness(
+            {"candidate_id": "h", "lane": "designed_contrast",
+             "event_date": "2020-01-09"}, bundle)
+        self.assertFalse(head["dimensions"]["credit_hy_oas"]["available"])
+        self.assertEqual(head["dimensions"]["credit_hy_oas"]["reason"],
+                         "source_missing")
+        tail = gsa.candidate_readiness(
+            {"candidate_id": "t", "lane": "designed_contrast",
+             "event_date": "2023-07-07"}, bundle)
+        self.assertTrue(tail["dimensions"]["credit_hy_oas"]["available"])
+
+
+# ---------------------------------------------------------------------------
+# 8. Deterministic candidate-ledger reconciliation (live artifacts)
 # ---------------------------------------------------------------------------
 
 

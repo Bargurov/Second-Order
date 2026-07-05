@@ -30,9 +30,12 @@ the existing price_cache):
   session coverage), so trailing windows over it would silently shrink;
 * curve_2s10s      - official Treasury daily yield-curve CSVs ("10 Yr"
   minus "2 Yr", next-day availability class);
-* credit_hy_oas    - the sole zero-cost distribution channel (FRED) is
-  unreachable from this environment (repeated timeouts recorded); the
-  dimension is BLOCKED, not proxied.
+* credit_hy_oas    - ICE BofA US High Yield OAS via the authenticated FRED
+  API (free registered key resolved from the environment or the gitignored
+  .env; the key authenticates the request and is never stored, logged, or
+  cached). FRED distributes only a rolling three-year window of this ICE
+  series (since April 2026), so cutoffs before the surviving window stay
+  source_missing - disclosed, never proxied.
 
 Local cache: ``g_state_cache/`` (gitignored) with per-series retrieval
 metadata (source, URL, observation range, retrieval timestamp). No cache or
@@ -52,13 +55,15 @@ from __future__ import annotations
 import argparse
 import bisect
 import json
+import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -136,18 +141,25 @@ SOURCE_CONTRACTS: dict[str, dict[str, str]] = {
         "missing_rule": "no eligible observation -> source_missing",
     },
     "credit_hy_oas": {
-        "source": "ICE BofA US High Yield OAS - distributed zero-cost only "
-                  "via FRED, which is unreachable from this environment "
-                  "(repeated connect/read timeouts recorded 2026-07-05)",
+        "source": "ICE BofA US High Yield OAS via the official FRED API "
+                  "(api.stlouisfed.org, free registered key; the key "
+                  "authenticates the request only and never enters cache "
+                  "metadata or logs)",
         "series": "high-yield OAS level at cutoff",
         "frequency": "daily (business days)",
         "observation": "index date",
-        "availability": "next_day (index published with a one-business-day "
-                        "lag)",
-        "revision": "effectively unrevised",
-        "range_needed": "2017-12 onward",
-        "missing_rule": "BLOCKED: no zero-cost reachable source; never "
-                        "proxied",
+        "availability": "next_day (FRED posts the series the next business "
+                        "morning - observed via the release last_updated "
+                        "stamp; ALFRED realtime_start is back-dated to the "
+                        "observation date and is NOT an availability record)",
+        "revision": "effectively unrevised (sampled observations are "
+                    "single-valued across all surviving vintages)",
+        "range_needed": "2017-12 onward; FRED distributes only a rolling "
+                        "three-year window of this ICE series (since April "
+                        "2026), so history before 2023-07-04 is "
+                        "source-withdrawn",
+        "missing_rule": "cutoff at/before the surviving window start -> "
+                        "source_missing; never proxied",
     },
 }
 
@@ -524,6 +536,73 @@ def fetch_curve_2s10s() -> tuple[dict[str, float], dict[str, Any]]:
     return series, meta
 
 
+_HY_OAS_SERIES_ID = "BAMLH0A0HYM2"
+
+
+def _fred_api_key(env: Mapping[str, str],
+                  dotenv_path: Path) -> Optional[str]:
+    """Resolve the FRED API key: environment first, then the gitignored
+    .env file. Returns None when absent. The value is never printed."""
+    key = (env.get("FRED_API_KEY") or "").strip()
+    if key:
+        return key
+    if dotenv_path.exists():
+        for line in dotenv_path.read_text(encoding="utf-8").splitlines():
+            if line.strip().startswith("FRED_API_KEY="):
+                key = line.split("=", 1)[1].strip()
+                return key or None
+    return None
+
+
+def _hy_oas_request_url(api_key: str) -> str:
+    qs = urllib.parse.urlencode({
+        "series_id": _HY_OAS_SERIES_ID,
+        "observation_start": FETCH_START,
+        "observation_end": FETCH_END,
+        "file_type": "json",
+        "api_key": api_key,
+    })
+    return f"https://api.stlouisfed.org/fred/series/observations?{qs}"
+
+
+def _redact_api_key(url: str) -> str:
+    return re.sub(r"api_key=[^&]*", "api_key=REDACTED", url)
+
+
+def _parse_fred_observations(payload: dict[str, Any]) -> dict[str, float]:
+    """FRED observations JSON -> {iso_date: float}, dropping the "."
+    missing-value markers and anything outside the substrate window."""
+    series: dict[str, float] = {}
+    for row in payload.get("observations", []):
+        d, v = row.get("date", ""), row.get("value", ".")
+        if v == "." or not (FETCH_START <= d <= FETCH_END):
+            continue
+        series[d] = float(v)
+    return series
+
+
+def fetch_hy_oas(api_key: Optional[str], *,
+                 getter: Callable[..., bytes] = _get,
+                 ) -> tuple[dict[str, float], dict[str, Any]]:
+    """Authenticated FRED acquisition of the ICE BofA US HY OAS level.
+
+    The key authenticates the request only; the cached metadata records a
+    REDACTED url. Without a key this raises before any network call - the
+    dimension stays blocked rather than proxied or fetched anonymously.
+    """
+    if not api_key:
+        raise ValueError("FRED_API_KEY required for credit_hy_oas")
+    url = _hy_oas_request_url(api_key)
+    payload = json.loads(getter(url).decode("utf-8"))
+    series = _parse_fred_observations(payload)
+    meta = {
+        "series": f"ICE BofA US High Yield OAS ({_HY_OAS_SERIES_ID})",
+        "source": "official FRED API (authenticated, free registered key)",
+        "url": _redact_api_key(url),
+    }
+    return series, meta
+
+
 def probe_hy_oas_blocked() -> dict[str, Any]:
     """Bounded evidence probe for the blocked credit dimension (no proxy)."""
     url = ("https://fred.stlouisfed.org/graph/fredgraph.csv"
@@ -570,13 +649,27 @@ def run_fetch() -> None:
     curve, m = fetch_curve_2s10s()
     _save("curve_2s10s", curve, m)
     print(f"curve_2s10s: {len(curve)} obs")
-    blocked = probe_hy_oas_blocked()
-    CACHE_DIR.mkdir(exist_ok=True)
-    (CACHE_DIR / "hy_oas.blocked.json").write_text(
-        json.dumps({**blocked,
-                    "checked_at": datetime.now(timezone.utc).isoformat()}),
-        encoding="utf-8")
-    print(f"hy_oas: blocked={blocked['blocked']} ({blocked['evidence'][:60]})")
+    key = _fred_api_key(os.environ, ROOT / ".env")
+    if key is None:
+        blocked = probe_hy_oas_blocked()
+        CACHE_DIR.mkdir(exist_ok=True)
+        (CACHE_DIR / "hy_oas.blocked.json").write_text(
+            json.dumps({**blocked, "checked_at":
+                        datetime.now(timezone.utc).isoformat()}),
+            encoding="utf-8")
+        print(f"hy_oas: blocked={blocked['blocked']} "
+              f"({blocked['evidence'][:60]})")
+    else:
+        hy, m = fetch_hy_oas(key)
+        _save("hy_oas", hy, m)
+        (CACHE_DIR / "hy_oas.blocked.json").write_text(
+            json.dumps({"blocked": False,
+                        "evidence": "acquired via authenticated FRED API "
+                                    "(key never stored)",
+                        "checked_at":
+                        datetime.now(timezone.utc).isoformat()}),
+            encoding="utf-8")
+        print(f"hy_oas: {len(hy)} obs")
 
 
 def load_bundle() -> SourceBundle:
