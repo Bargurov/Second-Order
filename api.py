@@ -3645,6 +3645,7 @@ from routes import (
     demo_evidence_summary as _demo_evidence_summary_mod,
     demo_still_moving as _demo_still_moving_mod,
     demo_weekly as _demo_weekly_mod,
+    mission_g_evidence as _mission_g_evidence_mod,
     tracked_evidence as _tracked_evidence_mod,
 )
 
@@ -3773,3 +3774,24 @@ def _evidence_summary_endpoint():
         phase2_path=str(base / _TRACKED_EVIDENCE_PHASE2_FILENAME),
         rejection_path=str(base / _TRACKED_EVIDENCE_REJECTION_FILENAME),
     )
+
+
+@app.get("/evidence/mission-g")
+def _mission_g_evidence_endpoint():
+    """Mission G historical research record — tracked artifacts only.
+
+    Structured summary of the completed Mission G record: separate
+    evidence-lane denominators (accepted track record vs the two
+    historical ledgers, never pooled), the broad FOMC null, the uniform
+    stability diagnostics, the bounded OPEC association in its approved
+    wording, the era-bounded secondary credit limitation, the G3B
+    mechanism-comparability failure, and the six representative cases
+    labeled as illustrations.
+
+    Every computed research number is parsed at request time from the
+    tracked ``stats/G*.md`` artifacts; artifact drift raises rather than
+    serving stale numbers. No DB read or write, no provider / yfinance /
+    market_data / price_cache call, no LLM call, no artifact mutation;
+    works on a fresh clone with no local research state.
+    """
+    return _mission_g_evidence_mod.build_mission_g_evidence_summary()
