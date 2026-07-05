@@ -95,22 +95,22 @@ extraordinary or surprise announcements).
 | D18 | 2022-08-03 | 31st ONOMM PR | 0.1 mb/d increase for September 2022 | increase | C13 `opec-2022-08-03-sep-100k` | pinned_official / scheduled | none |
 | D19 | 2022-09-05 | 32nd ONOMM PR | 0.1 mb/d reduction for October 2022 (reverses the September step) | reduction (reversal) | C14 `opec-2022-09-05-oct-minus-100k` | pinned_official / scheduled | none |
 | D20 | 2022-10-05 | 33rd ONOMM PR | 2 mb/d reduction from November 2022 | reduction | C15 `opec-2022-10-05-cut-2mbd` | pinned_official / scheduled | none |
-| D21 | 2023-04-02 | OPEC Secretariat note on coordinated voluntary adjustments | Coordinated multi-country voluntary reduction of about 1.16 mb/d from May 2023 (collective policy event under the locked rule) | reduction (coordinated voluntary) | C16 `opec-2023-04-02-voluntary-1p16` | pin_verification_pending / clean_discrete | none |
+| D21 | 2023-04-02 | 48th JMMC PR (opec.org pr-detail 63-03-apr-2023; notes 2023-04-02 voluntary adjustments) | Coordinated multi-country voluntary reduction announced on 2023-04-02 from May 2023 (collective policy event under the locked rule) | reduction (coordinated voluntary) | C16 `opec-2023-04-02-voluntary-1p16` | pinned_official / clean_discrete | none |
 | D22 | 2023-06-04 | 35th ONOMM PR | 2024 required production levels revised; group adjustments extended (a single-country voluntary add-on excluded per rule) | reduction / extension (levels revision) | C17 `opec-2023-06-04-2024-levels` | pinned_official / scheduled | none |
 | D23 | 2023-11-30 | 36th ONOMM PR + coordinating-producers statement | Coordinated additional voluntary adjustments of about 2.2 mb/d for Q1 2024 | reduction (coordinated voluntary) | C18 `opec-2023-11-30-voluntary-2p2` | pinned_official / scheduled | none |
-| D24 | 2024-03-03 | Coordinating-producers (V8) statement | 2.2 mb/d voluntary adjustments extended through Q2 2024 | extension | C19 `opec-2024-03-03-q2-extension` | pin_verification_pending / scheduled | none |
+| D24 | 2024-03-03 | Coordinating-producers statement (opec.org pr-detail 4-03-mar-2024) | 2.2 mb/d voluntary adjustments extended through Q2 2024 | extension | C19 `opec-2024-03-03-q2-extension` | pinned_official / scheduled | none |
 | D25 | 2024-06-02 | 37th ONOMM PR + V8 statement | Group-wide adjustments extended into 2025; 2.2 mb/d voluntary extended to 2024-09 then phased return scheduled from 2024-10 | extension + restoration schedule | C20 `opec-2024-06-02-extension-schedule` | pinned_official / scheduled | none |
 | D26 | 2024-09-05 | V8 statement | Phased return delayed two months (to end-November 2024) | extension (delay) | C21 `opec-2024-09-05-two-month-delay` | pinned_official / scheduled | none |
 | D27 | 2024-11-03 | V8 statement | Phased return delayed one further month (to end-December 2024) | extension (delay) | C22 `opec-2024-11-03-one-month-delay` | pinned_official / scheduled | none |
 | D28 | 2024-12-05 | 38th ONOMM PR (opec.org pr-detail 28-05-dec-2024) + V8 statement | Return start moved to 2025-04 over an extended runway to 2026-09; group-wide adjustments extended through 2026 | extension + schedule revision | C23 `opec-2024-12-05-april-start` | pinned_official / scheduled | none |
-| D29 | 2025-03-03 | V8 statement | Gradual return set to begin 2025-04-01 (about 0.137 mb/d monthly design) | restoration activation | C24 `opec-2025-03-03-activation` | pin_verification_pending / scheduled | none |
+| D29 | 2025-03-03 | V8 statement (opec.org pr-detail 518-03-march-2025) | Gradual return set to begin 2025-04-01 (about 0.137 mb/d monthly design) | restoration activation | C24 `opec-2025-03-03-activation` | pinned_official / scheduled | none |
 | D30 | 2025-04-03 | V8 statement | May 2025 level raised by 0.411 mb/d (three monthly increments in one) | restoration acceleration | C25 `opec-2025-04-03-may-411k` | pinned_official / scheduled | none |
 | D31 | 2025-05-03 | V8 statement (opec.org pr-detail 563-03-may-2025) | June 2025 level raised by 0.411 mb/d | restoration acceleration | C26 `opec-2025-05-03-jun-411k` | pinned_official / scheduled | none |
 | D32 | 2025-06-01 | V8 statement | July 2025 level raised by 0.411 mb/d | restoration acceleration | C27 `opec-2025-06-01-jul-411k` | pinned_official / scheduled | none |
 | D33 | 2025-07-05 | V8 statement (opec.org pr-detail 569-05-july-2025) | August 2025 level raised by 0.548 mb/d | restoration acceleration | C28 `opec-2025-07-05-aug-548k` | pinned_official / scheduled | none |
 | D34 | 2025-08-03 | V8 statement | September 2025 level raised by 0.547 mb/d (completes the 2.2 mb/d return ahead of schedule) | restoration acceleration | C29 `opec-2025-08-03-sep-547k` | pinned_official / scheduled | none |
-| D35 | 2025-09-07 | V8 statement | October 2025 level raised by 0.137 mb/d - first step of returning the separate 1.65 mb/d voluntary layer (new phase) | restoration schedule (new layer) | C30 `opec-2025-09-07-oct-137k` | pin_verification_pending / scheduled | none |
-| D36 | 2025-10-05 | V8 statement | November 2025 level raised by 0.137 mb/d | restoration schedule | C31 `opec-2025-10-05-nov-137k` | pin_verification_pending / scheduled | none |
+| D35 | 2025-09-07 | V8 statement (opec.org pr-detail 573-07-september-2025) | October 2025 level raised by 0.137 mb/d - first step of returning the separate 1.65 mb/d voluntary layer (new phase) | restoration schedule (new layer) | C30 `opec-2025-09-07-oct-137k` | pinned_official / scheduled | none |
+| D36 | 2025-10-05 | V8 statement (opec.org pr-detail 578-05-october-2025) | November 2025 level raised by 0.137 mb/d | restoration schedule | C31 `opec-2025-10-05-nov-137k` | pinned_official / scheduled | none |
 | D37 | 2025-11-02 | V8 statement (opec.org pr-detail 1574579-02-november-2025) | December 2025 level raised by 0.137 mb/d; increments paused for Q1 2026 (seasonality) | restoration schedule + pause | C32 `opec-2025-11-02-dec-137k-pause` | pinned_official / scheduled | none |
 | D38 | 2025-11-30 | 40th ONOMM PR (opec.org pr-detail 243582-30-november-2025; 583-30-november-2025) | Group-wide 2026 levels held; baseline/capacity mechanism agreed; Q1 2026 pause reaffirmed | extension (annual decision + mechanism) | C33 `opec-2025-11-30-2026-hold` | pinned_official / scheduled | none |
 
@@ -126,22 +126,21 @@ extraordinary or surprise announcements).
                                     trail, not an adopted collective decision
                                     under the current rule)
 -> 32 canonical reservoir identities
--> 27 anchor-pinned                (pinned_official, reservoir-ready set)
-    5 pin-verification-pending     (C16, C19, C24, C30, C31 - held)
+-> 32 anchor-pinned                (pinned_official, reservoir-ready set)
+    0 pin-verification-pending     (the five formerly pending identities:
+                                    C16, C19, C24, C30, C31 - now pinned)
 -> 5 duplicate/mirror links preserved (no discovery deleted; mirrors remain
                                     visible above and in the discovery count)
 -> 0 archive collisions            (section 4)
--> 27 reservoir-ready identities   (pinned + duplicate-resolved + no collision)
+-> 32 reservoir-ready identities   (pinned + duplicate-resolved + no collision)
 ```
 
 Reconciliation: 38 discoveries = 33 canonical identities + 5 mirror links.
 33 identities fall on 33 distinct announcement dates (no two identities share
 a date). Of those 33, one is held/excluded (C05-held), leaving 32 canonical
-reservoir identities; 32 = 27 pinned-ready + 5 pin-verification-pending. No
+reservoir identities; 32 = 32 pinned-ready + 0 pin-verification-pending. No
 identity advances twice: each mirror is linked to exactly one canonical row
-and cannot be recruited separately. The 5 pin-pending identities remain in
-the reservoir ledger but are NOT reservoir-ready; they require an
-official-page pin before any G2 state assignment.
+and cannot be recruited separately.
 
 March 2020 adjudication: the 178th Conference record states only a
 recommendation to the 8th ONOMM for an additional adjustment; the same-day
@@ -199,15 +198,20 @@ separate, later decision.
 
 ## 7. Verification and reproduction
 
-- Every canonical identity cites an official meeting identity (numbered
-  Conference/ONOMM press release or dated V8 statement); five identities are
-  explicitly marked pin-verification-pending and held from readiness, and the
-  March 2020 recommendation/non-agreement trail is explicitly held/excluded
-  from readiness.
+- Every canonical reservoir identity cites an official meeting identity
+  (numbered Conference/ONOMM press release or dated V8 statement) or an
+  official OPEC page that pins the event date; no anchor remains
+  pin-verification-pending, and the March 2020 recommendation/non-agreement
+  trail is explicitly held/excluded from readiness.
 - Counts reconcile: 38 = 33 + 5 (section 3); 33 identities on 33 distinct
   dates; 33 = 32 reservoir identities + 1 held/excluded identity; readiness
-  27 = 32 - 5 pending - 0 collisions.
+  32 = 32 - 0 pending - 0 collisions.
 - Official source pages verified during this pass include:
+  [48th JMMC, 2023-04-03](https://www.opec.org/pr-detail/63-03-apr-2023.html),
+  [coordinating-producers statement, 2024-03-03](https://www.opec.org/pr-detail/4-03-mar-2024.html),
+  [V8 statement, 2025-03-03](https://www.opec.org/pr-detail/518-03-march-2025.html),
+  [V8 statement, 2025-09-07](https://www.opec.org/pr-detail/573-07-september-2025.html),
+  [V8 statement, 2025-10-05](https://www.opec.org/pr-detail/578-05-october-2025.html),
   [178th OPEC Conference, 2020-03-05](https://www.opec.org/pr-detail/316-05-mar-2020.html),
   [OPEC Heads of Delegation consultation, 2020-03-05](https://www.opec.org/pr-detail/317-05-mar-2020.html),
   [OPEC 2020 press-release archive](https://www.opec.org/press-releases-2020.html),
