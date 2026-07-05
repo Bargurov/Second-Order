@@ -7,16 +7,42 @@
  * limitation (T4A) — with the standing non-claims visible.  Descriptive
  * archive evidence, never a trading or prediction surface.
  *
- * Pure / presentational (no React Query, no jsdom), matching the project's
- * render-smoke pattern (renderToStaticMarkup).
+ * Render-smoke pattern (renderToStaticMarkup, no jsdom).  Since H3 the page
+ * consumes GET /evidence/mission-g via React Query, so the render is wrapped in
+ * a QueryClientProvider.  The baseline render leaves that query unseeded — the
+ * Mission G card shows its honest loading state — so the T2–K3B section
+ * assertions below are unaffected by the async record; a separately-seeded
+ * render (bottom of file) exercises the Mission G card with contract data.
  */
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { EvidenceOverview } from "../evidence-overview";
 import { Sidebar } from "@/components/layout/sidebar";
+import { qk } from "@/lib/queryKeys";
+import type { MissionGEvidenceSummary } from "@/lib/api";
 
-const html = renderToStaticMarkup(<EvidenceOverview />);
+/** Deterministic client for static renders: no retries, nothing goes stale. */
+function testQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Infinity, gcTime: Infinity },
+    },
+  });
+}
+
+function renderOverview(client: QueryClient): string {
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>
+      <EvidenceOverview />
+    </QueryClientProvider>,
+  );
+}
+
+// Baseline render: the Mission G query is unseeded, so the card shows its
+// honest loading state and the static research sections render as before.
+const html = renderOverview(testQueryClient());
 const visible = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
 describe("EvidenceOverview — title + purpose + corpus snapshot (T5A)", () => {
@@ -599,5 +625,171 @@ describe("EvidenceOverview — navigation (T5A)", () => {
     const navVisible = nav.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
     expect(navVisible).toContain("Evidence Overview");
     expect(navVisible).toContain("Research");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// H3/H4 — Mission G historical-evidence card, integrated on the page.
+//
+// The card renders only endpoint-supplied values (H2 contract), so seeding the
+// React Query cache with a contract-shaped fixture is what exercises it.  The
+// fixture mirrors GET /evidence/mission-g and is the only place these values
+// live.  Kept as a separate seeded render so the page-wide banned-word smoke
+// tests above keep running against the (loading-state) baseline.
+// ---------------------------------------------------------------------------
+
+const APPROVED_OPEC_WORDING =
+  "stable descriptive association with unresolved calendar-time confounding";
+
+function missionGFixture(): MissionGEvidenceSummary {
+  return {
+    contract_version: "mission-g-evidence-v1",
+    source_artifacts: {
+      readout: "G6_FROZEN_MANIFEST_READOUT.md",
+      stability: "G6B_STABILITY_AND_FALSIFIERS.md",
+      cases: "G6C_REPRESENTATIVE_CASES.md",
+      promotion_proof: "G5_PROMOTION_PROOF.md",
+      mechanism_attrition: "G3_MECHANISM_CLASSIFICATION_ATTRITION.md",
+    },
+    lanes: {
+      accepted_track_record: {
+        count: 86,
+        lane_note:
+          "separate immutable live-archive lineage with its own denominator; it is not part of the historical evidence below",
+      },
+      historical: {
+        total: 97,
+        fomc_frame_complete: 65,
+        opec_designed_contrast: 32,
+        lane_note:
+          "two historical ledgers promoted under the Mission G protocol; the designed-contrast lane carries no prevalence claim",
+      },
+      pooling_prohibition:
+        "The accepted track record and the historical ledgers are separate denominators answering different questions; they are never pooled, summed, or compared as one sample.",
+    },
+    main_result: {
+      headline:
+        "The historical state-conditioning surface is predominantly flat, fragile, or contradictory under the frozen manifest.",
+      fomc_null: {
+        statement:
+          "The frame-complete FOMC lane is broadly null: no state axis holds a stable rank association with any response lens.",
+        max_abs_full_sample_rho: 0.2746,
+      },
+    },
+    stability: {
+      continuous_associations: 120,
+      loeo_sign_reversals: 44,
+      loyo_sign_reversals: 76,
+      note: "leave-one-event-out and leave-one-calendar-year-out diagnostics were applied uniformly to every association; surviving them is not validation",
+    },
+    bounded_opec_association: {
+      wording: APPROVED_OPEC_WORDING,
+      axis: "fed_policy_path x sector-relative abnormal return",
+      lane: "opec_designed_contrast",
+      per_horizon: [
+        { horizon: 1, rho: -0.4564, loeo_sign_reversals: 0, loyo_sign_reversals: 0 },
+        { horizon: 5, rho: -0.2929, loeo_sign_reversals: 0, loyo_sign_reversals: 0 },
+        { horizon: 20, rho: -0.3824, loeo_sign_reversals: 0, loyo_sign_reversals: 0 },
+      ],
+      confound_note:
+        "the state axis itself tracks calendar time inside this lane, so these data cannot separate state from era",
+    },
+    credit_limitation: {
+      available: 36,
+      of: 97,
+      fomc_subset: 20,
+      opec_subset: 16,
+      era_bounded: true,
+      status: "secondary",
+      fragile_associations: 9,
+      of_associations: 12,
+      note: "HY OAS history before the surviving source window is source-withdrawn; the subset is descriptive only and was not promoted after outcomes were visible",
+    },
+    failed_thesis_mechanism_comparability: {
+      statement:
+        "A J1-derived headline mechanism taxonomy did not transfer comparably across accepted news headlines and historical official-decision text; mechanism labels are not a cross-cohort conditioning axis.",
+      classification_coverage_percent: {
+        accepted_news_headlines: 79.1,
+        fomc_official_text: 0.0,
+        opec_official_text: 3.1,
+      },
+    },
+    representative_cases: {
+      role_slots: 6,
+      unique_cases: 6,
+      status: "illustrations, never proof",
+      selection_note:
+        "state-quantile anchored, outcome-blind selection; outcome magnitude was never used",
+      cases: [
+        { role: "A", lane: "designed_contrast", state_axis: "fed_policy_path", quantile: "q25", candidate_id: "opec-2024-11-03-one-month-delay" },
+        { role: "A", lane: "designed_contrast", state_axis: "fed_policy_path", quantile: "q75", candidate_id: "opec-2023-11-30-voluntary-2p2" },
+        { role: "B", lane: "designed_contrast", state_axis: "credit_hy_oas", quantile: "q25", candidate_id: "opec-2025-09-07-oct-137k" },
+        { role: "B", lane: "designed_contrast", state_axis: "credit_hy_oas", quantile: "q75", candidate_id: "opec-2024-03-03-q2-extension" },
+        { role: "C", lane: "frame_complete_historical", state_axis: "fed_policy_path", quantile: "q25", candidate_id: "fomc-policy-decision-2019-09-18" },
+        { role: "C", lane: "frame_complete_historical", state_axis: "fed_policy_path", quantile: "q75", candidate_id: "fomc-policy-decision-2018-05-02" },
+      ],
+    },
+    non_claims: [
+      "Descriptive research record only: no p-values, no forecasts, no trading interpretation, no single-event inference.",
+      "No pooled statistic across evidence lanes.",
+      "Representative cases are illustrations, never proof.",
+    ],
+  };
+}
+
+const seededClient = testQueryClient();
+seededClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+const missionGVisible = renderOverview(seededClient)
+  .replace(/<[^>]*>/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+describe("EvidenceOverview — Mission G historical-evidence card (H3/H4)", () => {
+  it("shows an honest loading state before the record resolves (baseline render)", () => {
+    expect(visible.toLowerCase()).toContain(
+      "loading the mission g historical record",
+    );
+  });
+
+  it("surfaces the two-lane architecture with separate denominators, never pooled", () => {
+    expect(missionGVisible).toContain("Accepted track record");
+    expect(missionGVisible).toContain("Historical evidence");
+    expect(missionGVisible).toContain("86"); // accepted lane
+    expect(missionGVisible).toContain("97"); // historical total
+    expect(missionGVisible).toContain("65"); // FOMC frame-complete
+    expect(missionGVisible).toContain("32"); // OPEC designed-contrast
+    expect(missionGVisible.toLowerCase()).toContain("never pooled");
+  });
+
+  it("never presents a pooled 183 sample", () => {
+    expect(missionGVisible).not.toContain("183");
+  });
+
+  it("leads with the broad null, then the bounded OPEC association and its confound", () => {
+    const lc = missionGVisible.toLowerCase();
+    const nullIdx = lc.indexOf("broadly null");
+    const opecIdx = missionGVisible.indexOf(APPROVED_OPEC_WORDING);
+    expect(nullIdx).toBeGreaterThan(-1);
+    expect(opecIdx).toBeGreaterThan(-1);
+    expect(nullIdx).toBeLessThan(opecIdx); // the null precedes its one exception
+    expect(lc).toContain("cannot separate state from era");
+  });
+
+  it("keeps stability reversals and failed/incomplete evidence visible as results", () => {
+    expect(missionGVisible).toContain("44/120"); // leave-one-event-out reversals
+    expect(missionGVisible).toContain("76/120"); // leave-one-calendar-year-out
+    expect(missionGVisible).toContain("36/97");  // era-bounded secondary credit
+    expect(missionGVisible).toContain("79.1");   // G3B attrition coverage
+    expect(missionGVisible.toLowerCase()).toContain("did not transfer comparably");
+  });
+
+  it("lists the representative cases as illustrations, never proof", () => {
+    expect(missionGVisible).toContain("illustrations, never proof");
+    expect(missionGVisible).toContain("opec-2024-11-03-one-month-delay");
+    expect(missionGVisible).toContain("fomc-policy-decision-2018-05-02");
+  });
+
+  it("does not fall back to the unavailable/degraded state on a successful load", () => {
+    expect(missionGVisible).not.toContain("Mission G record unavailable");
   });
 });
