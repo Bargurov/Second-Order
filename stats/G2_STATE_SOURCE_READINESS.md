@@ -63,16 +63,47 @@ Two explicit structural choices (stated, not silent):
 - No paid source and no paid request was used anywhere; all four acquired
   series came from zero-cost official/public endpoints.
 
-## 3. Blocked dimension
+## 3. Blocked dimension (G2B source resolution)
 
-`credit_hy_oas` is BLOCKED: the sole zero-cost distribution channel for the
-ICE BofA high-yield OAS series (FRED) is unreachable from this environment -
-repeated connect/read timeouts, re-verified at acquisition time and recorded
-with the attempted URL in `g_state_cache/hy_oas.blocked.json`. Per the G0
-contract the dimension is marked blocked rather than proxied, substituted,
-or silently dropped. Resolution options (a reachable network path to FRED,
-or an alternative zero-cost licensed source) are a future gated slice; G4
-may drop the dimension if it remains unusable.
+`credit_hy_oas` remains BLOCKED. G2B ran a bounded source resolution (three
+source paths, hard-capped) and refined the diagnosis from "FRED unreachable"
+to ENVIRONMENT-BLOCKED with the failure layer identified:
+
+1. Intended path - FRED CSV channel
+   (`fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2`): DNS, TCP
+   connect, and TLS handshake to the CDN edge all succeed; the HTTP request
+   is then silently dropped (read timeout, zero response bytes). The drop is
+   host-level and header-independent (browser-identical headers behave the
+   same), affects the plain series page too, and reproduced across checks
+   hours apart; a control host fetched over the same network answered
+   normally. A cloud-egress cross-check of the same URL received an explicit
+   HTTP 403. This is edge-level request filtering for this environment's
+   egress - not a source outage and not a DNS, TCP, or TLS failure. The
+   attempted URL and evidence stay recorded in
+   `g_state_cache/hy_oas.blocked.json`.
+2. Official FRED API (`api.stlouisfed.org/fred/series/observations`, same
+   series id): REACHABLE from this environment - it answers HTTP 400
+   "api_key is not set" in under a second. This is the same official FRED
+   distribution of the same ICE BofA series, zero-cost behind a free
+   registered API key, and its realtime (vintage) parameters would let the
+   acquisition verify publication semantics directly. No key exists in this
+   environment and registration is an operator action; the path is
+   credential-gated, not network-blocked.
+3. Issuer platform (ICE, `indices.ice.com`): reachable, but a
+   registration-gated interactive platform with no documented zero-cost
+   scriptable endpoint for full 2018-2025 OAS history; it does not meet the
+   auditable point-in-time acquisition bar. (The legacy
+   `indices.theice.com` hostname no longer resolves.)
+
+Diagnosis: ENVIRONMENT-BLOCKED. The intended series identity and its frozen
+`next_day` availability class remain methodologically valid; the block is a
+property of this environment's network egress plus a missing free
+credential, not of the source. Concrete resolution path: a free FRED API
+key supplied by the operator (environment variable, never committed), after
+which acquisition, publication-semantics verification, and the
+97-candidate readiness probe can run in a future gated slice. Per the G0
+contract no proxy was introduced and no substitute series was fetched; the
+decision to drop the dimension, if it stays unusable, belongs to G4.
 
 ## 4. 97-candidate readiness matrix (outcome-blind)
 
