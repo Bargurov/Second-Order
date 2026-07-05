@@ -7,8 +7,13 @@
  *
  * Pure / presentational: it renders the static `RESEARCH_FINDINGS` snapshot.
  */
+import { useQuery } from "@tanstack/react-query";
+
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import { qk } from "@/lib/queryKeys";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { MissionGEvidenceCard } from "@/components/ui/mission-g-evidence-card";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
 import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
@@ -87,6 +92,14 @@ const LEDGER: ReadonlyArray<{ value: React.ReactNode; label: string; note: strin
 ];
 
 export function EvidenceOverview() {
+  // H3 — Mission G record from the tracked-only GET /evidence/mission-g
+  // contract. Long staleTime: the payload only changes on a tracked commit.
+  const { data: missionG, isError: missionGError } = useQuery({
+    queryKey: qk.missionGEvidence(),
+    queryFn: () => api.missionGEvidence(),
+    staleTime: 1_800_000,
+  });
+
   return (
     <div className="mx-auto w-full max-w-5xl">
       {/* Header + purpose + non-claim banner */}
@@ -145,6 +158,37 @@ export function EvidenceOverview() {
             denominators or claims. Event-study availability is a coverage denominator, not a
             significance claim; representative cases are illustrative, not evidence.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* H3 — the completed Mission G historical research record, consumed
+          from the tracked-artifact-backed GET /evidence/mission-g contract
+          (H2). Placed directly under the denominator ledger so the second
+          evidence lane appears where denominators are introduced. The
+          accepted-lane result above answers a directional-skill /
+          above-baseline question over the 86 accepted rows; Mission G
+          answers a historical state-conditioning question over its own
+          97-event ledger — different questions, never pooled. */}
+      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Historical evidence · Mission G · separate ledger</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Mission G historical research record
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            A frozen-design historical program, separate from the accepted
+            track record above: it asks whether pre-event market state
+            conditioned event reactions across two bounded historical
+            universes, not whether the live archive shows above-baseline
+            directional skill. All figures below are served from the tracked
+            research artifacts.
+          </p>
+          <MissionGEvidenceCard
+            data={missionG}
+            unavailable={missionGError}
+          />
         </CardContent>
       </Card>
 

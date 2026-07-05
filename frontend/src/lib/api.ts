@@ -2978,6 +2978,88 @@ export interface TrackedEvidenceSummaryResponse {
   errors:         string[];
 }
 
+/** Mission G research contract — GET /evidence/mission-g (H2).
+ *  Structured summary of the completed Mission G historical record,
+ *  parsed server-side from the tracked stats/G*.md artifacts at request
+ *  time.  Every computed research number originates in those artifacts;
+ *  the accepted track record and the historical ledgers are separate
+ *  lanes and are never pooled. */
+export interface MissionGEvidenceSummary {
+  contract_version: string;
+  source_artifacts: {
+    readout: string;
+    stability: string;
+    cases: string;
+    promotion_proof: string;
+    mechanism_attrition: string;
+  };
+  lanes: {
+    accepted_track_record: { count: number; lane_note: string };
+    historical: {
+      total: number;
+      fomc_frame_complete: number;
+      opec_designed_contrast: number;
+      lane_note: string;
+    };
+    pooling_prohibition: string;
+  };
+  main_result: {
+    headline: string;
+    fomc_null: { statement: string; max_abs_full_sample_rho: number };
+  };
+  stability: {
+    continuous_associations: number;
+    loeo_sign_reversals: number;
+    loyo_sign_reversals: number;
+    note: string;
+  };
+  bounded_opec_association: {
+    wording: string;
+    axis: string;
+    lane: string;
+    per_horizon: Array<{
+      horizon: number;
+      rho: number;
+      loeo_sign_reversals: number;
+      loyo_sign_reversals: number;
+    }>;
+    confound_note: string;
+  };
+  credit_limitation: {
+    available: number;
+    of: number;
+    fomc_subset: number;
+    opec_subset: number;
+    era_bounded: boolean;
+    status: string;
+    fragile_associations: number;
+    of_associations: number;
+    note: string;
+  };
+  failed_thesis_mechanism_comparability: {
+    statement: string;
+    classification_coverage_percent: {
+      accepted_news_headlines: number;
+      fomc_official_text: number;
+      opec_official_text: number;
+    };
+  };
+  representative_cases: {
+    role_slots: number;
+    unique_cases: number;
+    status: string;
+    selection_note: string;
+    cases: Array<{
+      role: string;
+      lane: string;
+      state_axis: string;
+      quantile: string;
+      candidate_id: string;
+    }>;
+  };
+  non_claims: string[];
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDetail: () => request<HealthDetail>("/health/detail"),
@@ -3268,6 +3350,12 @@ export const api = {
    *  reads, no provider, no network. */
   trackedEvidenceSummary: () =>
     request<TrackedEvidenceSummaryResponse>("/evidence/summary"),
+
+  /** Completed Mission G historical research record.  Read-only endpoint
+   *  backed by the tracked ``stats/G*.md`` artifacts only; no DB reads,
+   *  no provider, no network beyond this API call. */
+  missionGEvidence: () =>
+    request<MissionGEvidenceSummary>("/evidence/mission-g"),
 
   trackRecordBreakdown: () =>
     request<TrackRecordBreakdown>("/stats/track-record/breakdown"),
