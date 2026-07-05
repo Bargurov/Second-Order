@@ -357,7 +357,135 @@ class HyOasFetchTests(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 8. Deterministic candidate-ledger reconciliation (live artifacts)
+# 8. G2D credit point-in-time evidence extract: candidate-level preservation
+#    of the HY OAS inputs, generated from the SAME readiness logic.
+# ---------------------------------------------------------------------------
+
+
+class CreditEvidenceBuildTests(unittest.TestCase):
+    # Sessions where 2020-01-09 is a cutoff candidate date and the series
+    # has an observation ON the cutoff itself - the next_day selector must
+    # step back to the prior session, a same_day selector would not.
+    EV_SESSIONS = ["2020-01-06", "2020-01-07", "2020-01-08", "2020-01-09",
+                   "2020-01-10"]
+    EV_HY = {"2020-01-07": 4.10, "2020-01-08": 4.20, "2020-01-09": 4.30}
+
+    def _bundle(self):
+        return gsa.SourceBundle(
+            sessions=self.EV_SESSIONS, vix=None, spy=None, curve_2s10s=None,
+            hy_oas=dict(self.EV_HY),
+            fed_timeline=[("2016-12-14", 0.625)], blocked={})
+
+    def _candidates(self):
+        return [
+            {"candidate_id": "b-early", "lane": "designed_contrast",
+             "event_date": "2020-01-07"},   # cutoff 01-06, no prior obs
+            {"candidate_id": "a-late", "lane": "frame_complete_historical",
+             "event_date": "2020-01-10"},   # cutoff 01-09, obs on cutoff
+        ]
+
+    def test_rows_only_for_available_and_use_next_day_selector(self):
+        ev = gsa.build_credit_evidence(self._candidates(), self._bundle())
+        self.assertEqual(ev["available"], 1)
+        self.assertEqual(ev["source_missing"], 1)
+        row = ev["rows"][0]
+        self.assertEqual(row["candidate_id"], "a-late")
+        # next_day: obs dated at the cutoff (01-09) is NOT eligible
+        self.assertEqual(row["obs_date"], "2020-01-08")
+        self.assertEqual(row["value"], 4.20)
+        expected = gsa.latest_eligible(self.EV_HY, "2020-01-09",
+                                       availability="next_day")
+        self.assertEqual((row["obs_date"], row["value"]), expected)
+        self.assertEqual(row["series_id"], "BAMLH0A0HYM2")
+        self.assertEqual(row["availability_rule"], "next_day")
+
+    def test_rows_are_deduped_deterministically_ordered_and_stable(self):
+        cands = self._candidates() + [
+            {"candidate_id": "a-late", "lane": "frame_complete_historical",
+             "event_date": "2020-01-10"}]   # duplicate must not double-count
+        ev1 = gsa.build_credit_evidence(cands, self._bundle())
+        ev2 = gsa.build_credit_evidence(list(reversed(cands)),
+                                        self._bundle())
+        self.assertEqual(ev1, ev2)
+        ids = [r["candidate_id"] for r in ev1["rows"]]
+        self.assertEqual(ids, sorted(set(ids)))
+        keys = [(r["event_date"], r["candidate_id"]) for r in ev1["rows"]]
+        self.assertEqual(keys, sorted(keys))
+
+    def test_row_fields_whitelisted_and_outcome_blind(self):
+        ev = gsa.build_credit_evidence(self._candidates(), self._bundle())
+        for row in ev["rows"]:
+            self.assertEqual(set(row), set(gsa.CREDIT_EVIDENCE_FIELDS))
+        dumped = json.dumps(ev).lower()
+        for banned in ("abnormal", "outcome", '"sar"', '"car"', "raw_return",
+                       "readout", "reaction", "sector_relative", "state_tag"):
+            self.assertNotIn(banned, dumped, banned)
+
+    def test_render_contains_nonclaim_pin_and_cache_hash(self):
+        ev = gsa.build_credit_evidence(self._candidates(), self._bundle())
+        meta = {"retrieved_at": "2026-07-05T10:04:37.921668+00:00",
+                "source": "official FRED API (authenticated, free "
+                          "registered key)",
+                "first": "2023-07-04", "last": "2025-12-31",
+                "observations": 654}
+        text = gsa.render_credit_evidence(ev, meta, "deadbeef" * 8)
+        self.assertIn(
+            "This artifact preserves the candidate-level inputs observed "
+            "in the 2026-07-05 acquisition run. It does not preserve or "
+            "redistribute the full ICE BofA/FRED series and does not make "
+            "the upstream rolling source permanently reproducible.", text)
+        self.assertIn("BAMLH0A0HYM2", text)
+        self.assertIn("next_day", text)
+        self.assertIn("deadbeef" * 8, text)
+        self.assertIn("2026-07-05T10:04:37.921668+00:00", text)
+        self.assertIn("| a-late |", text)
+        self.assertIn("4.20", text)
+
+
+@unittest.skipUnless(G1A.exists() and G1B.exists()
+                     and (ROOT / "g_state_cache" / "hy_oas.json").exists(),
+                     "live ledgers and acquired credit cache required")
+class CreditEvidenceLiveTests(unittest.TestCase):
+    def _live(self):
+        cands = (gsa.parse_g1a_candidates(str(G1A))
+                 + gsa.parse_g1b_candidates(str(G1B)))
+        return cands, gsa.load_bundle()
+
+    def test_live_extract_is_36_rows_61_missing_unique_ids(self):
+        cands, bundle = self._live()
+        ev = gsa.build_credit_evidence(cands, bundle)
+        self.assertEqual(ev["available"], 36)
+        self.assertEqual(ev["source_missing"], 61)
+        self.assertEqual(len(ev["rows"]), 36)
+        ids = [r["candidate_id"] for r in ev["rows"]]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_live_extract_reconciles_with_readiness_probe(self):
+        cands, bundle = self._live()
+        ev = gsa.build_credit_evidence(cands, bundle)
+        in_evidence = {r["candidate_id"] for r in ev["rows"]}
+        for c in cands:
+            probe_row = gsa.candidate_readiness(c, bundle)
+            self.assertEqual(
+                probe_row["dimensions"]["credit_hy_oas"]["available"],
+                c["candidate_id"] in in_evidence, c["candidate_id"])
+
+    def test_tracked_artifact_matches_deterministic_regeneration(self):
+        artifact = ROOT / "stats" / "G2D_CREDIT_POINT_IN_TIME_EVIDENCE.md"
+        if not artifact.exists():
+            self.skipTest("evidence artifact not yet generated")
+        cands, bundle = self._live()
+        ev = gsa.build_credit_evidence(cands, bundle)
+        cache = ROOT / "g_state_cache" / "hy_oas.json"
+        import hashlib
+        sha = hashlib.sha256(cache.read_bytes()).hexdigest()
+        meta = json.loads(cache.read_text(encoding="utf-8"))["meta"]
+        regenerated = gsa.render_credit_evidence(ev, meta, sha)
+        self.assertEqual(artifact.read_text(encoding="utf-8"), regenerated)
+
+
+# ---------------------------------------------------------------------------
+# 9. Deterministic candidate-ledger reconciliation (live artifacts)
 # ---------------------------------------------------------------------------
 
 
