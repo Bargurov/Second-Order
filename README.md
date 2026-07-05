@@ -8,9 +8,15 @@ not a trading product.
 
 **Current research state.** The tracked Phase 1-4 evidence track is frozen and
 complete; the wider-app archive is descriptive, read-only, and reproducible from
-the read-only reports below. The headline baseline conclusion is
-`not_above_baseline` — no robust above-baseline directional skill — and
-cohort-level inference is currently blocked (see the Compute-Readiness Contract).
+the read-only reports below. Two distinct null-like results exist over different
+denominators and different questions — do not conflate them. The accepted-lane
+baseline verdict is `not_above_baseline` — no robust above-baseline directional
+skill in the 86-row accepted archive. Separately, the completed Mission G
+historical program (97 events; see
+[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)) asked whether pre-event market
+state conditioned historical event reactions and found a predominantly flat,
+fragile, or contradictory surface. Cohort-level inference remains blocked (see
+the Compute-Readiness Contract).
 
 **Best starting point for a finance reviewer.** Start with
 [`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md): it explains the completed
@@ -164,7 +170,10 @@ one canonical abnormal-return benchmark; sector baselines are descriptive contex
 only, never a sector-relative abnormal return. The headline baseline conclusion
 is `not_above_baseline` (no robust above-baseline directional skill), and
 cohort-level inference is currently blocked — see the
-[Compute-Readiness Contract](#event-study-compute-readiness-contract). The closed
+[Compute-Readiness Contract](#event-study-compute-readiness-contract). That
+accepted-lane verdict answers a directional-skill question; it is distinct from
+the Mission G historical state-conditioning null summarized in
+[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md). The closed
 Phase 1 and Phase 2 FDR pools (five rows each) are a **separate** evidence track
 with their own frozen q-values, never derived from this saved-event archive.
 
@@ -174,11 +183,17 @@ out of this reviewer-facing README.
 
 ## Verify it yourself: read-only research reports
 
-Every figure above recomputes from the live archive. The methods spine is
-[`stats/METHODOLOGY.md`](stats/METHODOLOGY.md) — the abnormal-return / SAR /
-p-value / FDR conventions plus the statistical-honesty layer (small-sample
-robust diagnostics, event-window overlap disclosure, and track-record
-scoring-rule sensitivity).
+Every figure above recomputes from the live archive. The Phase-1 methods
+spine is [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md) — the
+abnormal-return / SAR / p-value / FDR conventions plus the
+statistical-honesty layer (small-sample robust diagnostics, event-window
+overlap disclosure, and track-record scoring-rule sensitivity). Current
+methodology is distributed across the canonical documents: the close-basis
+policy in [`stats/BASIS_RESTATEMENT.md`](stats/BASIS_RESTATEMENT.md), the
+event-study lens spec in
+[`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md), and
+the locked Mission G protocol in
+[`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md).
 
 These reports are **read-only**: they open `events.db` with `mode=ro`, never
 mutate it, never call a paid provider, and never run `/analyze`. They never
@@ -330,7 +345,12 @@ and
 
 ## Current Status
 
-The tracked evidence track is complete through Phase 4. The cohort-wide
+The tracked evidence track is complete through Phase 4. Beyond that track,
+the Mission G historical research program (97 events across two separate
+ledgers) is complete, and Mission H surfaces the completed record — the
+[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md) front door, the read-only
+`GET /evidence/mission-g` contract, and the Evidence Overview card — without
+adding any new research claim. The cohort-wide
 methodology and the Phase 1–4 arc are documented at
 [`evidence_artifacts/section_c_v2/phase_evidence_methodology.md`](evidence_artifacts/section_c_v2/phase_evidence_methodology.md)
 and
@@ -478,13 +498,15 @@ decision does not change the closed Phase 1 or Phase 2 FDR denominators.
 
 ## Next Roadmap
 
-The tracked evidence track is closed at Phase 4. No new candidates, new
-pools, or new validators are scheduled by this README. Deferred
+The tracked evidence track is closed at Phase 4; no new candidates, pools,
+or validators are scheduled for it. The Mission G historical research
+program is likewise complete, and Mission H (which surfaces that completed
+record) adds no new research claim. Deferred
 methodology lessons (CENX, NUE, NOC) are recorded separately in
 `evidence_artifacts/section_c_v2/rejection_log_summary_v1.json` and are not
-denominator members of any open pool. No UI surface is claimed for the
-tracked-evidence layer; the only public consumption surface is the
-read-only `GET /evidence/summary` route.
+denominator members of any open pool. The public consumption surfaces for
+completed evidence are the read-only `GET /evidence/summary` and
+`GET /evidence/mission-g` routes.
 
 Open work in the wider app, independent of the tracked-evidence track:
 

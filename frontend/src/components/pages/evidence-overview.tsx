@@ -111,7 +111,8 @@ export function EvidenceOverview() {
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-on-surface-variant/85">
           This page summarizes descriptive archive evidence and the baseline checks behind it. It is
           not a trading or prediction surface, and it makes no claim of edge or statistical
-          significance. Figures are a read-only snapshot as of {F.asOf}.
+          significance. Figures are read-only; each evidence surface below carries its own
+          frozen or tracked provenance, and dated snapshots are labeled per section.
         </p>
       </header>
 
