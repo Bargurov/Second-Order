@@ -12,10 +12,12 @@ the read-only reports below. The headline baseline conclusion is
 `not_above_baseline` — no robust above-baseline directional skill — and
 cohort-level inference is currently blocked (see the Compute-Readiness Contract).
 
-**For a finance reviewer, in five minutes.** Read what Second Order does and does
-not claim, walk the [five-minute walkthrough](#five-minute-walkthrough), skim the
-denominator funnel, then recompute the numbers yourself with the read-only
-commands in [Verify it yourself](#verify-it-yourself-read-only-research-reports).
+**Best starting point for a finance reviewer.** Start with
+[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md): it explains the completed
+research chain, evidence lanes, Mission G design, main null result, bounded OPEC
+association, representative cases, and claim boundaries. Then use the
+[five-minute walkthrough](#five-minute-walkthrough), denominator funnel, and
+read-only commands in [Verify it yourself](#verify-it-yourself-read-only-research-reports).
 
 Second Order runs as a FastAPI backend with a React app and a Telegram bot; local
 setup is in [Run Locally](#run-locally). Detailed operator history and dated
@@ -95,8 +97,7 @@ A skeptical reviewer can follow the intended order without a guided tour:
 7. **Methodology / non-claims** —
    [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md): market-adjusted readouts are
    SPY-relative with beta fixed at 1. Representative cases are walkthrough
-   material, not family-level inference; not a recommendation, forecast, or
-   trading signal.
+   material, not family-level inference; not a recommendation or forecast.
 
 Locked protocol for the gated historical-evidence phase (Mission G): [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md) with its standardization spec [`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md).
 
@@ -122,7 +123,7 @@ Locked protocol for the gated historical-evidence phase (Mission G): [`stats/G_R
 8. **End on the boundary** — every read is descriptive event-window evidence at
    `n = 1`, not a recommendation and not a claim of predictive power.
 
-Technical and finance reviewers: the strongest self-verifiable evidence is in
+Technical and finance reviewers: the self-verifiable evidence lives in
 [**Verify it yourself**](#verify-it-yourself-read-only-research-reports), whose
 read-only reports recompute the family overlay, transmission cases, sector
 backdrop, and case-selection stress.
@@ -505,8 +506,7 @@ WhatsApp / OpenClaw delivery.
 
 Second Order is a local-first research and analyst-support tool. It is
 not a live trading product. The tracked evidence layer is descriptive
-of past, dated events; it does not generate trading signals and makes
-no claim about future returns.
+of past, dated events and makes no claim about future returns.
 
 ## Current Capabilities
 

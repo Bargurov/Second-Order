@@ -1,0 +1,123 @@
+# Second Order Research Overview
+
+This is the finance-reviewer front door for Second Order's current research record. It summarizes what the workbench does, how the evidence lanes are separated, what Mission G found, and where the durable proof artifacts live.
+
+## 1. What Second Order Is
+
+Second Order is an event-driven quant-finance research workbench and portfolio piece for geopolitical, macro, and policy headlines. Its maintained research chain is:
+
+`event -> mechanism -> affected assets -> 1d/5d/20d reaction -> abnormal/event-study readout -> falsifier/limits -> archive evidence -> representative cases`
+
+The point is to make each dated event legible as evidence: what changed, what transmission channel was hypothesized, which assets were exposed, how those assets actually moved, and which limits or counter-readings remain visible.
+
+It is not a buy/sell tool, not a forecasting system, not a claim of single-event significance, and not a live-trading product. The event-study layer describes realized event-window behavior; it does not establish that one event proves a mechanism or that a future event should behave the same way.
+
+## 2. Research Architecture
+
+The project keeps evidence lanes visible because each lane has a different denominator:
+
+- Existing live track record: 86 accepted archive rows, preserved as its own live-track-record denominator.
+- Frame-complete FOMC historical lane: 65 Federal Reserve monetary-policy decisions from 2018-2025, enumerated as a bounded official frame.
+- Designed-contrast OPEC lane: 32 source-pinned reservoir-ready OPEC/OPEC+ production-policy identities, recruited under a separate designed-contrast rule.
+- Representative cases: illustrations only, with no denominator of their own.
+
+The denominator separation is central. The live archive, the complete FOMC frame, and the OPEC designed reservoir answer different research questions and are not pooled into one general market-event result. Representative cases help a reader inspect the machinery but never substitute for a lane-level count.
+
+## 3. Event-Study Layer
+
+The shipped event-study hierarchy uses four response lenses:
+
+1. Absolute asset return.
+2. SPY-relative abnormal return.
+3. Sector-relative abnormal return, where the sector benchmark is eligible.
+4. SAR, the standardized abnormal return.
+
+Each lens is read at 1d, 5d, and 20d horizons. The canonical basis is adjusted/adjusted when available. Raw/raw fallback is allowed only when required by data availability, and a cross-basis readout is never treated as canonical. The point of the hierarchy is to keep raw movement, market movement, sector movement, and volatility-scaled movement separate rather than forcing them into one headline number.
+
+## 4. Mission G Chain
+
+Mission G was built as an outcome-blind historical evidence chain:
+
+1. Protocol lock.
+2. Independent historical universes.
+3. Point-in-time state construction.
+4. Mechanical eligibility.
+5. Outcome-blind structural freeze.
+6. Separate-ledger promotion.
+7. Complete frozen-manifest readout.
+8. Uniform stability diagnostics.
+9. Outcome-independent representative cases.
+
+The order matters. The universes, state axes, eligibility gates, comparison menu, and ledger promotion were frozen before historical outcome values were inspected. The readout then executed the frozen menu rather than choosing comparisons after seeing which ones looked favorable.
+
+## 5. Point-In-Time State
+
+The primary state vector is continuous and point-in-time:
+
+- Fed path.
+- VIX level/trailing percentile.
+- SPY distance from the 200-day moving average.
+- 2s10s yield curve.
+
+These four dimensions are available for all 97 historical Mission G candidates. Continuous values are canonical; categorical tags are secondary reader aids.
+
+HY OAS is handled separately. It is available for 36/97 candidates, bounded by the source era, and is therefore secondary-only. It is not a cross-period primary state vector, and no proxy was substituted for the missing history.
+
+## 6. Main Empirical Result
+
+The lead result is a null. The broad state-conditioning surface is predominantly flat, fragile, or contradictory. Across the 120 continuous associations in the stability pass, 44/120 changed sign under leave-one-event-out and 76/120 changed sign under leave-one-year-out. The frame-complete FOMC lane is broadly flat, with no general regime effect under the frozen manifest.
+
+There is one bounded exception: in the OPEC designed-contrast lane, Fed path x sector-relative reaction remained negative across 1d, 5d, and 20d and survived the uniform leave-one-event-out and leave-one-year-out sign checks. The correct description is: stable descriptive association with unresolved calendar-time confounding.
+
+That phrase is deliberately narrow. It does not claim prediction, causality, single-event significance, or a general market rule.
+
+## 7. Credit Result
+
+The OPEC credit subset has N=16. It is era-bounded, secondary-only, and mostly fragile under the same stability discipline. Credit coverage is useful as a constrained descriptive slice of the period where HY OAS exists, but it was not promoted to a primary cross-period state dimension after outcomes were visible. That restraint is part of the result.
+
+## 8. Representative Cases
+
+The representative-case artifact is [`stats/G6C_REPRESENTATIVE_CASES.md`](stats/G6C_REPRESENTATIVE_CASES.md). It contains six state-anchored cases selected by three roles: the OPEC Fed-path association, the fragile OPEC credit subset, and the broad-null FOMC lane. Each role takes Q25 and Q75 state anchors; the selected case is the nearest event to the anchor, with deterministic tiebreaks by event date and candidate id. Outcome magnitude is never used.
+
+Three compact examples show why the cases are illustrations rather than proof:
+
+- `opec-2024-03-03-q2-extension`: a large raw 20d move collapses after the sector benchmark, showing why the response hierarchy matters.
+- `opec-2023-11-30-voluntary-2p2`: after the first day, the traded outcome runs opposite the announcement's face-value direction across the market, sector, and volatility-scaled lenses.
+- `fomc-policy-decision-2019-09-18`: a quiet FOMC case where the response is small and mixed, illustrating the broad flatness of the FOMC lane.
+
+The cases are useful because they make the statistics inspectable at the dossier level. They are not evidence that the selected event is typical, decisive, or independently probative.
+
+## 9. What Failed And Why It Matters
+
+Several attempted research paths failed or narrowed:
+
+- Broad regime conditioning did not survive as a stable general surface.
+- Mechanism-label comparability failed across source registers and input surfaces, so mechanism labels were not used as a cross-cohort Mission G conditioning axis.
+- Credit coverage was not adequate for a primary cross-period vector.
+- Many associations changed sign under uniform stability diagnostics.
+
+Those failures matter because they are visible outcomes, not discarded work. They define the claim boundary and make the surviving descriptive statement narrower and more honest.
+
+## 10. Reproducibility Evidence Trail
+
+Key artifacts, in audit order:
+
+- Protocol and ledger rules: [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md).
+- Event-study standardization: [`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md).
+- FOMC frame inventory: [`stats/G1A_FOMC_FRAME_INVENTORY.md`](stats/G1A_FOMC_FRAME_INVENTORY.md).
+- OPEC designed reservoir: [`stats/G1B_OPEC_DESIGNED_RESERVOIR.md`](stats/G1B_OPEC_DESIGNED_RESERVOIR.md).
+- State-source readiness: [`stats/G2_STATE_SOURCE_READINESS.md`](stats/G2_STATE_SOURCE_READINESS.md).
+- Mechanical eligibility: [`stats/G3_MECHANICAL_ELIGIBILITY.md`](stats/G3_MECHANICAL_ELIGIBILITY.md).
+- Structural freeze: [`stats/G4_STRUCTURAL_FREEZE.md`](stats/G4_STRUCTURAL_FREEZE.md).
+- Promotion proof: [`stats/G5_PROMOTION_PROOF.md`](stats/G5_PROMOTION_PROOF.md).
+- Frozen-manifest readout: [`stats/G6_FROZEN_MANIFEST_READOUT.md`](stats/G6_FROZEN_MANIFEST_READOUT.md).
+- Stability and falsifiers: [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md).
+- Representative cases: [`stats/G6C_REPRESENTATIVE_CASES.md`](stats/G6C_REPRESENTATIVE_CASES.md).
+
+Together these artifacts let a reviewer reconstruct the bounded historical universes, state substrate, eligibility gate, frozen comparison set, readout, stability checks, and case-selection rule without relying on market memory or presentation copy.
+
+## 11. Claims And Non-Claims
+
+Second Order currently claims that its research workflow can preserve event identity, denominator separation, point-in-time state, and event-study readouts in an auditable local workbench. The main Mission G empirical result is a broad null, plus the bounded OPEC phrase above and a constrained secondary credit result.
+
+It does not claim a tradable rule, a general market regime model, a causal statement, a future-return forecast, or single-event statistical significance. Representative cases remain illustrations. The durable contribution is the disciplined research record: what held, what failed, and where the limits are visible.
