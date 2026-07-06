@@ -136,7 +136,9 @@ that drive the design:
   tracked OPEC date from the reference. Per-year minimums: FOMC 226 (1d),
   157 (5d); OPEC 218 (1d), 138 (5d), 18 (20d - thin years disclosed).
 - Uniform +-20 own-family exclusion: FOMC 0 at every horizon (a 41-session
-  hole exceeds the 30-session cycle); OPEC 958.
+  hole exceeds the 30-session cycle); OPEC 889 (under the 41-date /
+  39-anchor known-date register; the superseded 958 excluded only the 32
+  promoted study events - see the section 20 erratum).
 - Cross-family exclusion at +-20: zero eligible dates in BOTH lanes at
   every horizon. At +-h it removes 20-37 percent of dates at 5d.
 - Non-overlapping window blocks in Design A (eligible dates / h): FOMC
@@ -500,3 +502,16 @@ calibration, and falsifiers are unchanged by it.
 
 No ordinary-period outcome comparison was computed or inspected before
 this protocol freeze.
+
+**Erratum (i0-v1, clerical count-consistency - post-freeze, outcome-blind,
+before I2).** The secondary "uniform +-20 own-family exclusion" diagnostic in
+section 5 stated OPEC 958; that figure excluded only the 32 promoted study
+events. Under the frozen section-8 known-date register (41 dates / 39 anchors)
+the register-consistent count is 889 - identical to the primary OPEC 20d
+reference, because a uniform +-20 buffer coincides with buffer = h at the 20d
+horizon. The correction was made from date/session geometry alone. It is a
+count-consistency fix only: no protocol design rule, no study denominator
+(FOMC 65 / OPEC 32), no primary count (FOMC 1816 / 1299 / 0,
+OPEC 1903 / 1631 / 889), no estimand (MEMP), no calibration rule
+(2,000 placements), no falsifier, and no result interpretation changed. No
+ordinary-period outcome had been computed or inspected.
