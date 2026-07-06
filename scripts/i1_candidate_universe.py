@@ -27,6 +27,7 @@ written except, by the caller, the tracked Markdown report.
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -528,6 +529,28 @@ def render_report(universe: dict[str, LaneResult]) -> str:
     return "\n".join(L)
 
 
+def emit_report(report: str, stream=None) -> None:
+    """Write the report to ``stream`` (default stdout) as UTF-8, verbatim.
+
+    The report is a deterministic UTF-8 document that uses characters such as
+    ``→`` (U+2192) and ``≥`` (U+2265).  On Windows the console's text stdout
+    defaults to a legacy code page (cp1252) that cannot encode them, so a plain
+    ``print`` raises ``UnicodeEncodeError`` — the shipped emit defect.  Writing
+    the UTF-8 bytes straight to the underlying binary buffer bypasses that
+    locale text layer, so the emit succeeds without the operator setting
+    ``PYTHONUTF8`` / ``PYTHONIOENCODING``.  A stream that exposes no binary
+    ``.buffer`` (e.g. an in-memory text capture) receives the string directly.
+    The emitted bytes are exactly ``render_report()`` encoded as UTF-8 — the
+    report content is unchanged.
+    """
+    stream = sys.stdout if stream is None else stream
+    buffer = getattr(stream, "buffer", None)
+    if buffer is not None:
+        buffer.write(report.encode("utf-8"))
+        buffer.flush()
+    else:
+        stream.write(report)
+
+
 if __name__ == "__main__":  # pragma: no cover
-    uni = build_universe()
-    print(render_report(uni))
+    emit_report(render_report(build_universe()))

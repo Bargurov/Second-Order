@@ -12,6 +12,7 @@ g3_price_cache.db substrate (same as the G3 grinder).
 """
 from __future__ import annotations
 
+import io
 import re
 import unittest
 from pathlib import Path
@@ -367,6 +368,53 @@ class OutcomeBlindnessTest(unittest.TestCase):
             for token in banned:
                 if token in low and not negated:
                     self.fail(f"outcome vocabulary {token!r} in: {line}")
+
+
+# ---------------------------------------------------------------------------
+# CLI emit portability — the report must reach stdout on a Windows console
+# whose text layer uses a legacy code page (cp1252), without UnicodeEncodeError.
+# ---------------------------------------------------------------------------
+
+
+class CliEmitPortabilityTest(unittest.TestCase):
+    @staticmethod
+    def _cp1252_stdout():
+        # A text stdout backed by a legacy Windows code page, exposing the
+        # binary .buffer that a UTF-8 emit boundary should target -- the same
+        # shape as the operator's real console stdout.
+        raw = io.BytesIO()
+        return io.TextIOWrapper(raw, encoding="cp1252", newline=""), raw
+
+    def test_report_has_a_char_a_legacy_console_cannot_encode(self):
+        # Premise of the whole task: the deterministic report really carries a
+        # character (U+2192 '->') that cp1252 cannot encode, so a naive text
+        # write reproduces the operator's UnicodeEncodeError exactly.
+        report = i1.render_report(universe())
+        self.assertIn("→", report)
+        wrapper, _ = self._cp1252_stdout()
+        with self.assertRaises(UnicodeEncodeError):
+            wrapper.write(report)
+            wrapper.flush()
+
+    def test_emit_report_writes_utf8_through_cp1252_stdout(self):
+        report = i1.render_report(universe())
+        wrapper, raw = self._cp1252_stdout()
+        i1.emit_report(report, stream=wrapper)  # must NOT raise
+        self.assertEqual(raw.getvalue().decode("utf-8"), report)
+
+    def test_emit_report_preserves_render_report_bytes(self):
+        report = i1.render_report(universe())
+        wrapper, raw = self._cp1252_stdout()
+        i1.emit_report(report, stream=wrapper)
+        self.assertEqual(raw.getvalue(), report.encode("utf-8"))
+
+    def test_emit_report_falls_back_to_text_write(self):
+        # A stream with no binary .buffer (e.g. an in-memory text capture)
+        # still receives the exact report.
+        report = i1.render_report(universe())
+        sink = io.StringIO()
+        i1.emit_report(report, stream=sink)
+        self.assertEqual(sink.getvalue(), report)
 
 
 if __name__ == "__main__":
