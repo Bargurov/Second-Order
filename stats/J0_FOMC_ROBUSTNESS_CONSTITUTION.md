@@ -928,3 +928,47 @@ downstream, can produce PROPAGATED, TRANSMISSION BREAK, or DOWNSTREAM
 WITHOUT UPSTREAM; every such case maps to MEASUREMENT UNRESOLVED while
 the proxy-specific node state remains displayed. No Mission J robustness
 outcome was computed or inspected before or during this amendment.
+
+**Post-publication clarification (j0-v1, outcome-blind): frozen J1
+calibration RNG policy `grouped_shared_calendar_single_stream`.** The
+J1B engine build correctly identified that section 4.1's "I2C-A
+semantics verbatim" does not define how Mission I's single-stream RNG
+consumption order (defined over family-by-horizon groups, one drawn
+calendar shared across each group's metrics) maps onto the 12
+heterogeneous J1 cells. No real Mission J calibration or outcome had
+been computed before this clarification; it is not outcome-calibrated.
+The frozen policy, with no runtime alternative:
+
+- **One RNG.** Exactly one local `numpy.random.default_rng(20180101)`
+  instance for the full J1 calibration family. No global RNG, no
+  per-cell seed, no per-group seed, no reset between groups.
+- **Three frozen placement groups**, processed in exactly this order:
+  1. **Rolling-beta equity** - cells 1-5 (KRE, IAT, KBE, XLF, VFH
+     rolling-beta AR);
+  2. **Raw ETF returns** - cells 6-9 and 12 (IAT, KBE, XLF, VFH, SHY
+     raw return);
+  3. **Treasury/rates geometry** - cells 10-11 (2Y CMT raw change,
+     2s10s raw change). 2s10s remains contextual - outside the
+     rates-repricing proxy panel, outside role modifiers, outside edge
+     adjudication; sharing a placement calendar with 2Y is a
+     calibration-geometry decision only and does not change its
+     economic role.
+- **Exact group-eligibility assertions.** Before calibration, every
+  member of a placement group must have exact equality of (1) the
+  eligible ordinary-anchor identity set, (2) the available-event
+  identity set, and (3) the available-event year-count vector. Counts
+  alone are insufficient. On any identity difference the run fails
+  loudly: no automatic group split, no per-cell fallback, no new seed,
+  no continuing because counts match.
+- **Draw semantics.** For each group and each of the 2,000 placements:
+  iterate years in ascending order; use the sorted eligible ordinary
+  pool for the year; draw the group's frozen available-event count for
+  that year uniformly without replacement; combine the yearly draws
+  into one pseudo-event calendar; reuse that exact calendar across
+  every cell in the group. After 2,000 placements for one group, the
+  same RNG stream continues into the next group.
+- **Rationale.** This extends the governing I2C-A principle - one
+  synthetic event calendar is reused across comparison dimensions when
+  denominator geometry is identical - to J1, which requires three
+  placement groups because the 12 frozen cells do not share one
+  eligibility geometry.
