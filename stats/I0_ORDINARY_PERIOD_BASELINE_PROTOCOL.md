@@ -141,11 +141,15 @@ that drive the design:
   promoted study events - see the section 20 erratum).
 - Cross-family exclusion at +-20: zero eligible dates in BOTH lanes at
   every horizon. At +-h it removes 20-37 percent of dates at 5d.
-- Non-overlapping window blocks in Design A (eligible dates / h): FOMC
-  ~1816 (1d) / ~259 (5d); OPEC ~1903 / ~326 / ~44 (20d).
+- Non-overlapping window blocks in Design A (canonical greedy disjoint
+  [t, t+h] windows on the eligible session indices, starts >= h+1 apart per
+  section 9): FOMC 927 (1d) / 233 (5d); OPEC 960 (1d) / 287 (5d) / 51 (20d).
+  (Superseded eligible-dates / h proxy - see the section 20 erratum.)
 - Single pre-declared sensitivity count: FOMC 20d under FORWARD-ONLY
   own-family exclusion (no own event inside [t, t+20]) = 659 dates, all 8
-  years (min-year 75), ~32 non-overlapping blocks.
+  years (min-year 75), 64 canonical non-overlapping blocks (the same
+  h+1-spacing greedy packing as every primary block count; roughly one
+  disjoint aftermath-inclusive window per inter-meeting run).
 
 ## 6. Selected primary baseline design
 
@@ -276,9 +280,12 @@ independent observations:
    distribution for percentile ranking (section 13) - no standard error,
    effective-N, or independence claim is ever attached to its size.
 2. The funnel (section 17) must report, beside every reference count, the
-   non-overlapping block count (eligible range / h; e.g. OPEC 20d: 889
-   dates but only ~44 disjoint windows), so apparent size is never
-   mistaken for information.
+   non-overlapping block count - the size of the canonical greedy
+   earliest-first set of disjoint response windows [t, t+h] on the eligible
+   session indices, where two windows share no session only if their starts
+   are at least h+1 apart (a shared endpoint at distance h is overlap; e.g.
+   OPEC 20d: 889 eligible dates but only 51 disjoint windows) - so apparent
+   size is never mistaken for information.
 3. The calibration layer (section 14) draws pseudo-event PLACEMENTS on
    the same eligible calendar, so every calibration draw inherits exactly
    the same overlap structure as the real comparison - dependence cancels
@@ -389,8 +396,10 @@ inference):
   sign(MEMP - 0.5) flips (flip conventions as in G6B; no new threshold).
 - F2 leave-one-event-out: same, removing one event at a time.
 - F3 overlap decimation: recompute each MEMP against the deterministic
-  non-overlapping reference subset (every h-th eligible session, starting
-  at the first); report the change and any sign flip.
+  non-overlapping reference subset - the canonical greedy earliest-first
+  disjoint-window subset defined in section 9 (index-based, starts >= h+1
+  apart), NOT a rank-based every-h-th thinning (see the section 20 erratum);
+  report the change and any sign flip.
 - F4 cross-metric consistency: per family x horizon, count metrics
   agreeing on sign(MEMP - 0.5).
 - F5 cross-horizon consistency: per family x metric, whether feasible
@@ -515,3 +524,41 @@ count-consistency fix only: no protocol design rule, no study denominator
 OPEC 1903 / 1631 / 889), no estimand (MEMP), no calibration rule
 (2,000 placements), no falsifier, and no result interpretation changed. No
 ordinary-period outcome had been computed or inspected.
+
+**Erratum (i0-v1, non-overlapping block-count semantics - post-freeze,
+outcome-blind, dependence-disclosure only, before I2).** The block count was
+originally stated as the "eligible dates / h" proxy (section 5 / section 9.2
+above), which is not a count of non-overlapping windows: at h = 1 it returns
+the entire eligible count (windows [t, t+h] that pervasively overlap), and it
+ignores the actual session indices, so exclusion holes make it both over- and
+under-state the true disjoint count. Corrected to the canonical greedy
+earliest-first set of disjoint response windows on the eligible session
+indices, using the frozen section-8 semantics: [t, t+h] and [t', t'+h] share
+no session iff their starts are at least h+1 apart (a shared endpoint at
+distance exactly h is overlap - the same buffer that makes the exclusion rule
+drop |i - e| <= h; the alternative "starts >= h apart" is rejected as
+inconsistent with that exclusion contract). Corrected counts (from
+date/session geometry alone, via the Mission I1 candidate manifests): FOMC 1d
+1816 -> 927, 5d 259 -> 233; OPEC 1d 1903 -> 960, 5d 326 -> 287, 20d 44 -> 51.
+The change is non-monotonic by design: it lowers the small-horizon cells
+(dense adjacency) but raises OPEC 20d (44 -> 51), because clustering plus a
+~230-session exclusion hole means eligible-dates / h was never a packing
+count. Falsifier F3's non-overlapping decimation (section 15) is unified onto
+this same canonical index-based subset; its earlier "every h-th eligible
+session" rank-based wording is superseded (rank steps ignore holes and
+endpoint sharing) and is corrected here for consistency only - F3 itself is
+not implemented before I2. This is a dependence-disclosure fix only: the block
+count has no consumer beyond the funnel disclosure, and no design rule, study
+denominator (FOMC 65 / OPEC 32), exclusion register (41 dates / 39 anchors),
+primary reference count (FOMC 1816 / 1299 / 0, OPEC 1903 / 1631 / 889),
+estimand (MEMP), calibration rule, or result interpretation changed. The one
+non-primary FOMC-20d forward-only aftermath sensitivity was likewise rebuilt
+under the canonical rule before push: its frozen 659-date universe is
+unchanged (reconfirmed by index reconstruction), and its block count is 64
+canonical disjoint windows - the earlier "~32" was the superseded
+count-divided-by-h proxy and understated the disjoint-window capacity by
+half. This correction is outcome-blind, made before Mission I2, and is
+sensitivity-disclosure only: the sensitivity remains non-primary,
+aftermath-inclusive, outside the twenty-statistic primary comparison
+family, and not a rescue of the structurally infeasible FOMC 20d primary
+cell. No ordinary-period outcome had been computed or inspected.

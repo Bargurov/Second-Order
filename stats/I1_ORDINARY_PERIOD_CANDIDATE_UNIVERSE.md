@@ -16,11 +16,11 @@ The two families keep entirely separate ledgers: their denominators, exclusion s
 
 | horizon | era | est cut | fwd cut | gap cut | excl cut | eligible | non-overlap blocks | status |
 |---|---|---|---|---|---|---|---|---|
-| 1d | 2011 | 0 | 0 | 0 | 195 | **1816** | 1816 | feasible |
-| 5d | 2011 | 0 | 0 | 0 | 712 | **1299** | 259 | feasible |
+| 1d | 2011 | 0 | 0 | 0 | 195 | **1816** | 927 | feasible |
+| 5d | 2011 | 0 | 0 | 0 | 712 | **1299** | 233 | feasible |
 | 20d | 2011 | 0 | 0 | 0 | 2011 | **0** | 0 | structurally_infeasible |
 
-Funnel order (I0 §17): era → estimation (≥60 prior) → forward (≥h ahead) → interior-gap → known-date exclusion; each stage sieves the prior survivors, so era − cuts = eligible at every horizon. The non-overlap block count is `eligible // h`; it is a packing count, **not** an independent, effective, or degrees-of-freedom sample size.
+Funnel order (I0 §17): era → estimation (≥60 prior) → forward (≥h ahead) → interior-gap → known-date exclusion; each stage sieves the prior survivors, so era − cuts = eligible at every horizon. The non-overlap block count is the size of the canonical set of disjoint response windows `[t, t+h]` — a deterministic greedy earliest-first packing on the eligible session indices, where two windows share no session only if their starts are at least `h+1` apart (I0 §8; a shared endpoint at distance `h` is overlap). It is **not** `eligible // h` (which ignores index positions and, at `h=1`, returns the full count), and **not** an independent, effective, or degrees-of-freedom sample size.
 
 The 20d horizon is **structurally infeasible**: with the estimation and forward gates removing nothing in-era, the exclusion geometry alone leaves zero eligible sessions — a pre-declared calendar fact (I0 §8), not a data gap and not rescued by any substitute date.
 
@@ -43,11 +43,11 @@ Eligible-session count by year:
 
 | horizon | era | est cut | fwd cut | gap cut | excl cut | eligible | non-overlap blocks | status |
 |---|---|---|---|---|---|---|---|---|
-| 1d | 2011 | 0 | 0 | 0 | 108 | **1903** | 1903 | feasible |
-| 5d | 2011 | 0 | 0 | 0 | 380 | **1631** | 326 | feasible |
-| 20d | 2011 | 0 | 0 | 0 | 1122 | **889** | 44 | feasible |
+| 1d | 2011 | 0 | 0 | 0 | 108 | **1903** | 960 | feasible |
+| 5d | 2011 | 0 | 0 | 0 | 380 | **1631** | 287 | feasible |
+| 20d | 2011 | 0 | 0 | 0 | 1122 | **889** | 51 | feasible |
 
-Funnel order (I0 §17): era → estimation (≥60 prior) → forward (≥h ahead) → interior-gap → known-date exclusion; each stage sieves the prior survivors, so era − cuts = eligible at every horizon. The non-overlap block count is `eligible // h`; it is a packing count, **not** an independent, effective, or degrees-of-freedom sample size.
+Funnel order (I0 §17): era → estimation (≥60 prior) → forward (≥h ahead) → interior-gap → known-date exclusion; each stage sieves the prior survivors, so era − cuts = eligible at every horizon. The non-overlap block count is the size of the canonical set of disjoint response windows `[t, t+h]` — a deterministic greedy earliest-first packing on the eligible session indices, where two windows share no session only if their starts are at least `h+1` apart (I0 §8; a shared endpoint at distance `h` is overlap). It is **not** `eligible // h` (which ignores index positions and, at `h=1`, returns the full count), and **not** an independent, effective, or degrees-of-freedom sample size.
 
 Eligible-session count by year:
 

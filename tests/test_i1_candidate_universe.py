@@ -182,11 +182,71 @@ class FunnelGeometryTest(unittest.TestCase):
                     f"{key} h={h}",
                 )
 
-    def test_block_count_is_final_floor_div_h(self):
+class NonOverlapBlockCountTest(unittest.TestCase):
+    """The block count must be an actual count of disjoint response windows.
+
+    Under the frozen I0 sec.8 semantics a response window is [t, t+h] and two
+    windows 'share no session' iff their starts are separated by >= h+1 (a
+    shared endpoint at distance exactly h IS overlap, matching the exclusion
+    buffer that drops |i-e| <= h). The block count is the size of the
+    canonical greedy earliest-first maximal set of such windows on the
+    eligible session indices -- NOT eligible_count // h, which ignores index
+    positions (exclusion holes) and the window span.
+    """
+
+    def test_block_count_equals_canonical_subset_size(self):
         for key in ("FOMC", "OPEC"):
             for h in (1, 5, 20):
                 c = lane(key).cells[h]
-                self.assertEqual(c.block_count, c.final_count // h, f"{key} h={h}")
+                picks = i1.canonical_non_overlapping_windows(
+                    c.candidate_indices, h)
+                self.assertEqual(c.block_count, len(picks), f"{key} h={h}")
+
+    def test_selected_windows_share_no_session(self):
+        for key in ("FOMC", "OPEC"):
+            for h in (1, 5, 20):
+                picks = i1.canonical_non_overlapping_windows(
+                    lane(key).cells[h].candidate_indices, h)
+                for a, b in zip(picks, picks[1:]):
+                    self.assertGreaterEqual(b - a, h + 1, f"{key} h={h}")
+
+    def test_block_count_never_exceeds_eligible(self):
+        for key in ("FOMC", "OPEC"):
+            for h in (1, 5, 20):
+                c = lane(key).cells[h]
+                self.assertLessEqual(c.block_count, c.final_count, f"{key} h={h}")
+
+    def test_greedy_selection_is_maximal(self):
+        # No non-selected eligible start could be added while preserving the
+        # >= h+1 separation: every one lies within h of some pick.
+        for key in ("FOMC", "OPEC"):
+            for h in (1, 5, 20):
+                idx = sorted(lane(key).cells[h].candidate_indices)
+                picks = i1.canonical_non_overlapping_windows(idx, h)
+                pickset = set(picks)
+                for i in idx:
+                    if i in pickset:
+                        continue
+                    self.assertTrue(
+                        any(abs(i - p) <= h for p in picks),
+                        f"{key} h={h} idx={i} is addable -> not maximal")
+
+    def test_contiguous_run_closed_form(self):
+        # A hole-free run 0..N-1 packs at starts 0, h+1, 2(h+1), ...
+        for n, h in ((10, 1), (100, 5), (41, 20), (1, 1), (2, 1), (21, 20)):
+            picks = i1.canonical_non_overlapping_windows(list(range(n)), h)
+            self.assertEqual(len(picks), (n - 1) // (h + 1) + 1, f"n={n} h={h}")
+            self.assertEqual(picks[0], 0)
+
+    def test_exclusion_holes_are_handled(self):
+        # Two dense clusters far apart: greedy packs inside each; the hole
+        # neither creates nor destroys a window. eligible_count // h would
+        # miss this entirely.
+        idx = [0, 1, 2, 100, 101, 102]
+        self.assertEqual(
+            i1.canonical_non_overlapping_windows(idx, 1), [0, 2, 100, 102])
+        self.assertEqual(
+            i1.canonical_non_overlapping_windows(idx, 5), [0, 100])
 
 
 # ---------------------------------------------------------------------------

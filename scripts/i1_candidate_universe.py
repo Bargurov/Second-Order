@@ -197,6 +197,41 @@ def is_preexclusion_eligible(frame: list[str], idx: int, h: int) -> bool:
     return interior_gap_ok(frame, idx, h)
 
 
+def canonical_non_overlapping_windows(indices, h: int) -> list[int]:
+    """The canonical maximal set of disjoint response windows on ``indices``.
+
+    A response window is ``[t, t+h]`` (I0 §8): it spans the sessions
+    ``t, t+1, …, t+h``.  Two windows ``[t, t+h]`` and ``[t', t'+h]`` **share a
+    session** iff ``|t - t'| <= h`` — at distance exactly ``h`` they meet at a
+    shared endpoint, which is still overlap under the frozen "shares no
+    session" semantics (the same buffer that makes the exclusion rule drop
+    ``|i - e| <= h``).  Two windows are therefore disjoint iff their starts are
+    at least ``h + 1`` sessions apart.
+
+    Selection is the deterministic greedy earliest-first packing (starting at
+    the first eligible session, matching the §15 anchor): take the earliest
+    start, then repeatedly take the earliest remaining start at least ``h + 1``
+    beyond the last one taken.  For same-length windows this greedy is optimal
+    (it returns a maximum-size set of pairwise-disjoint windows), and it is the
+    single canonical non-overlapping subset — the block count is its size and
+    the §15 F3 decimation, when implemented in I2, must consume this same
+    subset (not a rank-based "every h-th eligible session", which ignores
+    exclusion holes and endpoint sharing).
+
+    This replaces ``eligible_count // h``, which is not a window count at all:
+    at ``h = 1`` it returns the entire eligible count (windows that pervasively
+    overlap), and it ignores the actual session indices, so exclusion holes
+    make it both over- and under-state the true disjoint count.
+    """
+    picks: list[int] = []
+    last: int | None = None
+    for i in sorted(indices):
+        if last is None or i >= last + h + 1:
+            picks.append(i)
+            last = i
+    return picks
+
+
 # ---------------------------------------------------------------------------
 # Ledger parsing (study universes + OPEC register).
 # ---------------------------------------------------------------------------
@@ -306,7 +341,7 @@ def build_funnel_cell(spec: LaneSpec, frame: list[str], era: list[int],
         final_count=len(final),
         feasible=feasible,
         status=status,
-        block_count=len(final) // h,
+        block_count=len(canonical_non_overlapping_windows(final, h)),
         per_year=dict(sorted(per_year.items())),
         candidate_indices=tuple(final),
     )
@@ -459,7 +494,13 @@ def render_report(universe: dict[str, LaneResult]) -> str:
                  "forward (≥h ahead) → interior-gap → known-date exclusion; "
                  "each stage sieves the prior survivors, so "
                  "era − cuts = eligible at every horizon. The non-overlap "
-                 "block count is `eligible // h`; it is a packing count, "
+                 "block count is the size of the canonical set of disjoint "
+                 "response windows `[t, t+h]` — a deterministic greedy "
+                 "earliest-first packing on the eligible session indices, "
+                 "where two windows share no session only if their starts are "
+                 "at least `h+1` apart (I0 §8; a shared endpoint at distance "
+                 "`h` is overlap). It is **not** `eligible // h` (which ignores "
+                 "index positions and, at `h=1`, returns the full count), and "
                  "**not** an independent, effective, or degrees-of-freedom "
                  "sample size.")
         L.append("")
