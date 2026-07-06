@@ -238,10 +238,11 @@ def _available(
     bench_flag: bool,
     aligned_sample_size: int,
     event_index: int,
+    horizons: Sequence[int] = HORIZONS,
 ) -> dict[str, Any]:
     per_horizon: list[dict[str, Any]] = []
     horizons_block = es.get("horizons") or {}
-    for h in HORIZONS:
+    for h in horizons:
         fields = horizons_block.get(h) or horizons_block.get(int(h)) or {}
         per_horizon.append({
             "horizon":          h,
@@ -306,6 +307,7 @@ def _available(
 def build_event_study_validation(
     event: dict, *, benchmark_ticker: str = BENCHMARK_TICKER,
     flag_pairs: Optional[Sequence[tuple[bool, bool]]] = None,
+    horizons: Sequence[int] = HORIZONS,
 ) -> dict[str, Any]:
     """Return the gated event-study payload for one event.
 
@@ -328,9 +330,25 @@ def build_event_study_validation(
     if none of the forced pairs is computable the payload is
     ``insufficient_data``.  The F2 basis-integrity comparison is the only
     intended non-default caller.
+
+    ``horizons`` defaults to the shipped ``HORIZONS`` (1/5/20) — every existing
+    caller is unchanged, including the all-or-nothing readiness at the maximum
+    of that tuple.  Passing a subset (e.g. ``(1,)`` or ``(5,)``) evaluates
+    readiness, the forward-window and contiguity requirement, and the engine
+    against ONLY those horizons, so a shorter-horizon response no longer
+    depends on the maximum horizon's forward tail.  The I2A per-horizon
+    response substrate is the only intended non-default caller; the readiness
+    gates, estimation window, basis policy, and interior-gap guard are
+    otherwise identical.
     """
     if not isinstance(event, dict):
         return _insufficient(_base({}, None), ["no_event"])
+
+    req_horizons = tuple(horizons)
+    if not req_horizons or not all(isinstance(h, int) and h > 0
+                                   for h in req_horizons):
+        raise ValueError(f"horizons must be a non-empty tuple of positive "
+                         f"ints, got {horizons!r}")
 
     primary = _primary_ticker(event.get("market_tickers"))
     event_d = _parse_iso_date(event.get("event_date"))
@@ -363,11 +381,11 @@ def build_event_study_validation(
         reasons.append("insufficient_estimation_window_primary")
     if sum(1 for d in spy_dates if d < event_iso) < ESTIMATION_WINDOW:
         reasons.append("insufficient_estimation_window_benchmark")
-    for h in HORIZONS:
+    for h in req_horizons:
         target = _business_day_offset(event_d, h).isoformat()
         if not any(d >= target for d in tkr_dates):
             reasons.append(f"missing_forward_cache_{h}d")
-    spy_target = _business_day_offset(event_d, max(HORIZONS)).isoformat()
+    spy_target = _business_day_offset(event_d, max(req_horizons)).isoformat()
     if not any(d >= spy_target for d in spy_dates):
         reasons.append("missing_benchmark_proxy")
     if reasons:
@@ -383,7 +401,7 @@ def build_event_study_validation(
     # ``flag_pairs`` callers (the F2 forced-basis comparison) bypass the
     # policy and may still request cross pairs; those carry the cross-basis
     # caveat below.
-    max_h = max(HORIZONS)
+    max_h = max(req_horizons)
     compute_failures: list[str] = []
     pairs = (list(flag_pairs) if flag_pairs is not None
              else [(True, True), (False, False)])
@@ -407,7 +425,7 @@ def build_event_study_validation(
                 asset_prices=asset_prices,
                 benchmark_prices=bench_prices,
                 event_index=idx,
-                horizons=HORIZONS,
+                horizons=req_horizons,
                 estimation_window=ESTIMATION_WINDOW,
             )
         except ValueError as exc:
@@ -425,6 +443,7 @@ def build_event_study_validation(
             bench_flag=bench_flag,
             aligned_sample_size=len(common),
             event_index=idx,
+            horizons=req_horizons,
         )
         # Canonical-policy fallback disclosure: only in default mode, and
         # only when the preferred matched-adjusted pair was not computable.
