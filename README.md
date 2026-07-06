@@ -195,6 +195,14 @@ event-study lens spec in
 the locked Mission G protocol in
 [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md).
 
+The separate **Mission I** ordinary-period baseline — whether completed FOMC and
+OPEC event windows are unusual relative to eligible ordinary periods on the same
+frozen assets — is closed out in
+[`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) (structure and
+evidence chain summarized in [`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)). Its
+finding is family-, horizon-, and metric-specific and carries no significance,
+causal, or predictive claim.
+
 These reports are **read-only**: they open `events.db` with `mode=ro`, never
 mutate it, never call a paid provider, and never run `/analyze`. They never
 reopen or recompute the **frozen** Phase 1 / Phase 2 FDR pools. Every payload
