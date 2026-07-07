@@ -875,6 +875,9 @@ def run_engine(inputs: EngineInputs, authorization: Any) -> EngineResult:
             "available_event_n": sub.available_event_n,
             "event_year_vector": sub.event_year_vector,
             "event_failure_counts": sub.event_failure_counts,
+            "unavailable_events": [[e["date"], e["reason"]]
+                                   for e in sub.events
+                                   if e["reason"] is not None],
             "reference_n": len(sub.reference_sessions),
             "excluded_event_proximity": sub.excluded_event_proximity,
             "memp": m,
