@@ -38,6 +38,7 @@ export const qk = {
   trackRecord:            () => ["stats", "track-record"] as const,
   trackedEvidenceSummary: () => ["evidence", "summary"] as const,
   missionGEvidence:       () => ["evidence", "mission-g"] as const,
+  missionJEvidence:       () => ["evidence", "mission-j"] as const,
   trackRecordBreakdown:   () => ["stats", "track-record", "breakdown"] as const,
   confidenceCalibration:  () => ["stats", "confidence-calibration"] as const,
   newsPaginated: (limit: number) => ["news", "paginated", limit] as const,

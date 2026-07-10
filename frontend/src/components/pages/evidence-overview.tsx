@@ -14,6 +14,7 @@ import { api } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MissionGEvidenceCard } from "@/components/ui/mission-g-evidence-card";
+import { MissionJEvidenceCard } from "@/components/ui/mission-j-evidence-card";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
 import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
@@ -97,6 +98,15 @@ export function EvidenceOverview() {
   const { data: missionG, isError: missionGError } = useQuery({
     queryKey: qk.missionGEvidence(),
     queryFn: () => api.missionGEvidence(),
+    staleTime: 1_800_000,
+  });
+
+  // Mission J flagship — the published robustness/transmission record from
+  // the tracked-only GET /evidence/mission-j contract. Long staleTime: the
+  // payload only changes on a tracked commit.
+  const { data: missionJ, isError: missionJError } = useQuery({
+    queryKey: qk.missionJEvidence(),
+    queryFn: () => api.missionJEvidence(),
     staleTime: 1_800_000,
   });
 
@@ -189,6 +199,39 @@ export function EvidenceOverview() {
           <MissionGEvidenceCard
             data={missionG}
             unavailable={missionGError}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Mission J flagship — the published FOMC robustness & transmission
+          record, consumed from the tracked-publication-backed
+          GET /evidence/mission-j contract. Placed directly after the
+          Mission G record: a separate frozen research program with its own
+          denominators (never pooled with Mission G, Mission I, or the
+          accepted track record). Editorial treatment translated from the
+          Executive Design package; all research values, states, qualifiers
+          and non-claims come verbatim from the contract. */}
+      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Robustness record · Mission J · separate ledger</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Mission J — FOMC robustness &amp; transmission record
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            A hindsight-controlled robustness program over the completed
+            FOMC 1d finding: a prospectively frozen constitution (J0), a
+            frozen data substrate (J1A), an asset-and-benchmark challenge
+            (J1B), a timing and exact-window collision challenge (J2), and
+            a frozen mechanism/transmission readout (J3). Same-sample Class
+            B evidence under prospectively frozen new tests — never
+            independent historical confirmation. All figures below are
+            served from the tracked research publications.
+          </p>
+          <MissionJEvidenceCard
+            data={missionJ}
+            unavailable={missionJError}
           />
         </CardContent>
       </Card>

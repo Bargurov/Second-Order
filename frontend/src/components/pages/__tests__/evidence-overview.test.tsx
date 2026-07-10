@@ -793,3 +793,64 @@ describe("EvidenceOverview — Mission G historical-evidence card (H3/H4)", () =
     expect(missionGVisible).not.toContain("Mission G record unavailable");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mission J flagship section (Evidence Overview flagship slice).
+// Seeded like the Mission G block above: contract-shaped fixture, no network.
+// ---------------------------------------------------------------------------
+
+import { api } from "@/lib/api";
+import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
+
+const missionJClient = testQueryClient();
+missionJClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+missionJClient.setQueryData(qk.missionJEvidence(), missionJFixture());
+const missionJHtml = renderOverview(missionJClient);
+const missionJVisible = missionJHtml
+  .replace(/<[^>]*>/g, " ")
+  .replace(/&amp;/g, "&")
+  .replace(/\s+/g, " ")
+  .trim();
+
+describe("EvidenceOverview — Mission J robustness & transmission record", () => {
+  it("wires the query key and API client method to the tracked contract", () => {
+    expect(qk.missionJEvidence()).toEqual(["evidence", "mission-j"]);
+    expect(typeof api.missionJEvidence).toBe("function");
+  });
+
+  it("shows an honest loading state before the record resolves (baseline render)", () => {
+    expect(visible.toLowerCase()).toContain("loading the mission j");
+  });
+
+  it("places Mission J after the Mission G record and before mechanism families", () => {
+    const missionG = missionJVisible.indexOf("Mission G historical research record");
+    const missionJ = missionJVisible.indexOf(
+      "FOMC robustness & transmission record",
+    );
+    const families = missionJVisible.indexOf("Mechanism families");
+    expect(missionG).toBeGreaterThan(-1);
+    expect(missionJ).toBeGreaterThan(missionG);
+    expect(families).toBeGreaterThan(missionJ);
+    expect(missionJVisible).toContain("Mission J");
+  });
+
+  it("renders the frozen/published provenance and the separate-ledger framing", () => {
+    expect(missionJVisible.toLowerCase()).toContain("published and closed");
+    expect(missionJVisible).toContain("same-sample Class B");
+    expect(missionJVisible).toContain("computes no research statistic");
+  });
+
+  it("surfaces the graph readout, robustness surface, timing and collision record", () => {
+    expect(missionJVisible).toContain("PROPAGATED under the frozen measurement rules");
+    expect(missionJVisible).toContain("12/12");
+    expect(missionJVisible).toContain("ORDINARY / UNRESOLVED");
+    expect(missionJVisible).toContain("UNADJUDICABLE");
+    expect(missionJVisible).toContain("0 of 65");
+  });
+
+  it("keeps the rest of the page functional alongside Mission J", () => {
+    expect(missionJVisible).toContain("Canonical denominators");
+    expect(missionJVisible).toContain("How to read the event-study rows");
+    expect(missionJVisible).toContain("What this is not");
+  });
+});

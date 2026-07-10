@@ -3060,6 +3060,144 @@ export interface MissionGEvidenceSummary {
   non_claims: string[];
 }
 
+/** One J1B/J2 state-bearing cell of the published Mission J record.
+ *  MEMP and calibration are exact-precision strings (never recomputed or
+ *  reformatted); overlays are the published flip/run strings. */
+export interface MissionJStateBearingCell {
+  cell: number;
+  measurement?: string;
+  metric?: string;
+  lens?: string;
+  role?: string;
+  m_class?: string;
+  evidence_class?: string;
+  window?: string;
+  attempted_event_n: number;
+  available_event_n: number;
+  unavailable_events?: string[][];
+  reference_n: number;
+  memp: string;
+  calibration_percentile: string;
+  node_state: string;
+  loyo: string;
+  loeo: string;
+  f3_reference_n: number;
+  f3_canonical_n: number;
+  f3_memp: string;
+  f3_sign_flip: boolean;
+}
+
+/** Mission J research contract — GET /evidence/mission-j
+ *  (mission-j-evidence-v1).  The published Mission J record, parsed
+ *  server-side from the tracked stats/J1B_*, J2_*, and J3_* publications
+ *  at request time.  Nothing is recomputed and no node or edge
+ *  adjudication is re-run; J1B, J2, and J3 are separate sections and are
+ *  never pooled with each other or with any other mission's ledger. */
+export interface MissionJEvidenceSummary {
+  contract_version: string;
+  provenance: {
+    sources: Record<
+      "j1b" | "j2" | "j3",
+      { artifact: string; sha256: string; bytes: number }
+    >;
+    publication_status: string;
+    no_recompute_statement: string;
+  };
+  j1b: {
+    window: string;
+    cells: MissionJStateBearingCell[];
+    panels: Array<{
+      role: string;
+      members: string[];
+      primary: string;
+      states: Record<string, string>;
+      modifier: string;
+    }>;
+    contextual_2s10s: {
+      measurement: string;
+      state: string;
+      isolation_note: string;
+    };
+    measurement_limited: { statement: string };
+    correlated_views_disclosure: string;
+    non_claims: string[];
+  };
+  j2: {
+    window: string;
+    state_bearing: MissionJStateBearingCell[];
+    diagnostics: Array<{
+      id: string;
+      metric: string;
+      window: string;
+      available_event_n: number;
+      attempted_event_n: number;
+      median_response: string;
+      median_abs_response: string;
+      direction: string;
+      descriptive_only: boolean;
+      status_wording: string;
+    }>;
+    timing_interpretation: string[];
+    raw_cell_fragility: {
+      metric: string;
+      loyo: string;
+      loeo: string;
+      note: string;
+    };
+    collisions: {
+      interval: string;
+      primary_n: number;
+      collision_free_n: number;
+      c2: {
+        register: string;
+        register_dates: number;
+        tagged_n: number;
+        of: number;
+        subset_n: number;
+        subset_status: string;
+      };
+      c1: { status: string; families: string; reason: string };
+      fomc_self: { min_anchor_spacing: number; violations: number };
+      limitation: string;
+    };
+  };
+  j3: {
+    nodes: Array<{
+      node: string;
+      role: string;
+      panel: Array<{
+        member: string;
+        primary: boolean;
+        m_class: string;
+        state: string;
+      }>;
+      m_class: string | null;
+      modifier: string | null;
+      reading: string;
+      rule_path: string;
+      limitation: string;
+    }>;
+    edges: Array<{
+      edge: string;
+      from: string;
+      to: string;
+      upstream_reading: string;
+      upstream_path: string;
+      downstream_state: string;
+      downstream_m_class: string;
+      downstream_modifier: string;
+      route_b_satisfied: boolean;
+      state: string;
+      rule_path: string;
+    }>;
+    timing_qualifier: string;
+    collision_qualifier: string;
+    supports: string[];
+    unresolved: string[];
+    non_claims: string[];
+  };
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDetail: () => request<HealthDetail>("/health/detail"),
@@ -3356,6 +3494,9 @@ export const api = {
    *  no provider, no network beyond this API call. */
   missionGEvidence: () =>
     request<MissionGEvidenceSummary>("/evidence/mission-g"),
+
+  missionJEvidence: () =>
+    request<MissionJEvidenceSummary>("/evidence/mission-j"),
 
   trackRecordBreakdown: () =>
     request<TrackRecordBreakdown>("/stats/track-record/breakdown"),
