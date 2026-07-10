@@ -364,6 +364,16 @@ methodology and the Phase 1–4 arc are documented at
 and
 [`evidence_artifacts/section_c_v2/phase_history.md`](evidence_artifacts/section_c_v2/phase_history.md).
 
+The separate **Mission J** hindsight-controlled FOMC robustness program — the
+asset/benchmark, timing/collision, and transmission-graph challenge to Mission
+I's inherited one-day reading — is published and complete. Its record is
+surfaced in the app on the **Evidence Overview** screen and through the
+read-only, tracked-only `GET /evidence/mission-j` contract
+(`mission-j-evidence-v1`), which parses the frozen `stats/J*` publications at
+request time and adds no new research claim. The frozen source chain is
+J0 → J1A → J1B → J2 → J3, summarized in
+[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md).
+
 - **Phase 1** — a five-row freeze-candidate cohort
   (WHR / TXT / FSLR / RIO / LITE) is tracked at
   `evidence_artifacts/section_c_v2/freeze_candidate_evidence.json`. Each row
