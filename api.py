@@ -3646,6 +3646,7 @@ from routes import (
     demo_still_moving as _demo_still_moving_mod,
     demo_weekly as _demo_weekly_mod,
     mission_g_evidence as _mission_g_evidence_mod,
+    mission_j_evidence as _mission_j_evidence_mod,
     tracked_evidence as _tracked_evidence_mod,
 )
 
@@ -3795,3 +3796,31 @@ def _mission_g_evidence_endpoint():
     works on a fresh clone with no local research state.
     """
     return _mission_g_evidence_mod.build_mission_g_evidence_summary()
+
+
+@app.get("/evidence/mission-j")
+def _mission_j_evidence_endpoint():
+    """Mission J published research record — tracked publications only.
+
+    Structured summary of the completed and published Mission J record:
+    the J1B 12-cell robustness surface with panel modifiers and
+    denominators, the J2 timing surface (state-bearing cells plus
+    descriptive-only diagnostics) with the exact-window collision
+    register, and the final J3 node readings and edge states parsed from
+    the tracked J3 publication — never re-adjudicated at request time.
+
+    Every computed research number is parsed at request time from the
+    tracked ``stats/J1B_*``, ``stats/J2_*``, and ``stats/J3_*``
+    publications; artifact drift raises rather than serving stale,
+    partial, or reinterpreted numbers. No DB read or write, no provider /
+    yfinance / market_data / price_cache call, no LLM call, no artifact
+    mutation; works on a fresh clone with no local research state.
+    """
+    try:
+        return _mission_j_evidence_mod.build_mission_j_evidence_summary()
+    except ValueError:
+        # Stable envelope: never leak artifact paths or parser internals.
+        raise HTTPException(
+            status_code=503,
+            detail=("mission-j research record unavailable (tracked "
+                    "artifact drift or unreadable source)"))
