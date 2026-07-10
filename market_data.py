@@ -614,7 +614,14 @@ class NoFetchProviderProxy:
             "no_provider_fetch: blocked fetch_info(%s) in a no-fetch "
             "context (GET boundary)", ticker,
         )
-        return {}
+        return {
+            "symbol": ticker.upper(),
+            "name": None,
+            "sector": None,
+            "industry": None,
+            "market_cap": None,
+            "avg_volume": None,
+        }
 
     def __getattr__(self, name: str):
         return getattr(self._wrapped, name)

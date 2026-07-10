@@ -13,7 +13,7 @@ import logging
 import os
 import re
 import socket
-from datetime import datetime
+from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
 _log = logging.getLogger("second_order.news")
@@ -121,23 +121,35 @@ _DATE_FORMATS: list[str] = [
 def _normalize_timestamp(raw: str) -> str:
     """Best-effort parse of a raw timestamp string into ISO format.
 
-    Tries RFC 2822 (email.utils) first — this covers the common RSS format
-    'Sat, 05 Apr 2026 10:30:00 GMT'.  Then falls through strptime patterns.
+    Offset-aware inputs are converted to UTC before their existing output
+    style is preserved. This keeps common UTC/GMT candidate ids stable while
+    preventing non-UTC feed timestamps from sorting by local clock time.
     Returns the original string if nothing works, keeping the record usable.
     """
     if not raw or not raw.strip():
         return ""
     raw = raw.strip()
 
-    # Already valid ISO — fast path
+    # Already valid ISO. Preserve existing UTC/naive values byte-for-byte so
+    # persisted candidate ids remain stable; normalize only non-zero offsets.
     if re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", raw):
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return raw
+        offset = dt.utcoffset()
+        if offset is not None and offset.total_seconds() != 0:
+            return dt.astimezone(timezone.utc).isoformat()
         return raw
 
-    # RFC 2822 (most RSS published strings)
+    # RFC 2822 (most RSS published strings). The historical output style is
+    # timezone-naive, so convert the instant to UTC before dropping tzinfo.
     try:
         dt = parsedate_to_datetime(raw)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
         return dt.strftime("%Y-%m-%dT%H:%M:%S")
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         pass
 
     # Strptime fallbacks
@@ -148,7 +160,7 @@ def _normalize_timestamp(raw: str) -> str:
         except ValueError:
             continue
 
-    # Unparseable — return as-is so the record isn't lost
+    # Unparseable - return as-is so the record isn't lost
     return raw
 
 

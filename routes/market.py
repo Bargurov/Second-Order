@@ -82,16 +82,11 @@ def get_ticker_headlines(symbol: str, limit: int = 5):
     symbol = _clean_fetch_symbol(symbol)
     if not symbol:
         return []
-    with no_provider_fetch():
-        info = ticker_info(symbol)
-    name = info.get("name") or ""
+    # Match the locally cached news payload by explicit ticker only. Company
+    # name enrichment requires ticker_info(), which reaches the provider seam
+    # even when the no-fetch proxy blocks the eventual network call. A GET
+    # route must remain cache-only all the way down.
     sym_upper = symbol.upper()
-    terms = [sym_upper]
-    if name and len(name) > 3:
-        for word in name.split():
-            if len(word) > 3 and word not in ("The", "Inc.", "Corp.", "Ltd.", "Inc", "Corp", "Ltd"):
-                terms.append(word)
-                break
     try:
         data = _api._get_news_cached()
     except Exception:
@@ -101,8 +96,7 @@ def get_ticker_headlines(symbol: str, limit: int = 5):
     for cluster in data.get("clusters", []):
         headline = cluster.get("headline", "")
         headline_upper = headline.upper()
-        if any(t in headline_upper for t in [sym_upper]) or \
-           any(t.lower() in headline.lower() for t in terms[1:]):
+        if sym_upper in headline_upper:
             matches.append({
                 "headline": headline,
                 "source_count": cluster.get("source_count", 0),

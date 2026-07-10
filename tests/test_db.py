@@ -32,20 +32,24 @@ def _remove_temp_dir(path: str) -> None:
 
 
 class TempDbCleanupTests(unittest.TestCase):
-    def test_temp_db_directory_cleanup_removes_db_file(self) -> None:
+    def test_db_operations_release_file_without_gc(self) -> None:
         tmp_dir, db_file = _make_temp_db("test_events_")
         original_db_file = db.DB_FILE
         original_ready = db._db_ready
         try:
             db.DB_FILE = db_file
             db.init_db()
+            db.load_recent_events(limit=1)
             self.assertTrue(os.path.exists(db_file))
+
+            db.DB_FILE = original_db_file
+            db._db_ready = original_ready
+            os.remove(db_file)
+            self.assertFalse(os.path.exists(db_file))
         finally:
             db.DB_FILE = original_db_file
             db._db_ready = original_ready
             _remove_temp_dir(tmp_dir)
-
-        self.assertFalse(os.path.exists(db_file))
 
 
 class DatabaseSmokeTests(unittest.TestCase):

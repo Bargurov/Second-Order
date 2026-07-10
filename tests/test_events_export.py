@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import db  # noqa: E402
 import events_export  # noqa: E402
+from tests._db_isolation import TEMP_DB_DIR  # noqa: E402
 from events_export import (  # noqa: E402
     CSV_COLUMNS,
     build_csv_export,
@@ -41,10 +42,7 @@ class _ExportBase(unittest.TestCase):
 
     def setUp(self):
         self._orig = db.DB_FILE
-        self._tmp = os.path.join(
-            os.path.dirname(__file__),
-            f"test_export_{uuid.uuid4().hex}.db",
-        )
+        self._tmp = str(TEMP_DB_DIR / f"test_export_{uuid.uuid4().hex}.db")
         db.DB_FILE = self._tmp
         db.init_db()
 
@@ -52,7 +50,7 @@ class _ExportBase(unittest.TestCase):
         db.DB_FILE = self._orig
         try:
             os.remove(self._tmp)
-        except (OSError, PermissionError):
+        except FileNotFoundError:
             pass
 
     # Tiny factory to reduce repetition.  Returns the saved event id.
@@ -295,6 +293,10 @@ class TestExportEndpoint(_ExportBase):
         super().setUp()
         from api import app
         self.client = TestClient(app)
+
+    def tearDown(self):
+        self.client.close()
+        super().tearDown()
 
     def test_endpoint_defaults_to_json(self):
         self._save_event(headline="Endpoint JSON default")

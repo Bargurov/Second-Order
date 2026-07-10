@@ -779,8 +779,18 @@ class TestEventDateMode(unittest.TestCase):
         # Base close at event date = 100, 5th day = 110 → +10% forward
         closes = [100.0, 101.0, 103.0, 105.0, 108.0, 110.0] + [110.0] * 14
         df = _make_df(closes, [1_000_000.0] * 20)
-        with patch("market_check._fetch_since", return_value=df):
+        unverified = {
+            "status": "unverified",
+            "secondary_r5": None,
+            "delta": None,
+            "provider": None,
+        }
+        with patch("market_check._fetch_since", return_value=df), patch(
+            "market_check._verify_ticker_return",
+            return_value=unverified,
+        ) as verify_mock:
             result = market_check._check_one_ticker("GLD", event_date="2020-03-01")
+        verify_mock.assert_called_once_with("GLD", 10.0, event_date="2020-03-01")
         self.assertAlmostEqual(result["return_5d"], 10.0, places=1)
 
     def test_anchor_date_matches_first_trading_day(self):

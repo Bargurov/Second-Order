@@ -1572,6 +1572,10 @@ class TestNormalizeTimestamp(unittest.TestCase):
         result = news_sources._normalize_timestamp("2026-04-05T14:30:00+00:00")
         self.assertEqual(result, "2026-04-05T14:30:00+00:00")  # fast-path keeps it
 
+    def test_iso_with_non_utc_offset_normalizes_to_utc(self):
+        result = news_sources._normalize_timestamp("2026-04-05T10:30:00+02:00")
+        self.assertEqual(result, "2026-04-05T08:30:00+00:00")
+
     def test_rfc2822(self):
         result = news_sources._normalize_timestamp("Sat, 05 Apr 2026 10:30:00 GMT")
         self.assertEqual(result, "2026-04-05T10:30:00")
@@ -1579,6 +1583,10 @@ class TestNormalizeTimestamp(unittest.TestCase):
     def test_rfc2822_with_offset(self):
         result = news_sources._normalize_timestamp("Sat, 05 Apr 2026 10:30:00 +0000")
         self.assertEqual(result, "2026-04-05T10:30:00")
+
+    def test_rfc2822_with_non_utc_offset_normalizes_to_utc(self):
+        result = news_sources._normalize_timestamp("Sat, 05 Apr 2026 10:30:00 +0200")
+        self.assertEqual(result, "2026-04-05T08:30:00")
 
     def test_date_only(self):
         result = news_sources._normalize_timestamp("2026-04-05")
@@ -1633,6 +1641,14 @@ class TestMixedTimestampOrdering(unittest.TestCase):
         self.assertIn("New", records[0]["title"])
         self.assertIn("Middle", records[1]["title"])
         self.assertIn("Old", records[2]["title"])
+
+    def test_offset_timestamps_sort_by_actual_instant(self):
+        records = [
+            self._rec("Older local-clock story", pub="2026-04-05T10:30:00+02:00"),
+            self._rec("Newer UTC story", pub="2026-04-05T09:00:00+00:00"),
+        ]
+        records.sort(key=lambda r: r["published_at"] or "", reverse=True)
+        self.assertEqual(records[0]["title"], "Newer UTC story")
 
     def test_cluster_published_at_picks_newest_across_formats(self):
         """Cluster timestamp should be the most recent regardless of input format."""

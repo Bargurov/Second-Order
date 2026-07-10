@@ -206,7 +206,13 @@ class TestNoProviderFetchGuard(GetBoundaryBase):
                 proxied.fetch_daily("AAPL", period="3mo"),
                 "fetch_daily must be a no-op inside the guard",
             )
-            self.assertEqual(proxied.fetch_info("AAPL"), {})
+            self.assertEqual(
+                proxied.fetch_info("aapl"),
+                {"symbol": "AAPL", "name": None, "sector": None,
+                 "industry": None, "market_cap": None, "avg_volume": None},
+                "blocked fetch_info must return the stable typed "
+                "envelope (never a provider payload, never a bare {})",
+            )
         self.assertEqual(self.provider.fetch_daily_calls, [])
         self.assertEqual(self.provider.fetch_info_calls, [])
         self.assertIs(get_provider(), self.provider,

@@ -12,6 +12,7 @@ Covers:
 
 import os
 import sys
+import time
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -200,6 +201,27 @@ class TestVerifyTickerReturn(unittest.TestCase):
             result = _verify_ticker_return("AAPL", 7.0, event_date=None)
         self.assertEqual(result["status"], "unverified")
         secondary_mock.fetch_daily.assert_not_called()
+
+    def test_timeout_returns_without_waiting_for_worker(self):
+        """The request deadline must not wait for executor shutdown."""
+        def slow_verification(*args):
+            time.sleep(0.2)
+            return {"status": "confirmed"}
+
+        started = time.perf_counter()
+        with patch("market_check._VERIFY_TIMEOUT", 0.01), patch(
+            "market_check._verify_ticker_return_impl",
+            side_effect=slow_verification,
+        ):
+            result = _verify_ticker_return(
+                "AAPL",
+                5.0,
+                event_date=self._EVENT_DATE,
+            )
+        elapsed = time.perf_counter() - started
+
+        self.assertEqual(result["status"], "timed_out")
+        self.assertLess(elapsed, 0.1)
 
 
 # ---------------------------------------------------------------------------

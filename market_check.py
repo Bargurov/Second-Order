@@ -718,16 +718,28 @@ def _verify_ticker_return(
     try:
         from concurrent.futures import ThreadPoolExecutor
         from concurrent.futures import TimeoutError as _FuturesTimeout
-        with ThreadPoolExecutor(max_workers=1) as _pool:
-            _fut = _pool.submit(_verify_ticker_return_impl, ticker, r5_primary, event_date)
-            try:
-                return _fut.result(timeout=_VERIFY_TIMEOUT)
-            except _FuturesTimeout:
-                _log.warning(
-                    "_verify_ticker_return(%s): secondary check timed out after %.1fs",
-                    ticker, _VERIFY_TIMEOUT,
-                )
-                return timed_out_result
+
+        _pool = ThreadPoolExecutor(max_workers=1)
+        _fut = _pool.submit(
+            _verify_ticker_return_impl,
+            ticker,
+            r5_primary,
+            event_date,
+        )
+        try:
+            return _fut.result(timeout=_VERIFY_TIMEOUT)
+        except _FuturesTimeout:
+            _fut.cancel()
+            _log.warning(
+                "_verify_ticker_return(%s): secondary check timed out after %.1fs",
+                ticker, _VERIFY_TIMEOUT,
+            )
+            return timed_out_result
+        finally:
+            # A ThreadPoolExecutor context manager waits for running work on
+            # exit, which defeats the deadline above. Running provider calls
+            # cannot be cancelled, so release the request without waiting.
+            _pool.shutdown(wait=False, cancel_futures=True)
     except Exception:
         _log.warning("_verify_ticker_return(%s): unexpected error", ticker, exc_info=True)
         return {"status": "unavailable", "secondary_r5": None, "delta": None, "provider": None}
