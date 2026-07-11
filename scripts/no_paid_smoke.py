@@ -17,11 +17,16 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import gc
+import hashlib
 import importlib
 import io
 import json
 import logging
+import os
+import shutil
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -36,6 +41,173 @@ if str(ROOT) not in sys.path:
 
 
 BodyInvariant = Callable[[Any], None]
+
+
+# ---------------------------------------------------------------------------
+# Database isolation (T0)
+# ---------------------------------------------------------------------------
+# The in-process smoke exercises CLI report scripts and API routes that
+# resolve the archive through ``db.DB_FILE``.  With no override that
+# binding defaults to the CWD-relative ``events.db`` — and several report
+# CLIs call ``db.init_db()``, so a smoke run from a checkout with no root
+# archive used to CREATE a fresh 172,032-byte root ``events.db`` (first
+# creator: the "no-forward gap report" script row).  A no-paid verifier
+# must also be database-isolated, so the smoke now:
+#
+#   * selects an explicit temporary ``EVENTS_DB_FILE`` (the canonical
+#     ``db.resolve_events_db_file`` seam) BEFORE any archive-capable
+#     module is imported, and rebinds already-imported snapshot modules
+#     exactly the way ``tests/_db_isolation.py`` does;
+#   * restores the caller's environment and module bindings and removes
+#     the temporary directory afterwards, pass or fail;
+#   * records the pre-run state of the root ``events.db`` (+ SQLite
+#     sidecars) and appends a "root db isolation" check row that FAILS
+#     the smoke if the root database was created, changed or grew a
+#     sidecar — the result is verified, never assumed from intent.
+
+_ISOLATION_ENV_VAR = "EVENTS_DB_FILE"
+
+# ``db.LIVE_DB_FILE`` duplicated deliberately: the watchdog must observe
+# the root path without importing the archive-capable ``db`` module.  A
+# regression test pins equality with ``db.LIVE_DB_FILE``.
+_ROOT_DB_BASENAME = "events.db"
+
+_SQLITE_SIDECAR_SUFFIXES: tuple[str, ...] = ("", "-wal", "-shm", "-journal")
+
+# Modules that snapshot ``DB_FILE`` at module top-level (same explicit
+# list as ``tests/_db_isolation.py`` — adding a new snapshot site is a
+# deliberate edit in both places).
+_DB_SNAPSHOT_MODULES: tuple[str, ...] = (
+    "macro_release_facts",
+    "macro_surprises",
+    "saved_studies",
+)
+
+
+def _root_db_state() -> dict[str, dict[str, Any] | None]:
+    """Hash/size/mtime of the root ``events.db`` and its SQLite sidecars.
+
+    Pure ``os``/``hashlib`` — never imports application modules, so it is
+    safe to call before isolation is established.
+    """
+    state: dict[str, dict[str, Any] | None] = {}
+    for suffix in _SQLITE_SIDECAR_SUFFIXES:
+        name = _ROOT_DB_BASENAME + suffix
+        path = Path(name)
+        if not path.exists():
+            state[name] = None
+            continue
+        st = path.stat()
+        state[name] = {
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "size": st.st_size,
+            "st_mtime_ns": st.st_mtime_ns,
+        }
+    return state
+
+
+def _describe_root_drift(
+    before: dict[str, dict[str, Any] | None],
+    after: dict[str, dict[str, Any] | None],
+) -> str | None:
+    """Human-readable difference between two root-db states, or None."""
+    problems: list[str] = []
+    for name in sorted(before):
+        b, a = before.get(name), after.get(name)
+        if b == a:
+            continue
+        if b is None:
+            problems.append(f"{name} was created by the smoke run")
+        elif a is None:
+            problems.append(f"{name} disappeared during the smoke run")
+        else:
+            fields = [
+                key for key in ("sha256", "size", "st_mtime_ns")
+                if b[key] != a[key]
+            ]
+            problems.append(f"{name} changed ({', '.join(fields)})")
+    return "; ".join(problems) if problems else None
+
+
+def _cleanup_isolation_dir(tmpdir: str) -> None:
+    """Remove the temporary DB directory; retry once after a GC pass so a
+    lingering (refcount-held) SQLite handle on Windows cannot leak it."""
+    for _ in range(3):
+        gc.collect()
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        if not os.path.isdir(tmpdir):
+            return
+
+
+@contextlib.contextmanager
+def isolated_smoke_database():
+    """Route every in-process archive binding to a private temp path.
+
+    Establishes the temporary path through the canonical
+    ``EVENTS_DB_FILE`` seam before any archive-capable import can
+    resolve it, rebinds modules that were imported earlier by the
+    embedding process, and restores everything — environment, module
+    bindings, filesystem — in ``finally``.  Fails closed: if the
+    temporary directory cannot be created, the error propagates and the
+    smoke never runs against the root binding.
+    """
+    tmpdir = tempfile.mkdtemp(prefix="no_paid_smoke_db_")
+    tmp_db = os.path.join(tmpdir, "no_paid_smoke_events.db")
+    env_was_set = _ISOLATION_ENV_VAR in os.environ
+    saved_env = os.environ.get(_ISOLATION_ENV_VAR)
+    os.environ[_ISOLATION_ENV_VAR] = tmp_db
+
+    pre_imported = {
+        name: sys.modules.get(name)
+        for name in ("db", "price_cache", *_DB_SNAPSHOT_MODULES)
+    }
+    saved_bindings: list[tuple[Any, str, Any]] = []
+    db_mod = pre_imported["db"]
+    if db_mod is not None:
+        saved_bindings.append((db_mod, "DB_FILE", db_mod.DB_FILE))
+        saved_bindings.append((db_mod, "_db_ready", db_mod._db_ready))
+        db_mod.DB_FILE = tmp_db
+        db_mod._db_ready = False
+    pc_mod = pre_imported["price_cache"]
+    if pc_mod is not None:
+        saved_bindings.append((pc_mod, "_table_ready", pc_mod._table_ready))
+        pc_mod._table_ready = False
+    for name in _DB_SNAPSHOT_MODULES:
+        mod = pre_imported[name]
+        if mod is not None and hasattr(mod, "DB_FILE"):
+            saved_bindings.append((mod, "DB_FILE", mod.DB_FILE))
+            mod.DB_FILE = tmp_db
+    try:
+        yield tmp_db
+    finally:
+        # Environment first, so late rebinds below resolve the caller's
+        # canonical binding rather than the temporary path.
+        if env_was_set:
+            os.environ[_ISOLATION_ENV_VAR] = saved_env
+        else:
+            os.environ.pop(_ISOLATION_ENV_VAR, None)
+        for module, attr, original in reversed(saved_bindings):
+            setattr(module, attr, original)
+        # Modules first imported INSIDE the window resolved their paths
+        # from the temporary environment — re-point them at the restored
+        # environment so no temp path leaks to later in-process callers.
+        db_after = sys.modules.get("db")
+        if db_after is not None and pre_imported["db"] is None:
+            db_after.DB_FILE = db_after.resolve_events_db_file()
+            db_after._db_ready = False
+        pc_after = sys.modules.get("price_cache")
+        if pc_after is not None and pre_imported["price_cache"] is None:
+            pc_after._table_ready = False
+        if db_after is not None:
+            for name in _DB_SNAPSHOT_MODULES:
+                mod = sys.modules.get(name)
+                if (
+                    mod is not None
+                    and pre_imported[name] is None
+                    and hasattr(mod, "DB_FILE")
+                ):
+                    mod.DB_FILE = db_after.DB_FILE
+        _cleanup_isolation_dir(tmpdir)
 
 
 def _assert_auto_backfill_status_no_paid(body: Any) -> None:
@@ -1942,15 +2114,70 @@ def run_smoke(
     if client is not None and base_url:
         raise ValueError("Pass either client or base_url, not both.")
 
+    # Root-db watchdog: record the pre-run state of the default root
+    # archive path BEFORE any archive-capable import or isolation setup.
+    # The comparison row appended at the end verifies the result — the
+    # smoke never relies on temp-path intention alone.
+    root_before = _root_db_state()
+
+    # Isolation ownership: when the smoke constructs its own in-process
+    # stack (the ``python scripts/no_paid_smoke.py`` path), every archive
+    # binding is routed to a private temporary path for the whole run.
+    # An injected ``client`` means an embedding caller (the test suite)
+    # already owns DB isolation; ``--base-url`` mode performs HTTP probes
+    # only and needs no local database at all.
+    owns_stack = client is None and not base_url
+    isolation = isolated_smoke_database() if owns_stack else contextlib.nullcontext()
+
+    results: list[SmokeResult] = []
+    with isolation:
+        results.extend(
+            _run_smoke_checks(
+                client=client,
+                base_url=base_url,
+                timeout=timeout,
+                guard_provider_seams=guard_provider_seams,
+            )
+        )
+
+    check_started = time.perf_counter()
+    drift = _describe_root_drift(root_before, _root_db_state())
+    results.append(
+        SmokeResult(
+            name="root db isolation",
+            path=_ROOT_DB_BASENAME,
+            ok=drift is None,
+            status_code=None,
+            elapsed_ms=int((time.perf_counter() - check_started) * 1000),
+            error=(f"root database state changed: {drift}" if drift else None),
+        )
+    )
+    return results
+
+
+def _run_smoke_checks(
+    *,
+    client: Any | None,
+    base_url: str | None,
+    timeout: float,
+    guard_provider_seams: bool,
+) -> list[SmokeResult]:
+    """The endpoint + script + boundary checks, run inside the caller's
+    isolation context (``run_smoke`` owns isolation and the root-db
+    watchdog)."""
     if client is None:
         client = _LocalHttpClient(base_url, timeout) if base_url else _make_test_client()
 
-    # Import provider-consuming modules BEFORE the raiser guard opens: a
-    # module first imported inside the guard window captures the raiser via
-    # its module-scope ``from market_data import get_provider`` and keeps it
-    # after restore, poisoning the post-guard GET-boundary check below.
-    import market_snapshots  # noqa: F401
-    import market_universe  # noqa: F401
+    if not base_url:
+        # Import provider-consuming modules BEFORE the raiser guard opens: a
+        # module first imported inside the guard window captures the raiser
+        # via its module-scope ``from market_data import get_provider`` and
+        # keeps it after restore, poisoning the post-guard GET-boundary check
+        # below.  In ``--base-url`` mode these local application imports are
+        # deliberately skipped: remote probing must not import or initialize
+        # the local API/database stack.
+        import market_snapshots  # noqa: F401
+        import market_universe  # noqa: F401
 
     guard = guard_no_paid_provider_calls() if guard_provider_seams and not base_url else contextlib.nullcontext()
     results: list[SmokeResult] = []

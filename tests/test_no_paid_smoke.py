@@ -10,6 +10,7 @@ import io
 import json
 import os
 import sqlite3
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -151,6 +152,7 @@ class TestNoPaidSmokeRunner(_Base):
             len(no_paid_smoke.ENDPOINTS)
             + len(no_paid_smoke.SCRIPTS)
             + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
+            + 1  # root db isolation row (T0)
         )
         failures = [r for r in results if not r.ok and not r.skipped]
         self.assertEqual(failures, [])
@@ -164,6 +166,7 @@ class TestNoPaidSmokeRunner(_Base):
             len(no_paid_smoke.ENDPOINTS)
             + len(no_paid_smoke.SCRIPTS)
             + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
+            + 1  # root db isolation row (T0)
         )
         self.assertTrue(payload["ok"])
         self.assertEqual(payload["summary"]["failed"], 0)
@@ -202,6 +205,7 @@ class TestNoPaidSmokeRunner(_Base):
             len(no_paid_smoke.ENDPOINTS)
             + len(no_paid_smoke.SCRIPTS)
             + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
+            + 1  # root db isolation row (T0)
         )
         self.assertEqual(len(results), expected_total)
         self.assertFalse(no_paid_smoke.summarize(results)["ok"])
@@ -249,7 +253,8 @@ class TestNoPaidSmokeBaseUrlSkipsLocalScripts(unittest.TestCase):
                 base_url="http://0.0.0.0:1",
                 timeout=0.1,
             )
-        self.assertEqual(len(results), len(no_paid_smoke.ENDPOINTS))
+        # Endpoint rows plus the always-present root-db isolation row (T0).
+        self.assertEqual(len(results), len(no_paid_smoke.ENDPOINTS) + 1)
 
     def test_base_url_mode_omits_every_script_module_from_results(self) -> None:
         from unittest.mock import patch
@@ -350,7 +355,8 @@ class TestNoPaidSmokeBaseUrlSkipsLocalScripts(unittest.TestCase):
         payload = json.loads(out.getvalue())
         self.assertIsInstance(payload["checks"], list)
         self.assertEqual(
-            len(payload["checks"]), len(no_paid_smoke.ENDPOINTS),
+            # Endpoint rows plus the root-db isolation row (T0).
+            len(payload["checks"]), len(no_paid_smoke.ENDPOINTS) + 1,
             f"base_url payload must omit script rows; saw "
             f"{len(payload['checks'])} checks",
         )
@@ -1304,7 +1310,8 @@ class TestNoPaidSmokeScriptRunner(_Base):
             len(results),
             len(no_paid_smoke.ENDPOINTS)
             + len(no_paid_smoke.SCRIPTS)
-            + len(no_paid_smoke._GET_BOUNDARY_ROUTES),
+            + len(no_paid_smoke._GET_BOUNDARY_ROUTES)
+            + 1,  # root db isolation row (T0)
         )
 
     def test_failed_script_main_is_reported_as_failed_result(self) -> None:
@@ -3110,3 +3117,270 @@ class TestMarketGetBoundaryCheck(unittest.TestCase):
         self.assertEqual(
             len(boundary_rows), len(no_paid_smoke._GET_BOUNDARY_ROUTES),
         )
+
+
+# ---------------------------------------------------------------------------
+# T0 — database isolation.  The no-paid verifier must also be
+# database-isolated: running the smoke from a checkout with no root
+# ``events.db`` must not create one (the pre-T0 harness created a
+# 172,032-byte root archive via the first script check's ``db.init_db()``),
+# an existing root archive must stay byte- and metadata-identical, and the
+# run must be deterministic.  Subprocess-based wherever import order or
+# global module state matters: the defect fires on the FIRST archive-capable
+# import, which an in-process test cannot rewind.
+# ---------------------------------------------------------------------------
+
+
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_SMOKE_SCRIPT = os.path.join(_REPO_ROOT, "scripts", "no_paid_smoke.py")
+_SIDECAR_SUFFIXES = ("", "-wal", "-shm", "-journal")
+
+
+def _subprocess_env(extra: dict | None = None) -> dict:
+    """Environment for a smoke subprocess with the DEFAULT db binding.
+
+    ``EVENTS_DB_FILE`` is popped because the test session's conftest
+    exports it (tests/_db_isolation.py) — the defect under test only
+    fires when the operator runs the smoke with no override, exactly
+    the clean-checkout scenario the full-suite audit reproduced.
+    """
+    env = os.environ.copy()
+    env.pop("EVENTS_DB_FILE", None)
+    if extra:
+        env.update(extra)
+    return env
+
+
+def _run_smoke_cli(cwd: str, *args: str, env: dict | None = None):
+    return subprocess.run(
+        [sys.executable, _SMOKE_SCRIPT, *args],
+        cwd=cwd,
+        env=env if env is not None else _subprocess_env(),
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
+
+
+def _root_db_artifacts(cwd: str) -> list[str]:
+    return sorted(
+        f"events.db{suffix}" for suffix in _SIDECAR_SUFFIXES
+        if os.path.exists(os.path.join(cwd, f"events.db{suffix}"))
+    )
+
+
+def _normalized_payload(stdout: str) -> dict:
+    """Parse the --json payload and zero the only documented timing field."""
+    payload = json.loads(stdout)
+    for check in payload.get("checks", ()):
+        check["elapsed_ms"] = 0
+    return payload
+
+
+class TestNoPaidSmokeDatabaseIsolation(unittest.TestCase):
+    """T0 regression guard: clean-root, sentinel, determinism, JSON,
+    remote-mode and cleanup invariants for the smoke's database
+    isolation."""
+
+    def setUp(self) -> None:
+        self._cwd = tempfile.mkdtemp(prefix="no_paid_smoke_t0_")
+
+    def tearDown(self) -> None:
+        import shutil
+        shutil.rmtree(self._cwd, ignore_errors=True)
+
+    # -- clean-root invariant + smoke self-check row --------------------
+
+    def test_clean_root_creates_no_database_and_reports_isolation_row(
+        self,
+    ) -> None:
+        proc = _run_smoke_cli(self._cwd, "--json")
+        self.assertEqual(
+            proc.returncode, 0,
+            f"smoke failed in a clean root:\n{proc.stdout}\n{proc.stderr}",
+        )
+        self.assertEqual(
+            _root_db_artifacts(self._cwd), [],
+            "smoke must not create a root events.db or SQLite sidecar",
+        )
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["summary"]["failed"], 0)
+        isolation_rows = [
+            c for c in payload["checks"] if c["name"] == "root db isolation"
+        ]
+        self.assertEqual(
+            len(isolation_rows), 1,
+            "the smoke must verify its own root-db invariant as a check row",
+        )
+        self.assertTrue(isolation_rows[0]["ok"])
+
+    # -- existing-sentinel invariant (two consecutive runs) --------------
+
+    def test_existing_sentinel_identical_after_two_runs(self) -> None:
+        sentinel = os.path.join(self._cwd, "events.db")
+        with open(sentinel, "wb") as fh:
+            fh.write(b"SENTINEL-NOT-A-DATABASE-" * 64)
+        before_stat = os.stat(sentinel)
+        with open(sentinel, "rb") as fh:
+            import hashlib
+            before_sha = hashlib.sha256(fh.read()).hexdigest()
+
+        codes = []
+        for _ in range(2):
+            proc = _run_smoke_cli(self._cwd, "--json")
+            codes.append(proc.returncode)
+            after_stat = os.stat(sentinel)
+            with open(sentinel, "rb") as fh:
+                after_sha = hashlib.sha256(fh.read()).hexdigest()
+            self.assertEqual(after_sha, before_sha, "sentinel bytes changed")
+            self.assertEqual(after_stat.st_size, before_stat.st_size)
+            self.assertEqual(
+                after_stat.st_mtime_ns, before_stat.st_mtime_ns,
+                "sentinel st_mtime_ns changed — the smoke touched the root DB",
+            )
+            self.assertEqual(
+                _root_db_artifacts(self._cwd), ["events.db"],
+                "no SQLite sidecar may appear beside the sentinel",
+            )
+        self.assertEqual(codes[0], codes[1])
+        self.assertEqual(codes[0], 0)
+
+    # -- double-run determinism ------------------------------------------
+
+    def test_double_run_deterministic_output_and_filesystem(self) -> None:
+        first = _run_smoke_cli(self._cwd, "--json")
+        listing_first = sorted(os.listdir(self._cwd))
+        second = _run_smoke_cli(self._cwd, "--json")
+        listing_second = sorted(os.listdir(self._cwd))
+
+        self.assertEqual(first.returncode, second.returncode)
+        p1 = _normalized_payload(first.stdout)
+        p2 = _normalized_payload(second.stdout)
+        self.assertEqual(p1, p2, "smoke output must be deterministic "
+                                 "after zeroing elapsed_ms")
+        self.assertEqual(p1["summary"]["total"], p2["summary"]["total"])
+        self.assertEqual(listing_first, listing_second)
+        self.assertEqual(_root_db_artifacts(self._cwd), [])
+
+    # -- import / --help / remote-mode probes -----------------------------
+
+    def test_help_creates_no_database(self) -> None:
+        proc = _run_smoke_cli(self._cwd, "--help")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(_root_db_artifacts(self._cwd), [])
+
+    def test_module_import_creates_no_database(self) -> None:
+        code = (
+            "import sys; sys.path.insert(0, {root!r}); "
+            "import scripts.no_paid_smoke"
+        ).format(root=_REPO_ROOT)
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=self._cwd, env=_subprocess_env(),
+            capture_output=True, text=True, timeout=120,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(_root_db_artifacts(self._cwd), [])
+
+    def test_base_url_mode_avoids_local_app_imports_and_db(self) -> None:
+        driver = (
+            "import sys\n"
+            "sys.path.insert(0, {root!r})\n"
+            "from scripts import no_paid_smoke\n"
+            "no_paid_smoke.main(['--json', '--base-url',\n"
+            "                    'http://127.0.0.1:9', '--timeout', '0.2'])\n"
+            "banned = [m for m in ('api', 'db', 'price_cache',\n"
+            "                      'market_snapshots', 'market_universe',\n"
+            "                      'market_check', 'market_data')\n"
+            "          if m in sys.modules]\n"
+            "print('BANNED=' + ','.join(banned), file=sys.stderr)\n"
+        ).format(root=_REPO_ROOT)
+        proc = subprocess.run(
+            [sys.executable, "-c", driver],
+            cwd=self._cwd, env=_subprocess_env(),
+            capture_output=True, text=True, timeout=300,
+        )
+        self.assertIn(
+            "BANNED=\n", proc.stderr.replace("\r\n", "\n"),
+            f"--base-url mode imported local app/database modules: "
+            f"{proc.stderr!r}",
+        )
+        self.assertEqual(
+            _root_db_artifacts(self._cwd), [],
+            "--base-url mode must not create any local database",
+        )
+
+    # -- failure cleanup ---------------------------------------------------
+
+    def test_failure_restores_env_and_cleans_temp_artifacts(self) -> None:
+        from unittest.mock import patch
+
+        env_before = os.environ.get("EVENTS_DB_FILE")
+        db_file_before = db.DB_FILE
+        db_ready_before = db._db_ready
+        temp_root = tempfile.gettempdir()
+
+        def _leaked_isolation_dirs() -> set[str]:
+            try:
+                return {
+                    name for name in os.listdir(temp_root)
+                    if name.startswith("no_paid_smoke_db_")
+                }
+            except OSError:
+                return set()
+
+        leaked_before = _leaked_isolation_dirs()
+        bad_module = no_paid_smoke.SCRIPTS[0].module
+        target_module = __import__(bad_module, fromlist=["main"])
+
+        def _broken_main(_argv, *, out=None):
+            raise RuntimeError("synthetic T0 failure")
+
+        out = io.StringIO()
+        with patch.object(target_module, "main", _broken_main):
+            code = no_paid_smoke.main(["--json"], out=out)
+
+        self.assertEqual(code, 1, "a failing check must exit nonzero")
+        self.assertEqual(os.environ.get("EVENTS_DB_FILE"), env_before)
+        self.assertEqual(db.DB_FILE, db_file_before)
+        # The caller's readiness flag is restored verbatim, whatever an
+        # earlier test in the session left it as.
+        self.assertEqual(db._db_ready, db_ready_before)
+        self.assertEqual(
+            _leaked_isolation_dirs(), leaked_before,
+            "the smoke's temporary database directory must be removed "
+            "even when a check fails",
+        )
+        payload = json.loads(out.getvalue())
+        self.assertFalse(payload["ok"])
+
+    # -- path precedence: one canonical seam, operator value restored ------
+
+    def test_isolation_uses_canonical_events_db_file_seam(self) -> None:
+        self.assertEqual(no_paid_smoke._ISOLATION_ENV_VAR, "EVENTS_DB_FILE")
+        self.assertEqual(
+            db.resolve_events_db_file({"EVENTS_DB_FILE": "custom.db"}),
+            "custom.db",
+        )
+        self.assertEqual(no_paid_smoke._ROOT_DB_BASENAME, db.LIVE_DB_FILE)
+
+    def test_operator_events_db_file_not_touched_and_restored(self) -> None:
+        custom = os.path.join(self._cwd, "operator_custom.db")
+        saved = os.environ.get("EVENTS_DB_FILE")
+        os.environ["EVENTS_DB_FILE"] = custom
+        try:
+            out = io.StringIO()
+            no_paid_smoke.main(["--json"], out=out)
+            self.assertEqual(
+                os.environ.get("EVENTS_DB_FILE"), custom,
+                "the operator's EVENTS_DB_FILE must be restored verbatim",
+            )
+            self.assertFalse(
+                os.path.exists(custom),
+                "the smoke must not create the operator's override path",
+            )
+        finally:
+            if saved is None:
+                os.environ.pop("EVENTS_DB_FILE", None)
+            else:
+                os.environ["EVENTS_DB_FILE"] = saved
