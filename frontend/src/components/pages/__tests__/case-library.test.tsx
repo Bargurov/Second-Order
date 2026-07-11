@@ -87,9 +87,45 @@ describe("CaseLibrary — denominator + anti-cherry-pick copy stays visible (T8B
     expect(visible).not.toContain("81 market-scored events of 166 saved");
   });
 
-  it("keeps the current accepted-corpus outcome split visible", () => {
-    expect(visible).toContain("46 any-supporting · 8 contradicted · 32 unresolved.");
+  it("keeps the current accepted-corpus outcome split visible, named by lens", () => {
+    expect(visible).toContain(
+      "Any-support OR-rule: 59 any-supporting · 14 contradicted · 13 unresolved.",
+    );
+    // stale pre-recovery split must be gone
+    expect(visible).not.toContain("46 any-supporting · 8 contradicted · 32 unresolved.");
     expect(visible).not.toContain("19 any-supporting · 35 contradicted · 27 unresolved.");
+  });
+
+  it("shows the directional-majority ledger under its explicit rule name", () => {
+    expect(visible).toContain("Directional-majority rule (validation_status_v2):");
+    expect(visible).toContain("29 supporting-majority");
+    expect(visible).toContain("44 contradicting-majority-or-tie");
+    expect(visible).toContain("13 no-directional-evidence");
+  });
+
+  it("never labels the aggregate counts as an undefined bare track record", () => {
+    // Both count lines must be lens-named; the words "track record" may appear
+    // only with the accepted-denominator framing, never as the label of a
+    // count line.
+    expect(visible).not.toMatch(/track record:\s*\d/i);
+  });
+
+  it("explains in one sentence why the two ledger distributions differ", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("one supporting name is enough");
+    expect(lc).toContain("ties");
+  });
+
+  it("keeps the effective-independence caution adjacent to the aggregate counts", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("7 descriptive market-story clusters");
+    expect(lc).toContain("not 86 independent market stories");
+  });
+
+  it("distinguishes this editorial walkthrough from the F1/F2 research set", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("editorial");
+    expect(lc).toContain("not the same list as the f1/f2 representative research set");
   });
 
   it("frames the slate as deliberately not distribution-proportional", () => {
@@ -238,8 +274,21 @@ describe("CaseLibrary — per-case evidence density (W1A)", () => {
     const lc = visible.toLowerCase();
     expect(lc).toContain("illustrative");
     expect(lc).toContain("not a validation pool");
-    expect(lc).toContain("3/15");
     expect(lc).toContain("do not replace the corpus-level denominators");
+    // the stale pre-restatement slate claim must be gone
+    expect(lc).not.toContain("only 3/15 are any-supporting");
+  });
+
+  it("states the restated slate mix under both lenses (selection roles kept frozen)", () => {
+    expect(visible).toContain("Slate selection roles (frozen):");
+    expect(visible).toContain(
+      "3 strong-support · 5 contradiction · 5 unresolved · 1 data-limited · 1 mechanism-rich",
+    );
+    expect(visible).toContain("Current outcomes (restated 2026-07-11):");
+    expect(visible).toContain("12 of 15 any-supporting under the OR-rule");
+    expect(visible).toContain("8 supporting-majority · 7 contradicting-majority-or-tie");
+    // stale mix line must be gone
+    expect(visible).not.toContain("3 any-supporting · 5 contradicted · 7 unresolved");
   });
 
   it("keeps contradiction, unresolved, and data-limited cases first-class/visible", () => {
@@ -254,6 +303,96 @@ describe("CURATED_CASES registry — event-study availability flag (V2D)", () =>
   it("marks all 15 cases event-study-available after the V2C coverage repair", () => {
     for (const c of CURATED_CASES) {
       expect(c.eventStudyAvailable, `#${c.eventId} ES`).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Post-recovery reconciliation (2026-07-11): the archive's directional
+// evidence moved (8 events recovered from cached bars; further windows
+// matured naturally), so the registry's outcome copy must match the current
+// archive while every SELECTION ROLE stays frozen.  Re-derived read-only at
+// task entry via db._score_directions / validation_status_v2 on the current
+// archive.
+// ---------------------------------------------------------------------------
+
+const caseById = Object.fromEntries(CURATED_CASES.map((c) => [c.eventId, c]));
+
+describe("CURATED_CASES — recovered/matured outcomes restated (2026-07-11)", () => {
+  it("carries no obsolete 'no directional evidence captured' outcome anywhere", () => {
+    for (const c of CURATED_CASES) {
+      const lc = c.outcome.toLowerCase();
+      expect(lc, `#${c.eventId} outcome`).not.toContain("no directional tape evidence was captured");
+      expect(lc, `#${c.eventId} outcome`).not.toContain("no directional evidence was captured");
+      expect(lc, `#${c.eventId} outcome`).not.toContain("cannot be scored directionally");
+    }
+  });
+
+  it("restates the three recovery-affected cases (211, 214, 215)", () => {
+    expect(caseById[211].outcome).toContain("Any-supporting");
+    expect(caseById[211].caveat).toContain("recovered 2026-07-11");
+    expect(caseById[214].outcome).toContain("Any-supporting");
+    expect(caseById[214].caveat).toContain("recovered 2026-07-11");
+    // the adverse resolution stays visible — recovery cuts both ways
+    expect(caseById[215].outcome).toContain("Contradicted");
+    expect(caseById[215].outcome).toContain("ratio 0.00");
+  });
+
+  it("restates the four maturation-affected cases (238, 239, 240, 300)", () => {
+    expect(caseById[240].outcome).toContain("Any-supporting");
+    expect(caseById[239].outcome).toContain("Any-supporting");
+    // 238 is an exact 2-2 tie: the two lenses split on it
+    expect(caseById[238].outcome.toLowerCase()).toContain("tie");
+    expect(caseById[238].outcome).toContain("OR-rule");
+    expect(caseById[300].outcome).toContain("Any-supporting");
+    expect(caseById[300].outcome.toLowerCase()).toContain("single");
+  });
+
+  it("names the majority lens on the three lens-ambiguous contradiction cases (72, 80, 94)", () => {
+    for (const id of [72, 80, 94]) {
+      expect(caseById[id].outcome, `#${id}`).toContain("Contradicting-majority");
+      expect(caseById[id].outcome, `#${id}`).toContain("OR-rule");
+    }
+  });
+
+  it("keeps every unaffected case's outcome semantically unchanged", () => {
+    expect(caseById[105].outcome).toBe(
+      "Any-supporting — tape-direction agreement across the scored names (ratio 0.75).",
+    );
+    expect(caseById[29].outcome).toBe(
+      "Contradicted — the directional read did not hold (ratio 0.00).",
+    );
+    expect(caseById[85].outcome).toBe(
+      "Contradicted — the directional read did not hold (ratio 0.00); all four tagged names moved against the squeeze thesis.",
+    );
+    expect(caseById[84].outcome).toBe(
+      "Any-supporting — tape-direction agreement across a majority of the tagged names (ratio 0.60).",
+    );
+    expect(caseById[1].outcome).toBe(
+      "Any-supporting, but thin — agreement on the single directional name captured (ratio 1.00 on one tagged ticker).",
+    );
+  });
+
+  it("keeps every selection role frozen (roles never follow outcomes)", () => {
+    const ROLE_BY_ID: Record<number, string> = {
+      105: "strong-support",
+      29: "contradiction",
+      85: "contradiction",
+      215: "unresolved",
+      72: "contradiction",
+      84: "strong-support",
+      94: "contradiction",
+      80: "contradiction",
+      1: "strong-support",
+      240: "unresolved",
+      238: "mechanism-rich",
+      300: "data-limited",
+      211: "unresolved",
+      239: "unresolved",
+      214: "unresolved",
+    };
+    for (const c of CURATED_CASES) {
+      expect(c.role, `#${c.eventId} role`).toBe(ROLE_BY_ID[c.eventId]);
     }
   });
 });

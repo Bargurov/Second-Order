@@ -164,6 +164,32 @@ export function EvidenceOverview() {
               </li>
             ))}
           </ol>
+          {/* The two named outcome ledgers over the 86 accepted rows — same
+              denominator, different semantics, never merged. The independence
+              caution stays upstream: see the effective-independent-evidence
+              card directly below before reading either split as separate
+              evidence. */}
+          <div className="flex flex-col gap-1 border-t border-border/40 pt-2">
+            <p className="text-[11px] leading-relaxed text-on-surface-variant/70">
+              Read both ledgers as clustered evidence — the effective-independent-evidence card
+              below shows the 86 rows collapse into 7 market-story clusters.
+            </p>
+            <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/80">
+              {`${AC.orRuleName} (db.compute_track_record): ${AC.anySupporting} any-supporting / ` +
+                `${AC.contradicted} contradicted / ${AC.unresolved} unresolved.`}
+            </p>
+            <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/80">
+              {`${AC.directionalMajority.ruleName}: ${AC.directionalMajority.validated} validated / ` +
+                `${AC.directionalMajority.contradicted} contradicted / ` +
+                `${AC.directionalMajority.unresolved} unresolved — ` +
+                `${AC.directionalMajority.tieNote}.`}
+            </p>
+            <p className="text-[11px] leading-relaxed text-on-surface-variant/70">
+              {`${AC.lensDivergenceNote} The majority labels are the production scorer's ` +
+                `vocabulary — evidence sufficiency, not a success verdict and not a claim ` +
+                `about future events.`}
+            </p>
+          </div>
           <p className="text-[11.5px] italic leading-relaxed text-on-surface-variant/75">
             Staged candidates sit outside the accepted and FDR pools and never enter accepted
             denominators or claims. Event-study availability is a coverage denominator, not a
@@ -393,24 +419,30 @@ export function EvidenceOverview() {
         </CardContent>
       </Card>
 
-      {/* F3 — surface of the F1/F2 representative case library. Static snapshot
+      {/* F3 — surface of the F1/F2 representative research set. Static snapshot
           from REPRESENTATIVE_CASE_LIBRARY (no browser recompute, no network);
-          figures trace to stats/REPRESENTATIVE_CASE_EXPANSION.md (F1) and
-          stats/EXPANDED_CASE_NOTES.md (F2) @ RCL.sourceCommit. The 6 N1 anchors
-          are already-covered (kept in the transmission walkthrough, not
-          rewritten here); the 9 new cases have expanded F2 notes. */}
+          the SELECTION traces to stats/REPRESENTATIVE_CASE_EXPANSION.md (F1)
+          and stats/EXPANDED_CASE_NOTES.md (F2) @ RCL.sourceCommit; outcomes
+          were restated from the current archive on RCL.outcomesRestatedOn.
+          The 6 N1 anchors are already-covered (kept in the transmission
+          walkthrough, not rewritten here); the 9 new cases have expanded F2
+          notes. A DIFFERENT list from the app Case Library's editorial
+          walkthrough. */}
       <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
         <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
-          <Kicker>Representative cases · walkthrough library</Kicker>
+          <Kicker>Representative cases · frozen F1 selection rule</Kicker>
           <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
-            Representative case library
+            F1/F2 representative research set
           </h2>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
           <p className="text-on-surface-variant/80">
             {`${RCL.totals.total} illustrative cases across ${RCL.totals.familiesTotal} mechanism families: `}
-            {`${RCL.totals.anchors} already-covered N1 anchors + ${RCL.totals.newNotes} newly proposed F1/F2 cases. `}
-            {`Representative cases are for walkthrough depth, not family-level inference.`}
+            {`${RCL.totals.anchors} already-covered N1 anchors + ${RCL.totals.newNotes} newly proposed F1/F2 cases, `}
+            {`selected under the frozen F1 selection rule — not the app Case Library walkthrough, which is a `}
+            {`separate editorial slate. Selection is frozen @ ${RCL.sourceCommit}; outcomes restated ${RCL.outcomesRestatedOn} `}
+            {`from the current archive. Representative cases are for walkthrough depth, not family-level `}
+            {`inference, and neither list stands in for the corpus-level evidence.`}
           </p>
 
           <div className="flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] tabular-nums text-on-surface-variant/80">
@@ -482,12 +514,13 @@ export function EvidenceOverview() {
           <Stat label="Event-study available" value={F.corpus.eventStudyAvailable} />
           <Stat label="Event-study unavailable" value={F.corpus.eventStudyUnavailable} />
           <p className="border-t border-border/40 pt-2 text-[12px] leading-relaxed text-on-surface/85">
-            {`Restated ${AC.restatedOn} (AP3b): the live archive now holds ${AC.savedEvents} saved events; ` +
-              `the accepted track-record corpus is ${AC.trackRecordTotal} ` +
-              `(${AC.anySupporting} any-supporting / ${AC.contradicted} contradicted / ${AC.unresolved} unresolved) ` +
-              `and the coverage / analysis denominator is ${AC.coverageDenominator}, after ` +
-              `${AC.syntheticSeedFlagged} synthetic/test seed rows were flagged in event_hygiene and excluded ` +
-              `(kept in the archive, never deleted). Phase 1 and Phase 2 remain separate pools.`}
+            {`Restated ${AC.restatedOn} (post-recovery): the live archive now holds ${AC.savedEvents} saved events; ` +
+              `the accepted track-record corpus is ${AC.trackRecordTotal} — ` +
+              `${AC.orRuleName}: ${AC.anySupporting} any-supporting / ${AC.contradicted} contradicted / ` +
+              `${AC.unresolved} unresolved — and the coverage / analysis denominator is ` +
+              `${AC.coverageDenominator}, after ${AC.syntheticSeedFlagged} synthetic/test seed rows were ` +
+              `flagged in event_hygiene and excluded (kept in the archive, never deleted; AP3b). ` +
+              `Phase 1 and Phase 2 remain separate pools.`}
           </p>
         </Section>
 

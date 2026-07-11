@@ -1,10 +1,11 @@
 /**
  * Case Library (R6B) — a guided, honest entry point.
  *
- * Fifteen real representative archived events that show the RANGE of outcomes —
- * strong support, contradiction, unresolved, data-limited, mechanism-rich (only
- * three any-supporting, the rest contradictions or unresolved/data-limited) —
- * without implying cherry-picked proof.  Each card links into
+ * Fifteen real representative archived events selected (roles frozen at T8A)
+ * to span the RANGE of reads — strong support, contradiction, unresolved,
+ * data-limited, mechanism-rich — without implying cherry-picked proof. Outcome
+ * copy is current-archive data (restated 2026-07-11 post-recovery); selection
+ * roles never follow outcomes.  Each card links into
  * the existing EventDossier surface via the URL-addressable /share/:id route
  * (chosen over an in-app Archive deep-link, which would need a fetch-by-id path
  * since Archive resolves the detail only from its currently-loaded page).
@@ -37,7 +38,7 @@ const NON_CLAIMS = [
   "Each case is a descriptive event-window read at n = 1, not benchmark-adjusted significance.",
   "Not exhaustive; denominators differ by gate and data availability.",
   "Separate from the closed Phase 1 / Phase 2 FDR pools; no pooled denominator is implied.",
-  "Illustrative reads, not a validation pool — only 3/15 are any-supporting, and representative cases do not replace the corpus-level denominators above.",
+  "Illustrative reads, not a validation pool — the slate over-weights adverse and thin reads by selection (7 of 15 read contradicting-majority-or-tie after the 2026-07-11 restatement), and representative cases do not replace the corpus-level denominators above.",
 ];
 
 function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
@@ -147,12 +148,17 @@ export function CaseLibrary({ onOpenCase }: { onOpenCase?: (eventId: number) => 
           Case Library
         </h1>
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-on-surface-variant/85">
-          A guided, fifteen-case walkthrough of representative real events spanning the range of
-          outcomes and mechanisms. Only three of the fifteen are any-supporting; the rest are
-          contradictions or unresolved / data-limited reads.
+          A guided, fifteen-case editorial walkthrough of representative real events, selected to
+          span supportive, contradictory, unresolved and data-limited reads across mechanisms.
+          After the 2026-07-11 directional-evidence recovery and archive maturation, every slate
+          case now carries a directional read — the per-case outcome lines below state each read
+          and its lens. It is not distribution-proportional, not a research sample, and not the
+          same list as the F1/F2 representative research set on Evidence Overview.
         </p>
 
-        {/* Denominator anchor + corpus split + slate mix (anti-cherry-pick) */}
+        {/* Denominator anchor + the two named outcome ledgers + slate mix
+            (anti-cherry-pick). Aggregate counts are never shown as an
+            undefined bare track record — each count line names its lens. */}
         <div className="mt-3 flex flex-col gap-1 rounded-md border border-border/50 bg-surface-container-low px-3.5 py-2.5">
           {/* Current accepted-corpus denominator (single template-literal text
               node so renderToStaticMarkup never splits "180-event"). Sourced
@@ -163,11 +169,31 @@ export function CaseLibrary({ onOpenCase }: { onOpenCase?: (eventId: number) => 
               `${ACCEPTED_CORPUS.syntheticSeedFlagged} synthetic/test seeds flagged in event_hygiene ` +
               `and excluded, kept in the archive). Restated ${ACCEPTED_CORPUS.restatedOn}.`}
           </p>
+          {/* Independence caution stays UPSTREAM of the outcome counts — a
+              reviewer sees it before reading either split as separate evidence. */}
+          <p className="text-[11px] leading-relaxed text-on-surface-variant/70">
+            Clustered evidence: the 86 accepted rows group into 7 descriptive market-story
+            clusters (largest 79) — not 86 independent market stories. Read both ledgers below
+            with that in mind.
+          </p>
           <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
-            {`${ACCEPTED_CORPUS.anySupporting} any-supporting · ${ACCEPTED_CORPUS.contradicted} contradicted · ${ACCEPTED_CORPUS.unresolved} unresolved.`}
+            {`${ACCEPTED_CORPUS.orRuleName}: ${ACCEPTED_CORPUS.anySupporting} any-supporting · ` +
+              `${ACCEPTED_CORPUS.contradicted} contradicted · ${ACCEPTED_CORPUS.unresolved} unresolved.`}
+          </p>
+          <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/75">
+            {`${ACCEPTED_CORPUS.directionalMajority.ruleName}: ` +
+              `${ACCEPTED_CORPUS.directionalMajority.validated} supporting-majority · ` +
+              `${ACCEPTED_CORPUS.directionalMajority.contradicted} contradicting-majority-or-tie · ` +
+              `${ACCEPTED_CORPUS.directionalMajority.unresolved} no-directional-evidence.`}
+          </p>
+          <p className="text-[11px] leading-relaxed text-on-surface-variant/70">
+            {ACCEPTED_CORPUS.lensDivergenceNote}
           </p>
           <p className="font-mono text-[11px] tabular-nums text-on-surface-variant/60">
-            This slate is deliberately not distribution-proportional: 3 any-supporting · 5 contradicted · 7 unresolved (incl. 1 data-limited, 1 mechanism-rich) · 5 of 15 oil/energy by theme.
+            {`Slate selection roles (frozen): 3 strong-support · 5 contradiction · 5 unresolved · ` +
+              `1 data-limited · 1 mechanism-rich; 5 of 15 oil/energy by theme. ` +
+              `Current outcomes (restated ${ACCEPTED_CORPUS.restatedOn}): 12 of 15 any-supporting under the OR-rule; ` +
+              `8 supporting-majority · 7 contradicting-majority-or-tie under the directional-majority rule; 0 unresolved.`}
           </p>
         </div>
 

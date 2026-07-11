@@ -21,15 +21,31 @@ the Compute-Readiness Contract).
 **Best starting point for a finance reviewer.** Start with
 [`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md): it explains the completed
 research chain, evidence lanes, Mission G design, main null result, bounded OPEC
-association, representative cases, and claim boundaries. Then use the
-[five-minute walkthrough](#five-minute-walkthrough), denominator funnel, and
-read-only commands in [Verify it yourself](#verify-it-yourself-read-only-research-reports).
+association, Missions I and J, representative cases, and claim boundaries. Then
+follow the [reviewer reading path](#reviewer-reading-path), the denominator
+funnel, and the read-only commands in
+[Verify it yourself](#verify-it-yourself-read-only-research-reports); the
+[in-app walkthrough](#in-app-walkthrough) is optional and needs a populated
+local archive.
 
 Second Order runs as a FastAPI backend with a React app and a Telegram bot; local
 setup is in [Run Locally](#run-locally). Detailed operator history and dated
 repair logs are intentionally kept out of this reviewer-facing README; the repo
 preserves that evolution through git history and the durable research reports
 linked below.
+
+## Current results at a glance
+
+Already-published conclusions only. Each row keeps its own denominator and
+evidence lane; lanes are never pooled, summed, or compared as one sample.
+
+| Lane | Denominator | Evidence class / basis | Principal finding | Main fragility / unavailable measure | Non-claim | Durable artifact |
+|---|---|---|---|---|---|---|
+| Accepted archive | 86 accepted rows (of 180 saved) | descriptive live-archive ledger | Baseline verdict `not_above_baseline`; two outcome lenses (restated 2026-07-11): Any-support OR-rule 59 / 14 / 13; directional-majority (`validation_status_v2`) 29 / 44 / 13 | ~7 market-story clusters, largest 79 — not 86 independent stories | no directional recommendation; no single-event significance | [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md) + the read-only reports below |
+| Mission G | 97 promoted (65 FOMC / 32 OPEC) | outcome-blind frozen historical chain | Broad state-conditioning surface predominantly flat, fragile, or contradictory; one bounded OPEC fed-path × sector-relative association with unresolved calendar-time confounding | 44/120 LOEO and 76/120 LOYO sign reversals; HY OAS 36/97 era-bounded | descriptive association only — no causal claim, no prediction | [`stats/G6_FROZEN_MANIFEST_READOUT.md`](stats/G6_FROZEN_MANIFEST_READOUT.md), [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md) |
+| Mission I | 65 FOMC / 32 OPEC vs eligible ordinary periods | frozen MEMP percentile family; no p-values, no FDR | Event exceptionalism is family-, horizon-, and metric-specific; FOMC 1d shows a broad perturbation-stable elevation; the blanket "event windows are generally more extreme" narrative is rejected (a statement about the narrative, not a hypothesis test) | the FOMC 5d raw cell is a near-0.5 knife-edge | descriptive; no significance test, no tradeability | [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) |
+| Mission J | 65 FOMC decisions (2018–2025) | same-sample Class B: prospectively frozen post-outcome challenges | 12/12 robustness cells ELEVATED (correlated views, not independent replications); all three transmission edges PROPAGATED at the tier-5 descriptive ceiling; pre-event timing is lens-dependent (sector-relative and SAR ELEVATED; raw and SPY-relative ORDINARY / UNRESOLVED) | ideal M1 rates measure unavailable (2Y CMT is measurement-limited); C1 CPI/Employment collisions unadjudicable; C2 OPEC tags 0/65 | no causality, prediction, tradeability, or independent replication | [`stats/J1B_FOMC_ROBUSTNESS_RESULTS.md`](stats/J1B_FOMC_ROBUSTNESS_RESULTS.md), [`stats/J2_TIMING_COLLISION_RESULTS.md`](stats/J2_TIMING_COLLISION_RESULTS.md), [`stats/J3_MECHANISM_TRANSMISSION_READOUT.md`](stats/J3_MECHANISM_TRANSMISSION_READOUT.md) |
+| Validation-status calibration | 86 accepted rows; 73 decisive labels post-recovery | read-only rule audit against the real archive | `KEEP_CURRENT_RULE` — no production-rule change; the tracked publication is a dated pre-recovery snapshot (65 decisive labels at its as-of date) | no independent target for accuracy calibration was available; 4 decisive labels rest on a single directional ticker | evidence-sufficiency calibration, not accuracy calibration | [`stats/VALIDATION_STATUS_CALIBRATION.md`](stats/VALIDATION_STATUS_CALIBRATION.md) |
 
 ## What this is — for a finance reader
 
@@ -66,54 +82,62 @@ the days after the event.
 
 ## Reviewer reading path
 
-A skeptical reviewer can follow the intended order without a guided tour:
+One primary path, durable record first — every step below reads from tracked
+files and works from a clean clone:
 
-1. **Evidence Overview** (Research nav) — the front-door screen: the denominator
-   ledger, the mechanism-family inventory, and the representative case library on
-   one page.
-2. **Mechanism-family evidence inventory** —
-   [`stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md`](stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md):
-   where the accepted archive has mass, which families are thin, which are
-   overlay-only buckets, and where readouts show missingness.
-3. **Representative case library** —
-   [`stats/REPRESENTATIVE_CASE_EXPANSION.md`](stats/REPRESENTATIVE_CASE_EXPANSION.md):
-   15 illustrative cases across 6 mechanism families — 6 already-covered anchors
-   plus 9 newly proposed cases with expanded notes.
-4. **Expanded case notes** —
-   [`stats/EXPANDED_CASE_NOTES.md`](stats/EXPANDED_CASE_NOTES.md): source-grounded
-   notes for the 9 newly proposed cases. Each note keeps the readout lens (primary
-   ticker vs SPY) separate from the thesis-outcome lens (support / contradiction /
-   unresolved) — the two can disagree.
-5. **Optional numeric readout layer** —
-   [`stats/CASE_LIBRARY_REACTION_MATRIX.md`](stats/CASE_LIBRARY_REACTION_MATRIX.md):
-   a compact 1d / 5d / 20d SPY-relative matrix for the 15 representative cases.
-   It shows 12 / 15 available readouts, makes missing readouts explicit, and
-   keeps the readout lens separate from thesis-outcome scoring.
-6. **Effective independent evidence** —
-   [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md):
-   answers the reviewer question "are the 86 accepted track-record rows really 86
-   separate market stories?" They group into 7 descriptive market-story clusters
-   under transparent same-date / same-primary-ticker-window / duplicate-link rules,
-   and the largest cluster holds 79 rows — so the archive reads as a small number
-   of market tapes observed many ways, not 86 separate pieces of evidence. Read it
-   before treating the support / contradiction / unresolved counts as separate
-   evidence; it makes the interpretation more honest, not weaker. A descriptive
-   independence-caution layer — not an inferential effective sample size, score,
-   rank, p-value, or FDR pool.
-7. **Methodology / non-claims** —
-   [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md): market-adjusted readouts are
-   SPY-relative with beta fixed at 1. Representative cases are walkthrough
-   material, not family-level inference; not a recommendation or forecast.
+1. **[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)** — the research question,
+   the evidence-lane map, and the claim boundaries.
+2. **Accepted archive outcome ledgers** — the
+   [funnel below](#the-funnel--denominators-honestly): the accepted denominator
+   and the two named outcome lenses (the Any-support OR-rule and the
+   directional-majority `validation_status_v2` rule), plus
+   [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md)
+   before treating the 86 rows as 86 separate market stories (they group into 7
+   descriptive market-story clusters; the largest holds 79 rows).
+3. **Mission G — historical state conditioning** — protocol
+   [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md) and spec
+   [`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md), readout
+   [`stats/G6_FROZEN_MANIFEST_READOUT.md`](stats/G6_FROZEN_MANIFEST_READOUT.md),
+   stability and falsifiers
+   [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md).
+4. **Mission I — ordinary-period baseline** — are completed event windows
+   unusual against eligible *ordinary* periods on the same frozen assets and
+   metrics? [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md).
+5. **Mission J — hindsight-controlled FOMC robustness** —
+   [`stats/J1B_FOMC_ROBUSTNESS_RESULTS.md`](stats/J1B_FOMC_ROBUSTNESS_RESULTS.md),
+   [`stats/J2_TIMING_COLLISION_RESULTS.md`](stats/J2_TIMING_COLLISION_RESULTS.md),
+   [`stats/J3_MECHANISM_TRANSMISSION_READOUT.md`](stats/J3_MECHANISM_TRANSMISSION_READOUT.md).
+6. **Representative cases** — Mission G's outcome-blind cases
+   [`stats/G6C_REPRESENTATIVE_CASES.md`](stats/G6C_REPRESENTATIVE_CASES.md); the
+   F1/F2 research set
+   [`stats/REPRESENTATIVE_CASE_EXPANSION.md`](stats/REPRESENTATIVE_CASE_EXPANSION.md)
+   with [`stats/EXPANDED_CASE_NOTES.md`](stats/EXPANDED_CASE_NOTES.md) and the
+   numeric matrix
+   [`stats/CASE_LIBRARY_REACTION_MATRIX.md`](stats/CASE_LIBRARY_REACTION_MATRIX.md).
+   Illustrations for inspection — never lane-level counts, and the readout lens
+   stays separate from the thesis-outcome lens (the two can disagree).
+7. **Methodology, limits, and read-only reproduction** —
+   [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md) (SPY-relative, beta fixed at
+   1), the family-mass and missingness inventory
+   [`stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md`](stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md),
+   and the read-only commands in
+   [Verify it yourself](#verify-it-yourself-read-only-research-reports).
 
-Locked protocol for the gated historical-evidence phase (Mission G): [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md) with its standardization spec [`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md).
+## In-app walkthrough
 
-## Five-minute walkthrough
+A brief tour of the running dashboard — **optional**, and it requires a
+populated local `events.db`. The archive intentionally does not ship, so a
+clean clone starts with an empty archive and these screens render empty (see
+[Reproducibility & data](#reproducibility--data)). App surfaces are a reading
+aid, not the sole durable research record — that record is the tracked
+`stats/` publications on the reviewer path above.
 
 1. **Market Overview** (the landing page) — read the market backdrop, recent
    event activity, and the *Track record & evidence* framing.
-2. **Case Library** (Research nav) — fifteen representative cases (only three
-   any-supporting; the rest contradictions or unresolved / data-limited reads),
-   with the denominator anchor and the standing non-claims on the page.
+2. **Case Library** (Research nav) — fifteen representative cases selected to
+   span supportive, contradictory, unresolved and data-limited reads (outcomes
+   restated 2026-07-11 post-recovery), with the denominator anchor, both named
+   outcome ledgers, and the standing non-claims on the page.
 3. **Open #105 — OPEC output cuts** (strong support): the in-app Archive / Event
    Detail dossier, where the tape agreed with the thesis direction across several
    legs.
@@ -138,9 +162,9 @@ backdrop, and case-selection stress.
 
 - **EventDossier** — the shared research note for one event; it leads both the
   Share page and the Archive / Event Detail view.
-- **Case Library** — a guided, representative entry point (fifteen real cases;
-  only three any-supporting, the rest contradictions or unresolved / data-limited
-  reads).
+- **Case Library** — a guided, editorial entry point: fifteen real cases
+  selected to span supportive, contradictory, unresolved and data-limited
+  reads (outcomes restated 2026-07-11 post-recovery; selection roles frozen).
 - **Archive / Event Detail** — the full in-app dossier, including the scored
   outcome (`validation_status_v2`) when the archive row carries it.
 - **Share page (`/share/:id`)** — the same dossier, shell-free for linking; it
@@ -158,8 +182,21 @@ figures — a clean clone starts empty):
 
 - **180** archive rows — every saved event.
 - **94** accepted coverage / analysis rows.
-- **86** accepted track-record rows (46 any-supporting, 8 contradicted,
-  32 unresolved).
+- **86** accepted track-record rows, read through two named outcome lenses
+  (restated 2026-07-11 after the directional-evidence recovery; both lenses
+  cover the same 86 rows and are never merged):
+  - **Any-support OR-rule** (`db.compute_track_record`): 59 any-supporting,
+    14 contradicted, 13 unresolved. Any supporting directional ticker is
+    sufficient for the any-supporting bucket — a descriptive ledger, not a
+    majority vote.
+  - **Directional-majority rule (`validation_status_v2`)**: 29 validated,
+    44 contradicted, 13 unresolved. Supporting vs contradicting tickers;
+    ties count as contradicted under the frozen current rule. The labels are
+    the production scorer's vocabulary — evidence sufficiency, not a success
+    verdict and not a claim about future events.
+  - One supporting name is enough under the OR-rule, while the majority rule
+    weighs supporting against contradicting names — that is why the two
+    distributions differ.
 - **78 of 94** event-study compute-ready — rows with per-horizon (1d / 5d / 20d)
   point estimates computable against SPY.
 - **13** staged candidates — review staging, excluded from every accepted

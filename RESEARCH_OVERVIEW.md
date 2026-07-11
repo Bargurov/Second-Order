@@ -6,7 +6,7 @@ This is the finance-reviewer front door for Second Order's current research reco
 
 Second Order is an event-driven quant-finance research workbench and portfolio piece for geopolitical, macro, and policy headlines. Its maintained research chain is:
 
-`event -> mechanism -> affected assets -> 1d/5d/20d reaction -> abnormal/event-study readout -> falsifier/limits -> archive evidence -> representative cases`
+`event -> mechanism -> affected assets -> 1d/5d/20d reaction -> abnormal/event-study readout -> falsifier/limits -> ordinary-period comparison -> robustness -> archive evidence -> representative cases`
 
 The point is to make each dated event legible as evidence: what changed, what transmission channel was hypothesized, which assets were exposed, how those assets actually moved, and which limits or counter-readings remain visible.
 
@@ -22,6 +22,8 @@ The project keeps evidence lanes visible because each lane has a different denom
 - Representative cases: illustrations only, with no denominator of their own.
 
 The denominator separation is central. The live archive, the complete FOMC frame, and the OPEC designed reservoir answer different research questions and are not pooled into one general market-event result. Representative cases help a reader inspect the machinery but never substitute for a lane-level count.
+
+The live track-record lane is read through two named outcome lenses that stay separate: the **Any-support OR-rule** ledger (`db.compute_track_record` — one supporting directional name is enough for the any-supporting bucket) and the **directional-majority** ledger (`validation_status_v2` — supporting vs contradicting names, with ties counting as contradicted under the frozen current rule). Both ledgers are descriptive archive accounting; the boundary on what they do and do not establish lives in the claims section below. The event-level rule behind `validation_status_v2` was audited read-only in [`stats/VALIDATION_STATUS_CALIBRATION.md`](stats/VALIDATION_STATUS_CALIBRATION.md) — a dated pre-recovery snapshot (65 decisive labels at its as-of date). The current post-recovery ledger carries 73 decisive labels after the 2026-07-11 directional-evidence recovery; the calibration's KEEP_CURRENT_RULE conclusion is unchanged and no production rule changed.
 
 ## 3. Event-Study Layer
 

@@ -22,12 +22,19 @@
  * line is explicitly marked editorial and derived only from headline /
  * what_changed / transmission text — never implied as a typed extraction.
  *
- * Outcomes were derived read-only from the archive. As of 2026-06-09 the live
- * archive holds 180 saved events; the accepted track-record corpus is 86 events
- * (46 any-supporting / 8 contradicted / 32 unresolved) after excluding 71
- * synthetic/test seed rows flagged in event_hygiene (kept in the archive,
- * never deleted). These are descriptive archive denominators, separate from the
- * closed Phase 1 / Phase 2 FDR pools.
+ * Outcomes were derived read-only from the archive and restated 2026-07-11
+ * after the directional-evidence recovery (five-day directions back-computed
+ * from already-cached bars for eight accepted events) and natural window
+ * maturation. The live archive holds 180 saved events; the accepted
+ * track-record corpus is 86 events after excluding 71 synthetic/test seed rows
+ * flagged in event_hygiene (kept in the archive, never deleted). Two outcome
+ * lenses, never merged: the Any-support OR-rule ledger reads 59 any-supporting
+ * / 14 contradicted / 13 unresolved, and the directional-majority ledger
+ * (validation_status_v2) reads 29 / 44 / 13 over the same 86 rows. Selection
+ * roles below are FROZEN at T8A selection time and never follow later
+ * outcomes; the outcome copy per case is current-archive data. These are
+ * descriptive archive denominators, separate from the closed Phase 1 /
+ * Phase 2 FDR pools.
  *
  * Copy carries no buy/sell/long/short/alpha/signal/trade framing and no
  * proof/confirmed/validated-as-success framing.
@@ -139,13 +146,14 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "UAE departs OPEC, reshaping the alliance behind oil prices",
     mechanism:
       "A structural cartel-cohesion shift rather than a price shock: the UAE's exit erodes OPEC spare-capacity discipline, with the energy majors as the watched names.",
-    outcome: "Unresolved — no directional tape evidence was captured in the scoring window (no tagged names).",
+    outcome:
+      "Contradicted — all three recovered directional names moved against the thesis (ratio 0.00) under both lenses.",
     eventStudyNote: "Event-study readout available (vs SPY, n = 1).",
     whySelected:
-      "A structural mechanism (cartel cohesion), not an acute shock — and one the scorer honestly left unresolved.",
-    demonstrates: "Mechanism breadth beyond acute shocks, with an honest unresolved outcome.",
-    doesNotProve: "Absence of a captured read is evidence neither for nor against the thesis.",
-    caveat: "Descriptive read at n = 1; the affected names carry no directional tag.",
+      "A structural mechanism (cartel cohesion), not an acute shock — selected while the scorer honestly left it unresolved; the 2026-07-11 directional-evidence recovery resolved it against the thesis. Selection role retained, and the adverse resolution stays.",
+    demonstrates: "A structural mechanism whose recovered read went against the thesis — recovery cuts both ways.",
+    doesNotProve: "One adverse read does not rule out the mechanism class; it is a single event-window read.",
+    caveat: "Descriptive read at n = 1; directions recovered 2026-07-11 from already-cached bars.",
     rawReturnsAvailable: true,
   },
   // ── supply_shock (1) — oil-refining in this corpus, disclosed ────────────────
@@ -159,7 +167,7 @@ export const CURATED_CASES: CuratedCase[] = [
     mechanism:
       "Forcing teapot refiners to hold domestic output cuts Chinese product exports, tightening global gasoline, diesel and jet balances; US and European refiners sit on the firming side.",
     outcome:
-      "Contradicted — the directional read did not hold (ratio 0.25); three of four tagged names moved against the thesis.",
+      "Contradicting-majority under the directional-majority rule — three of four tagged names moved against the thesis (support ratio 0.25). The any-support OR-rule would count the single agreeing name, which is exactly why the two ledgers are kept separate.",
     eventStudyNote: "Event-study readout available (vs SPY, n = 1).",
     whySelected:
       "The lone supply_shock family case, and a humbling one — a coherent refined-product tightening thesis the tape mostly rejected.",
@@ -216,7 +224,7 @@ export const CURATED_CASES: CuratedCase[] = [
     mechanism:
       "Selective tariffs plus preferential transatlantic channels protect some US and EU sectors and raise barriers to third-country imports; Asian exporters sit on the exposed side.",
     outcome:
-      "Contradicted — the directional read did not hold (ratio 0.17); five of six tagged names moved against the thesis.",
+      "Contradicting-majority under the directional-majority rule — five of six tagged names moved against the thesis (support ratio 0.17); the any-support OR-rule would count the single agreeing name.",
     eventStudyNote: "Event-study readout available (vs SPY, n = 1).",
     whySelected:
       "A non-oil tariff contradiction with a rich, articulated mechanism — a well-reasoned thesis the tape rejected.",
@@ -234,7 +242,8 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "US–Ecuador reciprocal commerce agreement",
     mechanism:
       "Editorial note: the payload carries no mechanism summary. From the event text, mutual tariff reductions favour US and Ecuadorian commodity exporters over third-country competitors.",
-    outcome: "Contradicted — the directional read did not hold (ratio 0.33).",
+    outcome:
+      "Contradicting-majority under the directional-majority rule — two of three names moved against the thesis (support ratio 0.33); the any-support OR-rule would count the single agreeing name.",
     eventStudyNote: "Event-study readout available (vs SPY, n = 1).",
     whySelected: "A thin but real non-oil tariff contradiction, included so the contradictions are not all oil.",
     demonstrates: "A small, all-beneficiary case can still read as a contradiction.",
@@ -251,12 +260,15 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "GM raises 2026 guidance amid a $500M tariff refund",
     mechanism:
       "A Section 232 steel and aluminium tariff refund accrues to automakers; steel names sit on the exposed side.",
-    outcome: "Unresolved — no directional evidence was captured in the scoring window.",
+    outcome:
+      "Any-supporting under the OR-rule — all three directional names agreed (ratio 1.00) once the five-day window matured; the directional-majority read concurs.",
     eventStudyNote: "Event-study readout available; raw market-check returns were not captured.",
-    whySelected: "A real, recent tariff-channel thesis that stayed unresolved rather than being forced into a verdict.",
-    demonstrates: "Honest unresolved — the scorer abstains when directional tape evidence is absent.",
-    doesNotProve: "Absence of a read is evidence neither for nor against the thesis.",
-    caveat: "Raw market-check returns are unavailable; the event-study readout carries the quantitative read.",
+    whySelected:
+      "A real, recent tariff-channel thesis selected while its scoring window was still open and the read unresolved; the window matured and the read resolved supporting. Selection role retained.",
+    demonstrates: "Recent events start unresolved and resolve as their windows mature — the scorer abstains, then reads.",
+    doesNotProve: "A matured supporting read is still one event-window read at n = 1.",
+    caveat:
+      "Raw market-check returns are unavailable; the event-study readout carries the quantitative read. Outcome restated 2026-07-11 after window maturation.",
     rawReturnsAvailable: false,
   },
   {
@@ -268,13 +280,14 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "China scraps tariffs on 53 African nations",
     mechanism:
       "A zero-tariff import channel favours lithium, cobalt and copper producers, with China demand proxies as second-order beneficiaries.",
-    outcome: "Unresolved — the mechanism is articulated; the outcome is not resolved (dual role).",
+    outcome:
+      "Split read after window maturation: any-supporting under the OR-rule (2 of 4 names, ratio 0.50) but an exact 2-2 tie — contradicting-majority-or-tie under the directional-majority rule. The two lenses disagree on this case.",
     eventStudyNote: "Event-study readout available; raw market-check returns were not captured.",
     whySelected: "The richest articulated second-order commodity-channel mechanism, away from oil and geopolitics.",
-    demonstrates: "A clean mechanism can be stated even when the outcome stays unresolved.",
-    doesNotProve: "A well-formed mechanism is a hypothesis, not a result.",
+    demonstrates: "A clean mechanism can be stated even when the two outcome lenses split on the read.",
+    doesNotProve: "A tied read establishes neither direction; a well-formed mechanism is a hypothesis, not a result.",
     caveat:
-      "Dual role (mechanism-rich and unresolved); raw returns are unavailable, so the event-study readout carries the quantitative read.",
+      "Dual role (mechanism-rich); a live example of why the two ledgers differ — one agreeing name satisfies the OR-rule while the tie reads contradicting under the majority rule. Raw returns unavailable; outcome restated 2026-07-11.",
     rawReturnsAvailable: false,
   },
   // ── sanction (2) ─────────────────────────────────────────────────────────────
@@ -287,14 +300,16 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "US license requirement on NVIDIA A100/H100 exports to China",
     mechanism:
       "Export controls cut a single exposed name's China datacenter GPU sales (editorial note: the payload carries no mechanism summary for this anchor).",
-    outcome: "Unresolved — a single name at n = 1 cannot be scored directionally.",
+    outcome:
+      "Any-supporting under the OR-rule — the single exposed name agreed with the thesis (ratio 1.00 on one tagged ticker); the directional-majority read rests on that same single name.",
     eventStudyNote: "Event-study readout available; a sizeable negative abnormal return at 5 days.",
     whySelected:
-      "A single-name historical anchor: scored unresolved precisely because the data is thin, yet the event-study still gives a descriptive read.",
-    demonstrates: "Honest missingness — thin data is labelled, not dressed up.",
-    doesNotProve: "One name's move is not a generalisable result.",
+      "A single-name historical anchor selected for its honest thinness; the name's window later matured to a supporting read. Selection role retained — the read is still one name.",
+    demonstrates: "Honest missingness — thin data is labelled, and a one-name resolved read is still thin.",
+    doesNotProve:
+      "One name's move is not a generalisable result — this is one of the archive's single-ticker decisive reads the validation-status calibration flags.",
     caveat:
-      "No mechanism summary or raw returns in the payload; the event-study readout carries the quantitative read, and the mechanism line here is editorial context for a public event.",
+      "No mechanism summary or raw returns in the payload; the event-study readout carries the quantitative read, and the mechanism line here is editorial context for a public event. Single tagged name; outcome restated 2026-07-11.",
     rawReturnsAvailable: false,
   },
   {
@@ -306,12 +321,14 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "China warns 'price must be paid' after US House approves Xinjiang sanctions",
     mechanism:
       "Sanctions gate US banking and technology services to listed Chinese entities, with Beijing flagging counter-measures; solar (polysilicon) and China-exposed names are the watched legs.",
-    outcome: "Unresolved — no directional tape evidence was captured in the window (no tagged names).",
+    outcome:
+      "Any-supporting under the OR-rule — all three recovered directional names agreed with the thesis (ratio 1.00); the directional-majority read concurs.",
     eventStudyNote: "Event-study readout available (vs SPY, n = 1).",
-    whySelected: "A non-oil, multi-name sanction case that complements 300's single-name read.",
-    demonstrates: "Sanction-channel breadth beyond a single exposed ticker.",
-    doesNotProve: "Absence of a captured read is evidence neither way.",
-    caveat: "Descriptive read at n = 1; the names carry no directional tag.",
+    whySelected:
+      "A non-oil, multi-name sanction case that complements 300's single-name read — selected while its names were untagged; the 2026-07-11 directional-evidence recovery back-computed the directions from already-cached bars. Selection role retained.",
+    demonstrates: "Sanction-channel breadth — and a measurement gap that, once repaired from cached data, resolved supporting.",
+    doesNotProve: "A recovered directional read is still one event-window read at n = 1; it does not establish the sanction mechanism.",
+    caveat: "Descriptive read at n = 1; directions recovered 2026-07-11 from already-cached bars.",
     rawReturnsAvailable: true,
   },
   // ── policy_surprise (1) — monetary, the only one in the corpus ───────────────
@@ -324,13 +341,15 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "Powell says he'll stay on the Fed board as rates hold at 5.25–5.50%",
     mechanism:
       "A higher-for-longer rate read: Fed-independence framing supports banks and regional lenders while pressuring duration-sensitive REITs and Treasuries.",
-    outcome: "Unresolved — no directional tape evidence was captured in the window.",
+    outcome:
+      "Any-supporting under the OR-rule (two of three names, ratio 0.67) once the window matured; supporting-majority under the directional-majority rule.",
     eventStudyNote: "Event-study readout available; raw market-check returns were not captured.",
     whySelected:
-      "The only policy_surprise (monetary) case — a rate-sensitivity cross-section away from commodities and tariffs.",
-    demonstrates: "Family breadth into monetary policy, with an honest unresolved outcome.",
-    doesNotProve: "Absence of a captured read is evidence neither way.",
-    caveat: "Raw market-check returns are unavailable; the event-study readout carries the quantitative read.",
+      "The only policy_surprise (monetary) case — a rate-sensitivity cross-section away from commodities and tariffs, selected while unresolved; the window matured to a supporting read. Selection role retained.",
+    demonstrates: "Family breadth into monetary policy; an unresolved read that matured rather than staying open.",
+    doesNotProve: "A two-of-three read at n = 1 is thin; it does not establish the rate-sensitivity mechanism.",
+    caveat:
+      "Raw market-check returns are unavailable; the event-study readout carries the quantitative read. Outcome restated 2026-07-11 after window maturation.",
     rawReturnsAvailable: false,
   },
   // ── ceasefire_deescalation (1) — irreducibly thin, flagged ───────────────────
@@ -343,13 +362,15 @@ export const CURATED_CASES: CuratedCase[] = [
     headline: "Middle East peace talks stall amid Hormuz tensions and Lebanon ceasefire violations",
     mechanism:
       "Editorial note: the payload carries no mechanism summary. From the event text, stalled de-escalation lifts regional risk premia, with the defence primes (LMT, RTX) as the watched names.",
-    outcome: "Unresolved — no directional tape evidence was captured; only two defence names, both untagged.",
+    outcome:
+      "Any-supporting under the OR-rule — both defence names agreed with the thesis (ratio 1.00) after the recovery; the directional-majority read concurs.",
     eventStudyNote: "Event-study readout available (vs SPY, n = 1).",
     whySelected:
-      "The least-thin ceasefire_deescalation case — included for family breadth, with the thinness stated plainly.",
-    demonstrates: "Family coverage, flagged as thin rather than dressed up.",
-    doesNotProve: "Two untagged names cannot establish a directional read.",
-    caveat: "Thin (two names); mechanism line is editorial; the family has only two scored events in the archive.",
+      "The least-thin ceasefire_deescalation case — included for family breadth while its two names were untagged; the 2026-07-11 recovery resolved both supporting. Selection role retained, with the thinness stated plainly.",
+    demonstrates: "Family coverage, flagged as thin rather than dressed up — the recovered read is two names, not breadth.",
+    doesNotProve: "Two supporting names at n = 1 cannot establish a directional read for the family.",
+    caveat:
+      "Thin (two names); mechanism line is editorial; the family has only two scored events in the archive. Directions recovered 2026-07-11 from already-cached bars.",
     rawReturnsAvailable: true,
   },
 ];

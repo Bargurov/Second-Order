@@ -4,30 +4,63 @@
  *
  * These are a DATED snapshot of a derivable truth, not the source of truth: the
  * read-only report scripts (`scripts/stat_validation_readiness_report.py`,
- * `db.compute_track_record`, `scripts/event_study_coverage_report.py`) recompute
- * every figure from whatever `events.db` is present. The numbers below reflect
- * the maintainer's local archive as of `restatedOn`; a clean clone (empty
- * archive) computes zero. Re-derive and bump `restatedOn` when the archive moves.
+ * `db.compute_track_record`, `scripts/event_study_coverage_report.py`,
+ * `scripts/validation_status_calibration_report.py`) recompute every figure
+ * from whatever `events.db` is present. The numbers below reflect the
+ * maintainer's local archive as of `restatedOn`; a clean clone (empty archive)
+ * computes zero. Re-derive and bump `restatedOn` when the archive moves.
  *
- * `restatedOn` marks the AP3b restatement: 71 synthetic/test seed rows were
- * flagged in the `event_hygiene` sidecar (`override_class = 'synthetic_seed'`)
- * and EXCLUDED from the accepted-corpus denominators while remaining in the
- * archive (keep-and-flag, never deleted).
+ * The 2026-07-11 restatement follows the directional-evidence recovery (eight
+ * accepted events whose 5d directions were back-computed from already-cached
+ * bars) plus natural window maturation since the 2026-06-09 AP3b restatement.
+ * The AP3b exclusion stands: 71 synthetic/test seed rows are flagged in the
+ * `event_hygiene` sidecar (`override_class = 'synthetic_seed'`) and EXCLUDED
+ * from the accepted-corpus denominators while remaining in the archive
+ * (keep-and-flag, never deleted).
+ *
+ * TWO OUTCOME LENSES, never merged, over the same 86 accepted rows:
+ *   1. Any-support OR-rule (`db.compute_track_record`): one supporting
+ *      directional name puts the event in the any-supporting bucket. A
+ *      descriptive ledger — not a majority vote, not predictive validation.
+ *   2. Directional-majority rule (`validation_status_v2`): supporting vs
+ *      contradicting names; supporting majority -> validated, ties and
+ *      contradicting majorities -> contradicted under the frozen current rule,
+ *      no directional evidence -> unresolved after the pending window.
+ *      Calibrated for evidence sufficiency only (KEEP_CURRENT_RULE); no
+ *      predictive-accuracy target was available.
  */
 export const ACCEPTED_CORPUS = {
   /** Date the denominators below were last restated from the live archive. */
-  restatedOn: "2026-06-09",
+  restatedOn: "2026-07-11",
   /** Total events saved in the archive (incl. flagged seeds + staged/pending). */
   savedEvents: 180,
   /** Thesis events in the accepted track-record denominator (synthetic excluded). */
   trackRecordTotal: 86,
-  /** Accepted track-record outcome split (compute_track_record). */
-  anySupporting: 46,
-  contradicted: 8,
-  unresolved: 32,
+  /** Lens 1 — Any-support OR-rule outcome split (db.compute_track_record). */
+  orRuleName: "Any-support OR-rule",
+  anySupporting: 59,
+  contradicted: 14,
+  unresolved: 13,
+  /** Read-only reproduction path for the OR-rule ledger. */
+  orRuleRepro:
+    'python -c "import db; db.init_db(); print(db.compute_track_record())"',
+  /** Lens 2 — Directional-majority rule (validation_status_v2) over the SAME 86 rows. */
+  directionalMajority: {
+    ruleName: "Directional-majority rule (validation_status_v2)",
+    validated: 29,
+    contradicted: 44,
+    unresolved: 13,
+    tieNote:
+      "ties (supports == contradicts) count as contradicted under the frozen current rule",
+    repro:
+      "python scripts/validation_status_calibration_report.py --db-path events.db",
+  },
+  /** Why the two distributions differ (one sentence, shown next to both ledgers). */
+  lensDivergenceNote:
+    "One supporting name is enough under the OR-rule, while the directional-majority rule weighs supporting against contradicting names and counts ties as contradicted — that is why the two distributions differ.",
   /** Analysis / coverage denominator (synthetic excluded). */
   coverageDenominator: 94,
-  /** Realized accepted rows with a computable event-study readout. */
+  /** Realized accepted rows with a computable event-study readout (re-verified 2026-07-11). */
   eventStudyAvailableRealized: 49,
   /**
    * Accepted coverage rows with a computable SPY-relative event-study readout —

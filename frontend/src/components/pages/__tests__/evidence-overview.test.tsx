@@ -64,14 +64,39 @@ describe("EvidenceOverview — title + purpose + corpus snapshot (T5A)", () => {
     expect(visible).toContain("2026-06-08");  // the snapshot date is shown
   });
 
-  it("shows the current accepted-corpus restatement (post-AP3b, 2026-06-09)", () => {
+  it("shows the current accepted-corpus restatement (post-recovery, 2026-07-11)", () => {
     expect(visible).toContain("180");  // saved events (current)
     expect(visible).toContain("86");   // accepted track-record total (current)
     expect(visible).toContain("94");   // coverage / analysis denominator (current)
     expect(visible.toLowerCase()).toContain("restated");
     expect(visible.toLowerCase()).toContain("flagged");   // synthetic seeds flagged
     expect(visible.toLowerCase()).toContain("excluded");  // ...and excluded
-    expect(visible).toContain("2026-06-09");              // restatement date
+    expect(visible).toContain("2026-07-11");              // restatement date
+    expect(visible).not.toContain("2026-06-09");          // stale restatement date gone
+  });
+
+  it("shows BOTH named outcome ledgers over the 86 accepted rows", () => {
+    // Lens 1 — Any-support OR-rule (db.compute_track_record)
+    expect(visible).toContain("Any-support OR-rule");
+    expect(visible).toContain("59 any-supporting");
+    expect(visible).toContain("14 contradicted");
+    expect(visible).toContain("13 unresolved");
+    // Lens 2 — Directional-majority rule (validation_status_v2)
+    expect(visible).toContain("Directional-majority rule (validation_status_v2)");
+    expect(visible).toContain("29 validated");
+    expect(visible).toContain("44 contradicted");
+    // stale pre-recovery OR split must be gone
+    expect(visible).not.toContain("46 any-supporting");
+  });
+
+  it("qualifies the majority labels as scorer vocabulary, not a success verdict", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("not a success verdict");
+    expect(lc).toContain("ties");
+  });
+
+  it("explains in one sentence why the two ledger distributions differ", () => {
+    expect(visible.toLowerCase()).toContain("one supporting name is enough");
   });
 });
 
@@ -473,10 +498,17 @@ describe("EvidenceOverview — mechanism-family evidence inventory (E2)", () => 
   });
 });
 
-describe("EvidenceOverview — representative case library (F3)", () => {
-  it("renders the representative case library section", () => {
-    expect(visible).toContain("Representative case library");
+describe("EvidenceOverview — F1/F2 representative research set (F3)", () => {
+  it("renders the F1/F2 set under a heading a reviewer cannot confuse with the app Case Library", () => {
+    expect(visible).toContain("F1/F2 representative research set");
     expect(visible.toLowerCase()).toContain("illustrative");
+    expect(visible.toLowerCase()).toContain("not the app case library walkthrough");
+  });
+
+  it("keeps the frozen F1 selection separate from the restated outcomes", () => {
+    const lc = visible.toLowerCase();
+    expect(lc).toContain("frozen f1 selection");
+    expect(lc).toContain("outcomes restated 2026-07-11");
   });
 
   it("renders the summary numbers", () => {
@@ -494,12 +526,19 @@ describe("EvidenceOverview — representative case library (F3)", () => {
   });
 
   it("ties one anchor row per family together (id, role, family, outcome, event-study)", () => {
-    expect(visible).toContain("#210 already-covered anchor supply_shock unresolved yes");
+    // 210, 211, 212 and 239 carry their 2026-07-11 restated outcomes; the
+    // selection (anchor / newly proposed) stays frozen under the F1 rule.
+    expect(visible).toContain("#210 already-covered anchor supply_shock contradiction yes");
     expect(visible).toContain("#61 already-covered anchor geopolitical_conflict_context contradiction yes");
     expect(visible).toContain("#1 already-covered anchor tariff support yes");
-    expect(visible).toContain("#211 already-covered anchor sanction unresolved yes");
+    expect(visible).toContain("#211 already-covered anchor sanction support yes");
     expect(visible).toContain("#66 already-covered anchor ceasefire_deescalation support yes");
     expect(visible).toContain("#46 already-covered anchor monetary_policy_or_rates support yes");
+    expect(visible).toContain("#212 newly proposed tariff support yes");
+    expect(visible).toContain("#239 newly proposed monetary_policy_or_rates support yes");
+    // stale unresolved reads must be gone from the restated rows
+    expect(visible).not.toContain("#210 already-covered anchor supply_shock unresolved");
+    expect(visible).not.toContain("#211 already-covered anchor sanction unresolved");
   });
 
   it("labels new cases as newly proposed and ties their rows", () => {
@@ -536,6 +575,13 @@ describe("EvidenceOverview — representative case library (F3)", () => {
   it("keeps the D1 denominator ledger and E2 inventory rendering", () => {
     expect(visible).toContain("Canonical denominators");
     expect(visible).toContain("Mechanism-family evidence inventory");
+  });
+
+  it("introduces no new evidence card and no new API call (reconciliation guard)", () => {
+    // The reconciliation refreshes existing surfaces only: no Mission I card,
+    // no new endpoint wiring.
+    expect(html).not.toContain("mission-i");
+    expect((api as unknown as Record<string, unknown>).missionIEvidence).toBeUndefined();
   });
 
   it("introduces no banned framing in the new section", () => {
@@ -615,7 +661,7 @@ describe("EvidenceOverview — effective independent evidence (K3B)", () => {
   it("keeps the denominator ledger and existing cards rendering", () => {
     expect(visible).toContain("Canonical denominators");
     expect(visible).toContain("Mechanism-family evidence inventory");
-    expect(visible).toContain("Representative case library");
+    expect(visible).toContain("F1/F2 representative research set");
   });
 });
 
