@@ -3,13 +3,17 @@
 
 Why this tool exists
 --------------------
-Event-study compute-readiness is matched-flag-blocked: the tickers are
-cached predominantly *adjusted* (aa=1) while SPY is cached predominantly
-*raw* (aa=0), so every compute-ready event resolves on the cross-flag
-basis ``(adjusted asset, raw benchmark)`` and carries a dividend-basis
-caveat.  The fix is to populate **true adjusted SPY** (aa=1) over the
-estimation+forward windows of those events, so ``(adjusted, adjusted)``
-becomes viable and the caveat disappears.
+The tickers are cached predominantly *adjusted* (aa=1) while SPY is
+cached predominantly *raw* (aa=0).  Under the canonical basis policy
+(F3, ``event_study_validation``) the default readout resolves matched
+adjusted/adjusted first, matched raw/raw as the only disclosed fallback,
+and NEVER a cross-basis pair — so an adjusted-asset event with raw-only
+(or partial-adjusted) SPY gates to ``insufficient_data``, or falls back
+to matched raw/raw when the asset has raw rows too.  The fix is to
+populate **true adjusted SPY** (aa=1) over the estimation+forward
+windows of those events, so the preferred ``(adjusted, adjusted)`` pair
+becomes viable: blocked events become available and fallback readouts
+upgrade to the preferred basis.
 
 No existing guarded tool does this: ``benchmark_cache_backfill_*``
 targets the ``missing_benchmark_proxy`` forward gap and writes only to a
@@ -19,12 +23,19 @@ writer that does exactly — and only — the scoped job.
 
 Scope guarantee
 ---------------
-Every write is ``(ticker="SPY", auto_adjust=1)`` and nothing else:
+Every write is ``(ticker="SPY", auto_adjust=1)`` inside the declared
+window and nothing else:
 * never another ticker, never ``auto_adjust=0``;
 * never the ``events`` table — only ``price_cache``;
-* a direct ``INSERT OR REPLACE`` (idempotent), NOT
-  ``price_cache._write_rows`` / ``fetch_daily_cached`` (which gap-plan and
-  carry the corrupt-row purge / cross-contamination lock).
+* the full ``(SPY, aa=1, [window])`` slice is replaced ATOMICALLY in one
+  transaction — stale partial rows are deleted with the slice so an
+  incomplete fetch can never splice stale and fresh closes into a
+  complete-looking series;
+* fetched rows are validated before write (ISO date inside the window,
+  finite positive close) — malformed provider data is skipped, never
+  written over real rows;
+* NOT ``price_cache._write_rows`` / ``fetch_daily_cached`` (which
+  gap-plan and carry the corrupt-row purge / cross-contamination lock).
 
 Safety contract (mirrors ``auto_adjust_mismatch_repair.py``)
 ------------------------------------------------------------
@@ -43,7 +54,7 @@ Safety contract (mirrors ``auto_adjust_mismatch_repair.py``)
 The required window
 -------------------
 By default the planner DERIVES the union window from the current
-cross-flag compute-ready events (so it stays correct as the cache
+preferred-basis-blocked events (so it stays correct as the cache
 changes): ``[min(event_date) - 60bd, max(event_date) + 20bd]``.  Pass
 ``--start`` / ``--end`` to override with an explicit window.
 """
@@ -51,6 +62,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import shutil
 import sqlite3
 import sys
@@ -141,10 +153,78 @@ def _resolve_db_path(db_path: Optional[str]) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 
-def _cross_flag_compute_ready(db_path: Optional[str]) -> list[tuple[int, str]]:
-    """Return ``[(event_id, event_date_iso)]`` for compute-ready events
-    that currently resolve on a CROSS-FLAG basis — the events this
-    backfill would convert to matched.
+def _last_index_le(sorted_dates: list[str], target_iso: str) -> Optional[int]:
+    """Largest index ``i`` with ``sorted_dates[i] <= target_iso``, or None.
+    (Mirrors ``event_study_validation._last_index_le``.)"""
+    idx: Optional[int] = None
+    for i, d in enumerate(sorted_dates):
+        if d <= target_iso:
+            idx = i
+        else:
+            break
+    return idx
+
+
+def _is_contiguous(window_dates: list[str]) -> bool:
+    """True iff consecutive dates are within 5 calendar days.
+    (Mirrors ``event_study_validation._is_contiguous`` / its gap guard.)"""
+    for a, b in zip(window_dates, window_dates[1:]):
+        try:
+            gap = (_date.fromisoformat(b) - _date.fromisoformat(a)).days
+        except (ValueError, TypeError):
+            return False
+        if gap > 5:
+            return False
+    return True
+
+
+def _asset_adjusted_window_viable(dates_sorted: list[str], event_iso: str) -> bool:
+    """True when the asset's aa=1 series ALONE satisfies the estimation
+    depth, forward horizon, and contiguity that the preferred
+    (adjusted, adjusted) pair would need — i.e. a complete adjusted SPY
+    plausibly makes the preferred basis computable for this event."""
+    idx = _last_index_le(dates_sorted, event_iso)
+    if idx is None or idx < ESTIMATION_WINDOW:
+        return False
+    if (len(dates_sorted) - 1) < idx + FORWARD_HORIZON:
+        return False
+    window = dates_sorted[idx - ESTIMATION_WINDOW: idx + FORWARD_HORIZON + 1]
+    return _is_contiguous(window)
+
+
+def _ticker_aa1_dates(db_path: str, ticker: str) -> list[str]:
+    """Sorted aa=1 cache dates with non-NULL closes for ``ticker``."""
+    try:
+        conn = sqlite3.connect(db_path)
+    except sqlite3.Error:
+        return []
+    try:
+        rows = conn.execute(
+            "SELECT date FROM price_cache "
+            "WHERE ticker = ? AND auto_adjust = 1 AND close IS NOT NULL "
+            "ORDER BY date",
+            (ticker,),
+        ).fetchall()
+    except sqlite3.Error:
+        rows = []
+    finally:
+        conn.close()
+    return [d[:10] for (d,) in rows if isinstance(d, str)]
+
+
+def _preferred_basis_blocked_targets(db_path: Optional[str]) -> list[tuple[int, str]]:
+    """Return ``[(event_id, event_date_iso)]`` for the events this backfill
+    could move to the preferred matched-adjusted basis.
+
+    Under the canonical policy (F3) the default readout NEVER resolves a
+    cross-basis pair, so the pre-F3 notion of "available cross-flag events"
+    is empty by construction.  A target is instead an event where BOTH:
+
+      * the default readout is not already preferred-matched-adjusted —
+        either ``status="insufficient_data"`` (blocked) or an explicit
+        ``basis_fallback`` (matched raw/raw); AND
+      * the asset-side aa=1 series alone is window-viable, so completing
+        adjusted SPY plausibly makes ``(adjusted, adjusted)`` computable.
 
     Reuses ``event_study_validation.build_event_study_validation`` (the
     same gate the route and the readiness report use); read-only.
@@ -169,15 +249,21 @@ def _cross_flag_compute_ready(db_path: Optional[str]) -> list[tuple[int, str]]:
             conn.close()
         for eid, event_date, market_tickers in rows:
             sym = _primary_symbol(market_tickers)
+            if not sym:
+                continue
             event = {
                 "id": eid, "event_date": event_date,
-                "market_tickers": [{"symbol": sym}] if sym else [],
+                "market_tickers": [{"symbol": sym}],
             }
             res = build_event_study_validation(event)
-            if res.get("status") != "event_study_available":
+            if (res.get("status") == "event_study_available"
+                    and "basis_fallback" not in res):
+                continue  # already on the preferred matched-adjusted basis
+            event_d = _parse_iso(event_date)
+            if event_d is None:
                 continue
-            basis = res.get("auto_adjust_basis") or {}
-            if basis.get("asset") != basis.get("benchmark"):  # cross-flag
+            asset_dates = _ticker_aa1_dates(resolved, sym)
+            if _asset_adjusted_window_viable(asset_dates, event_d.isoformat()):
                 if isinstance(eid, int) and isinstance(event_date, str):
                     out.append((eid, event_date))
     finally:
@@ -256,7 +342,7 @@ def plan_spy_adjusted_backfill(
 ) -> dict[str, Any]:
     """Compute the SPY-adjusted backfill plan.  Read-only: no fetch, no write.
 
-    Derives the union window from the current cross-flag compute-ready
+    Derives the union window from the current preferred-basis-blocked
     events unless an explicit ``start``/``end`` is supplied.
     """
     targets: list[tuple[int, str]] = []
@@ -264,7 +350,7 @@ def plan_spy_adjusted_backfill(
         win_start = _parse_iso(start)
         win_end = _parse_iso(end)
     else:
-        targets = _cross_flag_compute_ready(db_path)
+        targets = _preferred_basis_blocked_targets(db_path)
         if not targets:
             return _empty_plan()
         dates = sorted(d for d in (_parse_iso(ed) for _, ed in targets) if d)
@@ -329,6 +415,46 @@ def _default_audit_log_path() -> str:
     return str(Path("audit_logs") / f"spy_adjusted_benchmark_backfill_{ts}.jsonl")
 
 
+def _validated_rows(
+    rows: list[dict[str, Any]], win_start_iso: str, win_end_iso: str,
+) -> list[dict[str, Any]]:
+    """Keep only writable provider rows: a parseable ISO date INSIDE the
+    declared window and a finite, strictly positive close.  Malformed rows
+    (missing/NaN/inf/non-positive close, bad or out-of-window date) are
+    skipped — never written over real cache rows.  Duplicate dates keep
+    the last occurrence (the PK upsert is last-wins, deterministically).
+    """
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        d = r.get("date")
+        if not isinstance(d, str) or len(d) < 10:
+            continue
+        d = d[:10]
+        try:
+            _date.fromisoformat(d)
+        except (ValueError, TypeError):
+            continue
+        if d < win_start_iso or d > win_end_iso:
+            continue
+        close = r.get("close")
+        if isinstance(close, bool) or not isinstance(close, (int, float)):
+            continue
+        close_f = float(close)
+        if not math.isfinite(close_f) or close_f <= 0.0:
+            continue
+        volume = r.get("volume")
+        if (isinstance(volume, bool)
+                or not isinstance(volume, (int, float))
+                or not math.isfinite(float(volume))):
+            volume_f = 0.0
+        else:
+            volume_f = float(volume)
+        out.append({"date": d, "close": close_f, "volume": volume_f})
+    return out
+
+
 def apply_spy_adjusted_backfill(
     *,
     db_path: Optional[str] = None,
@@ -354,18 +480,22 @@ def apply_spy_adjusted_backfill(
     plan = plan_spy_adjusted_backfill(db_path=db_path, start=start, end=end)
     envelope: dict[str, Any] = {
         **plan,
-        "write_attempted": False,
-        "fetched_rows":    0,
-        "applied_count":   0,
-        "backup_path":     None,
-        "audit_log_path":  None,
-        "refuse_reason":   None,
+        "write_attempted":      False,
+        "fetched_rows":         0,
+        "invalid_rows_skipped": 0,
+        "slice_rows_deleted":   0,
+        "applied_count":        0,
+        "backup_path":          None,
+        "audit_log_path":       None,
+        "refuse_reason":        None,
     }
 
     if not confirm:
         return envelope
     if plan["window_start"] is None or plan["window_end"] is None:
-        envelope["refuse_reason"] = "no target window (no cross-flag compute-ready events)"
+        envelope["refuse_reason"] = (
+            "no target window (no preferred-basis-blocked events)"
+        )
         return envelope
 
     resolved = _resolve_db_path(db_path)
@@ -393,32 +523,43 @@ def apply_spy_adjusted_backfill(
 
     rows = _fetch_spy_adjusted(start=plan["window_start"], end=plan["window_end"])
     envelope["fetched_rows"] = len(rows)
-    if not rows:
+    valid = _validated_rows(rows, plan["window_start"], plan["window_end"])
+    envelope["invalid_rows_skipped"] = len(rows) - len(valid)
+    if not valid:
+        # Refuse BEFORE the transaction: an empty/unusable frame must not
+        # delete the existing slice (no partial destructive write).
         envelope["write_attempted"] = True
-        envelope["refuse_reason"] = "provider returned no SPY rows"
+        envelope["refuse_reason"] = "provider returned no usable SPY rows"
         return envelope
 
     fetched_at = _dt.now(tz=_tz.utc).isoformat()
     applied: list[dict[str, Any]] = []
     conn = sqlite3.connect(resolved, isolation_level=None)
     try:
+        # ONE transaction replaces the full declared (SPY, aa=1, window)
+        # slice: stale partial rows are deleted with the slice so an
+        # incomplete fetch leaves a VISIBLE hole instead of splicing stale
+        # and fresh closes into a complete-looking series.
         conn.execute("BEGIN IMMEDIATE")
         try:
-            for r in rows:
-                d = r.get("date")
-                if not isinstance(d, str) or not d:
-                    continue
-                close = r.get("close")
-                volume = r.get("volume")
+            cur = conn.execute(
+                "DELETE FROM price_cache "
+                "WHERE ticker = ? AND auto_adjust = ? "
+                "AND date >= ? AND date <= ?",
+                (BENCHMARK_TICKER, BENCHMARK_AUTO_ADJUST,
+                 plan["window_start"], plan["window_end"]),
+            )
+            envelope["slice_rows_deleted"] = max(0, cur.rowcount)
+            for r in valid:
                 # Hard-scoped: ticker and flag are constants, never inputs.
                 conn.execute(
                     "INSERT OR REPLACE INTO price_cache "
                     "(ticker, date, close, volume, auto_adjust, fetched_at) "
                     "VALUES (?, ?, ?, ?, ?, ?)",
-                    (BENCHMARK_TICKER, d[:10], close, volume,
+                    (BENCHMARK_TICKER, r["date"], r["close"], r["volume"],
                      BENCHMARK_AUTO_ADJUST, fetched_at),
                 )
-                applied.append({"date": d[:10], "close": close, "volume": volume})
+                applied.append(r)
             conn.execute("COMMIT")
         except BaseException:
             conn.execute("ROLLBACK")
@@ -461,7 +602,7 @@ def _render_text(report: dict[str, Any]) -> str:
         + ("write" if report.get("write_attempted") else "dry-run"),
         "",
         f"benchmark:            {report.get('benchmark_symbol')} (auto_adjust={report.get('auto_adjust')})",
-        f"target cross-flag events: {report.get('target_event_count')} {report.get('target_event_ids')}",
+        f"target blocked events: {report.get('target_event_count')} {report.get('target_event_ids')}",
         f"window:               {report.get('window_start')} -> {report.get('window_end')}",
         f"window weekdays:      {report.get('window_weekdays')}",
         f"SPY aa=1 cached:      {report.get('spy_aa1_cached_in_window')}",

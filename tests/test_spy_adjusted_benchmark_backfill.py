@@ -3,12 +3,16 @@
 Covers the guarded contract and the research goal:
 
 * dry-run reaches no provider and mutates nothing;
-* the plan derives the union window from cross-flag compute-ready events;
+* the plan derives the union window from preferred-basis-blocked events
+  (F3 policy: a cross-basis cache gates to insufficient_data, so the
+  targets are the blocked/fallback events whose asset side is
+  adjusted-viable);
 * the writer refuses without --write / --confirm / --backup-path;
-* the write is row-scoped — only ``(SPY, aa=1)`` rows, never another
-  ticker, never aa=0, never the events table — and idempotent;
-* applying the backfill **converts a cross-flag event to matched basis**
-  (the whole point of the tool).
+* the write is row-scoped — only ``(SPY, aa=1)`` rows inside the declared
+  window, never another ticker, never aa=0, never the events table — and
+  idempotent;
+* applying the backfill **converts a blocked cross-basis event to the
+  matched preferred basis** (the whole point of the tool).
 
 All writes run against throwaway temp DBs; no live archive is touched and
 the provider fetch is always patched.
@@ -262,32 +266,39 @@ class ConvertsToMatchedTest(unittest.TestCase):
             p = os.path.join(d, "events.db"); _make_db(p)
             event = {"id": 1, "event_date": _EVENT_D.isoformat(),
                      "market_tickers": [{"symbol": "XLE"}]}
-            # Before: cross-flag (adjusted XLE / raw SPY).
+            # Before: BLOCKED.  The archive is cross-basis (adjusted XLE /
+            # raw-only SPY) and the canonical basis policy (F3) never
+            # resolves a cross-basis pair, so the default readout gates to
+            # insufficient_data rather than available-with-caveat.
             with _Rebind(p):
                 before = esv.build_event_study_validation(event)
-            self.assertEqual(before["status"], "event_study_available")
-            self.assertNotEqual(before["auto_adjust_basis"]["asset"],
-                                before["auto_adjust_basis"]["benchmark"])
-            self.assertIn("basis_caveat", before)
+            self.assertEqual(before["status"], "insufficient_data")
+            self.assertIn("no_contiguous_aligned_window",
+                          before["blocking_reasons"])
+            self.assertNotIn("auto_adjust_basis", before)
             # Apply the SPY-adjusted backfill.
             with mock.patch.object(bf, "_fetch_spy_adjusted", side_effect=_fake_fetch):
                 env = bf.apply_spy_adjusted_backfill(
                     db_path=p, confirm=True, backup_path=os.path.join(d, "b.db"),
                     audit_log_path=os.path.join(d, "a.jsonl"))
             self.assertTrue(env["applied_count"] > 0)
-            # After: matched (adjusted / adjusted), caveat gone.
+            # After: matched preferred basis (adjusted / adjusted) — no
+            # caveat, no fallback disclosure.
             with _Rebind(p):
                 after = esv.build_event_study_validation(event)
             self.assertEqual(after["status"], "event_study_available")
             self.assertEqual(after["auto_adjust_basis"], {"asset": True, "benchmark": True})
             self.assertNotIn("basis_caveat", after)
+            self.assertNotIn("basis_fallback", after)
 
     def test_partial_spy_aa1_is_replaced_and_converts_to_matched(self):
         # The LIVE path: SPY aa=1 is partially populated with an interior
-        # gap (sentinel closes), so (adj,adj) is currently non-viable and
-        # the event is cross-flag.  The fetch returns DIFFERENT values for
-        # the whole window; INSERT OR REPLACE must overwrite the sentinels
-        # AND fill the gap, flipping the event to matched.
+        # gap (sentinel closes), so the preferred (adj,adj) pair is
+        # non-viable and the default readout (F3 policy: no cross-basis
+        # pair) gates to insufficient_data.  The fetch returns DIFFERENT
+        # values for the whole window; the atomic slice replacement must
+        # overwrite the sentinels AND fill the gap, flipping the event to
+        # the matched preferred basis.
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "events.db"); _make_db(p)
             dates = _bdays(_EVENT_D, 65, 22)
@@ -309,22 +320,28 @@ class ConvertsToMatchedTest(unittest.TestCase):
                      "market_tickers": [{"symbol": "XLE"}]}
             sentinel_date = dates[10].isoformat()
             self.assertEqual(_spy_aa1_close(p, sentinel_date), 1.0)
+            # Before: the partial aa=1 series blocks the preferred pair and
+            # the raw XLE side is absent, so the default readout gates to
+            # insufficient_data (never a cross-basis resolution).
             with _Rebind(p):
                 before = esv.build_event_study_validation(event)
-            self.assertNotEqual(before["auto_adjust_basis"]["asset"],
-                                before["auto_adjust_basis"]["benchmark"])  # cross-flag
+            self.assertEqual(before["status"], "insufficient_data")
+            self.assertNotIn("auto_adjust_basis", before)
 
             with mock.patch.object(bf, "_fetch_spy_adjusted", side_effect=_fake_fetch):
                 env = bf.apply_spy_adjusted_backfill(
                     db_path=p, confirm=True, backup_path=os.path.join(d, "b.db"),
                     audit_log_path=os.path.join(d, "a.jsonl"))
             self.assertGreater(env["applied_count"], 0)
-            # REPLACE fired: the sentinel date now holds a fetched value.
+            # Slice replacement fired: the sentinel date now holds a
+            # fetched value.
             self.assertGreater(_spy_aa1_close(p, sentinel_date), 1.0)
             with _Rebind(p):
                 after = esv.build_event_study_validation(event)
+            self.assertEqual(after["status"], "event_study_available")
             self.assertEqual(after["auto_adjust_basis"], {"asset": True, "benchmark": True})
             self.assertNotIn("basis_caveat", after)
+            self.assertNotIn("basis_fallback", after)
 
 
 if __name__ == "__main__":
