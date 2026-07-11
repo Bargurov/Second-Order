@@ -32,6 +32,13 @@ from typing import Mapping, Optional
 ENABLE_VAR = "SECOND_ORDER_RUN_LOCAL_DATA_TESTS"
 PATH_VAR = "SECOND_ORDER_LOCAL_EVENTS_DB"
 
+# Mission I local recomputation substrate (T2): the gitignored
+# g3_price_cache.db the I1 candidate-universe builder reads.  It is a
+# price-session cache, not an events archive, so it carries its own
+# explicit path variable — the events-DB path is never overloaded with
+# it, and neither variable ever falls back to a conventional location.
+MISSION_I_PATH_VAR = "SECOND_ORDER_LOCAL_MISSION_I_SUBSTRATE"
+
 
 def _env(environ: Optional[Mapping[str, str]]) -> Mapping[str, str]:
     return os.environ if environ is None else environ
@@ -88,11 +95,58 @@ def read_only_uri(path: Path) -> str:
     return f"file:{path}?mode=ro"
 
 
+def local_mission_i_substrate_or_none(
+    environ: Optional[Mapping[str, str]] = None,
+) -> Optional[Path]:
+    """The explicitly declared Mission I substrate path, or ``None``.
+
+    Same contract as :func:`local_events_db_or_none`: requires the
+    shared opt-in flag AND this substrate's own explicit path; validates
+    the file exists; never probes ``g_state_cache/`` or any conventional
+    location as a fallback.
+    """
+    if not local_data_opt_in(environ):
+        return None
+    raw = (_env(environ).get(MISSION_I_PATH_VAR) or "").strip()
+    if not raw:
+        return None
+    path = Path(raw).resolve()
+    if not path.is_file():
+        return None
+    return path
+
+
+def mission_i_skip_reason(
+    environ: Optional[Mapping[str, str]] = None,
+) -> str:
+    """Precise reason for skipping a Mission I substrate test here."""
+    if not local_data_opt_in(environ):
+        return (
+            f"Mission I local-recomputation tests are disabled by default; "
+            f"set {ENABLE_VAR}=1 and {MISSION_I_PATH_VAR}=<path to "
+            f"g3_price_cache.db> to run them"
+        )
+    raw = (_env(environ).get(MISSION_I_PATH_VAR) or "").strip()
+    if not raw:
+        return (
+            f"{ENABLE_VAR}=1 but {MISSION_I_PATH_VAR} is unset; refusing "
+            f"to fall back to a conventional substrate location — declare "
+            f"the path explicitly"
+        )
+    path = Path(raw).resolve()
+    if not path.is_file():
+        return f"{MISSION_I_PATH_VAR} does not exist or is not a file: {path}"
+    return "Mission I substrate gate satisfied"
+
+
 __all__ = (
     "ENABLE_VAR",
     "PATH_VAR",
+    "MISSION_I_PATH_VAR",
     "local_data_opt_in",
     "local_events_db_or_none",
     "local_data_skip_reason",
+    "local_mission_i_substrate_or_none",
+    "mission_i_skip_reason",
     "read_only_uri",
 )
