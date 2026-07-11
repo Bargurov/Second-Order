@@ -220,22 +220,42 @@ class TestBackdropPartialAvailability(_Base):
         self.assertIn("regime", data["stress"])
         self.assertEqual(len(data["snapshots"]), 8)
 
-    def test_warm_store_empty_endpoint_still_returns(self):
+    def test_cold_store_endpoint_returns_not_refreshed_placeholders(self):
         """Most realistic dev state: snapshot store empty, other sections work.
 
-        Contract today: ``/market-context`` auto-warms an empty
-        SnapshotStore with one synchronous refresh so the user does
-        not need to call ``/snapshots`` first.  ``market_check._fetch``
-        is patched to a healthy frame, so the auto-refresh succeeds and
-        every snapshot returns warmed.  Stress + highlights continue
-        to compute independently.
+        Cache-only GET contract (post no-provider-fetch boundary):
+        ``/market-context`` reads the SnapshotStore only.  A cold store
+        is *not* auto-warmed by the GET — every liquid market surfaces
+        as an explicit shaped ``not_refreshed`` placeholder
+        (``value=None``) so the backdrop can render a truthful cell
+        instead of dropping the strip.  ``market_check._fetch`` is
+        patched to a healthy frame precisely to prove the GET does *not*
+        reach for it: even with a live seam available, no refresh runs.
+        Stress + highlights still compute independently from cached data.
+
+        Warming the store is the (non-GET) snapshot warmer's job — see
+        ``TestBackdropFullContext`` and ``TestBackdropCacheOnlyContract``.
         """
+        self.assertEqual(len(get_store()), 0, "store must start cold")
         with patch("market_check._fetch", return_value=_good_df()):
             data = self.client.get("/market-context").json()
+        # GET is a pure read: the cold store stays cold.
+        self.assertEqual(len(get_store()), 0, "GET must not warm the store")
+        # Still eight shaped rows, every one an explicit not_refreshed placeholder.
         self.assertEqual(len(data["snapshots"]), 8)
         for snap in data["snapshots"]:
-            self.assertIsNone(snap["error"])
-            self.assertIsNotNone(snap["value"])
+            self.assertEqual(snap["error"], "not_refreshed")
+            self.assertIsNone(snap["value"])
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["total"], 8)
+        self.assertEqual(meta["unavailable"], meta["total"])
+        self.assertEqual(meta["fresh"], 0)
+        # Operator-readable note: not-refreshed-yet, never a provider failure.
+        note = data["snapshot_freshness_note"]
+        self.assertIsNotNone(note)
+        self.assertIn("have not been refreshed yet", note)
+        self.assertNotIn("failed to refresh", note)
+        # Other sections still render from their own (cached) fetch paths.
         self.assertIn("regime", data["stress"])
 
     def test_all_sections_fail_endpoint_still_200(self):
@@ -365,6 +385,272 @@ class TestBackdropMixedState(_Base):
         self.assertEqual(meta["unavailable"], 1)
         self.assertEqual(meta["stale"], 1)
         self.assertEqual(meta["fresh"], 6)
+
+
+# ---------------------------------------------------------------------------
+# Cache-only GET contract — the backdrop reads the SnapshotStore, it never
+# warms it.  Provider-backed refresh + store mutation live behind the
+# explicit (non-GET) warmer.  These tests lock that division so a future
+# change cannot silently reintroduce synchronous warming from the GET path.
+# ---------------------------------------------------------------------------
+
+class TestBackdropCacheOnlyContract(_Base):
+
+    # Top-level sections the analysis backdrop depends on being present.
+    TOP_LEVEL_SECTIONS = {
+        "snapshots", "snapshots_meta", "snapshot_freshness_note",
+        "stress", "highlights", "source",
+    }
+
+    def _snapshot_timestamps(self):
+        """Monotonic write-timestamps per stored market — mutation fingerprint.
+
+        A GET that re-``update()``s any entry would reset its timestamp; an
+        unchanged map after a GET proves the store was read, not rewritten.
+        """
+        store = get_store()
+        with store._lock:
+            return {k: v[1] for k, v in store._entries.items()}
+
+    def _assert_backdrop_shape(self, data):
+        """Every backdrop market keeps the full consumer key set, in any state."""
+        for key in self.TOP_LEVEL_SECTIONS:
+            self.assertIn(key, data, f"missing top-level section {key}")
+        by_market = {s["market"]: s for s in data["snapshots"]}
+        for market in BACKDROP_MARKETS:
+            self.assertIn(market, by_market, f"backdrop market {market} dropped")
+            for key in SNAPSHOT_KEYS_USED:
+                self.assertIn(key, by_market[market], f"{market} missing key {key}")
+
+    # -- Cold store: explicit placeholders, no provider, no writer ----------
+
+    def test_cold_store_get_reaches_no_provider_or_writer(self):
+        """A cold-store GET is a pure read: no provider fetch, no cache write,
+        no store mutation — yet still 200 with eight shaped placeholders."""
+        import price_cache
+
+        class _RecordingProvider:
+            def __init__(self):
+                self.fetch_daily_calls = []
+                self.fetch_info_calls = []
+
+            def fetch_daily(self, ticker, *, period=None, start=None, end=None,
+                            auto_adjust=True):
+                self.fetch_daily_calls.append(ticker)
+                return None
+
+            def fetch_info(self, ticker):
+                self.fetch_info_calls.append(ticker)
+                return {}
+
+        rec = _RecordingProvider()
+        set_provider(rec)  # _Base.tearDown restores the saved provider
+
+        # Recording (not raising) writer: the route wraps each section in
+        # try/except, so a raising writer would be swallowed and prove
+        # nothing.  Record calls and assert the list stays empty instead.
+        writes = []
+
+        def _recording_write_rows(*args, **kwargs):
+            writes.append(args)
+            return 0
+
+        self.assertEqual(len(get_store()), 0)
+        with patch.object(price_cache, "_write_rows", _recording_write_rows):
+            resp = self.client.get("/market-context")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(rec.fetch_daily_calls, [], "provider fetch_daily reached from GET")
+        self.assertEqual(rec.fetch_info_calls, [], "provider fetch_info reached from GET")
+        self.assertEqual(writes, [], "price-cache write attempted during GET")
+        self.assertEqual(len(get_store()), 0, "GET mutated the snapshot store")
+
+        data = resp.json()
+        self.assertEqual(len(data["snapshots"]), 8)
+        for snap in data["snapshots"]:
+            self.assertEqual(snap["error"], "not_refreshed")
+            self.assertIsNone(snap["value"])
+
+    # -- Explicit warmer owns mutation; GET performs no second refresh ------
+
+    def test_explicit_warmer_populates_store_get_makes_no_second_refresh(self):
+        """Division of responsibility: the (non-GET) warmer mutates, the GET
+        reads.  After ``refresh_all()`` the store is populated; a subsequent
+        GET returns those warm values without re-writing the store or cache."""
+        import price_cache
+
+        self.assertEqual(len(get_store()), 0)
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        self.assertEqual(len(get_store()), 8, "explicit warmer must populate the store")
+
+        ts_before = self._snapshot_timestamps()
+        writes = []
+
+        def _recording_write_rows(*args, **kwargs):
+            writes.append(args)
+            return 0
+
+        with patch.object(price_cache, "_write_rows", _recording_write_rows):
+            data = self.client.get("/market-context").json()
+
+        self.assertEqual(self._snapshot_timestamps(), ts_before,
+                         "GET re-updated a warm snapshot (hidden refresh)")
+        self.assertEqual(writes, [], "warm-store GET wrote to the price cache")
+
+        by_market = {s["market"]: s for s in data["snapshots"]}
+        for market in BACKDROP_MARKETS:
+            self.assertIsNotNone(by_market[market]["value"])
+            self.assertIsNone(by_market[market]["error"])
+            self.assertFalse(by_market[market]["stale"])
+
+    # -- Stale values stay visible; the GET never auto-refreshes them -------
+
+    def test_stale_store_served_not_auto_refreshed(self):
+        """Backdated snapshots read back as stale-but-present; the GET serves
+        them as-is (counted stale, not unavailable) and never refreshes."""
+        import price_cache
+
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        store = get_store()
+        with store._lock:
+            for k, (snap, _ts) in list(store._entries.items()):
+                store._entries[k] = (
+                    snap, time.monotonic() - SNAPSHOT_MAX_AGE_SECONDS - 5,
+                )
+        ts_before = self._snapshot_timestamps()
+        writes = []
+
+        def _recording_write_rows(*args, **kwargs):
+            writes.append(args)
+            return 0
+
+        with patch.object(price_cache, "_write_rows", _recording_write_rows):
+            data = self.client.get("/market-context").json()
+
+        self.assertEqual(self._snapshot_timestamps(), ts_before,
+                         "GET refreshed a stale snapshot instead of serving it")
+        self.assertEqual(writes, [])
+
+        by_market = {s["market"]: s for s in data["snapshots"]}
+        for market in BACKDROP_MARKETS:
+            self.assertTrue(by_market[market]["stale"])
+            self.assertIsNotNone(by_market[market]["value"])
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["stale"], 8)
+        self.assertEqual(meta["unavailable"], 0)
+        note = data["snapshot_freshness_note"]
+        self.assertIsNotNone(note)
+        self.assertIn("may lag the live tape", note)
+
+    # -- Partial store: real rows kept, missing ones padded -----------------
+
+    def test_partial_store_padded_without_losing_real_rows(self):
+        """A partially-populated store keeps its real values; missing markets
+        surface as not_refreshed placeholders.  Total stays eight, meta
+        reconciles, and the GET mutates nothing."""
+        import price_cache
+
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        store = get_store()
+        missing = ("CL", "GC", "DXY")
+        with store._lock:
+            for k in missing:
+                store._entries.pop(k, None)
+        ts_before = self._snapshot_timestamps()
+        writes = []
+
+        def _recording_write_rows(*args, **kwargs):
+            writes.append(args)
+            return 0
+
+        with patch.object(price_cache, "_write_rows", _recording_write_rows):
+            data = self.client.get("/market-context").json()
+
+        self.assertEqual(self._snapshot_timestamps(), ts_before, "GET mutated a partial store")
+        self.assertEqual(writes, [])
+
+        self.assertEqual(len(data["snapshots"]), 8)
+        by_market = {s["market"]: s for s in data["snapshots"]}
+        # Backdrop markets still present keep their real values.
+        for market in ("ES", "10Y"):
+            self.assertIsNotNone(by_market[market]["value"])
+            self.assertIsNone(by_market[market]["error"])
+        # Dropped markets come back as explicit placeholders, not omitted.
+        for market in missing:
+            self.assertIsNone(by_market[market]["value"])
+            self.assertEqual(by_market[market]["error"], "not_refreshed")
+        meta = data["snapshots_meta"]
+        self.assertEqual(meta["total"], 8)
+        self.assertEqual(meta["unavailable"], len(missing))
+        self.assertEqual(meta["fresh"], 8 - len(missing))
+
+    # -- Freshness note distinguishes cold vs stale vs provider failure -----
+
+    def test_freshness_note_distinguishes_cold_stale_and_failed(self):
+        """The note tells cold (never refreshed) from stale (cached, may lag)
+        from a real provider failure — and never leaks the internal
+        ``not_refreshed`` token into product-facing prose."""
+        # Cold: not-refreshed-yet wording.
+        cold_note = self.client.get("/market-context").json()["snapshot_freshness_note"]
+        self.assertIsNotNone(cold_note)
+        self.assertIn("have not been refreshed yet", cold_note)
+        self.assertNotIn("failed to refresh", cold_note)
+        self.assertNotIn("not_refreshed", cold_note)
+
+        # Stale: cached-may-lag wording.
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        store = get_store()
+        with store._lock:
+            for k, (snap, _ts) in list(store._entries.items()):
+                store._entries[k] = (
+                    snap, time.monotonic() - SNAPSHOT_MAX_AGE_SECONDS - 5,
+                )
+        stale_note = self.client.get("/market-context").json()["snapshot_freshness_note"]
+        self.assertIsNotNone(stale_note)
+        self.assertIn("may lag the live tape", stale_note)
+
+        # Provider failure: warmed with error rows (error != not_refreshed).
+        get_store().clear()
+        with patch("market_check._fetch", return_value=None):
+            refresh_all()
+        failed_note = self.client.get("/market-context").json()["snapshot_freshness_note"]
+        self.assertIsNotNone(failed_note)
+        self.assertIn("failed to refresh from the data provider", failed_note)
+
+    # -- Response shape stays stable across every store state ---------------
+
+    def test_backdrop_row_shape_stable_across_states(self):
+        """Cold, warm, stale and partial stores all yield the same stable
+        shape: the consumer never NPEs on a missing key.  Values are only
+        asserted where the scenario actually has them."""
+        # Cold — shape present, values absent (that's the contract).
+        self._assert_backdrop_shape(self.client.get("/market-context").json())
+
+        # Warm.
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        self._assert_backdrop_shape(self.client.get("/market-context").json())
+
+        # Stale.
+        store = get_store()
+        with store._lock:
+            for k, (snap, _ts) in list(store._entries.items()):
+                store._entries[k] = (
+                    snap, time.monotonic() - SNAPSHOT_MAX_AGE_SECONDS - 5,
+                )
+        self._assert_backdrop_shape(self.client.get("/market-context").json())
+
+        # Partial.
+        get_store().clear()
+        with patch("market_check._fetch", return_value=_good_df()):
+            refresh_all()
+        with store._lock:
+            store._entries.pop("CL", None)
+        self._assert_backdrop_shape(self.client.get("/market-context").json())
 
 
 if __name__ == "__main__":
