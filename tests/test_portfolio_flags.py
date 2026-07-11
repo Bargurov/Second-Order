@@ -18,17 +18,34 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import api  # noqa: F401  — resolve circular imports between routes
+from market_check_freshness import compute_staleness
 from portfolio_flags import portfolio_flags
 from relevance_ranking import (
     _LOW_INFO_PENALTY,
     _PROOF_DISCIPLINE_BONUS,
     _STALENESS_PENALTY,
+    _quality_adjust,
     compute_relevance_score,
     rank_with_diversity,
 )
 
 
 _NOW = datetime(2026, 4, 20, 12, 0, 0)
+
+
+def _checked_at(now: datetime, *, days_ago: int = 0, minutes_ago: int = 0) -> str:
+    """ISO market-check timestamp derived from the INJECTED scoring clock.
+
+    Every age-sensitive fixture in this module must use this helper.
+    Earlier revisions built ``last_market_check_at`` from the machine
+    wall clock while scoring with ``now=_NOW``; once calendar time
+    advanced past ``_NOW`` the "80-day-old" check landed in the scoring
+    clock's FUTURE, the freshness helper clamped elapsed time to zero,
+    and the intended stale event was silently classified fresh.
+    """
+    return (now - timedelta(days=days_ago, minutes=minutes_ago)).isoformat(
+        timespec="seconds",
+    )
 
 
 def _ticker(symbol: str, *, return_5d: float = 2.0,
@@ -180,14 +197,19 @@ class TestRankingAdjustments(unittest.TestCase):
             event_id=1,
             confidence="low",
             mechanism_summary="Insufficient evidence.",
-            last_market_check_at=(datetime.now() - timedelta(days=80)).isoformat(timespec="seconds"),
+            last_market_check_at=_checked_at(_NOW, days_ago=80),
         )
         fresh_proof = _base_event(
             event_id=2,
-            last_market_check_at=(datetime.now() - timedelta(minutes=30)).isoformat(timespec="seconds"),
+            last_market_check_at=_checked_at(_NOW, minutes_ago=30),
             minimum_proof_set=[{"observation": "X", "channel": "commodities"}],
             key_falsifiers=[{"observation": "Y", "channel": "commodities"}],
         )
+        # The fixture really is stale-vs-fresh under the scoring clock.
+        self.assertEqual(compute_staleness(stale_low, now=_NOW)["status"],
+                         "stale")
+        self.assertEqual(compute_staleness(fresh_proof, now=_NOW)["status"],
+                         "fresh")
         ranked = rank_with_diversity(
             [stale_low, fresh_proof], limit=2, now=_NOW,
         )
@@ -197,21 +219,41 @@ class TestRankingAdjustments(unittest.TestCase):
     def test_proof_bonus_compounds_with_staleness_penalty(self):
         stale_proof = _base_event(
             event_id=1,
-            last_market_check_at=(datetime.now() - timedelta(days=80)).isoformat(timespec="seconds"),
+            last_market_check_at=_checked_at(_NOW, days_ago=80),
             minimum_proof_set=[{"observation": "X", "channel": "commodities"}],
             key_falsifiers=[{"observation": "Y", "channel": "commodities"}],
         )
         fresh_plain = _base_event(
             event_id=2,
-            last_market_check_at=(datetime.now() - timedelta(minutes=30)).isoformat(timespec="seconds"),
+            last_market_check_at=_checked_at(_NOW, minutes_ago=30),
         )
-        # Stale × proof_bonus = 0.80 × 1.08 = 0.864
-        # Fresh plain       = 1.00
-        # Fresh plain still wins despite no proof bonus.
+        # Status is asserted directly so the comparison can never again
+        # silently degrade into fresh-vs-fresh.
+        self.assertEqual(compute_staleness(stale_proof, now=_NOW)["status"],
+                         "stale")
+        self.assertEqual(compute_staleness(fresh_plain, now=_NOW)["status"],
+                         "fresh")
+        # Multipliers reconcile with the pinned constants:
+        #   stale × proof_bonus = 0.80 × 1.08 = 0.864;  fresh plain = 1.00.
+        self.assertAlmostEqual(
+            _quality_adjust(stale_proof, now=_NOW)["multiplier"],
+            _STALENESS_PENALTY * _PROOF_DISCIPLINE_BONUS, places=6,
+        )
+        self.assertAlmostEqual(
+            _quality_adjust(fresh_plain, now=_NOW)["multiplier"], 1.0,
+            places=6,
+        )
+        # Fresh plain still wins despite no proof bonus; rank 1 is the
+        # top selection and effective scores are best-to-worst.
         ranked = rank_with_diversity(
             [stale_proof, fresh_plain], limit=2, now=_NOW,
         )
         self.assertEqual(ranked[0]["event"]["id"], 2)
+        self.assertEqual(ranked[1]["event"]["id"], 1)
+        self.assertEqual(ranked[0]["rank"], 1)
+        self.assertEqual(ranked[1]["rank"], 2)
+        self.assertGreater(ranked[0]["effective_score"],
+                           ranked[1]["effective_score"])
 
     def test_low_info_penalty_deepens_stale_gap(self):
         """Stale AND low-info should compound both penalties."""
@@ -219,12 +261,17 @@ class TestRankingAdjustments(unittest.TestCase):
             event_id=1,
             confidence="low",
             mechanism_summary="Insufficient evidence.",
-            last_market_check_at=(datetime.now() - timedelta(days=80)).isoformat(timespec="seconds"),
+            last_market_check_at=_checked_at(_NOW, days_ago=80),
         )
         just_stale = _base_event(
             event_id=2,
-            last_market_check_at=(datetime.now() - timedelta(days=80)).isoformat(timespec="seconds"),
+            last_market_check_at=_checked_at(_NOW, days_ago=80),
         )
+        # Both really are stale under the scoring clock.
+        self.assertEqual(compute_staleness(double_penalty, now=_NOW)["status"],
+                         "stale")
+        self.assertEqual(compute_staleness(just_stale, now=_NOW)["status"],
+                         "stale")
         double_score = compute_relevance_score(
             double_penalty, now=_NOW,
         )["overall_score"]
@@ -241,6 +288,138 @@ class TestRankingAdjustments(unittest.TestCase):
         self.assertAlmostEqual(_PROOF_DISCIPLINE_BONUS, 1.08, places=6)
         self.assertAlmostEqual(_LOW_INFO_PENALTY,       0.75, places=6)
         self.assertAlmostEqual(_STALENESS_PENALTY,      0.80, places=6)
+
+
+# ---------------------------------------------------------------------------
+# Clock determinism — the ranking contract depends on RELATIVE time only.
+# ---------------------------------------------------------------------------
+
+class TestClockDeterminism(unittest.TestCase):
+    """T3E — every age-sensitive timestamp derives from the injected
+    scoring clock, so the same relative scenario is invariant to the
+    calendar date the suite runs on."""
+
+    @staticmethod
+    def _scenario(anchor: datetime):
+        """Controlled stale-proof vs fresh-plain pair anchored entirely
+        at ``anchor``: event date, timestamps, and market checks all
+        shift together with the scoring clock."""
+        event_iso = (anchor - timedelta(days=2)).date().isoformat()
+        ts_iso = (anchor - timedelta(days=2)).isoformat(timespec="seconds")
+        stale_proof = _base_event(
+            event_id=1,
+            event_date=event_iso,
+            timestamp=ts_iso,
+            last_market_check_at=_checked_at(anchor, days_ago=80),
+            minimum_proof_set=[{"observation": "X", "channel": "commodities"}],
+            key_falsifiers=[{"observation": "Y", "channel": "commodities"}],
+        )
+        fresh_plain = _base_event(
+            event_id=2,
+            event_date=event_iso,
+            timestamp=ts_iso,
+            last_market_check_at=_checked_at(anchor, minutes_ago=30),
+        )
+        ranked = rank_with_diversity(
+            [stale_proof, fresh_plain], limit=2, now=anchor,
+        )
+        return {
+            "statuses": (
+                compute_staleness(stale_proof, now=anchor)["status"],
+                compute_staleness(fresh_plain, now=anchor)["status"],
+            ),
+            "multipliers": (
+                round(_quality_adjust(stale_proof, now=anchor)["multiplier"], 6),
+                round(_quality_adjust(fresh_plain, now=anchor)["multiplier"], 6),
+            ),
+            "ranked": [
+                (r["event"]["id"], r["rank"],
+                 r["overall_score"], r["effective_score"])
+                for r in ranked
+            ],
+        }
+
+    def test_clock_shift_invariance_2026_vs_2030(self):
+        a = self._scenario(datetime(2026, 4, 20, 12, 0, 0))
+        b = self._scenario(datetime(2030, 4, 20, 12, 0, 0))
+        self.assertEqual(a["statuses"], ("stale", "fresh"))
+        self.assertEqual(a["statuses"], b["statuses"])
+        self.assertEqual(a["multipliers"], b["multipliers"])
+        self.assertEqual(a["ranked"], b["ranked"])
+
+    def test_staleness_boundary_is_deterministic(self):
+        """Classification around the shared freshness threshold, read
+        from the policy itself — never hardcoded here."""
+        probe = _base_event(
+            event_id=1, last_market_check_at=_checked_at(_NOW, minutes_ago=1),
+        )
+        threshold_h = compute_staleness(probe, now=_NOW)[
+            "refresh_threshold_hours"
+        ]
+        threshold_min = int(threshold_h * 60)
+        cases = (
+            (threshold_min - 5, "fresh"),   # just inside the window
+            (threshold_min,     "stale"),   # boundary is inclusive-stale
+            (threshold_min + 5, "stale"),   # just beyond
+        )
+        for minutes_ago, expected in cases:
+            with self.subTest(minutes_ago=minutes_ago):
+                ev = _base_event(
+                    event_id=1,
+                    last_market_check_at=_checked_at(
+                        _NOW, minutes_ago=minutes_ago,
+                    ),
+                )
+                self.assertEqual(
+                    compute_staleness(ev, now=_NOW)["status"], expected,
+                )
+
+    def test_fresh_proof_outranks_fresh_plain(self):
+        """The proof bonus itself stays active when both are fresh."""
+        fresh_proof = _base_event(
+            event_id=1,
+            last_market_check_at=_checked_at(_NOW, minutes_ago=30),
+            minimum_proof_set=[{"observation": "X", "channel": "commodities"}],
+            key_falsifiers=[{"observation": "Y", "channel": "commodities"}],
+        )
+        fresh_plain = _base_event(
+            event_id=2,
+            last_market_check_at=_checked_at(_NOW, minutes_ago=30),
+        )
+        ranked = rank_with_diversity(
+            [fresh_plain, fresh_proof], limit=2, now=_NOW,
+        )
+        self.assertEqual(ranked[0]["event"]["id"], 1)  # proof-backed first
+        self.assertEqual(ranked[1]["event"]["id"], 2)
+        self.assertEqual(ranked[0]["rank"], 1)
+        self.assertEqual(ranked[1]["rank"], 2)
+
+    def test_multiplier_ordering_across_all_four_variants(self):
+        """fresh proof > fresh plain > stale proof > stale plain — the
+        composed multipliers (1.08 > 1.00 > 0.864 > 0.80) order the
+        overall scores when every other input is equal."""
+        def _score(event_id, *, stale, proof):
+            kwargs = {
+                "last_market_check_at": _checked_at(
+                    _NOW, days_ago=80 if stale else 0,
+                    minutes_ago=0 if stale else 30,
+                ),
+            }
+            if proof:
+                kwargs["minimum_proof_set"] = [
+                    {"observation": "X", "channel": "commodities"}]
+                kwargs["key_falsifiers"] = [
+                    {"observation": "Y", "channel": "commodities"}]
+            ev = _base_event(event_id=event_id, **kwargs)
+            return compute_relevance_score(ev, now=_NOW)["overall_score"]
+
+        fresh_proof = _score(1, stale=False, proof=True)
+        fresh_plain = _score(2, stale=False, proof=False)
+        stale_proof = _score(3, stale=True, proof=True)
+        stale_plain = _score(4, stale=True, proof=False)
+        self.assertGreater(fresh_proof, fresh_plain)
+        self.assertGreater(fresh_plain, stale_proof)
+        self.assertGreater(stale_proof, stale_plain)
 
 
 # ---------------------------------------------------------------------------
