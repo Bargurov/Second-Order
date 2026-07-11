@@ -93,14 +93,24 @@ Output contract::
       "events_with_20d_forward_cache":           int,
       "events_missing_benchmark_proxy":          int,
       "events_with_insufficient_estimation_window": int,
-      "events_fully_ready":                      int,   # ARCHIVE readiness
-      "compute_readiness": {                     # STRICT event-study gate
-        "archive_ready_count":             int,
-        "event_study_compute_ready_count": int,
+      "events_fully_ready":                      int,   # LOOSE archive/cache
+                                                        # coverage diagnostic —
+                                                        # NOT engine computability
+      "compute_readiness": {                     # STRICT default matched-basis gate
+        "archive_ready_count":             int,  # copy of events_fully_ready
+        "event_study_compute_ready_count": int,  # default gate: status==available
         "status_counts": {"event_study_available": int, "insufficient_data": int},
         "top_blocking_reasons":            {str: int},
+        "basis_resolution_counts": {              # F3 vocabulary
+          "preferred_adjusted":   int,            # matched adjusted/adjusted
+          "matched_raw_fallback": int,            # disclosed raw/raw fallback
+          "unavailable":          int,            # no matched basis satisfies gate
+        },
         "auto_adjust_basis_counts":        {"matched": int, "cross_flag": int},
-        "cross_flag_caveat_count":         int,
+                                           # LEGACY: cross_flag structurally 0
+                                           # under the default F3 policy
+        "cross_flag_caveat_count":         int,   # LEGACY: structurally 0
+        "legacy_fields_note":              str,
       },
       "events": [                          # capped at --limit, id asc
         {
@@ -233,8 +243,15 @@ _NON_CLAIMS: dict[str, Any] = {
 
 
 _RECOMMENDED_OK = (
-    "Every event in the archive has the cache coverage needed to run "
-    "the event-study engine over 1d/5d/20d horizons."
+    "Every denominator event is available under the default "
+    "matched-basis event-study gate over 1d/5d/20d horizons."
+)
+_RECOMMENDED_MATCHED_BASIS_BLOCKED = (
+    "Archive cache checks are complete, but one or more events remain "
+    "unavailable under the default matched-basis event-study gate.  "
+    "Review compute_readiness.top_blocking_reasons and "
+    "basis_resolution_counts; populating the missing matched-basis "
+    "series (for example adjusted SPY) may convert them."
 )
 _RECOMMENDED_GAPS = (
     "Some events lack the cache coverage needed for the event-study "
@@ -509,12 +526,29 @@ def summarize_readiness(
         "compute_readiness":                           compute_readiness,
         "window_overlap":                              window_overlap,
         "events":                                      truncated,
-        "recommended_next_action": (
-            _RECOMMENDED_OK
-            if total_events > 0 and n_fully_ready == total_events
-            else _RECOMMENDED_GAPS
+        # Engine-availability wording follows the STRICT matched-basis
+        # gate, never archive cache coverage alone: archive-complete but
+        # strict-blocked corpora get the matched-basis blocker message,
+        # not the "every event is available" claim.
+        "recommended_next_action": _recommended_next_action(
+            total_events=total_events,
+            n_fully_ready=n_fully_ready,
+            compute_ready=compute_readiness["event_study_compute_ready_count"],
         ),
     }
+
+
+def _recommended_next_action(
+    *, total_events: int, n_fully_ready: int, compute_ready: int,
+) -> str:
+    """Pick the recommendation from the strictest claim it makes."""
+    if total_events <= 0:
+        return _RECOMMENDED_GAPS
+    if compute_ready == total_events:
+        return _RECOMMENDED_OK
+    if n_fully_ready == total_events:
+        return _RECOMMENDED_MATCHED_BASIS_BLOCKED
+    return _RECOMMENDED_GAPS
 
 
 def _excluded_stages_for(lens: str) -> frozenset[str]:
@@ -577,14 +611,34 @@ def _load_synthetic_seed_ids(conn: sqlite3.Connection) -> frozenset[int]:
 _COMPUTE_TOP_REASONS = 8
 
 
+# Legacy pre-F3 fields, retained for existing consumers (for example
+# scripts/adjusted_ticker_backfill.py and the README's cross_flag=0
+# statement).  Under the frozen F3 default policy the gate never resolves
+# a cross-basis pair, so ``cross_flag`` and ``cross_flag_caveat_count``
+# are structurally 0 on the default path; forced cross-basis views exist
+# only as sensitivity diagnostics outside this report.
+_LEGACY_FIELDS_NOTE = (
+    "auto_adjust_basis_counts.cross_flag and cross_flag_caveat_count are "
+    "legacy pre-F3 fields: the default matched-basis policy never "
+    "resolves a cross-basis pair, so they are structurally 0 here. "
+    "basis_resolution_counts is the current vocabulary."
+)
+
+
 def _compute_readiness_empty() -> dict[str, Any]:
     return {
         "archive_ready_count":             0,
         "event_study_compute_ready_count": 0,
         "status_counts": {"event_study_available": 0, "insufficient_data": 0},
         "top_blocking_reasons":            {},
+        "basis_resolution_counts": {
+            "preferred_adjusted":   0,
+            "matched_raw_fallback": 0,
+            "unavailable":          0,
+        },
         "auto_adjust_basis_counts":        {"matched": 0, "cross_flag": 0},
         "cross_flag_caveat_count":         0,
+        "legacy_fields_note":              _LEGACY_FIELDS_NOTE,
     }
 
 
@@ -612,6 +666,16 @@ def _summarize_compute_readiness(
 
     status_counts = {STATUS_AVAILABLE: 0, STATUS_INSUFFICIENT: 0}
     basis_counts = {"matched": 0, "cross_flag": 0}
+    # F3 basis-resolution vocabulary: the default gate resolves matched
+    # adjusted/adjusted (preferred), matched raw/raw (disclosed via
+    # ``basis_fallback``), or nothing.  Cross-basis pairs never resolve
+    # on the default path, so ``cross_flag`` above is a structurally-0
+    # legacy field kept only for existing consumers.
+    resolution_counts = {
+        "preferred_adjusted":   0,
+        "matched_raw_fallback": 0,
+        "unavailable":          0,
+    }
     blocking: dict[str, int] = {}
     cross_flag_caveat = 0
     # Compute-ready (event_id, event_date) pairs — the set that could actually
@@ -645,8 +709,13 @@ def _summarize_compute_readiness(
                     basis_counts["cross_flag"] += 1
                 if out.get("basis_caveat"):
                     cross_flag_caveat += 1
+                if out.get("basis_fallback") == "matched_raw_fallback":
+                    resolution_counts["matched_raw_fallback"] += 1
+                else:
+                    resolution_counts["preferred_adjusted"] += 1
             else:
                 status_counts[STATUS_INSUFFICIENT] += 1
+                resolution_counts["unavailable"] += 1
                 for reason in out.get("blocking_reasons") or []:
                     # Collapse parameterized suffixes (``engine_error(..)``)
                     # to the bare reason key for a stable histogram.
@@ -663,8 +732,10 @@ def _summarize_compute_readiness(
         "event_study_compute_ready_count": status_counts[STATUS_AVAILABLE],
         "status_counts":                   dict(status_counts),
         "top_blocking_reasons":            top,
+        "basis_resolution_counts":         dict(resolution_counts),
         "auto_adjust_basis_counts":        dict(basis_counts),
         "cross_flag_caveat_count":         cross_flag_caveat,
+        "legacy_fields_note":              _LEGACY_FIELDS_NOTE,
     }
     return summary, ready_pairs
 
@@ -940,11 +1011,19 @@ def _render_text(report: dict[str, Any]) -> str:
         f"{cr.get('event_study_compute_ready_count', 0)} "
         f"(of {cr.get('archive_ready_count', 0)} archive-ready)"
     )
+    res = cr.get("basis_resolution_counts") or {}
     lines.append(
-        f"  compute basis:                               "
+        f"  basis resolution (F3):                       "
+        f"preferred_adjusted={res.get('preferred_adjusted', 0)} "
+        f"matched_raw_fallback={res.get('matched_raw_fallback', 0)} "
+        f"unavailable={res.get('unavailable', 0)}"
+    )
+    lines.append(
+        f"  compute basis (legacy fields):               "
         f"matched={basis.get('matched', 0)} "
         f"cross_flag={basis.get('cross_flag', 0)} "
-        f"(caveat={cr.get('cross_flag_caveat_count', 0)})"
+        f"(caveat={cr.get('cross_flag_caveat_count', 0)}; cross_flag is "
+        f"structurally 0 under the default matched-basis policy)"
     )
     tbr = cr.get("top_blocking_reasons") or {}
     if tbr:

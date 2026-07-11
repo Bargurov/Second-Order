@@ -1161,8 +1161,11 @@ class TestComputeReadiness(_Base):
         cr = report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
         for k in ("archive_ready_count", "event_study_compute_ready_count",
                   "status_counts", "top_blocking_reasons",
-                  "auto_adjust_basis_counts", "cross_flag_caveat_count"):
+                  "auto_adjust_basis_counts", "cross_flag_caveat_count",
+                  "basis_resolution_counts", "legacy_fields_note"):
             self.assertIn(k, cr)
+        for k in ("preferred_adjusted", "matched_raw_fallback", "unavailable"):
+            self.assertIn(k, cr["basis_resolution_counts"])
         self.assertIn("event_study_available", cr["status_counts"])
         self.assertIn("insufficient_data", cr["status_counts"])
 
@@ -1193,15 +1196,29 @@ class TestComputeReadiness(_Base):
         self.assertEqual(cr["auto_adjust_basis_counts"]["cross_flag"], 0)
         self.assertEqual(cr["cross_flag_caveat_count"], 0)
 
-    def test_cross_flag_caveat_counted_separately(self) -> None:
-        # Asset adjusted-only, benchmark raw-only → computes on the cross
-        # pair, counted as cross_flag and carrying the dividend caveat.
+    def test_cross_basis_only_fixture_stays_unavailable(self) -> None:
+        # Asset adjusted-only, benchmark raw-only.  Under the frozen F3
+        # basis policy the default gate never resolves a cross-basis
+        # pair, so this event is NOT default compute-ready: it stays
+        # unavailable with visible blockers.  (The pre-F3 revision of
+        # this test expected a cross_flag available-with-caveat record —
+        # that default resolution no longer exists; forced cross-basis
+        # views are diagnostic-only.)
         self._seed_compute_ready(ticker_flag=1, spy_flag=0)
         cr = report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
-        self.assertEqual(cr["event_study_compute_ready_count"], 1)
-        self.assertEqual(cr["auto_adjust_basis_counts"]["cross_flag"], 1)
+        self.assertEqual(cr["event_study_compute_ready_count"], 0)
+        self.assertEqual(cr["status_counts"]["insufficient_data"], 1)
+        self.assertIn("no_contiguous_aligned_window",
+                      cr["top_blocking_reasons"])
+        # Legacy cross-flag fields are structurally 0 on the default path.
+        self.assertEqual(cr["auto_adjust_basis_counts"]["cross_flag"], 0)
         self.assertEqual(cr["auto_adjust_basis_counts"]["matched"], 0)
-        self.assertEqual(cr["cross_flag_caveat_count"], 1)
+        self.assertEqual(cr["cross_flag_caveat_count"], 0)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 0, "matched_raw_fallback": 0,
+             "unavailable": 1},
+        )
 
     def test_compute_ready_path_invokes_no_provider_seam(self) -> None:
         from contextlib import ExitStack
@@ -1705,6 +1722,228 @@ class TestReadinessOverlapLensDivergence(_LensBase):
             acc["window_overlap"]["n_with_date"],
             raw["window_overlap"]["n_with_date"],
         )
+
+
+class TestBasisResolutionContract(_Base):
+    """T3D — the strict layer counts basis resolution under the frozen F3
+    policy: preferred adjusted/adjusted, disclosed matched raw/raw
+    fallback, or unavailable.  Cross-basis-only rows never enter the
+    compute-ready denominator; the legacy cross_flag fields stay 0."""
+
+    _ED = date(2026, 4, 15)
+
+    def _seed_bases(self, *, adj_asset=None, raw_asset=None,
+                    adj_spy=None, raw_spy=None, ticker="XLE",
+                    event=True) -> None:
+        """Seed any combination of basis series.  Values: None (absent),
+        "complete", or "partial" (interior indices 30..45 removed)."""
+        dates = _contiguous_window(self._ED, 65, 22)
+        partial = [d for i, d in enumerate(dates) if not (30 <= i <= 45)]
+
+        def pick(mode):
+            return dates if mode == "complete" else partial
+
+        with self._conn() as conn:
+            if event:
+                _seed_event(conn, event_date=self._ED.isoformat(),
+                            market_tickers=json.dumps([{"symbol": ticker}]))
+            if adj_asset:
+                _seed_series(conn, ticker=ticker, dates=pick(adj_asset),
+                             base=50.0, noise=True, auto_adjust=1,
+                             jump_from=66)
+            if raw_asset:
+                _seed_series(conn, ticker=ticker, dates=pick(raw_asset),
+                             base=48.0, noise=True, auto_adjust=0,
+                             jump_from=66)
+            if adj_spy:
+                _seed_series(conn, ticker=_BENCHMARK_TICKER,
+                             dates=pick(adj_spy), base=101.0, noise=False,
+                             auto_adjust=1)
+            if raw_spy:
+                _seed_series(conn, ticker=_BENCHMARK_TICKER,
+                             dates=pick(raw_spy), base=100.0, noise=False,
+                             auto_adjust=0)
+            conn.commit()
+
+    def _cr(self) -> dict:
+        return report.summarize_readiness(db_path=self._tmp)["compute_readiness"]
+
+    def _assert_reconciles(self, cr: dict) -> None:
+        br = cr["basis_resolution_counts"]
+        evaluated = (cr["status_counts"]["event_study_available"]
+                     + cr["status_counts"]["insufficient_data"])
+        self.assertEqual(
+            br["preferred_adjusted"] + br["matched_raw_fallback"]
+            + br["unavailable"],
+            evaluated,
+        )
+        self.assertEqual(
+            br["preferred_adjusted"] + br["matched_raw_fallback"],
+            cr["event_study_compute_ready_count"],
+        )
+
+    def test_preferred_adjusted_counts_visibly(self) -> None:
+        self._seed_bases(adj_asset="complete", adj_spy="complete")
+        cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 1, "matched_raw_fallback": 0,
+             "unavailable": 0},
+        )
+        self.assertEqual(cr["auto_adjust_basis_counts"],
+                         {"matched": 1, "cross_flag": 0})
+        self.assertEqual(cr["cross_flag_caveat_count"], 0)
+        self._assert_reconciles(cr)
+
+    def test_matched_raw_fallback_counts_visibly(self) -> None:
+        self._seed_bases(raw_asset="complete", raw_spy="complete")
+        cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 0, "matched_raw_fallback": 1,
+             "unavailable": 0},
+        )
+        self.assertEqual(cr["auto_adjust_basis_counts"],
+                         {"matched": 1, "cross_flag": 0})
+        self._assert_reconciles(cr)
+
+    def test_both_bases_prefer_adjusted_without_double_count(self) -> None:
+        self._seed_bases(adj_asset="complete", raw_asset="complete",
+                         adj_spy="complete", raw_spy="complete")
+        cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 1, "matched_raw_fallback": 0,
+             "unavailable": 0},
+        )
+        self._assert_reconciles(cr)
+
+    def test_partial_adjusted_falls_back_to_complete_raw_pair(self) -> None:
+        # The partial adjusted pair must not combine with raw rows; the
+        # complete raw pair satisfies the gate → disclosed fallback.
+        self._seed_bases(adj_asset="partial", raw_asset="complete",
+                         adj_spy="partial", raw_spy="complete")
+        cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 0, "matched_raw_fallback": 1,
+             "unavailable": 0},
+        )
+        self._assert_reconciles(cr)
+
+    def test_neither_matched_basis_viable_stays_unavailable(self) -> None:
+        # Adjusted pair gap-blocked, no raw pair at all — unavailable,
+        # blockers visible, no exception.
+        self._seed_bases(adj_asset="partial", adj_spy="complete")
+        cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 0)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 0, "matched_raw_fallback": 0,
+             "unavailable": 1},
+        )
+        self.assertTrue(cr["top_blocking_reasons"])
+        self._assert_reconciles(cr)
+
+    def test_mixed_corpus_reconciles_all_resolution_classes(self) -> None:
+        # Three disjoint event windows so the shared SPY series cannot
+        # bleed between them: E1 preferred adjusted, E2 matched raw
+        # fallback, E3 cross-basis-only (unavailable).
+        eds = (date(2025, 4, 15), date(2025, 10, 15), date(2026, 4, 15))
+        tickers = ("XLE", "XLF", "XOM")
+        spy_flags = (1, 0, 0)          # per-window SPY basis
+        asset_flags = (1, 0, 1)        # E3: adjusted asset vs raw SPY
+        with self._conn() as conn:
+            for ed, tkr, spy_flag, asset_flag in zip(
+                    eds, tickers, spy_flags, asset_flags):
+                dates = _contiguous_window(ed, 65, 22)
+                _seed_event(conn, event_date=ed.isoformat(),
+                            market_tickers=json.dumps([{"symbol": tkr}]))
+                _seed_series(conn, ticker=tkr, dates=dates, base=50.0,
+                             noise=True, auto_adjust=asset_flag,
+                             jump_from=66)
+                _seed_series(conn, ticker=_BENCHMARK_TICKER, dates=dates,
+                             base=100.0, noise=False, auto_adjust=spy_flag)
+            conn.commit()
+        cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 2)
+        self.assertEqual(
+            cr["basis_resolution_counts"],
+            {"preferred_adjusted": 1, "matched_raw_fallback": 1,
+             "unavailable": 1},
+        )
+        self.assertEqual(cr["auto_adjust_basis_counts"],
+                         {"matched": 2, "cross_flag": 0})
+        self.assertEqual(cr["cross_flag_caveat_count"], 0)
+        # Archive readiness may exceed strict compute readiness.
+        self.assertGreaterEqual(cr["archive_ready_count"],
+                                cr["event_study_compute_ready_count"])
+        self._assert_reconciles(cr)
+
+    def test_summary_runs_under_network_ban(self) -> None:
+        import socket as _socket
+        self._seed_bases(adj_asset="complete", adj_spy="complete")
+        with patch.object(
+                _socket, "getaddrinfo",
+                side_effect=AssertionError("network resolution attempted")):
+            cr = self._cr()
+        self.assertEqual(cr["event_study_compute_ready_count"], 1)
+
+
+class TestRecommendationTruthfulness(_Base):
+    """T3D — engine-availability wording must follow the STRICT
+    matched-basis gate, never archive cache coverage alone."""
+
+    _ED = date(2026, 4, 15)
+
+    def _seed_pair(self, *, ticker_flag: int, spy_flag: int) -> None:
+        dates = _contiguous_window(self._ED, 65, 22)
+        with self._conn() as conn:
+            _seed_event(conn, event_date=self._ED.isoformat(),
+                        market_tickers=json.dumps([{"symbol": "XLE"}]))
+            _seed_series(conn, ticker="XLE", dates=dates, base=50.0,
+                         noise=True, auto_adjust=ticker_flag, jump_from=66)
+            _seed_series(conn, ticker=_BENCHMARK_TICKER, dates=dates,
+                         base=100.0, noise=False, auto_adjust=spy_flag)
+            conn.commit()
+
+    def test_archive_complete_but_strict_blocked_names_the_gate(self) -> None:
+        # Cross-basis-only: archive checks pass, the strict gate refuses.
+        self._seed_pair(ticker_flag=1, spy_flag=0)
+        result = report.summarize_readiness(db_path=self._tmp)
+        self.assertEqual(result["events_fully_ready"], result["total_events"])
+        cr = result["compute_readiness"]
+        self.assertLess(cr["event_study_compute_ready_count"],
+                        result["total_events"])
+        msg = result["recommended_next_action"]
+        self.assertIn("matched-basis", msg)
+        self.assertNotIn("every event in the archive has the cache coverage",
+                         msg.lower())
+
+    def test_strict_complete_emits_gate_based_success(self) -> None:
+        self._seed_pair(ticker_flag=1, spy_flag=1)
+        result = report.summarize_readiness(db_path=self._tmp)
+        cr = result["compute_readiness"]
+        self.assertEqual(cr["event_study_compute_ready_count"],
+                         result["total_events"])
+        msg = result["recommended_next_action"]
+        self.assertIn("matched-basis", msg)
+        for banned in ("significan", "validated", "confirmed",
+                       "research-ready", "proven"):
+            self.assertNotIn(banned, msg.lower())
+
+    def test_ordinary_archive_gaps_keep_refresh_wording(self) -> None:
+        with self._conn() as conn:
+            _seed_event(conn, event_date=self._ED.isoformat(),
+                        market_tickers=json.dumps([{"symbol": "XLE"}]))
+            conn.commit()  # no cache at all
+        result = report.summarize_readiness(db_path=self._tmp)
+        self.assertIn("cache coverage",
+                      result["recommended_next_action"].lower())
 
 
 if __name__ == "__main__":
