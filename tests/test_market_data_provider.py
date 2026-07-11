@@ -12,10 +12,12 @@ Covers:
 """
 
 import os
+import sqlite3
 import sys
 import tempfile
 import unittest
 import uuid
+from datetime import date, timedelta
 from typing import Optional
 from unittest.mock import patch, MagicMock
 
@@ -69,6 +71,28 @@ def _make_df(closes, volumes=None, start_date="2026-03-01"):
         volumes = [1_000_000.0] * n
     dates = pd.date_range(start_date, periods=n, freq="B")
     return pd.DataFrame({"Close": closes, "Volume": volumes}, index=dates)
+
+
+# One controlled cache clock for every rolling-period test.  A Monday, so
+# ``price_cache._last_weekday(_CACHE_TODAY) == _CACHE_TODAY`` and the
+# resolved 3mo window is exactly [_CACHE_TODAY - 93d, _CACHE_TODAY].
+# Rolling-window fixtures must derive BOTH the patched cache clock and the
+# provider DataFrame dates from this anchor: a fixed historical frame with
+# an unpatched real clock ages out of the 93-day request window, gets
+# persisted but re-read as empty, returns None (never hot-cached), and the
+# provider is honestly retried — which broke the old cache-hit assertion.
+_CACHE_TODAY = date(2026, 4, 20)
+
+
+def _cache_clock_df(closes, *, anchor=_CACHE_TODAY, days_before=30):
+    """Provider frame anchored ``days_before`` days before the cache clock."""
+    start = anchor - timedelta(days=days_before)
+    return _make_df(closes, start_date=start.isoformat())
+
+
+def _patched_clock(anchor=_CACHE_TODAY):
+    """Patch the SQLite cache layer's date seam to a fixed anchor."""
+    return patch("price_cache._today", return_value=anchor)
 
 
 # ---------------------------------------------------------------------------
@@ -260,8 +284,9 @@ class TestYFinanceFetchInfo(unittest.TestCase):
 # market_check delegates to the active provider
 # ---------------------------------------------------------------------------
 
-class TestMarketCheckDelegation(unittest.TestCase):
-    """market_check._fetch and friends should call the active provider."""
+class _ProviderCacheBase(unittest.TestCase):
+    """Shared isolation: temp SQLite DB, provider singleton restore,
+    table-ready reset, and hot-cache clear — nothing leaks across tests."""
 
     def setUp(self):
         self._original = get_provider()
@@ -286,15 +311,28 @@ class TestMarketCheckDelegation(unittest.TestCase):
             except PermissionError:
                 pass
 
+    def _sqlite_rows(self, ticker: str, auto_adjust: int):
+        with sqlite3.connect(self._tmp_db) as conn:
+            return conn.execute(
+                "SELECT MIN(date), MAX(date), COUNT(*) FROM price_cache "
+                "WHERE ticker = ? AND auto_adjust = ?",
+                (ticker, auto_adjust),
+            ).fetchone()
+
+
+class TestMarketCheckDelegation(_ProviderCacheBase):
+    """market_check._fetch and friends should call the active provider."""
+
     def test_fetch_uses_provider(self):
-        # Dynamic recent start so all 10 bars fall inside _fetch's rolling
-        # 3-month window regardless of the calendar (AB1 Lane E stale-fixture
-        # repair — a fixed past start_date silently aged out).
-        start = (pd.Timestamp.today().normalize() - pd.Timedelta(days=30)).strftime("%Y-%m-%d")
-        df = _make_df([100.0] * 10, start_date=start)
+        # Rolling-period test: fixture dates and the cache clock derive
+        # from the same _CACHE_TODAY anchor so all 10 bars are in-window
+        # on any calendar date (AB1 Lane E repaired this with wall-clock-
+        # relative dates; T3F pins it to the injected cache clock).
+        df = _cache_clock_df([100.0] * 10)
         fake = _FakeProvider(daily_response=df)
         set_provider(fake)
-        result = market_check._fetch("AAPL")
+        with _patched_clock():
+            result = market_check._fetch("AAPL")
         # The cache layer re-reads rows from SQLite, so identity won't
         # match, but the Close column must round-trip unchanged.
         self.assertIsNotNone(result)
@@ -364,14 +402,190 @@ class TestMarketCheckDelegation(unittest.TestCase):
         self.assertEqual(result, [])
 
     def test_cache_avoids_repeat_provider_call(self):
-        """Once a value is cached, the provider should not be called again."""
-        df = _make_df([100.0] * 10)
+        """Once a VALID in-window value is cached, the provider is not
+        called again — proven on both cache layers.
+
+        The pre-T3F fixture used the default 2026-03-01 frame with the
+        real cache clock; by July 2026 the frame sat entirely before the
+        rolling 93-day request window, so rows persisted but the
+        requested-window re-read was empty, the public result was None
+        (correctly not hot-cached), and every call honestly retried the
+        provider (3 calls, not 1).
+        """
+        df = _cache_clock_df([100.0] * 10)
         fake = _FakeProvider(daily_response=df)
         set_provider(fake)
-        market_check._fetch("AAPL")
-        market_check._fetch("AAPL")
-        market_check._fetch("AAPL")
-        self.assertEqual(len(fake.daily_calls), 1, "Provider was called more than once")
+        with _patched_clock():
+            first = market_check._fetch("AAPL")
+            # A valid in-window frame is actually returned...
+            self.assertIsNotNone(first)
+            self.assertEqual(len(first), 10)
+            self.assertEqual(len(fake.daily_calls), 1)
+            # ...persisted on the requested basis in SQLite...
+            min_d, max_d, n = self._sqlite_rows("AAPL", 1)
+            self.assertEqual(n, 10)
+            window_start = _CACHE_TODAY - timedelta(days=93)
+            self.assertGreaterEqual(date.fromisoformat(min_d), window_start)
+            self.assertLessEqual(date.fromisoformat(max_d), _CACHE_TODAY)
+            # ...and hot-cached in memory.
+            self.assertGreaterEqual(market_check._cache_len(), 1)
+            second = market_check._fetch("AAPL")
+            third = market_check._fetch("AAPL")
+        self.assertEqual(len(fake.daily_calls), 1,
+                         "Provider was called more than once")
+        # Same logical result after the SQLite round trip (not identity).
+        self.assertEqual(list(first["Close"]), list(second["Close"]))
+        self.assertEqual(list(first["Close"]), list(third["Close"]))
+
+
+# ---------------------------------------------------------------------------
+# T3F — rolling-window cache contract under one controlled clock
+# ---------------------------------------------------------------------------
+
+class TestRollingWindowCacheContract(_ProviderCacheBase):
+    """The rolling 3mo request window and every provider frame derive
+    from the same injected cache clock; only in-window same-basis rows
+    are returned and hot-cached, and honest retry behavior is preserved
+    for out-of-window responses."""
+
+    def test_provider_request_boundaries(self):
+        """Provider gets the resolved gap start, and an ``end`` one
+        calendar day AFTER the inclusive request end (yfinance-exclusive);
+        the public window itself stays inclusive."""
+        df = _cache_clock_df([100.0] * 10)
+        fake = _FakeProvider(daily_response=df)
+        set_provider(fake)
+        with _patched_clock():
+            market_check._fetch("AAPL")
+        call = fake.daily_calls[0]
+        # The gap planner requests only fetchable trading days: the raw
+        # window start (a Saturday for this anchor) snaps forward to the
+        # next weekday.  Read the policy from the module's own helper
+        # rather than re-encoding calendar logic here.
+        window_start = _CACHE_TODAY - timedelta(days=93)
+        expected_start = price_cache._next_weekday(window_start)
+        self.assertEqual(call["start"], expected_start.isoformat())
+        self.assertEqual(
+            call["end"], (_CACHE_TODAY + timedelta(days=1)).isoformat(),
+        )
+        self.assertTrue(call["auto_adjust"])
+        self.assertIsNone(call["period"])
+
+    def test_out_of_window_response_stays_unavailable(self):
+        """A frame entirely before request_start persists but is honestly
+        re-read as empty: None result, no hot-cache entry, and a retry on
+        the next call — the exact behavior the stale fixture tripped."""
+        df = _cache_clock_df([100.0] * 10, days_before=150)  # ends ~-136d
+        fake = _FakeProvider(daily_response=df)
+        set_provider(fake)
+        with _patched_clock():
+            first = market_check._fetch("AAPL")
+            self.assertIsNone(first)
+            self.assertEqual(market_check._cache_len(), 0)
+            _min_d, _max_d, n = self._sqlite_rows("AAPL", 1)
+            self.assertEqual(n, 10)  # persisted, just out of window
+            second = market_check._fetch("AAPL")
+            self.assertIsNone(second)
+        self.assertEqual(len(fake.daily_calls), 2,
+                         "None results must not be cached")
+
+    def test_partial_overlap_filters_to_window(self):
+        """Rows before the window are dropped; only the in-window suffix
+        is returned, sorted, with no out-of-range leak."""
+        df = _cache_clock_df([100.0 + i for i in range(20)], days_before=100)
+        fake = _FakeProvider(daily_response=df)
+        set_provider(fake)
+        with _patched_clock():
+            result = market_check._fetch("AAPL")
+        self.assertIsNotNone(result)
+        window_start = _CACHE_TODAY - timedelta(days=93)
+        in_window = [d for d in df.index if d.date() >= window_start]
+        self.assertEqual(len(result), len(in_window))
+        self.assertLess(len(result), len(df))
+        returned_dates = [pd.Timestamp(d).date() for d in result.index]
+        self.assertEqual(returned_dates, sorted(returned_dates))
+        self.assertGreaterEqual(returned_dates[0], window_start)
+        self.assertLessEqual(returned_dates[-1], _CACHE_TODAY)
+
+    def test_basis_separation_adjusted_cannot_satisfy_raw(self):
+        """(ticker, date, auto_adjust) is the cache identity: adjusted
+        rows never satisfy a raw request, so the raw path reaches the
+        provider with auto_adjust=False."""
+        df = _cache_clock_df([100.0] * 10)
+        fake = _FakeProvider(daily_response=df)
+        set_provider(fake)
+        with _patched_clock():
+            adjusted = market_check._fetch("AAPL")            # aa=1
+            self.assertIsNotNone(adjusted)
+            self.assertEqual(len(fake.daily_calls), 1)
+            start_iso = (_CACHE_TODAY - timedelta(days=30)).isoformat()
+            raw = market_check._fetch_since("AAPL", start_iso)  # aa=0
+            self.assertIsNotNone(raw)
+        self.assertEqual(len(fake.daily_calls), 2)
+        self.assertTrue(fake.daily_calls[0]["auto_adjust"])
+        self.assertFalse(fake.daily_calls[1]["auto_adjust"])
+        _min1, _max1, n_adj = self._sqlite_rows("AAPL", 1)
+        _min0, _max0, n_raw = self._sqlite_rows("AAPL", 0)
+        self.assertEqual(n_adj, 10)
+        self.assertEqual(n_raw, 10)
+
+    def test_clock_shift_invariance(self):
+        """The same relative scenario at two Monday anchors years apart
+        yields identical call counts, row counts, cache behavior, and
+        relative request-window geometry."""
+        anchors = (date(2026, 4, 20), date(2030, 4, 22))  # both Mondays
+        observed = []
+        extra_tmp = None
+        try:
+            for i, anchor in enumerate(anchors):
+                if i > 0:
+                    # Fresh SQLite + hot cache for the second anchor.
+                    extra_tmp = os.path.join(
+                        tempfile.gettempdir(),
+                        f"test_price_cache_{uuid.uuid4().hex}.db",
+                    )
+                    db.DB_FILE = extra_tmp
+                    price_cache._reset_table_ready_for_tests()
+                    market_check._cache_clear()
+                df = _cache_clock_df([100.0] * 10, anchor=anchor)
+                fake = _FakeProvider(daily_response=df)
+                set_provider(fake)
+                with _patched_clock(anchor):
+                    r1 = market_check._fetch("AAPL")
+                    r2 = market_check._fetch("AAPL")
+                call = fake.daily_calls[0]
+                observed.append({
+                    "rows": None if r1 is None else len(r1),
+                    "rows_repeat": None if r2 is None else len(r2),
+                    "provider_calls": len(fake.daily_calls),
+                    "hot_cache": market_check._cache_len() >= 1,
+                    "basis": call["auto_adjust"],
+                    "start_offset_days":
+                        (anchor - date.fromisoformat(call["start"])).days,
+                    "end_offset_days":
+                        (date.fromisoformat(call["end"]) - anchor).days,
+                })
+        finally:
+            if extra_tmp and os.path.exists(extra_tmp):
+                db.DB_FILE = self._tmp_db
+                price_cache._reset_table_ready_for_tests()
+                try:
+                    os.remove(extra_tmp)
+                except PermissionError:
+                    pass
+        self.assertEqual(observed[0], observed[1])
+        self.assertEqual(observed[0]["rows"], 10)
+        self.assertEqual(observed[0]["provider_calls"], 1)
+        self.assertTrue(observed[0]["hot_cache"])
+
+    def test_shared_state_not_leaked_between_tests(self):
+        """The clock seam and provider singleton arrive unpatched, and
+        the patch context restores the real seam on exit."""
+        self.assertNotIsInstance(price_cache._today, MagicMock)
+        with _patched_clock():
+            self.assertEqual(price_cache._today(), _CACHE_TODAY)
+        self.assertNotIsInstance(price_cache._today, MagicMock)
+        self.assertIsNotNone(get_provider())
 
 
 if __name__ == "__main__":
