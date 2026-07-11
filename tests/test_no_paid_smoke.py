@@ -332,9 +332,18 @@ class TestNoPaidSmokeBaseUrlSkipsLocalScripts(unittest.TestCase):
                 client=_NoopClient(),
                 guard_provider_seams=False,
             )
+        # Scripts whose declared local fixtures are absent (e.g. the
+        # maintainer-local backup on a clean clone) are SKIPPED by
+        # design, so the invocation expectation is environment-correct
+        # in both a full checkout and a clean clone (T1).
+        expected = [
+            s.module for s in no_paid_smoke.SCRIPTS
+            if not no_paid_smoke._missing_required_paths(s)
+        ]
         self.assertEqual(
-            seen, [s.module for s in no_paid_smoke.SCRIPTS],
-            "default local mode must still run every local script in order",
+            seen, expected,
+            "default local mode must run every runnable local script "
+            "in order",
         )
 
     def test_main_with_base_url_skips_local_scripts(self) -> None:

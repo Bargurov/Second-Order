@@ -27,7 +27,13 @@ if _REPO not in sys.path:
 from scripts import transmission_case_selection_stress_report as Q  # noqa: E402
 from scripts import transmission_case_walkthrough_report as W  # noqa: E402
 
-_LIVE_DB = os.path.join(_REPO, "events.db")
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+_LIVE_DB = str(local_events_db_or_none() or "")
 _N1_IDS = [1, 61, 210, 46, 66, 211]
 
 
@@ -348,7 +354,7 @@ class TestRendering(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
-@unittest.skipUnless(os.path.exists(_LIVE_DB), "live events.db required")
+@unittest.skipUnless(bool(_LIVE_DB), local_data_skip_reason())
 class TestLive(unittest.TestCase):
     def test_current_n1_ids_reproduced_exactly(self):
         rep = Q.build_report(db_path=_LIVE_DB)

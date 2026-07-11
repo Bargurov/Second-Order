@@ -50,7 +50,13 @@ from scripts.mechanism_family_evidence_inventory import (  # noqa: E402
     select_representative_cases,
 )
 
-LIVE_DB = ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+LIVE_DB = local_events_db_or_none()
 
 
 # ---------------------------------------------------------------------------
@@ -328,7 +334,7 @@ class TestSectorEnrichment(unittest.TestCase):
 # Live wiring — read-only + canonical denominators
 # ---------------------------------------------------------------------------
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestLiveInventory(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

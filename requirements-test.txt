@@ -1,0 +1,30 @@
+# Canonical backend TEST environment — one clean-clone install command:
+#
+#     python -m pip install -r requirements-test.txt
+#
+# Contract pinned by tests/test_clean_clone_test_environment.py and probed
+# by scripts/test_environment_preflight.py (CI runs both).  Policy:
+# runtime dependencies stay declared in requirements.txt; this file adds
+# ONLY test-only packages and evidence-based test-environment
+# compatibility bounds.  It is not a lockfile and does not claim
+# byte-for-byte reproducibility.
+
+-r requirements.txt
+
+# Test-only runner. Six test modules import pytest at module top, so a
+# clean clone cannot even COLLECT the suite without it (the independent
+# full-test audit reproduced exactly this).  Bound to the 9.x series the
+# suite is verified against (unittest subTest reporting included).
+pytest>=9,<10
+
+# Evidence-based compatibility bound (T1 bisect in a clean venv):
+# route-enumeration tests (tests/test_no_paid_get_routes.py,
+# tests/test_archive_diagnostics.py) pass on fastapi 0.135.3 and 0.136.3
+# and fail on 0.137.2 / 0.138.2 / 0.139.0 — included-router routes are
+# represented differently from 0.137 onward.  starlette was ruled out
+# (0.135.3 passes under starlette 1.0.0 AND 1.3.1).  Whether the tests
+# should adapt to the >=0.137 representation is a deliberate contract
+# decision deferred to a later slice; until then the canonical test
+# environment stays on the verified range.  Runtime policy in
+# requirements.txt intentionally keeps fastapi floating (see its header).
+fastapi>=0.135,<0.137

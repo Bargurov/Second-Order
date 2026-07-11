@@ -35,7 +35,13 @@ from scripts.effective_independent_evidence_report import (  # noqa: E402
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-LIVE_DB = ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+LIVE_DB = local_events_db_or_none()
 STATS_MD = ROOT / "stats" / "EFFECTIVE_INDEPENDENT_EVIDENCE.md"
 
 REPRESENTATIVE_IDS = {1, 46, 61, 66, 210, 211, 7, 29, 38, 71, 153, 154, 160, 212, 239}
@@ -181,7 +187,7 @@ class TestWindowCapacityPure(unittest.TestCase):
 # Live report — accepted track-record corpus
 # ---------------------------------------------------------------------------
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestLiveReport(unittest.TestCase):
 
     @classmethod
@@ -335,7 +341,7 @@ class TestLiveReport(unittest.TestCase):
                     )
 
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestCli(unittest.TestCase):
 
     def test_json_mode_exits_cleanly_and_matches_core_counts(self):

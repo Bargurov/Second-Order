@@ -48,7 +48,13 @@ from scripts.representative_case_expansion_report import (  # noqa: E402
 )
 from scripts.mechanism_family_evidence_inventory import build_inventory  # noqa: E402
 
-LIVE_DB = ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+LIVE_DB = local_events_db_or_none()
 
 
 def _row(event_id, outcome, es, *, headline=None, date="2026-04-01", symbols=None):
@@ -223,7 +229,7 @@ class TestNoBannedFraming(unittest.TestCase):
 # Live wiring
 # ---------------------------------------------------------------------------
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestLiveExpansion(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

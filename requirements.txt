@@ -27,6 +27,11 @@ pandas>=2.2,<3
 pydantic>=2,<3
 python-dotenv
 python-telegram-bot[job-queue]>=21,<22
+# Imported directly by tracked runtime scripts (candidate-pack loaders and
+# report tooling); previously satisfied only as a transitive extra of
+# uvicorn[standard], which is not a declaration.
+pyyaml
+
 streamlit
 uvicorn[standard]
 yfinance

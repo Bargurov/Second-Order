@@ -22,7 +22,13 @@ from scripts import data_hygiene_report as dh
 from scripts import materiality_annotation as ma
 
 _ROOT = Path(__file__).resolve().parents[1]
-_LIVE_DB = _ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+_LIVE_DB = local_events_db_or_none()
 
 _FIXED_TS = "2026-07-04T00:00:00+00:00"
 
@@ -157,7 +163,7 @@ class OverlayConsumerTests(unittest.TestCase):
         self.assertEqual(report["materiality_hygiene_overlay"]["held_count"], 5)
 
 
-@unittest.skipUnless(_LIVE_DB.exists(), "live events.db required for the temp-DB proof")
+@unittest.skipUnless(_LIVE_DB is not None, local_data_skip_reason())
 class DenominatorInvarianceProofTests(unittest.TestCase):
     """The temp-DB proof: annotating must not move any accepted denominator."""
 

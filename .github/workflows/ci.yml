@@ -25,8 +25,11 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install backend dependencies
-        run: python -m pip install -r requirements.txt
+      - name: Install canonical backend test environment
+        run: python -m pip install -r requirements-test.txt
+
+      - name: Test-environment preflight
+        run: python scripts/test_environment_preflight.py --json
 
       - name: Run repo hygiene unit tests
         run: python -m unittest tests.test_repo_hygiene_check -v

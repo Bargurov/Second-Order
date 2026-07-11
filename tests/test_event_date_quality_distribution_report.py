@@ -57,7 +57,13 @@ from scripts.event_date_quality_distribution_report import (  # noqa: E402
 )
 from scripts.event_date_quality_report import LABELS as EDQ_LABELS  # noqa: E402
 
-LIVE_DB = ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+LIVE_DB = local_events_db_or_none()
 
 REPRESENTATIVE_IDS = {1, 7, 29, 38, 46, 61, 66, 71, 153, 154, 160, 210, 211, 212, 239}
 MISSING_READOUT_IDS = [153, 154, 160]
@@ -127,7 +133,7 @@ class TestLabelDefinitions(unittest.TestCase):
 # --------------------------------------------------------------------------- #
 # Live wiring                                                                 #
 # --------------------------------------------------------------------------- #
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestLiveReport(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -513,7 +519,7 @@ class TestReviewerLegibilityConstants(unittest.TestCase):
 # --------------------------------------------------------------------------- #
 # Reviewer legibility -- live wiring (J1B)                                     #
 # --------------------------------------------------------------------------- #
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestReviewerLegibilityLive(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

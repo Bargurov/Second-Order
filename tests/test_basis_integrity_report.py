@@ -33,7 +33,13 @@ import db as _db  # noqa: E402
 import event_study_validation as esv  # noqa: E402
 from scripts import basis_integrity_report as bir  # noqa: E402
 
-LIVE_DB = ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+LIVE_DB = local_events_db_or_none()
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +258,7 @@ class CompareBasesTests(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class LiveBasisReportTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

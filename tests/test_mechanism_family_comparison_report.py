@@ -37,7 +37,13 @@ from scripts.mechanism_family_comparison_report import (  # noqa: E402
     render_text,
 )
 
-LIVE_DB = ROOT / "events.db"
+# T1: live-archive checks are explicit opt-in via the shared gate;
+# root events.db presence must not change the default universe.
+from tests._local_data_gate import (  # noqa: E402
+    local_data_skip_reason,
+    local_events_db_or_none,
+)
+LIVE_DB = local_events_db_or_none()
 
 
 def _fam(name, n, s, c, u, esa, eso, canonical):
@@ -133,7 +139,7 @@ class TestBuildComparison(unittest.TestCase):
 # Live wiring
 # ---------------------------------------------------------------------------
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestLiveComparison(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -243,7 +249,7 @@ class TestLiveComparison(unittest.TestCase):
             self.assertNotIn(w, residue, f"affirmative {w!r}")
 
 
-@unittest.skipUnless(LIVE_DB.exists(), "live events.db not present")
+@unittest.skipUnless(LIVE_DB is not None, local_data_skip_reason())
 class TestReviewerReadability(unittest.TestCase):
     """I1A: the report must read as a reviewer-facing artifact, not internal."""
 
