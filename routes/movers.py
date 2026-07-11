@@ -1942,6 +1942,30 @@ def movers_backfill_preview(
     The paid-backfill cost guard on ``POST /movers/backfill-recent`` is
     intentionally untouched — this endpoint exists so the operator can
     inspect what *would* run before authorising the spend.
+
+    Field contract — four DISTINCT questions, never one boolean:
+
+      * ``requires_llm`` (item): the corresponding paid action for this
+        item is a fresh LLM analysis — structural, independent of the
+        current provider/paid configuration.  Skip and cached-refresh
+        items are False.
+      * ``llm_available`` (top): the configured backfill provider has a
+        usable, non-placeholder key right now (provider readiness).
+      * ``paid_analysis_enabled`` (top): the server-side
+        ``ENABLE_PAID_ANALYSIS`` kill-switch state (paid authorization).
+      * ``would_call_llm`` (item, backward-compatible): strictly
+        ``requires_llm AND llm_available`` — an authorized, confirmed
+        paid run under the CURRENT provider configuration would reach
+        the LLM for this item.  Kill-switch and confirmation gates are
+        surfaced in ``execution_blockers``, never folded in here.
+
+    ``execution_blockers`` (item) lists every currently visible gate the
+    corresponding paid request must clear, in order: ``llm_unavailable``,
+    ``paid_analysis_disabled``, ``confirm_paid_required`` (executing one
+    candidate via POST /movers/backfill-candidate always demands
+    ``confirm_paid=true``).  Empty for items that require no fresh LLM.
+    ``counts.requires_llm`` / ``counts.would_call_llm`` /
+    ``counts.blocked`` reconcile exactly with the item fields.
     """
     payload, source = _cached_news_payload()
     raw_clusters = _sort_news_clusters((payload or {}).get("clusters") or [])
@@ -1950,6 +1974,7 @@ def movers_backfill_preview(
     model = _backfill_model(provider)
     model_key = _backfill_model_key(provider, model)
     llm_available = _llm_available(provider)
+    paid_enabled = _paid_analysis_enabled()
 
     since_dt = (
         datetime.now() - timedelta(hours=since_hours)
@@ -1962,7 +1987,9 @@ def movers_backfill_preview(
         "considered": 0,
         "eligible": 0,
         "already_analyzed": 0,
+        "requires_llm": 0,
         "would_call_llm": 0,
+        "blocked": 0,
     }
 
     # Pre-filter: recency + relevance — same gate as backfill.  Pre-
@@ -2050,7 +2077,23 @@ def movers_backfill_preview(
                     skip_reason = "already_market_checked"
                     already_analyzed = True
 
-        would_call_llm = skip_reason is None and llm_available
+        # Candidate requirement (structural) vs executable-now: the two
+        # questions the old conflated boolean collapsed.  A missing
+        # provider key must not erase the item's LLM requirement, and a
+        # requirement must not read as an imminent call when blocked.
+        requires_llm = skip_reason is None
+        would_call_llm = requires_llm and llm_available
+        execution_blockers: list[str] = []
+        if requires_llm:
+            if not llm_available:
+                execution_blockers.append("llm_unavailable")
+            if not paid_enabled:
+                execution_blockers.append("paid_analysis_disabled")
+            # Executing one candidate (POST /movers/backfill-candidate)
+            # always demands confirm_paid=true — a standing requirement
+            # of the corresponding paid request, named so the operator
+            # sees the full gate list from the zero-cost step.
+            execution_blockers.append("confirm_paid_required")
 
         if skip_reason is None:
             counts["eligible"] += 1
@@ -2058,8 +2101,12 @@ def movers_backfill_preview(
             _bump_skip(skip_reasons, skip_reason)
         if already_analyzed:
             counts["already_analyzed"] += 1
+        if requires_llm:
+            counts["requires_llm"] += 1
         if would_call_llm:
             counts["would_call_llm"] += 1
+        if execution_blockers:
+            counts["blocked"] += 1
 
         rank_score, rank_factors = score_by_id.get(
             id(cluster), (0.0, _headline_keyword_signals("")),
@@ -2078,7 +2125,9 @@ def movers_backfill_preview(
             "skip_reason": skip_reason,
             "skip_reason_label": _skip_reason_label(skip_reason),
             "already_analyzed": already_analyzed,
+            "requires_llm": requires_llm,
             "would_call_llm": would_call_llm,
+            "execution_blockers": execution_blockers,
             "rank_score":   round(float(rank_score), 3),
             "rank_factors": rank_factors,
             "rank_explanation": _rank_explanation(rank_factors),
@@ -2096,6 +2145,7 @@ def movers_backfill_preview(
         },
         "news_source": source,
         "llm_available": llm_available,
+        "paid_analysis_enabled": paid_enabled,
         "llm_provider": provider,
         "analysis_model": model,
         "analysis_model_key": model_key,

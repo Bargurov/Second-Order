@@ -1108,18 +1108,29 @@ class TestManualCandidateUiContract(_PaidGuardTestBase):
              patch("api._persist_event", self._ban("api._persist_event")), \
              patch("yfinance.download",  self._ban("yfinance.download")), \
              patch("yfinance.Ticker",    self._ban("yfinance.Ticker")), \
-             patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+             patch.dict(os.environ, {
+                 # Pin the provider EXPLICITLY: the backfill provider
+                 # defaults to openai, and a clean clone has no .env, so
+                 # relying on the maintainer's local BACKFILL_PROVIDER
+                 # made this test environment-dependent (it failed in
+                 # every canonical clean-clone discovery run).
+                 "BACKFILL_PROVIDER": "anthropic",
+                 "ANTHROPIC_API_KEY": "test-key",
+             }):
             r = self.client.get(
                 "/movers/backfill-preview",
                 params={"limit": 5},
             )
         self.assertEqual(r.status_code, 200, r.text)
         body = r.json()
-        # The preview classified the cluster — would_call_llm reflects
-        # what a paid run would do, but the preview itself spent
-        # nothing and the registry signature is unchanged.
+        # The preview classified the cluster: it structurally requires a
+        # fresh LLM (requires_llm) and the pinned provider is ready, so
+        # an authorized paid run would reach the LLM (would_call_llm) —
+        # yet the preview itself spent nothing and the registry
+        # signature is unchanged.
         self.assertEqual(len(body["items"]), 1)
         self.assertEqual(body["items"][0]["headline"], headline)
+        self.assertTrue(body["items"][0]["requires_llm"])
         self.assertTrue(body["items"][0]["would_call_llm"])
         self.assertEqual(self._registry_signature(), sig_before)
 
