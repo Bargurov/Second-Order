@@ -9,18 +9,22 @@ Covers:
   - SnapshotStore freshness flag
   - Stale snapshots are still returned (graceful degradation)
   - refresh_all() warms _TICKER_CACHE so subsequent _fetch calls hit cache
+    (rolling-cache scenarios run under an injected cache clock so the
+    fixture stays inside the requested window regardless of the real date)
   - Provider failure stores an error snapshot, does not raise
   - Background thread starts/stops cleanly
   - /snapshots endpoint shape
 """
 
 import os
+import sqlite3
 import sys
 import tempfile
 import threading
 import time
 import unittest
 import uuid
+from datetime import date, timedelta
 from unittest.mock import patch
 
 import pandas as pd
@@ -105,6 +109,46 @@ def _make_df(closes):
 def _good_df():
     """A DataFrame with enough rows for 5d returns to compute."""
     return _make_df([100.0 + i * 0.5 for i in range(30)])
+
+
+# ---------------------------------------------------------------------------
+# Warm-cache clock control (TestWarmCacheContract only)
+# ---------------------------------------------------------------------------
+# The warm-cache contract exercises the real _fetch() -> fetch_daily_cached()
+# path, whose rolling 93-day request window ends at price_cache._today().
+# A fixed provider frame combined with the real wall clock silently ages out
+# of that window: the provider rows persist, but the requested-window re-read
+# comes back empty, _fetch() honestly returns None, the hot cache never
+# warms, and every provider-call assertion below loses its meaning.  Every
+# rolling-cache scenario therefore derives BOTH the cache clock and the
+# provider frame from one controlled weekday anchor.
+
+_WARM_CACHE_TODAY = date(2026, 4, 20)          # Monday
+_WARM_CACHE_SHIFTED_TODAY = date(2030, 4, 22)  # Monday
+
+
+def _warm_cache_df(*, anchor: date = _WARM_CACHE_TODAY, periods: int = 30):
+    """Provider frame whose last row lands exactly on the injected cache
+    clock anchor, keeping every row inside the resolved 3mo request window.
+
+    Geometry is anchor-relative, so shifting the anchor shifts the frame
+    identically (clock-shift invariance).
+    """
+    dates = pd.bdate_range(end=pd.Timestamp(anchor), periods=periods)
+    return pd.DataFrame(
+        {
+            "Close": [100.0 + i * 0.5 for i in range(periods)],
+            "Volume": [1_000_000.0] * periods,
+        },
+        index=dates,
+    )
+
+
+def _resolved_3mo_window(anchor: date):
+    """The (start, end) range fetch_daily_cached resolves for period='3mo'
+    under the injected anchor clock."""
+    with patch("price_cache._today", return_value=anchor):
+        return price_cache._resolve_range("3mo", None, None)
 
 
 # ---------------------------------------------------------------------------
@@ -330,9 +374,18 @@ class TestRefreshAll(unittest.TestCase):
 
 class TestWarmCacheContract(unittest.TestCase):
     """After refresh_all(), subsequent _fetch() calls for the same symbols
-    must hit the cache and not call the provider again."""
+    must hit the cache and not call the provider again.
+
+    All rolling-cache scenarios patch price_cache._today to
+    _WARM_CACHE_TODAY and build provider frames with _warm_cache_df so the
+    fixture and the requested window share one clock."""
 
     def setUp(self):
+        # Prove the module-level SQLite isolation is active before any
+        # cache write: the price cache must point at the setUpModule temp
+        # file, never at a repo-root archive.
+        self.assertEqual(db.DB_FILE, _TEST_DB_FILE)
+        self.assertTrue(db.DB_FILE.startswith(tempfile.gettempdir()))
         self._saved = get_provider()
         set_provider(YFinanceProvider())
         get_store().clear()
@@ -355,24 +408,86 @@ class TestWarmCacheContract(unittest.TestCase):
         # Cache should now contain entries
         self.assertGreater(market_check._cache_len(), 0)
 
+    def test_warm_fixture_inside_resolved_request_window(self):
+        """Guard: warm fixtures must lie inside the window the cache layer
+        actually requests, at every supported anchor — otherwise the
+        provider-call assertions in this class stop meaning anything."""
+        for anchor in (_WARM_CACHE_TODAY, _WARM_CACHE_SHIFTED_TODAY):
+            with self.subTest(anchor=anchor):
+                # Weekday anchor: the resolved request end equals the anchor
+                # exactly (no weekend snap-back).
+                self.assertLess(anchor.weekday(), 5)
+                req_start, req_end = _resolved_3mo_window(anchor)
+                self.assertEqual(req_end, anchor)
+                df = _warm_cache_df(anchor=anchor)
+                self.assertGreaterEqual(df.index.min().date(), req_start)
+                self.assertLessEqual(df.index.max().date(), req_end)
+
     def test_subsequent_fetch_hits_cache(self):
-        """After warming, calling _fetch with a warmed symbol should not invoke the underlying provider."""
-        # Use a fake provider so we can count calls
+        """After warming, _fetch for a warmed symbol returns data from the
+        in-memory cache without any further provider call."""
         from unittest.mock import MagicMock
-        df = _good_df()
         fake = MagicMock(spec=YFinanceProvider)
-        fake.fetch_daily.return_value = df
+        fake.fetch_daily.return_value = _warm_cache_df()
         set_provider(fake)
         try:
-            # Refresh once — this should cache "ES=F" via _fetch
-            refresh_all()
-            calls_after_refresh = fake.fetch_daily.call_count
-            self.assertGreater(calls_after_refresh, 0)
-            # Now call _fetch again for one of the warmed symbols
-            result = market_check._fetch("ES=F")
-            self.assertIsNotNone(result)
-            # The provider should NOT have been called again
-            self.assertEqual(fake.fetch_daily.call_count, calls_after_refresh)
+            with patch("price_cache._today", return_value=_WARM_CACHE_TODAY):
+                # Refresh once — this should cache "ES=F" via _fetch
+                refresh_all()
+                calls_after_refresh = fake.fetch_daily.call_count
+                self.assertGreater(calls_after_refresh, 0)
+                # Now call _fetch again for one of the warmed symbols
+                first = market_check._fetch("ES=F")
+                self.assertIsNotNone(first)
+                self.assertFalse(first.empty)
+                second = market_check._fetch("ES=F")
+                self.assertIsNotNone(second)
+                # The provider should NOT have been called again
+                self.assertEqual(fake.fetch_daily.call_count, calls_after_refresh)
+                # Served by the hot layer, and logically the same data
+                # (equality, not object identity).
+                self.assertIsNotNone(market_check._cache_get("fetch:ES=F"))
+                pd.testing.assert_frame_equal(first, second)
+        finally:
+            set_provider(YFinanceProvider())
+
+    def test_warm_cache_layers_are_both_populated(self):
+        """refresh_all warms two distinct layers, proven separately: adjusted
+        rows persisted in the isolated SQLite cache inside the request
+        window, and the in-memory fetch:ES=F entry that serves later calls
+        without provider activity."""
+        from unittest.mock import MagicMock
+        fake = MagicMock(spec=YFinanceProvider)
+        fake.fetch_daily.return_value = _warm_cache_df()
+        set_provider(fake)
+        try:
+            with patch("price_cache._today", return_value=_WARM_CACHE_TODAY):
+                refresh_all()
+                calls_after_refresh = fake.fetch_daily.call_count
+                req_start, req_end = price_cache._resolve_range(
+                    "3mo", None, None,
+                )
+                # Persistent layer: adjusted ES=F rows exist and sit inside
+                # the resolved request window.
+                conn = sqlite3.connect(db.DB_FILE)
+                try:
+                    row_min, row_max, row_count = conn.execute(
+                        "SELECT MIN(date), MAX(date), COUNT(*) "
+                        "FROM price_cache "
+                        "WHERE ticker='ES=F' AND auto_adjust=1"
+                    ).fetchone()
+                finally:
+                    conn.close()
+                self.assertGreater(row_count, 0)
+                self.assertGreaterEqual(date.fromisoformat(row_min), req_start)
+                self.assertLessEqual(date.fromisoformat(row_max), req_end)
+                # Hot layer: the in-memory entry exists and serves the next
+                # call without reaching the provider.
+                self.assertIsNotNone(market_check._cache_get("fetch:ES=F"))
+                served = market_check._fetch("ES=F")
+                self.assertIsNotNone(served)
+                self.assertEqual(len(served), row_count)
+                self.assertEqual(fake.fetch_daily.call_count, calls_after_refresh)
         finally:
             set_provider(YFinanceProvider())
 
@@ -380,23 +495,122 @@ class TestWarmCacheContract(unittest.TestCase):
         """After refresh_all warms the cache, macro_snapshot should not re-fetch
         liquid market tickers (DX-Y.NYB, ^TNX, CL=F under YFinance)."""
         from unittest.mock import MagicMock
-        df = _good_df()
         fake = MagicMock(spec=YFinanceProvider)
-        fake.fetch_daily.return_value = df
+        fake.fetch_daily.return_value = _warm_cache_df()
         set_provider(fake)
         try:
-            refresh_all()
-            calls_after_refresh = fake.fetch_daily.call_count
-            # Now call macro_snapshot — it should reuse the warm cache for
-            # the liquid markets it now references via the resolver.
-            market_check.macro_snapshot()
-            calls_after_macro = fake.fetch_daily.call_count
-            # macro_snapshot has 5 instruments; 3 are liquid markets that
-            # were just warmed (DXY, 10Y, CL).  Only 2 (^VIX, BZ=F) should
-            # be cold-fetched.  So at most 2 new provider calls.
-            new_calls = calls_after_macro - calls_after_refresh
-            self.assertLessEqual(new_calls, 2,
-                                 f"Expected ≤2 new calls after warm refresh, got {new_calls}")
+            with patch("price_cache._today", return_value=_WARM_CACHE_TODAY):
+                refresh_all()
+                calls_after_refresh = fake.fetch_daily.call_count
+                warmed = {
+                    c.args[0] if c.args else c.kwargs.get("ticker")
+                    for c in fake.fetch_daily.call_args_list
+                }
+                # Now call macro_snapshot — it should reuse the warm cache for
+                # the liquid markets it now references via the resolver.
+                market_check.macro_snapshot()
+                new_calls = fake.fetch_daily.call_args_list[calls_after_refresh:]
+                new_symbols = [
+                    c.args[0] if c.args else c.kwargs.get("ticker")
+                    for c in new_calls
+                ]
+                # Warmed liquid symbols must not be fetched again.
+                self.assertEqual(
+                    [s for s in new_symbols if s in warmed], [],
+                    "macro_snapshot re-fetched symbols the warmer already cached",
+                )
+                # macro_snapshot has 5 instruments; 3 are liquid markets that
+                # were just warmed (DXY, 10Y, CL).  Only 2 (^VIX, BZ=F) should
+                # be cold-fetched.
+                new = len(new_symbols)
+                self.assertLessEqual(new, 2,
+                                     f"Expected ≤2 new calls after warm refresh, got {new}")
+                self.assertEqual(sorted(new_symbols), ["BZ=F", "^VIX"])
+        finally:
+            set_provider(YFinanceProvider())
+
+    def test_warm_cache_contract_is_clock_shift_invariant(self):
+        """The whole warm-cache scenario behaves identically at two weekday
+        anchors when the cache clock and the provider frame shift together."""
+        from unittest.mock import MagicMock
+        observed = []
+        for anchor in (_WARM_CACHE_TODAY, _WARM_CACHE_SHIFTED_TODAY):
+            # Fresh persistent-cache, hot-cache and store state per anchor.
+            get_store().clear()
+            market_check._cache_clear()
+            price_cache._clear_table_for_tests()
+            fake = MagicMock(spec=YFinanceProvider)
+            df = _warm_cache_df(anchor=anchor)
+            fake.fetch_daily.return_value = df
+            set_provider(fake)
+            try:
+                with patch("price_cache._today", return_value=anchor):
+                    req_start, req_end = price_cache._resolve_range(
+                        "3mo", None, None,
+                    )
+                    refresh_all()
+                    calls_after_refresh = fake.fetch_daily.call_count
+                    result = market_check._fetch("ES=F")
+                    later_delta = (
+                        fake.fetch_daily.call_count - calls_after_refresh
+                    )
+                    before_macro = fake.fetch_daily.call_count
+                    market_check.macro_snapshot()
+                    macro_extra = sorted(
+                        c.args[0] if c.args else c.kwargs.get("ticker")
+                        for c in fake.fetch_daily.call_args_list[before_macro:]
+                    )
+                    observed.append({
+                        "initial_calls": calls_after_refresh,
+                        "later_delta": later_delta,
+                        "rows": None if result is None else len(result),
+                        "hot": market_check._cache_get("fetch:ES=F") is not None,
+                        "macro_extra": macro_extra,
+                        "window_geometry": (
+                            (req_end - anchor).days,
+                            (req_end - req_start).days,
+                            (req_end - df.index.max().date()).days,
+                            (df.index.max() - df.index.min()).days,
+                        ),
+                    })
+            finally:
+                set_provider(YFinanceProvider())
+        self.assertEqual(observed[0], observed[1])
+        self.assertEqual(observed[0]["later_delta"], 0)
+        self.assertTrue(observed[0]["hot"])
+        self.assertIsNotNone(observed[0]["rows"])
+        self.assertGreater(observed[0]["rows"], 0)
+
+    def test_out_of_window_frame_is_honestly_unavailable(self):
+        """Negative control — the exact signature that invalidated the old
+        fixed-date fixture: a provider frame entirely before the request
+        window persists, but the requested-window re-read is empty, _fetch
+        returns None, the hot cache stays unpopulated, and a later call
+        honestly retries the provider."""
+        from unittest.mock import MagicMock
+        stale_anchor = _WARM_CACHE_TODAY - timedelta(days=100)
+        fake = MagicMock(spec=YFinanceProvider)
+        fake.fetch_daily.return_value = _warm_cache_df(
+            anchor=stale_anchor, periods=10,
+        )
+        set_provider(fake)
+        try:
+            with patch("price_cache._today", return_value=_WARM_CACHE_TODAY):
+                req_start, _req_end = price_cache._resolve_range(
+                    "3mo", None, None,
+                )
+                frame_max = fake.fetch_daily.return_value.index.max().date()
+                self.assertLess(frame_max, req_start)
+                first = market_check._fetch("ES=F")
+                self.assertIsNone(first)
+                self.assertEqual(fake.fetch_daily.call_count, 1)
+                # None is never cached; the hot layer stays empty.
+                self.assertIsNone(market_check._cache_get("fetch:ES=F"))
+                self.assertEqual(market_check._cache_len(), 0)
+                # A later call may retry the provider.
+                second = market_check._fetch("ES=F")
+                self.assertIsNone(second)
+                self.assertEqual(fake.fetch_daily.call_count, 2)
         finally:
             set_provider(YFinanceProvider())
 
