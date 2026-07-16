@@ -147,13 +147,21 @@ describe("_studyConfigChips for portfolio_view", () => {
     expect(_studyConfigChips(study)).toEqual(["high-quality", "tariff cycle"]);
   });
 
-  it("emits a tradable / not tradable chip from a boolean", () => {
-    expect(
-      _studyConfigChips(makeStudy({ config: { tradable: true } })),
-    ).toContain("tradable");
-    expect(
-      _studyConfigChips(makeStudy({ config: { tradable: false } })),
-    ).toContain("not tradable");
+  it("omits the engine tradable flag from viewer chips in either polarity (L1)", () => {
+    // The boolean config key still filters server-side (see the round-trip
+    // suite below) but must never surface as a viewer-facing label.
+    for (const value of [true, false]) {
+      const chips = _studyConfigChips(makeStudy({ config: { tradable: value } }));
+      expect(
+        chips.some((c) => /\btradable\b/i.test(c)),
+        `a tradable-labelled chip leaked for tradable=${value}`,
+      ).toBe(false);
+    }
+    // With no other config keys set, the chip list falls back to the
+    // explicit default label rather than rendering an empty strip.
+    expect(_studyConfigChips(makeStudy({ config: { tradable: true } }))).toEqual([
+      "default portfolio",
+    ]);
   });
 
   it("emits queue / mover_window / thesis_state / proof_quality chips when set", () => {
@@ -272,9 +280,9 @@ describe("_portfolioViewConfigToFilters", () => {
 
   it("survives the chip → filter round-trip without losing axes", () => {
     // The render path runs both _studyConfigChips (for the card) and
-    // _portfolioViewConfigToFilters (for the replay).  Make sure the
-    // same config feeds both branches without silently dropping any
-    // axis the chip surfaces.
+    // _portfolioViewConfigToFilters (for the replay).  The replay contract
+    // must preserve EVERY axis — including the engine tradable flag, which
+    // (L1) no longer emits a viewer chip but still filters server-side.
     const study = makeStudy({
       config: {
         quality_tier: "actionable",
@@ -286,8 +294,8 @@ describe("_portfolioViewConfigToFilters", () => {
     const filters = _portfolioViewConfigToFilters(study.config);
 
     expect(chips).toContain("high-quality");
-    expect(chips).toContain("not tradable");
     expect(chips).toContain("tariff cycle");
+    expect(chips.some((c) => /\btradable\b/i.test(c))).toBe(false);
 
     expect(filters.quality_tier).toBe("actionable");
     expect(filters.tradable).toBe(false);

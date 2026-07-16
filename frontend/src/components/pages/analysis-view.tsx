@@ -27,7 +27,7 @@ import {
   Clock,
   MessageSquare,
 } from "lucide-react";
-import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type AnalogMatchDimension, type RevisitSnapshot, type ConfidenceCalibration, type CrossAssetConfirmation, type CreditTransmission, type HorizonCheckpoints, type HorizonCheckpoint, type SectorPassthrough, type SectorPassthroughEntry, type MechanismFamily, type ExpectedChannel, type Counterforce, type SubstitutionBarrier, type EventMacroReleaseContext, type EventPolicyTimingContext, type EventCountryVulnerabilityContext, type PolicyTimingStatus, type VulnerabilityTier, type CommodityTier } from "@/lib/api";
+import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type AnalogMatchDimension, type RevisitSnapshot, type ConfidenceCalibration, type ConfidenceCalibrationBucket, type CrossAssetConfirmation, type CreditTransmission, type HorizonCheckpoints, type HorizonCheckpoint, type SectorPassthrough, type SectorPassthroughEntry, type MechanismFamily, type ExpectedChannel, type Counterforce, type SubstitutionBarrier, type EventMacroReleaseContext, type EventPolicyTimingContext, type EventCountryVulnerabilityContext, type PolicyTimingStatus, type VulnerabilityTier, type CommodityTier } from "@/lib/api";
 import { deriveAllHorizons, deriveTrajectory, type HorizonSummary, type ThesisTrajectory } from "@/lib/revisit-derivation";
 import "@/styles/analyze-canvas.css";
 import { cn } from "@/lib/utils";
@@ -3370,6 +3370,30 @@ interface AnalysisViewProps {
   onAnalysisSucceeded?: (headline: string) => void;
 }
 
+// ---------------------------------------------------------------------------
+// L1 — confidence-calibration archive note
+// ---------------------------------------------------------------------------
+
+/**
+ * Descriptive archive-share note rendered under the model-confidence metric.
+ * The calibration bucket's ``hit_rate`` is the ANY-SUPPORT share — the
+ * fraction of archived analyses at this confidence level whose event later
+ * had at least one supporting directional ticker — so the copy names that
+ * rule and its denominator instead of posing as predictive validation.
+ * Exported for the posture-reconciliation test.
+ */
+export function calibrationArchiveNote(
+  level: string,
+  bucket: ConfidenceCalibrationBucket,
+): string {
+  return `${Math.round(bucket.hit_rate * 100)}% of ${bucket.n} archived ${level}-confidence analyses had ≥1 supporting ticker (any-support rule)`;
+}
+
+/** Hover title for the calibration note — the explicit claim boundary. */
+export const CALIBRATION_ARCHIVE_NOTE_TITLE =
+  "Descriptive archive share under the any-support rule — not predictive " +
+  "validation, accuracy, or model performance.";
+
 type Phase = "idle" | "classify" | "analysis" | "market" | "complete";
 
 export function AnalysisView({ initialHeadline, initialContext, initialEventId, onHeadlineConsumed, onBack, onAnalysisFailed, onAnalysisSucceeded }: AnalysisViewProps) {
@@ -3553,8 +3577,8 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
                 <div className="ml">Confidence</div>
                 <div className={cn("mv", `conf-${result.analysis.confidence}`)}>{conf.label}</div>
                 {calibBucket && (
-                  <div className="ms" title={`Historical validation rate for ${result.analysis.confidence}-confidence calls`}>
-                    {Math.round(calibBucket.hit_rate * 100)}% validated historically, n={calibBucket.n}
+                  <div className="ms" title={CALIBRATION_ARCHIVE_NOTE_TITLE}>
+                    {calibrationArchiveNote(result.analysis.confidence, calibBucket)}
                   </div>
                 )}
               </div>

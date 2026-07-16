@@ -91,12 +91,13 @@ export function roleLabel(role: string | null | undefined): string {
 // Scorecard badge
 // ---------------------------------------------------------------------------
 
+// L1 — the badge reports the agreement count only.  No ratio-threshold
+// success/failure coloring: a supporting/total count is a descriptive tally,
+// not a performance verdict, so it must not render as one.
 function ScoreBadge({ score }: { score: { supporting: number; total: number } | null }) {
   if (!score || score.total === 0) return <Badge variant="outline">no data</Badge>;
-  const ratio = score.supporting / score.total;
-  const variant = ratio >= 0.6 ? "default" : ratio >= 0.4 ? "secondary" : "destructive";
   return (
-    <Badge variant={variant} className="font-num">
+    <Badge variant="outline" className="font-num" title="supporting / total directional tickers">
       {score.supporting}/{score.total}
     </Badge>
   );
@@ -239,7 +240,7 @@ export function AggregateSummary({ results }: { results: Map<number, BacktestRes
 
   if (eventsScored === 0) return null;
 
-  const hitRate = totalTickers > 0 ? ((totalSupporting / totalTickers) * 100).toFixed(0) : "0";
+  const agreementPct = totalTickers > 0 ? ((totalSupporting / totalTickers) * 100).toFixed(0) : "0";
 
   return (
     <Card className="overflow-hidden border-border bg-card">
@@ -248,9 +249,9 @@ export function AggregateSummary({ results }: { results: Map<number, BacktestRes
           <Target className="h-4 w-4 text-muted-foreground" />
         </div>
         <div className="space-y-0.5">
-          <p className="section-kicker">Score overview</p>
+          <p className="section-kicker">Directional agreement</p>
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="font-num text-xl font-semibold text-foreground">{hitRate}%</span>
+            <span className="font-num text-xl font-semibold text-foreground">{agreementPct}%</span>
             <span className="text-[12px] leading-5 text-foreground/74">
               directional agreement across <span className="font-num">{totalTickers}</span> tickers in{" "}
               <span className="font-num">{eventsScored}</span> scored events

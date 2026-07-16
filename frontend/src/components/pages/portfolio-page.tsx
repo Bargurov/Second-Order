@@ -13,9 +13,6 @@ import {
   type PortfolioEntry,
   type PersistenceSignal,
   type RegimeDriftEntry,
-  type SimulatePortfolioResponse,
-  type SimulatePosition,
-  type SimulateWarning,
   type ThemeTrendEntry,
   type TrackRecordBreakdown,
   type TrackRecordBreakdownBucket,
@@ -61,32 +58,17 @@ import {
 const SECTION_CARD =
   "bg-surface-container-low rounded-lg";
 
-// ---------------------------------------------------------------------------
-// Simulator pure helpers (exported for tests)
-// ---------------------------------------------------------------------------
-
-/** Group positions by event_id, preserving insertion order. */
-export function groupPositionsByEvent(
-  positions: SimulatePosition[],
-): Map<number, SimulatePosition[]> {
-  const map = new Map<number, SimulatePosition[]>();
-  for (const pos of positions) {
-    const existing = map.get(pos.event_id);
-    if (existing) {
-      existing.push(pos);
-    } else {
-      map.set(pos.event_id, [pos]);
-    }
-  }
-  return map;
-}
-
-/** Format a nullable return value as "+4.2%" / "-2.1%" / "—". */
-export function formatReturn(r: number | null): string {
-  if (r === null) return "—";
-  const sign = r >= 0 ? "+" : "";
-  return `${sign}${r.toFixed(1)}%`;
-}
+/**
+ * L1 — header subtitle for the portfolio feed.  Names the actual ordering
+ * basis (the backend orders by cross-asset significance and persistence,
+ * with resolved outcome at reduced weight, then diversifies across
+ * mechanism families) and states what the ordering is not.  Exported for
+ * the posture-reconciliation test.
+ */
+export const PORTFOLIO_ORDER_SUBTITLE =
+  "Archived analyses in a stated descriptive order — cross-asset " +
+  "significance, persistence, and resolved outcome, diversified across " +
+  "mechanism families. A research record, not an opportunity ranking.";
 
 // ---------------------------------------------------------------------------
 // Engine-phase compact signals — pure helpers (exported for tests)
@@ -366,357 +348,17 @@ function LifecycleBadge({ sig }: { sig: PersistenceSignal }) {
 }
 
 // ---------------------------------------------------------------------------
-// Simulator subcomponents
-// ---------------------------------------------------------------------------
-
-function PickRow({
-  entry,
-  selected,
-  onToggle,
-}: {
-  entry: PortfolioEntry;
-  selected: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className={cn(
-        "w-full rounded-lg p-2.5 text-left transition-all",
-        "shadow-[inset_0_0_0_1px_rgba(71,70,86,0.35)]",
-        selected &&
-          "bg-primary/5 shadow-[inset_0_0_0_1px_rgba(147,209,211,0.25)]",
-      )}
-    >
-      <div className="flex items-start gap-2.5">
-        {/* Checkbox */}
-        <div
-          className={cn(
-            "mt-0.5 flex h-3 w-3 shrink-0 items-center justify-center rounded border",
-            selected
-              ? "border-primary/50 bg-primary/15"
-              : "border-outline-variant/40 bg-transparent",
-          )}
-        >
-          {selected && (
-            <span className="block h-1.5 w-1.5 rounded-sm bg-primary" />
-          )}
-        </div>
-        {/* Content */}
-        <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              "line-clamp-2 text-[10px] font-semibold leading-snug",
-              selected ? "text-on-surface" : "text-on-surface/50",
-            )}
-          >
-            {entry.headline}
-          </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <ValidationBadge
-              outcome={entry.validation_outcome}
-              ratio={null}
-            />
-            <ConfidenceChip value={entry.confidence} />
-          </div>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function SnapshotStrip({
-  summary,
-}: {
-  summary: SimulatePortfolioResponse["summary"];
-}) {
-  const metrics: Array<{
-    label: string;
-    value: string;
-    positive?: boolean;
-    negative?: boolean;
-  }> = [
-    {
-      label: "Return",
-      value:
-        summary.portfolio_return !== null
-          ? formatReturn(summary.portfolio_return)
-          : "—",
-      positive:
-        summary.portfolio_return !== null && summary.portfolio_return >= 0,
-      negative:
-        summary.portfolio_return !== null && summary.portfolio_return < 0,
-    },
-    {
-      label: "Win Rate",
-      value:
-        summary.win_rate !== null
-          ? `${Math.round(summary.win_rate * 100)}%`
-          : "—",
-    },
-    {
-      label: "Coverage",
-      value: `${Math.round(summary.data_coverage * 100)}%`,
-    },
-    {
-      label: "Positions",
-      value: String(summary.positions_total),
-    },
-  ];
-
-  return (
-    <div className={cn(SECTION_CARD, "px-4 py-3")}>
-      <p className="section-kicker mb-3">
-        Portfolio Snapshot · {summary.events_contributing} positions
-      </p>
-      <div className="flex gap-6">
-        {metrics.map((m) => (
-          <div key={m.label} className="flex flex-col items-center gap-0.5">
-            <span
-              className={cn(
-                "text-[20px] font-bold tabular-nums leading-none",
-                m.positive
-                  ? "text-[#6ec6a5]"
-                  : m.negative
-                    ? "text-[#ee7d77]"
-                    : "text-primary",
-              )}
-            >
-              {m.value}
-            </span>
-            <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              {m.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function EventOutcomes({
-  positions,
-  entries,
-}: {
-  positions: SimulatePosition[];
-  entries: PortfolioEntry[];
-}) {
-  const grouped = useMemo(() => groupPositionsByEvent(positions), [positions]);
-  const entryMap = useMemo(
-    () => new Map(entries.map((e) => [e.id, e])),
-    [entries],
-  );
-
-  return (
-    <div className={cn(SECTION_CARD, "px-4 py-3")}>
-      <p className="section-kicker mb-3">Per-event outcomes</p>
-      <div className="space-y-3">
-        {Array.from(grouped.entries()).map(([eventId, eventPositions]) => {
-          const entry = entryMap.get(eventId);
-          const headline = eventPositions[0]?.event_headline ?? "";
-          const allMissing = eventPositions.every(
-            (p) => p.return_source === "missing",
-          );
-
-          return (
-            <div
-              key={eventId}
-              className="flex items-start gap-3 border-b border-border/20 pb-3 last:border-0 last:pb-0"
-            >
-              {/* Status dot */}
-              <span
-                className={cn(
-                  "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                  entry?.validation_outcome === "validated"
-                    ? "bg-[#6ec6a5]"
-                    : entry?.validation_outcome === "contradicted"
-                      ? "bg-[#ee7d77]"
-                      : "bg-muted-foreground/30",
-                )}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="mb-1.5 line-clamp-1 text-[10.5px] font-semibold text-on-surface">
-                  {headline}
-                </p>
-                {allMissing ? (
-                  <span className="text-[10px] text-muted-foreground/50">
-                    No data
-                  </span>
-                ) : (
-                  <div className="flex flex-wrap gap-1">
-                    {eventPositions.map((pos) => (
-                      <span
-                        key={`${pos.symbol}-${pos.direction_tag ?? "n"}`}
-                        className={cn(
-                          "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-medium",
-                          pos.gross_return === null
-                            ? "bg-surface-container text-muted-foreground/50"
-                            : pos.gross_return >= 0
-                              ? "bg-[#6ec6a5]/10 text-[#6ec6a5]"
-                              : "bg-[#ee7d77]/10 text-[#ee7d77]",
-                        )}
-                      >
-                        {pos.symbol}
-                        <span className="opacity-70">
-                          {formatReturn(pos.gross_return)}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {entry && (
-                <ValidationBadge
-                  outcome={entry.validation_outcome}
-                  ratio={null}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function WarningsList({ warnings }: { warnings: SimulateWarning[] }) {
-  if (warnings.length === 0) return null;
-
-  return (
-    <div className={cn(SECTION_CARD, "px-4 py-3")}>
-      <p className="section-kicker mb-3">Overlap & concentration</p>
-      <div className="space-y-2">
-        {warnings.map((w, i) => (
-          <div
-            key={i}
-            className={cn(
-              "rounded-md px-3 py-2 text-[11px]",
-              w.type === "concentration"
-                ? "border border-[#ee7d77]/18 bg-[#ee7d77]/6 text-[#ee7d77]"
-                : "bg-surface-container text-muted-foreground",
-            )}
-          >
-            {w.type === "concentration" && (
-              <span className="mr-1">⚠</span>
-            )}
-            {w.message}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SimResults({
-  selectedIds,
-  entries,
-}: {
-  selectedIds: Set<number>;
-  entries: PortfolioEntry[];
-}) {
-  const sortedIds = useMemo(
-    () => [...selectedIds].sort((a, b) => a - b),
-    [selectedIds],
-  );
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: qk.simulate(sortedIds),
-    queryFn: () =>
-      api.simulatePortfolio({
-        event_ids: sortedIds,
-        horizon: "5d",
-        direction_filter: "supporting",
-        include_shorts: false,
-      }),
-    enabled: sortedIds.length > 0,
-    staleTime: 2 * 60_000,
-  });
-
-  if (sortedIds.length === 0) {
-    return (
-      <div className="flex h-48 items-center justify-center text-center">
-        <p className="text-[12px] text-muted-foreground/50">
-          Select positions from the left to run a simulation
-        </p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-20 w-full rounded-xl" />
-        <Skeleton className="h-36 w-full rounded-xl" />
-        <Skeleton className="h-20 w-full rounded-xl" />
-      </div>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <div className={cn(SECTION_CARD, "p-6 text-center")}>
-        <p className="text-[12px] text-muted-foreground">
-          Simulation failed — try again
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <SnapshotStrip summary={data.summary} />
-      {data.positions.length > 0 && (
-        <EventOutcomes positions={data.positions} entries={entries} />
-      )}
-      <WarningsList warnings={data.warnings} />
-    </div>
-  );
-}
-
-function SimulatorTab({
-  entries,
-  selectedIds,
-  onToggle,
-}: {
-  entries: PortfolioEntry[];
-  selectedIds: Set<number>;
-  onToggle: (id: number) => void;
-}) {
-  return (
-    <div className="grid grid-cols-[260px_1fr] gap-4">
-      {/* LEFT: pick list */}
-      <div>
-        <p className="section-kicker mb-2">
-          Select positions ({selectedIds.size} / {entries.length})
-        </p>
-        <div className="space-y-1.5">
-          {entries.map((entry) => (
-            <PickRow
-              key={entry.id}
-              entry={entry}
-              selected={selectedIds.has(entry.id)}
-              onToggle={() => onToggle(entry.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* RIGHT: results */}
-      <SimResults selectedIds={selectedIds} entries={entries} />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Research analytics — mechanism-family + regime track record
 // ---------------------------------------------------------------------------
 //
 // Renders the three slices produced by /stats/track-record/breakdown in a
 // dense, research-oriented layout: overall strip + three tables.  Every
-// numeric is tabular-nums; hit rates are colour-coded using the same
-// muted teal (supporting) / coral (contradicting) palette used elsewhere.
-// Falls back to a friendly empty state when the archive has no
-// resolvable outcomes yet.
+// numeric is tabular-nums.  Validated / contradicted COUNTS keep the
+// categorical teal / coral state colours; the validated-share percentage
+// itself stays neutral (L1) — a share of resolved archive outcomes is
+// descriptive accounting, and colouring it by a threshold would read as a
+// performance verdict.  Falls back to a friendly empty state when the
+// archive has no resolvable outcomes yet.
 
 /** Render a signed-percent return with consistent sign-leading format. */
 function _fmtPct(v: number | null, digits = 1): string {
@@ -725,24 +367,18 @@ function _fmtPct(v: number | null, digits = 1): string {
   return `${sign}${v.toFixed(digits)}%`;
 }
 
-/** Render hit rate as "56% · 18 events" — the two numbers that matter
- *  for a research desk in one compact string.  Hides the rate when
- *  the bucket has no directional outcomes. */
-function _fmtHitRate(rate: number | null, n: number): string {
+/** Render a validated share as "56% · 18" — rate plus its denominator in
+ *  one compact string.  Hides the rate when the bucket has no resolved
+ *  directional outcomes. */
+function _fmtShare(rate: number | null, n: number): string {
   if (rate === null || n === 0) return `— · ${n}`;
   return `${Math.round(rate * 100)}% · ${n}`;
 }
 
-/** Tone for a hit rate — green when the bucket is beating 50%, coral
- *  when worse than a coinflip, neutral otherwise.  `n` gates: buckets
- *  with fewer than 3 resolved directional outcomes stay neutral even
- *  at 100% / 0% because sample depth doesn't support a call yet. */
-function _hitRateTone(rate: number | null, n: number): string {
-  if (rate === null || n < 3) return "text-muted-foreground/70";
-  if (rate >= 0.55) return "text-[#6ec6a5]";
-  if (rate <= 0.45) return "text-[#ee7d77]";
-  return "text-muted-foreground/70";
-}
+/** Neutral tone for a validated share (L1).  The share is descriptive
+ *  archive accounting over resolved outcomes — never coloured by a
+ *  beat-the-coinflip threshold, which would present it as edge. */
+const SHARE_TONE = "text-on-surface/85";
 
 function _returnTone(v: number | null): string {
   if (v === null) return "text-muted-foreground/40";
@@ -800,9 +436,11 @@ function _ResolutionBar({
   );
 }
 
-/** Hit-rate progress bar — design package ``.hit-bar``.  Subdued teal
- *  fill, dim when below 0.5 to flag a coin-flip bucket at a glance. */
-function _HitRateBar({
+/** Validated-share proportion bar.  Single constant fill opacity (L1):
+ *  the bar shows a share of resolved outcomes, so its rendering must not
+ *  change character at 0.5 — a coin-flip threshold is a performance read,
+ *  not a categorical state. */
+function _ShareBar({
   rate,
   width = 56,
 }: {
@@ -820,19 +458,17 @@ function _HitRateBar({
       aria-hidden
     >
       <span
-        className={cn(
-          "block h-full rounded-sm",
-          rate < 0.5 ? "bg-[#93d1d3]/35" : "bg-[#93d1d3]/75",
-        )}
+        className="block h-full rounded-sm bg-[#93d1d3]/60"
         style={{ width: `${fillWidth}px` }}
       />
     </span>
   );
 }
 
-function ResearchHeadlineStrip({ data }: { data: TrackRecordBreakdown }) {
+// Exported for the L1 posture-reconciliation test.
+export function ResearchHeadlineStrip({ data }: { data: TrackRecordBreakdown }) {
   const directional = data.validated_total + data.contradicted_total;
-  const hitRatePct = data.hit_rate !== null ? Math.round(data.hit_rate * 100) : null;
+  const validatedSharePct = data.hit_rate !== null ? Math.round(data.hit_rate * 100) : null;
 
   // Secondary metrics — kept inline so the hero number reads first.
   const metrics: Array<{ label: string; value: string; tone?: string }> = [
@@ -853,22 +489,18 @@ function ResearchHeadlineStrip({ data }: { data: TrackRecordBreakdown }) {
         </span>
       </div>
       <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-        {/* Hero metric — hit rate dominates so the page reads "did the
-            discipline pay" before any breakdown row competes for attention. */}
+        {/* Lead metric — the validated share of resolved archive outcomes,
+            stated with its denominator and rendered neutral (L1): it is
+            descriptive accounting, not a payoff or edge readout. */}
         <div className="flex flex-col gap-1 pr-6 border-r border-white/[0.06]">
           <div className="flex items-baseline gap-3">
-            <span
-              className={cn(
-                "font-headline font-extrabold text-[28px] leading-none tracking-tight tabular-nums",
-                _hitRateTone(data.hit_rate, directional),
-              )}
-            >
-              {hitRatePct !== null ? `${hitRatePct}%` : "—"}
+            <span className="font-headline font-extrabold text-[28px] leading-none tracking-tight tabular-nums text-on-surface/90">
+              {validatedSharePct !== null ? `${validatedSharePct}%` : "—"}
             </span>
-            <_HitRateBar rate={data.hit_rate} width={88} />
+            <_ShareBar rate={data.hit_rate} width={88} />
           </div>
           <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70">
-            Hit rate · {directional} resolved
+            Validated share · {directional} resolved
           </span>
         </div>
         {/* Secondary metrics */}
@@ -888,6 +520,12 @@ function ResearchHeadlineStrip({ data }: { data: TrackRecordBreakdown }) {
           </div>
         ))}
       </div>
+      {/* L1 — quiet claim-boundary footnote for the whole strip. */}
+      <p className="mt-2.5 text-[10.5px] leading-4 text-muted-foreground/50">
+        Validated / contradicted are the archive&apos;s directional-outcome
+        labels over resolved events — descriptive accounting, not accuracy,
+        edge, or a success probability.
+      </p>
     </div>
   );
 }
@@ -924,7 +562,7 @@ function BreakdownTable({
                 <th className="pb-2 text-left">Bucket</th>
                 <th className="pb-2 pl-3 text-right tabular-nums">N</th>
                 <th className="pb-2 pl-3 text-left">Resolution</th>
-                <th className="pb-2 pl-3 text-right">Hit rate</th>
+                <th className="pb-2 pl-3 text-right">Validated share</th>
                 <th className="pb-2 pl-3 text-right">Avg 5d</th>
                 <th className="pb-2 pl-3 text-right">Avg 20d</th>
                 <th className="pb-2 pl-3 text-right">Revisits</th>
@@ -963,14 +601,14 @@ function BreakdownTable({
                     </td>
                     <td className="py-2 pl-3">
                       <div className="flex items-center justify-end gap-2">
-                        <_HitRateBar rate={b.hit_rate} />
+                        <_ShareBar rate={b.hit_rate} />
                         <span
                           className={cn(
                             "font-mono text-[11px] tabular-nums w-[58px] text-right",
-                            _hitRateTone(b.hit_rate, directional),
+                            SHARE_TONE,
                           )}
                         >
-                          {_fmtHitRate(b.hit_rate, directional)}
+                          {_fmtShare(b.hit_rate, directional)}
                         </span>
                       </div>
                     </td>
@@ -2169,16 +1807,17 @@ function PathClustersPanel({ clusters }: { clusters: CrossEventPathCluster[] }) 
 function CombinationOutcomesPanel({ rows }: { rows: CrossEventCombination[] }) {
   return (
     <div className="flex flex-col">
-      <p className="section-kicker mb-0.5">Family × Sector Hit Rates</p>
+      <p className="section-kicker mb-0.5">Family × Sector Resolution</p>
       <p className="mb-2 text-[10px] text-muted-foreground/45">
-        Cross-cut vs the per-family breakdown — the strongest signal combos
+        Cross-cut vs the per-family breakdown — validated / contradicted shares
+        by family and sector
       </p>
       {rows.length === 0 ? _cesEmpty("No combinations with sufficient sample.") : (
         <table className="w-full text-[11px]">
           <thead>
             <tr className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/55">
               <th className="pb-2 text-left">Family · Sector</th>
-              <th className="pb-2 pl-3 text-right">Hit · n</th>
+              <th className="pb-2 pl-3 text-right">Share · n</th>
               <th className="pb-2 pl-3 text-right">V / C</th>
             </tr>
           </thead>
@@ -2200,10 +1839,10 @@ function CombinationOutcomesPanel({ rows }: { rows: CrossEventCombination[] }) {
                   <td
                     className={cn(
                       "py-1.5 pl-3 text-right font-mono tabular-nums",
-                      _hitRateTone(r.hit_rate, directional),
+                      SHARE_TONE,
                     )}
                   >
-                    {_fmtHitRate(r.hit_rate, directional)}
+                    {_fmtShare(r.hit_rate, directional)}
                   </td>
                   <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
                     <span className="text-[#6ec6a5]">{r.validated}</span>
@@ -2353,7 +1992,11 @@ export function _studyConfigChips(study: SavedStudy): string[] {
             _humanize(c.quality_tier),
         );
       }
-      if (typeof c.tradable === "boolean") chips.push(c.tradable ? "tradable" : "not tradable");
+      // L1 — the boolean ``tradable`` config key still filters server-side
+      // (contract untouched) but emits no viewer chip: "tradable" is the
+      // engine's trade-actionability opinion and must not surface as a
+      // professional UI label.  The replay banner's filter COUNT still
+      // includes it, so an active filter is never silently hidden.
       if (typeof c.mechanism_subtype === "string" && c.mechanism_subtype) {
         chips.push(_humanize(c.mechanism_subtype));
       }
@@ -3086,7 +2729,7 @@ function ResearchTab({
       />
       <BreakdownTable
         title="By Compound Regime"
-        kicker="Reflation / stagflation / funding-stress / … performance"
+        kicker="Reflation / stagflation / funding-stress / … resolution mix"
         keyPrefix="comp"
         buckets={data.by_compound_regime}
         emptyHint="No compound-regime-tagged outcomes yet."
@@ -3106,7 +2749,8 @@ function ResearchTab({
 // Portfolio card
 // ---------------------------------------------------------------------------
 
-function PortfolioCard({
+// Exported for the L1 posture-reconciliation test.
+export function PortfolioCard({
   entry,
   onOpen,
 }: {
@@ -3128,7 +2772,6 @@ function PortfolioCard({
   });
 
   const qualityLabel = formatQualityTier(entry.quality_tier);
-  const tradable = tradableFlag(entry.actionability_check);
   const subtype = formatSubtype(
     entry.mechanism_subtype,
     (entry as { mechanism_family?: string | null }).mechanism_family,
@@ -3140,7 +2783,6 @@ function PortfolioCard({
     : undefined;
   const showEnginePhase =
     qualityLabel !== null ||
-    tradable !== null ||
     subtype !== null ||
     warnings.length > 0;
   const tierToneClass =
@@ -3203,22 +2845,11 @@ function PortfolioCard({
                 {qualityLabel}
               </span>
             )}
-            {tradable === true && (
-              <span
-                title="Actionability check: tradable"
-                className="inline-flex items-center rounded-full bg-[#93d1d3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#93d1d3]"
-              >
-                tradable
-              </span>
-            )}
-            {tradable === false && (
-              <span
-                title="Actionability check: not tradable"
-                className="inline-flex items-center rounded-full bg-surface-container px-2 py-0.5 text-[10px] font-semibold text-muted-foreground/70"
-              >
-                not tradable
-              </span>
-            )}
+            {/* L1 — the engine's ``actionability_check.tradable`` flag is the
+                analysis model's own trade-actionability opinion.  It stays in
+                the API payload for compatibility but is never rendered as a
+                viewer-facing label: a "tradable" chip is a recommendation
+                surface, whatever the styling. */}
             {subtype && (
               <span
                 title="mechanism subtype"
@@ -3398,17 +3029,13 @@ const QUALITY_TIER_OPTIONS: ReadonlyArray<{
   { value: "low_information", label: "Low info" },
 ];
 
-const TRADABLE_OPTIONS: ReadonlyArray<{
-  value: TradableFilter;
-  label: string;
-}> = [
-  { value: "all",          label: "All" },
-  { value: "tradable",     label: "Tradable" },
-  { value: "not_tradable", label: "Not tradable" },
-  { value: "unknown",      label: "Unknown" },
-];
+// L1 — no viewer-facing filter over the engine's trade-actionability flag.
+// The ``tradable`` axis survives in EngineFilters / applyEngineFilters for
+// contract stability (saved server-side views may still carry it), but the
+// professional UI offers no "show me the tradable ones" control.
 
-function EngineFilterBar({
+// Exported for the L1 posture-reconciliation test.
+export function EngineFilterBar({
   filters,
   onChange,
   subtypeOptions,
@@ -3451,24 +3078,6 @@ function EngineFilterBar({
         {QUALITY_TIER_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>
             {o.value === "all" ? "Tier · all" : o.label}
-          </option>
-        ))}
-      </select>
-      <select
-        data-testid="engine-filter-tradable"
-        aria-label="Filter by tradable"
-        className={selectClass}
-        value={filters.tradable}
-        onChange={(e) =>
-          onChange({
-            ...filters,
-            tradable: e.target.value as TradableFilter,
-          })
-        }
-      >
-        {TRADABLE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.value === "all" ? "Tradable · all" : o.label}
           </option>
         ))}
       </select>
@@ -3649,10 +3258,14 @@ function LandingMoversRail({
 }
 
 export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
-  const [activeTab, setActiveTab] = useState<
-    "portfolio" | "research" | "simulator"
-  >("portfolio");
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  // L1 — the former "simulator" tab (hand-picked archived events aggregated
+  // into a portfolio Return / Win Rate) was removed, not restyled: a
+  // hindsight selection over known outcomes with no governed rule, cost
+  // model, or point-in-time discipline reads as strategy performance no
+  // matter what it is called.  Do not reintroduce it as a tab.
+  const [activeTab, setActiveTab] = useState<"portfolio" | "research">(
+    "portfolio",
+  );
   const [engineFilters, setEngineFilters] = useState<EngineFilters>(
     ENGINE_FILTERS_DEFAULT,
   );
@@ -3690,7 +3303,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
   );
   const filtersActive = !replayActive && isEngineFilterActive(engineFilters);
 
-  function switchTab(tab: "portfolio" | "research" | "simulator") {
+  function switchTab(tab: "portfolio" | "research") {
     if (tab !== activeTab) setEngineFilters(ENGINE_FILTERS_DEFAULT);
     setActiveTab(tab);
   }
@@ -3705,18 +3318,6 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
     setReplayedView(null);
   }
 
-  function toggleId(id: number) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }
-
   return (
     <ResearchPageShell className="mx-auto max-w-3xl space-y-5">
       {/* ── Header ── */}
@@ -3726,8 +3327,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
             Research Portfolio
           </h2>
           <p className="mt-1 text-[12.5px] text-on-surface-variant/75">
-            Strongest past analyses ranked by confidence, market validation,
-            and follow-through.
+            {PORTFOLIO_ORDER_SUBTITLE}
           </p>
         </div>
         {entries.length > 0 && (
@@ -3761,7 +3361,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
               Saved view · {replayedView!.name}
             </p>
             <p className="text-[11px] text-muted-foreground/65 truncate">
-              {Object.keys(replayedView!.filters).length} filter{Object.keys(replayedView!.filters).length === 1 ? "" : "s"} applied server-side · clear to return to the ranked default
+              {Object.keys(replayedView!.filters).length} filter{Object.keys(replayedView!.filters).length === 1 ? "" : "s"} applied server-side · clear to return to the default ordering
             </p>
           </div>
           <button
@@ -3782,7 +3382,7 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
       {/* ── Tab bar (only once data is loaded) ── */}
       {entries.length > 0 && (
         <div className="inline-flex items-center gap-1 rounded-md bg-white/[0.04] p-[3px]">
-          {(["portfolio", "research", "simulator"] as const).map((tab) => (
+          {(["portfolio", "research"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => switchTab(tab)}
@@ -3886,15 +3486,6 @@ export function PortfolioPage({ onAnalyze }: PortfolioPageProps) {
       {/* ── Research tab — mechanism-family + regime track record ── */}
       {entries.length > 0 && activeTab === "research" && (
         <ResearchTab onLoadPortfolioView={loadPortfolioView} />
-      )}
-
-      {/* ── Simulator tab ── */}
-      {entries.length > 0 && activeTab === "simulator" && (
-        <SimulatorTab
-          entries={entries}
-          selectedIds={selectedIds}
-          onToggle={toggleId}
-        />
       )}
     </ResearchPageShell>
   );
