@@ -107,9 +107,14 @@ describe("route behavior", () => {
     // Documented in App.tsx ("Default home page is Market Context") and
     // sidebar.tsx ("Workspace leads with Market context (the new default
     // landing)").  ``overview`` remains a back-compat alias that resolves
-    // to the same surface; the literal default state is ``"market"``.
+    // to the same surface.  Since M1 the initial page is derived from the
+    // pure route seam — resolveInitialRoute("/") resolves to ``market``
+    // (pinned in lib/__tests__/app-route.test.ts), and the unknown-path
+    // fallback is Market too, so a fresh root load still lands there.
     const app = readFileSync(APP_FILE, "utf-8");
-    expect(app).toMatch(/useState<Page>\("market"\)/);
+    expect(app).toMatch(
+      /useState<Page>\(\s*\(\) => resolveInitialRoute\(window\.location\.pathname\)\.page,?\s*\)/,
+    );
   });
 
   it("App.tsx routes the back-compat overview alias to MarketOverview", () => {

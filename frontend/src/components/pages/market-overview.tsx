@@ -1828,6 +1828,38 @@ function EvidenceNonClaims() {
 }
 
 // ---------------------------------------------------------------------------
+// Clean-clone reviewer pointer (M1) — the real clean-clone state has an
+// EMPTY local archive while the published tracked evidence record
+// (GET /evidence/summary, tracked artifacts) is available, which is exactly
+// the state that suppresses the cold-start panel below (isColdStart requires
+// no tracked evidence).  One quiet action in that state points a reviewer at
+// the addressable Evidence Overview through the central navigate contract.
+// The two states are mutually exclusive by construction, so the action can
+// never render twice.
+// ---------------------------------------------------------------------------
+
+export const EVIDENCE_POINTER_NOTE =
+  "The local archive is empty. The published evidence record is a descriptive research record read from tracked artifacts — not live archive data.";
+export const EVIDENCE_POINTER_ACTION = "Review the published evidence record";
+
+// Pure visibility rule: only the proven clean-clone state — every channel
+// loaded cleanly, archive genuinely empty, tracked evidence present.  A
+// null total means the archive count is not proven yet, so stay hidden.
+export function showEvidenceReviewerPointer(args: {
+  allLoaded: boolean;
+  hasError: boolean;
+  archiveTotal: number | null;
+  hasTrackedEvidence: boolean;
+}): boolean {
+  return (
+    args.allLoaded &&
+    !args.hasError &&
+    args.archiveTotal === 0 &&
+    args.hasTrackedEvidence
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Headline-analysis intake (P6) — the always-available "start here" entry.
 // Routes any free-text headline into the existing onAnalyze flow; the
 // LatestHeadlinesStrip footer remains the real-news browse affordance.
@@ -1914,10 +1946,13 @@ export function HeadlineIntake({
 // Main page
 // ---------------------------------------------------------------------------
 
-export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: {
+export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines, onOpenEvidence }: {
   onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
   failedHeadlines?: Set<string>;
   onOpenHeadlines?: () => void;
+  /** M1 — clean-clone reviewer path: wired by App through the central
+   *  navigate("evidence") contract so the URL becomes /evidence. */
+  onOpenEvidence?: () => void;
 }) {
   // Single normalized market context fetch — replaces the previous separate
   // /snapshots, /stress, and /movers/today queries.  Stress + benchmarks +
@@ -2132,6 +2167,33 @@ export function MarketOverview({ onAnalyze, failedHeadlines, onOpenHeadlines }: 
         trackRecord={trackRecord}
         onAnalyze={onAnalyze}
       />
+
+      {/* Clean-clone reviewer pointer (M1) — visible only in the proven
+          empty-archive / tracked-evidence state (which suppresses the
+          cold-start panel above, so the action never appears twice).  The
+          copy keeps the published descriptive record distinguished from
+          live archive data; the action navigates through App's central
+          navigate("evidence") contract. */}
+      {onOpenEvidence &&
+        showEvidenceReviewerPointer({
+          allLoaded,
+          hasError: !!firstError,
+          archiveTotal,
+          hasTrackedEvidence,
+        }) && (
+          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 rounded-[4px] border border-[color:var(--so-rule)] bg-[var(--so-bg-1)] px-4 py-3">
+            <p className="min-w-0 flex-1 basis-64 font-[family-name:var(--so-serif)] text-[12.5px] italic leading-relaxed text-[var(--so-ink-2)]">
+              {EVIDENCE_POINTER_NOTE}
+            </p>
+            <button
+              type="button"
+              onClick={onOpenEvidence}
+              className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] text-[var(--so-ink-2)] transition-colors hover:text-[var(--so-citrine)]"
+            >
+              {EVIDENCE_POINTER_ACTION} <span className="text-[var(--so-citrine)]">→</span>
+            </button>
+          </div>
+        )}
 
       {/* ────────────── 3 · OUTCOME LEDGER ────────────── */}
       <SectionHead kicker="Outcome" n="3" title="Outcome ledger" className="mt-11" />

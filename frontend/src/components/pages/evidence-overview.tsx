@@ -7,6 +7,7 @@
  *
  * Pure / presentational: it renders the static `RESEARCH_FINDINGS` snapshot.
  */
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
@@ -20,6 +21,58 @@ import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-cor
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
 import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "@/lib/representative-case-library";
 import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "@/lib/effective-independent-evidence";
+
+// ---------------------------------------------------------------------------
+// Stable research-section anchors (M1) — the page is directly addressable at
+// /evidence, and exactly these four sections carry stable IDs a reviewer can
+// link to (page header, canonical denominator ledger, Mission G record,
+// Mission J record).  The IDs live on the existing section wrappers — which
+// render in loading and unavailable states too — so an anchor never
+// disappears while a record resolves.  Scrolling is bounded and injectable:
+// known IDs scroll (offset for the sticky TopBar via scroll-mt), unknown
+// hashes fail quietly, and the hashchange listener cleans up StrictMode-safe.
+// ---------------------------------------------------------------------------
+
+export const EVIDENCE_ANCHOR_IDS = [
+  "evidence-top",
+  "denominators",
+  "mission-g",
+  "mission-j",
+] as const;
+
+export function scrollToEvidenceHash(
+  hash: string,
+  doc: Pick<Document, "getElementById">,
+): boolean {
+  const id = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (!id || !(EVIDENCE_ANCHOR_IDS as readonly string[]).includes(id)) {
+    return false;
+  }
+  const el = doc.getElementById(id);
+  if (!el) return false;
+  el.scrollIntoView({ block: "start" });
+  return true;
+}
+
+type HashScrollWindow = {
+  location: { hash: string };
+  addEventListener(type: "hashchange", listener: () => void): void;
+  removeEventListener(type: "hashchange", listener: () => void): void;
+};
+
+/** Scroll the direct-entry hash once after mount, then follow hash changes
+ *  while the page stays active; returns the listener cleanup. */
+export function installEvidenceHashScroll(
+  win: HashScrollWindow,
+  doc: Pick<Document, "getElementById">,
+): () => void {
+  const scroll = () => {
+    scrollToEvidenceHash(win.location.hash, doc);
+  };
+  scroll();
+  win.addEventListener("hashchange", scroll);
+  return () => win.removeEventListener("hashchange", scroll);
+}
 
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -110,10 +163,14 @@ export function EvidenceOverview() {
     staleTime: 1_800_000,
   });
 
+  // M1 — direct-entry hash scroll (a mount at /evidence#mission-j lands on
+  // the Mission J record) plus hash changes while the page stays active.
+  useEffect(() => installEvidenceHashScroll(window, document), []);
+
   return (
     <div className="mx-auto w-full max-w-5xl">
       {/* Header + purpose + non-claim banner */}
-      <header className="mb-5">
+      <header id="evidence-top" className="mb-5 scroll-mt-20">
         <Kicker>Research</Kicker>
         <h1 className="mt-1 font-headline text-[22px] font-bold leading-tight tracking-[-0.01em] text-on-surface">
           Evidence Overview
@@ -133,7 +190,7 @@ export function EvidenceOverview() {
           accepted-lens snapshot (AC.restatedOn), recomputed read-only by
           scripts/stat_validation_readiness_report.py --lens accepted and
           scripts/event_study_coverage_report.py. */}
-      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+      <Card id="denominators" className="mb-3 scroll-mt-20 overflow-hidden border-border/50 bg-surface-container-low">
         <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
           <Kicker>Denominator ledger · evidence funnel</Kicker>
           <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
@@ -206,7 +263,7 @@ export function EvidenceOverview() {
           above-baseline question over the 86 accepted rows; Mission G
           answers a historical state-conditioning question over its own
           97-event ledger — different questions, never pooled. */}
-      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+      <Card id="mission-g" className="mb-3 scroll-mt-20 overflow-hidden border-border/50 bg-surface-container-low">
         <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
           <Kicker>Historical evidence · Mission G · separate ledger</Kicker>
           <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
@@ -237,7 +294,7 @@ export function EvidenceOverview() {
           accepted track record). Editorial treatment translated from the
           Executive Design package; all research values, states, qualifiers
           and non-claims come verbatim from the contract. */}
-      <Card className="mb-3 overflow-hidden border-border/50 bg-surface-container-low">
+      <Card id="mission-j" className="mb-3 scroll-mt-20 overflow-hidden border-border/50 bg-surface-container-low">
         <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
           <Kicker>Robustness record · Mission J · separate ledger</Kicker>
           <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">

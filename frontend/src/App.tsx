@@ -1,7 +1,13 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar, type Page } from "@/components/layout/sidebar";
+import {
+  resolveInitialRoute,
+  installPopstateListener,
+  planNavigation,
+  applyHistoryAction,
+} from "@/lib/app-route";
 import { TopBar } from "@/components/layout/top-bar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MarketOverview } from "@/components/pages/market-overview";
@@ -42,7 +48,18 @@ export default function App() {
   // Default home page is Market Context — the macro / uncertainty /
   // headlines stack the sidebar leads Workspace with.  ``overview`` is
   // a legacy alias that still resolves to the same surface.
-  const [page, setPage] = useState<Page>("market");
+  //
+  // M1 — one page is directly addressable: a mount at /evidence opens the
+  // Evidence Overview; every other full-shell path resolves to Market (a
+  // fresh root load never trusts prior history state).  The pure route
+  // seam in lib/app-route.ts owns all of these decisions.
+  const [page, setPage] = useState<Page>(
+    () => resolveInitialRoute(window.location.pathname).page,
+  );
+  // Mirrors ``page`` so the stable navigate callback can plan history
+  // actions from the actual current page without re-creating itself (and
+  // therefore its consumers' props) on every page change.
+  const pageRef = useRef<Page>(page);
   const [collapsed, setCollapsed] = useAutoCollapse();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingHeadline, setPendingHeadline] = useState<string | undefined>();
@@ -69,26 +86,53 @@ export default function App() {
     });
   }, []);
 
+  // M1 history contract — one effect owns the browser-history wiring:
+  // normalize the entry URL (/evidence/ → /evidence, unknown → /), seed the
+  // current entry's { page } state, and resolve Back/Forward through the
+  // pure route seam.  The popstate handler only reads history; replaceState
+  // here is idempotent and the returned cleanup removes the listener, so a
+  // StrictMode setup → cleanup → setup cycle leaves exactly one listener.
+  useEffect(() => {
+    const route = resolveInitialRoute(
+      window.location.pathname,
+      window.location.hash,
+    );
+    window.history.replaceState({ page: route.page }, "", route.canonicalUrl);
+    return installPopstateListener(window, (p) => {
+      pageRef.current = p;
+      setPage(p);
+    });
+  }, []);
+
+  // Central navigation — every programmatic page transition goes through
+  // here so the URL/history contract can never desynchronize: entering or
+  // leaving Evidence pushes an entry (Back restores the origin page),
+  // moving among the state-driven pages replaces in place at "/".
+  const navigate = useCallback((p: Page) => {
+    applyHistoryAction(window.history, planNavigation(pageRef.current, p));
+    pageRef.current = p;
+    setPage(p);
+    setMobileOpen(false);
+  }, []);
+
   const analyzeHeadline = useCallback(
     (headline: string, opts?: { eventId?: number; context?: string }) => {
       setPendingHeadline(headline);
       setPendingContext(opts?.context);
       setPendingEventId(opts?.eventId);
-      setPage("analyze");
+      navigate("analyze");
     },
-    [],
+    [navigate],
   );
 
-  const navigate = useCallback((p: Page) => {
-    setPage(p);
-    setMobileOpen(false);
-  }, []);
-
   // Open a Case Library card in the in-app Archive/Event Detail view.
-  const openCase = useCallback((eventId: number) => {
-    setPendingArchiveId(eventId);
-    setPage("events");
-  }, []);
+  const openCase = useCallback(
+    (eventId: number) => {
+      setPendingArchiveId(eventId);
+      navigate("events");
+    },
+    [navigate],
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -148,10 +192,10 @@ export default function App() {
                   {/* Market Context — the macro/uncertainty/headlines surface,
                       reached explicitly via the ``market`` route.  ``overview``
                       is a back-compat alias so older deep links and any
-                      setPage("overview") callers still resolve to the same
+                      navigate("overview") callers still resolve to the same
                       page; preserve until callers migrate. */}
                   {(page === "market" || page === "overview") && (
-                    <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} onOpenHeadlines={() => navigate("headlines")} />
+                    <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} onOpenHeadlines={() => navigate("headlines")} onOpenEvidence={() => navigate("evidence")} />
                   )}
                   {page === "headlines" && (
                     <InboxWorkbench onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
@@ -167,7 +211,7 @@ export default function App() {
                         setPendingEventId(undefined);
                       }}
                       // Back navigates to the default workspace landing.
-                      onBack={() => setPage("market")}
+                      onBack={() => navigate("market")}
                       onAnalysisFailed={handleAnalysisFailed}
                       onAnalysisSucceeded={handleAnalysisSucceeded}
                     />

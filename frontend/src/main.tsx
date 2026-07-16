@@ -5,6 +5,7 @@ import "./index.css";
 import App from "./App";
 import { SharePage } from "@/components/pages/share-page";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { matchSharePath } from "@/lib/app-route";
 
 // ---------------------------------------------------------------------------
 // URL-aware shell selection
@@ -12,15 +13,17 @@ import { ErrorBoundary } from "@/components/error-boundary";
 // The app uses state-based internal routing (no React Router), so to support
 // shell-free shareable pages we inspect the URL path at mount time.
 // A /share/:eventId path renders SharePage in isolation; all other paths
-// get the full App shell as before.
+// get the full App shell, which resolves its own initial page (Market by
+// default, Evidence Overview for the addressable /evidence route) through
+// the same lib/app-route.ts seam.
 // ---------------------------------------------------------------------------
 
-const _sharePath = /^\/share\/(\d+)\/?$/.exec(window.location.pathname);
+const _shareEventId = matchSharePath(window.location.pathname);
 
 const root = document.getElementById("root")!;
 
-if (_sharePath) {
-  const eventId = parseInt(_sharePath[1] ?? "0", 10);
+if (_shareEventId != null) {
+  const eventId = _shareEventId;
   const qc = new QueryClient({
     defaultOptions: {
       queries: { staleTime: 300_000, retry: 1, refetchOnWindowFocus: false },
