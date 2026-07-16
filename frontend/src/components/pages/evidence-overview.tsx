@@ -23,6 +23,10 @@ import {
   researchRecordExportReady,
   researchRecordMemoInput,
 } from "@/lib/research-record-memo";
+import {
+  EVIDENCE_GLOSSARY,
+  buildEvidenceVerificationManifest,
+} from "@/lib/evidence-reader-guide";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
 import {
   ACCEPTED_CORPUS as AC,
@@ -161,26 +165,40 @@ export function EvidenceOverview() {
   // the Mission J record) plus hash changes while the page stays active.
   useEffect(() => installEvidenceHashScroll(window, document), []);
 
+  // Shared M2/M3 snapshots of the two existing Mission queries — the export
+  // action and the reviewer guide both read these; neither makes a request.
+  const missionGSnapshot = {
+    isPending: missionGPending,
+    isError: missionGError,
+    data: missionG,
+  };
+  const missionJSnapshot = {
+    isPending: missionJPending,
+    isError: missionJError,
+    data: missionJ,
+  };
+
   // M2 — one canonical research-record export, built ONLY on click from the
   // same canonical static constants and the same settled Mission G/J query
   // results this page renders (no rebuild per render, no second fetch, no
   // blob allocation outside the handler).  Ready once both contracts settle;
   // a settled error exports as an explicitly unavailable lane.
-  const exportReady = researchRecordExportReady(
-    { isPending: missionGPending, isError: missionGError, data: missionG },
-    { isPending: missionJPending, isError: missionJError, data: missionJ },
-  );
+  const exportReady = researchRecordExportReady(missionGSnapshot, missionJSnapshot);
   const handleDownloadResearchRecord = () => {
     if (!exportReady) return;
     const markdown = buildResearchRecordMemo(
-      researchRecordMemoInput(
-        { isPending: missionGPending, isError: missionGError, data: missionG },
-        { isPending: missionJPending, isError: missionJError, data: missionJ },
-        new Date().toISOString(),
-      ),
+      researchRecordMemoInput(missionGSnapshot, missionJSnapshot, new Date().toISOString()),
     );
     downloadResearchRecordMemo(markdown);
   };
+
+  // M3 — reviewer guide manifest: the four material evidence lanes traced to
+  // their canonically recorded provenance, with pending / unavailable
+  // contract lanes stated honestly (never omitted).
+  const verificationLanes = buildEvidenceVerificationManifest(
+    missionGSnapshot,
+    missionJSnapshot,
+  );
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -217,6 +235,109 @@ export function EvidenceOverview() {
           frozen or tracked provenance, and dated snapshots are labeled per section.
         </p>
       </header>
+
+      {/* M3 — reviewer guide: one compact native disclosure, collapsed by
+          default, between the page introduction and the denominator ledger.
+          Two subsections only: the four-lane verification path (canonical
+          provenance and inert reproduction commands; pending / unavailable
+          contract lanes stated, never omitted) and the eight-term frozen
+          claim-ceiling glossary sourced from the tracked J0/J2 contracts.
+          The glossary's claim boundaries are the page's dedicated negated
+          non-claim list. No new route, anchor, request, or download action. */}
+      <details className="group mb-3 overflow-hidden rounded-md border border-border/50 bg-surface-container-low">
+        <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
+          <span className="flex flex-col gap-0.5">
+            <Kicker>Reviewer guide · provenance and definitions</Kicker>
+            <span className="font-headline text-[13.5px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+              How to read and verify this record
+            </span>
+          </span>
+          <span
+            aria-hidden
+            className="font-mono text-[10px] text-on-surface-variant/55 group-open:rotate-90"
+          >
+            ▸
+          </span>
+        </summary>
+        <div className="flex flex-col gap-4 border-t border-border/40 px-3.5 py-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          {/* Subsection 1 — verification path */}
+          <section className="flex flex-col gap-2">
+            <Kicker>Verification path</Kicker>
+            <p className="text-[11.5px] leading-relaxed text-on-surface-variant/75">
+              Where each visible evidence lane comes from and how to reproduce or inspect it from a
+              local checkout. Reproduction commands are inert reference text — nothing runs from
+              this page, and fields the canonical sources do not record say so.
+            </p>
+            <div className="flex flex-col divide-y divide-border/30">
+              {verificationLanes.map((lane) => (
+                <div key={lane.lane} className="flex flex-col gap-1 py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                    <span className="font-mono text-[11px] text-on-surface">{lane.lane}</span>
+                    <span className="font-mono text-[10px] text-on-surface-variant/60">
+                      {lane.availability}
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] leading-relaxed text-on-surface-variant/80">
+                    {lane.purpose}
+                  </p>
+                  <p className="font-mono text-[10.5px] tabular-nums leading-relaxed text-on-surface-variant/70">
+                    {lane.scope}
+                  </p>
+                  <dl className="flex flex-col gap-0.5 pt-0.5">
+                    {lane.fields.map((f) => (
+                      <div
+                        key={f.label}
+                        className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3"
+                      >
+                        <dt className="w-56 shrink-0 text-[10.5px] text-on-surface-variant/60">
+                          {f.label}
+                        </dt>
+                        <dd className="min-w-0 text-[11px] leading-relaxed text-on-surface-variant/85">
+                          {f.code ? (
+                            <code className="break-all font-mono text-[10.5px] text-on-surface-variant">
+                              {f.value}
+                            </code>
+                          ) : (
+                            f.value
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Subsection 2 — terms and claim ceilings */}
+          <section className="flex flex-col gap-2 border-t border-border/40 pt-3">
+            <Kicker>Terms and claim ceilings</Kicker>
+            <p className="text-[11.5px] leading-relaxed text-on-surface-variant/75">
+              The frozen research states and evidence classes used above, with what each does not
+              license. Definitions follow the tracked contracts; claim boundaries are stated per
+              term.
+            </p>
+            <dl className="flex flex-col divide-y divide-border/30">
+              {EVIDENCE_GLOSSARY.map((e) => (
+                <div key={e.term} className="flex flex-col gap-0.5 py-2 first:pt-0 last:pb-0">
+                  <dt className="font-mono text-[11px] text-on-surface">{e.term}</dt>
+                  <dd className="flex flex-col gap-0.5">
+                    <p className="text-[11.5px] leading-relaxed text-on-surface-variant/85">
+                      {e.definition}
+                    </p>
+                    <p className="text-[11px] italic leading-relaxed text-on-surface-variant/70">
+                      {e.boundary}
+                    </p>
+                    <p className="font-mono text-[10px] leading-relaxed text-on-surface-variant/50">
+                      {e.source} · {e.sourceSection}
+                    </p>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        </div>
+      </details>
 
       {/* D1 — canonical denominator ledger / evidence funnel.  A single anchor
           for the project's denominator accounting so the figures in the cards
