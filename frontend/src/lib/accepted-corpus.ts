@@ -109,3 +109,42 @@ export const FAMILY_COVERAGE = {
   overviewNote: "stats/MECHANISM_FAMILY_OVERVIEW.md",
   shortlistNote: "stats/STAGED_CANDIDATE_SHORTLIST.md",
 } as const;
+
+/**
+ * D1 — the canonical denominator funnel, shared by the Evidence Overview
+ * page and the research-record memo export (M2) so the two renderings can
+ * never drift apart.  Every figure is composed from the constants above (no
+ * number is retyped); each step is a DIFFERENT denominator answering a
+ * DIFFERENT question — not a competing estimate of one number.
+ */
+export const DENOMINATOR_LEDGER: ReadonlyArray<{
+  value: string;
+  label: string;
+  note: string;
+}> = [
+  {
+    value: String(ACCEPTED_CORPUS.savedEvents),
+    label: "archive rows",
+    note: "Full local archive — every saved event, including flagged seeds and staged / pending rows.",
+  },
+  {
+    value: String(ACCEPTED_CORPUS.coverageDenominator),
+    label: "accepted coverage rows",
+    note: "Accepted rows eligible for coverage / event-date reporting.",
+  },
+  {
+    value: String(ACCEPTED_CORPUS.trackRecordTotal),
+    label: "accepted track-record rows",
+    note: "Accepted rows used for support / contradiction / unresolved accounting.",
+  },
+  {
+    value: `${ACCEPTED_CORPUS.eventStudyAvailable} / ${ACCEPTED_CORPUS.coverageDenominator}`,
+    label: "event-study available",
+    note: "Accepted coverage rows with a SPY-relative event-study readout — a coverage denominator, not a significance claim.",
+  },
+  {
+    value: String(FAMILY_COVERAGE.stagedCandidates),
+    label: "staged candidates",
+    note: "Outside the accepted and FDR pools; never merged into accepted claims.",
+  },
+];

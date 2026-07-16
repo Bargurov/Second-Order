@@ -9,6 +9,7 @@
  */
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -16,8 +17,18 @@ import { qk } from "@/lib/queryKeys";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MissionGEvidenceCard } from "@/components/ui/mission-g-evidence-card";
 import { MissionJEvidenceCard } from "@/components/ui/mission-j-evidence-card";
+import {
+  buildResearchRecordMemo,
+  downloadResearchRecordMemo,
+  researchRecordExportReady,
+  researchRecordMemoInput,
+} from "@/lib/research-record-memo";
 import { RESEARCH_FINDINGS as F } from "@/lib/research-findings";
-import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "@/lib/accepted-corpus";
+import {
+  ACCEPTED_CORPUS as AC,
+  DENOMINATOR_LEDGER,
+  FAMILY_COVERAGE as FC,
+} from "@/lib/accepted-corpus";
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "@/lib/mechanism-family-evidence";
 import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "@/lib/representative-case-library";
 import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "@/lib/effective-independent-evidence";
@@ -113,42 +124,21 @@ function Verdict({ children }: { children: React.ReactNode }) {
   );
 }
 
-// D1 — the canonical denominator funnel.  Every figure is composed from the
-// shared accepted-corpus constants (no number is retyped here), so the ledger
-// cannot drift from the cards below.  Each step is a DIFFERENT denominator
-// answering a DIFFERENT question — not a competing estimate of one number.
-const LEDGER: ReadonlyArray<{ value: React.ReactNode; label: string; note: string }> = [
-  {
-    value: AC.savedEvents,
-    label: "archive rows",
-    note: "Full local archive — every saved event, including flagged seeds and staged / pending rows.",
-  },
-  {
-    value: AC.coverageDenominator,
-    label: "accepted coverage rows",
-    note: "Accepted rows eligible for coverage / event-date reporting.",
-  },
-  {
-    value: AC.trackRecordTotal,
-    label: "accepted track-record rows",
-    note: "Accepted rows used for support / contradiction / unresolved accounting.",
-  },
-  {
-    value: `${AC.eventStudyAvailable} / ${AC.coverageDenominator}`,
-    label: "event-study available",
-    note: "Accepted coverage rows with a SPY-relative event-study readout — a coverage denominator, not a significance claim.",
-  },
-  {
-    value: FC.stagedCandidates,
-    label: "staged candidates",
-    note: "Outside the accepted and FDR pools; never merged into accepted claims.",
-  },
-];
+// D1 — the canonical denominator funnel lives in the shared
+// DENOMINATOR_LEDGER (lib/accepted-corpus): composed from the accepted-corpus
+// constants (no number retyped) and consumed by BOTH this page and the M2
+// research-record memo export, so the two renderings cannot drift.  Each step
+// is a DIFFERENT denominator answering a DIFFERENT question — not a competing
+// estimate of one number.
 
 export function EvidenceOverview() {
   // H3 — Mission G record from the tracked-only GET /evidence/mission-g
   // contract. Long staleTime: the payload only changes on a tracked commit.
-  const { data: missionG, isError: missionGError } = useQuery({
+  const {
+    data: missionG,
+    isError: missionGError,
+    isPending: missionGPending,
+  } = useQuery({
     queryKey: qk.missionGEvidence(),
     queryFn: () => api.missionGEvidence(),
     staleTime: 1_800_000,
@@ -157,7 +147,11 @@ export function EvidenceOverview() {
   // Mission J flagship — the published robustness/transmission record from
   // the tracked-only GET /evidence/mission-j contract. Long staleTime: the
   // payload only changes on a tracked commit.
-  const { data: missionJ, isError: missionJError } = useQuery({
+  const {
+    data: missionJ,
+    isError: missionJError,
+    isPending: missionJPending,
+  } = useQuery({
     queryKey: qk.missionJEvidence(),
     queryFn: () => api.missionJEvidence(),
     staleTime: 1_800_000,
@@ -167,14 +161,55 @@ export function EvidenceOverview() {
   // the Mission J record) plus hash changes while the page stays active.
   useEffect(() => installEvidenceHashScroll(window, document), []);
 
+  // M2 — one canonical research-record export, built ONLY on click from the
+  // same canonical static constants and the same settled Mission G/J query
+  // results this page renders (no rebuild per render, no second fetch, no
+  // blob allocation outside the handler).  Ready once both contracts settle;
+  // a settled error exports as an explicitly unavailable lane.
+  const exportReady = researchRecordExportReady(
+    { isPending: missionGPending, isError: missionGError, data: missionG },
+    { isPending: missionJPending, isError: missionJError, data: missionJ },
+  );
+  const handleDownloadResearchRecord = () => {
+    if (!exportReady) return;
+    const markdown = buildResearchRecordMemo(
+      researchRecordMemoInput(
+        { isPending: missionGPending, isError: missionGError, data: missionG },
+        { isPending: missionJPending, isError: missionJError, data: missionJ },
+        new Date().toISOString(),
+      ),
+    );
+    downloadResearchRecordMemo(markdown);
+  };
+
   return (
     <div className="mx-auto w-full max-w-5xl">
-      {/* Header + purpose + non-claim banner */}
+      {/* Header + purpose + non-claim banner + quiet export action */}
       <header id="evidence-top" className="mb-5 scroll-mt-20">
-        <Kicker>Research</Kicker>
-        <h1 className="mt-1 font-headline text-[22px] font-bold leading-tight tracking-[-0.01em] text-on-surface">
-          Evidence Overview
-        </h1>
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+          <div>
+            <Kicker>Research</Kicker>
+            <h1 className="mt-1 font-headline text-[22px] font-bold leading-tight tracking-[-0.01em] text-on-surface">
+              Evidence Overview
+            </h1>
+          </div>
+          <div className="flex flex-col items-start gap-1 pt-1 sm:items-end">
+            <button
+              type="button"
+              disabled={!exportReady}
+              onClick={handleDownloadResearchRecord}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-container px-2.5 py-1 font-mono text-[11px] text-on-surface-variant transition-colors hover:text-on-surface disabled:cursor-default disabled:opacity-50 disabled:hover:text-on-surface-variant"
+            >
+              <Download aria-hidden className="h-3 w-3" />
+              Download research record (.md)
+            </button>
+            {!exportReady && (
+              <p className="font-mono text-[10px] text-on-surface-variant/55">
+                Preparing tracked evidence…
+              </p>
+            )}
+          </div>
+        </div>
         <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-on-surface-variant/85">
           This page summarizes descriptive archive evidence and the baseline checks behind it. It is
           not a trading or prediction surface, and it makes no claim of edge or statistical
@@ -203,7 +238,7 @@ export function EvidenceOverview() {
               `estimates of one number. Current accepted-lens snapshot as of ${AC.restatedOn}.`}
           </p>
           <ol className="flex flex-col">
-            {LEDGER.map((row, i) => (
+            {DENOMINATOR_LEDGER.map((row, i) => (
               <li
                 key={row.label}
                 className="flex items-baseline gap-3 border-b border-border/30 py-1.5 last:border-0"
