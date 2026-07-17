@@ -31,7 +31,7 @@ import logging
 import os
 import re
 import time
-from typing import Any, TypedDict
+from typing import Any, NamedTuple, TypedDict
 
 _log = logging.getLogger("second_order.analyze_event")
 
@@ -548,6 +548,46 @@ def _api_key_for_provider(provider: str) -> str:
     if provider == "openai":
         return os.getenv("OPENAI_API_KEY", "")
     return os.getenv("ANTHROPIC_API_KEY", "")
+
+
+class ProviderConfiguration(NamedTuple):
+    """The resolved analysis-provider configuration.
+
+    ``key_state`` is one of ``"empty"`` / ``"placeholder"`` / ``"real"``;
+    ``billable`` is True exactly when the SELECTED provider's key is
+    real — the states under which a dispatched call could bill.
+    """
+
+    provider: str
+    key: str
+    key_state: str
+    billable: bool
+
+
+def resolve_provider_configuration(
+        input_provider: str | None = None) -> ProviderConfiguration:
+    """One source of truth for guard and dispatch.
+
+    Resolves the effective analysis provider (explicit argument, else
+    ``ANALYSIS_PROVIDER``, else the anthropic default — invalid values
+    follow the existing explicit anthropic fallback), that provider's
+    key, the key state, and whether the configuration is billable.
+    Pure environment/configuration read: no network, no SDK client
+    construction, no paid call.  The API paid-analysis guard and
+    ``analyze_event`` dispatch must both use this resolution so they can
+    never disagree about the selected provider or its key.
+    """
+    provider = _selected_provider(input_provider)
+    key = _api_key_for_provider(provider)
+    if not key.strip():
+        key_state = "empty"
+    elif _has_real_api_key(key):
+        key_state = "real"
+    else:
+        key_state = "placeholder"
+    return ProviderConfiguration(provider=provider, key=key,
+                                 key_state=key_state,
+                                 billable=key_state == "real")
 
 
 # ---------------------------------------------------------------------------
@@ -3806,11 +3846,12 @@ def analyze_event(
     event_context = inp.event_context
     macro_context = inp.macro_context
 
-    provider = _selected_provider(inp.provider)
-    api_key = _api_key_for_provider(provider)
+    config = resolve_provider_configuration(inp.provider)
+    provider = config.provider
+    api_key = config.key
     model = _selected_model(inp.model, provider)
 
-    if not _has_real_api_key(api_key):
+    if not config.billable:
         print(f"[analyze_event] No {provider} API key found. Returning mock response.")
         key_name = "OPENAI_API_KEY" if provider == "openai" else "ANTHROPIC_API_KEY"
         print(f"  -> Set {key_name} in your .env file to get real analysis.\n")

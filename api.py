@@ -113,10 +113,13 @@ def _paid_analysis_enabled() -> bool:
 
 
 def _real_api_key_present() -> bool:
-    """True when a real (non-placeholder) Anthropic key is configured — i.e.
-    the process CAN make a billed call."""
-    from analyze_event import _has_real_api_key
-    return _has_real_api_key(os.getenv("ANTHROPIC_API_KEY") or "")
+    """True when the SELECTED analysis provider (anthropic default or
+    openai via ``ANALYSIS_PROVIDER``) has a real (non-placeholder) key —
+    i.e. the process CAN make a billed call.  Uses the same provider
+    resolution as dispatch (one source of truth), so the guard can never
+    disagree with ``analyze_event`` about which key matters."""
+    from analyze_event import resolve_provider_configuration
+    return resolve_provider_configuration().billable
 
 
 def require_admin_token(
@@ -141,8 +144,10 @@ def require_paid_analysis(
     """Fail-CLOSED guard for the paid ``/analyze`` endpoints.
 
     The ONLY unauthenticated path is local mock mode — no real (billable)
-    Anthropic key AND no configured admin token — where ``/analyze`` returns a
-    mock and can never bill, so local dev / the test suite stay open.
+    key for the SELECTED analysis provider AND no configured admin token —
+    where ``/analyze`` returns a mock and can never bill, so local dev /
+    the test suite stay open.  Applies identically to every supported
+    provider (anthropic and openai).
 
     In every other state the route CAN bill (a real key is present) or the
     deploy is protected (an admin token is configured), so BOTH conditions are
@@ -642,11 +647,13 @@ _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def _active_model() -> str:
-    """Return the model ID that analyze_event will use."""
-    provider = (os.getenv("ANALYSIS_PROVIDER", "anthropic") or "anthropic").strip().lower()
-    if provider == "openai":
-        return (os.getenv("OPENAI_MODEL") or "").strip() or "gpt-4o-mini"
-    return (os.getenv("ANTHROPIC_MODEL") or "").strip() or _DEFAULT_MODEL
+    """Return the model ID that analyze_event will use.
+
+    Delegates to ``analyze_event._selected_model`` so provider/model
+    selection has one source of truth (no drifting inline copy here).
+    """
+    from analyze_event import _selected_model
+    return _selected_model()
 
 
 def _classify_for_effective_date(
