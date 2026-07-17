@@ -2978,6 +2978,14 @@ export interface TrackedEvidenceSummaryResponse {
   errors:         string[];
 }
 
+/** The five tracked Mission G publications, keyed by contract role. */
+export type MissionGSourceKey =
+  | "readout"
+  | "stability"
+  | "cases"
+  | "promotion_proof"
+  | "mechanism_attrition";
+
 /** Mission G research contract — GET /evidence/mission-g (H2).
  *  Structured summary of the completed Mission G historical record,
  *  parsed server-side from the tracked stats/G*.md artifacts at request
@@ -2992,6 +3000,25 @@ export interface MissionGEvidenceSummary {
     cases: string;
     promotion_proof: string;
     mechanism_attrition: string;
+  };
+  provenance: {
+    /** Request-time fingerprints of the tracked artifacts actually
+     *  served — the Mission I / Mission J convention. */
+    sources: Record<
+      MissionGSourceKey,
+      { artifact: string; sha256: string; bytes: number }
+    >;
+    /** Reproduction commands RECORDED in each publication's fenced
+     *  Reproduction block, parsed verbatim — inert reference strings,
+     *  never controls. */
+    reproduction: {
+      commands: Record<MissionGSourceKey, string[]>;
+      recorded_in: Record<MissionGSourceKey, string>;
+    };
+    /** Recorded in no Mission G publication — stated null, never inferred. */
+    execution_commits: null;
+    /** Recorded in no Mission G publication — stated null, never inferred. */
+    computation_dates: null;
   };
   lanes: {
     accepted_track_record: { count: number; lane_note: string };
@@ -3100,6 +3127,16 @@ export interface MissionJEvidenceSummary {
       "j1b" | "j2" | "j3",
       { artifact: string; sha256: string; bytes: number }
     >;
+    /** Execution provenance RECORDED in each publication (commit +
+     *  executed-at timestamp), parsed server-side — never inferred from
+     *  the current checkout. */
+    execution: Record<
+      "j1b" | "j2" | "j3",
+      { execution_commit: string; executed_at: string }
+    >;
+    /** No Mission J publication records a reproduction command block —
+     *  stated null, never fabricated. */
+    reproduction: null;
     publication_status: string;
     no_recompute_statement: string;
   };

@@ -66,9 +66,20 @@ describe("ACCEPTED_CORPUS — post-recovery restatement (2026-07-11)", () => {
   });
 
   it("carries exact read-only reproduction paths for both ledgers", () => {
-    expect(ACCEPTED_CORPUS.orRuleRepro ?? "").toContain("compute_track_record");
+    // The OR-rule command is the dedicated mode=ro report script — it must
+    // never route through database initialization (which creates, renames,
+    // and migrates the source archive; see
+    // tests/test_track_record_reproduction_safety.py backend-side).
+    expect(ACCEPTED_CORPUS.orRuleRepro ?? "").toContain(
+      "scripts/track_record_report.py",
+    );
+    expect(ACCEPTED_CORPUS.orRuleRepro ?? "").toContain("--db-path");
+    expect(ACCEPTED_CORPUS.orRuleRepro ?? "").not.toContain("init_db");
     expect(ACCEPTED_CORPUS.directionalMajority?.repro ?? "").toContain(
       "validation_status_calibration_report.py",
+    );
+    expect(ACCEPTED_CORPUS.directionalMajority?.repro ?? "").not.toContain(
+      "init_db",
     );
   });
 

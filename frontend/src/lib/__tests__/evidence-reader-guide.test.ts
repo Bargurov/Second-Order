@@ -294,8 +294,19 @@ describe("evidence reader guide — verification manifest", () => {
     expect(fieldValue(staticEvidence, "Representative cases (F1/F2)")).toContain(
       RCL.outcomesRestatedOn,
     );
-    expect(fieldValue(staticEvidence, "Reproduce (representative cases)")).toBe("not recorded");
+    // recorded in both F1/F2 source documents ("Reproduce (read-only)")
+    expect(fieldValue(staticEvidence, "Reproduce (representative cases)")).toBe(
+      RCL.reproCommands.join(" · "),
+    );
     expect(fieldValue(staticEvidence, "Family coverage (AZ1)")).toContain(FC.asOf);
+    // the shortlist decision log records its baseline commit; the overview
+    // map records none — both states stay explicit
+    expect(fieldValue(staticEvidence, "Family coverage (AZ1)")).toContain(
+      FC.shortlistBaselineCommit,
+    );
+    expect(fieldValue(staticEvidence, "Family coverage (AZ1)")).toContain(
+      "overview commit not recorded",
+    );
     expect(fieldValue(staticEvidence, "Reproduce (family coverage)")).toBe(FC.reproCommand);
   });
 
@@ -309,11 +320,26 @@ describe("evidence reader guide — verification manifest", () => {
     expect(fieldValue(missionG, "Source artifacts")).toContain(
       g.source_artifacts.mechanism_attrition,
     );
-    // the contract records no commit / hash / date / command — never inferred
+    // request-time artifact hashes and the recorded per-publication
+    // reproduction commands come from the payload
+    const hashes = fieldValue(missionG, "Artifact hashes");
+    for (const src of Object.values(g.provenance.sources)) {
+      expect(hashes).toContain(src.artifact);
+      expect(hashes).toContain(src.sha256);
+      expect(hashes).toContain(String(src.bytes));
+    }
+    const repro = fieldValue(missionG, "Reproduce");
+    for (const [key, commands] of Object.entries(g.provenance.reproduction.commands)) {
+      for (const cmd of commands) expect(repro, key).toContain(cmd);
+      expect(repro).toContain(
+        g.provenance.reproduction.recorded_in[
+          key as keyof typeof g.provenance.reproduction.recorded_in
+        ],
+      );
+    }
+    // the contract records no commit / date — never inferred
     expect(fieldValue(missionG, "Source commit")).toBe("not recorded");
-    expect(fieldValue(missionG, "Artifact hashes")).toBe("not recorded");
     expect(fieldValue(missionG, "Computation / restatement date")).toBe("not recorded");
-    expect(fieldValue(missionG, "Reproduce")).toBe("not recorded");
     expect(fieldValue(missionG, "Evidence ceiling")).toBe(g.non_claims[0]);
   });
 
@@ -329,7 +355,15 @@ describe("evidence reader guide — verification manifest", () => {
       expect(fieldValue(missionJ, label)).toContain(String(src.bytes));
     }
     expect(fieldValue(missionJ, "Publication status")).toBe(j.provenance.publication_status);
-    expect(fieldValue(missionJ, "Computation / restatement date")).toBe("not recorded");
+    // execution provenance RECORDED in each publication comes from the payload
+    const commits = fieldValue(missionJ, "Execution commits");
+    const dates = fieldValue(missionJ, "Computation / restatement date");
+    for (const key of ["j1b", "j2", "j3"] as const) {
+      expect(commits, key).toContain(j.provenance.execution[key].execution_commit);
+      expect(dates, key).toContain(j.provenance.execution[key].executed_at);
+    }
+    expect(dates).toContain("executed at (recorded)");
+    // no Mission J publication records a reproduction command — never fabricated
     expect(fieldValue(missionJ, "Reproduce")).toBe("not recorded");
     const ceiling = fieldValue(missionJ, "Evidence ceiling");
     expect(ceiling.toLowerCase()).toContain("same-sample class b evidence");
@@ -338,9 +372,17 @@ describe("evidence reader guide — verification manifest", () => {
   });
 
   it("keeps Mission G and Mission J as separate, unmerged lanes", () => {
+    const g = missionGFixture();
+    const j = missionJFixture();
     expect(flat(missionG)).not.toContain("J1B");
-    expect(flat(missionG)).not.toContain("sha256");
     expect(flat(missionJ)).not.toContain("G6_FROZEN_MANIFEST_READOUT");
+    // each lane carries only its own provenance — no cross-lane hashes
+    for (const src of Object.values(j.provenance.sources)) {
+      expect(flat(missionG)).not.toContain(src.sha256);
+    }
+    for (const src of Object.values(g.provenance.sources)) {
+      expect(flat(missionJ)).not.toContain(src.sha256);
+    }
     expect(flat(manifest[0] as VerificationLane) + flat(missionG) + flat(missionJ)).not.toContain(
       "183",
     );

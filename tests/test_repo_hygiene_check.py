@@ -366,8 +366,24 @@ class TestCiWorkflowConfig(unittest.TestCase):
             return text[start:]
         return text[start:next_start]
 
-    def test_ci_runs_repo_hygiene_project_health_and_no_paid_only(self) -> None:
+    def _safe_health_job_text(self) -> str:
+        """Text of the backend ``safe-health`` job only.
+
+        This job is the keyless / providerless backend gate; the separate
+        ``frontend-evidence`` job legitimately runs ``npm ci`` and
+        ``npm run build`` and is contracted independently by
+        ``test_ci_workflow_contract``.  The composition assertions below
+        describe the backend job, so they must read that job's text — not
+        the whole file — or a frontend-only command (``npm ci``) reads as
+        a safe-health violation.
+        """
         text = self._ci_text()
+        start = text.index("  safe-health:")
+        end = text.find("\n  frontend-evidence:", start)
+        return text[start:] if end == -1 else text[start:end]
+
+    def test_ci_runs_repo_hygiene_project_health_and_no_paid_only(self) -> None:
+        text = self._safe_health_job_text()
 
         for needle in (
             "python -m unittest tests.test_repo_hygiene_check -v",

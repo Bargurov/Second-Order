@@ -3796,7 +3796,15 @@ def _mission_g_evidence_endpoint():
     market_data / price_cache call, no LLM call, no artifact mutation;
     works on a fresh clone with no local research state.
     """
-    return _mission_g_evidence_mod.build_mission_g_evidence_summary()
+    try:
+        return _mission_g_evidence_mod.build_mission_g_evidence_summary()
+    except ValueError:
+        # Stable envelope: never leak artifact paths or parser internals
+        # (the Mission I / Mission J drift-envelope convention).
+        raise HTTPException(
+            status_code=503,
+            detail=("mission-g research record unavailable (tracked "
+                    "artifact drift or unreadable source)"))
 
 
 @app.get("/evidence/mission-i")

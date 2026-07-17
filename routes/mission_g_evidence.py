@@ -21,6 +21,7 @@ ever carries their sum.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 from typing import Any, Mapping, Optional
@@ -158,6 +159,42 @@ def _parse_g3b_coverage(g3b_text: str) -> dict[str, float]:
     }
 
 
+def _provenance_entry(path: Path) -> dict[str, Any]:
+    """Request-time artifact fingerprint — the same convention as the
+    Mission I and Mission J contracts (the sha256 / byte size of the
+    tracked artifact actually served)."""
+    data = path.read_bytes()
+    return {"artifact": path.name,
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "bytes": len(data)}
+
+
+def _parse_reproduction_commands(text: str, artifact: str) -> list[str]:
+    """The fenced command block under the publication's Reproduction
+    heading — recorded in every Mission G publication, exposed verbatim
+    (never hand-copied here).  Drift (no heading, no fence, or a
+    non-command line) refuses to serve."""
+    heading = re.search(
+        r"^## (?:\d+\. )?(?:Provenance and )?[Rr]eproduction\s*$",
+        text, re.MULTILINE)
+    if heading is None:
+        raise ValueError(
+            f"mission-g artifact drift: {artifact} no longer records a "
+            "Reproduction section; refusing to serve")
+    fence = re.search(r"```\n([\s\S]*?)```", text[heading.end():])
+    if fence is None:
+        raise ValueError(
+            f"mission-g artifact drift: {artifact} Reproduction section "
+            "lost its command block; refusing to serve")
+    commands = [line.rstrip() for line in fence.group(1).splitlines()
+                if line.strip()]
+    if not commands or not all(c.startswith("python ") for c in commands):
+        raise ValueError(
+            f"mission-g artifact drift: {artifact} reproduction commands "
+            "drifted; refusing to serve")
+    return commands
+
+
 def _parse_case_slots(g6c_text: str) -> list[dict[str, str]]:
     rows = re.findall(
         r"^\| ([ABC]) \([^)]*\) \| (\S+) \| `(\w+)` \| (Q25|Q75) \| "
@@ -221,6 +258,16 @@ def build_mission_g_evidence_summary(
         if slot["candidate_id"] not in unique_case_ids:
             unique_case_ids.append(slot["candidate_id"])
 
+    artifact_paths = {
+        "readout": Path(g6a_path),
+        "stability": Path(g6b_path),
+        "cases": Path(g6c_path),
+        "promotion_proof": Path(g5_path),
+        "mechanism_attrition": Path(g3b_path),
+    }
+    artifact_texts = {"readout": g6a, "stability": g6b, "cases": g6c,
+                      "promotion_proof": g5, "mechanism_attrition": g3b}
+
     return {
         "contract_version": CONTRACT_VERSION,
         "source_artifacts": {
@@ -229,6 +276,25 @@ def build_mission_g_evidence_summary(
             "cases": str(Path(g6c_path).name),
             "promotion_proof": str(Path(g5_path).name),
             "mechanism_attrition": str(Path(g3b_path).name),
+        },
+        "provenance": {
+            "sources": {key: _provenance_entry(path)
+                        for key, path in artifact_paths.items()},
+            "reproduction": {
+                # Recorded in every Mission G publication (each carries a
+                # fenced Reproduction block); parsed verbatim at request
+                # time, never hand-copied.
+                "commands": {
+                    key: _parse_reproduction_commands(
+                        artifact_texts[key], path.name)
+                    for key, path in artifact_paths.items()},
+                "recorded_in": {key: path.name
+                                for key, path in artifact_paths.items()},
+            },
+            # Recorded in NO Mission G publication — stated as null rather
+            # than inferred from the checkout, Git HEAD, or the clock.
+            "execution_commits": None,
+            "computation_dates": None,
         },
         "lanes": {
             "accepted_track_record": {

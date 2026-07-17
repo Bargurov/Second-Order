@@ -380,6 +380,28 @@ def _provenance_entry(path: Path) -> dict[str, Any]:
             "bytes": len(data)}
 
 
+def _parse_execution_metadata(text: str, artifact: str) -> dict[str, str]:
+    """The execution commit and timestamp RECORDED in the publication.
+
+    Every Mission J publication records both lines (J2/J3 under their
+    "Contract and provenance" heading, J1B as a header bullet), so the
+    contract requires them: a copy without them, or with a malformed
+    value, refuses to serve rather than inferring anything from the
+    current checkout.
+    """
+    commit = re.search(r"^- execution commit: `([0-9a-f]{40})`\s*$",
+                       text, re.MULTILINE)
+    executed = re.search(
+        r"^- executed at: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s*$",
+        text, re.MULTILINE)
+    if commit is None or executed is None:
+        raise ValueError(
+            f"mission-j artifact drift: {artifact} no longer records its "
+            "execution commit / executed-at provenance; refusing to serve")
+    return {"execution_commit": commit.group(1),
+            "executed_at": executed.group(1)}
+
+
 def build_mission_j_evidence_summary(
         *,
         j1b_path: Path | str = J1B_PUBLICATION_PATH,
@@ -575,6 +597,17 @@ def build_mission_j_evidence_summary(
                 "j2": _provenance_entry(j2_path),
                 "j3": _provenance_entry(j3_path),
             },
+            # Execution provenance RECORDED in each publication, parsed
+            # at request time (never hand-copied, never inferred from the
+            # current checkout).
+            "execution": {
+                "j1b": _parse_execution_metadata(j1b_text, j1b_path.name),
+                "j2": _parse_execution_metadata(j2_text, j2_path.name),
+                "j3": _parse_execution_metadata(j3_text, j3_path.name),
+            },
+            # No Mission J publication records a reproduction command
+            # block — stated as null, never fabricated.
+            "reproduction": None,
             "publication_status": (
                 "Mission J is published and closed: constitution (J0), "
                 "frozen data substrate (J1A), asset/benchmark challenge "

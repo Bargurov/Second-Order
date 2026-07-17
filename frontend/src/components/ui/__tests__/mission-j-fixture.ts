@@ -30,6 +30,23 @@ export function missionJFixture(): MissionJEvidenceSummary {
         j2: { artifact: "J2_TIMING_COLLISION_RESULTS.md", sha256: "f51e58e37059", bytes: 18563 },
         j3: { artifact: "J3_MECHANISM_TRANSMISSION_READOUT.md", sha256: "41e73b5cbe82", bytes: 12175 },
       },
+      // Execution provenance RECORDED in the tracked publications
+      // (the published values, verbatim).
+      execution: {
+        j1b: {
+          execution_commit: "2ec68108affc1d3e084c7242e5b13669e3c5d76d",
+          executed_at: "2026-07-07T00:11:57Z",
+        },
+        j2: {
+          execution_commit: "f7a9c799b5e5c7966d712362778734219a0558f3",
+          executed_at: "2026-07-10T16:27:14Z",
+        },
+        j3: {
+          execution_commit: "3d6a9af80a20854c88a43af5e952c5276711a125",
+          executed_at: "2026-07-10T17:23:47Z",
+        },
+      },
+      reproduction: null,
       publication_status:
         "Mission J is published and closed: constitution (J0), frozen data substrate (J1A), asset/benchmark challenge (J1B), timing and exact-window collision challenge (J2), and frozen mechanism/transmission readout (J3).",
       no_recompute_statement:

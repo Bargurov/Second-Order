@@ -657,8 +657,37 @@ describe("research-record memo — limitations and provenance appendix", () => {
       `- J1B artifact: ${j.provenance.sources.j1b.artifact} — sha256 ${j.provenance.sources.j1b.sha256} · ${j.provenance.sources.j1b.bytes} bytes`,
     );
     expect(complete).toContain("not recorded");
-    // Mission G records no commit / hash / repro in its contract
-    expect(complete).toContain("- Artifact hashes: not recorded");
+    // Mission J executions are RECORDED in the publications and rendered;
+    // its reproduction command is recorded nowhere and stays honest
+    for (const key of ["j1b", "j2", "j3"] as const) {
+      const exec = j.provenance.execution[key];
+      expect(complete).toContain(
+        `- ${key.toUpperCase()} execution (recorded): commit ${exec.execution_commit} — executed at ${exec.executed_at}`,
+      );
+    }
+    expect(complete).toContain("- Reproduction command: not recorded");
+    // Mission G renders request-time artifact hashes and the recorded
+    // per-publication reproduction commands; commit / date stay honest
+    const g = missionGFixture();
+    for (const src of Object.values(g.provenance.sources)) {
+      expect(complete).toContain(`sha256 ${src.sha256} · ${src.bytes} bytes`);
+    }
+    for (const commands of Object.values(g.provenance.reproduction.commands)) {
+      for (const cmd of commands) expect(complete).toContain(cmd);
+    }
+    const gBlock = complete
+      .split("### Mission G historical record")[1]
+      .split("### Mission I published record")[0];
+    expect(gBlock).toContain("- Source commit: not recorded");
+    expect(gBlock).toContain("- Computation / restatement date: not recorded");
+    // family coverage: the shortlist pin is recorded, the overview is not
+    expect(complete).toContain(
+      `shortlist baseline commit ${FC.shortlistBaselineCommit}`,
+    );
+    // representative set: both recorded read-only commands render as code
+    for (const cmd of RCL.reproCommands) {
+      expect(complete).toContain(`\`${cmd}\``);
+    }
   });
 
   it("renders reproduction commands as inline code, never as controls", () => {

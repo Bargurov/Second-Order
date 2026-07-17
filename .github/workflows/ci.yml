@@ -266,6 +266,16 @@ jobs:
           tests.test_validate_cohort_integration_review
           tests.test_tracked_evidence
 
+      - name: Run published evidence-contract tests
+        run: >-
+          python -m unittest -v
+          tests.test_mission_g_evidence
+          tests.test_mission_i_evidence
+          tests.test_mission_j_evidence
+          tests.test_get_provider_boundary
+          tests.test_track_record_reproduction_safety
+          tests.test_ci_workflow_contract
+
       - name: Run evidence-layer validators on tracked artifacts
         run: |
           python scripts/validate_freeze_candidate_artifact.py \
@@ -336,3 +346,30 @@ jobs:
 
       - name: Run no-paid smoke
         run: python scripts/no_paid_smoke.py --json
+
+  frontend-evidence:
+    name: Frontend Evidence Contracts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend workspace
+        run: npm ci
+
+      - name: Run frontend evidence suites
+        run: npm test
+
+      - name: Typecheck and build
+        run: npm run build

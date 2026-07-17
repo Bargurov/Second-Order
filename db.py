@@ -1660,6 +1660,18 @@ def compute_track_record() -> dict:
             rows = [(r[0], r[1], None, r[2], r[3]) for r in rows]
         synthetic = synthetic_seed_ids(conn)
 
+    return track_record_from_rows(rows, synthetic)
+
+
+def track_record_from_rows(rows, synthetic: frozenset[int]) -> dict:
+    """Pure OR-rule ledger aggregation over already-loaded event rows.
+
+    ``rows`` are ``(market_tickers, rating, revisit_snapshots, stage, id)``
+    tuples; ``synthetic`` is the :func:`synthetic_seed_ids` exclusion set.
+    Shared by :func:`compute_track_record` and the read-only reviewer
+    report (``scripts/track_record_report.py``) so the app ledger and the
+    advertised reproduction command can never drift apart.
+    """
     # Curated rows (intake stubs AND promoted observations) carry no thesis
     # outcome — exclude every non-thesis stage from the denominator so they
     # neither inflate ``total`` nor land in the ``unresolved`` bucket.  AP3a:

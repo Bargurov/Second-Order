@@ -4,7 +4,8 @@
  *
  * These are a DATED snapshot of a derivable truth, not the source of truth: the
  * read-only report scripts (`scripts/stat_validation_readiness_report.py`,
- * `db.compute_track_record`, `scripts/event_study_coverage_report.py`,
+ * `scripts/track_record_report.py` (the `db.compute_track_record` ledger),
+ * `scripts/event_study_coverage_report.py`,
  * `scripts/validation_status_calibration_report.py`) recompute every figure
  * from whatever `events.db` is present. The numbers below reflect the
  * maintainer's local archive as of `restatedOn`; a clean clone (empty archive)
@@ -41,9 +42,11 @@ export const ACCEPTED_CORPUS = {
   anySupporting: 59,
   contradicted: 14,
   unresolved: 13,
-  /** Read-only reproduction path for the OR-rule ledger. */
+  /** Read-only reproduction path for the OR-rule ledger — a mode=ro SQLite
+   *  report that never creates, migrates, or renames the source archive
+   *  (tests/test_track_record_reproduction_safety.py). */
   orRuleRepro:
-    'python -c "import db; db.init_db(); print(db.compute_track_record())"',
+    "python scripts/track_record_report.py --db-path events.db --json",
   /** Lens 2 — Directional-majority rule (validation_status_v2) over the SAME 86 rows. */
   directionalMajority: {
     ruleName: "Directional-majority rule (validation_status_v2)",
@@ -108,6 +111,10 @@ export const FAMILY_COVERAGE = {
     "python scripts/mechanism_family_overview_report.py --db-path events.db --json",
   overviewNote: "stats/MECHANISM_FAMILY_OVERVIEW.md",
   shortlistNote: "stats/STAGED_CANDIDATE_SHORTLIST.md",
+  /** Baseline commit RECORDED in the shortlist decision log ("main /
+   *  origin/main expected at `4dab1a1`" at time of review) — the
+   *  shortlist's recorded pin, not a claim about the overview map. */
+  shortlistBaselineCommit: "4dab1a1",
 } as const;
 
 /**

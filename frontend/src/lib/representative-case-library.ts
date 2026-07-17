@@ -31,6 +31,13 @@ export const REPRESENTATIVE_CASE_LIBRARY = {
     "stats/REPRESENTATIVE_CASE_EXPANSION.md",
     "stats/EXPANDED_CASE_NOTES.md",
   ],
+  /** Read-only reproduction commands RECORDED in the two source documents
+   *  (each carries a "Reproduce (read-only)" block; both scripts read the
+   *  archive over mode=ro connections) — inert display strings. */
+  reproCommands: [
+    "python scripts/representative_case_expansion_report.py --db-path events.db --json",
+    "python scripts/expanded_case_notes_report.py --db-path events.db --json",
+  ],
   totals: {
     total: 15,
     anchors: 6,

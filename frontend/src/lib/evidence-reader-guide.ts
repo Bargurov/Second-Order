@@ -217,6 +217,8 @@ function missionGLane(query: EvidenceQuerySnapshot<MissionGEvidenceSummary>): Ve
   }
   const g = query.data as MissionGEvidenceSummary;
   const arts = g.source_artifacts;
+  const sources = Object.values(g.provenance.sources);
+  const repro = g.provenance.reproduction;
   return {
     ...base,
     scope: `${g.lanes.historical.total} historical events — ${g.lanes.historical.fomc_frame_complete} FOMC frame-complete · ${g.lanes.historical.opec_designed_contrast} OPEC designed-contrast; the ${g.lanes.accepted_track_record.count} accepted rows stay a separate lane`,
@@ -231,10 +233,27 @@ function missionGLane(query: EvidenceQuerySnapshot<MissionGEvidenceSummary>): Ve
         value: `${arts.readout} · ${arts.stability} · ${arts.cases} · ${arts.promotion_proof} · ${arts.mechanism_attrition}`,
         code: true,
       },
+      // Recorded in NO Mission G publication — stated, never inferred
+      // from the checkout, Git HEAD, or the clock.
       { label: "Source commit", value: NOT_RECORDED },
-      { label: "Artifact hashes", value: NOT_RECORDED },
+      {
+        label: "Artifact hashes",
+        value: sources
+          .map((s) => `${s.artifact} sha256 ${s.sha256} (${s.bytes} bytes)`)
+          .join(" · "),
+        code: true,
+      },
       { label: "Computation / restatement date", value: NOT_RECORDED },
-      { label: "Reproduce", value: NOT_RECORDED },
+      {
+        label: "Reproduce",
+        value: Object.entries(repro.commands)
+          .map(
+            ([key, commands]) =>
+              `${commands.join(" · ")} — recorded in ${repro.recorded_in[key as keyof typeof repro.recorded_in]}`,
+          )
+          .join("; "),
+        code: true,
+      },
       { label: "Evidence ceiling", value: g.non_claims[0] ?? NOT_RECORDED },
     ],
   };
@@ -323,6 +342,7 @@ function missionJLane(query: EvidenceQuerySnapshot<MissionJEvidenceSummary>): Ve
         { label: "J2 artifact", value: token },
         { label: "J3 artifact", value: token },
         { label: "Publication status", value: token },
+        { label: "Execution commits", value: token },
         { label: "Computation / restatement date", value: token },
         { label: "Reproduce", value: token },
         { label: "Evidence ceiling", value: token },
@@ -360,7 +380,18 @@ function missionJLane(query: EvidenceQuerySnapshot<MissionJEvidenceSummary>): Ve
         code: true,
       },
       { label: "Publication status", value: j.provenance.publication_status },
-      { label: "Computation / restatement date", value: NOT_RECORDED },
+      {
+        // Execution provenance RECORDED in each tracked publication,
+        // parsed by the contract — never inferred from the checkout.
+        label: "Execution commits",
+        value: `J1B ${j.provenance.execution.j1b.execution_commit} · J2 ${j.provenance.execution.j2.execution_commit} · J3 ${j.provenance.execution.j3.execution_commit}`,
+        code: true,
+      },
+      {
+        label: "Computation / restatement date",
+        value: `executed at (recorded): J1B ${j.provenance.execution.j1b.executed_at} · J2 ${j.provenance.execution.j2.executed_at} · J3 ${j.provenance.execution.j3.executed_at}`,
+      },
+      // Recorded in NO Mission J publication — stated, never fabricated.
       { label: "Reproduce", value: NOT_RECORDED },
       { label: "Evidence ceiling", value: ceilingValue },
     ],
@@ -392,10 +423,15 @@ function staticEvidenceLane(): VerificationLane {
         value: `${RCL.sources[0]} · ${RCL.sources[1]} @ ${RCL.sourceCommit} (outcomes restated ${RCL.outcomesRestatedOn})`,
         code: true,
       },
-      { label: "Reproduce (representative cases)", value: NOT_RECORDED },
+      {
+        // Recorded in both source documents ("Reproduce (read-only)").
+        label: "Reproduce (representative cases)",
+        value: RCL.reproCommands.join(" · "),
+        code: true,
+      },
       {
         label: "Family coverage (AZ1)",
-        value: `${FC.overviewNote} · ${FC.shortlistNote} (as of ${FC.asOf}; commit ${NOT_RECORDED})`,
+        value: `${FC.overviewNote} · ${FC.shortlistNote} (as of ${FC.asOf}; shortlist baseline commit ${FC.shortlistBaselineCommit}; overview commit ${NOT_RECORDED})`,
         code: true,
       },
       { label: "Reproduce (family coverage)", value: FC.reproCommand, code: true },

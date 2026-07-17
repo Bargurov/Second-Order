@@ -20,6 +20,52 @@ export function missionGFixture(): MissionGEvidenceSummary {
       promotion_proof: "G5_PROMOTION_PROOF.md",
       mechanism_attrition: "G3_MECHANISM_CLASSIFICATION_ATTRITION.md",
     },
+    provenance: {
+      sources: {
+        readout: { artifact: "G6_FROZEN_MANIFEST_READOUT.md", sha256: "aa11d06a0f1e", bytes: 21001 },
+        stability: { artifact: "G6B_STABILITY_AND_FALSIFIERS.md", sha256: "bb22d06b57ab", bytes: 19002 },
+        cases: { artifact: "G6C_REPRESENTATIVE_CASES.md", sha256: "cc33d06cca5e", bytes: 15003 },
+        promotion_proof: { artifact: "G5_PROMOTION_PROOF.md", sha256: "dd44d0557001", bytes: 9004 },
+        mechanism_attrition: { artifact: "G3_MECHANISM_CLASSIFICATION_ATTRITION.md", sha256: "ee55d03ba771", bytes: 7005 },
+      },
+      reproduction: {
+        // The commands RECORDED in each publication's fenced Reproduction
+        // block (verbatim, inert display strings).
+        commands: {
+          readout: [
+            "python scripts/g6_frozen_manifest_readout.py --emit",
+            "python -m unittest tests.test_g6_frozen_manifest_readout",
+          ],
+          stability: [
+            "python scripts/g6b_stability_falsifiers.py --emit",
+            "python -m unittest tests.test_g6b_stability_falsifiers",
+          ],
+          cases: [
+            "python scripts/g6c_representative_cases.py --emit",
+            "python -m unittest tests.test_g6c_representative_cases",
+          ],
+          promotion_proof: [
+            "python -m unittest tests.test_g5_promotion",
+            "python scripts/g5_promotion.py --verify            # read-only live probe",
+            "python scripts/g5_promotion.py --temp-proof COPY   # full proof on a copy",
+          ],
+          mechanism_attrition: [
+            "python scripts/g3_mechanism_classification.py --classify",
+            "python scripts/g3_mechanism_classification.py --emit-report",
+            "python -m unittest tests.test_g3_mechanism_classification",
+          ],
+        },
+        recorded_in: {
+          readout: "G6_FROZEN_MANIFEST_READOUT.md",
+          stability: "G6B_STABILITY_AND_FALSIFIERS.md",
+          cases: "G6C_REPRESENTATIVE_CASES.md",
+          promotion_proof: "G5_PROMOTION_PROOF.md",
+          mechanism_attrition: "G3_MECHANISM_CLASSIFICATION_ATTRITION.md",
+        },
+      },
+      execution_commits: null,
+      computation_dates: null,
+    },
     lanes: {
       accepted_track_record: {
         count: 86,

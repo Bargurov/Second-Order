@@ -28,6 +28,7 @@
  */
 import type {
   MissionGEvidenceSummary,
+  MissionGSourceKey,
   MissionIEvidenceSummary,
   MissionISourceKey,
   MissionJEvidenceSummary,
@@ -216,6 +217,15 @@ const MISSION_G_UNAVAILABLE_LINE = "Mission G research record: unavailable";
 const MISSION_I_UNAVAILABLE_LINE = "Mission I research record: unavailable";
 const MISSION_J_UNAVAILABLE_LINE = "Mission J research record: unavailable";
 
+/** Display labels for the five Mission G publications, in contract order. */
+const MISSION_G_SOURCE_ORDER: ReadonlyArray<[MissionGSourceKey, string]> = [
+  ["readout", "G6A readout"],
+  ["stability", "G6B stability"],
+  ["cases", "G6C cases"],
+  ["promotion_proof", "G5 promotion proof"],
+  ["mechanism_attrition", "G3B mechanism attrition"],
+];
+
 /** Display labels for the seven Mission I publications, in contract order. */
 const MISSION_I_SOURCE_ORDER: ReadonlyArray<[MissionISourceKey, string]> = [
   ["i0_protocol", "I0 protocol"],
@@ -292,8 +302,7 @@ function missionGSection(lane: MissionLane<MissionGEvidenceSummary>): string[] {
     "",
     "- Evidence class: not recorded in the contract.",
     `- Source artifacts: ${arts.readout} · ${arts.stability} · ${arts.cases} · ${arts.promotion_proof} · ${arts.mechanism_attrition}`,
-    `- Source commit / artifact hashes: ${NOT_RECORDED}`,
-    `- Reproduction command: ${NOT_RECORDED}`,
+    `- Source commit: ${NOT_RECORDED}; artifact hashes and recorded reproduction commands appear in the provenance appendix (section 12).`,
     "",
     "#### Mission G non-claims (verbatim)",
     "",
@@ -723,7 +732,7 @@ function provenanceSection(input: ResearchRecordMemoInput): string[] {
     "### Mechanism-family coverage (AZ1)",
     "",
     `- Source documents: ${FC.overviewNote} · ${FC.shortlistNote}`,
-    `- Source commit: ${NOT_RECORDED}`,
+    `- Source commit: ${NOT_RECORDED} (overview map) · shortlist baseline commit ${FC.shortlistBaselineCommit} (recorded in the shortlist decision log)`,
     `- As-of date: ${FC.asOf}`,
     `- Reproduction: \`${FC.reproCommand}\``,
     "",
@@ -732,7 +741,7 @@ function provenanceSection(input: ResearchRecordMemoInput): string[] {
     `- Source documents: ${RCL.sources[0]} · ${RCL.sources[1]}`,
     `- Source commit: ${RCL.sourceCommit}`,
     `- Outcomes restated: ${RCL.outcomesRestatedOn}`,
-    `- Reproduction command: ${NOT_RECORDED}`,
+    `- Reproduction (recorded in the source documents): ${RCL.reproCommands.map((c) => `\`${c}\``).join(" · ")}`,
     "",
     "### Mission G historical record",
     "",
@@ -740,13 +749,20 @@ function provenanceSection(input: ResearchRecordMemoInput): string[] {
   if (input.missionG.available) {
     const g = input.missionG.data;
     const arts = g.source_artifacts;
+    const repro = g.provenance.reproduction;
     lines.push(
       `- Contract: ${g.contract_version} via GET /evidence/mission-g (tracked artifacts parsed at request time)`,
       `- Source artifacts: ${arts.readout} · ${arts.stability} · ${arts.cases} · ${arts.promotion_proof} · ${arts.mechanism_attrition}`,
+      ...MISSION_G_SOURCE_ORDER.map(([key, label]) => {
+        const src = g.provenance.sources[key];
+        return `- ${label} artifact: ${src.artifact} — sha256 ${src.sha256} · ${src.bytes} bytes`;
+      }),
       `- Source commit: ${NOT_RECORDED}`,
-      `- Artifact hashes: ${NOT_RECORDED}`,
       `- Computation / restatement date: ${NOT_RECORDED}`,
-      `- Reproduction command: ${NOT_RECORDED}`,
+      ...MISSION_G_SOURCE_ORDER.map(
+        ([key]) =>
+          `- Reproduction (recorded in ${repro.recorded_in[key]}): ${repro.commands[key].map((c) => `\`${c}\``).join(" · ")}`,
+      ),
     );
   } else {
     lines.push("- Mission G research record: unavailable — no provenance could be exported.");
@@ -783,6 +799,10 @@ function provenanceSection(input: ResearchRecordMemoInput): string[] {
       `- J2 artifact: ${src.j2.artifact} — sha256 ${src.j2.sha256} · ${src.j2.bytes} bytes`,
       `- J3 artifact: ${src.j3.artifact} — sha256 ${src.j3.sha256} · ${src.j3.bytes} bytes`,
       `- Publication status: ${j.provenance.publication_status}`,
+      ...(["j1b", "j2", "j3"] as const).map((key) => {
+        const exec = j.provenance.execution[key];
+        return `- ${key.toUpperCase()} execution (recorded): commit ${exec.execution_commit} — executed at ${exec.executed_at}`;
+      }),
       `- Reproduction command: ${NOT_RECORDED}`,
     );
   } else {

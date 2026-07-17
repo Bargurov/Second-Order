@@ -551,5 +551,97 @@ class EndpointTests(unittest.TestCase):
         self.assertNotIn("Traceback", resp.text)
 
 
+# ---------------------------------------------------------------------------
+# Execution provenance (V1): recorded in every Mission J publication,
+# exposed consistently — parsed from the tracked files, never inferred.
+# ---------------------------------------------------------------------------
+
+# Frozen published values (verbatim from the tracked publications).
+FROZEN_EXECUTION = {
+    "j1b": {"execution_commit": "2ec68108affc1d3e084c7242e5b13669e3c5d76d",
+            "executed_at": "2026-07-07T00:11:57Z"},
+    "j2": {"execution_commit": "f7a9c799b5e5c7966d712362778734219a0558f3",
+           "executed_at": "2026-07-10T16:27:14Z"},
+    "j3": {"execution_commit": "3d6a9af80a20854c88a43af5e952c5276711a125",
+           "executed_at": "2026-07-10T17:23:47Z"},
+}
+
+
+class ExecutionProvenanceTests(unittest.TestCase):
+    def test_23_execution_metadata_exposed_for_all_three_publications(self):
+        execution = _payload()["provenance"]["execution"]
+        self.assertEqual(execution, FROZEN_EXECUTION)
+
+    def test_24_values_come_from_the_tracked_files(self):
+        # Independent extraction: the same lines the publications record.
+        for key, path in (("j1b", J1B_PATH), ("j2", J2_PATH),
+                          ("j3", J3_PATH)):
+            text = path.read_text(encoding="utf-8")
+            commit = re.search(
+                r"^- execution commit: `([0-9a-f]{40})`$", text,
+                re.MULTILINE).group(1)
+            executed = re.search(
+                r"^- executed at: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$",
+                text, re.MULTILINE).group(1)
+            execution = _payload()["provenance"]["execution"][key]
+            self.assertEqual(execution["execution_commit"], commit)
+            self.assertEqual(execution["executed_at"], executed)
+
+    def test_25_tampered_commit_changes_parsed_result(self):
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(J2_PATH,
+                            "f7a9c799b5e5c7966d712362778734219a0558f3",
+                            "a" * 40, td)
+            payload = _build(j2_path=bad)
+        self.assertEqual(
+            payload["provenance"]["execution"]["j2"]["execution_commit"],
+            "a" * 40)
+
+    def test_26_missing_execution_commit_fails_loudly(self):
+        text = J1B_PATH.read_text(encoding="utf-8")
+        tampered = re.sub(r"^- execution commit: `[0-9a-f]{40}`\n", "",
+                          text, flags=re.MULTILINE)
+        self.assertNotEqual(tampered, text)
+        with tempfile.TemporaryDirectory() as td:
+            bad = Path(td) / J1B_PATH.name
+            bad.write_text(tampered, encoding="utf-8")
+            with self.assertRaises(ValueError):
+                _build(j1b_path=bad)
+
+    def test_27_malformed_commit_or_timestamp_fails_loudly(self):
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(J3_PATH,
+                            "3d6a9af80a20854c88a43af5e952c5276711a125",
+                            "not-a-commit", td)
+            with self.assertRaises(ValueError):
+                _build(j3_path=bad)
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(J3_PATH, "2026-07-10T17:23:47Z",
+                            "sometime in July", td)
+            with self.assertRaises(ValueError):
+                _build(j3_path=bad)
+
+    def test_28_no_current_head_inference(self):
+        src = Path(mje.__file__).read_text(encoding="utf-8")
+        for banned in ("subprocess", "git rev-parse", "GITHUB_SHA",
+                       "datetime.now", "date.today"):
+            self.assertNotIn(banned, src)
+
+    def test_29_reproduction_stays_honestly_unrecorded(self):
+        # No Mission J publication records a reproduction command block;
+        # the contract must state that as null, never fabricate one.
+        prov = _payload()["provenance"]
+        self.assertIsNone(prov["reproduction"])
+
+    def test_30_research_sections_unchanged_by_execution_addition(self):
+        payload = _payload()
+        self.assertEqual(sorted(payload),
+                         ["contract_version", "j1b", "j2", "j3",
+                          "provenance"])
+        self.assertEqual(len(payload["j1b"]["cells"]), 12)
+        self.assertEqual(len(payload["j2"]["state_bearing"]), 4)
+        self.assertEqual(len(payload["j3"]["edges"]), 3)
+
+
 if __name__ == "__main__":
     unittest.main()
