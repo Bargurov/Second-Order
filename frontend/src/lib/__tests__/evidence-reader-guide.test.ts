@@ -1,15 +1,17 @@
 /**
- * M3 — reviewer guide pure contract (glossary + verification manifest).
+ * M3/N2 — reviewer guide pure contract (glossary + verification manifest).
  *
  * The glossary carries exactly the eight frozen terms with definitions,
  * tracked sources and explicit claim boundaries taken from the J0
  * constitution / publications — never invented, never softened into
- * confidence language.  The verification manifest traces exactly the four
- * material evidence lanes to their canonically recorded provenance:
- * missing fields say "not recorded", a pending contract says "preparing
- * tracked record", an unavailable contract says "record unavailable", and
- * nothing is inferred from Git HEAD, filenames or the clock.  The builder
- * is pure — no fetch, no browser global, deterministic ordering.
+ * confidence language.  The verification manifest traces exactly the five
+ * material evidence lanes (N2 added the Mission I ordinary-period
+ * comparison record between Mission G and Mission J) to their canonically
+ * recorded provenance: missing fields say "not recorded", a pending
+ * contract says "preparing tracked record", an unavailable contract says
+ * "record unavailable", and nothing is inferred from Git HEAD, filenames
+ * or the clock.  The builder is pure — no fetch, no browser global,
+ * deterministic ordering.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -23,6 +25,7 @@ import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "../effective-independent-
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "../mechanism-family-evidence";
 import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "../representative-case-library";
 import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
+import { missionIFixture } from "@/components/ui/__tests__/mission-i-fixture";
 import { missionGFixture } from "@/components/ui/__tests__/mission-g-fixture";
 
 // ---------------------------------------------------------------------------
@@ -179,11 +182,13 @@ describe("evidence reader guide — glossary contract", () => {
 const EXPECTED_LANES = [
   "Accepted archive and denominator record",
   "Mission G historical record",
+  "Mission I ordinary-period comparison record",
   "Mission J robustness and transmission record",
   "Mechanism-family / independence / representative-case static evidence",
 ];
 
 const settledG = { isPending: false, isError: false, data: missionGFixture() };
+const settledI = { isPending: false, isError: false, data: missionIFixture() };
 const settledJ = { isPending: false, isError: false, data: missionJFixture() };
 const pending = { isPending: true, isError: false, data: undefined };
 const errored = { isPending: false, isError: true, data: undefined };
@@ -199,24 +204,70 @@ function flat(lane: VerificationLane): string {
 }
 
 describe("evidence reader guide — verification manifest", () => {
-  const manifest = buildEvidenceVerificationManifest(settledG, settledJ);
-  const [accepted, missionG, missionJ, staticEvidence] = manifest;
+  const manifest = buildEvidenceVerificationManifest(settledG, settledI, settledJ);
+  const [accepted, missionG, missionI, missionJ, staticEvidence] = manifest;
 
-  it("contains exactly the four material lanes, unique, in stable order", () => {
+  it("contains exactly the five material lanes, unique, in stable order", () => {
     expect(manifest.map((l) => l.lane)).toEqual(EXPECTED_LANES);
-    expect(new Set(manifest.map((l) => l.lane)).size).toBe(4);
+    expect(new Set(manifest.map((l) => l.lane)).size).toBe(5);
   });
 
-  it("is deterministic for equal inputs and adds no Mission I lane", () => {
+  it("is deterministic for equal inputs, with exactly one Mission I lane between G and J", () => {
     expect(
       JSON.stringify(
         buildEvidenceVerificationManifest(
           { isPending: false, isError: false, data: missionGFixture() },
+          { isPending: false, isError: false, data: missionIFixture() },
           { isPending: false, isError: false, data: missionJFixture() },
         ),
       ),
     ).toBe(JSON.stringify(manifest));
-    expect(JSON.stringify(manifest)).not.toContain("Mission I");
+    const laneNames = manifest.map((l) => l.lane);
+    expect(
+      laneNames.filter((l) => l === "Mission I ordinary-period comparison record"),
+    ).toHaveLength(1);
+    expect(laneNames.indexOf("Mission I ordinary-period comparison record")).toBe(
+      laneNames.indexOf("Mission G historical record") + 1,
+    );
+    expect(laneNames.indexOf("Mission J robustness and transmission record")).toBe(
+      laneNames.indexOf("Mission I ordinary-period comparison record") + 1,
+    );
+  });
+
+  it("takes Mission I provenance (artifacts, hashes, repro, ceiling) from the payload", () => {
+    const i = missionIFixture();
+    expect(missionI.availability).toBe("available — tracked contract");
+    expect(missionI.scope).toContain("65");
+    expect(missionI.scope).toContain("32");
+    expect(missionI.scope).toContain("20 primary cells");
+    expect(missionI.scope).toContain("6 falsifier families");
+    expect(fieldValue(missionI, "Contract")).toContain("GET /evidence/mission-i");
+    expect(fieldValue(missionI, "Contract")).toContain(i.contract_version);
+    const artifacts = fieldValue(missionI, "Source artifacts");
+    const hashes = fieldValue(missionI, "Artifact hashes");
+    for (const src of Object.values(i.provenance.sources)) {
+      expect(artifacts).toContain(src.artifact);
+      expect(hashes).toContain(src.sha256);
+    }
+    const repro = fieldValue(missionI, "Reproduce");
+    for (const cmd of i.provenance.reproduction.commands) {
+      expect(repro).toContain(cmd);
+    }
+    // recorded in NO Mission I publication — stated, never inferred
+    expect(fieldValue(missionI, "Computation dates")).toBe("not recorded");
+    expect(fieldValue(missionI, "Execution commits")).toBe("not recorded");
+    const ceiling = fieldValue(missionI, "Evidence ceiling");
+    expect(ceiling).toContain("percentile-of-placements only");
+    expect(ceiling.toLowerCase()).toContain("no p-values");
+  });
+
+  it("keeps Mission I a separate, unpooled lane", () => {
+    expect(flat(missionI)).not.toContain("J1B");
+    expect(flat(missionI)).not.toContain("G6_FROZEN_MANIFEST_READOUT");
+    expect(flat(missionG)).not.toContain("mission-i");
+    expect(flat(missionJ)).not.toContain("mission-i");
+    // 65 + 32 never presented as one 97-event Mission I sample
+    expect(missionI.scope).not.toContain("97");
   });
 
   it("preserves the canonical accepted-corpus provenance fields", () => {
@@ -296,35 +347,55 @@ describe("evidence reader guide — verification manifest", () => {
   });
 
   it("renders a pending contract lane as preparing, without hiding it", () => {
-    const m = buildEvidenceVerificationManifest(pending, pending);
-    expect(m).toHaveLength(4);
+    const m = buildEvidenceVerificationManifest(pending, pending, pending);
+    expect(m).toHaveLength(5);
     expect(m[1].availability).toBe("preparing tracked record");
     expect(m[2].availability).toBe("preparing tracked record");
+    expect(m[3].availability).toBe("preparing tracked record");
     expect(fieldValue(m[1], "Source artifacts")).toBe("preparing tracked record");
-    expect(fieldValue(m[2], "Evidence ceiling")).toBe("preparing tracked record");
+    expect(fieldValue(m[2], "Source artifacts")).toBe("preparing tracked record");
+    expect(fieldValue(m[3], "Evidence ceiling")).toBe("preparing tracked record");
     // static lanes stay fully available
     expect(m[0].availability).toBe("available — static tracked snapshot");
-    expect(m[3].availability).toBe("available — static tracked snapshot");
+    expect(m[4].availability).toBe("available — static tracked snapshot");
   });
 
   it("renders an unavailable contract lane as record unavailable, without omission", () => {
-    const m = buildEvidenceVerificationManifest(errored, settledJ);
-    expect(m).toHaveLength(4);
+    const m = buildEvidenceVerificationManifest(errored, errored, settledJ);
+    expect(m).toHaveLength(5);
     expect(m[1].availability).toBe("record unavailable");
+    expect(m[2].availability).toBe("record unavailable");
     expect(fieldValue(m[1], "Source artifacts")).toBe("record unavailable");
-    expect(fieldValue(m[1], "Evidence ceiling")).toBe("record unavailable");
+    expect(fieldValue(m[2], "Source artifacts")).toBe("record unavailable");
+    expect(fieldValue(m[2], "Evidence ceiling")).toBe("record unavailable");
     // the sibling lane is untouched
-    expect(m[2].availability).toBe("available — tracked contract");
-    // the contract route itself is app knowledge, not payload knowledge
+    expect(m[3].availability).toBe("available — tracked contract");
+    // the contract routes are app knowledge, not payload knowledge
     expect(fieldValue(m[1], "Contract")).toContain("GET /evidence/mission-g");
+    expect(fieldValue(m[2], "Contract")).toContain("GET /evidence/mission-i");
   });
 
   it("never infers a Mission G commit or hash from anywhere", () => {
     for (const snapshot of [settledG, pending, errored]) {
-      const m = buildEvidenceVerificationManifest(snapshot, settledJ);
+      const m = buildEvidenceVerificationManifest(snapshot, settledI, settledJ);
       const commit = m[1].fields.find((f) => f.label === "Source commit")?.value ?? "";
       expect(["not recorded", "preparing tracked record", "record unavailable"]).toContain(commit);
       expect(commit).not.toMatch(/^[0-9a-f]{7,40}$/);
+    }
+  });
+
+  it("never infers a Mission I computation date or commit from anywhere", () => {
+    for (const snapshot of [settledI, pending, errored]) {
+      const m = buildEvidenceVerificationManifest(settledG, snapshot, settledJ);
+      for (const label of ["Computation dates", "Execution commits"]) {
+        const value = m[2].fields.find((f) => f.label === label)?.value ?? "";
+        expect(
+          ["not recorded", "preparing tracked record", "record unavailable"],
+          label,
+        ).toContain(value);
+        expect(value).not.toMatch(/^[0-9a-f]{7,40}$/);
+        expect(value).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+      }
     }
   });
 
@@ -344,8 +415,8 @@ describe("evidence reader guide — verification manifest", () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
     try {
-      buildEvidenceVerificationManifest(settledG, settledJ);
-      buildEvidenceVerificationManifest(errored, pending);
+      buildEvidenceVerificationManifest(settledG, settledI, settledJ);
+      buildEvidenceVerificationManifest(errored, pending, errored);
       expect(fetchSpy).not.toHaveBeenCalled();
       // node test env has no window/document — construction would have thrown
       expect(typeof globalThis.window).toBe("undefined");

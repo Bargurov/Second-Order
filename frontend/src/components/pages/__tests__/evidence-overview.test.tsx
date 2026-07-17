@@ -590,11 +590,13 @@ describe("EvidenceOverview — F1/F2 representative research set (F3)", () => {
     expect(visible).toContain("Mechanism-family evidence inventory");
   });
 
-  it("introduces no new evidence card and no new API call (reconciliation guard)", () => {
-    // The reconciliation refreshes existing surfaces only: no Mission I card,
-    // no new endpoint wiring.
-    expect(html).not.toContain("mission-i");
-    expect((api as unknown as Record<string, unknown>).missionIEvidence).toBeUndefined();
+  it("consumes the restored Mission I contract through exactly one typed client method (N2)", () => {
+    // Restated from the L1 reconciliation guard (which asserted Mission I's
+    // absence): N2 published the Mission I reader — one client method, one
+    // anchored card wrapper, no second wiring.
+    expect(typeof api.missionIEvidence).toBe("function");
+    expect(html.split('id="mission-i"').length - 1).toBe(1);
+    expect(qk.missionIEvidence()).toEqual(["evidence", "mission-i"]);
   });
 
   it("introduces no banned framing in the new section", () => {
@@ -860,9 +862,11 @@ describe("EvidenceOverview — Mission G historical-evidence card (H3/H4)", () =
 
 import { api } from "@/lib/api";
 import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
+import { missionIFixture } from "@/components/ui/__tests__/mission-i-fixture";
 
 const missionJClient = testQueryClient();
 missionJClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+missionJClient.setQueryData(qk.missionIEvidence(), missionIFixture());
 missionJClient.setQueryData(qk.missionJEvidence(), missionJFixture());
 const missionJHtml = renderOverview(missionJClient);
 const missionJVisible = missionJHtml
@@ -911,5 +915,55 @@ describe("EvidenceOverview — Mission J robustness & transmission record", () =
     expect(missionJVisible).toContain("Canonical denominators");
     expect(missionJVisible).toContain("How to read the event-study rows");
     expect(missionJVisible).toContain("What this is not");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mission I ordinary-period comparison reader (N2) — placement, separate
+// ledger framing, and one-query reuse.  Deep per-fact rendering lives in the
+// mission-i-evidence-card suite; here the page contract is pinned.
+// ---------------------------------------------------------------------------
+
+describe("EvidenceOverview — Mission I ordinary-period comparison reader (N2)", () => {
+  it("wires the query key and API client method to the tracked contract", () => {
+    expect(qk.missionIEvidence()).toEqual(["evidence", "mission-i"]);
+    expect(typeof api.missionIEvidence).toBe("function");
+  });
+
+  it("shows an honest loading state before the record resolves (baseline render)", () => {
+    expect(visible).toContain("Preparing tracked Mission I record");
+  });
+
+  it("places Mission I between the Mission G and Mission J records", () => {
+    const missionG = missionJVisible.indexOf("Mission G historical research record");
+    const missionI = missionJVisible.indexOf(
+      "Were these event windows unusual relative to ordinary periods?",
+    );
+    const missionJ = missionJVisible.indexOf("FOMC robustness & transmission record");
+    expect(missionG).toBeGreaterThan(-1);
+    expect(missionI).toBeGreaterThan(missionG);
+    expect(missionJ).toBeGreaterThan(missionI);
+  });
+
+  it("frames Mission I as its own separate ledger with visible denominators", () => {
+    expect(missionJVisible).toContain(
+      "Ordinary-period comparison · Mission I · separate ledger",
+    );
+    expect(missionJVisible).toContain("FOMC events 65");
+    expect(missionJVisible).toContain("OPEC events 32");
+    expect(missionJVisible).toContain("Primary cells 20");
+    expect(missionJVisible).toContain("Falsifier families 6");
+  });
+
+  it("keeps the frozen conclusion, clarifier, and structural unavailability visible", () => {
+    expect(missionJVisible).toContain("rejects the blanket idea");
+    expect(missionJVisible).toContain("not a formal hypothesis test");
+    expect(missionJVisible).toContain("structurally infeasible");
+  });
+
+  it("keeps the Mission G and Mission J readers intact alongside Mission I", () => {
+    expect(missionJVisible).toContain("broadly null");
+    expect(missionJVisible).toContain("12/12");
+    expect(missionJVisible).toContain("PROPAGATED under the frozen measurement rules");
   });
 });

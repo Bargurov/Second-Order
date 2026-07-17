@@ -1,10 +1,11 @@
 /**
  * Reviewed golden Markdown fixture for the canonical research-record memo
- * (schema second-order-research-record-v1) built with BOTH tracked contracts
- * unavailable and no export timestamp — the smallest complete build, which
- * still exercises every mandatory section, the full static canonical
- * surface, the explicit unavailable lanes, and the exact ordering and
- * formatting contract.
+ * (schema second-order-research-record-v2) built with ALL THREE tracked
+ * contracts unavailable and no export timestamp — the smallest complete
+ * build, which still exercises every mandatory section (all 13, with the
+ * Mission I ordinary-period comparison ledger between Mission G and
+ * Mission J), the full static canonical surface, the explicit unavailable
+ * lanes, and the exact ordering and formatting contract.
  *
  * Stored as a lines array joined with "\n" so checkout end-of-line settings
  * can never corrupt the byte-exact comparison.  Every research value below
@@ -18,7 +19,7 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "",
   "## 1. Record identity",
   "",
-  "- Schema: second-order-research-record-v1",
+  "- Schema: second-order-research-record-v2",
   "- Evidence Overview route: /evidence",
   "- Research dates and source commits appear within their respective sections below.",
   "- This file is a browser export of the Evidence Overview record; the export itself is not a tracked publication.",
@@ -95,13 +96,19 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "",
   "The /evidence/mission-g contract could not be loaded when this record was exported. No figures are reproduced in its place; the lane is recorded as unavailable rather than omitted. Mission G remains a separate historical ledger and is never pooled with the accepted track record.",
   "",
-  "## 7. Mission J — separate robustness and transmission ledger",
+  "## 7. Mission I — ordinary-period comparison ledger",
+  "",
+  "Mission I research record: unavailable",
+  "",
+  "The /evidence/mission-i contract could not be loaded when this record was exported. No figures are reproduced in its place; the lane is recorded as unavailable rather than omitted. Mission I remains a separate ordinary-period comparison ledger and is never pooled with Mission G, Mission J, or the accepted archive.",
+  "",
+  "## 8. Mission J — separate robustness and transmission ledger",
   "",
   "Mission J research record: unavailable",
   "",
   "The /evidence/mission-j contract could not be loaded when this record was exported. No figures are reproduced in its place; the lane is recorded as unavailable rather than omitted. Mission J remains a separate robustness and transmission ledger and is never pooled with Mission G or the accepted archive.",
   "",
-  "## 8. Mechanism-family evidence inventory",
+  "## 9. Mechanism-family evidence inventory",
   "",
   "Three family lenses exist on the Evidence Overview; they are different lenses over different denominators, not competing estimates of one count. Families appear in canonical order; no family is ranked.",
   "",
@@ -137,7 +144,7 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "- Tier-1 staged / no-paid shortlist: #303 regulation — DOJ v Apple — conduct antitrust · #304 regulation — DOJ v Google ad-tech — structural antitrust · #313 labor_inflation — UAW strike — production / wage-cost shock",
   "- Staged candidates are not accepted evidence and never enter accepted denominators or claims.",
   "",
-  "## 9. Representative-case context",
+  "## 10. Representative-case context",
   "",
   "- 15 illustrative cases across 6 mechanism families: 6 already-covered N1 anchors + 9 newly proposed F1/F2 cases; event-study readout available for 12 / 15; families represented 6 / 6.",
   "- Selection framework: the frozen F1 selection rule (selection frozen @ 399aa8d); outcomes restated 2026-07-11 from the current archive; the selection itself never changes with outcomes. This is a different list from the app Case Library walkthrough, which is a separate editorial slate.",
@@ -163,7 +170,7 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "",
   "- Readout availability is not the same as thesis support: outcome is thesis-direction scoring of the named tickers, while the event-study readout is the primary ticker vs SPY — a different lens (cases 29 and 38 share a readout but have opposite outcomes).",
   "",
-  "## 10. Data limitations and unresolved states",
+  "## 11. Data limitations and unresolved states",
   "",
   "Stated, not repaired. Only limitations present in the canonical inputs appear here.",
   "",
@@ -177,11 +184,12 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "- Daily-close provider only; no existing live row was overwritten (48 existing-key value differences were kept as-is).",
   "- Residual missingness is delisted / proxy-alias / residual gaps — not a simple backfill.",
   "- Coverage-repair boundary: The repair improves coverage / representativeness only. It does not create statistical significance, an edge, or a directional claim; a single-event AR stays an n = 1 descriptive point estimate. The temporal-clustering ceiling — the corpus is ~90% one 2-month window — is NOT lifted by coverage repair.",
-  "- Missing provenance: fields not canonically recorded are marked \"not recorded\" in section 11.",
+  "- Missing provenance: fields not canonically recorded are marked \"not recorded\" in section 12.",
   "- Mission G research record: unavailable — its limitation and falsifier detail could not be exported (section 6).",
-  "- Mission J research record: unavailable — its measurement-limited and unresolved detail could not be exported (section 7).",
+  "- Mission I research record: unavailable — its structural-unavailability and fragility detail could not be exported (section 7).",
+  "- Mission J research record: unavailable — its measurement-limited and unresolved detail could not be exported (section 8).",
   "",
-  "## 11. Provenance and reproduction appendix",
+  "## 12. Provenance and reproduction appendix",
   "",
   "Reproduction commands are recorded for reference only; nothing in this export executes them. Fields not canonically recorded say \"not recorded\".",
   "",
@@ -230,11 +238,15 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "",
   "- Mission G research record: unavailable — no provenance could be exported.",
   "",
+  "### Mission I published record",
+  "",
+  "- Mission I research record: unavailable — no provenance could be exported.",
+  "",
   "### Mission J published record",
   "",
   "- Mission J research record: unavailable — no provenance could be exported.",
   "",
-  "## 12. Final non-claims",
+  "## 13. Final non-claims",
   "",
   "Standing non-claims of the evidence record:",
   "",
@@ -250,5 +262,5 @@ const GOLDEN_LINES: ReadonlyArray<string> = [
   "predictive performance, alpha, tradeability, or an investment recommendation.",
 ];
 
-export const GOLDEN_RESEARCH_RECORD_BOTH_UNAVAILABLE: string =
+export const GOLDEN_RESEARCH_RECORD_ALL_UNAVAILABLE: string =
   GOLDEN_LINES.join("\n") + "\n";

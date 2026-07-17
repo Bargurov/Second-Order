@@ -1,16 +1,19 @@
 /**
- * M2 — canonical research-record memo builder (second-order-research-record-v1).
+ * M2/N2 — canonical research-record memo builder
+ * (second-order-research-record-v2).
  *
  * The builder is a pure function: canonical static evidence constants are
- * imported (never retyped), the Mission G / Mission J contract payloads are
- * passed in as explicit lanes, and the output is deterministic LF Markdown.
- * These tests pin the memo contract:
+ * imported (never retyped), the Mission G / Mission I / Mission J contract
+ * payloads are passed in as explicit lanes, and the output is deterministic
+ * LF Markdown.  N2 bumped the schema to v2: the memo is exactly 13 sections
+ * with the Mission I ordinary-period comparison ledger between Mission G
+ * and Mission J.  These tests pin the memo contract:
  *   - byte-identical output for identical input (incl. a reviewed golden);
  *   - every mandatory section present, in order, never silently omitted;
  *   - denominators equal the canonical constants (no retyped number);
  *   - both accepted outcome ledgers stay separate with the do-not-merge
  *     warning, and no blended / composite result exists;
- *   - Mission G / J wording comes from the contract payload (sentinel
+ *   - Mission G / I / J wording comes from the contract payload (sentinel
  *     mutation proves no hand-copied frozen conclusion);
  *   - unavailable lanes are explicit, ordinary / contradicted / mixed /
  *     unresolved states stay visible;
@@ -44,11 +47,12 @@ import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "../effective-independent-
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "../mechanism-family-evidence";
 import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "../representative-case-library";
 import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
+import { missionIFixture } from "@/components/ui/__tests__/mission-i-fixture";
 import {
   missionGFixture,
   MISSION_G_APPROVED_OPEC_WORDING,
 } from "@/components/ui/__tests__/mission-g-fixture";
-import { GOLDEN_RESEARCH_RECORD_BOTH_UNAVAILABLE } from "./research-record-golden";
+import { GOLDEN_RESEARCH_RECORD_ALL_UNAVAILABLE } from "./research-record-golden";
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -57,6 +61,7 @@ import { GOLDEN_RESEARCH_RECORD_BOTH_UNAVAILABLE } from "./research-record-golde
 function completeInput(): ResearchRecordMemoInput {
   return {
     missionG: { available: true, data: missionGFixture() },
+    missionI: { available: true, data: missionIFixture() },
     missionJ: { available: true, data: missionJFixture() },
   };
 }
@@ -64,6 +69,15 @@ function completeInput(): ResearchRecordMemoInput {
 function gUnavailableInput(): ResearchRecordMemoInput {
   return {
     missionG: { available: false },
+    missionI: { available: true, data: missionIFixture() },
+    missionJ: { available: true, data: missionJFixture() },
+  };
+}
+
+function iUnavailableInput(): ResearchRecordMemoInput {
+  return {
+    missionG: { available: true, data: missionGFixture() },
+    missionI: { available: false },
     missionJ: { available: true, data: missionJFixture() },
   };
 }
@@ -71,23 +85,30 @@ function gUnavailableInput(): ResearchRecordMemoInput {
 function jUnavailableInput(): ResearchRecordMemoInput {
   return {
     missionG: { available: true, data: missionGFixture() },
+    missionI: { available: true, data: missionIFixture() },
     missionJ: { available: false },
   };
 }
 
-function bothUnavailableInput(): ResearchRecordMemoInput {
-  return { missionG: { available: false }, missionJ: { available: false } };
+function allUnavailableInput(): ResearchRecordMemoInput {
+  return {
+    missionG: { available: false },
+    missionI: { available: false },
+    missionJ: { available: false },
+  };
 }
 
 const complete = buildResearchRecordMemo(completeInput());
 const gUnavailable = buildResearchRecordMemo(gUnavailableInput());
+const iUnavailable = buildResearchRecordMemo(iUnavailableInput());
 const jUnavailable = buildResearchRecordMemo(jUnavailableInput());
-const bothUnavailable = buildResearchRecordMemo(bothUnavailableInput());
+const allUnavailable = buildResearchRecordMemo(allUnavailableInput());
 const allVariants: Array<[string, string]> = [
   ["complete", complete],
   ["mission G unavailable", gUnavailable],
+  ["mission I unavailable", iUnavailable],
   ["mission J unavailable", jUnavailable],
-  ["both unavailable", bothUnavailable],
+  ["all unavailable", allUnavailable],
 ];
 
 const SECTION_HEADINGS = [
@@ -97,12 +118,13 @@ const SECTION_HEADINGS = [
   "## 4. Accepted outcome ledgers",
   "## 5. Independence caution",
   "## 6. Mission G — separate historical ledger",
-  "## 7. Mission J — separate robustness and transmission ledger",
-  "## 8. Mechanism-family evidence inventory",
-  "## 9. Representative-case context",
-  "## 10. Data limitations and unresolved states",
-  "## 11. Provenance and reproduction appendix",
-  "## 12. Final non-claims",
+  "## 7. Mission I — ordinary-period comparison ledger",
+  "## 8. Mission J — separate robustness and transmission ledger",
+  "## 9. Mechanism-family evidence inventory",
+  "## 10. Representative-case context",
+  "## 11. Data limitations and unresolved states",
+  "## 12. Provenance and reproduction appendix",
+  "## 13. Final non-claims",
 ];
 
 // ---------------------------------------------------------------------------
@@ -114,8 +136,8 @@ describe("research-record memo — determinism and formatting", () => {
     expect(buildResearchRecordMemo(completeInput())).toBe(
       buildResearchRecordMemo(completeInput()),
     );
-    expect(buildResearchRecordMemo(bothUnavailableInput())).toBe(
-      buildResearchRecordMemo(bothUnavailableInput()),
+    expect(buildResearchRecordMemo(allUnavailableInput())).toBe(
+      buildResearchRecordMemo(allUnavailableInput()),
     );
     const stamped: ResearchRecordMemoInput = {
       ...completeInput(),
@@ -142,15 +164,19 @@ describe("research-record memo — determinism and formatting", () => {
     }
   });
 
-  it("matches the reviewed golden fixture byte-for-byte (both lanes unavailable)", () => {
-    expect(bothUnavailable).toBe(GOLDEN_RESEARCH_RECORD_BOTH_UNAVAILABLE);
+  it("matches the reviewed golden fixture byte-for-byte (all three lanes unavailable)", () => {
+    expect(allUnavailable).toBe(GOLDEN_RESEARCH_RECORD_ALL_UNAVAILABLE);
   });
 
-  it("contains the schema version exactly once, in the record identity section", () => {
+  it("carries the v2 schema version exactly once — the section contract changed with it", () => {
     for (const [name, memo] of allVariants) {
       expect(memo.split(RESEARCH_RECORD_SCHEMA_VERSION).length - 1, name).toBe(1);
     }
-    expect(RESEARCH_RECORD_SCHEMA_VERSION).toBe("second-order-research-record-v1");
+    expect(RESEARCH_RECORD_SCHEMA_VERSION).toBe("second-order-research-record-v2");
+    // the retired v1 identifier must not linger anywhere in the output
+    for (const [name, memo] of allVariants) {
+      expect(memo, name).not.toContain("second-order-research-record-v1");
+    }
   });
 
   it("renders every mandatory section heading in order, in every variant", () => {
@@ -320,7 +346,7 @@ describe("research-record memo — Mission G lane", () => {
 
   it("states the unavailable lane explicitly", () => {
     expect(gUnavailable).toContain("Mission G research record: unavailable");
-    expect(bothUnavailable).toContain("Mission G research record: unavailable");
+    expect(allUnavailable).toContain("Mission G research record: unavailable");
     expect(complete).not.toContain("Mission G research record: unavailable");
   });
 
@@ -347,6 +373,7 @@ describe("research-record memo — Mission G lane", () => {
     g.bounded_opec_association.wording = "SENTINEL-G-WORDING";
     const memo = buildResearchRecordMemo({
       missionG: { available: true, data: g },
+      missionI: { available: false },
       missionJ: { available: false },
     });
     expect(memo).toContain("SENTINEL-G-HEADLINE");
@@ -355,18 +382,143 @@ describe("research-record memo — Mission G lane", () => {
   });
 });
 
+describe("research-record memo — Mission I lane (N2)", () => {
+  it("is never silently omitted, and sits between the G and J ledgers", () => {
+    for (const [name, memo] of allVariants) {
+      const g = memo.indexOf("## 6. Mission G — separate historical ledger");
+      const i = memo.indexOf("## 7. Mission I — ordinary-period comparison ledger");
+      const j = memo.indexOf("## 8. Mission J — separate robustness and transmission ledger");
+      expect(g, name).toBeGreaterThan(-1);
+      expect(i, name).toBeGreaterThan(g);
+      expect(j, name).toBeGreaterThan(i);
+    }
+  });
+
+  it("states the unavailable lane explicitly", () => {
+    expect(iUnavailable).toContain("Mission I research record: unavailable");
+    expect(allUnavailable).toContain("Mission I research record: unavailable");
+    expect(complete).not.toContain("Mission I research record: unavailable");
+  });
+
+  it("renders the frozen question, separate denominators and reference Ns from the payload", () => {
+    const i = missionIFixture();
+    expect(complete).toContain(i.constitution.frozen_question);
+    expect(complete).toContain("- FOMC: 65 event windows");
+    expect(complete).toContain("- OPEC: 32 event windows");
+    expect(complete).toContain(`${i.constitution.family_pooling_prohibition}.`);
+    // eligible ordinary-reference denominators per family × horizon
+    for (const lane of i.universe.families) {
+      for (const h of lane.horizons) {
+        expect(complete).toContain(
+          `| ${lane.family} | ${h.horizon} | ${lane.study_event_n_available} | ${h.reference_n_available} | ${h.non_overlapping_reference_n} | ${h.status} |`,
+        );
+      }
+    }
+  });
+
+  it("renders all 20 primary cells in frozen order with payload-exact values", () => {
+    const i = missionIFixture();
+    let last = -1;
+    for (const cell of i.primary_cells) {
+      const row = `| ${cell.cell} | ${cell.cell_key} | ${cell.event_n_available} | ${cell.reference_n_available} | ${cell.memp} | ${cell.signed_percentile_median} | ${cell.calibration_percentile} |`;
+      const idx = complete.indexOf(row);
+      expect(idx, cell.cell_key).toBeGreaterThan(last);
+      last = idx;
+    }
+  });
+
+  it("keeps the FOMC 20d structural unavailability explicit", () => {
+    expect(complete).toContain("| FOMC | 20d | 65 | 0 | 0 | structurally_infeasible |");
+    expect(complete).toContain("not a data gap");
+  });
+
+  it("renders the separate family readouts verbatim", () => {
+    const i = missionIFixture();
+    for (const r of i.family_horizon_readout) {
+      expect(complete).toContain(`- ${r.family} ${r.horizon}: ${r.headline}`);
+    }
+  });
+
+  it("renders all six falsifier families separately with the frozen results", () => {
+    const i = missionIFixture();
+    for (const key of ["f1", "f2", "f3", "f4", "f5", "f6"] as const) {
+      expect(complete).toContain(i.falsifiers.definitions[key]);
+    }
+    expect(complete).toContain("0 / 20 primary-cell direction changes");
+    expect(complete).toContain(i.falsifiers.f3_overlap_decimation.reading);
+    expect(complete).toContain(i.falsifiers.f3_overlap_decimation.limitation);
+    expect(complete).toContain("10 / 160");
+    expect(complete).toContain("32 / 904");
+    expect(complete).toContain("9 inside · 11 outside (8 upper · 3 lower)");
+    // never compressed into a pass count or score
+    expect(complete.toLowerCase()).not.toMatch(/\d\s*\/\s*6 (passed|failed)/);
+    expect(complete.toLowerCase()).not.toContain("robustness score");
+  });
+
+  it("keeps the FOMC 5d raw knife-edge fragility visible", () => {
+    const i = missionIFixture();
+    expect(complete).toContain(i.fragility.knife_edge.cell_key);
+    expect(complete).toContain("MEMP 0.501155");
+    expect(complete).toContain("LOEO 32 / 65");
+    expect(complete).toContain(i.fragility.knife_edge.explanation);
+  });
+
+  it("renders the conclusion, clarifier, limitations and non-claims verbatim", () => {
+    const i = missionIFixture();
+    expect(complete).toContain(`- Conclusion (verbatim): ${i.whole_mission_conclusion.statement}`);
+    expect(complete).toContain(`- Clarifier (verbatim): ${i.whole_mission_conclusion.clarifier}`);
+    for (const limit of i.unresolved_or_limits) {
+      expect(complete).toContain(`- ${limit}`);
+    }
+    for (const nc of i.non_claims) {
+      expect(complete).toContain(`- ${nc}`);
+    }
+  });
+
+  it("takes its wording from the payload, not from a hand-copied conclusion (sentinel)", () => {
+    const i = missionIFixture();
+    i.whole_mission_conclusion.statement = "SENTINEL-I-CONCLUSION";
+    i.family_horizon_readout[0].headline = "SENTINEL-I-HEADLINE";
+    const memo = buildResearchRecordMemo({
+      missionG: { available: false },
+      missionI: { available: true, data: i },
+      missionJ: { available: false },
+    });
+    expect(memo).toContain("SENTINEL-I-CONCLUSION");
+    expect(memo).toContain("SENTINEL-I-HEADLINE");
+    expect(memo).not.toContain("rejects the blanket idea");
+    expect(memo).not.toContain(
+      "broad, perturbation-stable elevation in one-day response magnitude",
+    );
+  });
+
+  it("carries the Mission I provenance appendix — hashes, repro, honest nulls", () => {
+    const i = missionIFixture();
+    for (const src of Object.values(i.provenance.sources)) {
+      expect(complete).toContain(
+        `${src.artifact} — sha256 ${src.sha256} · ${src.bytes} bytes`,
+      );
+    }
+    for (const cmd of i.provenance.reproduction.commands) {
+      expect(complete).toContain(cmd);
+    }
+    expect(complete).toContain("- Computation dates: not recorded");
+    expect(complete).toContain("- Execution commits: not recorded");
+  });
+});
+
 describe("research-record memo — Mission J lane", () => {
   it("is never silently omitted", () => {
     for (const [name, memo] of allVariants) {
       expect(memo, name).toContain(
-        "## 7. Mission J — separate robustness and transmission ledger",
+        "## 8. Mission J — separate robustness and transmission ledger",
       );
     }
   });
 
   it("states the unavailable lane explicitly", () => {
     expect(jUnavailable).toContain("Mission J research record: unavailable");
-    expect(bothUnavailable).toContain("Mission J research record: unavailable");
+    expect(allUnavailable).toContain("Mission J research record: unavailable");
     expect(complete).not.toContain("Mission J research record: unavailable");
   });
 
@@ -419,6 +571,7 @@ describe("research-record memo — Mission J lane", () => {
     j.j3.supports = ["SENTINEL-J-SUPPORT"];
     const memo = buildResearchRecordMemo({
       missionG: { available: false },
+      missionI: { available: false },
       missionJ: { available: true, data: j },
     });
     expect(memo).toContain("SENTINEL-J-TIMING");
@@ -471,17 +624,27 @@ describe("research-record memo — family inventory and representative cases", (
 
 describe("research-record memo — limitations and provenance appendix", () => {
   it("keeps unavailable / unresolved / limitation states visible", () => {
-    expect(complete).toContain("## 10. Data limitations and unresolved states");
+    expect(complete).toContain("## 11. Data limitations and unresolved states");
     expect(complete).toContain(F.coverageRepairPlan.nonClaim);
     for (const u of missionJFixture().j3.unresolved) {
       expect(complete).toContain(u);
     }
     expect(jUnavailable).toContain(
-      "- Mission J research record: unavailable — its measurement-limited and unresolved detail could not be exported (section 7).",
+      "- Mission J research record: unavailable — its measurement-limited and unresolved detail could not be exported (section 8).",
+    );
+    expect(iUnavailable).toContain(
+      "- Mission I research record: unavailable — its structural-unavailability and fragility detail could not be exported (section 7).",
     );
     expect(gUnavailable).toContain(
       "- Mission G research record: unavailable — its limitation and falsifier detail could not be exported (section 6).",
     );
+  });
+
+  it("keeps the Mission I structural and knife-edge limitations in the limitations section", () => {
+    const section = complete.split("## 11. Data limitations and unresolved states")[1]
+      .split("## 12.")[0];
+    expect(section).toContain("Mission I: FOMC 20d is structurally infeasible");
+    expect(section).toContain("Mission I knife-edge fragility");
   });
 
   it("renders recorded provenance fields and says 'not recorded' for the rest", () => {
@@ -579,40 +742,49 @@ describe("research-record memo — no banned framing", () => {
 
 describe("research-record memo — export readiness and lane mapping", () => {
   const g = missionGFixture();
+  const i = missionIFixture();
   const j = missionJFixture();
   const settledG = { isPending: false, isError: false, data: g };
+  const settledI = { isPending: false, isError: false, data: i };
   const settledJ = { isPending: false, isError: false, data: j };
   const pending = { isPending: true, isError: false, data: undefined };
   const errored = { isPending: false, isError: true, data: undefined };
 
-  it("is not ready while either contract is still in its initial loading state", () => {
-    expect(researchRecordExportReady(pending, settledJ)).toBe(false);
-    expect(researchRecordExportReady(settledG, pending)).toBe(false);
-    expect(researchRecordExportReady(pending, pending)).toBe(false);
+  it("is not ready while any of the three contracts is still in its initial loading state", () => {
+    expect(researchRecordExportReady(pending, settledI, settledJ)).toBe(false);
+    expect(researchRecordExportReady(settledG, pending, settledJ)).toBe(false);
+    expect(researchRecordExportReady(settledG, settledI, pending)).toBe(false);
+    expect(researchRecordExportReady(pending, pending, pending)).toBe(false);
   });
 
-  it("is ready once both queries settle, including settled errors", () => {
-    expect(researchRecordExportReady(settledG, settledJ)).toBe(true);
-    expect(researchRecordExportReady(errored, settledJ)).toBe(true);
-    expect(researchRecordExportReady(settledG, errored)).toBe(true);
-    expect(researchRecordExportReady(errored, errored)).toBe(true);
+  it("is ready once all three queries settle, including settled errors", () => {
+    expect(researchRecordExportReady(settledG, settledI, settledJ)).toBe(true);
+    expect(researchRecordExportReady(errored, settledI, settledJ)).toBe(true);
+    expect(researchRecordExportReady(settledG, errored, settledJ)).toBe(true);
+    expect(researchRecordExportReady(settledG, settledI, errored)).toBe(true);
+    expect(researchRecordExportReady(errored, errored, errored)).toBe(true);
   });
 
   it("maps settled data to available lanes and errors to explicit unavailable lanes", () => {
-    const input = researchRecordMemoInput(settledG, settledJ, "2026-07-16T12:00:00Z");
+    const input = researchRecordMemoInput(settledG, settledI, settledJ, "2026-07-16T12:00:00Z");
     expect(input.missionG).toEqual({ available: true, data: g });
+    expect(input.missionI).toEqual({ available: true, data: i });
     expect(input.missionJ).toEqual({ available: true, data: j });
     expect(input.exportedAt).toBe("2026-07-16T12:00:00Z");
 
-    const degraded = researchRecordMemoInput(errored, settledJ);
+    const degraded = researchRecordMemoInput(errored, errored, settledJ);
     expect(degraded.missionG).toEqual({ available: false });
+    expect(degraded.missionI).toEqual({ available: false });
     expect(degraded.missionJ).toEqual({ available: true, data: j });
     expect(degraded.exportedAt).toBeUndefined();
 
     // no data (even without an error flag) never fabricates an available lane
     expect(
-      researchRecordMemoInput(pending, { isPending: false, isError: false, data: undefined })
-        .missionJ,
+      researchRecordMemoInput(pending, pending, {
+        isPending: false,
+        isError: false,
+        data: undefined,
+      }).missionJ,
     ).toEqual({ available: false });
   });
 });

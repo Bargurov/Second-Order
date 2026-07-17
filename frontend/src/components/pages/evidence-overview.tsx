@@ -16,6 +16,7 @@ import { api } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MissionGEvidenceCard } from "@/components/ui/mission-g-evidence-card";
+import { MissionIEvidenceCard } from "@/components/ui/mission-i-evidence-card";
 import { MissionJEvidenceCard } from "@/components/ui/mission-j-evidence-card";
 import {
   buildResearchRecordMemo,
@@ -38,20 +39,22 @@ import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "@/lib/representative-case-li
 import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "@/lib/effective-independent-evidence";
 
 // ---------------------------------------------------------------------------
-// Stable research-section anchors (M1) — the page is directly addressable at
-// /evidence, and exactly these four sections carry stable IDs a reviewer can
-// link to (page header, canonical denominator ledger, Mission G record,
-// Mission J record).  The IDs live on the existing section wrappers — which
-// render in loading and unavailable states too — so an anchor never
-// disappears while a record resolves.  Scrolling is bounded and injectable:
-// known IDs scroll (offset for the sticky TopBar via scroll-mt), unknown
-// hashes fail quietly, and the hashchange listener cleans up StrictMode-safe.
+// Stable research-section anchors (M1, extended by N2) — the page is
+// directly addressable at /evidence, and exactly these five sections carry
+// stable IDs a reviewer can link to (page header, canonical denominator
+// ledger, Mission G record, Mission I record, Mission J record).  The IDs
+// live on the existing section wrappers — which render in loading and
+// unavailable states too — so an anchor never disappears while a record
+// resolves.  Scrolling is bounded and injectable: known IDs scroll (offset
+// for the sticky TopBar via scroll-mt), unknown hashes fail quietly, and
+// the hashchange listener cleans up StrictMode-safe.
 // ---------------------------------------------------------------------------
 
 export const EVIDENCE_ANCHOR_IDS = [
   "evidence-top",
   "denominators",
   "mission-g",
+  "mission-i",
   "mission-j",
 ] as const;
 
@@ -148,6 +151,20 @@ export function EvidenceOverview() {
     staleTime: 1_800_000,
   });
 
+  // N2 — Mission I ordinary-period comparison record from the tracked-only
+  // GET /evidence/mission-i contract (restored by N1). One query; its
+  // result is reused by the card, the memo export, and the reviewer guide.
+  // Long staleTime: the payload only changes on a tracked commit.
+  const {
+    data: missionI,
+    isError: missionIError,
+    isPending: missionIPending,
+  } = useQuery({
+    queryKey: qk.missionIEvidence(),
+    queryFn: () => api.missionIEvidence(),
+    staleTime: 1_800_000,
+  });
+
   // Mission J flagship — the published robustness/transmission record from
   // the tracked-only GET /evidence/mission-j contract. Long staleTime: the
   // payload only changes on a tracked commit.
@@ -165,12 +182,30 @@ export function EvidenceOverview() {
   // the Mission J record) plus hash changes while the page stays active.
   useEffect(() => installEvidenceHashScroll(window, document), []);
 
-  // Shared M2/M3 snapshots of the two existing Mission queries — the export
-  // action and the reviewer guide both read these; neither makes a request.
+  // N2 — re-apply the direct-entry hash once the three Mission records
+  // settle: the fetched cards above the target grow as they resolve, so the
+  // one-shot mount scroll can land short of the anchor. Still bounded to
+  // the known anchor IDs; an unknown or absent hash stays a no-op.
+  const missionRecordsSettled =
+    !missionGPending && !missionIPending && !missionJPending;
+  useEffect(() => {
+    if (missionRecordsSettled) {
+      scrollToEvidenceHash(window.location.hash, document);
+    }
+  }, [missionRecordsSettled]);
+
+  // Shared M2/M3 snapshots of the three existing Mission queries — the
+  // export action and the reviewer guide both read these; neither makes a
+  // request.
   const missionGSnapshot = {
     isPending: missionGPending,
     isError: missionGError,
     data: missionG,
+  };
+  const missionISnapshot = {
+    isPending: missionIPending,
+    isError: missionIError,
+    data: missionI,
   };
   const missionJSnapshot = {
     isPending: missionJPending,
@@ -179,24 +214,34 @@ export function EvidenceOverview() {
   };
 
   // M2 — one canonical research-record export, built ONLY on click from the
-  // same canonical static constants and the same settled Mission G/J query
+  // same canonical static constants and the same settled Mission G/I/J query
   // results this page renders (no rebuild per render, no second fetch, no
-  // blob allocation outside the handler).  Ready once both contracts settle;
-  // a settled error exports as an explicitly unavailable lane.
-  const exportReady = researchRecordExportReady(missionGSnapshot, missionJSnapshot);
+  // blob allocation outside the handler).  Ready once all three contracts
+  // settle; a settled error exports as an explicitly unavailable lane.
+  const exportReady = researchRecordExportReady(
+    missionGSnapshot,
+    missionISnapshot,
+    missionJSnapshot,
+  );
   const handleDownloadResearchRecord = () => {
     if (!exportReady) return;
     const markdown = buildResearchRecordMemo(
-      researchRecordMemoInput(missionGSnapshot, missionJSnapshot, new Date().toISOString()),
+      researchRecordMemoInput(
+        missionGSnapshot,
+        missionISnapshot,
+        missionJSnapshot,
+        new Date().toISOString(),
+      ),
     );
     downloadResearchRecordMemo(markdown);
   };
 
-  // M3 — reviewer guide manifest: the four material evidence lanes traced to
+  // M3 — reviewer guide manifest: the five material evidence lanes traced to
   // their canonically recorded provenance, with pending / unavailable
   // contract lanes stated honestly (never omitted).
   const verificationLanes = buildEvidenceVerificationManifest(
     missionGSnapshot,
+    missionISnapshot,
     missionJSnapshot,
   );
 
@@ -442,10 +487,46 @@ export function EvidenceOverview() {
         </CardContent>
       </Card>
 
+      {/* N2 — the published Mission I ordinary-period comparison record,
+          consumed from the tracked-publication-backed
+          GET /evidence/mission-i contract (restored by N1). Placed between
+          the Mission G and Mission J records — the project's research
+          chain reads: what happened across historical states (G) → was the
+          event-window magnitude unusual versus ordinary periods (I) → did
+          the inherited FOMC result survive new robustness challenges (J).
+          Three separate ledgers with separate denominators; their numbers
+          are never pooled and never staged as one statistical sample. All
+          research values, states, headlines, falsifiers and non-claims
+          come verbatim from the contract. */}
+      <Card id="mission-i" className="mb-3 scroll-mt-20 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Ordinary-period comparison · Mission I · separate ledger</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Were these event windows unusual relative to ordinary periods?
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            A frozen descriptive comparison, separate from Mission G above
+            and Mission J below: it asks whether the completed FOMC and
+            OPEC event windows were unusual in response magnitude relative
+            to eligible ordinary non-event periods on the same frozen
+            assets, response metrics, horizons, and calculation rules. The
+            two families keep separate ledgers, no result is pooled, and
+            there are no p-values and no pooled FDR family. All figures
+            below are served from the seven tracked Mission I publications.
+          </p>
+          <MissionIEvidenceCard
+            data={missionI}
+            unavailable={missionIError}
+          />
+        </CardContent>
+      </Card>
+
       {/* Mission J flagship — the published FOMC robustness & transmission
           record, consumed from the tracked-publication-backed
           GET /evidence/mission-j contract. Placed directly after the
-          Mission G record: a separate frozen research program with its own
+          Mission I record: a separate frozen research program with its own
           denominators (never pooled with Mission G, Mission I, or the
           accepted track record). Editorial treatment translated from the
           Executive Design package; all research values, states, qualifiers

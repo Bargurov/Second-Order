@@ -1,17 +1,23 @@
 /**
- * M2 — canonical research-record memo (schema second-order-research-record-v1).
+ * M2/N2 — canonical research-record memo
+ * (schema second-order-research-record-v2).
  *
  * `buildResearchRecordMemo` is a PURE, deterministic builder: it composes one
  * portable Markdown rendering of the evidence record shown on the Evidence
  * Overview page from the same canonical static constants the page renders
  * (accepted-corpus, research-findings, effective-independent-evidence,
- * mechanism-family-evidence, representative-case-library) plus the Mission G
- * and Mission J contract payloads passed in as explicit lanes.  No research
- * number is retyped here; frozen Mission wording comes verbatim from the
- * contract fields.  The builder touches no window, document, network, DB,
+ * mechanism-family-evidence, representative-case-library) plus the Mission G,
+ * Mission I, and Mission J contract payloads passed in as explicit lanes.  No
+ * research number is retyped here; frozen Mission wording comes verbatim from
+ * the contract fields.  The builder touches no window, document, network, DB,
  * provider, or wall clock — an optional export timestamp may be passed by the
  * caller and is labeled as export metadata only.  Output is LF-only and
  * byte-identical for identical input.
+ *
+ * Schema history: v1 carried 12 sections with the Mission G and Mission J
+ * lanes only; v2 (N2) added the Mission I ordinary-period comparison ledger
+ * between them — 13 sections exactly.  The identifier was bumped WITH the
+ * section contract; the two never change independently.
  *
  * An unavailable lane is stated explicitly ("Mission G research record:
  * unavailable") — never silently omitted — and provenance fields the
@@ -20,7 +26,12 @@
  * browser mechanics (Blob -> object URL -> temporary anchor -> revoke) behind
  * an injectable adapter so tests need no DOM.
  */
-import type { MissionGEvidenceSummary, MissionJEvidenceSummary } from "./api";
+import type {
+  MissionGEvidenceSummary,
+  MissionIEvidenceSummary,
+  MissionISourceKey,
+  MissionJEvidenceSummary,
+} from "./api";
 import {
   ACCEPTED_CORPUS as AC,
   DENOMINATOR_LEDGER,
@@ -31,7 +42,7 @@ import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "./effective-independent-e
 import { MECHANISM_FAMILY_EVIDENCE as MFE } from "./mechanism-family-evidence";
 import { REPRESENTATIVE_CASE_LIBRARY as RCL } from "./representative-case-library";
 
-export const RESEARCH_RECORD_SCHEMA_VERSION = "second-order-research-record-v1";
+export const RESEARCH_RECORD_SCHEMA_VERSION = "second-order-research-record-v2";
 export const RESEARCH_RECORD_FILENAME = "second-order-research-record.md";
 export const RESEARCH_RECORD_MIME_TYPE = "text/markdown;charset=utf-8";
 
@@ -41,6 +52,7 @@ export type MissionLane<T> = { available: true; data: T } | { available: false }
 
 export interface ResearchRecordMemoInput {
   missionG: MissionLane<MissionGEvidenceSummary>;
+  missionI: MissionLane<MissionIEvidenceSummary>;
   missionJ: MissionLane<MissionJEvidenceSummary>;
   /** Optional export timestamp supplied by the caller — export metadata
    *  only, never a research computation date. */
@@ -58,13 +70,15 @@ export interface EvidenceQuerySnapshot<T> {
   data: T | undefined;
 }
 
-/** The export action is ready once BOTH contracts have settled — success or
- *  error — because an errored lane is exported as explicitly unavailable. */
+/** The export action is ready once ALL THREE contracts have settled —
+ *  success or error — because an errored lane is exported as explicitly
+ *  unavailable. */
 export function researchRecordExportReady(
   missionG: EvidenceQuerySnapshot<unknown>,
+  missionI: EvidenceQuerySnapshot<unknown>,
   missionJ: EvidenceQuerySnapshot<unknown>,
 ): boolean {
-  return !missionG.isPending && !missionJ.isPending;
+  return !missionG.isPending && !missionI.isPending && !missionJ.isPending;
 }
 
 function toLane<T>(query: EvidenceQuerySnapshot<T>): MissionLane<T> {
@@ -74,14 +88,20 @@ function toLane<T>(query: EvidenceQuerySnapshot<T>): MissionLane<T> {
   return { available: false };
 }
 
-/** Map the page's existing Mission G / J query results onto the memo input —
- *  the exact same payloads the page renders, no second fetch. */
+/** Map the page's existing Mission G / I / J query results onto the memo
+ *  input — the exact same payloads the page renders, no second fetch. */
 export function researchRecordMemoInput(
   missionG: EvidenceQuerySnapshot<MissionGEvidenceSummary>,
+  missionI: EvidenceQuerySnapshot<MissionIEvidenceSummary>,
   missionJ: EvidenceQuerySnapshot<MissionJEvidenceSummary>,
   exportedAt?: string,
 ): ResearchRecordMemoInput {
-  return { missionG: toLane(missionG), missionJ: toLane(missionJ), exportedAt };
+  return {
+    missionG: toLane(missionG),
+    missionI: toLane(missionI),
+    missionJ: toLane(missionJ),
+    exportedAt,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +213,19 @@ function independenceSection(): string[] {
 }
 
 const MISSION_G_UNAVAILABLE_LINE = "Mission G research record: unavailable";
+const MISSION_I_UNAVAILABLE_LINE = "Mission I research record: unavailable";
 const MISSION_J_UNAVAILABLE_LINE = "Mission J research record: unavailable";
+
+/** Display labels for the seven Mission I publications, in contract order. */
+const MISSION_I_SOURCE_ORDER: ReadonlyArray<[MissionISourceKey, string]> = [
+  ["i0_protocol", "I0 protocol"],
+  ["i1_universe", "I1 universe"],
+  ["i2a_substrate", "I2A substrate"],
+  ["i2b_memp", "I2B MEMP"],
+  ["i2c_calibration", "I2C calibration"],
+  ["i2c_falsifiers", "I2C falsifiers"],
+  ["closeout", "Closeout"],
+];
 
 function missionGSection(lane: MissionLane<MissionGEvidenceSummary>): string[] {
   const head = ["## 6. Mission G — separate historical ledger", ""];
@@ -269,8 +301,124 @@ function missionGSection(lane: MissionLane<MissionGEvidenceSummary>): string[] {
   ];
 }
 
+function missionISection(lane: MissionLane<MissionIEvidenceSummary>): string[] {
+  const head = ["## 7. Mission I — ordinary-period comparison ledger", ""];
+  if (!lane.available) {
+    return [
+      ...head,
+      MISSION_I_UNAVAILABLE_LINE,
+      "",
+      "The /evidence/mission-i contract could not be loaded when this record was exported. No figures are reproduced in its place; the lane is recorded as unavailable rather than omitted. Mission I remains a separate ordinary-period comparison ledger and is never pooled with Mission G, Mission J, or the accepted archive.",
+    ];
+  }
+  const i = lane.data;
+  const con = i.constitution;
+  const fal = i.falsifiers;
+  const knife = i.fragility.knife_edge;
+  const fomc = i.universe.families[0];
+  const opec = i.universe.families[1];
+  if (fomc === undefined || opec === undefined) {
+    return [
+      ...head,
+      MISSION_I_UNAVAILABLE_LINE,
+      "",
+      "The /evidence/mission-i payload did not carry the two frozen family lanes when this record was exported; the lane is recorded as unavailable rather than partially reproduced.",
+    ];
+  }
+  const fomc20d = fomc.horizons.find((h) => h.horizon === "20d");
+  const f6 = fal.f6_calibration_position;
+  const affected = (cells: Array<{ cell_key: string; flips: number; of: number }>) =>
+    cells.map((a) => `${a.cell_key} ${a.flips} / ${a.of}`).join(" · ");
+  return [
+    ...head,
+    `Contract: ${i.contract_version} (GET /evidence/mission-i; tracked publications parsed at request time).`,
+    "",
+    `Research question (frozen, verbatim): ${con.frozen_question}`,
+    "",
+    `- Estimand: ${con.estimand.name} — ${con.estimand.definition.replace(/^- /, "")} Ordinary reference midpoint: ${con.estimand.ordinary_reference_midpoint}.`,
+    `- ${con.family_pooling_prohibition}.`,
+    `- ${i.calibration.interpretation_ceiling}`,
+    "",
+    "### Denominators and ordinary references (separate ledgers)",
+    "",
+    `- FOMC: ${fomc.study_event_n_available} event windows (${fomc.primary} vs ${fomc.market_benchmark} / ${fomc.sector_benchmark}).`,
+    `- OPEC: ${opec.study_event_n_available} event windows (${opec.primary} vs ${opec.market_benchmark} / ${opec.sector_benchmark}).`,
+    `- Primary cells: ${con.primary_cell_count} · falsifier families: ${Object.keys(fal.definitions).length}.`,
+    "",
+    "| Family | Horizon | Event N | Eligible ordinary reference N | Non-overlapping blocks | Status |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...i.universe.families.flatMap((family) =>
+      family.horizons.map(
+        (h) =>
+          `| ${family.family} | ${h.horizon} | ${family.study_event_n_available} | ${h.reference_n_available} | ${h.non_overlapping_reference_n} | ${h.status} |`,
+      ),
+    ),
+    "",
+    `- Non-overlapping blocks: ${i.universe.blocks_note}`,
+    ...(fomc20d?.limitation ? [`- FOMC 20d: ${fomc20d.limitation}`] : []),
+    "",
+    "### Twenty primary cells (frozen order)",
+    "",
+    "| # | Cell | Event N | Ref N | MEMP | Signed pct median | Calib pct | Direction | F6 |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ...i.primary_cells.map(
+      (c) =>
+        `| ${c.cell} | ${c.cell_key} | ${c.event_n_available} | ${c.reference_n_available} | ${c.memp} | ${c.signed_percentile_median} | ${c.calibration_percentile} | ${c.state.memp_direction} | ${c.state.f6_position} |`,
+    ),
+    "",
+    `- Signed-percentile disclosure: ${con.signed_percentile_disclosure.status} — ${con.signed_percentile_disclosure.disclaimers.join(" ")}`,
+    "",
+    "### Family × horizon readouts (verbatim)",
+    "",
+    ...i.family_horizon_readout.map((r) => `- ${r.family} ${r.horizon}: ${r.headline}`),
+    "",
+    "### Falsifier battery (six families, reported separately)",
+    "",
+    `- ${fal.battery_disclosure}.`,
+    "",
+    `- F1 — ${fal.definitions.f1}`,
+    `- F1 result: ${fal.f1_loyo.flips_total} / ${fal.f1_loyo.runs_total} leave-out runs flip sign(MEMP − 0.5); affected cells: ${affected(fal.f1_loyo.affected_cells)}.`,
+    `- F2 — ${fal.definitions.f2}`,
+    `- F2 result: ${fal.f2_loeo.flips_total} / ${fal.f2_loeo.runs_total} leave-out runs flip sign(MEMP − 0.5); affected cells: ${affected(fal.f2_loeo.affected_cells)}. ${fal.f2_loeo.knife_edge_explanation}`,
+    `- F3 — ${fal.definitions.f3}`,
+    `- F3 result: ${fal.f3_overlap_decimation.sign_flips} / ${fal.f3_overlap_decimation.of_cells} primary-cell direction changes. ${fal.f3_overlap_decimation.reading} ${fal.f3_overlap_decimation.limitation}`,
+    `- F4 — ${fal.definitions.f4}`,
+    `- F4 result (above / at / below the 0.5 midpoint per family × horizon): ${fal.f4_cross_metric.map((r) => `${r.family} ${r.horizon} ${r.positive} / ${r.zero} / ${r.negative}`).join(" · ")}.`,
+    `- F5 — ${fal.definitions.f5}`,
+    `- F5 result (feasible-horizon agreement per family × metric): ${fal.f5_cross_horizon.map((r) => `${r.family} ${r.metric} ${r.agree ? "agree" : "disagree"}${r.caveat !== null ? " (see caveat)" : ""}`).join(" · ")}.`,
+    ...fal.f5_cross_horizon
+      .filter((r) => r.caveat !== null)
+      .map((r) => `- F5 caveat (${r.family} ${r.metric}, verbatim): ${r.caveat}`),
+    `- F6 — ${fal.definitions.f6}`,
+    `- F6 result: ${f6.inside} inside · ${f6.outside} outside (${f6.outside_upper} upper · ${f6.outside_lower} lower). ${f6.limitation}`,
+    "",
+    "### Fragility",
+    "",
+    `- Knife edge: ${knife.cell_key} — MEMP ${knife.memp} · calibration ${knife.calibration_percentile} · LOYO ${knife.f1_loyo.flips} / ${knife.f1_loyo.runs} · LOEO ${knife.f2_loeo.flips} / ${knife.f2_loeo.runs}. ${knife.explanation}`,
+    `- LOYO-affected cells: ${affected(i.fragility.loyo_affected_cells)}.`,
+    "",
+    "### Era-matched placement calibration",
+    "",
+    `- ${i.calibration.placements_per_group} placements per family × horizon group · fixed seed ${i.calibration.seed} · ${i.calibration.groups.map((g) => `${g.family} ${g.horizon} ${g.completed_placements}/${g.expected_placements}`).join(" · ")}.`,
+    `- Method (verbatim): ${i.calibration.method}`,
+    "",
+    "### Whole-mission conclusion",
+    "",
+    `- Conclusion (verbatim): ${i.whole_mission_conclusion.statement}`,
+    `- Clarifier (verbatim): ${i.whole_mission_conclusion.clarifier}`,
+    "",
+    "### Limitations (verbatim)",
+    "",
+    ...i.unresolved_or_limits.map((limit) => `- ${limit}`),
+    "",
+    "#### Mission I non-claims (verbatim)",
+    "",
+    ...i.non_claims.map((nc) => `- ${nc}`),
+  ];
+}
+
 function missionJSection(lane: MissionLane<MissionJEvidenceSummary>): string[] {
-  const head = ["## 7. Mission J — separate robustness and transmission ledger", ""];
+  const head = ["## 8. Mission J — separate robustness and transmission ledger", ""];
   if (!lane.available) {
     return [
       ...head,
@@ -416,7 +564,7 @@ function familyInventorySection(): string[] {
     .join(" · ");
   const tier1 = FC.tier1.map((c) => `#${c.id} ${c.family} — ${c.label}`).join(" · ");
   return [
-    "## 8. Mechanism-family evidence inventory",
+    "## 9. Mechanism-family evidence inventory",
     "",
     "Three family lenses exist on the Evidence Overview; they are different lenses over different denominators, not competing estimates of one count. Families appear in canonical order; no family is ranked.",
     "",
@@ -457,7 +605,7 @@ function familyInventorySection(): string[] {
 
 function representativeCasesSection(): string[] {
   return [
-    "## 9. Representative-case context",
+    "## 10. Representative-case context",
     "",
     `- ${RCL.totals.total} illustrative cases across ${RCL.totals.familiesTotal} mechanism families: ${RCL.totals.anchors} already-covered N1 anchors + ${RCL.totals.newNotes} newly proposed F1/F2 cases; event-study readout available for ${RCL.totals.eventStudyAvailable} / ${RCL.totals.eventStudyOf}; families represented ${RCL.totals.familiesRepresented} / ${RCL.totals.familiesTotal}.`,
     `- Selection framework: the frozen F1 selection rule (selection frozen @ ${RCL.sourceCommit}); outcomes restated ${RCL.outcomesRestatedOn} from the current archive; the selection itself never changes with outcomes. This is a different list from the app Case Library walkthrough, which is a separate editorial slate.`,
@@ -484,7 +632,7 @@ function limitationsSection(input: ResearchRecordMemoInput): string[] {
     .map((f) => `${f.id} ${f.count} (${f.fixable ? "fixable" : "not fixable"})`)
     .join(" · ");
   const lines = [
-    "## 10. Data limitations and unresolved states",
+    "## 11. Data limitations and unresolved states",
     "",
     "Stated, not repaired. Only limitations present in the canonical inputs appear here.",
     "",
@@ -496,7 +644,7 @@ function limitationsSection(input: ResearchRecordMemoInput): string[] {
     `- Coverage repair residue (V2C ${plan.status}): live exposed / loser AR coverage ${plan.liveLoser} and total ${plan.liveTotal} after promoting ${plan.rowsInserted} additive price-cache rows into live; residual missing units ${plan.remaining.units} (${plan.remaining.distinctSymbols} distinct symbols, ${plan.remaining.windows} windows) — ${fixability}.`,
     ...plan.notes.map((note) => `- ${note}`),
     `- Coverage-repair boundary: ${plan.nonClaim}`,
-    '- Missing provenance: fields not canonically recorded are marked "not recorded" in section 11.',
+    '- Missing provenance: fields not canonically recorded are marked "not recorded" in section 12.',
   ];
   if (input.missionG.available) {
     const credit = input.missionG.data.credit_limitation;
@@ -506,6 +654,21 @@ function limitationsSection(input: ResearchRecordMemoInput): string[] {
   } else {
     lines.push(
       "- Mission G research record: unavailable — its limitation and falsifier detail could not be exported (section 6).",
+    );
+  }
+  if (input.missionI.available) {
+    const iData = input.missionI.data;
+    const knife = iData.fragility.knife_edge;
+    const fomc20d = iData.universe.families[0]?.horizons.find(
+      (h) => h.horizon === "20d",
+    );
+    lines.push(
+      `- Mission I: FOMC 20d is structurally infeasible — no primary cells exist at that horizon${fomc20d?.limitation ? ` (${fomc20d.limitation})` : ""} (section 7).`,
+      `- Mission I knife-edge fragility (${knife.cell_key}): LOYO ${knife.f1_loyo.flips} / ${knife.f1_loyo.runs} · LOEO ${knife.f2_loeo.flips} / ${knife.f2_loeo.runs} — ${knife.explanation}`,
+    );
+  } else {
+    lines.push(
+      "- Mission I research record: unavailable — its structural-unavailability and fragility detail could not be exported (section 7).",
     );
   }
   if (input.missionJ.available) {
@@ -518,7 +681,7 @@ function limitationsSection(input: ResearchRecordMemoInput): string[] {
     );
   } else {
     lines.push(
-      "- Mission J research record: unavailable — its measurement-limited and unresolved detail could not be exported (section 7).",
+      "- Mission J research record: unavailable — its measurement-limited and unresolved detail could not be exported (section 8).",
     );
   }
   return lines;
@@ -526,7 +689,7 @@ function limitationsSection(input: ResearchRecordMemoInput): string[] {
 
 function provenanceSection(input: ResearchRecordMemoInput): string[] {
   const lines = [
-    "## 11. Provenance and reproduction appendix",
+    "## 12. Provenance and reproduction appendix",
     "",
     'Reproduction commands are recorded for reference only; nothing in this export executes them. Fields not canonically recorded say "not recorded".',
     "",
@@ -588,6 +751,28 @@ function provenanceSection(input: ResearchRecordMemoInput): string[] {
   } else {
     lines.push("- Mission G research record: unavailable — no provenance could be exported.");
   }
+  lines.push("", "### Mission I published record", "");
+  if (input.missionI.available) {
+    const i = input.missionI.data;
+    const versions = i.provenance.publication_versions;
+    lines.push(
+      `- Contract: ${i.contract_version} via GET /evidence/mission-i (tracked publications parsed at request time)`,
+      ...MISSION_I_SOURCE_ORDER.map(([key, label]) => {
+        const src = i.provenance.sources[key];
+        return `- ${label} artifact: ${src.artifact} — sha256 ${src.sha256} · ${src.bytes} bytes`;
+      }),
+      `- Publication chain: ${i.provenance.publication_chain}`,
+      `- Publication versions: ${MISSION_I_SOURCE_ORDER.filter(([key]) => key !== "closeout")
+        .map(([key]) => versions[key as Exclude<MissionISourceKey, "closeout">])
+        .join(" · ")}`,
+      `- Reproduction (recorded in ${i.provenance.reproduction.source}): ${i.provenance.reproduction.commands.map((c) => `\`${c}\``).join(" · ")}`,
+      `- Reproducibility limits: ${i.provenance.reproduction.reproducibility_limits}`,
+      `- Computation dates: ${NOT_RECORDED}`,
+      `- Execution commits: ${NOT_RECORDED}`,
+    );
+  } else {
+    lines.push("- Mission I research record: unavailable — no provenance could be exported.");
+  }
   lines.push("", "### Mission J published record", "");
   if (input.missionJ.available) {
     const j = input.missionJ.data;
@@ -608,7 +793,7 @@ function provenanceSection(input: ResearchRecordMemoInput): string[] {
 
 function finalNonClaimsSection(): string[] {
   return [
-    "## 12. Final non-claims",
+    "## 13. Final non-claims",
     "",
     "Standing non-claims of the evidence record:",
     "",
@@ -630,6 +815,7 @@ export function buildResearchRecordMemo(input: ResearchRecordMemoInput): string 
     outcomeLedgersSection(),
     independenceSection(),
     missionGSection(input.missionG),
+    missionISection(input.missionI),
     missionJSection(input.missionJ),
     familyInventorySection(),
     representativeCasesSection(),

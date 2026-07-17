@@ -1,14 +1,15 @@
 /**
- * M3 — reviewer guide disclosure on Evidence Overview.
+ * M3/N2 — reviewer guide disclosure on Evidence Overview.
  *
  * Exactly one compact native <details> disclosure ("How to read and verify
  * this record"), collapsed by default, placed between the page header and
- * the denominator ledger, with exactly two subsections: the four-lane
- * verification path and the eight-term claim-ceiling glossary.  Pending and
- * unavailable Mission contracts stay visible as honest lane states;
- * reproduction commands render as inert code (no execute control); the M2
- * export action, M1 anchors, non-claim introduction, and the two existing
- * Mission queries are all unchanged.
+ * the denominator ledger, with exactly two subsections: the five-lane
+ * verification path (N2 added the Mission I ordinary-period comparison
+ * record between Mission G and Mission J) and the eight-term claim-ceiling
+ * glossary.  Pending and unavailable Mission contracts stay visible as
+ * honest lane states; reproduction commands render as inert code (no
+ * execute control); the M2 export action, M1/N2 anchors, non-claim
+ * introduction, and the three existing Mission queries are all unchanged.
  *
  * Render-smoke pattern (renderToStaticMarkup, no jsdom) — note static
  * markup includes <details> children even while collapsed, which is exactly
@@ -22,6 +23,7 @@ import { EvidenceOverview } from "../evidence-overview";
 import { qk } from "@/lib/queryKeys";
 import { EVIDENCE_GLOSSARY } from "@/lib/evidence-reader-guide";
 import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
+import { missionIFixture } from "@/components/ui/__tests__/mission-i-fixture";
 import { missionGFixture } from "@/components/ui/__tests__/mission-g-fixture";
 
 const SUMMARY = "How to read and verify this record";
@@ -79,11 +81,13 @@ const loadingHtml = renderOverview(testQueryClient());
 
 const seededClient = testQueryClient();
 seededClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+seededClient.setQueryData(qk.missionIEvidence(), missionIFixture());
 seededClient.setQueryData(qk.missionJEvidence(), missionJFixture());
 const seededHtml = renderOverview(seededClient);
 
 const degradedClient = testQueryClient();
 degradedClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+degradedClient.setQueryData(qk.missionIEvidence(), missionIFixture());
 seedError(degradedClient, qk.missionJEvidence());
 const degradedHtml = renderOverview(degradedClient);
 
@@ -113,17 +117,32 @@ describe("EvidenceOverview — reviewer guide disclosure (M3)", () => {
     expect(v).toContain("Terms and claim ceilings");
   });
 
-  it("renders exactly the four verification lanes", () => {
+  it("renders exactly the five verification lanes, Mission I between G and J", () => {
     const v = visible(detailsBlock(seededHtml));
     for (const lane of [
       "Accepted archive and denominator record",
       "Mission G historical record",
+      "Mission I ordinary-period comparison record",
       "Mission J robustness and transmission record",
       "Mechanism-family / independence / representative-case static evidence",
     ]) {
       expect(v.split(lane).length - 1, lane).toBe(1);
     }
-    expect(v).not.toContain("Mission I");
+    const g = v.indexOf("Mission G historical record");
+    const i = v.indexOf("Mission I ordinary-period comparison record");
+    const j = v.indexOf("Mission J robustness and transmission record");
+    expect(i).toBeGreaterThan(g);
+    expect(j).toBeGreaterThan(i);
+  });
+
+  it("sources the Mission I lane from its payload with honest null provenance (N2)", () => {
+    const v = visible(detailsBlock(seededHtml));
+    expect(v).toContain("stats/I0_ORDINARY_PERIOD_BASELINE_PROTOCOL.md");
+    expect(v).toContain("stats/MISSION_I_CLOSEOUT.md");
+    expect(v).toContain("python -m scripts.i2a_response_substrate --emit");
+    expect(v).toContain("Computation dates");
+    expect(v).toContain("Execution commits");
+    expect(v).toContain("percentile-of-placements only");
   });
 
   it("renders exactly the eight glossary terms with sources", () => {
@@ -140,6 +159,7 @@ describe("EvidenceOverview — reviewer guide disclosure (M3)", () => {
   it("keeps pending lanes visible while contracts load", () => {
     const v = visible(detailsBlock(loadingHtml));
     expect(v).toContain("Mission G historical record");
+    expect(v).toContain("Mission I ordinary-period comparison record");
     expect(v).toContain("Mission J robustness and transmission record");
     expect(v).toContain("preparing tracked record");
     // static lanes stay complete
@@ -169,9 +189,10 @@ describe("EvidenceOverview — reviewer guide disclosure (M3)", () => {
     expect(visible(details)).not.toMatch(/\b(run|execute) command\b/i);
   });
 
-  it("adds no duplicate Mission G/J request", () => {
+  it("adds no duplicate Mission G/I/J request", () => {
     const client = testQueryClient();
     client.setQueryData(qk.missionGEvidence(), missionGFixture());
+    client.setQueryData(qk.missionIEvidence(), missionIFixture());
     client.setQueryData(qk.missionJEvidence(), missionJFixture());
     renderOverview(client);
     const keys = client
@@ -181,14 +202,15 @@ describe("EvidenceOverview — reviewer guide disclosure (M3)", () => {
       .sort();
     expect(keys).toEqual([
       JSON.stringify(qk.missionGEvidence()),
+      JSON.stringify(qk.missionIEvidence()),
       JSON.stringify(qk.missionJEvidence()),
     ]);
   });
 
-  it("keeps the M2 export action exactly once and the M1 anchors exactly once", () => {
+  it("keeps the M2 export action exactly once and the M1/N2 anchors exactly once", () => {
     for (const html of [loadingHtml, seededHtml, degradedHtml]) {
       expect(html.split("Download research record (.md)").length - 1).toBe(1);
-      for (const id of ["evidence-top", "denominators", "mission-g", "mission-j"]) {
+      for (const id of ["evidence-top", "denominators", "mission-g", "mission-i", "mission-j"]) {
         expect((html.match(new RegExp(`id="${id}"`, "g")) ?? []).length, id).toBe(1);
       }
     }

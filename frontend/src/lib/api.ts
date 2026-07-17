@@ -3198,6 +3198,281 @@ export interface MissionJEvidenceSummary {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Mission I research contract — GET /evidence/mission-i
+// (mission-i-evidence-v1).  The published Mission I ordinary-period
+// comparison, parsed server-side from the seven tracked Mission I
+// publications at request time.  Nothing is recomputed — no percentile,
+// median, calibration, placement draw, or falsifier perturbation — and the
+// FOMC and OPEC families keep entirely separate ledgers (denominators,
+// exclusion sets, and funnels are never pooled).  MEMP, calibration and
+// signed-percentile values are exact-precision strings, never numbers.
+// ---------------------------------------------------------------------------
+
+/** The two frozen Mission I event families — separate ledgers, never pooled. */
+export type MissionIFamily = "FOMC" | "OPEC";
+
+/** Frozen response horizons (FOMC 20d is structurally infeasible and has no
+ *  primary cell — the horizon still appears in the universe funnel). */
+export type MissionIHorizon = "1d" | "5d" | "20d";
+
+/** The four frozen response metrics, in frozen order. */
+export type MissionIMetric =
+  | "raw_return"
+  | "spy_relative_ar"
+  | "sector_relative_ar"
+  | "sar";
+
+/** Universe funnel feasibility per family × horizon. */
+export type MissionIHorizonStatus = "feasible" | "structurally_infeasible";
+
+/** Direction of the published MEMP relative to the 0.5 ordinary midpoint. */
+export type MissionIMempDirection =
+  | "above_ordinary_midpoint"
+  | "below_ordinary_midpoint"
+  | "at_ordinary_midpoint";
+
+/** F6 position of the observed MEMP within its calibration distribution. */
+export type MissionICalibrationPosition = "inside" | "outside";
+
+/** One tracked publication reference: repo path, content hash, size. */
+export interface MissionIArtifactRef {
+  artifact: string;
+  sha256: string;
+  bytes: number;
+}
+
+/** The seven tracked Mission I publications, keyed by contract role. */
+export type MissionISourceKey =
+  | "i0_protocol"
+  | "i1_universe"
+  | "i2a_substrate"
+  | "i2b_memp"
+  | "i2c_calibration"
+  | "i2c_falsifiers"
+  | "closeout";
+
+export interface MissionIProvenance {
+  sources: Record<MissionISourceKey, MissionIArtifactRef>;
+  /** Version markers parsed from the publications (closeout carries none). */
+  publication_versions: Record<Exclude<MissionISourceKey, "closeout">, string>;
+  publication_chain: string;
+  no_recompute_statement: string;
+  /** The only canonically recorded reproduction path (I2A), with its
+   *  tracked fresh-clone limit — inert reference strings, never controls. */
+  reproduction: {
+    commands: string[];
+    reproducibility_limits: string;
+    source: string;
+  };
+  /** Recorded in no Mission I publication — stated null, never inferred. */
+  computation_dates: null;
+  /** Recorded in no Mission I publication — stated null, never inferred. */
+  execution_commits: null;
+}
+
+export interface MissionIConstitution {
+  protocol_version: string;
+  frozen_question: string;
+  estimand: {
+    name: string;
+    definition: string;
+    ordinary_reference_midpoint: string;
+  };
+  evidence_class: {
+    descriptive: boolean;
+    comparative: boolean;
+    frozen_before_outcome_comparison: boolean;
+  };
+  primary_cell_count: number;
+  family_pooling_prohibition: string;
+  signed_percentile_disclosure: { status: string; disclaimers: string[] };
+}
+
+/** One family × horizon lane of the eligibility funnel. */
+export interface MissionIHorizonLane {
+  horizon: MissionIHorizon;
+  funnel: {
+    era: number;
+    estimation_cut: number;
+    forward_cut: number;
+    gap_cut: number;
+    exclusion_cut: number;
+  };
+  reference_n_attempted: number;
+  reference_n_available: number;
+  /** Canonical disjoint-window block count — NOT an independent or
+   *  effective sample size (see MissionIUniverse.blocks_note). */
+  non_overlapping_reference_n: number;
+  status: MissionIHorizonStatus;
+  /** Frozen limitation wording when structurally infeasible; null else. */
+  limitation: string | null;
+}
+
+/** One family's frozen universe lane (assets, denominators, funnels). */
+export interface MissionIFamilyLane {
+  family: MissionIFamily;
+  primary: string;
+  market_benchmark: string;
+  sector_benchmark: string;
+  study_event_n_attempted: number;
+  study_event_n_available: number;
+  joint_sessions: number;
+  era_sessions: number;
+  price_basis_policy: string;
+  horizons: MissionIHorizonLane[];
+  /** FOMC carries a description; OPEC carries its exclusion register. */
+  exclusion: {
+    description?: string;
+    register?: {
+      name: string;
+      calendar_dates: number;
+      anchor_sessions: number;
+      note: string;
+    };
+  };
+}
+
+export interface MissionIUniverse {
+  families: MissionIFamilyLane[];
+  blocks_note: string;
+}
+
+/** One of the 20 frozen primary cells, in frozen order (cell 1..20). */
+export interface MissionIPrimaryCell {
+  cell: number;
+  cell_key: string;
+  family: MissionIFamily;
+  horizon: MissionIHorizon;
+  metric: MissionIMetric;
+  event_n_attempted: number;
+  event_n_available: number;
+  reference_n_attempted: number;
+  reference_n_available: number;
+  memp: string;
+  signed_percentile_median: string;
+  calibration_percentile: string;
+  state: {
+    memp_direction: MissionIMempDirection;
+    f6_position: MissionICalibrationPosition;
+  };
+  f1_loyo: { runs: number; flips: number };
+  f2_loeo: { runs: number; flips: number };
+  f3_overlap_decimation: {
+    original_reference_n: number;
+    canonical_reference_n: number;
+    decimated_memp: string;
+    change: string;
+    sign_flip: boolean;
+  };
+}
+
+export interface MissionICalibration {
+  placements_per_group: number;
+  seed: number;
+  groups: Array<{
+    family: MissionIFamily;
+    horizon: MissionIHorizon;
+    expected_placements: number;
+    completed_placements: number;
+    per_year_event_counts: Record<string, number>;
+  }>;
+  method: string;
+  no_failure_statement: string;
+  interpretation_ceiling: string;
+}
+
+/** A cell touched by a leave-out falsifier: flips of runs, by cell key. */
+export interface MissionIAffectedCell {
+  cell_key: string;
+  flips: number;
+  of: number;
+}
+
+/** The six falsifier families — reported separately, never scored. */
+export interface MissionIFalsifiers {
+  definitions: Record<"f1" | "f2" | "f3" | "f4" | "f5" | "f6", string>;
+  battery_disclosure: string;
+  f1_loyo: {
+    runs_total: number;
+    flips_total: number;
+    affected_cells: MissionIAffectedCell[];
+  };
+  f2_loeo: {
+    runs_total: number;
+    flips_total: number;
+    affected_cells: MissionIAffectedCell[];
+    knife_edge_explanation: string;
+  };
+  f3_overlap_decimation: {
+    sign_flips: number;
+    of_cells: number;
+    reading: string;
+    limitation: string;
+  };
+  f4_cross_metric: Array<{
+    family: MissionIFamily;
+    horizon: MissionIHorizon;
+    signs: Record<MissionIMetric, number>;
+    positive: number;
+    zero: number;
+    negative: number;
+  }>;
+  f5_cross_horizon: Array<{
+    family: MissionIFamily;
+    metric: MissionIMetric;
+    signs: Record<MissionIHorizon, number | null>;
+    agree: boolean;
+    caveat: string | null;
+  }>;
+  f6_calibration_position: {
+    inside: number;
+    outside: number;
+    outside_upper: number;
+    outside_lower: number;
+    limitation: string;
+  };
+}
+
+/** Frozen per-family × horizon closeout headline (blockquote, verbatim). */
+export interface MissionIFamilyReadout {
+  family: MissionIFamily;
+  horizon: MissionIHorizon;
+  headline: string;
+}
+
+export interface MissionIFragility {
+  knife_edge: {
+    cell_key: string;
+    memp: string;
+    calibration_percentile: string;
+    f1_loyo: { runs: number; flips: number };
+    f2_loeo: { runs: number; flips: number };
+    explanation: string;
+  };
+  loyo_affected_cells: MissionIAffectedCell[];
+}
+
+export interface MissionIConclusion {
+  statement: string;
+  clarifier: string;
+}
+
+export interface MissionIEvidenceSummary {
+  contract_version: string;
+  provenance: MissionIProvenance;
+  constitution: MissionIConstitution;
+  universe: MissionIUniverse;
+  primary_cells: MissionIPrimaryCell[];
+  calibration: MissionICalibration;
+  falsifiers: MissionIFalsifiers;
+  family_horizon_readout: MissionIFamilyReadout[];
+  fragility: MissionIFragility;
+  whole_mission_conclusion: MissionIConclusion;
+  unresolved_or_limits: string[];
+  non_claims: string[];
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDetail: () => request<HealthDetail>("/health/detail"),
@@ -3494,6 +3769,12 @@ export const api = {
    *  no provider, no network beyond this API call. */
   missionGEvidence: () =>
     request<MissionGEvidenceSummary>("/evidence/mission-g"),
+
+  /** Completed Mission I ordinary-period comparison record.  Read-only
+   *  endpoint backed by the seven tracked Mission I publications only;
+   *  no DB reads, no provider, no network beyond this API call. */
+  missionIEvidence: () =>
+    request<MissionIEvidenceSummary>("/evidence/mission-i"),
 
   missionJEvidence: () =>
     request<MissionJEvidenceSummary>("/evidence/mission-j"),

@@ -29,6 +29,7 @@ import {
   researchRecordMemoInput,
 } from "@/lib/research-record-memo";
 import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
+import { missionIFixture } from "@/components/ui/__tests__/mission-i-fixture";
 import { missionGFixture } from "@/components/ui/__tests__/mission-g-fixture";
 
 const ACTION_LABEL = "Download research record (.md)";
@@ -81,20 +82,28 @@ function actionTag(html: string): string {
   return tags[0];
 }
 
-// Loading baseline: both Mission queries unseeded.
+// Loading baseline: all three Mission queries unseeded.
 const loadingHtml = renderOverview(testQueryClient());
 
-// Settled success: both contracts seeded.
+// Settled success: all three contracts seeded.
 const seededClient = testQueryClient();
 seededClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+seededClient.setQueryData(qk.missionIEvidence(), missionIFixture());
 seededClient.setQueryData(qk.missionJEvidence(), missionJFixture());
 const seededHtml = renderOverview(seededClient);
 
-// Settled with one unavailable lane: Mission G ok, Mission J errored.
+// Settled with one unavailable lane: Mission G / I ok, Mission J errored.
 const degradedClient = testQueryClient();
 degradedClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+degradedClient.setQueryData(qk.missionIEvidence(), missionIFixture());
 seedError(degradedClient, qk.missionJEvidence());
 const degradedHtml = renderOverview(degradedClient);
+
+// Mission I alone still loading: G and J settled, I unseeded.
+const missionIPendingClient = testQueryClient();
+missionIPendingClient.setQueryData(qk.missionGEvidence(), missionGFixture());
+missionIPendingClient.setQueryData(qk.missionJEvidence(), missionJFixture());
+const missionIPendingHtml = renderOverview(missionIPendingClient);
 
 describe("EvidenceOverview — research-record export action (M2)", () => {
   it("renders exactly one quiet export action with an accessible label", () => {
@@ -112,7 +121,12 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
     expect(visible(loadingHtml)).toContain("Preparing tracked evidence…");
   });
 
-  it("enables the action once both contracts settle", () => {
+  it("stays disabled while the Mission I contract alone is still loading (N2)", () => {
+    expect(actionTag(missionIPendingHtml)).toContain('disabled=""');
+    expect(visible(missionIPendingHtml)).toContain("Preparing tracked evidence…");
+  });
+
+  it("enables the action once all three contracts settle", () => {
     expect(actionTag(seededHtml)).not.toContain('disabled=""');
     expect(visible(seededHtml)).not.toContain("Preparing tracked evidence…");
   });
@@ -133,9 +147,10 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
   it("introduces no duplicate evidence request", () => {
     const client = testQueryClient();
     client.setQueryData(qk.missionGEvidence(), missionGFixture());
+    client.setQueryData(qk.missionIEvidence(), missionIFixture());
     client.setQueryData(qk.missionJEvidence(), missionJFixture());
     renderOverview(client);
-    // exactly the two existing Mission queries — no third evidence fetch
+    // exactly the three existing Mission queries — no fourth evidence fetch
     const keys = client
       .getQueryCache()
       .getAll()
@@ -143,6 +158,7 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
       .sort();
     expect(keys).toEqual([
       JSON.stringify(qk.missionGEvidence()),
+      JSON.stringify(qk.missionIEvidence()),
       JSON.stringify(qk.missionJEvidence()),
     ]);
     expect(
@@ -154,6 +170,7 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
     const memo = buildResearchRecordMemo(
       researchRecordMemoInput(
         { isPending: false, isError: false, data: missionGFixture() },
+        { isPending: false, isError: false, data: missionIFixture() },
         { isPending: false, isError: false, data: missionJFixture() },
       ),
     );
@@ -164,17 +181,39 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
     expect(seededHtml).toContain("ORDINARY / UNRESOLVED");
     expect(memo.toLowerCase()).toContain("unadjudicable");
     expect(visible(seededHtml)).toContain("UNADJUDICABLE");
+    // Mission I between G and J, same frozen facts as the seeded page (N2)
+    expect(memo).toContain("## 7. Mission I — ordinary-period comparison ledger");
+    expect(memo).toContain("rejects the blanket idea");
+    expect(visible(seededHtml)).toContain("rejects the blanket idea");
+    expect(memo).toContain("| FOMC | 20d | 65 | 0 | 0 | structurally_infeasible |");
+    expect(visible(seededHtml)).toContain("structurally infeasible");
   });
 
   it("records an errored lane as unavailable in the exported memo", () => {
     const memo = buildResearchRecordMemo(
       researchRecordMemoInput(
         { isPending: false, isError: false, data: missionGFixture() },
+        { isPending: false, isError: false, data: missionIFixture() },
         { isPending: false, isError: true, data: undefined },
       ),
     );
     expect(memo).toContain("Mission J research record: unavailable");
     expect(memo).not.toContain("Mission G research record: unavailable");
+    expect(memo).not.toContain("Mission I research record: unavailable");
+  });
+
+  it("records an errored Mission I lane as unavailable in the exported memo (N2)", () => {
+    const memo = buildResearchRecordMemo(
+      researchRecordMemoInput(
+        { isPending: false, isError: false, data: missionGFixture() },
+        { isPending: false, isError: true, data: undefined },
+        { isPending: false, isError: false, data: missionJFixture() },
+      ),
+    );
+    expect(memo).toContain("Mission I research record: unavailable");
+    expect(memo).toContain("## 7. Mission I — ordinary-period comparison ledger");
+    expect(memo).not.toContain("Mission G research record: unavailable");
+    expect(memo).not.toContain("Mission J research record: unavailable");
   });
 
   it("changes no existing research section (regression smoke)", () => {
@@ -191,8 +230,8 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
     ]) {
       expect(v.replace(/&amp;/g, "&"), anchor).toContain(anchor);
     }
-    // M1 anchors intact
-    for (const id of ["evidence-top", "denominators", "mission-g", "mission-j"]) {
+    // M1/N2 anchors intact
+    for (const id of ["evidence-top", "denominators", "mission-g", "mission-i", "mission-j"]) {
       expect(
         (seededHtml.match(new RegExp(`id="${id}"`, "g")) ?? []).length,
         id,

@@ -11,17 +11,23 @@
  * No definition is invented, softened, or converted into confidence
  * language.
  *
- * The verification manifest traces exactly the four material evidence
- * lanes shown on the page to their canonically recorded provenance.  It
- * consumes the same canonical constants and Mission G / Mission J query
- * payloads the page already renders (no second fetch): a field the
- * canonical source does not record says "not recorded"; a still-loading
- * contract says "preparing tracked record"; a settled-error contract says
- * "record unavailable".  Nothing is inferred from Git HEAD, filenames,
- * README ordering, routes, or timestamps.  Reproduction commands are inert
- * strings for display as code — never executable controls.
+ * The verification manifest traces exactly the five material evidence
+ * lanes shown on the page (N2 added the Mission I ordinary-period
+ * comparison record between Mission G and Mission J) to their canonically
+ * recorded provenance.  It consumes the same canonical constants and
+ * Mission G / Mission I / Mission J query payloads the page already
+ * renders (no second fetch): a field the canonical source does not record
+ * says "not recorded"; a still-loading contract says "preparing tracked
+ * record"; a settled-error contract says "record unavailable".  Nothing is
+ * inferred from Git HEAD, filenames, README ordering, routes, or
+ * timestamps.  Reproduction commands are inert strings for display as
+ * code — never executable controls.
  */
-import type { MissionGEvidenceSummary, MissionJEvidenceSummary } from "./api";
+import type {
+  MissionGEvidenceSummary,
+  MissionIEvidenceSummary,
+  MissionJEvidenceSummary,
+} from "./api";
 import type { EvidenceQuerySnapshot } from "./research-record-memo";
 import { ACCEPTED_CORPUS as AC, FAMILY_COVERAGE as FC } from "./accepted-corpus";
 import { EFFECTIVE_INDEPENDENT_EVIDENCE as EIE } from "./effective-independent-evidence";
@@ -121,7 +127,7 @@ export const EVIDENCE_GLOSSARY: ReadonlyArray<GlossaryEntry> = [
 ];
 
 // ---------------------------------------------------------------------------
-// Verification-path manifest — four material lanes, stable order.
+// Verification-path manifest — five material lanes, stable order.
 // ---------------------------------------------------------------------------
 
 export interface VerificationField {
@@ -234,6 +240,71 @@ function missionGLane(query: EvidenceQuerySnapshot<MissionGEvidenceSummary>): Ve
   };
 }
 
+function missionILane(query: EvidenceQuerySnapshot<MissionIEvidenceSummary>): VerificationLane {
+  const token = laneToken(query);
+  const base = {
+    lane: "Mission I ordinary-period comparison record",
+    purpose:
+      "Frozen descriptive comparison: whether the completed FOMC and OPEC event windows were unusual in response magnitude relative to eligible ordinary periods on the same frozen assets, metrics, and horizons — separate FOMC / OPEC ledgers, never pooled with each other, Mission G, Mission J, or the accepted archive.",
+  };
+  if (token !== null) {
+    return {
+      ...base,
+      scope: token,
+      availability: token,
+      fields: [
+        {
+          label: "Contract",
+          value: "GET /evidence/mission-i (tracked publications parsed at request time)",
+        },
+        { label: "Source artifacts", value: token },
+        { label: "Artifact hashes", value: token },
+        { label: "Reproduce", value: token },
+        { label: "Computation dates", value: token },
+        { label: "Execution commits", value: token },
+        { label: "Evidence ceiling", value: token },
+      ],
+    };
+  }
+  const i = query.data as MissionIEvidenceSummary;
+  const fomc = i.universe.families[0];
+  const opec = i.universe.families[1];
+  const sources = Object.values(i.provenance.sources);
+  return {
+    ...base,
+    scope: `${fomc?.study_event_n_available ?? UNAVAILABLE} FOMC event windows · ${opec?.study_event_n_available ?? UNAVAILABLE} OPEC event windows · ${i.constitution.primary_cell_count} primary cells · ${Object.keys(i.falsifiers.definitions).length} falsifier families`,
+    availability: CONTRACT_AVAILABLE,
+    fields: [
+      {
+        label: "Contract",
+        value: `${i.contract_version} via GET /evidence/mission-i (tracked publications parsed at request time)`,
+      },
+      {
+        label: "Source artifacts",
+        value: sources.map((s) => s.artifact).join(" · "),
+        code: true,
+      },
+      {
+        label: "Artifact hashes",
+        value: sources
+          .map((s) => `${s.artifact} sha256 ${s.sha256} (${s.bytes} bytes)`)
+          .join(" · "),
+        code: true,
+      },
+      {
+        label: "Reproduce",
+        value: `${i.provenance.reproduction.commands.join(" · ")} — recorded in ${i.provenance.reproduction.source}; ${i.provenance.reproduction.reproducibility_limits}`,
+        code: true,
+      },
+      // Recorded in NO Mission I publication — stated, never inferred from
+      // the checkout, Git HEAD, or the clock.
+      { label: "Computation dates", value: NOT_RECORDED },
+      { label: "Execution commits", value: NOT_RECORDED },
+      { label: "Evidence ceiling", value: i.calibration.interpretation_ceiling },
+    ],
+  };
+}
+
 function missionJLane(query: EvidenceQuerySnapshot<MissionJEvidenceSummary>): VerificationLane {
   const token = laneToken(query);
   const base = {
@@ -338,13 +409,21 @@ function staticEvidenceLane(): VerificationLane {
 }
 
 /**
- * Build the four-lane verification manifest from the page's existing Mission
- * G / Mission J query snapshots plus the canonical static constants.  Pure,
- * deterministic, and honest about pending / unavailable / unrecorded state.
+ * Build the five-lane verification manifest from the page's existing Mission
+ * G / Mission I / Mission J query snapshots plus the canonical static
+ * constants.  Pure, deterministic, and honest about pending / unavailable /
+ * unrecorded state.
  */
 export function buildEvidenceVerificationManifest(
   missionG: EvidenceQuerySnapshot<MissionGEvidenceSummary>,
+  missionI: EvidenceQuerySnapshot<MissionIEvidenceSummary>,
   missionJ: EvidenceQuerySnapshot<MissionJEvidenceSummary>,
 ): VerificationLane[] {
-  return [acceptedLane(), missionGLane(missionG), missionJLane(missionJ), staticEvidenceLane()];
+  return [
+    acceptedLane(),
+    missionGLane(missionG),
+    missionILane(missionI),
+    missionJLane(missionJ),
+    staticEvidenceLane(),
+  ];
 }
