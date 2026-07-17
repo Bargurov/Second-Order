@@ -1,4 +1,4 @@
-"""Tests for the Mission I research contract (mission-i-evidence-v1).
+"""Tests for the Mission I research contract (mission-i-evidence-v2).
 
 Contract under test:
 
@@ -6,9 +6,15 @@ Contract under test:
   tracked Mission I publications - no events.db, no price cache, no
   provider, no network, and no hand-copied research number anywhere in
   the module;
-* nothing is recomputed: no MEMP, no calibration, no placement draw, no
+* nothing NEW is computed: no calibration, no placement draw, no
   falsifier perturbation - repeated copies across publications are
-  reconciled, never re-derived;
+  reconciled, never re-derived; the E1 event-level block recomputes the
+  published cell medians from the published rows for internal
+  reconciliation only, and any mismatch refuses service;
+* the event-level surface exposes all 904 tracked per-event rows in
+  publication order beneath the 20 primary cells: exact denominators
+  (65/32), no FOMC 20d row, tuple uniqueness, verbatim event identities,
+  and a lossless mid-rank-grid precision contract with no tolerance;
 * the 20-cell primary surface keeps its frozen family/horizon/metric
   order, exact-precision decimal strings, the approved two-part state
   object (no Mission-J-style scalar node state), and both attempted and
@@ -51,9 +57,9 @@ SOURCES = {
 }
 
 EXPECTED_SECTIONS = [
-    "calibration", "constitution", "contract_version", "falsifiers",
-    "family_horizon_readout", "fragility", "non_claims", "primary_cells",
-    "provenance", "universe", "unresolved_or_limits",
+    "calibration", "constitution", "contract_version", "event_level",
+    "falsifiers", "family_horizon_readout", "fragility", "non_claims",
+    "primary_cells", "provenance", "universe", "unresolved_or_limits",
     "whole_mission_conclusion",
 ]
 
@@ -124,8 +130,10 @@ def _all_ints(obj, out=None):
 
 class ContractShapeTests(unittest.TestCase):
     def test_1_contract_version(self):
+        # E1 explicit version decision: the event-level block is additive
+        # and the version is bumped with it (v1 -> v2), same endpoint path.
         self.assertEqual(_payload()["contract_version"],
-                         "mission-i-evidence-v1")
+                         "mission-i-evidence-v2")
 
     def test_2_exact_top_level_sections(self):
         self.assertEqual(sorted(_payload()), EXPECTED_SECTIONS)
@@ -571,7 +579,10 @@ class ReadoutAndCeilingTests(unittest.TestCase):
 
 class StructureHonestyTests(unittest.TestCase):
     def test_28_no_score_rank_strength_winner_probability_keys(self):
-        keys = _all_keys(_payload())
+        # "abs_mid_rank_pct" is the I2B event-surface column name verbatim
+        # ("abs mid-rank pct" - the published mid-rank tie rule, not an
+        # event ranking); it is the only permitted "rank" carrier.
+        keys = [k for k in _all_keys(_payload()) if k != "abs_mid_rank_pct"]
         for fragment in BANNED_KEY_FRAGMENTS:
             self.assertFalse(any(fragment in k for k in keys),
                              f"banned key fragment {fragment!r}")
@@ -631,14 +642,15 @@ class BoundaryTests(unittest.TestCase):
         finally:
             socket.socket = saved
         self.assertEqual(payload["contract_version"],
-                         "mission-i-evidence-v1")
+                         "mission-i-evidence-v2")
 
     def test_31c_no_hardcoded_research_numbers_in_module(self):
         body = re.sub(r'("""[\s\S]*?"""|#[^\n]*)', "",
                       Path(mie.__file__).read_text(encoding="utf-8"))
         for banned in (r"\b1816\b", r"\b1299\b", r"\b1903\b", r"\b1631\b",
                        r"\b889\b", r"\b927\b", r"\b233\b", r"\b960\b",
-                       r"\b287\b", r"\b904\b", r"\b160\b", r"\b2000\b",
+                       r"\b287\b", r"\b904\b", r"\b520\b", r"\b384\b",
+                       r"\b160\b", r"\b2000\b",
                        r"\b20180101\b", r"\b65\b", r"\b32\b",
                        r"0\.674559", r"0\.501155"):
             self.assertIsNone(re.search(banned, body),
@@ -741,6 +753,398 @@ class EndpointTests(unittest.TestCase):
         self.assertNotIn("private", resp.text)
         self.assertNotIn("secret-pattern", resp.text)
         self.assertNotIn("Traceback", resp.text)
+
+
+# ---------------------------------------------------------------------------
+# E1 event-level surface — parser contract (protections 39-46)
+# ---------------------------------------------------------------------------
+
+EVENT_SURFACE_HEADING = "## Per-event percentile surface"
+EVENT_ROW_KEYS = ["abs_mid_rank_pct", "anchor_session", "event", "response",
+                  "signed_pct"]
+
+
+def _event_level():
+    return _payload()["event_level"]
+
+
+def _event_cells():
+    return {c["cell_key"]: c for c in _event_level()["cells"]}
+
+
+def _surface_lines():
+    """The publication's own event-surface data rows, split into cells."""
+    text = SOURCES["i2b_memp"].read_text(encoding="utf-8")
+    tail = text.split(EVENT_SURFACE_HEADING, 1)[1]
+    rows = []
+    for line in tail.splitlines():
+        parts = [p.strip() for p in line.strip().strip("|").split("|")]
+        if len(parts) == 8 and parts[0] in ("FOMC", "OPEC"):
+            rows.append(parts)
+    return rows
+
+
+class EventLevelParserTests(unittest.TestCase):
+    def test_39_exactly_904_event_rows(self):
+        ev = _event_level()
+        self.assertEqual(ev["total_rows"], 904)
+        self.assertEqual(sum(len(c["rows"]) for c in ev["cells"]), 904)
+        self.assertEqual(ev["source"]["row_count"], 904)
+        # cross-consistency with the published LOEO run total (F2)
+        self.assertEqual(ev["total_rows"],
+                         _payload()["falsifiers"]["f2_loeo"]["runs_total"])
+
+    def test_39b_family_row_counts_520_and_384(self):
+        ev = _event_level()
+        self.assertEqual(ev["family_counts"], {"FOMC": 520, "OPEC": 384})
+        by_family = {"FOMC": 0, "OPEC": 0}
+        for c in ev["cells"]:
+            by_family[c["family"]] += len(c["rows"])
+        self.assertEqual(by_family, {"FOMC": 520, "OPEC": 384})
+
+    def test_40_twenty_populated_cells_in_frozen_order(self):
+        cells = _event_level()["cells"]
+        self.assertEqual(len(cells), 20)
+        self.assertEqual([c["cell_key"] for c in cells], EXPECTED_KEYS)
+        self.assertEqual([c["cell"] for c in cells], list(range(1, 21)))
+        for c in cells:
+            self.assertGreater(len(c["rows"]), 0, c["cell_key"])
+
+    def test_40b_cell_denominators_65_and_32(self):
+        for c in _event_level()["cells"]:
+            expected = 65 if c["family"] == "FOMC" else 32
+            self.assertEqual(c["event_n"], expected, c["cell_key"])
+            self.assertEqual(len(c["rows"]), expected, c["cell_key"])
+
+    def test_40c_no_fomc_20d_event_rows(self):
+        for c in _event_level()["cells"]:
+            self.assertFalse(
+                c["family"] == "FOMC" and c["horizon"] == "20d",
+                "structurally infeasible FOMC 20d cell must not exist")
+        keys = [c["cell_key"] for c in _event_level()["cells"]]
+        for metric in METRICS:
+            self.assertNotIn(f"FOMC|20d|{metric}", keys)
+
+    def test_41_tuple_uniqueness_across_all_rows(self):
+        tuples = [(c["family"], r["event"], c["horizon"], c["metric"])
+                  for c in _event_level()["cells"] for r in c["rows"]]
+        self.assertEqual(len(tuples), 904)
+        self.assertEqual(len(set(tuples)), 904)
+        # no event identity ever appears under both families
+        fomc_events = {r["event"] for c in _event_level()["cells"]
+                       if c["family"] == "FOMC" for r in c["rows"]}
+        opec_events = {r["event"] for c in _event_level()["cells"]
+                       if c["family"] == "OPEC" for r in c["rows"]}
+        self.assertEqual(len(fomc_events), 65)
+        self.assertEqual(len(opec_events), 32)
+        self.assertFalse(fomc_events & opec_events)
+
+    def test_42_publication_order_never_value_order(self):
+        surface = _surface_lines()
+        for key, cell in _event_cells().items():
+            family, horizon, metric = key.split("|")
+            pub = [(p[1], p[2], p[5], p[6], p[7]) for p in surface
+                   if (p[0], p[3], p[4]) == (family, horizon, metric)]
+            got = [(r["event"], r["anchor_session"], r["response"],
+                    r["abs_mid_rank_pct"], r["signed_pct"])
+                   for r in cell["rows"]]
+            self.assertEqual(got, pub, key)
+        # outcome-independence: the first cell's percentile sequences are
+        # visibly non-monotone in the publication and must stay that way
+        first = _event_cells()["FOMC|1d|raw_return"]["rows"]
+        for col in ("abs_mid_rank_pct", "signed_pct", "response"):
+            seq = [r[col] for r in first]
+            self.assertNotEqual(seq, sorted(seq), col)
+            self.assertNotEqual(seq, sorted(seq, reverse=True), col)
+        self.assertEqual(first[0]["event"],
+                         "fomc-policy-decision-2018-01-31")
+        last = _event_cells()["OPEC|20d|sar"]["rows"]
+        self.assertEqual(last[-1]["event"], "opec-2025-11-30-2026-hold")
+
+    def test_43_event_identity_and_anchor_preserved_verbatim(self):
+        # anchor sessions that differ from the date embedded in the event
+        # identity must survive verbatim (no normalisation, no inference)
+        rows = _event_cells()["FOMC|1d|raw_return"]["rows"]
+        march_2020 = next(r for r in rows
+                          if r["event"] == "fomc-policy-decision-2020-03-15")
+        self.assertEqual(march_2020["anchor_session"], "2020-03-13")
+        opec_rows = _event_cells()["OPEC|1d|raw_return"]["rows"]
+        cut_97 = next(r for r in opec_rows
+                      if r["event"] == "opec-2020-04-12-cut-9p7")
+        self.assertEqual(cut_97["anchor_session"], "2020-04-09")
+        conformity = opec_rows[0]
+        self.assertEqual(conformity["event"],
+                         "opec-2018-06-23-conformity-return")
+        self.assertEqual(conformity["anchor_session"], "2018-06-22")
+
+    def test_44_numeric_strings_at_published_precision(self):
+        response_re = re.compile(r"^-?\d+\.\d{6}$")
+        pct_re = re.compile(r"^[01]\.\d{6}$")
+        for c in _event_level()["cells"]:
+            for r in c["rows"]:
+                self.assertEqual(sorted(r), EVENT_ROW_KEYS)
+                self.assertIsInstance(r["response"], str)
+                self.assertRegex(r["response"], response_re)
+                for col in ("abs_mid_rank_pct", "signed_pct"):
+                    self.assertIsInstance(r[col], str)
+                    self.assertRegex(r[col], pct_re)
+                    self.assertLessEqual(float(r[col]), 1.0)
+
+    def test_46_event_source_provenance_matches_disk(self):
+        src = _event_level()["source"]
+        path = SOURCES["i2b_memp"]
+        self.assertEqual(src["artifact"], f"stats/{path.name}")
+        self.assertEqual(src["sha256"],
+                         hashlib.sha256(path.read_bytes()).hexdigest())
+        self.assertEqual(src["bytes"], path.stat().st_size)
+        self.assertEqual(src["row_count"], 904)
+        # the seven-publication provenance is preserved unchanged
+        self.assertEqual(sorted(_payload()["provenance"]["sources"]),
+                         sorted(SOURCES))
+
+
+# ---------------------------------------------------------------------------
+# E1 event-level surface — drift refusal (protection 45)
+# ---------------------------------------------------------------------------
+
+
+class EventLevelDriftTests(unittest.TestCase):
+    def _refuses(self, old: str, new: str):
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(SOURCES["i2b_memp"], old, new, td)
+            with self.assertRaises(ValueError):
+                _build(i2b_path=bad)
+
+    def test_45_malformed_row_refusal_never_dropped(self):
+        # an inserted junk pipe-line leaves all 904 valid rows in place; a
+        # parser that silently skipped non-matching lines would still reach
+        # the expected counts, so refusal here proves strict line policing
+        anchor = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+                  "1d | raw_return | 0.014767 | 0.663546 | 0.821586 |")
+        self._refuses(anchor, anchor + "\n| FOMC | not-a-row |")
+
+    def test_45b_missing_row_refusal(self):
+        line = ("| OPEC | opec-2025-11-30-2026-hold | 2025-11-28 | 20d | "
+                "sar | -0.868561 | 0.524184 | 0.247469 |")
+        self._refuses(line + "\n", "")
+
+    def test_45c_duplicate_row_refusal(self):
+        line = ("| OPEC | opec-2025-11-30-2026-hold | 2025-11-28 | 20d | "
+                "sar | -0.868561 | 0.524184 | 0.247469 |")
+        self._refuses(line, line + "\n" + line)
+
+    def test_45d_unexpected_metric_refusal(self):
+        line = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+                "1d | sar | 1.584840 | 0.904185 | 0.953744 |")
+        self._refuses(line, line.replace("| sar |", "| vol_return |"))
+
+    def test_45e_unexpected_fomc_20d_row_refusal(self):
+        line = ("| FOMC | fomc-policy-decision-2025-12-10 | 2025-12-10 | "
+                "5d | sar | 0.825367 | 0.639723 | 0.829099 |")
+        self._refuses(line, line + "\n" + line.replace("| 5d |", "| 20d |"))
+
+    def test_45f_cross_family_contamination_refusal(self):
+        line = ("| OPEC | opec-2025-11-30-2026-hold | 2025-11-28 | 20d | "
+                "sar | -0.868561 | 0.524184 | 0.247469 |")
+        self._refuses(line, line.replace("| OPEC |", "| FOMC |"))
+
+    def test_45g_heading_drift_refusal(self):
+        self._refuses(EVENT_SURFACE_HEADING, "## Event percentile surface")
+
+    def test_45h_column_header_drift_refusal(self):
+        header = ("| family | event | anchor session | horizon | metric | "
+                  "response | abs mid-rank pct | signed pct |")
+        self._refuses(header,
+                      header.replace("signed pct", "signed percentile"))
+
+    def test_45i_within_event_metric_order_drift_refusal(self):
+        raw = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+               "1d | raw_return | 0.014767 | 0.663546 | 0.821586 |")
+        spy = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+               "1d | spy_relative_ar | 0.015903 | 0.791300 | 0.902533 |")
+        self._refuses(raw + "\n" + spy, spy + "\n" + raw)
+
+    def test_45j_event_block_order_drift_refusal(self):
+        text = SOURCES["i2b_memp"].read_text(encoding="utf-8")
+        a = text.index("| FOMC | fomc-policy-decision-2018-01-31 ")
+        b = text.index("| FOMC | fomc-policy-decision-2018-03-21 ")
+        c = text.index("| FOMC | fomc-policy-decision-2018-05-02 ")
+        self._refuses(text[a:c], text[b:c] + text[a:b])
+
+
+# ---------------------------------------------------------------------------
+# E1 row-to-cell reconciliation (protections 47-48)
+# ---------------------------------------------------------------------------
+
+
+class EventLevelReconciliationTests(unittest.TestCase):
+    def test_47_every_cell_reconciles_published_equals_recomputed(self):
+        primary = {c["cell_key"]: c for c in _payload()["primary_cells"]}
+        for c in _event_level()["cells"]:
+            self.assertEqual(sorted(c["published"]),
+                             ["memp", "signed_percentile_median"],
+                             c["cell_key"])
+            self.assertEqual(c["recomputed"], c["published"], c["cell_key"])
+            self.assertIs(c["reconciled"], True, c["cell_key"])
+            # published copies are the primary-cell strings verbatim
+            p = primary[c["cell_key"]]
+            self.assertEqual(c["published"]["memp"], p["memp"])
+            self.assertEqual(c["published"]["signed_percentile_median"],
+                             p["signed_percentile_median"])
+
+    def test_47b_exact_recomputed_values_including_even_count_halves(self):
+        cells = _event_cells()
+        # odd-count family: the median is an order statistic
+        self.assertEqual(cells["FOMC|1d|raw_return"]["recomputed"],
+                         {"memp": "0.674559",
+                          "signed_percentile_median": "0.339207"})
+        # even-count cells whose printed-row half-sums sit exactly on a
+        # 7th-decimal half: only the exact mid-rank-grid recomputation
+        # resolves these deterministically at the published precision
+        self.assertEqual(
+            cells["OPEC|5d|raw_return"]["recomputed"]
+            ["signed_percentile_median"], "0.597180")
+        self.assertEqual(
+            cells["OPEC|1d|raw_return"]["recomputed"]
+            ["signed_percentile_median"], "0.406463")
+        self.assertEqual(
+            cells["OPEC|1d|sar"]["recomputed"]
+            ["signed_percentile_median"], "0.492643")
+        self.assertEqual(cells["OPEC|20d|sar"]["recomputed"]["memp"],
+                         "0.383577")
+
+    def test_47c_method_block_frozen_wording(self):
+        method = _event_level()["method"]
+        self.assertEqual(sorted(method),
+                         ["aggregate_definition", "claim_ceiling",
+                          "ordering_statement", "percentile_definition",
+                          "precision_policy", "signed_definition"])
+        self.assertIn("mid-rank percentile of its absolute response",
+                      method["percentile_definition"])
+        self.assertIn("MEMP is the median of those percentiles",
+                      method["aggregate_definition"])
+        self.assertIn("identical mid-rank rule",
+                      method["signed_definition"])
+        self.assertIn("Never ordered by percentile",
+                      method["ordering_statement"])
+        self.assertIn("no numeric tolerance", method["precision_policy"])
+        self.assertIn("mid-rank grid", method["precision_policy"])
+        self.assertIn("reconcile internally", method["claim_ceiling"])
+        self.assertIn("not independently reproduced",
+                      method["claim_ceiling"])
+
+    def _refuses(self, old: str, new: str):
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(SOURCES["i2b_memp"], old, new, td)
+            with self.assertRaises(ValueError):
+                _build(i2b_path=bad)
+
+    def test_48_sentinel_response_tamper_breaks_reconciliation(self):
+        # the response feeds no median, but the published method makes the
+        # percentile monotone in the response within a cell; an implanted
+        # response that contradicts its own percentiles must refuse
+        line = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+                "1d | raw_return | 0.014767 | 0.663546 | 0.821586 |")
+        self._refuses(line, line.replace("| 0.014767 |", "| 9.999999 |"))
+
+    def test_48b_sentinel_percentile_one_ulp_tamper_refusal(self):
+        # one printed ulp off the published mid-rank grid cannot decode
+        # losslessly; the record must refuse rather than absorb it
+        line = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+                "1d | raw_return | 0.014767 | 0.663546 | 0.821586 |")
+        self._refuses(line, line.replace("| 0.663546 |", "| 0.663547 |"))
+
+    def test_48c_sentinel_median_row_replacement_refusal(self):
+        # a grid-valid, monotonicity-clean replacement of the cell's
+        # median row must surface as an aggregate mismatch
+        line = ("| FOMC | fomc-policy-decision-2019-10-30 | 2019-10-30 | "
+                "1d | raw_return | -0.015165 | 0.674559 | 0.154185 |")
+        self._refuses(
+            line,
+            "| FOMC | fomc-policy-decision-2019-10-30 | 2019-10-30 | "
+            "1d | raw_return | -9.999999 | 0.999449 | 0.000551 |")
+
+    def test_48d_sentinel_event_removal_refusal(self):
+        text = SOURCES["i2b_memp"].read_text(encoding="utf-8")
+        a = text.index("| FOMC | fomc-policy-decision-2018-03-21 ")
+        b = text.index("| FOMC | fomc-policy-decision-2018-05-02 ")
+        self._refuses(text[a:b], "")
+
+    def test_48e_sentinel_cross_cell_move_refusal(self):
+        line = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+                "1d | raw_return | 0.014767 | 0.663546 | 0.821586 |")
+        self._refuses(line,
+                      line.replace("| 1d | raw_return |", "| 1d | sar |"))
+
+    def test_48f_sentinel_published_aggregate_one_ulp_refusal(self):
+        # one ulp of disagreement in the published aggregate must refuse:
+        # comparison is exact at published precision, with no tolerance
+        # that could absorb it (the signed median exists ONLY in the I2B
+        # head table, so this isolates the row-to-cell reconciliation)
+        line = "| FOMC | 1d | raw_return | 65 | 1816 | 0.674559 | 0.339207 |"
+        self._refuses(line, line.replace("0.339207", "0.339208"))
+        self._refuses(line, line.replace("0.339207", "0.339206"))
+
+
+# ---------------------------------------------------------------------------
+# E1 contract shape, determinism, and endpoint envelope (protections 49-51)
+# ---------------------------------------------------------------------------
+
+
+class EventLevelContractTests(unittest.TestCase):
+    def test_49_event_level_block_exact_shape(self):
+        ev = _event_level()
+        self.assertEqual(sorted(ev), ["cells", "family_counts", "method",
+                                      "source", "total_rows"])
+        self.assertEqual(sorted(ev["source"]),
+                         ["artifact", "bytes", "row_count", "sha256"])
+        for c in ev["cells"]:
+            self.assertEqual(
+                sorted(c),
+                ["cell", "cell_key", "event_n", "family", "horizon",
+                 "metric", "published", "recomputed", "reconciled", "rows"])
+
+    def test_50_double_build_byte_identical_json(self):
+        first = json.dumps(_build(), sort_keys=False)
+        second = json.dumps(_build(), sort_keys=False)
+        self.assertEqual(first, second)
+        self.assertEqual(json.dumps(_build(), sort_keys=True),
+                         json.dumps(_build(), sort_keys=True))
+
+    def test_51_endpoint_sanitized_503_on_event_drift_then_restored(self):
+        from fastapi.testclient import TestClient
+
+        import api as api_mod
+
+        line = ("| FOMC | fomc-policy-decision-2018-01-31 | 2018-01-31 | "
+                "1d | raw_return | 0.014767 | 0.663546 | 0.821586 |")
+        real = mie.build_mission_i_evidence_summary
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(SOURCES["i2b_memp"], line,
+                            line + "\n| FOMC | SENTINEL-LEAK-TOKEN |", td)
+
+            def drifted(**kwargs):
+                return real(i2b_path=bad, **kwargs)
+
+            with patch.object(mie, "build_mission_i_evidence_summary",
+                              drifted):
+                with TestClient(api_mod.app) as client:
+                    resp = client.get("/evidence/mission-i")
+            self.assertEqual(resp.status_code, 503)
+            self.assertEqual(
+                resp.json()["detail"],
+                "mission-i research record unavailable (tracked artifact "
+                "drift or unreadable source)")
+            self.assertNotIn("SENTINEL-LEAK-TOKEN", resp.text)
+            self.assertNotIn("I2B_MEMP", resp.text)
+            self.assertNotIn("Traceback", resp.text)
+        # restored: the live tracked file serves the full record again
+        with TestClient(api_mod.app) as client:
+            resp = client.get("/evidence/mission-i")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["contract_version"],
+                         "mission-i-evidence-v2")
+        self.assertEqual(resp.json()["event_level"]["total_rows"], 904)
 
 
 if __name__ == "__main__":

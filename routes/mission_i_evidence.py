@@ -1,24 +1,32 @@
 """Mission I research contract - tracked-artifact-backed evidence record.
 
 Builds the structured, read-only representation of the completed Mission I
-ordinary-period comparison (``mission-i-evidence-v1``) for application
+ordinary-period comparison (``mission-i-evidence-v2``) for application
 consumers.
 
 Sources of truth: the seven tracked Mission I publications, parsed at
 request time. Canonical ownership: I0 owns the frozen question, estimand,
 and falsifier definitions; I1 owns the executed universe funnels and the
 FOMC 20d structural infeasibility; I2A owns attempted/available coverage;
-I2B owns the frozen 20-cell order, MEMP, and signed-percentile median;
-I2C-A owns the calibration percentiles, B, seed, and year vectors; I2C-B
-owns the published falsifier values; the closeout owns interpretation,
-fragility synthesis, the whole-mission conclusion, and the permanent
-non-claims. Downstream repetitions are reconciliation copies - any
-disagreement between copies refuses service.
+I2B owns the frozen 20-cell order, MEMP, the signed-percentile median,
+and the complete per-event percentile surface; I2C-A owns the
+calibration percentiles, B, seed, and year vectors; I2C-B owns the
+published falsifier values; the closeout owns interpretation, fragility
+synthesis, the whole-mission conclusion, and the permanent non-claims.
+Downstream repetitions are reconciliation copies - any disagreement
+between copies refuses service.
 
-This endpoint PUBLISHES closed results. It reruns no statistic, no
+This endpoint PUBLISHES closed results. It runs no new statistic, no
 calibration, no placement draw, and no falsifier; every research number
 is extracted from the tracked publications (drift-tested), and the two
-families are never pooled. Artifact drift (missing file, malformed
+families are never pooled. The one deliberate exception is internal
+reconciliation of the event-level block: each published cell aggregate
+is recomputed from that cell's published per-event rows under the
+publication's own written method and must equal the published value
+exactly at the published precision, or the whole record refuses
+service. Nothing beyond the tracked publications is consulted; the
+original price data and ordinary-period reference distributions are not
+independently reproduced. Artifact drift (missing file, malformed
 cardinality, changed identity, diverging repeated copy, lost frozen
 wording) raises rather than serving stale, partial, or reinterpreted
 numbers.
@@ -30,13 +38,15 @@ from __future__ import annotations
 
 import hashlib
 import re
+from decimal import ROUND_HALF_EVEN, Decimal
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[1]
 _STATS = _ROOT / "stats"
 
-CONTRACT_VERSION = "mission-i-evidence-v1"
+CONTRACT_VERSION = "mission-i-evidence-v2"
 
 I0_PATH = _STATS / "I0_ORDINARY_PERIOD_BASELINE_PROTOCOL.md"
 I1_PATH = _STATS / "I1_ORDINARY_PERIOD_CANDIDATE_UNIVERSE.md"
@@ -332,6 +342,196 @@ def _parse_i2b(text: str) -> dict[str, Any]:
             "multiplicity_honesty": honesty}
 
 
+# Frozen event-surface structure (identities only - never research values).
+_EVENT_SURFACE_HEADING = "## Per-event percentile surface"
+_EVENT_COLUMNS = ("family", "event", "anchor session", "horizon", "metric",
+                  "response", "abs mid-rank pct", "signed pct")
+_EVENT_FIELDS = ("family", "event", "anchor_session", "horizon", "metric",
+                 "response", "abs_mid_rank_pct", "signed_pct")
+_EVENT_ROW = re.compile(
+    r"^\| (FOMC|OPEC) \| ([a-z0-9][a-z0-9-]*) \| (\d{4}-\d{2}-\d{2}) \| "
+    r"(" + "|".join(_ALL_HORIZONS) + r") \| "
+    r"(" + "|".join(_METRICS) + r") \| "
+    r"(-?\d+\.\d{6}) \| ([01]\.\d{6}) \| ([01]\.\d{6}) \|$")
+_PCT_QUANTUM = Decimal("0.000001")  # the publication's printed precision
+
+
+def _parse_i2b_event_surface(text: str) -> list[dict[str, str]]:
+    """The complete per-event percentile surface, strictly line-policed.
+
+    Every pipe-line in the section must be the frozen header, the
+    separator, or a well-formed data row; nothing is skipped or dropped
+    to recover an expected count.
+    """
+    art = I2B_PATH.name
+    idx = text.find(_EVENT_SURFACE_HEADING)
+    _require(idx >= 0, f"{art} per-event surface heading missing")
+    nxt = text.find("\n## ", idx)
+    section = text[idx:nxt if nxt > idx else len(text)]
+    lines = [ln for ln in section.splitlines()
+             if ln.lstrip().startswith("|")]
+    _require(len(lines) > 2, f"{art} per-event surface table missing")
+    _require(lines[0] == "| " + " | ".join(_EVENT_COLUMNS) + " |",
+             f"{art} per-event surface columns drifted")
+    _require(set(lines[1]) <= set("|- "),
+             f"{art} per-event surface separator drifted")
+    rows: list[dict[str, str]] = []
+    for line in lines[2:]:
+        m = _EVENT_ROW.match(line)
+        _require(m is not None,
+                 f"{art} per-event surface carries a malformed row")
+        rows.append(dict(zip(_EVENT_FIELDS, m.groups())))
+    _require(bool(rows), f"{art} per-event surface carries no rows")
+    return rows
+
+
+def _validate_event_surface(rows: list[dict[str, str]],
+                            i2b: dict[str, Any]) -> dict[str, int]:
+    """Frozen-order structural contract for the event surface.
+
+    Row order is the publication's own: families in frozen order, events
+    in frozen study-universe (ascending anchor-session) order, horizons
+    then metrics in frozen order within each event block; identities
+    never repeat, never cross families, and the walk must consume every
+    parsed row exactly once.
+    """
+    art = I2B_PATH.name
+    event_n = {family: next(r["event_n"] for r in i2b["rows"]
+                            if r["family"] == family)
+               for family, _horizons in _FAMILY_HORIZONS}
+    cursor = 0
+    seen_events: set[str] = set()
+    family_counts: dict[str, int] = {}
+    for family, horizons in _FAMILY_HORIZONS:
+        pattern = [(horizon, metric) for horizon in horizons
+                   for metric in _METRICS]
+        prev_anchor = ""
+        for _ in range(event_n[family]):
+            block = rows[cursor:cursor + len(pattern)]
+            _require(len(block) == len(pattern),
+                     f"{art} per-event surface ends mid-{family}")
+            event = block[0]["event"]
+            anchor = block[0]["anchor_session"]
+            _require(event not in seen_events,
+                     f"{art} event identity repeats in the surface")
+            seen_events.add(event)
+            _require(anchor > prev_anchor,
+                     f"{art} {family} anchor-session order drifted")
+            prev_anchor = anchor
+            for row, (horizon, metric) in zip(block, pattern):
+                _require(
+                    (row["family"], row["event"], row["anchor_session"],
+                     row["horizon"], row["metric"])
+                    == (family, event, anchor, horizon, metric),
+                    f"{art} per-event surface order or identity drifted "
+                    f"inside {family} event blocks")
+            cursor += len(pattern)
+        family_counts[family] = event_n[family] * len(pattern)
+    _require(cursor == len(rows),
+             f"{art} per-event surface carries unexpected extra rows")
+    _require(len(rows) == i2b["per_event_rows"],
+             f"{art} per-event row count disagrees with the published "
+             "surface total")
+    return family_counts
+
+
+def _parse_i2b_method(text: str) -> dict[str, str]:
+    """I2B's own frozen method wording (never hand-copied)."""
+    art = I2B_PATH.name
+    return {
+        "percentile_definition": _paragraph_with(
+            text, "mid-rank percentile of its absolute response", art),
+        "aggregate_definition": _sentence_with(
+            text, "MEMP is the median of those percentiles", art),
+        "signed_definition": _sentence_with(
+            text, "identical mid-rank rule", art),
+        "ordering_statement": _sentence_with(
+            text, "Never ordered by percentile", art),
+    }
+
+
+def _quantize_pct(value: Fraction, context: str) -> str:
+    """An exact rational, printed at the publication's precision.
+
+    Refuses when the value sits exactly on a rounding half at that
+    precision - the publication would then not determine the printed
+    digits, and the precision contract stays exact rather than widened.
+    (On the published mid-rank grids no such half can occur; hitting one
+    means the inputs are not the published grid.)
+    """
+    scaled = value * 10**6
+    _require(scaled.denominator != 2,
+             f"{context}: quantization ambiguous at published precision")
+    quantized = (Decimal(value.numerator)
+                 / Decimal(value.denominator)).quantize(
+        _PCT_QUANTUM, rounding=ROUND_HALF_EVEN)
+    return f"{quantized:.6f}"
+
+
+def _decode_pct(printed: str, reference_n: int, identity: str) -> Fraction:
+    """A printed percentile, decoded to its exact mid-rank grid value.
+
+    The published method makes every percentile an integer count of
+    half-ranks over the published reference N, so the printed
+    six-decimal value identifies that count uniquely (the grid spacing
+    is orders of magnitude wider than the print precision). The decode
+    must round-trip to the identical printed string; off-grid values
+    refuse service.
+    """
+    art = I2B_PATH.name
+    grid = 2 * reference_n
+    numerator = round(Fraction(Decimal(printed)) * grid)
+    exact = Fraction(numerator, grid)
+    _require(
+        0 <= exact <= 1
+        and _quantize_pct(exact, f"{art} {identity}") == printed,
+        f"{art} percentile off the published mid-rank grid for {identity}")
+    return exact
+
+
+def _exact_median(values: list[Fraction]) -> Fraction:
+    ordered = sorted(values)
+    half, odd = divmod(len(ordered), 2)
+    if odd:
+        return ordered[half]
+    return (ordered[half - 1] + ordered[half]) / 2
+
+
+def _require_percentiles_monotone(cell_rows: list[dict[str, str]],
+                                  identity: str) -> None:
+    """The published mid-rank rule is monotone in the response.
+
+    Within one cell every percentile is computed against the same
+    reference multiset, so a strictly larger printed |response| can
+    never carry a strictly smaller printed absolute percentile (and
+    likewise for signed values). Printed ties constrain nothing. This
+    binds the response column to the percentile columns without touching
+    any reference distribution.
+    """
+    art = I2B_PATH.name
+    for value_of, pct_key, label in (
+            (lambda r: abs(Decimal(r["response"])), "abs_mid_rank_pct",
+             "absolute"),
+            (lambda r: Decimal(r["response"]), "signed_pct", "signed")):
+        ordered = sorted(cell_rows, key=value_of)
+        max_before: Decimal | None = None
+        start = 0
+        while start < len(ordered):
+            stop = start
+            group_value = value_of(ordered[start])
+            while stop < len(ordered) \
+                    and value_of(ordered[stop]) == group_value:
+                stop += 1
+            pcts = [Decimal(r[pct_key]) for r in ordered[start:stop]]
+            _require(max_before is None or min(pcts) >= max_before,
+                     f"{art} {label} percentiles are not monotone in the "
+                     f"response for {identity}")
+            group_max = max(pcts)
+            max_before = group_max if max_before is None \
+                else max(max_before, group_max)
+            start = stop
+
+
 _I2C_A_ROW = re.compile(
     r"^\| (FOMC|OPEC) \| (\d+d) \| (\w+) \| (\d+) \| (\d+) \| ([0-9.]+) "
     r"\| ([0-9.]+) \|")
@@ -539,6 +739,82 @@ def _provenance_entry(path: Path) -> dict[str, Any]:
             "bytes": len(data)}
 
 
+def _event_level_payload(event_rows: list[dict[str, str]],
+                         family_counts: dict[str, int],
+                         i2b: dict[str, Any],
+                         method: dict[str, str],
+                         i2b_path: Path) -> dict[str, Any]:
+    """The additive event-level block: cell-grouped published rows, each
+    cell reconciled to its published aggregates before anything is
+    served (an unreconciled cell refuses the whole record)."""
+    cells: list[dict[str, Any]] = []
+    for i, (family, horizon, metric) in enumerate(_CELL_IDENTITY):
+        b_row = i2b["rows"][i]
+        identity = f"{family}|{horizon}|{metric}"
+        cell_rows = [
+            {"event": r["event"], "anchor_session": r["anchor_session"],
+             "response": r["response"],
+             "abs_mid_rank_pct": r["abs_mid_rank_pct"],
+             "signed_pct": r["signed_pct"]}
+            for r in event_rows
+            if (r["family"], r["horizon"], r["metric"])
+            == (family, horizon, metric)]
+        _require(len(cell_rows) == b_row["event_n"],
+                 f"event-level cell denominator drifted for {identity}")
+        _require_percentiles_monotone(cell_rows, identity)
+        published = {"memp": b_row["memp"],
+                     "signed_percentile_median": b_row["signed"]}
+        recomputed: dict[str, str] = {}
+        for pct_key, aggregate_key in (
+                ("abs_mid_rank_pct", "memp"),
+                ("signed_pct", "signed_percentile_median")):
+            exact = [_decode_pct(r[pct_key], b_row["reference_n"],
+                                 identity) for r in cell_rows]
+            recomputed[aggregate_key] = _quantize_pct(
+                _exact_median(exact),
+                f"{I2B_PATH.name} {identity} {aggregate_key}")
+            _require(recomputed[aggregate_key]
+                     == published[aggregate_key],
+                     "event-level rows do not reconcile to the published "
+                     f"{aggregate_key} for {identity}")
+        cells.append({
+            "cell": i + 1,
+            "cell_key": identity,
+            "family": family,
+            "horizon": horizon,
+            "metric": metric,
+            "event_n": b_row["event_n"],
+            "published": published,
+            "recomputed": recomputed,
+            "reconciled": True,
+            "rows": cell_rows,
+        })
+    source = _provenance_entry(i2b_path)
+    source["row_count"] = len(event_rows)
+    return {
+        "source": source,
+        "method": dict(
+            method,
+            precision_policy=(
+                "published percentile strings decode losslessly to the "
+                "publication's mid-rank grid over the published "
+                "reference count; each cell median is recomputed exactly "
+                "on that grid and compared to the published aggregate as "
+                "an exact decimal string at the published six-decimal "
+                "precision; no numeric tolerance is applied and an "
+                "unreconciled cell refuses service"),
+            claim_ceiling=(
+                "the tracked event-level rows reconcile internally to "
+                "the published Mission I aggregate record; the original "
+                "price data and ordinary-period reference distributions "
+                "are not independently reproduced"),
+        ),
+        "total_rows": len(event_rows),
+        "family_counts": family_counts,
+        "cells": cells,
+    }
+
+
 def build_mission_i_evidence_summary(
         *,
         i0_path: Path | str = I0_PATH,
@@ -563,7 +839,10 @@ def build_mission_i_evidence_summary(
     i0 = _parse_i0(_read(paths["i0_protocol"]))
     i1 = _parse_i1(_read(paths["i1_universe"]))
     i2a = _parse_i2a(_read(paths["i2a_substrate"]))
-    i2b = _parse_i2b(_read(paths["i2b_memp"]))
+    i2b_text = _read(paths["i2b_memp"])
+    i2b = _parse_i2b(i2b_text)
+    event_rows = _parse_i2b_event_surface(i2b_text)
+    i2b_method = _parse_i2b_method(i2b_text)
     cal = _parse_i2c_calibration(_read(paths["i2c_calibration"]))
     fal = _parse_i2c_falsifiers(_read(paths["i2c_falsifiers"]))
     close = _parse_closeout(_read(paths["closeout"]))
@@ -636,6 +915,9 @@ def build_mission_i_evidence_summary(
     _require(fomc_20d["eligible"] == 0
              and fomc_20d["status"] == "structurally_infeasible",
              "FOMC 20d structural-infeasibility row drifted")
+
+    # ---- Event-level surface: structure, then row-to-cell reconciliation --
+    event_family_counts = _validate_event_surface(event_rows, i2b)
 
     # ---- Assemble ---------------------------------------------------------
     def _lane_payload(family: str) -> dict[str, Any]:
@@ -783,6 +1065,9 @@ def build_mission_i_evidence_summary(
             "blocks_note": i1["blocks_note"],
         },
         "primary_cells": cells,
+        "event_level": _event_level_payload(
+            event_rows, event_family_counts, i2b, i2b_method,
+            paths["i2b_memp"]),
         "calibration": {
             "placements_per_group": cal["b"],
             "seed": cal["seed"],
