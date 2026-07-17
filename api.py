@@ -3646,6 +3646,7 @@ from routes import (
     demo_still_moving as _demo_still_moving_mod,
     demo_weekly as _demo_weekly_mod,
     mission_g_evidence as _mission_g_evidence_mod,
+    mission_i_evidence as _mission_i_evidence_mod,
     mission_j_evidence as _mission_j_evidence_mod,
     tracked_evidence as _tracked_evidence_mod,
 )
@@ -3796,6 +3797,36 @@ def _mission_g_evidence_endpoint():
     works on a fresh clone with no local research state.
     """
     return _mission_g_evidence_mod.build_mission_g_evidence_summary()
+
+
+@app.get("/evidence/mission-i")
+def _mission_i_evidence_endpoint():
+    """Mission I published research record — tracked publications only.
+
+    Structured summary of the completed Mission I ordinary-period
+    comparison: the frozen question and estimand, the two separate family
+    ledgers with per-horizon funnels (including the FOMC 20d structural
+    infeasibility), the frozen 20-cell MEMP surface with calibration
+    positions and per-cell falsifier overlays, the F1–F6 battery, the
+    family/horizon interpretations, the knife-edge fragility record, the
+    whole-mission conclusion with its required clarifier, and the
+    permanent non-claims.
+
+    Every research number is parsed at request time from the seven
+    tracked Mission I publications; nothing is recomputed and the two
+    families are never pooled. Artifact drift raises rather than serving
+    stale, partial, or reinterpreted numbers. No DB read or write, no
+    provider / yfinance / market_data / price_cache call, no LLM call,
+    no artifact mutation; works on a fresh clone.
+    """
+    try:
+        return _mission_i_evidence_mod.build_mission_i_evidence_summary()
+    except ValueError:
+        # Stable envelope: never leak artifact paths or parser internals.
+        raise HTTPException(
+            status_code=503,
+            detail=("mission-i research record unavailable (tracked "
+                    "artifact drift or unreadable source)"))
 
 
 @app.get("/evidence/mission-j")
