@@ -492,7 +492,12 @@ def _parse_closeout(text: str) -> dict[str, Any]:
              f"({len(non_claims)} items)")
     preamble = _sentence_with(text, "later robustness questions", art)
     boundary = _sentence_with(text, "future work", art)
-    f5_caveat = _sentence_with(
+    # The knife-edge caveat is quoted at its structural boundary — the
+    # closeout's blank-line-delimited paragraph — never by punctuation-
+    # scanning the flattened document, which spliced the preceding
+    # section heading and F4/F5 tables into the quoted field and cut the
+    # paragraph at its first period.
+    f5_caveat = _paragraph_with(
         text, "formal sign agreement here is weak evidence", art)
     # The evidence-chain line must still exist in the closeout; the
     # payload carries an authored restatement with no research number.

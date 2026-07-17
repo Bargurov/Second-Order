@@ -1118,7 +1118,7 @@ const MISSION_I_FIXTURE: MissionIEvidenceSummary = {
           "20d": null
         },
         "agree": true,
-        "caveat": "Cross-surface synthesis ### F4 — cross-metric direction (per family × horizon) | family × horizon | positive | zero | negative | |---|---|---|---| | FOMC 1d | 4 | 0 | 0 | | FOMC 5d | 3 | 0 | 1 | | OPEC 1d | 3 | 0 | 1 | | OPEC 5d | 2 | 0 | 2 | | OPEC 20d | 0 | 0 | 4 | ### F5 — cross-horizon consistency (per family × metric) | family | metric | feasible-horizon agreement | |---|---|---| | FOMC | raw_return | agree (see caveat) | | FOMC | SPY-relative AR | agree | | FOMC | sector-relative AR | disagree | | FOMC | SAR | agree | | OPEC | raw_return | disagree | | OPEC | SPY-relative AR | disagree | | OPEC | sector-relative AR | agree | | OPEC | SAR | disagree | Caveat on FOMC raw-return \"agree\": formal sign agreement here is weak evidence, because the 5d raw cell is the documented near-0.5 knife-edge (`MEMP = 0.501155`, LOEO `32/65`)."
+        "caveat": "Caveat on FOMC raw-return \"agree\": formal sign agreement here is weak evidence, because the 5d raw cell is the documented near-0.5 knife-edge (`MEMP = 0.501155`, LOEO `32/65`). Its `+1` sign is decided by a hair, so its agreement with the 1d `+1` sign should not be read as a stable cross-horizon pattern. These agreement flags are descriptive; they are not converted into a score."
       },
       {
         "family": "FOMC",

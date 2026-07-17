@@ -478,6 +478,38 @@ class FalsifierTests(unittest.TestCase):
         self.assertIs(opec_sector["agree"], True)
         self.assertEqual(sum(1 for r in rows if r["agree"]), 4)
 
+    def test_24b_f5_caveat_paragraph_bounded_no_section_or_table_spill(self):
+        """The knife-edge caveat is the closeout's blank-line paragraph —
+        never a flattened-document punctuation scan that splices the
+        preceding section heading and F4/F5 tables into the quoted field,
+        and never a first-period truncation that drops the paragraph's
+        qualifying sentences."""
+        caveat = _payload()["falsifiers"]["f5_cross_horizon"][0]["caveat"]
+        # no section spillover
+        self.assertNotIn("###", caveat)
+        self.assertNotIn("Cross-surface synthesis", caveat)
+        # no table spillover (headers, separators, or rows)
+        self.assertNotIn("|", caveat)
+        # starts at the caveat itself and keeps the full frozen paragraph
+        self.assertTrue(caveat.startswith("Caveat on FOMC raw-return"),
+                        caveat[:80])
+        self.assertIn("decided by a hair", caveat)
+        self.assertTrue(caveat.endswith("not converted into a score."),
+                        caveat[-80:])
+
+    def test_24c_f5_caveat_boundary_survives_adjacent_structure(self):
+        """Temporary-artifact-copy proof of the boundary rule: content in
+        the paragraph ABOVE the caveat (here a sentinel table row) must
+        never be spliced into the extracted caveat."""
+        target = 'Caveat on FOMC raw-return "agree": formal sign agreement'
+        with tempfile.TemporaryDirectory() as td:
+            bad = _tampered(
+                SOURCES["closeout"], target,
+                "| SENTINEL | injected | row |\n\n" + target, td)
+            payload = _build(closeout_path=bad)
+        caveat = payload["falsifiers"]["f5_cross_horizon"][0]["caveat"]
+        self.assertNotIn("SENTINEL", caveat)
+
 
 # ---------------------------------------------------------------------------
 # Readout, fragility, conclusion, non-claims (protections 25-26)

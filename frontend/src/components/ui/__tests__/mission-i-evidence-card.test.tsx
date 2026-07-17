@@ -373,7 +373,15 @@ describe("MissionIEvidenceCard — falsifiers, fragility, calibration", () => {
     )!;
     expect(opec20d.negative).toBe(4);
     expect(cardVisible).not.toMatch(/\d\s*\/\s*6 (passed|failed)/i);
-    expect(cardVisible).not.toMatch(/\bscore\b/i);
+    // The frozen F5 caveat legitimately NEGATES a score ("...they are not
+    // converted into a score."); every rendered occurrence of the token
+    // must be that payload negation — no affirmative score exists.
+    const lc = cardVisible.toLowerCase();
+    const scoreCount = (lc.match(/\bscore\b/g) ?? []).length;
+    const negatedCount = (lc.match(/not converted into a score/g) ?? []).length;
+    expect(scoreCount).toBe(negatedCount);
+    expect(scoreCount).toBeGreaterThan(0);
+    expect(lc).not.toContain("robustness score");
   });
 });
 
