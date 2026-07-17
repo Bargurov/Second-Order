@@ -37,6 +37,7 @@ import { EvidenceQualityStrip } from "@/components/ui/evidence-quality-strip";
 import { EnginePhaseSummary } from "@/components/ui/engine-phase-summary";
 import { MarketValidationStatus } from "@/components/ui/market-validation-status";
 import { EventStudyCard } from "@/components/ui/event-study-card";
+import { ReactionProfileCard } from "@/components/ui/reaction-profile-card";
 import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
 import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT, VALIDATION_V2_NOT_CLAIMED, HORIZON_DISCIPLINE_NOTE } from "@/lib/claim-copy";
@@ -189,13 +190,6 @@ function _compactPercent(value: number | null | undefined): string {
   return `${Math.round(normalized)}%`;
 }
 
-function _labelizeToken(value: string | null | undefined, fallback = "Unknown"): string {
-  if (!value) return fallback;
-  return value
-    .replace(/_/g, " ")
-    .replace(/(?:^|\s)\w/g, (c) => c.toUpperCase());
-}
-
 export function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResponse["validation_status_v2"]> }) {
   const meta = VALIDATION_STATUS_META[block.status] ?? VALIDATION_STATUS_META.unresolved!;
   const counts = block.counts ?? {};
@@ -262,91 +256,6 @@ export function ValidationStatusCard({ block }: { block: NonNullable<AnalyzeResp
         {total} ticker{total === 1 ? "" : "s"} checked
         {block.event_age_days != null ? ` · ${block.event_age_days}d since event` : ""}
       </p>
-    </section>
-  );
-}
-
-function ReactionProfileCard({ block }: { block: NonNullable<AnalyzeResponse["reaction_profile_v1"]> }) {
-  const tickers = block.tickers ?? [];
-  const displayTickers = tickers.slice(0, 4);
-  const isUnscorable = !block.available;
-
-  return (
-    <section className={cn(SECTION_CARD, "p-5")}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="az-card-title mb-2">Reaction profile</p>
-          <div
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
-              isUnscorable ? "bg-[rgba(122,134,148,0.10)]" : "bg-[rgba(152,194,173,0.10)]",
-            )}
-          >
-            <span className={cn("h-1.5 w-1.5 rounded-full", isUnscorable ? "bg-[var(--so-slate)]" : "bg-[var(--so-jade-ink)]")} />
-            <span
-              className={cn(
-                "text-[10px] font-bold uppercase tracking-[0.14em]",
-                isUnscorable ? "text-[var(--so-slate)]" : "text-[var(--so-jade-ink)]",
-              )}
-            >
-              {isUnscorable ? "Unscorable" : "Available"}
-            </span>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--so-ink-3)]">
-            Tickers
-          </p>
-          <p className="font-[family-name:var(--so-display)] text-[24px] font-normal leading-none tabular-nums text-[var(--so-ink-0)]">
-            {block.n_tickers ?? tickers.length}
-          </p>
-        </div>
-      </div>
-
-      <p className="mb-4 font-[family-name:var(--so-serif)] text-[12.5px] font-light italic leading-relaxed text-[var(--so-ink-2)]">
-        {block.reason || (isUnscorable ? "Not enough stored price history to score the reaction profile." : "Reaction profile computed.")}
-      </p>
-
-      {displayTickers.length > 0 ? (
-        <div>
-          {displayTickers.map((ticker, index) => {
-            const basis = ticker.reaction_profile_basis ?? "unscorable";
-            const status =
-              ticker.fade_or_hold_label_20d
-              ?? ticker.fade_or_hold_label_5d
-              ?? ticker.fade_or_hold_label_60d
-              ?? (basis === "unscorable" ? "insufficient" : null);
-            // Basis: forward-anchored reads jade, same-day fallback amber,
-            // stale/unscorable slate.  Hold reads jade, fade amber, reverse
-            // rust — a tape read, not a directional verdict.
-            const basisTone = basis.includes("forward")
-              ? "text-[var(--so-jade-ink)]"
-              : basis.includes("fallback") ? "text-[var(--so-amber)]" : "text-[var(--so-ink-3)]";
-            const statusTone = status === "hold"
-              ? "text-[var(--so-jade-ink)]"
-              : status === "fade" ? "text-[var(--so-amber)]"
-              : status === "reverse" ? "text-[var(--so-rust-ink)]" : "text-[var(--so-ink-3)]";
-            return (
-              <div
-                key={`${ticker.symbol ?? "ticker"}-${index}`}
-                className="grid grid-cols-[58px_1fr_auto] items-baseline gap-3 border-b border-[color:var(--so-rule)] py-2 last:border-b-0"
-              >
-                <span className="font-mono text-[12px] text-[var(--so-ink-0)]">{ticker.symbol || "—"}</span>
-                <span className={cn("min-w-0 truncate font-mono text-[9.5px] uppercase tracking-[0.06em]", basisTone)}>
-                  {_labelizeToken(basis, "no basis")}
-                </span>
-                <span className={cn("shrink-0 font-mono text-[10px] uppercase tracking-[0.1em]", statusTone)}>
-                  {_labelizeToken(status, "—")}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className={cn(INNER_CARD, "px-3 py-2 text-[11px] text-on-surface-variant/60")}>
-          No market tickers were stored for this event, so there is no per-ticker reaction profile.
-        </div>
-      )}
     </section>
   );
 }
