@@ -6,7 +6,8 @@ Covers:
   * non-list clusters / feed_status → guard rejects
   * wrong _schema_version → guard rejects
   * legacy payload (no _schema_version) passes when shape is valid
-  * _get_news_cached forces refresh when cached payload fails the guard
+  * _get_news_cached is cache-only: a payload that fails the guard reads as
+    unavailable (no refresh), never a fresh RSS fetch from a GET path
   * _fetch_fresh_news stamps every emitted payload with _schema_version
   * load_news_cache + save_news_cache roundtrip preserves the stamp
 """
@@ -120,9 +121,10 @@ class TestGetNewsCachedGuarded(unittest.TestCase):
         _api._news_cache["data"] = self._orig_hot.get("data")
         _api._news_cache["ts"] = self._orig_hot.get("ts", 0.0)
 
-    def test_hot_cache_failing_guard_is_cleared_and_fresh_fetch_runs(self):
-        # Seed the hot cache with a mis-shaped payload — clusters is a dict,
-        # not a list — so the guard rejects it on read.
+    def test_malformed_hot_cache_does_not_refresh(self):
+        # Cache-only contract: a mis-shaped hot entry (clusters is a dict) must
+        # NOT trigger a refresh.  With no persisted payload the read is honestly
+        # unavailable — the pre-repair read-through called _fetch_fresh_news here.
         bad = {"clusters": {"oops": True}, "total_headlines": 0, "feed_status": []}
         _api._news_cache["data"] = bad
         _api._news_cache["ts"] = 1e18  # pretend very fresh
@@ -136,16 +138,16 @@ class TestGetNewsCachedGuarded(unittest.TestCase):
         with patch("api.load_news_cache", return_value=None), \
              patch("api._fetch_fresh_news", side_effect=_fake_fresh):
             out = _api._get_news_cached()
+            state = _api.read_news_cache_state()
 
-        self.assertEqual(fresh_calls, [True])
-        self.assertEqual(out["clusters"][0]["headline"], "fresh")
-        # The bad hot entry was discarded; the real _fetch_fresh_news writes
-        # the fresh payload back to the hot cache, but that's stubbed here so
-        # we only assert the discard half of the contract.
-        self.assertIsNone(_api._news_cache["data"])
+        self.assertEqual(fresh_calls, [])            # no refresh from a GET read
+        self.assertEqual(out["clusters"], [])         # explicit empty payload
+        self.assertEqual(state.availability, "unavailable")
 
-    def test_persisted_cache_failing_guard_triggers_refresh(self):
-        # Wrong shape: clusters is a dict instead of a list.
+    def test_malformed_persisted_cache_does_not_refresh(self):
+        # Wrong shape: clusters is a dict instead of a list.  Under the
+        # cache-only contract a malformed persisted payload reads as
+        # unavailable instead of forcing a fresh fetch.
         bad_persisted = {"clusters": {"oops": True}, "total_headlines": 0}
         fresh_calls: list[bool] = []
 
@@ -156,11 +158,13 @@ class TestGetNewsCachedGuarded(unittest.TestCase):
         with patch("api.load_news_cache", return_value=bad_persisted), \
              patch("api._fetch_fresh_news", side_effect=_fake_fresh):
             out = _api._get_news_cached()
+            state = _api.read_news_cache_state()
 
-        self.assertEqual(fresh_calls, [True])
-        self.assertEqual(out["_schema_version"], _NEWS_CACHE_VERSION)
+        self.assertEqual(fresh_calls, [])
+        self.assertEqual(out["clusters"], [])
+        self.assertEqual(state.availability, "unavailable")
 
-    def test_persisted_cache_passing_guard_short_circuits(self):
+    def test_valid_persisted_cache_served_without_refresh(self):
         good = _valid_payload()
         fresh_calls: list[bool] = []
 

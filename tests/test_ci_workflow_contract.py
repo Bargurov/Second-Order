@@ -28,6 +28,7 @@ REQUIRED_BACKEND_MODULES = (
     "tests.test_mission_i_evidence",
     "tests.test_mission_j_evidence",
     "tests.test_get_provider_boundary",
+    "tests.test_news_get_boundary",
     "tests.test_admin_guard",
     "tests.test_track_record_reproduction_safety",
     "tests.test_ci_workflow_contract",

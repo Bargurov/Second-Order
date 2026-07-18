@@ -1782,7 +1782,19 @@ class TestMacroValidation(APITestCase):
 
 
 class TestNews(APITestCase):
+    def _warm(self):
+        """Populate the cache via the explicit refresh owner.
+
+        POST /news/refresh is the ONLY path allowed to fetch/cluster/persist;
+        _PATCHES fakes fetch_all/cluster_headlines so it stays offline.  A
+        cache-only GET never refreshes, so tests that need data warm first.
+        """
+        r = self.client.post("/news/refresh")
+        self.assertEqual(r.status_code, 200)
+        return r
+
     def test_news_returns_clusters(self):
+        self._warm()
         r = self.client.get("/news")
         self.assertEqual(r.status_code, 200)
         body = r.json()
@@ -1791,6 +1803,7 @@ class TestNews(APITestCase):
         self.assertEqual(body["total_headlines"], 2)
 
     def test_news_returns_feed_status(self):
+        self._warm()
         r = self.client.get("/news")
         self.assertEqual(r.status_code, 200)
         body = r.json()
@@ -1799,6 +1812,7 @@ class TestNews(APITestCase):
         self.assertTrue(len(body["feed_status"]) > 0)
 
     def test_news_cluster_shape(self):
+        self._warm()
         r = self.client.get("/news")
         self.assertEqual(r.status_code, 200)
         cluster = r.json()["clusters"][0]
@@ -1806,42 +1820,56 @@ class TestNews(APITestCase):
         self.assertIn("sources", cluster)
         self.assertIn("source_count", cluster)
 
-    def test_news_does_not_500(self):
-        """Regression: fetch_all returns (records, feed_status) tuple."""
+    def test_news_cold_get_is_unavailable_not_500(self):
+        """A cold GET is robust and honest: 200 + explicit unavailable, no 500,
+        no fabricated empty-success feed."""
         r = self.client.get("/news")
         self.assertNotEqual(r.status_code, 500)
         self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body.get("availability"), "unavailable")
+        self.assertTrue(body.get("refresh_required"))
 
     def test_news_cache_returns_same_data(self):
-        """Second call within TTL should return cached data."""
+        """Two reads of a warmed hot cache return identical payloads."""
+        self._warm()
         r1 = self.client.get("/news")
         r2 = self.client.get("/news")
         self.assertEqual(r1.status_code, 200)
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r1.json(), r2.json())
 
-    def test_news_cache_expires(self):
-        """After expiry the cache should refresh."""
-        r1 = self.client.get("/news")
-        self.assertEqual(r1.status_code, 200)
-        # Force expiry by backdating the timestamp.
+    def test_news_get_falls_back_to_sqlite_without_refresh(self):
+        """Hot expiry falls through to the persisted SQLite layer WITHOUT a
+        refresh — a cache-only GET never re-fetches."""
+        self._warm()
+        before = _api_mod.fetch_all.call_count
+        # Clear only the in-memory layer; SQLite row remains fresh.
+        _api_mod._news_cache["data"] = None
         _api_mod._news_cache["ts"] = 0.0
-        r2 = self.client.get("/news")
-        self.assertEqual(r2.status_code, 200)
-        # Both should still return valid data.
-        self.assertIn("clusters", r2.json())
-
-    def test_news_persists_to_sqlite(self):
-        """First /news call should write to the SQLite news_cache table."""
         r = self.client.get("/news")
         self.assertEqual(r.status_code, 200)
-        # Check the DB directly
-        cached = db.load_news_cache(max_age_seconds=60)
-        self.assertIsNotNone(cached)
-        self.assertIn("clusters", cached)
+        self.assertEqual(r.json()["total_headlines"], 2)     # served from SQLite
+        self.assertEqual(r.json().get("availability"), "available")
+        self.assertEqual(_api_mod.fetch_all.call_count, before)  # no GET refresh
+
+    def test_get_does_not_persist_but_refresh_does(self):
+        """Cache-only GET must not write SQLite; the explicit refresh owner
+        does.  This is the P2-1 write boundary at the app level."""
+        before = _api_mod.fetch_all.call_count
+        r = self.client.get("/news")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json().get("availability"), "unavailable")
+        self.assertEqual(_api_mod.fetch_all.call_count, before)     # GET didn't fetch
+        self.assertIsNone(db.load_news_cache(max_age_seconds=60))    # GET didn't write
+        # The explicit refresh owner persists.
+        self._warm()
+        self.assertIsNotNone(db.load_news_cache(max_age_seconds=60))
 
     def test_news_sqlite_survives_memory_clear(self):
-        """Clearing in-memory cache should fall back to SQLite."""
+        """Clearing the in-memory layer falls back to persisted SQLite; the
+        served data matches (the layer differs, so ``source`` differs)."""
+        self._warm()
         r1 = self.client.get("/news")
         self.assertEqual(r1.status_code, 200)
         # Clear only in-memory cache, leave SQLite intact
@@ -1849,7 +1877,8 @@ class TestNews(APITestCase):
         _api_mod._news_cache["ts"] = 0.0
         r2 = self.client.get("/news")
         self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r1.json(), r2.json())
+        self.assertEqual(r1.json()["clusters"], r2.json()["clusters"])
+        self.assertEqual(r1.json()["total_headlines"], r2.json()["total_headlines"])
 
 
 class TestLowSignalTagging(APITestCase):

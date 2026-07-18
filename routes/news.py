@@ -71,7 +71,11 @@ def news(
     limit: int = Query(0, ge=0, le=500),
     cursor: Optional[str] = None,
 ):
-    payload = _api._get_news_cached()
+    # Cache-only read: read_news_cache_state never fetches RSS, clusters, or
+    # writes SQLite/cache — the /news GET boundary.  Refresh ownership stays
+    # with POST /news/refresh.
+    state = _api.read_news_cache_state()
+    payload = state.payload if state.payload is not None else _api._unavailable_news_payload()
     # Re-sort defensively so pagination is stable even if the cached list
     # was produced by an older sort contract.  Sort is descending on the
     # composite key (source_count, published_at, id).
@@ -100,6 +104,11 @@ def news(
             "reused": total, "source": "cached_fallback",
             "freshness": "stale", "last_successful_refresh": None,
         }
+    # A cache-only stale read keeps the payload's own status but marks the
+    # freshness badge stale so the frontend indicator matches the honest
+    # availability (the cache was served without a refresh).
+    if state.availability == "stale":
+        meta = {**meta, "freshness": "stale"}
 
     # Track enrichment failures explicitly so the frontend can render a
     # "degraded" indicator instead of silently showing an empty calendar
@@ -154,6 +163,12 @@ def news(
         "policy_items": policy_items,
         "data_quality": "degraded" if degraded_fields else "ok",
         "degraded_fields": degraded_fields,
+        # P2-1 cache-only honesty signals: distinguish a fresh / stale local
+        # feed from an unavailable local cache (never a silent empty feed).
+        "availability": state.availability,
+        "refresh_required": state.refresh_required,
+        "source": state.source,
+        "last_updated_at": state.last_updated_at,
     }
 
 

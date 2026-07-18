@@ -234,9 +234,12 @@ class TestNewsRouteSurfacesPolicyTiming(unittest.TestCase):
         }
 
     def test_matching_cluster_surfaces_policy_timing(self) -> None:
+        # The /news route reads via read_news_cache_state (cache-only); inject
+        # the fake payload at that seam as an available local cache.
         with mock.patch.object(
-            self._api, "_get_news_cached",
-            return_value=self._fake_news_payload(),
+            self._api, "read_news_cache_state",
+            return_value=self._api.NewsCacheState(
+                "available", self._fake_news_payload(), "persisted", None, False),
         ):
             r = self.client.get("/news?limit=10")
         self.assertEqual(r.status_code, 200)

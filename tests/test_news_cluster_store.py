@@ -496,6 +496,8 @@ class TestNewsEndpointContract(unittest.TestCase):
             {"name": "Reuters", "url": "", "ok": True, "count": 1, "error": None},
         ]
         with patch("api.fetch_all", return_value=(records, feed_status)):
+            # Cache-only GET never refreshes — warm via the explicit owner.
+            self.client.post("/news/refresh")
             r = self.client.get("/news")
 
         self.assertEqual(r.status_code, 200)
@@ -529,6 +531,8 @@ class TestNewsEndpointContract(unittest.TestCase):
         }]
         with patch("api.fetch_all", return_value=(records, feed_status)), \
                 patch("api.cluster_headlines", return_value=fake_clusters):
+            # Cache-only GET never refreshes — warm via the explicit owner.
+            self.client.post("/news/refresh")
             r = self.client.get("/news")
 
         body = r.json()

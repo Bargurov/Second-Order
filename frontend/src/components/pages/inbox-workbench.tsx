@@ -58,6 +58,10 @@ function _refreshLabel(meta: RefreshMeta): string {
     const count = meta.created + meta.merged + meta.reused;
     return count > 0 ? `${base} — ${count} clusters` : base;
   }
+  // Cache-only: a shape-valid but past-TTL feed is served without a refresh —
+  // surface it as stale (never as a current "reused" count) so old headlines
+  // are not read as the present state of the world.
+  if (meta.freshness === "stale") return "Stale — cached";
   if (meta.source === "empty") return "No headlines";
   if (meta.source === "stored" || meta.source === "stored_fallback")
     return `${meta.reused} stored`;
@@ -71,9 +75,26 @@ function _refreshLabel(meta: RefreshMeta): string {
 function _refreshDot(meta: RefreshMeta): string {
   if (meta.status === "error") return "bg-destructive";
   if (meta.status === "degraded") return "bg-[#facc15]";
+  if (meta.freshness === "stale") return "bg-muted-foreground/70";
   if (meta.status === "throttled" || meta.status === "recent") return "bg-muted-foreground/40";
   if (meta.new > 0) return "bg-primary";
   return "bg-muted-foreground/40";
+}
+
+/**
+ * Cache-only contract: rendering the Headlines page must NEVER auto-trigger a
+ * refresh.  A refresh is a POST that reaches RSS and writes SQLite; it is an
+ * explicit user action (the refresh button, the sole POST /news/refresh
+ * owner).  A GET-served feed — fresh, stale, or unavailable — renders as-is.
+ *
+ * Kept as an exported, always-false predicate (rather than deleting the mount
+ * effect) so the invariant is unit-tested without a DOM and a future edit that
+ * re-introduces render-triggered refresh fails the test.  The backend marks
+ * BOTH stale and unavailable payloads freshness="stale", so any age-based
+ * auto-refresh here would fire a real fetch on every stale/missing load.
+ */
+export function shouldAutoRefreshOnRender(_meta: RefreshMeta | null): boolean {
+  return false;
 }
 
 const _MACRO_LABELS: Record<string, string> = { Unemployment: "U-Rate" };
@@ -688,8 +709,10 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
   const autoRefreshedRef = useRef(false);
   useEffect(() => {
     if (autoRefreshedRef.current || refreshing || !effectiveMeta) return;
-    const f = effectiveMeta.freshness;
-    if (f === "stale" || f === "degraded") {
+    // Cache-only: a GET-served feed never auto-triggers a refresh from render;
+    // stale / unavailable state renders honestly and refresh stays an explicit
+    // user action.  See shouldAutoRefreshOnRender.
+    if (shouldAutoRefreshOnRender(effectiveMeta)) {
       autoRefreshedRef.current = true;
       handleRefresh();
     }

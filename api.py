@@ -6,7 +6,7 @@ Run with:  uvicorn api:app --reload
 
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any, NamedTuple, Optional
 import io
 import json as _json
 import logging
@@ -590,39 +590,127 @@ def _fetch_fresh_news() -> dict:
     return payload
 
 
-def _get_news_cached() -> dict:
-    """Return news from the fastest available source.
+class NewsCacheState(NamedTuple):
+    """Read-only snapshot of the LOCAL news cache — never refreshes or writes.
 
-    Both the in-memory hot layer and the SQLite persistent layer are
-    validated by ``_is_valid_news_payload`` on read.  A stale-shape row
-    triggers a fresh refresh instead of leaking a mis-shaped payload
-    into the /news route.
+    ``availability``:
+      "available"   — a shape-valid payload within the freshness TTL
+      "stale"       — a shape-valid payload past the TTL (still served)
+      "unavailable" — no shape-valid local payload (missing or malformed)
+    ``source`` is ``"memory"`` / ``"persisted"`` / ``"none"``;
+    ``refresh_required`` is True whenever availability is not "available".
+    """
+
+    availability: str
+    payload: dict | None
+    source: str
+    last_updated_at: str | None
+    refresh_required: bool
+
+
+def _payload_last_updated(payload: dict) -> str | None:
+    return (payload.get("refresh_meta") or {}).get("last_successful_refresh")
+
+
+def _safe_load_news_cache(max_age_seconds: int | None) -> dict | None:
+    """load_news_cache that swallows failures — a read must never raise.
+
+    ``max_age_seconds=None`` reads the stored payload at any age (used for the
+    stale fallback: age never turns a shape-valid local payload unavailable).
+    """
+    try:
+        return load_news_cache(max_age_seconds=max_age_seconds)
+    except Exception:
+        _log.warning("load_news_cache failed during cache-only read",
+                     exc_info=True)
+        return None
+
+
+def read_news_cache_state() -> NewsCacheState:
+    """Inspect the local news cache WITHOUT refreshing, fetching, or writing.
+
+    Checks the in-memory hot layer, then the persistent SQLite layer, each
+    validated by ``_is_valid_news_payload``.  A shape-valid payload within the
+    TTL is "available"; a shape-valid but older payload is "stale" and still
+    served; a missing or malformed payload is "unavailable".  The refresh
+    owner (``_fetch_fresh_news`` via ``POST /news/refresh``) is NEVER invoked
+    here — that is what makes every GET consumer cache-only, and what closes
+    the prior read-through that reached RSS and wrote SQLite from a GET.
+
+    Pure: it reads module/DB state but mutates nothing (no cache warming, no
+    SQLite/cache write, no refresh-lock).
     """
     now = time.monotonic()
     hot = _news_cache.get("data")
-    if hot is not None and (now - _news_cache["ts"]) < _NEWS_TTL_SECONDS:
-        if _is_valid_news_payload(hot):
-            return hot
-        # Hot entry failed the shape guard — most likely written by an
-        # older process before the current version.  Clear it so the
-        # next branch tries the persistent layer.
-        _log.warning("_get_news_cached: in-memory payload failed shape guard; "
-                     "discarding and falling through")
-        _news_cache["data"] = None
-        _news_cache["ts"] = 0.0
-    try:
-        db_payload = load_news_cache(max_age_seconds=_NEWS_TTL_SECONDS)
-    except Exception:
-        _log.warning("load_news_cache failed, falling back to fresh fetch", exc_info=True)
-        db_payload = None
-    if db_payload is not None and _is_valid_news_payload(db_payload):
-        _news_cache["data"] = db_payload
-        _news_cache["ts"] = now
-        return db_payload
-    if db_payload is not None:
-        _log.warning("_get_news_cached: persisted payload failed shape guard; "
-                     "forcing fresh refresh")
-    return _fetch_fresh_news()
+    hot_ts = _news_cache.get("ts", 0.0)
+    hot_valid = hot is not None and _is_valid_news_payload(hot)
+    if hot_valid and (now - hot_ts) < _NEWS_TTL_SECONDS:
+        return NewsCacheState("available", hot, "memory",
+                              _payload_last_updated(hot), False)
+
+    fresh = _safe_load_news_cache(_NEWS_TTL_SECONDS)
+    if fresh is not None and _is_valid_news_payload(fresh):
+        return NewsCacheState("available", fresh, "persisted",
+                              _payload_last_updated(fresh), False)
+
+    # Read the persisted payload at ANY age: a shape-valid row past the TTL is
+    # served as stale regardless of how old it is — age never turns valid local
+    # evidence into "unavailable".  Only a missing or shape-invalid row is.
+    stored = _safe_load_news_cache(None)
+    if stored is not None and _is_valid_news_payload(stored):
+        return NewsCacheState("stale", stored, "persisted",
+                              _payload_last_updated(stored), True)
+
+    if hot_valid:
+        # Persistent layer unusable, but a shape-valid (older) hot payload
+        # exists — serve it as stale rather than claim unavailable.
+        return NewsCacheState("stale", hot, "memory",
+                              _payload_last_updated(hot), True)
+
+    return NewsCacheState("unavailable", None, "none", None, True)
+
+
+def _unavailable_news_payload() -> dict:
+    """Empty, shape-valid payload for the 'no valid local cache' state.
+
+    Kept shape-identical to a normal payload (clusters / total_headlines /
+    feed_status / refresh_meta / _schema_version) so the non-route consumers
+    that read only ``clusters`` stay byte-stable.  ``refresh_meta.status`` is
+    ``"error"`` with an explicit message so the existing frontend renders it
+    as not-successful (never a silent empty feed); the /news route also
+    surfaces ``availability="unavailable"`` as the authoritative signal.
+    """
+    return {
+        "clusters": [],
+        "total_headlines": 0,
+        "feed_status": [],
+        "refresh_meta": {
+            "status": "error", "source": "none",
+            "known": 0, "new": 0, "merged": 0, "created": 0, "reused": 0,
+            "ok_feeds": 0, "fail_feeds": 0,
+            "error": "No local news cache — POST /news/refresh to load",
+            "last_successful_refresh": None, "freshness": "stale",
+        },
+        "_schema_version": _NEWS_CACHE_VERSION,
+    }
+
+
+def _get_news_cached() -> dict:
+    """Return the best available LOCAL news payload WITHOUT ever refreshing.
+
+    Cache-only: delegates to ``read_news_cache_state`` and never calls
+    ``_fetch_fresh_news`` (no RSS ``fetch_all``, no cluster-store write, no
+    SQLite/cache write, no refresh-lock).  All five GET consumers share this
+    reader, so the GET/provider boundary holds everywhere; refresh ownership
+    stays with ``POST /news/refresh``.  When no shape-valid local payload
+    exists the return is an explicit empty payload (``clusters == []``); the
+    /news route surfaces the honest availability separately so an empty valid
+    feed is never confused with unavailable local data.
+    """
+    state = read_news_cache_state()
+    if state.payload is not None:
+        return state.payload
+    return _unavailable_news_payload()
 
 
 def compute_news_uncertainty() -> dict:

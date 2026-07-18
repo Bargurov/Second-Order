@@ -2977,10 +2977,17 @@ def find_cached_analysis(
 # News cache — persistent storage for /news payloads
 # ---------------------------------------------------------------------------
 
-def load_news_cache(max_age_seconds: int = 300) -> dict | None:
+def load_news_cache(max_age_seconds: int | None = 300) -> dict | None:
     """Return the cached news payload if it exists and is fresh enough.
 
-    Returns None if the cache is empty, stale, or the DB is not ready.
+    ``max_age_seconds=None`` disables the age filter and returns the stored
+    payload regardless of age — the cache-only /news reader uses this to serve
+    any shape-valid local payload as *stale* (age never turns valid local
+    evidence into "unavailable").  With a numeric bound the row is returned
+    only when its age is within it (unchanged behavior).
+
+    Returns None if the cache is empty, the DB is not ready, the payload is
+    unparseable, or (with a numeric bound) the row is older than the bound.
     """
     if not _db_ready:
         return None
@@ -2994,14 +3001,15 @@ def load_news_cache(max_age_seconds: int = 300) -> dict | None:
         return None
 
     payload_json, fetched_at = row
-    try:
-        fetched = datetime.fromisoformat(fetched_at)
-    except (ValueError, TypeError):
-        return None
+    if max_age_seconds is not None:
+        try:
+            fetched = datetime.fromisoformat(fetched_at)
+        except (ValueError, TypeError):
+            return None
 
-    age = (datetime.now() - fetched).total_seconds()
-    if age > max_age_seconds:
-        return None
+        age = (datetime.now() - fetched).total_seconds()
+        if age > max_age_seconds:
+            return None
 
     try:
         return json.loads(payload_json)

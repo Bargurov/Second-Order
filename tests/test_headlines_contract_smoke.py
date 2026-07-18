@@ -168,18 +168,17 @@ class TestNewsShape(HeadlinesContractBase):
     crashing the page."""
 
     def test_empty_cache_returns_full_envelope(self):
-        # No prime — cache miss; route still returns its declared envelope.
-        with patch.object(
-            self._api_mod, "_get_news_cached",
-            return_value=_stub_payload(clusters=[]),
-        ):
-            body = self._get_ok("/news")
+        # No prime — cache miss.  The cache-only route returns its declared
+        # envelope with an explicit unavailable state (never a fabricated
+        # empty-success feed).  setUp guarantees an empty hot + fresh temp DB.
+        body = self._get_ok("/news")
         _assert_json_clean(self, body, "GET /news empty")
         for key in (
             "clusters", "next_cursor", "total_headlines", "total_count",
             "feed_status", "refresh_meta",
             "macro_releases", "policy_items",
             "data_quality", "degraded_fields",
+            "availability", "refresh_required",
         ):
             self.assertIn(key, body, f"Missing /news key: {key}")
         self.assertEqual(body["clusters"], [])
@@ -190,6 +189,9 @@ class TestNewsShape(HeadlinesContractBase):
         self.assertIsInstance(body["policy_items"], list)
         self.assertIn(body["data_quality"], ("ok", "degraded"))
         self.assertIsInstance(body["degraded_fields"], list)
+        # Honest availability: an empty cache is unavailable, not empty-success.
+        self.assertEqual(body["availability"], "unavailable")
+        self.assertTrue(body["refresh_required"])
 
     def test_populated_cache_response_shape(self):
         self._prime_news()
