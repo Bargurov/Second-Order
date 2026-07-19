@@ -6,7 +6,7 @@ This is the finance-reviewer front door for Second Order's current research reco
 
 Second Order is an event-driven quant-finance research workbench and portfolio piece for geopolitical, macro, and policy headlines. Its maintained research chain is:
 
-`event -> mechanism -> affected assets -> 1d/5d/20d reaction -> abnormal/event-study readout -> falsifier/limits -> ordinary-period comparison -> robustness -> archive evidence -> representative cases`
+`event -> mechanism -> affected assets -> 1d/5d/20d reaction -> abnormal/event-study readout -> falsifier/limits -> ordinary-period comparison -> event-level reconciliation -> robustness -> archive evidence -> representative cases`
 
 The point is to make each dated event legible as evidence: what changed, what transmission channel was hypothesized, which assets were exposed, how those assets actually moved, and which limits or counter-readings remain visible.
 
@@ -130,9 +130,23 @@ Mission I is a separate, self-contained research section that asks one question:
 
 The answer is structural, not a yes/no. Event exceptionalism is family-, horizon-, and metric-specific. FOMC decision windows show a broad, perturbation-stable elevation in one-day response magnitude across all four metrics; that coherence weakens by 5d, where the raw-return cell is a near-0.5 knife-edge. OPEC is mixed at 1d and 5d and uniformly below ordinary response magnitude at 20d, but with limited cross-horizon consistency. Across the surface, no primary cell's direction depends on the overlap-decimation reference swap (F3 0/20), and leave-out fragility is concentrated in the single near-0.5 FOMC 5d raw cell. Mission I rejects the *blanket* descriptive idea that event windows are generally more extreme than ordinary periods — a statement about the broad narrative, not a formal hypothesis test.
 
-The interpretation, full stability synthesis, and permanent non-claims are in the closeout: [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md). Its frozen evidence chain is the I0 protocol ([`stats/I0_ORDINARY_PERIOD_BASELINE_PROTOCOL.md`](stats/I0_ORDINARY_PERIOD_BASELINE_PROTOCOL.md)), the candidate universe ([`stats/I1_ORDINARY_PERIOD_CANDIDATE_UNIVERSE.md`](stats/I1_ORDINARY_PERIOD_CANDIDATE_UNIVERSE.md)), the response substrate ([`stats/I2A_RESPONSE_SUBSTRATE.md`](stats/I2A_RESPONSE_SUBSTRATE.md)), the frozen MEMP family ([`stats/I2B_MEMP_PRIMARY_COMPARISON.md`](stats/I2B_MEMP_PRIMARY_COMPARISON.md)), the placement calibration ([`stats/I2C_CALIBRATION.md`](stats/I2C_CALIBRATION.md)), and the F1–F6 falsifiers ([`stats/I2C_FALSIFIERS.md`](stats/I2C_FALSIFIERS.md)). Like Mission G, it is descriptive research: no causality, prediction, tradeability, or single-event significance.
+The interpretation, full stability synthesis, and permanent non-claims are in the closeout: [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md). Its frozen evidence chain is the I0 protocol ([`stats/I0_ORDINARY_PERIOD_BASELINE_PROTOCOL.md`](stats/I0_ORDINARY_PERIOD_BASELINE_PROTOCOL.md)), the candidate universe ([`stats/I1_ORDINARY_PERIOD_CANDIDATE_UNIVERSE.md`](stats/I1_ORDINARY_PERIOD_CANDIDATE_UNIVERSE.md)), the response substrate ([`stats/I2A_RESPONSE_SUBSTRATE.md`](stats/I2A_RESPONSE_SUBSTRATE.md)), the frozen MEMP family ([`stats/I2B_MEMP_PRIMARY_COMPARISON.md`](stats/I2B_MEMP_PRIMARY_COMPARISON.md)), the placement calibration ([`stats/I2C_CALIBRATION.md`](stats/I2C_CALIBRATION.md)), and the F1–F6 falsifiers ([`stats/I2C_FALSIFIERS.md`](stats/I2C_FALSIFIERS.md)). Like Mission G, it is descriptive research: no causality, prediction, tradeability, or single-event significance. The published record's per-event observation layer is described in the next section.
 
-## 13. Mission J: Hindsight-Controlled FOMC Robustness
+## 13. Mission I Event-Level Evidence Layer
+
+The published Mission I record is served with its complete per-event observation surface, so a skeptical reviewer can move from any published aggregate to the exact rows behind it without recomputing anything. The tracked-only `GET /evidence/mission-i` contract (`mission-i-evidence-v2`) parses the seven tracked Mission I publications at request time and adds an additive event-level block to the 20-cell aggregate surface:
+
+- 20 event-level cells, aligned one-to-one and in frozen order with the 20 primary cells (family, horizon, metric, cell number, cell key).
+- 904 published per-event observations in total: FOMC carries 520 rows across its 8 available cells (65 rows per cell; FOMC 20d is structurally unavailable and has no cell), and OPEC carries 384 rows across its 12 cells (32 rows per cell).
+- Each cell's published MEMP and signed-percentile median are recomputed by the backend from that cell's published rows under the publication's own written method, and the record refuses service unless recomputed equals published as exact decimal strings at the published six-decimal precision. Published and recomputed values remain separately labeled in the interface; they are never collapsed into one unlabeled number.
+
+The claim ceiling of this layer is deliberately narrow. It is internal reconciliation — the tracked rows reconcile to the published aggregate record — and not independent replication: the original price data and ordinary-period reference distributions are not independently reproduced. The rows are reconciliation evidence for the published descriptive cell, not representative-case proof, and each row's `abs_mid_rank_pct` is the published mid-rank-percentile method value, not a strength or model output.
+
+Ordering discipline is preserved end to end: rows are served and rendered in the publication's own ascending anchor-session order, disclosure paginates as a pure prefix of that order, and no surface sorts, filters, or ranks by outcome — there is no "top events" view. The frontend consumer enforces the full cross-surface contract (version, cell inventory, identity and order against the primary cells, denominators, aggregate equality, row uniqueness and ordering, whole-block and family-count arithmetic) and fails closed on any inconsistent payload: an absent or malformed block renders an explicit refusal and zero event rows rather than a partial or fabricated table. Provenance stays honest in the same way: the contract exposes the source artifact, its SHA-256, byte size, and parsed row count, but no source-section field — the interface states that limitation explicitly, and computation dates and execution commits are shown as recorded in no Mission I publication rather than inferred from the repository.
+
+The raw FOMC 5d knife-edge remains the record's principal fragility and is flagged on its own cell inside the drilldown.
+
+## 14. Mission J: Hindsight-Controlled FOMC Robustness
 
 Mission J is a separate, self-contained research section that takes the one place Mission I found a broad, perturbation-stable elevation — the FOMC one-day response — and asks a single frozen question: does that inherited reading survive asset and benchmark substitution, pre-event timing, and exact-window event collisions, and how far does it carry across a pre-declared transmission graph? It runs its own frozen chain over a 65-event FOMC frame (2018–2025): a locked constitution (J0), a frozen data substrate (J1A), an asset/benchmark challenge (J1B), a timing and exact-window collision challenge (J2), and a mechanism/transmission readout (J3). No Mission J outcome value existed before each stage ran, and no number is merged with the Mission G or Mission I ledgers.
 
@@ -145,3 +159,41 @@ Mission J is a separate, self-contained research section that takes the one plac
 Measurement limitations travel with every affected statement. The ideal M1 policy-path measure (fed funds futures / OIS) is unavailable in the frozen substrate; the rates role rests on the 2Y CMT, which is measurement-limited because it blends policy expectations with term premium. All of Mission J is same-sample Class B evidence: post-outcome robustness under prospectively frozen new tests.
 
 Mission J makes no claim of causality, prediction, tradeability, alpha, independent historical confirmation, intraday sequencing, or structural macro-model proof. Like Mission G and Mission I, it is descriptive research: what survived the frozen challenge, what stayed lens-dependent or unadjudicable, and where the measurement limits are visible.
+
+## 15. Evidence Surfaces And Reviewer Workflow
+
+The published record is consumable two ways, and both read only tracked files:
+
+- **Durable publications** — the `stats/` chain linked throughout this document, reviewable from a clean clone with no running application.
+- **In-app evidence surfaces** — four read-only, tracked-publication-backed contracts: `GET /evidence/summary` (the closed Phase 1–4 track), `GET /evidence/mission-g`, `GET /evidence/mission-i` (`mission-i-evidence-v2`), and `GET /evidence/mission-j` (`mission-j-evidence-v1`). None of them reads the events database, calls a provider, or can bill anything; each parses its frozen publications at request time and refuses service on drift rather than serving a stale or partial record.
+
+The in-app reviewer path runs: Evidence Overview → the Mission G / Mission I / Mission J cards (three separate ledgers, in that order, never pooled) → the Mission I 20-cell aggregate surface → per-cell event-level drilldown (Section 13) → the collapsed five-lane reviewer guide → the deterministic canonical research-record export (`second-order-research-record-v2`), which serializes the same fetched contracts byte-stably and records any unavailable lane as unavailable rather than omitting it.
+
+A small set of runtime boundaries exists to keep this record trustworthy rather than to add product behavior: paid provider calls are fail-closed behind a cross-provider guard (a configured billable key alone leaves `/analyze` and `/analyze/stream` locked); `GET /news` is cache-only and never fetches or mutates (refresh is an explicit separate request, and any-age shape-valid cache is disclosed as stale rather than hidden); a streamed analysis is complete only after a structurally valid terminal event is applied, with truncation settling as failure exactly once and no automatic paid retry; and verification harnesses run database-isolated with provider keys explicitly emptied, bracketed by fingerprints over the protected research inputs.
+
+## 16. Research Governance
+
+Every cohort or effect readout in this project is expected to expose the same contract, and a reviewer should refuse any readout that omits one of these:
+
+- eligibility rule and denominator;
+- available / unavailable split;
+- outcome split under a named rule;
+- price basis and horizon;
+- evidence class;
+- the falsifier or fragility that most threatens it;
+- the explicit non-claim.
+
+Missingness, unresolved states, and infeasible comparisons are research outputs, not implementation defects: FOMC 20d infeasibility, the unadjudicable C1 collision branch, the unavailable ideal rates measure, and the family-untagged accepted rows are all reported as findings with their own wording, and no surface substitutes a fabricated value for any of them.
+
+## 17. Open Limitations And Next-Decision Boundary
+
+Standing limitations that travel with the record:
+
+- The accepted archive's 86 rows collapse into roughly seven market-story clusters (the largest holds 79 rows), so they are never read as 86 independent stories.
+- FOMC 20d is structurally infeasible in Mission I; the raw FOMC 5d cell remains the near-0.5 knife-edge and principal fragility.
+- Mission J's rates path is measurement-limited (ideal fed-funds-futures / OIS measure unavailable; 2Y CMT blends policy expectations with term premium), its C1 CPI/Employment collision branch is unadjudicable in the published execution, and all of Mission J is same-sample Class B evidence.
+- Cohort-level statistical inference over the wider archive remains blocked on independence and labeling grounds.
+
+Dependency-resolution alignment remains a monitored engineering item. Current verification runs on FastAPI 0.135.3, inside the tested `>=0.135,<0.137` range; no production failure is currently established.
+
+No further research phase is open. Opening one is a deliberate decision with its own eligibility gate: the most recent adjacency review found no data-compatible adjacent event family ready without building a new event, timing, exposure, and identification layer, and none was opened. Until that decision is made deliberately, the published record above is the complete current claim surface.

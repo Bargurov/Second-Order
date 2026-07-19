@@ -43,7 +43,7 @@ evidence lane; lanes are never pooled, summed, or compared as one sample.
 |---|---|---|---|---|---|---|
 | Accepted archive | 86 accepted rows (of 180 saved) | descriptive live-archive ledger | Baseline verdict `not_above_baseline`; two outcome lenses (restated 2026-07-11): Any-support OR-rule 59 / 14 / 13; directional-majority (`validation_status_v2`) 29 / 44 / 13 | ~7 market-story clusters, largest 79 — not 86 independent stories | no directional recommendation; no single-event significance | [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md) + the read-only reports below |
 | Mission G | 97 promoted (65 FOMC / 32 OPEC) | outcome-blind frozen historical chain | Broad state-conditioning surface predominantly flat, fragile, or contradictory; one bounded OPEC fed-path × sector-relative association with unresolved calendar-time confounding | 44/120 LOEO and 76/120 LOYO sign reversals; HY OAS 36/97 era-bounded | descriptive association only — no causal claim, no prediction | [`stats/G6_FROZEN_MANIFEST_READOUT.md`](stats/G6_FROZEN_MANIFEST_READOUT.md), [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md) |
-| Mission I | 65 FOMC / 32 OPEC vs eligible ordinary periods | frozen MEMP percentile family; no p-values, no FDR | Event exceptionalism is family-, horizon-, and metric-specific; FOMC 1d shows a broad perturbation-stable elevation; the blanket "event windows are generally more extreme" narrative is rejected (a statement about the narrative, not a hypothesis test) | the FOMC 5d raw cell is a near-0.5 knife-edge | descriptive; no significance test, no tradeability | [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) |
+| Mission I | 65 FOMC / 32 OPEC vs eligible ordinary periods; 20 primary cells; 904 event-level rows | frozen MEMP percentile family; no p-values, no FDR | Event exceptionalism is family-, horizon-, and metric-specific; FOMC 1d shows a broad perturbation-stable elevation; the blanket "event windows are generally more extreme" narrative is rejected (a statement about the narrative, not a hypothesis test); each published cell aggregate reconciles internally against its event-level rows (published == recomputed, exact strings — internal reconciliation, not independent replication) | the FOMC 5d raw cell is a near-0.5 knife-edge; FOMC 20d is structurally unavailable | descriptive; no significance test, no tradeability | [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) + in-app event-level drilldown via `GET /evidence/mission-i` |
 | Mission J | 65 FOMC decisions (2018–2025) | same-sample Class B: prospectively frozen post-outcome challenges | 12/12 robustness cells ELEVATED (correlated views, not independent replications); all three transmission edges PROPAGATED at the tier-5 descriptive ceiling; pre-event timing is lens-dependent (sector-relative and SAR ELEVATED; raw and SPY-relative ORDINARY / UNRESOLVED) | ideal M1 rates measure unavailable (2Y CMT is measurement-limited); C1 CPI/Employment collisions unadjudicable; C2 OPEC tags 0/65 | no causality, prediction, tradeability, or independent replication | [`stats/J1B_FOMC_ROBUSTNESS_RESULTS.md`](stats/J1B_FOMC_ROBUSTNESS_RESULTS.md), [`stats/J2_TIMING_COLLISION_RESULTS.md`](stats/J2_TIMING_COLLISION_RESULTS.md), [`stats/J3_MECHANISM_TRANSMISSION_READOUT.md`](stats/J3_MECHANISM_TRANSMISSION_READOUT.md) |
 | Validation-status calibration | 86 accepted rows; 73 decisive labels post-recovery | read-only rule audit against the real archive | `KEEP_CURRENT_RULE` — no production-rule change; the tracked publication is a dated pre-recovery snapshot (65 decisive labels at its as-of date) | no independent target for accuracy calibration was available; 4 decisive labels rest on a single directional ticker | evidence-sufficiency calibration, not accuracy calibration | [`stats/VALIDATION_STATUS_CALIBRATION.md`](stats/VALIDATION_STATUS_CALIBRATION.md) |
 
@@ -102,7 +102,11 @@ files and works from a clean clone:
    [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md).
 4. **Mission I — ordinary-period baseline** — are completed event windows
    unusual against eligible *ordinary* periods on the same frozen assets and
-   metrics? [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md).
+   metrics? [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md). The
+   published record (20 primary cells and all 904 per-event observations) is
+   also served in-app by the tracked-only `GET /evidence/mission-i` contract
+   (`mission-i-evidence-v2`), where each available cell opens an event-level
+   drilldown in publication order.
 5. **Mission J — hindsight-controlled FOMC robustness** —
    [`stats/J1B_FOMC_ROBUSTNESS_RESULTS.md`](stats/J1B_FOMC_ROBUSTNESS_RESULTS.md),
    [`stats/J2_TIMING_COLLISION_RESULTS.md`](stats/J2_TIMING_COLLISION_RESULTS.md),
@@ -122,6 +126,25 @@ files and works from a clean clone:
    [`stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md`](stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md),
    and the read-only commands in
    [Verify it yourself](#verify-it-yourself-read-only-research-reports).
+
+### In-app evidence path
+
+For the published evidence record itself (works against the tracked
+publications, no populated archive needed):
+
+```text
+Evidence Overview
+→ Mission I aggregate cells (20, frozen order, separate FOMC / OPEC ledgers)
+→ per-cell event-level drilldown (904 rows, publication order)
+→ published vs recomputed reconciliation, denominators, evidence class
+→ reviewer guide and the canonical research-record export
+```
+
+The same screen carries the Mission G card and the Mission J robustness /
+timing / transmission card (`GET /evidence/mission-j`,
+`mission-j-evidence-v1`) — three separate ledgers, never pooled. Every
+`/evidence/*` route is read-only and tracked-publication-backed: no database
+row, no provider call, no billing.
 
 ## In-app walkthrough
 
@@ -171,6 +194,11 @@ backdrop, and case-selection stress.
   may omit the scored outcome because the export payload does not carry it.
 - **Market Overview — Evidence Coverage** — the denominators and the evidence
   gates, kept phase-separated from the closed FDR pools.
+- **Evidence Overview** — the research ledger: canonical denominators, the
+  effective-independence caution, and the fetched Mission G / Mission I /
+  Mission J cards (three separate ledgers, in that order). The Mission I card
+  carries the per-cell event-level drilldown, the collapsed reviewer guide,
+  and the deterministic research-record export.
 - **Backtest** — a descriptive directional-agreement review, not strategy
   validation.
 
@@ -238,7 +266,14 @@ frozen assets — is closed out in
 [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) (structure and
 evidence chain summarized in [`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)). Its
 finding is family-, horizon-, and metric-specific and carries no significance,
-causal, or predictive claim.
+causal, or predictive claim. The published record is also consumable without
+running any script: the tracked-only `GET /evidence/mission-i` contract
+(`mission-i-evidence-v2`) parses the seven tracked Mission I publications at
+request time and serves the 20 primary cells together with all 904 published
+per-event observations, internally reconciled (published == recomputed as
+exact decimal strings) before anything is served. The frontend consumer
+enforces the same contract exactly and fails closed on any inconsistent
+payload rather than displaying a partial record.
 
 These reports are **read-only**: they open `events.db` with `mode=ro`, never
 mutate it, never call a paid provider, and never run `/analyze`. They never
@@ -401,6 +436,19 @@ methodology and the Phase 1–4 arc are documented at
 and
 [`evidence_artifacts/section_c_v2/phase_history.md`](evidence_artifacts/section_c_v2/phase_history.md).
 
+The separate **Mission I** ordinary-period baseline is published end to end:
+the tracked-only `GET /evidence/mission-i` contract (`mission-i-evidence-v2`)
+serves the 20 primary cells plus the additive event-level layer (904 published
+per-event rows: FOMC 520 across 8 available cells at 65 rows each, with 20d
+structurally unavailable; OPEC 384 across 12 cells at 32 rows each), each cell
+internally reconciled before service. On the **Evidence Overview** screen every
+available cell opens a publication-ordered event-level drilldown with the
+published and recomputed aggregates separately labeled, the denominators
+visible, the source-section field honestly reported as not exposed by the
+contract, and computation dates / execution commits stated as not recorded in
+any Mission I publication (never inferred). The same payload feeds the
+collapsed reviewer guide and the deterministic research-record export.
+
 The separate **Mission J** hindsight-controlled FOMC robustness program — the
 asset/benchmark, timing/collision, and transmission-graph challenge to Mission
 I's inherited one-day reading — is published and complete. Its record is
@@ -551,35 +599,30 @@ precision. The criteria a future cohort phase must meet are recorded in
 `stats/METHODOLOGY.md` ("Cohort inference — currently blocked"). This
 decision does not change the closed Phase 1 or Phase 2 FDR denominators.
 
-## Next Roadmap
+## Current boundaries and open items
 
 The tracked evidence track is closed at Phase 4; no new candidates, pools,
-or validators are scheduled for it. The Mission G historical research
-program is likewise complete, and Mission H (which surfaces that completed
-record) adds no new research claim. Deferred
-methodology lessons (CENX, NUE, NOC) are recorded separately in
+or validators are scheduled for it. The Mission G, Mission I, and Mission J
+research programs are complete and published; surfacing them added no new
+research claim. Deferred methodology lessons (CENX, NUE, NOC) are recorded
+separately in
 `evidence_artifacts/section_c_v2/rejection_log_summary_v1.json` and are not
 denominator members of any open pool. The public consumption surfaces for
-completed evidence are the read-only `GET /evidence/summary` and
-`GET /evidence/mission-g` routes.
+completed evidence are the four read-only, tracked-only routes:
+`GET /evidence/summary`, `GET /evidence/mission-g`,
+`GET /evidence/mission-i`, and `GET /evidence/mission-j`.
 
-Open work in the wider app, independent of the tracked-evidence track:
+No further research phase is currently open or scheduled. Opening one is a
+deliberate decision with its own eligibility gate — the most recent
+adjacency review found no data-compatible adjacent event family ready
+without a new event, timing, exposure, and identification layer, and none
+was opened. Remaining wider-app engineering items (calibration coverage,
+schema-migration discipline, delivery surfaces) stay deliberately
+unscheduled rather than promised.
 
-1. Magic-number inventory and empirical validation
-2. `validation_status_v2` calibration and broader archive coverage
-3. Reaction-profile calibration and coverage expansion
-4. Archive aggregate stats and track-record interpretation
-5. Schema migration discipline
-
-Wider-app market validation continues to move from raw forward-return
-checks toward abnormal returns, standardized abnormal returns (SAR),
-confidence intervals (CI), and false-discovery-rate (FDR) controls.
-That work is separate from the closed tracked-evidence pools and does
-not modify them.
-
-Deferred until the foundation is steadier: charts, tagging expansion,
-scheduler/background jobs, deployment profiles, and Telegram /
-WhatsApp / OpenClaw delivery.
+Dependency-resolution alignment remains a monitored engineering item.
+Current verification runs on FastAPI 0.135.3, inside the tested
+`>=0.135,<0.137` range; no production failure is currently established.
 
 Second Order is a local-first research and analyst-support tool. It is
 not a live trading product. The tracked evidence layer is descriptive
@@ -588,12 +631,20 @@ of past, dated events and makes no claim about future returns.
 ## Current Capabilities
 
 - Live inbox from `news_inbox.json` plus curated RSS sources
-- Source-preserving clustering and manual refresh via `/news/refresh`
-- Progressive analysis through `/analyze/stream` with mechanism, watchlists, transmission chain, and macro overlays
+- Source-preserving clustering with a cache-only read boundary: `GET /news`
+  never fetches a provider or mutates the news store — cold and stale cache
+  states are disclosed explicitly (any-age shape-valid cache is served as
+  stale, never hidden), and refresh happens only through the explicit
+  `POST /news/refresh`
+- Progressive analysis through `/analyze/stream` with mechanism, watchlists,
+  transmission chain, and macro overlays; a streamed analysis counts as
+  complete only after a structurally valid terminal event is received and
+  applied — EOF, malformed completion, or a consumer failure settles the run
+  as failed exactly once, with no automatic paid retry
 - Recent events archive with search/filter, related-event linking, event cascade, and dated backtests
 - Archive/detail validation readouts through `validation_status_v2`, including the `validation_status_v2` archive filter
 - Event-detail reaction profiles through `reaction_profile_v1` when cached forward close windows exist
-- Portfolio simulator over saved events, revisit snapshots, and share-page export
+- Portfolio view over saved events, revisit snapshots, and share-page export
 - Regime playbook, macro calendar, and policy-tracker surfaces
 - Movers (today / weekly / yearly / persistent) and stress / rates-context / market-context endpoints
 - Zero-cost diagnostics for `/diagnostics/track-record`, `/diagnostics/major-skipped-headlines`, and `/diagnostics/reaction-profile-stats`
@@ -729,8 +780,11 @@ default for a public demo.
 
 **Do not expose a real provider key on a public deploy without the paid-route
 guard.** The `/analyze` (and `/analyze/stream`) routes can make billed provider
-calls, and they fail **closed**: when a real (billable) `ANTHROPIC_API_KEY` is
-configured, a request is rejected with `403` unless **both**
+calls, and they fail **closed** across both providers: guard, dispatch, and
+the active-model readout resolve from one shared provider-configuration seam,
+so when a real (billable) key is configured for the selected provider —
+`ANTHROPIC_API_KEY` or `OPENAI_API_KEY` — a request is rejected with `403`
+unless **both**
 
 - `ENABLE_PAID_ANALYSIS=true`, **and**
 - `SECOND_ORDER_ADMIN_TOKEN` is set and the request sends a matching
