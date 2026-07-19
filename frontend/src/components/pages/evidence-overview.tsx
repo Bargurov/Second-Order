@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MissionGEvidenceCard } from "@/components/ui/mission-g-evidence-card";
 import { MissionIEvidenceCard } from "@/components/ui/mission-i-evidence-card";
 import { MissionJEvidenceCard } from "@/components/ui/mission-j-evidence-card";
+import { UniversalEventDossiersCard } from "@/components/ui/universal-event-dossiers";
 import {
   buildResearchRecordMemo,
   downloadResearchRecordMemo,
@@ -56,6 +57,7 @@ export const EVIDENCE_ANCHOR_IDS = [
   "mission-g",
   "mission-i",
   "mission-j",
+  "event-dossiers",
 ] as const;
 
 export function scrollToEvidenceHash(
@@ -178,16 +180,33 @@ export function EvidenceOverview() {
     staleTime: 1_800_000,
   });
 
+  // U1 — universal event dossier index from the tracked-only
+  // GET /evidence/event-dossiers contract. Index only: no dossier detail
+  // is fetched until the reviewer opens an event inside the card. Long
+  // staleTime: the payload only changes on a tracked commit.
+  const {
+    data: dossierIndex,
+    isError: dossierIndexError,
+    isPending: dossierIndexPending,
+  } = useQuery({
+    queryKey: qk.eventDossierIndex(),
+    queryFn: () => api.eventDossierIndex(),
+    staleTime: 1_800_000,
+  });
+
   // M1 — direct-entry hash scroll (a mount at /evidence#mission-j lands on
   // the Mission J record) plus hash changes while the page stays active.
   useEffect(() => installEvidenceHashScroll(window, document), []);
 
-  // N2 — re-apply the direct-entry hash once the three Mission records
-  // settle: the fetched cards above the target grow as they resolve, so the
-  // one-shot mount scroll can land short of the anchor. Still bounded to
-  // the known anchor IDs; an unknown or absent hash stays a no-op.
+  // N2/U1 — re-apply the direct-entry hash once the fetched records above
+  // the target settle: the cards grow as they resolve, so the one-shot
+  // mount scroll can land short of the anchor. Still bounded to the known
+  // anchor IDs; an unknown or absent hash stays a no-op.
   const missionRecordsSettled =
-    !missionGPending && !missionIPending && !missionJPending;
+    !missionGPending &&
+    !missionIPending &&
+    !missionJPending &&
+    !dossierIndexPending;
   useEffect(() => {
     if (missionRecordsSettled) {
       scrollToEvidenceHash(window.location.hash, document);
@@ -552,6 +571,40 @@ export function EvidenceOverview() {
           <MissionJEvidenceCard
             data={missionJ}
             unavailable={missionJError}
+          />
+        </CardContent>
+      </Card>
+
+      {/* U1 — the universal event dossier reader over the complete
+          published 97-event historical universe, consumed from the
+          tracked-only GET /evidence/event-dossiers[/{id}] contracts (U0).
+          Placed after the three aggregate mission records: the chain reads
+          what happened across historical states (G) → was the event-window
+          magnitude unusual (I) → did the FOMC reading survive robustness
+          challenges (J) → the per-event record behind all of it, one
+          dossier per event. Publication order only; the card fetches one
+          dossier at a time on open and never ranks, selects, or features
+          an event. FOMC and OPEC remain separate ledgers. */}
+      <Card id="event-dossiers" className="mb-3 scroll-mt-20 overflow-hidden border-border/50 bg-surface-container-low">
+        <CardHeader className="gap-1 border-b border-border/40 bg-surface-container-highest/50">
+          <Kicker>Universal event dossiers · complete historical universe</Kicker>
+          <h2 className="font-headline text-[15px] font-semibold leading-snug tracking-[-0.01em] text-on-surface">
+            Universal event dossiers
+          </h2>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 pt-3 text-[12.5px] leading-relaxed text-on-surface/85">
+          <p className="text-on-surface-variant/80">
+            One dossier per published historical event — identity and
+            source, exact denominators, mechanism and asset basis, the
+            per-event observations, ordinary-period context, robustness,
+            falsifier and fragility context, missingness, provenance, and
+            claim ceilings. Every figure is served verbatim from the
+            tracked publications; opening an event fetches its single
+            dossier and nothing else.
+          </p>
+          <UniversalEventDossiersCard
+            data={dossierIndex}
+            unavailable={dossierIndexError}
           />
         </CardContent>
       </Card>

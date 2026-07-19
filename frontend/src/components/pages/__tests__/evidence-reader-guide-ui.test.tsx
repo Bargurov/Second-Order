@@ -195,16 +195,21 @@ describe("EvidenceOverview — reviewer guide disclosure (M3)", () => {
     client.setQueryData(qk.missionIEvidence(), missionIFixture());
     client.setQueryData(qk.missionJEvidence(), missionJFixture());
     renderOverview(client);
+    // the page's four evidence queries (Mission G/I/J + the U1 dossier
+    // index) — the reviewer guide itself adds no fetch of its own
     const keys = client
       .getQueryCache()
       .getAll()
       .map((q) => JSON.stringify(q.queryKey))
       .sort();
-    expect(keys).toEqual([
-      JSON.stringify(qk.missionGEvidence()),
-      JSON.stringify(qk.missionIEvidence()),
-      JSON.stringify(qk.missionJEvidence()),
-    ]);
+    expect(keys).toEqual(
+      [
+        JSON.stringify(qk.eventDossierIndex()),
+        JSON.stringify(qk.missionGEvidence()),
+        JSON.stringify(qk.missionIEvidence()),
+        JSON.stringify(qk.missionJEvidence()),
+      ].sort(),
+    );
   });
 
   it("keeps the M2 export action exactly once and the M1/N2 anchors exactly once", () => {

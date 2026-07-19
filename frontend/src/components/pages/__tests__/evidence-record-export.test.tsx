@@ -150,17 +150,21 @@ describe("EvidenceOverview — research-record export action (M2)", () => {
     client.setQueryData(qk.missionIEvidence(), missionIFixture());
     client.setQueryData(qk.missionJEvidence(), missionJFixture());
     renderOverview(client);
-    // exactly the three existing Mission queries — no fourth evidence fetch
+    // exactly the page's four evidence queries (Mission G/I/J + the U1
+    // dossier index) — the export action itself adds no fetch of its own
     const keys = client
       .getQueryCache()
       .getAll()
       .map((q) => JSON.stringify(q.queryKey))
       .sort();
-    expect(keys).toEqual([
-      JSON.stringify(qk.missionGEvidence()),
-      JSON.stringify(qk.missionIEvidence()),
-      JSON.stringify(qk.missionJEvidence()),
-    ]);
+    expect(keys).toEqual(
+      [
+        JSON.stringify(qk.eventDossierIndex()),
+        JSON.stringify(qk.missionGEvidence()),
+        JSON.stringify(qk.missionIEvidence()),
+        JSON.stringify(qk.missionJEvidence()),
+      ].sort(),
+    );
     expect(
       (api as unknown as Record<string, unknown>).researchRecord,
     ).toBeUndefined();

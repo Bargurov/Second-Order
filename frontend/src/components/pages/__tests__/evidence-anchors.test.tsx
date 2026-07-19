@@ -1,12 +1,13 @@
 /**
- * M1/N2 — stable Evidence anchors + bounded hash scrolling.
+ * M1/N2/U1 — stable Evidence anchors + bounded hash scrolling.
  *
- * Exactly five stable section IDs on the Evidence Overview content (page
+ * Exactly six stable section IDs on the Evidence Overview content (page
  * header, canonical denominator ledger, Mission G record, Mission I record,
- * Mission J record — N2 added mission-i between mission-g and mission-j),
- * each unique, each offset for the sticky TopBar, each present even while
- * the Mission G/I/J records are still loading. Hash scrolling is a pure,
- * injectable helper: known IDs scroll, unknown hashes fail quietly, and the
+ * Mission J record, universal event dossiers — N2 added mission-i between
+ * mission-g and mission-j; U1 added event-dossiers after mission-j), each
+ * unique, each offset for the sticky TopBar, each present even while the
+ * fetched records are still loading. Hash scrolling is a pure, injectable
+ * helper: known IDs scroll, unknown hashes fail quietly, and the
  * hashchange listener is StrictMode-safe.
  *
  * Render-smoke pattern (renderToStaticMarkup, no jsdom).
@@ -57,14 +58,15 @@ function anchorTag(html: string, id: string): string {
   return m?.[0] ?? "";
 }
 
-describe("EvidenceOverview — stable anchor IDs (M1/N2)", () => {
-  it("exposes exactly the five documented anchor IDs, mission-i between g and j", () => {
+describe("EvidenceOverview — stable anchor IDs (M1/N2/U1)", () => {
+  it("exposes exactly the six documented anchor IDs, event-dossiers after mission-j", () => {
     expect([...EVIDENCE_ANCHOR_IDS]).toEqual([
       "evidence-top",
       "denominators",
       "mission-g",
       "mission-i",
       "mission-j",
+      "event-dossiers",
     ]);
   });
 
@@ -74,19 +76,22 @@ describe("EvidenceOverview — stable anchor IDs (M1/N2)", () => {
     }
   });
 
-  it("keeps the Mission G/I/J anchors present while their records are loading", () => {
+  it("keeps the fetched-record anchors present while their records are loading", () => {
     expect(countAnchor(loadingHtml, "mission-g")).toBe(1);
     expect(countAnchor(loadingHtml, "mission-i")).toBe(1);
     expect(countAnchor(loadingHtml, "mission-j")).toBe(1);
+    expect(countAnchor(loadingHtml, "event-dossiers")).toBe(1);
   });
 
-  it("orders the mission-i anchor between mission-g and mission-j in the document", () => {
+  it("orders mission-i between g and j, and event-dossiers after mission-j", () => {
     const g = loadingHtml.indexOf('id="mission-g"');
     const i = loadingHtml.indexOf('id="mission-i"');
     const j = loadingHtml.indexOf('id="mission-j"');
+    const d = loadingHtml.indexOf('id="event-dossiers"');
     expect(g).toBeGreaterThan(-1);
     expect(i).toBeGreaterThan(g);
     expect(j).toBeGreaterThan(i);
+    expect(d).toBeGreaterThan(j);
   });
 
   it("keeps each anchor unique once the Mission J record resolves", () => {

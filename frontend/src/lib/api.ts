@@ -3585,6 +3585,109 @@ export interface MissionIEvidenceSummary {
   non_claims: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Universal event dossiers (U1 — consuming the U0 tracked-only contracts
+// event-dossier-index-v1 / event-dossier-v1).  The complete published
+// historical research universe: 97 events (65 FOMC + 32 OPEC), every one
+// individually addressable in publication order — never selected, ranked,
+// or curated.  All values are the endpoint's own strings and counts; no
+// research value is recomputed in the browser.
+// ---------------------------------------------------------------------------
+
+export type EventDossierFamily = "FOMC" | "OPEC";
+
+export type EventDossierTopLevelStatus =
+  | "COMPLETE"
+  | "PARTIAL"
+  | "UNAVAILABLE"
+  | "CONTRADICTORY";
+
+/** Enrichment TIER, not quality: six events carry a published G6C
+ *  per-event dossier; the other 91 are core published evidence. */
+export type EventDossierEnrichmentTier =
+  | "published_per_event_dossier"
+  | "core_published_evidence";
+
+/** Per-section explicit state — never a bare null and never a score. */
+export type EventDossierSectionStatus =
+  | "available"
+  | "structurally_unavailable"
+  | "not_applicable"
+  | "not_exposed"
+  | "unresolved"
+  | "contradictory";
+
+/** One tracked-artifact provenance reference.  The non-claim section
+ *  cites the dossier contract itself, which exposes no hash or byte
+ *  count — absent fields stay absent and are displayed as not exposed,
+ *  never inferred. */
+export interface EventDossierSourceRef {
+  artifact: string;
+  sha256?: string;
+  bytes?: number;
+  note?: string;
+}
+
+/** One ledger row of the index — identity and explicit states only;
+ *  the contract exposes no response, percentile, or aggregate label at
+ *  this level. */
+export interface EventDossierIndexEntry {
+  candidate_id: string;
+  family: EventDossierFamily;
+  /** May be empty on a contradictory identity; the anchor session is a
+   *  separate field and the two are never merged. */
+  event_date: string;
+  anchor_session: string;
+  top_level_status: EventDossierTopLevelStatus;
+  available_section_count: number;
+  unavailable_section_count: number;
+  contradictory_section_count: number;
+  enrichment_tier: EventDossierEnrichmentTier;
+}
+
+export interface EventDossierCoverage {
+  total: number;
+  family_counts: Record<EventDossierFamily, number>;
+  status_counts: Record<EventDossierTopLevelStatus, number>;
+  section_availability_counts: Record<string, Record<string, number>>;
+  enrichment_counts: Record<EventDossierEnrichmentTier, number>;
+  contradiction_counts: { events: number; sections: number };
+}
+
+/** ``GET /evidence/event-dossiers`` (event-dossier-index-v1).  Events
+ *  arrive in publication order (the Mission I event surface: the FOMC
+ *  block then the OPEC block, each ascending by anchor session) and are
+ *  never reordered by any consumer. */
+export interface EventDossierIndex {
+  contract_version: string;
+  universe: string;
+  generated_from: EventDossierSourceRef[];
+  coverage: EventDossierCoverage;
+  events: EventDossierIndexEntry[];
+}
+
+/** One of the 13 frozen dossier sections.  ``data`` is section-specific
+ *  and intentionally left ``unknown`` at the wire layer: consumers must
+ *  validate the whole dossier fail-closed before narrowing, never
+ *  partially render a malformed section. */
+export interface EventDossierSection {
+  status: EventDossierSectionStatus;
+  reason_code: string;
+  summary: string;
+  data: unknown;
+  source_references: EventDossierSourceRef[];
+}
+
+/** ``GET /evidence/event-dossiers/{candidate_id}`` (event-dossier-v1):
+ *  exactly 13 sections in the backend's frozen order. */
+export interface EventDossierDetail {
+  contract_version: string;
+  candidate_id: string;
+  top_level_status: EventDossierTopLevelStatus;
+  enrichment_tier: EventDossierEnrichmentTier;
+  sections: Record<string, EventDossierSection>;
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDetail: () => request<HealthDetail>("/health/detail"),
@@ -3930,6 +4033,20 @@ export const api = {
 
   missionJEvidence: () =>
     request<MissionJEvidenceSummary>("/evidence/mission-j"),
+
+  /** Universal event dossier index — the complete 97-event published
+   *  historical universe in publication order.  Read-only endpoint backed
+   *  by tracked publications only; no DB reads, no provider, no network
+   *  beyond this API call. */
+  eventDossierIndex: () =>
+    request<EventDossierIndex>("/evidence/event-dossiers"),
+
+  /** One universal event dossier by candidate id (13 frozen sections).
+   *  Same tracked-only, read-only contract as the index. */
+  eventDossier: (candidateId: string) =>
+    request<EventDossierDetail>(
+      `/evidence/event-dossiers/${encodeURIComponent(candidateId)}`,
+    ),
 
   trackRecordBreakdown: () =>
     request<TrackRecordBreakdown>("/stats/track-record/breakdown"),

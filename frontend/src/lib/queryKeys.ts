@@ -40,6 +40,9 @@ export const qk = {
   missionGEvidence:       () => ["evidence", "mission-g"] as const,
   missionIEvidence:       () => ["evidence", "mission-i"] as const,
   missionJEvidence:       () => ["evidence", "mission-j"] as const,
+  eventDossierIndex:      () => ["evidence", "event-dossiers"] as const,
+  eventDossierDetail:     (candidateId: string) =>
+    ["evidence", "event-dossiers", candidateId] as const,
   trackRecordBreakdown:   () => ["stats", "track-record", "breakdown"] as const,
   confidenceCalibration:  () => ["stats", "confidence-calibration"] as const,
   newsPaginated: (limit: number) => ["news", "paginated", limit] as const,
