@@ -3239,13 +3239,16 @@ export interface MissionJEvidenceSummary {
 
 // ---------------------------------------------------------------------------
 // Mission I research contract — GET /evidence/mission-i
-// (mission-i-evidence-v1).  The published Mission I ordinary-period
+// (mission-i-evidence-v2).  The published Mission I ordinary-period
 // comparison, parsed server-side from the seven tracked Mission I
 // publications at request time.  Nothing is recomputed — no percentile,
 // median, calibration, placement draw, or falsifier perturbation — and the
 // FOMC and OPEC families keep entirely separate ledgers (denominators,
 // exclusion sets, and funnels are never pooled).  MEMP, calibration and
 // signed-percentile values are exact-precision strings, never numbers.
+// v2 adds the additive `event_level` block: the 904 published per-event
+// rows behind the 20 primary cells, each cell internally reconciled
+// (published == recomputed) server-side before anything is served.
 // ---------------------------------------------------------------------------
 
 /** The two frozen Mission I event families — separate ledgers, never pooled. */
@@ -3497,12 +3500,82 @@ export interface MissionIConclusion {
   clarifier: string;
 }
 
+/** One published per-event observation inside an event-level cell (E1,
+ *  mission-i-evidence-v2).  All values are the publication's own strings
+ *  at its printed precision — never numbers, never recomputed here.
+ *  `abs_mid_rank_pct` is the published mid-rank percentile of the absolute
+ *  response within the cell's ordinary reference distribution (a method
+ *  value — not a model rank, strength, or probability). */
+export interface MissionIEventRow {
+  event: string;
+  anchor_session: string;
+  response: string;
+  abs_mid_rank_pct: string;
+  signed_pct: string;
+}
+
+/** The two per-cell aggregates the event-level block carries in both
+ *  published and internally recomputed form — kept separately labeled,
+ *  never collapsed into one value. */
+export interface MissionIEventCellAggregates {
+  memp: string;
+  signed_percentile_median: string;
+}
+
+/** One of the 20 event-level cells: the published per-event rows behind a
+ *  primary cell, in the publication's own ascending anchor-session order,
+ *  with the backend's internal published-vs-recomputed reconciliation.
+ *  An unreconciled cell refuses the whole record server-side, so a served
+ *  cell always carries `reconciled: true`. */
+export interface MissionIEventLevelCell {
+  cell: number;
+  cell_key: string;
+  family: MissionIFamily;
+  horizon: MissionIHorizon;
+  metric: MissionIMetric;
+  event_n: number;
+  published: MissionIEventCellAggregates;
+  recomputed: MissionIEventCellAggregates;
+  reconciled: boolean;
+  rows: MissionIEventRow[];
+}
+
+/** I2B's own frozen method wording plus the endpoint's reconciliation
+ *  precision policy and claim ceiling — served verbatim, never paraphrased
+ *  into stronger language. */
+export interface MissionIEventLevelMethod {
+  percentile_definition: string;
+  aggregate_definition: string;
+  signed_definition: string;
+  ordering_statement: string;
+  precision_policy: string;
+  claim_ceiling: string;
+}
+
+/** The additive event-level block (mission-i-evidence-v2): all 904
+ *  published per-event rows, cell-grouped in the frozen 20-cell order.
+ *  Same-sample reconciliation evidence for the published aggregates —
+ *  never independent replication. */
+export interface MissionIEventLevel {
+  /** The tracked I2B publication the rows were parsed from, with its
+   *  parsed row count. */
+  source: MissionIArtifactRef & { row_count: number };
+  method: MissionIEventLevelMethod;
+  total_rows: number;
+  family_counts: Record<MissionIFamily, number>;
+  cells: MissionIEventLevelCell[];
+}
+
 export interface MissionIEvidenceSummary {
   contract_version: string;
   provenance: MissionIProvenance;
   constitution: MissionIConstitution;
   universe: MissionIUniverse;
   primary_cells: MissionIPrimaryCell[];
+  /** Present on every served mission-i-evidence-v2 payload; typed optional
+   *  so consumers must treat an absent or malformed block as event-level
+   *  disclosure unavailable (fail closed) rather than assuming it. */
+  event_level?: MissionIEventLevel;
   calibration: MissionICalibration;
   falsifiers: MissionIFalsifiers;
   family_horizon_readout: MissionIFamilyReadout[];

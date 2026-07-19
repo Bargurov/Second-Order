@@ -3,11 +3,17 @@
  * Evidence Overview page.
  *
  * First in-product consumer of the published Mission I record
- * (`GET /evidence/mission-i`, contract mission-i-evidence-v1, restored by
+ * (`GET /evidence/mission-i`, contract mission-i-evidence-v2, restored by
  * N1).  Every research value rendered here comes from the endpoint payload —
  * the backend parses the seven tracked Mission I publications at request
  * time — so this card carries no hand-copied research figure, re-runs no
  * statistic, and never pools the FOMC and OPEC ledgers.
+ *
+ * E2 adds the event-level drilldown: each available primary cell opens the
+ * v2 `event_level` audit workpaper (`MissionIEventLevelPanel`) beneath its
+ * family × horizon table — one cell at a time, publication order only,
+ * fail-closed when the block is absent or malformed, and FOMC 20d stays
+ * structurally unavailable and non-actionable.
  *
  * Editorial research-record treatment in the maintained tokens (the Mission
  * J card's visual language): hairline ledger grids for the dense numeric
@@ -20,18 +26,30 @@
  * Server ordering is preserved everywhere (frozen cell order 1..20);
  * loading, unavailable, and malformed states invent no value.
  */
+import { useState } from "react";
+
 import type {
   MissionIEvidenceSummary,
   MissionIFamilyLane,
   MissionIHorizon,
   MissionIPrimaryCell,
 } from "@/lib/api";
+import {
+  MissionIEventLevelPanel,
+  metricLabel,
+  missionIEventLevelState,
+} from "./mission-i-event-drilldown";
 
 export interface MissionIEvidenceCardProps {
   /** Endpoint payload; `null` / `undefined` renders the loading state. */
   data?: MissionIEvidenceSummary | null;
   /** Explicit degraded state when the contract could not be loaded. */
   unavailable?: boolean;
+  /** Optional starting event-level selection; re-resolved against the
+   *  payload's validated event-level cells, so an unavailable, unknown,
+   *  or structurally infeasible cell can never start open (the
+   *  ReactionProfileCard `initialHorizon` precedent). */
+  initialOpenCellKey?: string;
 }
 
 /** Contract direction vocabulary, humanized for display only. */
@@ -78,8 +96,22 @@ const CELL_TH =
   "px-2 py-1 text-left font-mono text-[9.5px] font-medium uppercase tracking-[0.08em] text-on-surface-variant/55";
 const CELL_TD = "px-2 py-1 font-mono text-[11px] tabular-nums";
 
+/** E2 — per-cell event-level disclosure wiring; `null` when the payload's
+ *  event-level block is absent or malformed (no actionable affordance is
+ *  rendered in that case — fail closed). */
+interface CellDisclosure {
+  openCellKey: string | null;
+  onToggle: (cellKey: string) => void;
+}
+
 /** One family × horizon group of the frozen 20-cell surface. */
-function HorizonCellRows({ cells }: { cells: MissionIPrimaryCell[] }) {
+function HorizonCellRows({
+  cells,
+  disclosure,
+}: {
+  cells: MissionIPrimaryCell[];
+  disclosure: CellDisclosure | null;
+}) {
   return (
     <>
       {cells.map((c) => (
@@ -97,6 +129,24 @@ function HorizonCellRows({ cells }: { cells: MissionIPrimaryCell[] }) {
             {directionLabel(c.state.memp_direction)} ·{" "}
             {f6Label(c.state.f6_position)}
           </td>
+          {disclosure !== null && (
+            <td className={CELL_TD}>
+              <button
+                type="button"
+                aria-expanded={disclosure.openCellKey === c.cell_key}
+                aria-controls={`mission-i-event-panel-${c.cell}`}
+                aria-label={`${
+                  disclosure.openCellKey === c.cell_key ? "Close" : "Open"
+                } event-level rows — ${c.family} ${c.horizon} ${metricLabel(
+                  c.metric,
+                )} (${c.event_n_available} events)`}
+                onClick={() => disclosure.onToggle(c.cell_key)}
+                className="rounded-sm border border-border/50 px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.08em] text-on-surface-variant/70 hover:border-on-surface-variant/50 hover:text-on-surface focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary"
+              >
+                {disclosure.openCellKey === c.cell_key ? "close" : "open"}
+              </button>
+            </td>
+          )}
         </tr>
       ))}
     </>
@@ -146,7 +196,14 @@ const HORIZON_ORDER: MissionIHorizon[] = ["1d", "5d", "20d"];
 export function MissionIEvidenceCard({
   data,
   unavailable = false,
+  initialOpenCellKey,
 }: MissionIEvidenceCardProps) {
+  // Hooks before any early return (rules of hooks): the requested
+  // event-level selection exists even while loading; it only activates
+  // once the contract is shaped and the event-level block validates.
+  const [requestedCellKey, setRequestedCellKey] = useState<string | null>(
+    initialOpenCellKey ?? null,
+  );
   if (unavailable) {
     return (
       <div className="flex flex-col gap-1 rounded-md border border-border/50 p-3 text-[12.5px] leading-relaxed text-on-surface-variant/85">
@@ -218,6 +275,27 @@ export function MissionIEvidenceCard({
       ),
     })).filter((g) => g.status !== undefined),
   }));
+
+  // E2 — event-level drilldown: the block is validated before any
+  // affordance renders (absent or malformed → no actionable control, an
+  // explicit refusal instead), and the requested cell is re-resolved
+  // against the validated cells so an unknown or structurally infeasible
+  // key can never open.
+  const eventLevelState = missionIEventLevelState(data);
+  const openCellKey =
+    eventLevelState === "ok" &&
+    requestedCellKey !== null &&
+    data.event_level?.cells.some((c) => c.cell_key === requestedCellKey)
+      ? requestedCellKey
+      : null;
+  const disclosure =
+    eventLevelState === "ok"
+      ? {
+          openCellKey,
+          onToggle: (cellKey: string) =>
+            setRequestedCellKey((k) => (k === cellKey ? null : cellKey)),
+        }
+      : null;
 
   return (
     <div className="flex flex-col gap-5 text-[12.5px] leading-relaxed text-on-surface/85">
@@ -373,7 +451,10 @@ export function MissionIEvidenceCard({
                       </caption>
                       <thead>
                         <tr>
-                          {["#", "metric", "event N", "ref N", "MEMP", "signed pct median", "calib pct", "frozen reading"].map(
+                          {[
+                            "#", "metric", "event N", "ref N", "MEMP", "signed pct median", "calib pct", "frozen reading",
+                            ...(disclosure !== null ? ["event rows"] : []),
+                          ].map(
                             (h) => (
                               <th key={h} scope="col" className={CELL_TH}>
                                 {h}
@@ -383,10 +464,30 @@ export function MissionIEvidenceCard({
                         </tr>
                       </thead>
                       <tbody>
-                        <HorizonCellRows cells={horizonCells} />
+                        <HorizonCellRows
+                          cells={horizonCells}
+                          disclosure={disclosure}
+                        />
                       </tbody>
                     </table>
                   </div>
+                  {/* E2 — the opened audit workpaper mounts beneath its own
+                      family × horizon table; one cell at a time, released
+                      on close. */}
+                  {disclosure !== null &&
+                    openCellKey !== null &&
+                    horizonCells.some((c) => c.cell_key === openCellKey) && (
+                      <MissionIEventLevelPanel
+                        data={data}
+                        cellKey={openCellKey}
+                        panelId={`mission-i-event-panel-${
+                          horizonCells.find(
+                            (c) => c.cell_key === openCellKey,
+                          )!.cell
+                        }`}
+                        onClose={() => setRequestedCellKey(null)}
+                      />
+                    )}
                 </div>
               ) : (
                 <p
@@ -400,6 +501,18 @@ export function MissionIEvidenceCard({
             )}
           </div>
         ))}
+        {/* E2 fail-closed: an absent or malformed event-level block keeps
+            the aggregate surface served, renders no disclosure control,
+            and refuses event rows explicitly — never a fabricated empty
+            state.  The two states stay distinct. */}
+        {eventLevelState !== "ok" && (
+          <p className="border-l-2 border-on-surface-variant/50 bg-surface-container-low p-3 text-[11.5px] leading-relaxed text-on-surface-variant/85">
+            Event-level disclosure unavailable:{" "}
+            {eventLevelState === "absent"
+              ? "this payload carries no event-level block (a pre-v2 record). The aggregate surface above remains served; no event rows are shown in its place."
+              : "the event_level block did not match the mission-i-evidence-v2 contract. The aggregate surface above remains served; no event rows are shown in its place."}
+          </p>
+        )}
         <Note>
           {constitution.signed_percentile_disclosure.status} — the signed
           percentile medians:{" "}

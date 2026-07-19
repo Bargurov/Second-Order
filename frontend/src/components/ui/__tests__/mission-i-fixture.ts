@@ -1,20 +1,28 @@
 /**
  * Contract-shaped Mission I fixture (mirrors GET /evidence/mission-i, the
- * N1 contract, mission-i-evidence-v1).  A typed transcription of the live
- * tracked-publication payload captured from the N1 backend builder — no
+ * published contract, mission-i-evidence-v2).  A typed transcription of the
+ * live tracked-publication payload captured from the backend builder — no
  * value below was hand-retyped, and no research value is recomputed here.
+ * The v1 core is unchanged by v2; the additive E2 `event_level` block (904
+ * published per-event rows, cell-grouped) lives in its own generated
+ * capture, `mission-i-event-level-fixture.ts`, and is attached here so the
+ * fixture stays one payload.
  * Not a test file — imported by the Mission I card, Evidence Overview,
- * research-record memo, and reader-guide suites.
+ * research-record memo, reader-guide, and drilldown suites.
  */
 import type { MissionIEvidenceSummary } from "@/lib/api";
+import { missionIEventLevelFixture } from "./mission-i-event-level-fixture";
 
 /** Fresh deep copy per call so sentinel-mutation tests never leak. */
 export function missionIFixture(): MissionIEvidenceSummary {
-  return structuredClone(MISSION_I_FIXTURE);
+  return {
+    ...structuredClone(MISSION_I_FIXTURE),
+    event_level: missionIEventLevelFixture(),
+  };
 }
 
 const MISSION_I_FIXTURE: MissionIEvidenceSummary = {
-  "contract_version": "mission-i-evidence-v1",
+  "contract_version": "mission-i-evidence-v2",
   "provenance": {
     "sources": {
       "i0_protocol": {

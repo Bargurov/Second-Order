@@ -1,5 +1,6 @@
 /**
- * N2 — Mission I evidence card + client contract (mission-i-evidence-v1).
+ * N2 — Mission I evidence card + client contract (mission-i-evidence-v2
+ * since E1/E2; the v1 core is unchanged and stays pinned here).
  *
  * The card is the first in-product consumer of the published Mission I
  * ordinary-period comparison (`GET /evidence/mission-i`, restored by N1).
@@ -90,7 +91,7 @@ describe("Mission I client contract (N2)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 3–16. Contract-shaped fixture invariants (mission-i-evidence-v1)
+// 3–16. Contract-shaped fixture invariants (v1 core, unchanged in v2)
 // ---------------------------------------------------------------------------
 
 describe("Mission I fixture — frozen contract invariants", () => {
@@ -407,7 +408,7 @@ describe("MissionIEvidenceCard — conclusion, limitations, non-claims, provenan
   });
 
   it("carries the tracked-contract provenance and all seven publications", () => {
-    expect(cardVisible).toContain("mission-i-evidence-v1");
+    expect(cardVisible).toContain("mission-i-evidence-v2");
     expect(cardVisible).toContain("GET /evidence/mission-i");
     for (const source of Object.values(fixture.provenance.sources)) {
       expect(cardVisible).toContain(source.artifact);
