@@ -79,6 +79,18 @@ class TestMockFailureResponse(unittest.TestCase):
                      "market", "is_mock", "event_date"):
             self.assertIn(key, resp, f"Missing key: {key}")
 
+    def test_failure_reason_defaults_when_mock_reason_empty(self):
+        """A message-less exception yields ``_mock(str(e))`` with ``str(e)==""``
+        → ``what_changed == "[mock: ]"`` → an empty extracted reason.  The
+        response must still carry a non-empty, human-readable failure_reason so
+        the streamed terminal is not rejected by the frontend validator."""
+        self.assertEqual(_mock("").get("what_changed"), "[mock: ]")
+        resp = self.api._mock_failure_response("H", _mock(""), "2026-01-01")
+        self.assertTrue(resp["analysis_failed"])
+        self.assertTrue(resp["is_mock"])
+        self.assertNotEqual((resp["failure_reason"] or "").strip(), "")
+        self.assertEqual(resp["failure_reason"], "model unavailable")
+
 
 # ---------------------------------------------------------------------------
 # Integration: /analyze does not persist mock and returns failure

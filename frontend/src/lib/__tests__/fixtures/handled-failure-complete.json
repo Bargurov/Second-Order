@@ -1,0 +1,13 @@
+{
+  "_phase": "complete",
+  "headline": "Fed model outage halts analysis",
+  "stage": "",
+  "persistence": "",
+  "analysis": {},
+  "market": { "note": "", "details": {}, "tickers": [] },
+  "freshness": {},
+  "is_mock": true,
+  "event_date": "2026-01-01",
+  "analysis_failed": true,
+  "failure_reason": "model unavailable"
+}

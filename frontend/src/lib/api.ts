@@ -1,3 +1,5 @@
+import { validateTerminalAnalyzePayload } from "./analyze-terminal";
+
 /** Resolve the API base URL from build-time env, with a safe same-origin
  *  fallback.
  *
@@ -3543,20 +3545,60 @@ export const api = {
 
         const decoder = new TextDecoder();
         let buf = "";
+        // P2-2: a streamed analysis is complete ONLY after a STRUCTURALLY
+        // VALID canonical terminal event (`_phase === "complete"`) has been
+        // validated and successfully applied by the consumer.  A phase label
+        // alone is not proof: clean/abnormal EOF, an invalid terminal payload,
+        // or a consumer that throws are all incomplete — the caller rejects.
+        let terminalReceived = false;
 
         function pump(): void {
           if (signal?.aborted) { reader!.cancel(); resolve(); return; }
           reader!.read().then(({ done, value }) => {
-            if (done || signal?.aborted) { resolve(); return; }
+            // Intentional user cancellation — a distinct outcome, not failure.
+            if (signal?.aborted) { resolve(); return; }
+            if (done) {
+              if (terminalReceived) { resolve(); return; }
+              // EOF with no valid terminal event.  Any trailing partial frame
+              // is still in `buf` and is deliberately never promoted.
+              reject(new Error("Analysis stream ended before completion."));
+              return;
+            }
             buf += decoder.decode(value, { stream: true });
             const lines = buf.split("\n");
             buf = lines.pop() ?? "";
             for (const line of lines) {
-              if (line.startsWith("data: ")) {
+              if (!line.startsWith("data: ")) continue;
+              let parsed: Record<string, unknown>;
+              try {
+                parsed = JSON.parse(line.slice(6)) as Record<string, unknown>;
+              } catch {
+                // Malformed JSON — fail-closed skip.  NEVER conflated with the
+                // consumer exception handled below.
+                continue;
+              }
+              if (parsed._phase === "complete") {
+                // Order is load-bearing: validate the terminal payload BEFORE
+                // recording it and BEFORE trusting the consumer to apply it.
+                if (!validateTerminalAnalyzePayload(parsed)) {
+                  reader!.cancel();
+                  reject(new Error(
+                    "Analysis stream ended with an invalid terminal payload."));
+                  return;
+                }
                 try {
-                  const parsed = JSON.parse(line.slice(6));
                   onEvent(parsed._phase as string, parsed);
-                } catch { /* skip malformed */ }
+                } catch (err) {
+                  // Consumer failed to apply the terminal event — reject;
+                  // the sentinel stays false.  Not a malformed-JSON skip.
+                  reader!.cancel();
+                  reject(err instanceof Error ? err
+                    : new Error("Analysis consumer failed."));
+                  return;
+                }
+                terminalReceived = true;
+              } else {
+                onEvent(parsed._phase as string, parsed);
               }
             }
             pump();

@@ -837,6 +837,13 @@ def _mock_failure_response(headline: str, analysis: dict, effective_date: str) -
     # Extract the mock reason from "[mock: <reason>]"
     raw = analysis.get("what_changed") or ""
     reason = raw.replace("[mock:", "").rstrip("]").strip() if "[mock:" in raw else "model unavailable"
+    # A message-less provider exception reaches _mock(str(e)) with str(e) == "",
+    # producing what_changed == "[mock: ]" and an empty extracted reason.  The
+    # streamed handled-failure terminal must always carry a non-empty,
+    # human-readable failure_reason: the frontend validator rejects an empty one
+    # (a genuine handled failure would otherwise be demoted to an invalid/
+    # incomplete terminal), so never emit an empty reason.
+    reason = reason or "model unavailable"
     return {
         "headline":       headline,
         "stage":          "",

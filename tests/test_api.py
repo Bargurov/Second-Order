@@ -422,6 +422,116 @@ class TestAnalyzeStream(APITestCase):
         self.assertIsInstance(chain, list)
         self.assertGreater(len(chain), 0)
 
+    # -- P2-2: terminal-event guarantees on the generator itself ------------
+    #
+    # The frontend independently rejects EOF without a terminal 'complete'
+    # (see frontend analyze-stream tests), because after the TCP connection
+    # disappears the backend cannot emit anything.  These tests pin the
+    # backend half: an owned success path emits exactly ONE 'complete', and a
+    # provider failure after partial output emits NO 'complete' at all — the
+    # generator raises (abnormal termination), never a false terminal.
+
+    def _drain_stream_direct(self, headline, *, event_date=None):
+        """Iterate the analyze_stream generator to exhaustion (or its raise),
+        without the ASGI layer.  Returns (events, raised_exception_or_None).
+        Drains via asyncio because StreamingResponse wraps a sync generator as
+        an async body_iterator.  ``event_date`` pins the effective date so a
+        captured terminal frame is deterministic (the route otherwise defaults
+        to ``datetime.now()``)."""
+        import asyncio
+        import routes.analyze as _ra
+
+        req = _api_mod.AnalyzeRequest(headline=headline, event_date=event_date)
+        resp = _ra.analyze_stream(req)
+        chunks: list[str] = []
+        exc = None
+
+        async def _drain():
+            async for chunk in resp.body_iterator:
+                chunks.append(chunk if isinstance(chunk, str) else chunk.decode())
+
+        try:
+            asyncio.run(_drain())
+        except Exception as e:  # noqa: BLE001 — the type is asserted by callers
+            exc = e
+
+        events: list[dict] = []
+        for text in chunks:
+            events.extend(self._parse_sse(text))
+        return events, exc
+
+    def test_stream_owned_success_emits_exactly_one_complete(self):
+        events, exc = self._drain_stream_direct("Owned path: ECB signals a pause")
+        self.assertIsNone(exc)
+        phases = [e["_phase"] for e in events]
+        self.assertEqual(phases.count("complete"), 1)
+        self.assertEqual(phases[-1], "complete")
+
+    def test_stream_provider_exception_emits_no_complete(self):
+        with patch("routes.analyze._call_analyze_event",
+                   side_effect=RuntimeError("provider exploded mid-stream")):
+            events, exc = self._drain_stream_direct(
+                "Provider dies: sanctions escalate unexpectedly")
+        phases = [e["_phase"] for e in events]
+        self.assertIn("classify", phases)        # partial output was emitted
+        self.assertNotIn("complete", phases)      # but never a false terminal
+        self.assertIsInstance(exc, RuntimeError)  # generator raised instead
+
+    # -- P2-2 parity: the REAL handled-failure terminal vs the frontend --------
+    #
+    # The frontend validator/reader/reducer regression is only as honest as the
+    # payload it exercises.  These pin the genuine handled-failure `complete`
+    # frame — real generator + real `_mock_failure_response` + real `_sse_event`;
+    # the ONLY seam replaced is the LLM call, and it is replaced with the
+    # system's OWN `analyze_event._mock(...)` fallback — so the fixture the
+    # frontend imports is proven to BE backend truth, not a reconstruction.
+
+    def test_stream_handled_failure_matches_frontend_fixture(self):
+        import json
+        from analyze_event import _mock
+        with patch("routes.analyze._call_analyze_event",
+                   return_value=_mock("model unavailable")), \
+             patch("api.build_macro_context_for_prompt", return_value=""):
+            events, exc = self._drain_stream_direct(
+                "Fed model outage halts analysis", event_date="2026-01-01")
+        self.assertIsNone(exc)
+        phases = [e["_phase"] for e in events]
+        self.assertEqual(phases, ["classify", "complete"])   # one true terminal
+        complete = next(e for e in events if e["_phase"] == "complete")
+
+        fixture_path = os.path.join(
+            os.path.dirname(__file__), "..", "frontend", "src", "lib",
+            "__tests__", "fixtures", "handled-failure-complete.json")
+        with open(fixture_path, encoding="utf-8") as fh:
+            fixture = json.load(fh)
+        self.assertEqual(
+            complete, fixture,
+            "real backend handled-failure `complete` frame drifted from the "
+            "shared cross-layer fixture the frontend regression imports")
+
+    def test_stream_handled_failure_reason_never_empty(self):
+        """A message-less provider exception reaches `_mock(str(e))` with
+        ``str(e) == ""`` → ``what_changed == "[mock: ]"`` → an empty extracted
+        reason.  The streamed handled-failure terminal must still carry a
+        non-empty, human-readable ``failure_reason`` (the frontend validator
+        rejects an empty one, which would demote a genuine handled failure to an
+        invalid/incomplete terminal), so it is defaulted."""
+        from analyze_event import _mock
+        self.assertEqual(_mock("").get("what_changed"), "[mock: ]")
+        with patch("routes.analyze._call_analyze_event", return_value=_mock("")), \
+             patch("api.build_macro_context_for_prompt", return_value=""):
+            events, exc = self._drain_stream_direct(
+                "Provider raised a message-less error", event_date="2026-01-01")
+        self.assertIsNone(exc)
+        complete = next(e for e in events if e["_phase"] == "complete")
+        self.assertTrue(complete["is_mock"])
+        self.assertTrue(complete["analysis_failed"])
+        self.assertIsInstance(complete["failure_reason"], str)
+        self.assertNotEqual(
+            complete["failure_reason"].strip(), "",
+            "handled-failure terminal emitted an empty failure_reason")
+        self.assertEqual(complete["failure_reason"], "model unavailable")
+
 
 class TestEvents(APITestCase):
     def test_events_empty(self):

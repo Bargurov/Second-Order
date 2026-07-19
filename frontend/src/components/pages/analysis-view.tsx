@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { useState, useEffect, useCallback, useReducer, useRef, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +41,8 @@ import { ReactionProfileCard } from "@/components/ui/reaction-profile-card";
 import { deriveDegradedNotice } from "@/components/ui/degraded-data-notice";
 import { DegradedBanner } from "@/components/ui/degraded-banner";
 import { MARKET_REACTION_LABEL, MARKET_REACTION_SUBLABEL, VALIDATION_V2_SCOPE_CAVEAT, VALIDATION_V2_NOT_CLAIMED, HORIZON_DISCIPLINE_NOTE } from "@/lib/claim-copy";
+import { analysisStreamReducer, INITIAL_ANALYSIS_STREAM_STATE, rowSettlementFor, type StreamOutcome } from "@/lib/analysis-stream";
+import { validateTerminalAnalyzePayload } from "@/lib/analyze-terminal";
 
 /*
   Tonal hierarchy (from Stitch reference):
@@ -3303,8 +3305,6 @@ export const CALIBRATION_ARCHIVE_NOTE_TITLE =
   "Descriptive archive share under the any-support rule — not predictive " +
   "validation, accuracy, or model performance.";
 
-type Phase = "idle" | "classify" | "analysis" | "market" | "complete";
-
 export function AnalysisView({ initialHeadline, initialContext, initialEventId, onHeadlineConsumed, onBack, onAnalysisFailed, onAnalysisSucceeded }: AnalysisViewProps) {
   const [headline, setHeadline] = useState("");
   const [eventDate] = useState("");
@@ -3313,9 +3313,10 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
   eventDateRef.current = eventDate;
   // Keep track of the pending event_id across the async submit cycle.
   const pendingEventIdRef = useRef<number | undefined>(initialEventId);
-  const [result, setResult] = useState<AnalyzeResponse | null>(null);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [{ phase, result, error }, dispatch] = useReducer(
+    analysisStreamReducer,
+    INITIAL_ANALYSIS_STREAM_STATE,
+  );
   const abortRef = useRef<AbortController | null>(null);
   const onAnalysisFailedRef = useRef(onAnalysisFailed);
   onAnalysisFailedRef.current = onAnalysisFailed;
@@ -3339,10 +3340,16 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     setHeadline(text);
-    setPhase("classify");
-    setError(null);
-    setResult(null);
-    let partial: Partial<AnalyzeResponse> = { headline: text };
+    dispatch({ type: "submit", headline: text });
+    // Settle the submitted Inbox row exactly once, off the terminal outcome.
+    // Best-effort: a throwing parent callback must never break local state.
+    const settle = (outcome: StreamOutcome) => {
+      const action = rowSettlementFor(outcome);
+      try {
+        if (action === "succeeded") onAnalysisSucceededRef.current?.(text);
+        else if (action === "failed") onAnalysisFailedRef.current?.(text);
+      } catch { /* row settlement is best-effort */ }
+    };
     try {
       await api.analyzeStream(
         {
@@ -3353,34 +3360,29 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
         },
         (stage, data) => {
           if (ctrl.signal.aborted) return;
-          if (stage === "classify") {
-            partial = { ...partial, stage: data.stage as string, persistence: data.persistence as string };
-            setResult(partial as AnalyzeResponse);
-            setPhase("analysis");
-          } else if (stage === "analysis") {
-            partial = { ...partial, analysis: data.analysis as AnalyzeResponse["analysis"], is_mock: data.is_mock as boolean };
-            setResult(partial as AnalyzeResponse);
-            setPhase("market");
-          } else if (stage === "complete") {
-            const resp = data as unknown as AnalyzeResponse;
-            if (resp.analysis_failed || resp.is_mock) {
-              onAnalysisFailedRef.current?.(text);
-              setError(resp.failure_reason || "Model unavailable — try again in a moment.");
-              setPhase("idle");
-              return;
-            }
-            onAnalysisSucceededRef.current?.(text);
-            setResult(resp);
-            setPhase("complete");
+          // Row settlement is a side effect and stays here; the reducer owns
+          // the view state.  Branch on the validator outcome so reader,
+          // reducer and settlement agree by construction (the reader has
+          // already validated a `complete` before this callback runs).
+          if (stage === "complete") {
+            const validated = validateTerminalAnalyzePayload(data);
+            settle(validated?.outcome === "success" ? "success" : "handled_failure");
           }
+          dispatch({ type: "event", stage, data });
         },
         ctrl.signal,
       );
-      if (!ctrl.signal.aborted) setPhase((p) => (p === "complete" ? p : "complete"));
+      // No forced completion.  The promise resolving means a valid terminal
+      // event was applied (or the run was cancelled); completion is owned
+      // solely by the "complete" event above.
     } catch (e) {
+      // Reached only when the stream ended BEFORE a valid terminal event
+      // (truncated / invalid / consumer error) — cancellation resolves, so it
+      // never lands here.  Settle the UI FIRST (always clears the partial and
+      // shows incomplete), then settle the Inbox row as a retryable failure.
       if (ctrl.signal.aborted) return;
-      setError(e instanceof Error ? e.message : "Analysis failed.");
-      setPhase("idle");
+      dispatch({ type: "incomplete", message: e instanceof Error ? e.message : "Analysis failed." });
+      settle("incomplete");
     }
   }, [headline]);
 
@@ -3393,7 +3395,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
     setMarketRefreshing(true);
     try {
       const res = await api.refreshMarket(eid);
-      setResult((prev) => prev ? { ...prev, market: res.market } : prev);
+      dispatch({ type: "marketRefreshed", market: res.market });
     } catch {
       // silent — market block stays as-is
     } finally {
