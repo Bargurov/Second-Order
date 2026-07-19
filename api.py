@@ -3747,6 +3747,7 @@ from routes import (
     demo_evidence_summary as _demo_evidence_summary_mod,
     demo_still_moving as _demo_still_moving_mod,
     demo_weekly as _demo_weekly_mod,
+    event_dossiers as _event_dossiers_mod,
     mission_g_evidence as _mission_g_evidence_mod,
     mission_i_evidence as _mission_i_evidence_mod,
     mission_j_evidence as _mission_j_evidence_mod,
@@ -3965,3 +3966,55 @@ def _mission_j_evidence_endpoint():
             status_code=503,
             detail=("mission-j research record unavailable (tracked "
                     "artifact drift or unreadable source)"))
+
+
+@app.get("/evidence/event-dossiers")
+def _event_dossier_index_endpoint():
+    """Universal event dossier index — tracked publications only (U0).
+
+    The complete published historical research universe: 97 events
+    (65 FOMC + 32 OPEC), every one individually addressable in
+    publication order — never selected, ranked, or curated, and never
+    ordered by response, percentile, aggregate state, or completeness.
+    Assembled at request time from the Mission I v2 event-level surface,
+    the G1A / G1B identity-and-source ledgers, the Mission G / J
+    aggregate builders, and the G6C publication (enrichment discovery
+    only). Artifact drift raises rather than serving a stale or partial
+    index. No DB read or write, no provider / yfinance / market_data /
+    price_cache call, no LLM call, no artifact mutation; works on a
+    fresh clone.
+    """
+    try:
+        return _event_dossiers_mod.build_event_dossier_index()
+    except ValueError:
+        # Stable envelope: never leak artifact paths or parser internals.
+        raise HTTPException(
+            status_code=503,
+            detail=("event dossier index unavailable (tracked artifact "
+                    "drift or unreadable source)"))
+
+
+@app.get("/evidence/event-dossiers/{candidate_id}")
+def _event_dossier_detail_endpoint(candidate_id: str):
+    """One universal event dossier — tracked publications only (U0).
+
+    Explicit section states (available / structurally_unavailable /
+    not_applicable / not_exposed / unresolved / contradictory), visible
+    missingness, aggregate labels kept as aggregate context, and
+    fail-closed CONTRADICTORY classification on identity disagreement.
+    Unknown identifiers return a stable 404; artifact drift raises the
+    same 503 envelope as the index. Read-only and tracked-only, exactly
+    as the index endpoint.
+    """
+    try:
+        dossier = _event_dossiers_mod.build_event_dossier(candidate_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=503,
+            detail=("event dossier unavailable (tracked artifact drift "
+                    "or unreadable source)"))
+    if dossier is None:
+        raise HTTPException(
+            status_code=404,
+            detail="event dossier not found: unknown candidate id")
+    return dossier
