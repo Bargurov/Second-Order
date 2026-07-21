@@ -8,6 +8,7 @@ import {
   BookOpen,
   Library,
   ClipboardList,
+  NotebookPen,
 } from "lucide-react";
 import type { Page } from "./sidebar";
 
@@ -17,6 +18,7 @@ import type { Page } from "./sidebar";
 // old "Overview" — the macro/uncertainty/headlines surface lives
 // behind Context now, not at the root.
 const TABS: { id: Page; label: string; icon: React.ElementType }[] = [
+  { id: "brief",     label: "Live Brief", icon: NotebookPen },
   { id: "market",    label: "Market",    icon: BarChart3 },
   { id: "portfolio", label: "Portfolio", icon: BookOpen },
   { id: "headlines", label: "Headlines", icon: Newspaper },

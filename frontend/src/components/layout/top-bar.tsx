@@ -11,6 +11,7 @@ import { qk } from "@/lib/queryKeys";
 import type { Page } from "./sidebar";
 
 const PAGE_META: Record<Page, { group: string; title: string }> = {
+  brief:     { group: "Workspace", title: "Live Brief" },
   market:    { group: "Workspace", title: "Market" },
   // Back-compat alias — App.tsx routes ``overview`` to the same
   // MarketOverview surface as ``market`` so older callers still resolve.

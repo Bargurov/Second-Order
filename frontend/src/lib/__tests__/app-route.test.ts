@@ -54,7 +54,7 @@ describe("isPage — canonical Page universe validation", () => {
   it("accepts every canonical Page id", () => {
     const all: Page[] = [
       "overview", "market", "headlines", "analyze", "events",
-      "backtest", "cases", "evidence", "portfolio", "demo",
+      "backtest", "cases", "evidence", "portfolio", "brief", "demo",
     ];
     for (const p of all) expect(isPage(p), p).toBe(true);
   });
