@@ -18,7 +18,6 @@ import { CaseLibrary } from "@/components/pages/case-library";
 import { EvidenceOverview } from "@/components/pages/evidence-overview";
 import { Backtest } from "@/components/pages/backtest";
 import { PortfolioPage } from "@/components/pages/portfolio-page";
-import { LiveBriefPage } from "@/components/pages/live-brief";
 import { SectionCDemo } from "@/components/pages/section-c-demo";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -227,7 +226,6 @@ export default function App() {
                   {page === "evidence" && <EvidenceOverview />}
                   {page === "backtest" && <Backtest />}
                   {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
-                  {page === "brief" && <LiveBriefPage />}
                   {page === "demo" && <SectionCDemo />}
                 </ErrorBoundary>
               </div>

@@ -43,7 +43,6 @@ const PAGE_IDS = [
   "cases",
   "evidence",
   "portfolio",
-  "brief",
   "demo",
 ] as const satisfies readonly Page[];
 

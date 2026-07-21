@@ -16,7 +16,6 @@ import {
   Library,
   ClipboardList,
   LayoutGrid,
-  NotebookPen,
   Zap,
 } from "lucide-react";
 
@@ -25,7 +24,7 @@ import {
  *  ``market`` to ``<MarketOverview>`` so older deep links and any
  *  ``setPage("overview")`` callers still resolve.  ``"market"`` is the
  *  current default workspace landing. */
-export type Page = "overview" | "market" | "headlines" | "analyze" | "events" | "backtest" | "cases" | "evidence" | "portfolio" | "brief" | "demo";
+export type Page = "overview" | "market" | "headlines" | "analyze" | "events" | "backtest" | "cases" | "evidence" | "portfolio" | "demo";
 
 type NavItem = { id: Page; label: string; icon: React.ElementType };
 type NavGroup = { group: string; items: NavItem[] };
@@ -43,7 +42,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     group: "Workspace",
     items: [
-      { id: "brief",     label: "Live Brief", icon: NotebookPen },
       { id: "market",    label: "Market", icon: BarChart3 },
       { id: "portfolio", label: "Portfolio",      icon: BookOpen },
       { id: "headlines", label: "Headlines",      icon: Newspaper },
