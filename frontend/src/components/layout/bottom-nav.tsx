@@ -19,7 +19,7 @@ import type { Page } from "./sidebar";
 const TABS: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "market",    label: "Market",    icon: BarChart3 },
   { id: "portfolio", label: "Portfolio", icon: BookOpen },
-  { id: "headlines", label: "Headlines", icon: Newspaper },
+  { id: "headlines", label: "Event Inbox", icon: Newspaper },
   { id: "analyze",   label: "Analyze",   icon: FlaskConical },
   { id: "cases",     label: "Case Library", icon: Library },
   { id: "evidence",  label: "Evidence Overview", icon: ClipboardList },

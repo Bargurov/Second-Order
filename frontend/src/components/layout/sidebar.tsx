@@ -44,7 +44,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "market",    label: "Market", icon: BarChart3 },
       { id: "portfolio", label: "Portfolio",      icon: BookOpen },
-      { id: "headlines", label: "Headlines",      icon: Newspaper },
+      { id: "headlines", label: "Event Inbox",    icon: Newspaper },
       { id: "analyze",   label: "Analyze",        icon: FlaskConical },
     ],
   },

@@ -1,0 +1,608 @@
+{
+ "_provenance": {
+  "source": "news_clusters rows captured read-only from the local store on 2026-07-24",
+  "selection": "six real clusters chosen for category breadth: multi-source energy (13504), multi-source geopolitics (13036), technology/AI (13451), official Fed feed (12494), single-publisher repeat (13507), sanctions/tech official (13060)",
+  "note": "Producer-shaped durable evidence for the automatic-event-inbox-v1 tests; timestamps are frozen as captured. Tests derive their injected clock from these timestamps."
+ },
+ "rows": [
+  {
+   "id": 13504,
+   "headline": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
+   "payload": {
+    "headline": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
+    "summary": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live. Corroborated by CNBC World, Reuters World.",
+    "consensus": {
+     "actors": [
+      "Iran",
+      "United Kingdom"
+     ],
+     "action": "military action",
+     "geography": [
+      "Middle East",
+      "Europe"
+     ],
+     "sector": "shipping",
+     "uncertainty": "low",
+     "consensus": "consensus"
+    },
+    "sources": [
+     {
+      "name": "CNBC World",
+      "tier": "high",
+      "url": "https://www.cnbc.com/2026/07/07/oil-prices-iran-strait-hormuz.html"
+     },
+     {
+      "name": "FT World",
+      "tier": "high",
+      "url": "https://www.ft.com/content/0a1c6329-2be0-4d7a-b7ab-82f81511bde2"
+     },
+     {
+      "name": "Reuters World",
+      "tier": "high",
+      "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxOYjZCV2V0UjBnQVQwWi1tTUNISGRvT3JTRGJodTlLNHVGcWQ4YkU5ZXRsMlBNb2lCSHJtUFAtUWx2c2hkZzVadmgxSVFncmRObHVQMGZITVNncS1nNXRDcEdfYkd4Wl9kT0ZINDFDUUU2cWV6eVdjcVdLUkJoRDlnR2FhSjdMYWRoM3N0bUw0aVJHRVgzcWlVNUpkWTdFUHVMbHlaMS1R?oc=5"
+     },
+     {
+      "name": "The Guardian Business",
+      "tier": "high",
+      "url": "https://www.theguardian.com/business/live/2026/jul/07/uk-house-prices-rise-in-june-despite-wider-economic-uncertainty-business-live"
+     }
+    ],
+    "published_at": "2026-07-07T10:19:10",
+    "source_count": 4,
+    "agreement": "consistent",
+    "evidence": [
+     {
+      "source": "The Guardian Business",
+      "tier": "high",
+      "title": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
+      "published_at": "2026-07-07T10:19:10",
+      "note": ""
+     },
+     {
+      "source": "CNBC World",
+      "tier": "high",
+      "title": "Oil prices rise after report of Iranian attack on commercial ships in Strait of Hormuz",
+      "published_at": "2026-07-07T10:10:40",
+      "note": ""
+     },
+     {
+      "source": "Reuters World",
+      "tier": "high",
+      "title": "Oil gains after vessel attacks near Strait of Hormuz",
+      "published_at": "2026-07-07T09:51:24",
+      "note": ""
+     }
+    ]
+   },
+   "records": [
+    {
+     "source": "CNBC World",
+     "title": "Oil prices rise after report of Iranian attack on commercial ships in Strait of Hormuz",
+     "published_at": "2026-07-07T10:10:40",
+     "url": "https://www.cnbc.com/2026/07/07/oil-prices-iran-strait-hormuz.html",
+     "candidate_id": "3928083571659f53"
+    },
+    {
+     "source": "Reuters World",
+     "title": "Oil gains after vessel attacks near Strait of Hormuz",
+     "published_at": "2026-07-07T09:51:24",
+     "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxOYjZCV2V0UjBnQVQwWi1tTUNISGRvT3JTRGJodTlLNHVGcWQ4YkU5ZXRsMlBNb2lCSHJtUFAtUWx2c2hkZzVadmgxSVFncmRObHVQMGZITVNncS1nNXRDcEdfYkd4Wl9kT0ZINDFDUUU2cWV6eVdjcVdLUkJoRDlnR2FhSjdMYWRoM3N0bUw0aVJHRVgzcWlVNUpkWTdFUHVMbHlaMS1R?oc=5",
+     "candidate_id": "2926247afba70c81"
+    },
+    {
+     "source": "FT World",
+     "title": "Qatari gas tanker hit in Strait of Hormuz",
+     "published_at": "2026-07-07T08:19:17",
+     "url": "https://www.ft.com/content/0a1c6329-2be0-4d7a-b7ab-82f81511bde2",
+     "candidate_id": "e976bfcf4bf30cdf"
+    },
+    {
+     "source": "The Guardian Business",
+     "title": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
+     "published_at": "2026-07-07T10:19:10",
+     "url": "https://www.theguardian.com/business/live/2026/jul/07/uk-house-prices-rise-in-june-despite-wider-economic-uncertainty-business-live",
+     "candidate_id": "6c4e5a3af9bc795d"
+    }
+   ],
+   "latest_published_at": "2026-07-07T10:42:18",
+   "updated_at": "2026-07-07T13:46:26"
+  },
+  {
+   "id": 13036,
+   "headline": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says",
+   "payload": {
+    "headline": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says",
+    "summary": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says (via Reuters World). Also covered by FT World, NPR World, Economic Times, LatAm Economy, but framing differs — Economic Times reports: \"Paras Defence, other defence stocks shed up to 5%\".",
+    "consensus": {
+     "actors": [
+      "Russia",
+      "Ukraine",
+      "Turkey",
+      "NATO"
+     ],
+     "action": "defense spending",
+     "geography": [
+      "Eurasia",
+      "Middle East"
+     ],
+     "sector": "defense",
+     "uncertainty": "high",
+     "consensus": "mixed"
+    },
+    "sources": [
+     {
+      "name": "FT World",
+      "tier": "high",
+      "url": "https://www.ft.com/content/81d702fd-28d4-4b46-aec3-60e71b53786a"
+     },
+     {
+      "name": "NPR World",
+      "tier": "high",
+      "url": "https://www.npr.org/2026/07/05/nx-s1-5877610/nato-leaders-look-for-unity-as-trump-attends-annual-summit"
+     },
+     {
+      "name": "Reuters World",
+      "tier": "high",
+      "url": "https://news.google.com/rss/articles/CBMi2wFBVV95cUxNQ0RBRmlpN2UtbDdMQUpmZDNuaXozSW1uMm1qWTBoT3lWc25yamFFUklpYW81bFk4ZHY4cVVqdGtIU0o2bGlpeldFcjJ4b1d4aGxxQTlzS1R0T2JxRXplR1M0MGphWnpTdVFzcFJQUGFPVWhmNUFISVNHSURvYnpOMnBUVVhHWlpOekJNUkxKS3N3cEZlYUlJZzhScllvc29yVFV6UmFNa2Q0cGRqQ2dkSUhERHoyS1dxelBGVS1NM0lwOE5iN1VZSWlxaXUwZzdtQmFGenJHaVVKalE?oc=5"
+     },
+     {
+      "name": "Economic Times",
+      "tier": "medium",
+      "url": "https://economictimes.indiatimes.com/markets/stocks/news/paras-defence-ideaforge-other-defence-stocks-slide-up-to-5-whats-triggering-the-selloff/articleshow/132234048.cms"
+     },
+     {
+      "name": "LatAm Economy",
+      "tier": "medium",
+      "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQU3NBM29PekxQd0tENDhEY2hlYXhFRTFUb2dJOUFGZEpHZnZhMEtsZnJKYUw5OURfOF9Demh2TzhOTC16UGdtYk5kOS1XY3d5dTg4bnFDOXBCWFlCX1BzMG9EdFZ0bUdsSlYyaVBFLUZhWWZkbXJqTHlVd3haWWxmV2R6ZXN5Tkt6ZjU3aE9XUi1mWktOTGdfNy1Lb0tCM2lIMTR0ZElLWWFQVXc4MUJHbWM5RnpUeWJucVI0d2txQzRTc1hxS1NpcDRhWQ?oc=5"
+     }
+    ],
+    "published_at": "2026-07-07T07:55:34",
+    "source_count": 5,
+    "agreement": "mixed",
+    "evidence": [
+     {
+      "source": "NPR World",
+      "tier": "high",
+      "title": "NATO leaders look for unity as Trump attends annual summit",
+      "published_at": "2026-07-05T21:03:40",
+      "note": ""
+     },
+     {
+      "source": "FT World",
+      "tier": "high",
+      "title": "Nato leaders gather for crucial meeting in Ankara",
+      "published_at": "2026-07-05T17:15:05",
+      "note": ""
+     },
+     {
+      "source": "Reuters World",
+      "tier": "high",
+      "title": "Russian defence ministry says its forces captured Kostiantynivka in eastern Ukraine",
+      "published_at": "2026-07-03T22:08:00",
+      "note": ""
+     }
+    ]
+   },
+   "records": [
+    {
+     "source": "NPR World",
+     "title": "NATO leaders look for unity as Trump attends annual summit",
+     "published_at": "2026-07-05T21:03:40",
+     "url": "https://www.npr.org/2026/07/05/nx-s1-5877610/nato-leaders-look-for-unity-as-trump-attends-annual-summit",
+     "candidate_id": "4976e3a4d7f42449"
+    },
+    {
+     "source": "FT World",
+     "title": "Nato leaders gather for crucial meeting in Ankara",
+     "published_at": "2026-07-05T17:15:05",
+     "url": "https://www.ft.com/content/81d702fd-28d4-4b46-aec3-60e71b53786a",
+     "candidate_id": "3653907cbd413340"
+    },
+    {
+     "source": "Reuters World",
+     "title": "Russian defence ministry says its forces captured Kostiantynivka in eastern Ukraine",
+     "published_at": "2026-07-03T22:08:00",
+     "url": "https://news.google.com/rss/articles/CBMi2wFBVV95cUxNQ0RBRmlpN2UtbDdMQUpmZDNuaXozSW1uMm1qWTBoT3lWc25yamFFUklpYW81bFk4ZHY4cVVqdGtIU0o2bGlpeldFcjJ4b1d4aGxxQTlzS1R0T2JxRXplR1M0MGphWnpTdVFzcFJQUGFPVWhmNUFISVNHSURvYnpOMnBUVVhHWlpOekJNUkxKS3N3cEZlYUlJZzhScllvc29yVFV6UmFNa2Q0cGRqQ2dkSUhERHoyS1dxelBGVS1NM0lwOE5iN1VZSWlxaXUwZzdtQmFGenJHaVVKalE?oc=5",
+     "candidate_id": "fbbddfb903a5d6e1"
+    },
+    {
+     "source": "Reuters World",
+     "title": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says",
+     "published_at": "2026-07-03T14:22:58",
+     "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxNR21mS1FvbzMzXzlxSUFEVVV5ZENiRktERHRtQ1hycW16UmphZF9RdUEybTVmYjNkOWY4dTFvZ3MyVlZPSnVaLVU2dS1DRjBkempBVkRvd2NROFBkRjlTajI5cjVLSjBxSzlaWmp2Z1RxQVlPaFBJMjQzNUd0VUdFejN1OVItOEhTQUtQU1Zzc2VfU0xQUFgxdWlvZEJfYUROWG9ZMlBhZUNsaTNLWDVzcTc0b2pLc0pRWDBkUGVSbTljVjNudFhGcU84amZSb1dPTzN2TDN0TQ?oc=5",
+     "candidate_id": "67828dd6c8b5d35f"
+    },
+    {
+     "source": "Economic Times",
+     "title": "Paras Defence, other defence stocks shed up to 5%",
+     "published_at": "2026-07-07T07:55:34",
+     "url": "https://economictimes.indiatimes.com/markets/stocks/news/paras-defence-ideaforge-other-defence-stocks-slide-up-to-5-whats-triggering-the-selloff/articleshow/132234048.cms",
+     "candidate_id": "3456691f872f4b12"
+    },
+    {
+     "source": "LatAm Economy",
+     "title": "Dutch to announce over €3 billion in defence deals at NATO forum, minister says",
+     "published_at": "2026-07-06T17:33:43",
+     "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQU3NBM29PekxQd0tENDhEY2hlYXhFRTFUb2dJOUFGZEpHZnZhMEtsZnJKYUw5OURfOF9Demh2TzhOTC16UGdtYk5kOS1XY3d5dTg4bnFDOXBCWFlCX1BzMG9EdFZ0bUdsSlYyaVBFLUZhWWZkbXJqTHlVd3haWWxmV2R6ZXN5Tkt6ZjU3aE9XUi1mWktOTGdfNy1Lb0tCM2lIMTR0ZElLWWFQVXc4MUJHbWM5RnpUeWJucVI0d2txQzRTc1hxS1NpcDRhWQ?oc=5",
+     "candidate_id": "cffd9191da5bab33"
+    }
+   ],
+   "latest_published_at": "2026-07-07T07:55:34",
+   "updated_at": "2026-07-07T13:46:22"
+  },
+  {
+   "id": 13451,
+   "headline": "Beijing is looking at curbing overseas access to China’s top AI models, sources say",
+   "payload": {
+    "headline": "Beijing is looking at curbing overseas access to China’s top AI models, sources say",
+    "summary": "Beijing is looking at curbing overseas access to China’s top AI models, sources say (regional outlet: Investing.com).",
+    "consensus": {
+     "actors": [
+      "China"
+     ],
+     "action": "unknown",
+     "geography": [
+      "East Asia"
+     ],
+     "sector": "unknown",
+     "uncertainty": "high",
+     "consensus": "consensus"
+    },
+    "sources": [
+     {
+      "name": "Investing.com",
+      "tier": "medium",
+      "url": "https://www.investing.com/news/stock-market-news/exclusivebeijing-is-looking-at-curbing-overseas-access-to-chinas-top-ai-models-sources-say-4778646"
+     }
+    ],
+    "published_at": "2026-07-07T10:18:41",
+    "source_count": 1,
+    "agreement": "consistent",
+    "evidence": [
+     {
+      "source": "Investing.com",
+      "tier": "medium",
+      "title": "Beijing is looking at curbing overseas access to China’s top AI models, sources say",
+      "published_at": "2026-07-07T10:18:41",
+      "note": ""
+     }
+    ]
+   },
+   "records": [
+    {
+     "source": "Investing.com",
+     "title": "Beijing is looking at curbing overseas access to China’s top AI models, sources say",
+     "published_at": "2026-07-07T10:18:41",
+     "url": "https://www.investing.com/news/stock-market-news/exclusivebeijing-is-looking-at-curbing-overseas-access-to-chinas-top-ai-models-sources-say-4778646",
+     "candidate_id": "360431e82e0e037f"
+    }
+   ],
+   "latest_published_at": "2026-07-07T10:18:41",
+   "updated_at": "2026-07-07T13:29:19"
+  },
+  {
+   "id": 12494,
+   "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+   "payload": {
+    "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+    "summary": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (via Fed Press Releases). Also covered by , but framing differs — Fed Press Releases reports: \"Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses\".",
+    "consensus": {
+     "actors": [
+      "Federal Reserve"
+     ],
+     "action": "export restrictions",
+     "geography": [],
+     "sector": "finance",
+     "uncertainty": "high",
+     "consensus": "mixed"
+    },
+    "sources": [
+     {
+      "name": "Fed Press Releases",
+      "tier": "high",
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/enforcement20260702a.htm"
+     }
+    ],
+    "published_at": "2026-07-02T15:00:00",
+    "source_count": 1,
+    "agreement": "mixed",
+    "evidence": [
+     {
+      "source": "Fed Press Releases",
+      "tier": "high",
+      "title": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+      "published_at": "2026-07-02T15:00:00",
+      "note": ""
+     }
+    ]
+   },
+   "records": [
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+     "published_at": "2026-07-02T15:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/enforcement20260702a.htm",
+     "candidate_id": "39d1724ed2c5e074"
+    },
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board issues enforcement action with employee of Bank of Eufaula and S N B Bancshares, Inc.",
+     "published_at": "2026-06-25T15:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/enforcement20260625b.htm",
+     "candidate_id": "b3064777349dda48"
+    },
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board announces termination of enforcement action with Jiko Group, Inc.",
+     "published_at": "2026-06-25T15:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/enforcement20260625a.htm",
+     "candidate_id": "ff4102f28901033f"
+    },
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses",
+     "published_at": "2026-06-24T20:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/bcreg20260624a.htm",
+     "candidate_id": "12b5b6ba16df7edd"
+    },
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board issues enforcement action with former employee of Bank of Eufaula and S N B Bancshares, Inc.",
+     "published_at": "2026-06-18T19:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/enforcement20260618b.htm",
+     "candidate_id": "3a3d2f0bcd61eeec"
+    },
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board issues enforcement action with former employee of Manufacturers and Traders Trust Company",
+     "published_at": "2026-06-18T15:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/enforcement20260618a.htm",
+     "candidate_id": "76821da50f879eec"
+    },
+    {
+     "source": "Fed Press Releases",
+     "title": "Federal Reserve Board announces that results from its annual bank stress test will be released on Wednesday, June 24, at 4 p.m. EDT.",
+     "published_at": "2026-06-09T20:00:00",
+     "url": "https://www.federalreserve.gov/newsevents/pressreleases/bcreg20260609a.htm",
+     "candidate_id": "e283e2d057853346"
+    }
+   ],
+   "latest_published_at": "2026-07-05T21:03:40",
+   "updated_at": "2026-07-06T00:43:15"
+  },
+  {
+   "id": 13507,
+   "headline": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms",
+   "payload": {
+    "headline": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms",
+    "summary": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms (via Bloomberg Markets). Also covered by LatAm Economy, but framing differs — LatAm Economy reports: \"Hedge funds dumped chip stocks for a fourth week as AI shares sold off\".",
+    "consensus": {
+     "actors": [
+      "Federal Reserve"
+     ],
+     "action": "trade policy",
+     "geography": [],
+     "sector": "semiconductors",
+     "uncertainty": "high",
+     "consensus": "mixed"
+    },
+    "sources": [
+     {
+      "name": "Bloomberg Markets",
+      "tier": "high",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNVHd0Nk9mdERMQWdZRldYc2VpZ242TEJCb2o5NVVKTkVyN2dyc3Q4OWJoQTVCYU9lRnNUWlFMN2N2bld5X28xX1I2dUppM0NCVENuX2szM0I3Qkg0Z2M4aTMxb1BIVkVLMEVFb0pEOXNJTWVza3pDQ0IySll2cVVjcGtVWTdMd3NEZm9GSEVDdFk4TVEtZEljS0Vubjk0TnZwa3JuejNqQWxyQlVWUm42UVVR?oc=5"
+     }
+    ],
+    "published_at": "2026-07-07T02:29:00",
+    "source_count": 1,
+    "agreement": "mixed",
+    "evidence": [
+     {
+      "source": "Bloomberg Markets",
+      "tier": "high",
+      "title": "Hedge Funds Most Bearish on Yen Since 2007 on Carry Trade Bets",
+      "published_at": "2026-07-07T02:29:00",
+      "note": ""
+     }
+    ]
+   },
+   "records": [
+    {
+     "source": "Bloomberg Markets",
+     "title": "Hedge Funds Most Bearish on Yen Since 2007 on Carry Trade Bets",
+     "published_at": "2026-07-07T02:29:00",
+     "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNVHd0Nk9mdERMQWdZRldYc2VpZ242TEJCb2o5NVVKTkVyN2dyc3Q4OWJoQTVCYU9lRnNUWlFMN2N2bld5X28xX1I2dUppM0NCVENuX2szM0I3Qkg0Z2M4aTMxb1BIVkVLMEVFb0pEOXNJTWVza3pDQ0IySll2cVVjcGtVWTdMd3NEZm9GSEVDdFk4TVEtZEljS0Vubjk0TnZwa3JuejNqQWxyQlVWUm42UVVR?oc=5",
+     "candidate_id": "9ec422c979fa5744"
+    },
+    {
+     "source": "Bloomberg Markets",
+     "title": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms",
+     "published_at": "2026-07-06T20:12:31",
+     "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOV2U3NnNDM0tLZ3VHN29pZi1JU3VnQTlkbmVlMGhqN3BrLTJlTGNhWXYzQ05HX1MybWdSSWowUFhWRGJUWDd0cEdyRmNXRXp5ZldwRHZhRTNEM3JNc0F6X3RjQUVRTFV5QnZOLVVYSXg1WlFFRGYxRFQxSzlNc3JZV01lY1JKdXJfaUw2bFdNZXVnSDBBOW9FRF9SR0NCV21VQy1xQjhxdnpjN1I5WUFvS0VUTGNmZw?oc=5",
+     "candidate_id": "371db463288607ed"
+    },
+    {
+     "source": "Bloomberg Markets",
+     "title": "Australia Runs Surprise Trade Deficit With Widest Gap Since 2015",
+     "published_at": "2026-07-02T02:48:00",
+     "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxNM1dOblJVUVdXc1lpWlNZUm9JVkNEMVIwa3N2RWgyamp5cmRJVHpPa2pLYUdyVTZ6ekoydHoyZl9LNnRydXRqTEhZOHp5U3d4Y3RlcHZyVnh5SllTc3N2czYxOUtIVlZXN0Y5c1NYX2NORk16X2FlLWhNLTctT0JXNVpJTlYzUjhQX3ByY2RQUDNoVzhMUTBKNkVoZV93angtMGNoWGFxWkEtUGJZQlN0TGJERC1QZw?oc=5",
+     "candidate_id": "074cfe207aeb62d1"
+    }
+   ],
+   "latest_published_at": "2026-07-07T02:29:00",
+   "updated_at": "2026-07-07T13:46:22"
+  },
+  {
+   "id": 13060,
+   "headline": "China hits back at US sanctions on tech giants, restricting its exports to American defense firms",
+   "payload": {
+    "headline": "China hits back at US sanctions on tech giants, restricting its exports to American defense firms",
+    "summary": "China hits back at US sanctions on tech giants, restricting its exports to American defense firms (via AP News). Also covered by Freight & Shipping, OFAC Sanctions, but framing differs — Freight & Shipping reports: \"U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity\".",
+    "consensus": {
+     "actors": [
+      "United States",
+      "China"
+     ],
+     "action": "sanctions",
+     "geography": [
+      "North America",
+      "East Asia"
+     ],
+     "sector": "finance",
+     "uncertainty": "high",
+     "consensus": "mixed"
+    },
+    "sources": [
+     {
+      "name": "AP News",
+      "tier": "high",
+      "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPeTFPcDVCY3h2bUxOdTVENzdPMjJ4SWhpQUJVS29SR2NjOFVGaDRjOWVaUklmMTRWWDRtbU1hbFluZWdfel9wMnZsNEFsRmRzLXBwWkVjUDdTd0F0d2FFaXlwWWlfSW5Cclk2MGV4SWVER1JmbTE2ODdDZnpIS2NjeU1ZMDRJbUlaY01oNktTUTF2QVBaUlFKc05pNA?oc=5"
+     },
+     {
+      "name": "Bloomberg Markets",
+      "tier": "high",
+      "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNdHd1eGFkQ1FZMlhEUWlyZWxTT1g5eWlGM3JlMTUxRjZfNTA0b0JGZWsxXzV5N0tNS1RxZGFxRUZtcW9GaGFjY2JOa1U3ZEY3dkMwXzdiTkJuMUJ6LWJlMjliQm5oLUd3bkhQMVBPV3M1VHdJM0xSWGZuak9TZjl2dGs2UUVlQk1nNkFYdkxEc3NJVWs3Zlg1VmxnSEpFa183N3hOZE1oMGhTR05jUHBDNnB3SXlrQ3VKNTNtVmhR?oc=5"
+     },
+     {
+      "name": "Freight & Shipping",
+      "tier": "medium",
+      "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxQQkt6MWUtYnZ4THg0aDFLa2NWX3I1Mkh4Nmw3cW5QQjc3RHNFcW5fckNHTUpKeWZWY2Y3c3VrQTc3RjEzc24xcGwtanR0NVdGNm94bjh2aXAwdTdMcWNoY2lxd3F6NTRTek4yVUtCWW5EWmxpQUpQTHhVR01uSkJqcS1VOVV4NzdiWGM3UXVTWkhFSjVZcmtwZ3RRbjl3ekx5ZjFuVEJ4Si1nN0M3V1BIQ0QxY2c?oc=5"
+     },
+     {
+      "name": "OFAC Sanctions",
+      "tier": "medium",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOMExydXpXbF83V29JR3BDbXBYakNtZHVodXNhOWQwd0ZtNlB0UmZtcmFSTkhMdDhTazBzaVVKVjRxbVh0d1lTdXZTWllpVXI2LXdya2kyU0JDYkFkUUNxSW0wLVY5R0VhMGc1TEVGTk1HdzJVV0JwQklnZ0ZseTdVejI1SHZXdEhKaVFzU1MyalBMeW1PakR1TUtLaVBXQXNkZlRVWG9obTlYQTl2SFI3aTZ30gG6AUFVX3lxTFB1YWwzZjNwQS1BUHA4UHBXZjlfb0lydUxLYXlLbXNMMkRNUjdTODJudlQweWFkN3c2QUxnaWY5bG5IWW9IT2NwdFZiZzNjNkpHVmpNaUZnaE5QcUhRLU81dXdaTDZhQ2luVXdiNzlPVHNyajc1eUlKcTZOb09GTElUa3dIX20zMmJnQXRZZUJmeUZxNlZ1TnZmWHBKcXR0QnM0dGdHemtSb1FBMXQzQ1ptbGJXQTR0VkN5Zw?oc=5"
+     }
+    ],
+    "published_at": "2026-06-30T17:35:00",
+    "source_count": 4,
+    "agreement": "mixed",
+    "evidence": [
+     {
+      "source": "AP News",
+      "tier": "high",
+      "title": "US Treasury cracks down on Jalisco New Generation Cartel with sanctions and a bank alert",
+      "published_at": "2026-06-30T17:35:00",
+      "note": ""
+     },
+     {
+      "source": "Freight & Shipping",
+      "tier": "medium",
+      "title": "U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity",
+      "published_at": "2026-06-29T21:50:03",
+      "note": "framing differs"
+     },
+     {
+      "source": "OFAC Sanctions",
+      "tier": "medium",
+      "title": "The US is changing Cuba sanctions architecture | United States | Global law firm - Norton Rose Fulbright",
+      "published_at": "2026-06-23T03:32:56",
+      "note": ""
+     }
+    ]
+   },
+   "records": [
+    {
+     "source": "Bloomberg Markets",
+     "title": "Brazil Freezes $2 Billion, Pursues Arrests After US Sanctions",
+     "published_at": "2026-07-03T16:00:36",
+     "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNdHd1eGFkQ1FZMlhEUWlyZWxTT1g5eWlGM3JlMTUxRjZfNTA0b0JGZWsxXzV5N0tNS1RxZGFxRUZtcW9GaGFjY2JOa1U3ZEY3dkMwXzdiTkJuMUJ6LWJlMjliQm5oLUd3bkhQMVBPV3M1VHdJM0xSWGZuak9TZjl2dGs2UUVlQk1nNkFYdkxEc3NJVWs3Zlg1VmxnSEpFa183N3hOZE1oMGhTR05jUHBDNnB3SXlrQ3VKNTNtVmhR?oc=5",
+     "candidate_id": "5b8e34c2fbb03e8e"
+    },
+    {
+     "source": "OFAC Sanctions",
+     "title": "US Removes Four Indian Companies From Russia-Linked Sanctions List - NDTV Profit",
+     "published_at": "2026-07-01T07:36:48",
+     "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOMExydXpXbF83V29JR3BDbXBYakNtZHVodXNhOWQwd0ZtNlB0UmZtcmFSTkhMdDhTazBzaVVKVjRxbVh0d1lTdXZTWllpVXI2LXdya2kyU0JDYkFkUUNxSW0wLVY5R0VhMGc1TEVGTk1HdzJVV0JwQklnZ0ZseTdVejI1SHZXdEhKaVFzU1MyalBMeW1PakR1TUtLaVBXQXNkZlRVWG9obTlYQTl2SFI3aTZ30gG6AUFVX3lxTFB1YWwzZjNwQS1BUHA4UHBXZjlfb0lydUxLYXlLbXNMMkRNUjdTODJudlQweWFkN3c2QUxnaWY5bG5IWW9IT2NwdFZiZzNjNkpHVmpNaUZnaE5QcUhRLU81dXdaTDZhQ2luVXdiNzlPVHNyajc1eUlKcTZOb09GTElUa3dIX20zMmJnQXRZZUJmeUZxNlZ1TnZmWHBKcXR0QnM0dGdHemtSb1FBMXQzQ1ptbGJXQTR0VkN5Zw?oc=5",
+     "candidate_id": "c7203cc35240bbf3"
+    },
+    {
+     "source": "AP News",
+     "title": "US Treasury cracks down on Jalisco New Generation Cartel with sanctions and a bank alert",
+     "published_at": "2026-06-30T17:35:00",
+     "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPeTFPcDVCY3h2bUxOdTVENzdPMjJ4SWhpQUJVS29SR2NjOFVGaDRjOWVaUklmMTRWWDRtbU1hbFluZWdfel9wMnZsNEFsRmRzLXBwWkVjUDdTd0F0d2FFaXlwWWlfSW5Cclk2MGV4SWVER1JmbTE2ODdDZnpIS2NjeU1ZMDRJbUlaY01oNktTUTF2QVBaUlFKc05pNA?oc=5",
+     "candidate_id": "568907f1daf59b13"
+    },
+    {
+     "source": "Freight & Shipping",
+     "title": "U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity",
+     "published_at": "2026-06-29T21:50:03",
+     "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxQQkt6MWUtYnZ4THg0aDFLa2NWX3I1Mkh4Nmw3cW5QQjc3RHNFcW5fckNHTUpKeWZWY2Y3c3VrQTc3RjEzc24xcGwtanR0NVdGNm94bjh2aXAwdTdMcWNoY2lxd3F6NTRTek4yVUtCWW5EWmxpQUpQTHhVR01uSkJqcS1VOVV4NzdiWGM3UXVTWkhFSjVZcmtwZ3RRbjl3ekx5ZjFuVEJ4Si1nN0M3V1BIQ0QxY2c?oc=5",
+     "candidate_id": "1d3464bb0f91457b"
+    },
+    {
+     "source": "Freight & Shipping",
+     "title": "U.S. Bank and DAT: Truck freight rates accelerate - The Joplin Globe",
+     "published_at": "2026-06-29T13:01:05",
+     "url": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxOZGhXWGpSMjg1eDRHeENJVkw5RHlWWF9LalRsaGVoSUZkeF9aUFVwSlZhV1hSLXBwZk1peVRLNk93cm9teHJacDhEMS1qYXFLQ3poUTNHX2NKTkl0cjh3R1daV3J1Wm8yZEpHNVRNbU9oOXhZM2ljM3pyTE80UTJhX2JHd25LdVhDaFY1dDZLTjVXYjdvNG9Ob0Z6MTZIUy15aDZvTjJvOHNTdElzVzJrcG54WTdacm5oczAxOUxnTnNMNzdZdW5vcjhIRFFpQnhEMVpNUUd4Ql9oUVJsS3QzR2xKUGM?oc=5",
+     "candidate_id": "bdb187c973924def"
+    },
+    {
+     "source": "Freight & Shipping",
+     "title": "U.S. Bank and DAT: Truck freight rates accelerate",
+     "published_at": "2026-06-29T13:00:00",
+     "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNc1VGM2dhY0QyVEV0ZnJJa3Zwd0JQdDBnY0RlNHVLcjBMRWdZajZyLXZLSmU5aC1nYnJXMHYxOG43Nlh2VmlvTXFDWkk1SjhhXy1LdGc0TnlTS1JJY19mTDBFXzRQSUZ0TVNQX2ZwbVFKenNSTE1JNnVIbjlISEhPQUpValdiNnRVSTVaa1o5Q1BPd3EyQldSZUR3?oc=5",
+     "candidate_id": "f2e9f13aa1821712"
+    },
+    {
+     "source": "OFAC Sanctions",
+     "title": "The US is changing Cuba sanctions architecture | United States | Global law firm - Norton Rose Fulbright",
+     "published_at": "2026-06-23T03:32:56",
+     "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNdVhEVks2Y1RUYWplUVY5STBlUlZCaFNBTVoteFF3bjBYaWRDeHRuVm52YWljZGRPc3lwMmQ0SEg0Z2RwRFRjZnc1dUJwLUtabHdwVTE3ampvWERoS2NJQkZnUTJya09mUFJ6a1JMTXVTaUlEeHczaDR5NnBGYms0UXZGOWhEMEVMSG55UEFod1V2ZHNwV1A1SXpLT2R3UnA5NXdldFpwdkROS3RwdlpxcUw5dG4wVHVkSEVfdQ?oc=5",
+     "candidate_id": "91d7ea38cd8ac630"
+    },
+    {
+     "source": "OFAC Sanctions",
+     "title": "China's first use of Blocking Rules against U.S. sanctions on Chinese refineries - Stephenson Harwood",
+     "published_at": "2026-05-05T07:00:00",
+     "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQNzhQdWY2ZTVvc2F4bV9nTW90Y2ttd1IyTDdmMGVfZF81bzBHa0tmRmRPci1DbVVxTllLR2pYN3dqTThuYzF4UU5kbElFRmpPclhUdEJENzRYVjFWRjdJcXhNMThTUnlIbTZWWGpZN0ZZb00tQ19XSmhZcVFnYnhkOWlhWnFwWl93OFp6M2VBdDc2MTZ4aGh0aDA2TlBMSnJpbFBuVjBOYWVVbVVMMkhVUnNaWHN1XzQzS3pod0d3?oc=5",
+     "candidate_id": "24edc4555c33e897"
+    },
+    {
+     "source": "OFAC Sanctions",
+     "title": "U.S. Piles on Array of New Sanctions Against Russian Military-Industrial and Financial Sectors - Dorsey & Whitney",
+     "published_at": "2024-03-04T08:00:00",
+     "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxORDNuMHZQdFNXeHNoa2k1aThGdWFwU0xPUW5odXhnR3JIMHhrV0FEVWpiM3A1QXNoLXE2S2R5THcxb2ZpQjBkTEVHQTZab1A1NEVBS2hkdk5GM25vR0tMZTdkV2NGbWM3RnNTbWhoY3lqQjNkRk5fX2RnRHpHcmpuenpOWEdseVJ1alBOZGJaYmJOb0pDSG9fWWZSSHQxRUdO?oc=5",
+     "candidate_id": "b5a5e3dba2d87937"
+    },
+    {
+     "source": "OFAC Sanctions",
+     "title": "OFAC to Banks: Implement Continuous Sanctions Monitoring - Hunton Andrews Kurth LLP",
+     "published_at": "2022-08-02T07:00:00",
+     "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxQZVhPZTB2Z3NCTnlBMENJQXR3Y0p6Vm9kdm00aHBFeGI5dEJ3dTh6MnhVa0czVWc2ZGZQcGoxRjdJZTNUcndYTmVCUE16UzdsdVUxVXI5Mk9nVlhzUnVvcmVobGtMNUp2NUJDYlJhRWJKTFFkUWNkc1FOQkk5R3B6dVlMREpLNjE3UDlBLXQzNmZ0RGc2Ymk1Sw?oc=5",
+     "candidate_id": "cc9f1748b3acfd0d"
+    },
+    {
+     "source": "AP News",
+     "title": "US slaps new sanctions on Cuban companies key to island’s crumbling economy",
+     "published_at": "2026-06-23T07:00:00",
+     "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPVzBTc0szRnZjZHZ5YmhSb1Jaal8wUU5maGRPNUtHTFBjUlBPS0VHd2FqY1l2Qy1OYS1rQV9yUC1CcjZ2UE5lY2NETDVGMlIzU3pGVVBfZXVjWWw3b3FCTFJycW12MS1mVkUyWTZma29HWVBCbVQ5dFJiWnlnV1NPREhZS0VRNmtGeDBkZExzRkpfZ1U?oc=5",
+     "candidate_id": "2e341560062d9fd3"
+    },
+    {
+     "source": "AP News",
+     "title": "China hits back at US sanctions on tech giants, restricting its exports to American defense firms",
+     "published_at": "2026-06-22T07:00:00",
+     "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQRWpCdDBoT09GWWxwbGxRNVZfTmNUMXNDUEZvYVlRRVk4bmVPdUsxQzBXb1ZnbWdPUFRsbmFaY1MyRDlKaUJscWd5c0FPeUVmQXZRNTVpVjQxLXE2LWtQcU1jRHkwNnc0ajlPTHpHOGFPb0F0Nm91LVZTR3d1MGtnMVluMnpOUXFNeEZQcXJyLWJiR0g2RUNWZ2VRVHRneUQ4eklWdURTXzZqMHRI?oc=5",
+     "candidate_id": "5015e137f44cff86"
+    },
+    {
+     "source": "AP News",
+     "title": "Philippines protests China’s sanctions against its defense chief as ‘an unfriendly act’",
+     "published_at": "2026-06-12T07:00:00",
+     "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxPLUllNlJSMXpsQWw0ZmQtVnlwczBaTWpTTUVzeEVob2hVaGRzeVFqRlNla3lvMVBLU1VROGtZU2JzVXFtV01BaWNpQzd1QUYwV29qWTN6ZWppOV94UzdYMEpBTmFYWUJUX1oyM01QV2F6LWtRUjlwWW4yLXhGbFJzSXZPOXhfMjcxay1RbEN4YlFkVHdNRjIydUx1enFSbE5BQ1NZTE5oYzR3Ui1uUGotVEtSLVJ5Zw?oc=5",
+     "candidate_id": "2e853af7c2bef2b0"
+    },
+    {
+     "source": "AP News",
+     "title": "US slaps sanctions against Cuban oil and gas company as tensions rise",
+     "published_at": "2026-06-11T07:00:00",
+     "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPWThta1pVUWQtMWt3WkFjR2x3QWxhWGE0empxRTJBQzlUREhzemRuV2l0Zm9zRldySU45M2tQSXZoMWRyeTM0NVFUdi1ma0JZWmxiTjFYRmo1alBZTmtmNGNJaUV1Smk1X0wtUmNYM1pCNkhtdnUyby1zRDBZLUR1aHNMd2h0TU1VN0Z6bFdkYWEzZExtck53MEFwdDczYmUzVHJuMFktUkc?oc=5",
+     "candidate_id": "8b805b0811bc838f"
+    }
+   ],
+   "latest_published_at": "2026-07-05T21:00:00",
+   "updated_at": "2026-07-07T01:06:05"
+  }
+ ]
+}

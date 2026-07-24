@@ -4146,6 +4146,10 @@ export const api = {
   newsRefresh: (signal?: AbortSignal) =>
     request<NewsResponse>("/news/refresh", { method: "POST", signal }),
 
+  /** Automatic Event Inbox — local-state-only GET; validated fail-closed by
+   *  lib/event-inbox.ts (parseInboxPayload), hence the unknown return. */
+  newsInbox: () => request<unknown>("/news/inbox"),
+
   newsTrends: () => request<NewsTrend[]>("/news/trends"),
 
   simulatePortfolio: (body: SimulatePortfolioRequest) =>

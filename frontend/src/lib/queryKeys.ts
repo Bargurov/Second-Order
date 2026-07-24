@@ -47,6 +47,7 @@ export const qk = {
   confidenceCalibration:  () => ["stats", "confidence-calibration"] as const,
   newsPaginated: (limit: number) => ["news", "paginated", limit] as const,
   newsTrends:    () => ["news", "trends"] as const,
+  newsInbox:     () => ["news", "inbox"] as const,
   portfolio:         (filterFingerprint?: string) =>
     filterFingerprint
       ? (["portfolio", "filtered", filterFingerprint] as const)
