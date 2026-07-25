@@ -45,6 +45,11 @@ import {
   PROVENANCE_NON_CLAIM,
   type AnalysisProvenance,
 } from "@/lib/analysis-provenance";
+import {
+  buildReadout,
+  qualityTierLabel,
+  MECHANISM_NON_CLAIM,
+} from "@/lib/analysis-readout";
 import "@/styles/analyze-canvas.css";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
@@ -3754,6 +3759,17 @@ export function AnalysisView({ initialLaunch, onHeadlineConsumed, onBack, onAnal
               </div>
 
               {/* ============================================================
+                  MECHANISM & RESOLUTION — the structured research chain the
+                  engine already produced, made inspectable.  Sits directly
+                  after the thesis so mechanism, counterforces, falsifiers and
+                  limits are reached on the way down the page rather than
+                  after the specialist blocks.  Surfaces only fields no other
+                  section renders; the Analysis Basis band below stays the
+                  separate answer to "what produced this".
+                  ============================================================ */}
+              <MechanismResolutionReadout analysis={result.analysis} />
+
+              {/* ============================================================
                   EVIDENCE & FALSIFIERS — pre-committed tests, visually primary
                   ============================================================ */}
               <div className="space-y-4">
@@ -4035,6 +4051,287 @@ export function AnalysisView({ initialLaunch, onHeadlineConsumed, onBack, onAnal
         </div>
       )}
     </div>
+  );
+}
+
+
+/** One labelled group inside the readout.  An unavailable group still renders
+ *  its label and says so — silence would read as "assessed, nothing found". */
+function ReadoutGroup({
+  label, available, note, children,
+}: {
+  label: string;
+  available: boolean;
+  note?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-1 sm:grid-cols-[11rem_1fr] sm:gap-x-6">
+      <dt className="pt-0.5 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/55">
+        {label}
+      </dt>
+      <dd className="min-w-0 text-[12px] leading-relaxed text-on-surface">
+        {available ? children : (
+          <span className="text-on-surface-variant/45">Not reported</span>
+        )}
+        {note && available && (
+          <span className="mt-0.5 block text-[10px] text-on-surface-variant/45">{note}</span>
+        )}
+      </dd>
+    </div>
+  );
+}
+
+/** Inline list rendering — dense, no bullets competing with the label column. */
+function ReadoutList({ values }: { values: string[] }) {
+  return (
+    <ul className="flex flex-col gap-0.5">
+      {values.map((v) => <li key={v}>{v}</li>)}
+    </ul>
+  );
+}
+
+function ReadoutBand({ title, question, children }: {
+  title: string; question?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="border-t border-[color:var(--so-rule)] pt-5 first:border-t-0 first:pt-0">
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h4 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-on-surface">
+          {title}
+        </h4>
+        {question && (
+          <span className="text-[11px] italic text-on-surface-variant/60">{question}</span>
+        )}
+      </div>
+      <dl className="flex flex-col gap-2.5">{children}</dl>
+    </div>
+  );
+}
+
+/**
+ * Mechanism and resolution readout — the research chain the analysis already
+ * contains, made inspectable.
+ *
+ * Reorganizes existing engine output only: event → mechanism → exposure →
+ * counterforces → falsifiers → next evidence → limits.  It states what the
+ * analysis claims and what would undo it; the Analysis Basis section below
+ * separately states what produced it.  The two must not be conflated, so
+ * nothing here reads provenance and nothing there reads the thesis.
+ *
+ * No score, rank, verdict or trade label — this is a workbench readout.
+ */
+function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const r = buildReadout(analysis);
+  const tierLabel = qualityTierLabel(r.limits.qualityTier.value);
+
+  return (
+    <section aria-label="Mechanism and resolution" className={cn(SECTION_CARD, "p-6")}>
+      <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="az-kick">— Mechanism &amp; resolution</span>
+        <span className="text-[11px] text-on-surface-variant/60">
+          {MECHANISM_NON_CLAIM}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {/* 1 — Mechanism and transmission */}
+        <ReadoutBand title="Mechanism" question="How could this transmit?">
+          <ReadoutGroup label="Mechanism" available={r.mechanism.summary.available}>
+            {r.mechanism.summary.value}
+          </ReadoutGroup>
+          <ReadoutGroup label="Transmission" available={r.mechanism.path.length > 0}
+                        note={r.mechanism.pathLabel}>
+            <ol className="flex flex-col gap-1">
+              {r.mechanism.path.map((s, i) => (
+                <li key={`${s.node}-${i}`} className="flex gap-2">
+                  <span className="shrink-0 font-mono text-[10px] text-on-surface-variant/50">
+                    {String(s.step ?? i + 1).padStart(2, "0")}
+                  </span>
+                  <span>
+                    {s.node}
+                    {s.soWhat && (
+                      <span className="text-on-surface-variant/65"> — {s.soWhat}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </ReadoutGroup>
+          <ReadoutGroup label="Transmission type" available={r.mechanism.transmissionType.available}>
+            <span className="font-mono text-[11px]">{r.mechanism.transmissionType.value}</span>
+          </ReadoutGroup>
+          <ReadoutGroup label="Bottleneck" available={r.mechanism.bottleneckType.available}>
+            <span className="font-mono text-[11px]">{r.mechanism.bottleneckType.value}</span>
+          </ReadoutGroup>
+        </ReadoutBand>
+
+        {/* 2 — Exposure roles */}
+        <ReadoutBand title="Exposure" question="Who is exposed, directly and indirectly?">
+          <ReadoutGroup label="Direct — positive" available={r.exposure.directPositive.available}>
+            <ReadoutList values={r.exposure.directPositive.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Direct — negative" available={r.exposure.directNegative.available}>
+            <ReadoutList values={r.exposure.directNegative.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Primary assets" available={r.exposure.primaryAssets.available}>
+            <span className="font-mono text-[11px]">{r.exposure.primaryAssets.values.join(" · ")}</span>
+          </ReadoutGroup>
+          <ReadoutGroup label="Secondary assets" available={r.exposure.secondaryAssets.available}>
+            <span className="font-mono text-[11px]">{r.exposure.secondaryAssets.values.join(" · ")}</span>
+          </ReadoutGroup>
+          <ReadoutGroup label="Hedge / signal" available={r.exposure.hedgeOrSignal.available}>
+            <span className="font-mono text-[11px]">{r.exposure.hedgeOrSignal.values.join(" · ")}</span>
+          </ReadoutGroup>
+          <ReadoutGroup label="Indirect channels" available={r.exposure.indirectChannels.available}>
+            <span className="font-mono text-[11px]">{r.exposure.indirectChannels.values.join(" · ")}</span>
+          </ReadoutGroup>
+        </ReadoutBand>
+
+        {/* 3 — Counterforces and competing explanations */}
+        <ReadoutBand title="Counterforces" question="What could weaken or reverse it?">
+          <ReadoutGroup label="Counterforces" available={r.counterforces.forces.available}>
+            <ul className="flex flex-col gap-1">
+              {r.counterforces.forces.values.map((f) => (
+                <li key={f.force}>
+                  {f.force}
+                  {f.effect && <span className="text-on-surface-variant/65"> — {f.effect}</span>}
+                  {f.likelihood && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{f.likelihood}]
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </ReadoutGroup>
+          <ReadoutGroup label="Competing thesis" available={r.counterforces.competingThesis.available}>
+            <div className="flex flex-col gap-0.5">
+              {Object.entries(r.counterforces.competingThesis.value ?? {}).map(([k, v]) => (
+                <div key={k}>
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-on-surface-variant/45">
+                    {k.replace(/_/g, " ")}
+                  </span>{" "}
+                  {v}
+                </div>
+              ))}
+            </div>
+          </ReadoutGroup>
+          <ReadoutGroup label="Substitution" available={r.counterforces.substitutionBarriers.available}>
+            <ReadoutList values={r.counterforces.substitutionBarriers.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Escape path" available={r.counterforces.escapePath.available}>
+            {r.counterforces.escapePath.value}
+          </ReadoutGroup>
+          <ReadoutGroup label="Challenge"
+                        available={r.counterforces.adversarialChallenge.available}
+                        note={r.counterforces.adversarialChallenge.provenanceLabel}>
+            {r.counterforces.adversarialChallenge.value}
+          </ReadoutGroup>
+        </ReadoutBand>
+
+        {/* 4 — Falsifiers and minimum proof */}
+        <ReadoutBand title="Falsifiers" question="What would weaken or invalidate this interpretation?">
+          <ReadoutGroup label="Key falsifiers" available={r.falsifiers.keyFalsifiers.available}>
+            <ReadoutList values={r.falsifiers.keyFalsifiers.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Minimum proof" available={r.falsifiers.minimumProof.available}>
+            <ReadoutList values={r.falsifiers.minimumProof.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Breakpoints" available={r.falsifiers.criticalBreakpoints.available}>
+            <ReadoutList values={r.falsifiers.criticalBreakpoints.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Status" available>
+            <span className="font-mono text-[11px] text-on-surface-variant">
+              proof: {r.falsifiers.proofStatus.label} · falsifier: {r.falsifiers.falsifierStatus.label}
+            </span>
+          </ReadoutGroup>
+        </ReadoutBand>
+
+        {/* 5 — Next evidence and resolution points */}
+        <ReadoutBand title="Next evidence" question="What evidence would help resolve the mechanism?">
+          <ReadoutGroup label="By horizon" available={r.resolution.horizons.length > 0}
+                        note="Observation points, not predictions.">
+            <ul className="flex flex-col gap-0.5">
+              {r.resolution.horizons.map((h) => (
+                <li key={h.horizon} className="flex gap-2">
+                  <span className="w-8 shrink-0 font-mono text-[10px] uppercase text-on-surface-variant/50">
+                    {h.horizon}
+                  </span>
+                  <span>{h.detail}</span>
+                </li>
+              ))}
+            </ul>
+          </ReadoutGroup>
+          <ReadoutGroup label="Monitor" available={r.resolution.monitorPlan.available}>
+            <ReadoutList values={r.resolution.monitorPlan.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Confirming evidence" available={r.resolution.confirmingEvidence.available}>
+            <ReadoutList values={r.resolution.confirmingEvidence.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Revisit if" available={r.resolution.evidenceToRevisit.available}>
+            <ReadoutList values={r.resolution.evidenceToRevisit.values} />
+          </ReadoutGroup>
+        </ReadoutBand>
+
+        {/* 6 — Evidence limits and non-claims.  Rendered inline, never behind
+            the disclosure below: a reviewer must meet the limits without
+            opting in. */}
+        <ReadoutBand title="Evidence limits" question="What is missing or constrained?">
+          {r.limits.degraded && (
+            <p className="text-[12px] leading-relaxed text-error">
+              This analysis is flagged degraded — treat every field below as provisional.
+            </p>
+          )}
+          <ReadoutGroup label="Specification" available={!!tierLabel}
+                        note="Describes how well specified the analysis is — not a recommendation.">
+            {tierLabel}
+          </ReadoutGroup>
+          <ReadoutGroup label="Source quality" available={r.limits.sourceQuality.available}
+                        note="Source quality is not model confidence.">
+            <span className="font-mono text-[11px]">{r.limits.sourceQuality.value}</span>
+          </ReadoutGroup>
+          <ReadoutGroup label="Evidence limits" available={r.limits.evidenceLimitations.available}>
+            <ReadoutList values={r.limits.evidenceLimitations.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Quality warnings" available={r.limits.qualityWarnings.available}>
+            <ReadoutList values={r.limits.qualityWarnings.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Validation warnings" available={r.limits.validationWarnings.available}>
+            <ReadoutList values={r.limits.validationWarnings.values} />
+          </ReadoutGroup>
+          <ReadoutGroup label="Regime caveat" available={r.limits.regimeCaveat.available}>
+            {r.limits.regimeCaveat.value}
+          </ReadoutGroup>
+        </ReadoutBand>
+      </div>
+
+      {/* Raw field detail for a reviewer who wants the underlying tokens.
+          Everything above is already visible without opening this. */}
+      <div className="mt-5 border-t border-[color:var(--so-rule)] pt-3">
+        <button
+          type="button"
+          onClick={() => setDetailOpen((v) => !v)}
+          className="text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60 transition-colors hover:text-on-surface-variant"
+        >
+          {detailOpen ? "Hide field detail" : "Show field detail"}
+        </button>
+        {detailOpen && (
+          <dl className="mt-3 flex flex-col gap-2">
+            <ReadoutGroup label="Stored tier" available={r.limits.qualityTier.available}>
+              <span className="font-mono text-[11px]">{r.limits.qualityTier.value}</span>
+            </ReadoutGroup>
+            <ReadoutGroup label="Proof status" available={r.falsifiers.proofStatus.available}>
+              <span className="font-mono text-[11px]">{r.falsifiers.proofStatus.label}</span>
+            </ReadoutGroup>
+            <ReadoutGroup label="Falsifier status" available={r.falsifiers.falsifierStatus.available}>
+              <span className="font-mono text-[11px]">{r.falsifiers.falsifierStatus.label}</span>
+            </ReadoutGroup>
+          </dl>
+        )}
+      </div>
+    </section>
   );
 }
 
