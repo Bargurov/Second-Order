@@ -136,9 +136,13 @@ class TestRefreshClusters(unittest.TestCase):
         ]
         out = self._refresh(records)
 
-        # cluster_fn called exactly once with the full batch
-        self.assertEqual(len(self.cluster_calls), 1)
+        # The batch pass runs once over the full batch.  The per-cluster
+        # payload rebuilds that follow it (insert and merge paths both call
+        # _build_cluster_payload) only ever see records already in that batch.
         self.assertEqual(len(self.cluster_calls[0]), 3)
+        batch_titles = {r["title"] for r in records}
+        for call in self.cluster_calls[1:]:
+            self.assertTrue({r["title"] for r in call} <= batch_titles)
 
         # Two clusters (Tariffs + OPEC), ordered multi-source first
         self.assertEqual(len(out), 2)
@@ -177,8 +181,8 @@ class TestRefreshClusters(unittest.TestCase):
             _rec("FT", "Bananas banned from EU markets"),    # new
         ])
 
-        # cluster_fn was called with JUST the new record
-        self.assertEqual(len(self.cluster_calls), 1)
+        # The batch pass was handed JUST the new record (the known ones were
+        # not reclustered); later calls are that cluster's payload rebuild.
         self.assertEqual(len(self.cluster_calls[0]), 1)
         self.assertEqual(
             self.cluster_calls[0][0]["title"], "Bananas banned from EU markets",
@@ -1204,6 +1208,215 @@ class TestPayloadRecordsConsistency(unittest.TestCase):
         self.assertEqual(result["source_count"], 0)
         self.assertEqual(result["sources"], [])
         self.assertEqual(result["evidence"], [])
+
+
+# ---------------------------------------------------------------------------
+# 5. Insert-path payload ownership (A0-R2A)
+# ---------------------------------------------------------------------------
+
+
+class TestInsertPathPayloadOwnership(unittest.TestCase):
+    """A newly INSERTED cluster's payload must be rebuilt from its own records.
+
+    ``_sanitize_payload`` already rebuilds ``sources`` / ``source_count`` /
+    ``evidence`` from the assigned records, but the narrative fields —
+    ``summary``, ``consensus``, ``agreement``, ``published_at`` — were carried
+    over verbatim from the upstream clustering result on the insert path while
+    the merge path rebuilt them via ``_build_cluster_payload``.  That asymmetry
+    produced stored clusters whose summary named outlets absent from their own
+    source list and whose material channels came from text belonging to records
+    the cluster does not own.
+
+    This class pins ownership of the narrative fields on BOTH paths.  It says
+    nothing about whether the assigned records describe one real-world event —
+    membership remains an open A0-R2 question.
+    """
+
+    # Titles are deliberately token-disjoint from the representative so
+    # ``_records_for_new_cluster`` provably cannot attach them (cosine 0.0),
+    # which is what makes the upstream payload "foreign" to the stored row.
+    REP_TITLE = "Copper smelter halts output after grid failure in Chile"
+    FOREIGN_TITLES = {
+        "BBC Business": "Wheat futures ease as Black Sea corridor reopens",
+        "S&P Global Commodities":
+            "Semiconductor export controls tightened for Dutch supplier",
+    }
+    _ACTORS = {"chile": "Chile", "black sea": "Russia", "dutch": "Netherlands"}
+
+    def setUp(self):
+        self._orig = db.DB_FILE
+        self._tmp = os.path.join(
+            tempfile.gettempdir(), f"test_news_ownership_{uuid.uuid4().hex}.db",
+        )
+        db.DB_FILE = self._tmp
+        db.init_db()
+
+    def tearDown(self):
+        db.DB_FILE = self._orig
+        if os.path.exists(self._tmp):
+            try:
+                os.remove(self._tmp)
+            except PermissionError:
+                pass
+
+    # -- a record-faithful stub clusterer -------------------------------
+    # It derives every payload field from the records it is handed, so a
+    # payload naming a foreign outlet can only appear when the production
+    # code failed to re-run it on the records it actually stored.
+
+    def _faithful_cluster_fn(self, records: list[dict]) -> list[dict]:
+        groups: dict[str, list[dict]] = {}
+        for rec in records:
+            groups.setdefault(rec.get("_grp", "?"), []).append(rec)
+        out: list[dict] = []
+        for group in groups.values():
+            rep = next((r for r in group if r["title"] == self.REP_TITLE), group[0])
+            seen: set[str] = set()
+            sources = []
+            for r in group:
+                if r["source"] in seen:
+                    continue
+                seen.add(r["source"])
+                sources.append({"name": r["source"], "tier": "high",
+                                "url": r.get("url", "")})
+            others = [s["name"] for s in sources if s["name"] != rep["source"]]
+            summary = f"{rep['title']} (via {rep['source']})."
+            if others:
+                quoted = next(r["title"] for r in group
+                              if r["source"] == others[-1])
+                summary += (f" Also covered by {', '.join(others)}, but framing "
+                            f"differs — {others[-1]} reports: \"{quoted}\".")
+            actors = sorted({
+                name for r in group for token, name in self._ACTORS.items()
+                if token in r["title"].lower()
+            })
+            pubs = [r["published_at"] for r in group if r.get("published_at")]
+            out.append({
+                "headline": rep["title"],
+                "summary": summary,
+                "consensus": {"actors": actors, "action": "unknown",
+                              "geography": [], "sector": "unknown",
+                              "uncertainty": "high" if others else "medium",
+                              "consensus": "mixed" if others else "consensus"},
+                "sources": sources,
+                "published_at": max(pubs) if pubs else "",
+                "source_count": len(sources),
+                "agreement": "mixed" if others else "consistent",
+                "evidence": [{"source": r["source"], "tier": "high",
+                              "title": r["title"],
+                              "published_at": r["published_at"], "note": ""}
+                             for r in group],
+            })
+        return out
+
+    def _batch(self) -> list[dict]:
+        """One upstream group: the owned representative plus two records that
+        provably cannot be assigned to it (zero shared content tokens)."""
+        rep = _rec("Reuters World", self.REP_TITLE, hours_ago=2)
+        rep["_grp"] = "A"
+        batch = [rep]
+        for i, (src, title) in enumerate(self.FOREIGN_TITLES.items()):
+            r = _rec(src, title, hours_ago=1 if i == 0 else 3)
+            r["_grp"] = "A"
+            batch.append(r)
+        return batch
+
+    def _stored_row(self) -> dict:
+        stored = db.load_news_clusters()
+        self.assertEqual(len(stored), 1, "expected exactly one stored cluster")
+        return stored[0]
+
+    def _insert(self):
+        news_cluster_store.refresh_clusters(
+            self._batch(), cluster_fn=self._faithful_cluster_fn, now=_now(),
+        )
+        row = self._stored_row()
+        # Precondition: only the representative record was assigned, so every
+        # foreign field below is genuinely un-owned by this stored cluster.
+        self.assertEqual([r["title"] for r in row["records"]], [self.REP_TITLE])
+        return row
+
+    # -- ownership assertions -------------------------------------------
+
+    def test_no_foreign_source_survives_insert(self):
+        row = self._insert()
+        names = {s["name"] for s in row["payload"]["sources"]}
+        self.assertEqual(names, {"Reuters World"})
+
+    def test_source_count_matches_unique_assigned_sources(self):
+        row = self._insert()
+        owned = {r["source"] for r in row["records"]}
+        self.assertEqual(row["payload"]["source_count"], len(owned))
+
+    def test_no_foreign_outlet_survives_in_the_summary(self):
+        row = self._insert()
+        summary = row["payload"]["summary"]
+        for foreign in self.FOREIGN_TITLES:
+            self.assertNotIn(foreign, summary)
+
+    def test_no_foreign_actor_survives_in_the_consensus(self):
+        row = self._insert()
+        actors = row["payload"]["consensus"]["actors"]
+        self.assertNotIn("Russia", actors)
+        self.assertNotIn("Netherlands", actors)
+        self.assertIn("Chile", actors)
+
+    def test_no_foreign_excerpt_or_agreement_survives(self):
+        row = self._insert()
+        payload = row["payload"]
+        titles = {e["title"] for e in payload["evidence"]}
+        self.assertEqual(titles, {self.REP_TITLE})
+        # One owned source cannot be a "mixed" multi-source disagreement.
+        self.assertEqual(payload["agreement"], "consistent")
+        self.assertEqual(payload["consensus"]["consensus"], "consensus")
+
+    def test_payload_published_at_is_owned(self):
+        row = self._insert()
+        owned = {r["published_at"] for r in row["records"]}
+        self.assertIn(row["payload"]["published_at"], owned)
+
+    def test_no_channel_survives_that_only_foreign_text_triggers(self):
+        row = self._insert()
+        import event_inbox
+        text = f"{row['headline']} {row['payload']['summary']}"
+        channels = event_inbox.derive_channels(text)
+        self.assertIn("ENERGY_COMMODITIES", channels)   # owned: "copper"
+        self.assertNotIn("TECHNOLOGY_PRODUCTIVITY", channels)  # foreign only
+        self.assertNotIn("TRADE", channels)                    # foreign only
+
+    def test_inbox_event_uses_the_rebuilt_payload(self):
+        self._insert()
+        import event_inbox
+        payload = event_inbox.build_inbox(db.load_news_clusters(), now=_now())
+        self.assertEqual(event_inbox.validate_inbox_payload(payload), [])
+        self.assertEqual(len(payload["events"]), 1)
+        ev = payload["events"][0]
+        for foreign in self.FOREIGN_TITLES:
+            self.assertNotIn(foreign, ev["event_summary"] or "")
+            self.assertNotIn(foreign, ev["analysis_target"]["context"])
+        self.assertEqual({s["name"] for s in ev["sources"]}, {"Reuters World"})
+        self.assertNotIn("TECHNOLOGY_PRODUCTIVITY", ev["material_channels"])
+        # A0-R1 timestamp ownership is unchanged by this repair.
+        owned = _now() - timedelta(hours=2)
+        self.assertEqual(ev["first_seen_at"], owned.isoformat(timespec="seconds"))
+        self.assertEqual(ev["last_updated_at"], owned.isoformat(timespec="seconds"))
+
+    def test_merge_path_obeys_the_same_ownership_invariant(self):
+        """Parity guard: the merge path already rebuilt; it must keep doing so."""
+        self._insert()
+        follow_up = _rec("CNBC World",
+                         f"{self.REP_TITLE}, operator says", hours_ago=1)
+        follow_up["_grp"] = "A"
+        news_cluster_store.refresh_clusters(
+            [follow_up], cluster_fn=self._faithful_cluster_fn, now=_now(),
+        )
+        row = self._stored_row()
+        names = {s["name"] for s in row["payload"]["sources"]}
+        self.assertEqual(names, {"Reuters World", "CNBC World"})
+        self.assertEqual(row["payload"]["source_count"], 2)
+        for foreign in self.FOREIGN_TITLES:
+            self.assertNotIn(foreign, row["payload"]["summary"])
+        self.assertNotIn("Russia", row["payload"]["consensus"]["actors"])
 
 
 if __name__ == "__main__":

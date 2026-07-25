@@ -416,7 +416,19 @@ def refresh_clusters(
             continue
 
         # 4b. No existing match — insert as a brand-new cluster row.
-        sanitized = _sanitize_payload(new_cluster, new_records_in_cluster)
+        # Rebuild the payload from the records this row will actually own,
+        # exactly as the merge path above does.  ``cluster_fn`` may have
+        # produced ``new_cluster`` from a much larger group than
+        # ``_records_for_new_cluster`` assigns here, so inheriting its
+        # summary / consensus / agreement / published_at verbatim would
+        # persist narrative describing records this cluster does not own.
+        # (``_sanitize_payload`` alone only rebuilds sources, source_count
+        # and evidence.)  A failed rebuild falls back to the upstream
+        # payload so a degenerate cluster_fn can never lose the row.
+        rebuilt = _build_cluster_payload(new_records_in_cluster, cluster_fn)
+        if rebuilt is None:
+            rebuilt = new_cluster
+        sanitized = _sanitize_payload(rebuilt, new_records_in_cluster)
         latest = _max_published(sanitized, "")
         cluster_id = insert_cluster_fn(
             sanitized.get("headline", new_headline) or new_headline,
