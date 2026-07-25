@@ -374,7 +374,8 @@ class TestAnalyzeWiring(unittest.TestCase):
              patch.object(self.api, "market_check", side_effect=self._stub_market_check):
             r = self.client.post(
                 "/analyze",
-                json={"headline": "Macro shock test event"},
+                json={"headline": "Macro shock test event",
+                      "confirm_paid": True},
             )
         self.assertEqual(r.status_code, 200)
         sd = r.json()["analysis"].get("shock_decomposition")
@@ -389,7 +390,8 @@ class TestAnalyzeWiring(unittest.TestCase):
              patch.object(self.api, "market_check", side_effect=self._stub_market_check):
             r = self.client.post(
                 "/analyze",
-                json={"headline": "Macro shock test event"},
+                json={"headline": "Macro shock test event",
+                      "confirm_paid": True},
             )
         self.assertEqual(r.status_code, 200)
         sd = r.json()["analysis"].get("shock_decomposition")

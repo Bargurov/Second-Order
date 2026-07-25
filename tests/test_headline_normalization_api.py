@@ -109,7 +109,8 @@ class TestHeadlineNormalizationApi(unittest.TestCase):
             "event_date",
             (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"),
         )
-        payload = {"headline": headline, "event_date": event_date, **extra}
+        payload = {"headline": headline, "event_date": event_date,
+                   "confirm_paid": True, **extra}
         return self.client.post("/analyze", json=payload)
 
     # ------------------------------------------------------------------

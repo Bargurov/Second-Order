@@ -209,7 +209,9 @@ class SmokeTestBase(unittest.TestCase):
 
     def _analyze(self, headline="Smoke: Fed hikes rates by 50bp", **kwargs):
         """POST /analyze and assert 200."""
-        r = self.client.post("/analyze", json={"headline": headline, **kwargs})
+        r = self.client.post(
+            "/analyze",
+            json={"headline": headline, "confirm_paid": True, **kwargs})
         self.assertEqual(r.status_code, 200, r.text)
         return r.json()
 

@@ -39,7 +39,7 @@ _setup_logging()
 from fastapi import FastAPI, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from db import (
     init_db, load_recent_events, load_events_since,
@@ -50,6 +50,7 @@ from db import (
     append_revisit_snapshot, load_revisit_snapshots,
     get_confidence_calibration_stats,
     events_db_override, db_binding_is_live, get_db_path,
+    link_candidate_analysis,
 )
 from classify import classify_stage, classify_persistence
 from analyze_event import (
@@ -1367,6 +1368,11 @@ def _build_cached_response(
         # parity contract (test_freeze_policy_contract) intact.
         "persistence_failed": False,
         "persistence_error":  None,
+        # The row this response was restored from.  A free read links
+        # nothing — an inbox candidate is linked only by the run that
+        # actually produced the analysis — so candidate_link stays None.
+        "analysis_event_id": cached.get("id"),
+        "candidate_link": None,
     }
     return _sanitize_floats(response)
 
@@ -1399,12 +1405,15 @@ def _persist_event(
     headline: str, stage: str, persistence: str,
     analysis: AnalysisResult, mkt: dict, effective_date: str,
     model: str | None = None,
-) -> str | None:
+) -> tuple[str | None, int | None]:
     """Build an event record from analysis results and save to the DB.
 
-    Returns ``None`` on success, or a short error-message string on
-    failure.  Existing callers (``/analyze``, ``/analyze/stream``,
-    movers backfill) rely on this function never raising past its
+    Returns ``(error, analysis_event_id)`` — ``(None, id)`` on success, or
+    ``(short error string, None)`` on failure.  The id is what the candidate
+    linkage is stamped with, so a failed save can never produce one.
+
+    Existing callers (``/analyze``, ``/analyze/stream``, movers backfill)
+    rely on this function never raising past its
     boundary, so the failure is surfaced via the return value instead
     — callers can surface it as a ``persistence_failed`` flag.
 
@@ -1497,7 +1506,7 @@ def _persist_event(
         )
         event_record["country_vulnerability_context"] = {}
     try:
-        save_event(event_record)
+        saved_id = save_event(event_record)
     except Exception as e:
         # Caller (typically /analyze or /analyze/stream) surfaces
         # this as ``persistence_failed: True`` so the response is
@@ -1505,11 +1514,11 @@ def _persist_event(
         # NOT re-raised — every existing caller depends on this
         # function not raising past its boundary.
         _log.warning("save_event failed: %s", e, exc_info=True)
-        return f"{type(e).__name__}: {e}"
+        return f"{type(e).__name__}: {e}", None
     # Bust the today-movers in-memory cache so /movers/today reflects
     # the new event without waiting for the 5-minute TTL to expire.
     _TODAYS_MOVERS_CACHE["data"] = None
-    return None
+    return None, saved_id
 
 
 # ---------------------------------------------------------------------------
@@ -1534,6 +1543,30 @@ class AnalyzeRequest(BaseModel):
             "two near-duplicate headlines share the same anchor date."
         ),
     )
+    confirm_paid: bool = Field(
+        False,
+        description=(
+            "Explicit operator confirmation that a provider call may be made. "
+            "A cache MISS without this fails closed with "
+            "'paid_confirmation_required' and never reaches a provider; a "
+            "cache hit is served regardless because it costs nothing."
+        ),
+    )
+    candidate_id: Optional[str] = Field(
+        None, max_length=128,
+        description=(
+            "Strict Automatic Event Inbox candidate identity (``aei-*``). "
+            "Never a substitute for the numeric ``event_id``."
+        ),
+    )
+    parent_cluster_id: Optional[int] = Field(
+        None, ge=1,
+        description="Stored semantic-parent cluster id — provenance only.",
+    )
+    title_key: Optional[str] = Field(
+        None, max_length=500,
+        description="Strict ``_dedup_key`` identity the candidate partition uses.",
+    )
     force: bool = Field(
         False,
         description=(
@@ -1541,6 +1574,30 @@ class AnalyzeRequest(BaseModel):
             "Use when an archive review needs the full live macro recompute."
         ),
     )
+
+    @model_validator(mode="after")
+    def _candidate_identity_is_all_or_none(self) -> "AnalyzeRequest":
+        """Candidate identity is a unit: partial identity is rejected.
+
+        A half-supplied identity would let the route link an analysis to a
+        candidate it cannot verify, so the boundary refuses it (422) rather
+        than guessing.  ``candidate_id`` must also recompute from
+        ``(parent_cluster_id, title_key)`` — it is derived, never asserted.
+        """
+        present = [f for f in ("candidate_id", "parent_cluster_id", "title_key")
+                   if getattr(self, f) is not None]
+        if present and len(present) != 3:
+            raise ValueError(
+                "candidate_id, parent_cluster_id and title_key must be "
+                "supplied together (got: " + ", ".join(sorted(present)) + ")")
+        if present:
+            from event_inbox import candidate_event_id
+            expected = candidate_event_id(self.parent_cluster_id, self.title_key)
+            if self.candidate_id != expected:
+                raise ValueError(
+                    "candidate_id does not recompute from parent_cluster_id "
+                    "and title_key")
+        return self
 
 
 class ReviewRequest(BaseModel):

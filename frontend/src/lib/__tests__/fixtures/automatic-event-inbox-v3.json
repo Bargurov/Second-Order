@@ -1,0 +1,942 @@
+{
+  "contract": "automatic-event-inbox-v3",
+  "generated_from": "local news_clusters store (read-only SQLite), partitioned by exact normalized-headline identity",
+  "as_of": "2026-07-07T12:00:00",
+  "availability": "AVAILABLE",
+  "events": [
+    {
+      "event_id": "aei-13504-f549fbb8",
+      "cluster_id": 13504,
+      "headline": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
+      "event_summary": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live (major outlet: The Guardian Business).",
+      "first_seen_at": "2026-07-07T10:19:10",
+      "last_updated_at": "2026-07-07T10:19:10",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "The Guardian Business",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": "commodity_squeeze",
+      "event_type": "military action",
+      "material_channels": [
+        "SUPPLY_CHAIN",
+        "ENERGY_COMMODITIES",
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints",
+        "Potential effect on energy or commodity supply and prices",
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
+        "context": "Summary: UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live (major outlet: The Guardian Business).\nAgreement: consistent\nActors: United Kingdom | Action: military action | Sector: shipping | Geography: Europe | Uncertainty: medium",
+        "candidate_id": "aei-13504-f549fbb8",
+        "parent_cluster_id": 13504,
+        "title_key": "uk house prices rise in june despite wider economic uncertainty oil prices up after attack on tanker in strait of hormuz  business live",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13451-aebcb831",
+      "cluster_id": 13451,
+      "headline": "Beijing is looking at curbing overseas access to China’s top AI models, sources say",
+      "event_summary": "Beijing is looking at curbing overseas access to China’s top AI models, sources say (regional outlet: Investing.com).",
+      "first_seen_at": "2026-07-07T10:18:41",
+      "last_updated_at": "2026-07-07T10:18:41",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Investing.com",
+          "tier": "medium",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": null,
+      "material_channels": [
+        "TECHNOLOGY_PRODUCTIVITY"
+      ],
+      "why_surfaced": [
+        "May alter technology supply or productivity constraints"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "High source-derived uncertainty",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Beijing is looking at curbing overseas access to China’s top AI models, sources say",
+        "context": "Summary: Beijing is looking at curbing overseas access to China’s top AI models, sources say (regional outlet: Investing.com).\nAgreement: consistent\nActors: China | Action: unknown | Sector: unknown | Geography: East Asia | Uncertainty: high",
+        "candidate_id": "aei-13451-aebcb831",
+        "parent_cluster_id": 13451,
+        "title_key": "beijing is looking at curbing overseas access to chinas top ai models sources say",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13504-3d6eaebe",
+      "cluster_id": 13504,
+      "headline": "Oil prices rise after report of Iranian attack on commercial ships in Strait of Hormuz",
+      "event_summary": "Oil prices rise after report of Iranian attack on commercial ships in Strait of Hormuz (major outlet: CNBC World).",
+      "first_seen_at": "2026-07-07T10:10:40",
+      "last_updated_at": "2026-07-07T10:10:40",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "CNBC World",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": "commodity_squeeze",
+      "event_type": "military action",
+      "material_channels": [
+        "SUPPLY_CHAIN",
+        "ENERGY_COMMODITIES",
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints",
+        "Potential effect on energy or commodity supply and prices",
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "Oil prices rise after report of Iranian attack on commercial ships in Strait of Hormuz",
+        "context": "Summary: Oil prices rise after report of Iranian attack on commercial ships in Strait of Hormuz (major outlet: CNBC World).\nAgreement: consistent\nActors: Iran | Action: military action | Sector: shipping | Geography: Middle East | Uncertainty: medium",
+        "candidate_id": "aei-13504-3d6eaebe",
+        "parent_cluster_id": 13504,
+        "title_key": "oil prices rise after report of iranian attack on commercial ships in strait of hormuz",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13504-59ce4752",
+      "cluster_id": 13504,
+      "headline": "Oil gains after vessel attacks near Strait of Hormuz",
+      "event_summary": "Oil gains after vessel attacks near Strait of Hormuz (major outlet: Reuters World).",
+      "first_seen_at": "2026-07-07T09:51:24",
+      "last_updated_at": "2026-07-07T09:51:24",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Reuters World",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": "commodity_squeeze",
+      "event_type": "military action",
+      "material_channels": [
+        "SUPPLY_CHAIN",
+        "ENERGY_COMMODITIES",
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints",
+        "Potential effect on energy or commodity supply and prices",
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "Oil gains after vessel attacks near Strait of Hormuz",
+        "context": "Summary: Oil gains after vessel attacks near Strait of Hormuz (major outlet: Reuters World).\nAgreement: consistent\nAction: military action | Sector: shipping | Uncertainty: medium",
+        "candidate_id": "aei-13504-59ce4752",
+        "parent_cluster_id": 13504,
+        "title_key": "oil gains after vessel attacks near strait of hormuz",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13504-27399ab0",
+      "cluster_id": 13504,
+      "headline": "Qatari gas tanker hit in Strait of Hormuz",
+      "event_summary": "Qatari gas tanker hit in Strait of Hormuz (major outlet: FT World).",
+      "first_seen_at": "2026-07-07T08:19:17",
+      "last_updated_at": "2026-07-07T08:19:17",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "FT World",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": "commodity_squeeze",
+      "event_type": null,
+      "material_channels": [
+        "SUPPLY_CHAIN"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "Qatari gas tanker hit in Strait of Hormuz",
+        "context": "Summary: Qatari gas tanker hit in Strait of Hormuz (major outlet: FT World).\nAgreement: consistent\nAction: unknown | Sector: shipping | Uncertainty: medium",
+        "candidate_id": "aei-13504-27399ab0",
+        "parent_cluster_id": 13504,
+        "title_key": "qatari gas tanker hit in strait of hormuz",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13507-efb58a25",
+      "cluster_id": 13507,
+      "headline": "Hedge Funds Most Bearish on Yen Since 2007 on Carry Trade Bets",
+      "event_summary": "Hedge Funds Most Bearish on Yen Since 2007 on Carry Trade Bets (major outlet: Bloomberg Markets).",
+      "first_seen_at": "2026-07-07T02:29:00",
+      "last_updated_at": "2026-07-07T02:29:00",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Bloomberg Markets",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "trade policy",
+      "material_channels": [
+        "CURRENCY"
+      ],
+      "why_surfaced": [
+        "Potential effect on exchange rates"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Hedge Funds Most Bearish on Yen Since 2007 on Carry Trade Bets",
+        "context": "Summary: Hedge Funds Most Bearish on Yen Since 2007 on Carry Trade Bets (major outlet: Bloomberg Markets).\nAgreement: consistent\nAction: trade policy | Sector: unknown | Uncertainty: medium",
+        "candidate_id": "aei-13507-efb58a25",
+        "parent_cluster_id": 13507,
+        "title_key": "hedge funds most bearish on yen since 2007 on carry trade bets",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13507-2186228f",
+      "cluster_id": 13507,
+      "headline": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms",
+      "event_summary": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms (major outlet: Bloomberg Markets).",
+      "first_seen_at": "2026-07-06T20:12:31",
+      "last_updated_at": "2026-07-06T20:12:31",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Bloomberg Markets",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "trade policy",
+      "material_channels": [
+        "RATES",
+        "CURRENCY"
+      ],
+      "why_surfaced": [
+        "Potential effect on short-term rate expectations or yields",
+        "Potential effect on exchange rates"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms",
+        "context": "Summary: Traders Are Most Positive on Dollar Since 2015 as Fed Hike Looms (major outlet: Bloomberg Markets).\nAgreement: consistent\nActors: Federal Reserve | Action: trade policy | Sector: unknown | Uncertainty: medium",
+        "candidate_id": "aei-13507-2186228f",
+        "parent_cluster_id": 13507,
+        "title_key": "traders are most positive on dollar since 2015 as fed hike looms",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13036-20bad7aa",
+      "cluster_id": 13036,
+      "headline": "Dutch to announce over €3 billion in defence deals at NATO forum, minister says",
+      "event_summary": "Dutch to announce over €3 billion in defence deals at NATO forum, minister says (regional outlet: LatAm Economy).",
+      "first_seen_at": "2026-07-06T17:33:43",
+      "last_updated_at": "2026-07-06T17:33:43",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "LatAm Economy",
+          "tier": "medium",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "defense spending",
+      "material_channels": [
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "High source-derived uncertainty",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Dutch to announce over €3 billion in defence deals at NATO forum, minister says",
+        "context": "Summary: Dutch to announce over €3 billion in defence deals at NATO forum, minister says (regional outlet: LatAm Economy).\nAgreement: consistent\nActors: NATO | Action: defense spending | Sector: defense | Uncertainty: high",
+        "candidate_id": "aei-13036-20bad7aa",
+        "parent_cluster_id": 13036,
+        "title_key": "dutch to announce over 3 billion in defence deals at nato forum minister says",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13036-dbc73ced",
+      "cluster_id": 13036,
+      "headline": "NATO leaders look for unity as Trump attends annual summit",
+      "event_summary": "NATO leaders look for unity as Trump attends annual summit (major outlet: NPR World).",
+      "first_seen_at": "2026-07-05T21:03:40",
+      "last_updated_at": "2026-07-05T21:03:40",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "NPR World",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": null,
+      "material_channels": [
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "NATO leaders look for unity as Trump attends annual summit",
+        "context": "Summary: NATO leaders look for unity as Trump attends annual summit (major outlet: NPR World).\nAgreement: consistent\nActors: NATO | Action: unknown | Sector: unknown | Uncertainty: medium",
+        "candidate_id": "aei-13036-dbc73ced",
+        "parent_cluster_id": 13036,
+        "title_key": "nato leaders look for unity as trump attends annual summit",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13036-c490739c",
+      "cluster_id": 13036,
+      "headline": "Nato leaders gather for crucial meeting in Ankara",
+      "event_summary": "Nato leaders gather for crucial meeting in Ankara (major outlet: FT World).",
+      "first_seen_at": "2026-07-05T17:15:05",
+      "last_updated_at": "2026-07-05T17:15:05",
+      "lifecycle": "WATCH",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "FT World",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": null,
+      "material_channels": [
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Nato leaders gather for crucial meeting in Ankara",
+        "context": "Summary: Nato leaders gather for crucial meeting in Ankara (major outlet: FT World).\nAgreement: consistent\nActors: Turkey, NATO | Action: unknown | Sector: unknown | Geography: Middle East | Uncertainty: medium",
+        "candidate_id": "aei-13036-c490739c",
+        "parent_cluster_id": 13036,
+        "title_key": "nato leaders gather for crucial meeting in ankara",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13060-4f584711",
+      "cluster_id": 13060,
+      "headline": "Brazil Freezes $2 Billion, Pursues Arrests After US Sanctions",
+      "event_summary": "Brazil Freezes $2 Billion, Pursues Arrests After US Sanctions (major outlet: Bloomberg Markets).",
+      "first_seen_at": "2026-07-03T16:00:36",
+      "last_updated_at": "2026-07-03T16:00:36",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Bloomberg Markets",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": "supply_shock",
+      "event_type": "sanctions",
+      "material_channels": [
+        "TRADE"
+      ],
+      "why_surfaced": [
+        "May alter trade flows, tariffs or sanctions exposure"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "Brazil Freezes $2 Billion, Pursues Arrests After US Sanctions",
+        "context": "Summary: Brazil Freezes $2 Billion, Pursues Arrests After US Sanctions (major outlet: Bloomberg Markets).\nAgreement: consistent\nActors: United States | Action: sanctions | Sector: unknown | Geography: North America | Uncertainty: medium",
+        "candidate_id": "aei-13060-4f584711",
+        "parent_cluster_id": 13060,
+        "title_key": "brazil freezes 2 billion pursues arrests after us sanctions",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13036-024766b7",
+      "cluster_id": 13036,
+      "headline": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says",
+      "event_summary": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says (major outlet: Reuters World).",
+      "first_seen_at": "2026-07-03T14:22:58",
+      "last_updated_at": "2026-07-03T14:22:58",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Reuters World",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "defense spending",
+      "material_channels": [
+        "GEOPOLITICAL_RISK"
+      ],
+      "why_surfaced": [
+        "Geopolitical escalation or de-escalation channel"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says",
+        "context": "Summary: NATO leaders including Trump to affirm 'ironclad commitment' to collective defence in Ankara, summit text says (major outlet: Reuters World).\nAgreement: consistent\nActors: Turkey, NATO | Action: defense spending | Sector: defense | Geography: Middle East | Uncertainty: medium",
+        "candidate_id": "aei-13036-024766b7",
+        "parent_cluster_id": 13036,
+        "title_key": "nato leaders including trump to affirm ironclad commitment to collective defence in ankara summit text says",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-12494-5eeccbe1",
+      "cluster_id": 12494,
+      "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+      "event_summary": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (major outlet: Fed Press Releases).",
+      "first_seen_at": "2026-07-02T15:00:00",
+      "last_updated_at": "2026-07-02T15:00:00",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Fed Press Releases",
+          "tier": "high",
+          "official": true
+        }
+      ],
+      "official_source_present": true,
+      "event_family": null,
+      "event_type": "export restrictions",
+      "material_channels": [
+        "RATES",
+        "REGULATION"
+      ],
+      "why_surfaced": [
+        "Potential effect on short-term rate expectations or yields",
+        "May change the regulatory or antitrust regime",
+        "Official source present: Fed Press Releases"
+      ],
+      "known_unknowns": [
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+        "context": "Summary: Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (major outlet: Fed Press Releases).\nAgreement: consistent\nActors: Federal Reserve | Action: export restrictions | Sector: finance | Uncertainty: medium",
+        "candidate_id": "aei-12494-5eeccbe1",
+        "parent_cluster_id": 12494,
+        "title_key": "federal reserve board issues enforcement action with small business bank and announces termination enforcement actions with bnp paribas sa bnp paribas usa inc bnp paribas securities corp and community bankshares inc",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13060-5acdd294",
+      "cluster_id": 13060,
+      "headline": "US Removes Four Indian Companies From Russia-Linked Sanctions List - NDTV Profit",
+      "event_summary": "US Removes Four Indian Companies From Russia-Linked Sanctions List - NDTV Profit (regional outlet: OFAC Sanctions).",
+      "first_seen_at": "2026-07-01T07:36:48",
+      "last_updated_at": "2026-07-01T07:36:48",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "OFAC Sanctions",
+          "tier": "medium",
+          "official": true
+        }
+      ],
+      "official_source_present": true,
+      "event_family": "sanction",
+      "event_type": "sanctions",
+      "material_channels": [
+        "TRADE"
+      ],
+      "why_surfaced": [
+        "May alter trade flows, tariffs or sanctions exposure",
+        "Official source present: OFAC Sanctions"
+      ],
+      "known_unknowns": [
+        "Single source; independent corroboration missing",
+        "High source-derived uncertainty"
+      ],
+      "analysis_target": {
+        "headline": "US Removes Four Indian Companies From Russia-Linked Sanctions List - NDTV Profit",
+        "context": "Summary: US Removes Four Indian Companies From Russia-Linked Sanctions List - NDTV Profit (regional outlet: OFAC Sanctions).\nAgreement: consistent\nActors: Russia, India, United States | Action: sanctions | Sector: unknown | Geography: Eurasia, South Asia, North America | Uncertainty: high",
+        "candidate_id": "aei-13060-5acdd294",
+        "parent_cluster_id": 13060,
+        "title_key": "us removes four indian companies from russialinked sanctions list  ndtv profit",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13060-5a77f3c7",
+      "cluster_id": 13060,
+      "headline": "US Treasury cracks down on Jalisco New Generation Cartel with sanctions and a bank alert",
+      "event_summary": "US Treasury cracks down on Jalisco New Generation Cartel with sanctions and a bank alert (major outlet: AP News).",
+      "first_seen_at": "2026-06-30T17:35:00",
+      "last_updated_at": "2026-06-30T17:35:00",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "AP News",
+          "tier": "high",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": "sanction",
+      "event_type": "sanctions",
+      "material_channels": [
+        "TRADE"
+      ],
+      "why_surfaced": [
+        "May alter trade flows, tariffs or sanctions exposure"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "US Treasury cracks down on Jalisco New Generation Cartel with sanctions and a bank alert",
+        "context": "Summary: US Treasury cracks down on Jalisco New Generation Cartel with sanctions and a bank alert (major outlet: AP News).\nAgreement: consistent\nActors: United States | Action: sanctions | Sector: finance | Geography: North America | Uncertainty: medium",
+        "candidate_id": "aei-13060-5a77f3c7",
+        "parent_cluster_id": 13060,
+        "title_key": "us treasury cracks down on jalisco new generation cartel with sanctions and a bank alert",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13060-c47bb254",
+      "cluster_id": 13060,
+      "headline": "U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity",
+      "event_summary": "U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity (regional outlet: Freight & Shipping).",
+      "first_seen_at": "2026-06-29T21:50:03",
+      "last_updated_at": "2026-06-29T21:50:03",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Freight & Shipping",
+          "tier": "medium",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "export restrictions",
+      "material_channels": [
+        "SUPPLY_CHAIN"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "High source-derived uncertainty",
+        "No event-family mapping for this cluster",
+        "Announced or anticipated action; implementation details remain unresolved"
+      ],
+      "analysis_target": {
+        "headline": "U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity",
+        "context": "Summary: U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity (regional outlet: Freight & Shipping).\nAgreement: consistent\nActors: United States | Action: export restrictions | Sector: shipping | Geography: North America | Uncertainty: high",
+        "candidate_id": "aei-13060-c47bb254",
+        "parent_cluster_id": 13060,
+        "title_key": "us bank truck freight rates rose considerably in april and may  dc velocity",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13060-350c9d88",
+      "cluster_id": 13060,
+      "headline": "U.S. Bank and DAT: Truck freight rates accelerate - The Joplin Globe",
+      "event_summary": "U.S. Bank and DAT: Truck freight rates accelerate - The Joplin Globe (regional outlet: Freight & Shipping).",
+      "first_seen_at": "2026-06-29T13:01:05",
+      "last_updated_at": "2026-06-29T13:01:05",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Freight & Shipping",
+          "tier": "medium",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "export restrictions",
+      "material_channels": [
+        "SUPPLY_CHAIN"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "High source-derived uncertainty",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "U.S. Bank and DAT: Truck freight rates accelerate - The Joplin Globe",
+        "context": "Summary: U.S. Bank and DAT: Truck freight rates accelerate - The Joplin Globe (regional outlet: Freight & Shipping).\nAgreement: consistent\nActors: United States | Action: export restrictions | Sector: shipping | Geography: North America | Uncertainty: high",
+        "candidate_id": "aei-13060-350c9d88",
+        "parent_cluster_id": 13060,
+        "title_key": "us bank and dat truck freight rates accelerate  the joplin globe",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-13060-6c226253",
+      "cluster_id": 13060,
+      "headline": "U.S. Bank and DAT: Truck freight rates accelerate",
+      "event_summary": "U.S. Bank and DAT: Truck freight rates accelerate (regional outlet: Freight & Shipping).",
+      "first_seen_at": "2026-06-29T13:00:00",
+      "last_updated_at": "2026-06-29T13:00:00",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Freight & Shipping",
+          "tier": "medium",
+          "official": false
+        }
+      ],
+      "official_source_present": false,
+      "event_family": null,
+      "event_type": "export restrictions",
+      "material_channels": [
+        "SUPPLY_CHAIN"
+      ],
+      "why_surfaced": [
+        "May alter supply-chain constraints"
+      ],
+      "known_unknowns": [
+        "No official source in the cluster",
+        "Single source; independent corroboration missing",
+        "High source-derived uncertainty",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "U.S. Bank and DAT: Truck freight rates accelerate",
+        "context": "Summary: U.S. Bank and DAT: Truck freight rates accelerate (regional outlet: Freight & Shipping).\nAgreement: consistent\nActors: United States | Action: export restrictions | Sector: shipping | Geography: North America | Uncertainty: high",
+        "candidate_id": "aei-13060-6c226253",
+        "parent_cluster_id": 13060,
+        "title_key": "us bank and dat truck freight rates accelerate",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-12494-fc3108d6",
+      "cluster_id": 12494,
+      "headline": "Federal Reserve Board announces termination of enforcement action with Jiko Group, Inc.",
+      "event_summary": "Federal Reserve Board announces termination of enforcement action with Jiko Group, Inc. (major outlet: Fed Press Releases).",
+      "first_seen_at": "2026-06-25T15:00:00",
+      "last_updated_at": "2026-06-25T15:00:00",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Fed Press Releases",
+          "tier": "high",
+          "official": true
+        }
+      ],
+      "official_source_present": true,
+      "event_family": null,
+      "event_type": null,
+      "material_channels": [
+        "RATES",
+        "REGULATION"
+      ],
+      "why_surfaced": [
+        "Potential effect on short-term rate expectations or yields",
+        "May change the regulatory or antitrust regime",
+        "Official source present: Fed Press Releases"
+      ],
+      "known_unknowns": [
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Federal Reserve Board announces termination of enforcement action with Jiko Group, Inc.",
+        "context": "Summary: Federal Reserve Board announces termination of enforcement action with Jiko Group, Inc. (major outlet: Fed Press Releases).\nAgreement: consistent\nActors: Federal Reserve | Action: unknown | Sector: unknown | Uncertainty: medium",
+        "candidate_id": "aei-12494-fc3108d6",
+        "parent_cluster_id": 12494,
+        "title_key": "federal reserve board announces termination of enforcement action with jiko group inc",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-12494-01512302",
+      "cluster_id": 12494,
+      "headline": "Federal Reserve Board issues enforcement action with employee of Bank of Eufaula and S N B Bancshares, Inc.",
+      "event_summary": "Federal Reserve Board issues enforcement action with employee of Bank of Eufaula and S N B Bancshares, Inc. (major outlet: Fed Press Releases).",
+      "first_seen_at": "2026-06-25T15:00:00",
+      "last_updated_at": "2026-06-25T15:00:00",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Fed Press Releases",
+          "tier": "high",
+          "official": true
+        }
+      ],
+      "official_source_present": true,
+      "event_family": null,
+      "event_type": "export restrictions",
+      "material_channels": [
+        "RATES",
+        "REGULATION"
+      ],
+      "why_surfaced": [
+        "Potential effect on short-term rate expectations or yields",
+        "May change the regulatory or antitrust regime",
+        "Official source present: Fed Press Releases"
+      ],
+      "known_unknowns": [
+        "Single source; independent corroboration missing",
+        "No event-family mapping for this cluster"
+      ],
+      "analysis_target": {
+        "headline": "Federal Reserve Board issues enforcement action with employee of Bank of Eufaula and S N B Bancshares, Inc.",
+        "context": "Summary: Federal Reserve Board issues enforcement action with employee of Bank of Eufaula and S N B Bancshares, Inc. (major outlet: Fed Press Releases).\nAgreement: consistent\nActors: Federal Reserve | Action: export restrictions | Sector: finance | Uncertainty: medium",
+        "candidate_id": "aei-12494-01512302",
+        "parent_cluster_id": 12494,
+        "title_key": "federal reserve board issues enforcement action with employee of bank of eufaula and s n b bancshares inc",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    },
+    {
+      "event_id": "aei-12494-215b9d16",
+      "cluster_id": 12494,
+      "headline": "Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses",
+      "event_summary": "Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses (major outlet: Fed Press Releases).",
+      "first_seen_at": "2026-06-24T20:00:00",
+      "last_updated_at": "2026-06-24T20:00:00",
+      "lifecycle": "RESOLVED",
+      "source_count": 1,
+      "sources": [
+        {
+          "name": "Fed Press Releases",
+          "tier": "high",
+          "official": true
+        }
+      ],
+      "official_source_present": true,
+      "event_family": "bank_stress",
+      "event_type": "export restrictions",
+      "material_channels": [
+        "GROWTH",
+        "RATES",
+        "REGULATION"
+      ],
+      "why_surfaced": [
+        "Potential effect on growth expectations",
+        "Potential effect on short-term rate expectations or yields",
+        "May change the regulatory or antitrust regime",
+        "Official source present: Fed Press Releases"
+      ],
+      "known_unknowns": [
+        "Single source; independent corroboration missing"
+      ],
+      "analysis_target": {
+        "headline": "Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses",
+        "context": "Summary: Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses (major outlet: Fed Press Releases).\nAgreement: consistent\nActors: Federal Reserve | Action: export restrictions | Sector: finance | Uncertainty: medium",
+        "candidate_id": "aei-12494-215b9d16",
+        "parent_cluster_id": 12494,
+        "title_key": "federal reserve boards annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses",
+        "analysis_link_status": "unanalyzed",
+        "analysis_event_id": null
+      },
+      "availability_status": "AVAILABLE",
+      "missing_reason": null
+    }
+  ],
+  "counts": {
+    "parent_clusters_total": 6,
+    "partitioned_parent_clusters": 6,
+    "malformed_parent_clusters": 0,
+    "candidates_total": 35,
+    "surfaced": 21,
+    "beyond_window": 11,
+    "excluded_no_material_channel": 3,
+    "malformed_candidates": 0,
+    "by_lifecycle": {
+      "NEW": 0,
+      "DEVELOPING": 0,
+      "WATCH": 10,
+      "RESOLVED": 11
+    }
+  },
+  "limitations": [
+    "Absence from the inbox does not prove that an event is economically irrelevant.",
+    "Materiality channels are assigned by a documented deterministic keyword rule; the semantic novelty of an update is not verified.",
+    "Event-family mapping is an optional enrichment; clusters without a mapping show that explicitly.",
+    "Event candidates are exact normalized-headline partitions of a stored cluster, so a cross-source paraphrase of one event can appear as separate candidates; conservative splitting is preferred to merging distinct events.",
+    "Because event identity is exact, corroboration is counted only when sources publish the same normalized headline; cross-source agreement can therefore be understated.",
+    "Lifecycle labels describe candidate timing and workflow age, not economic resolution: RESOLVED means the candidate stopped drawing new articles, and DEVELOPING is not currently produced because a materially different headline becomes a separate candidate.",
+    "Why-surfaced names the deterministic inclusion channel rather than a full event-specific assessment, and material-channel coverage is incomplete — corporate earnings and guidance are a known gap.",
+    "5 of 6 stored clusters contained more than one identity partition and were surfaced as separate candidates.",
+    "11 event candidates last updated more than 14 days ago are outside the inbox window (counted, not shown).",
+    "3 event candidates matched no explicit material channel and are excluded (counted, not shown)."
+  ],
+  "non_claim": "Events are surfaced through explicit source, identity and economic-channel rules. Inclusion is not a prediction of price direction, significance or tradeability."
+}

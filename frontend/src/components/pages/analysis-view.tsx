@@ -29,6 +29,15 @@ import {
 } from "lucide-react";
 import { api, type AnalyzeResponse, type Confidence, type Ticker, type AnalysisDetail, type CurrencyChannel, type PolicySensitivity, type InventoryContext, type RealYieldContext, type PolicyConstraint, type ShockDecomposition, type ReactionFunctionDivergence, type SurpriseVsAnticipation, type TermsOfTrade, type TermsOfTradeExposure, type ReserveStress, type ReserveStressVulnerable, type ReserveStressInsulated, type NarrativeDivergence, type RoleSignal, type HistoricalAnalog, type AnalogMatchDimension, type RevisitSnapshot, type ConfidenceCalibration, type ConfidenceCalibrationBucket, type CrossAssetConfirmation, type CreditTransmission, type HorizonCheckpoints, type HorizonCheckpoint, type SectorPassthrough, type SectorPassthroughEntry, type MechanismFamily, type ExpectedChannel, type Counterforce, type SubstitutionBarrier, type EventMacroReleaseContext, type EventPolicyTimingContext, type EventCountryVulnerabilityContext, type PolicyTimingStatus, type VulnerabilityTier, type CommodityTier } from "@/lib/api";
 import { deriveAllHorizons, deriveTrajectory, type HorizonSummary, type ThesisTrajectory } from "@/lib/revisit-derivation";
+import {
+  analysisActionFor,
+  analyzeRequestFor,
+  launchFromHeadline,
+  shouldAutoSubmit,
+  type AnalysisAction,
+  type AnalysisLaunch,
+  type InboxLaunch,
+} from "@/lib/analysis-launch";
 import "@/styles/analyze-canvas.css";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
@@ -3265,12 +3274,11 @@ function AnalysisSkeleton() {
 // ---------------------------------------------------------------------------
 
 interface AnalysisViewProps {
-  initialHeadline?: string;
-  initialContext?: string;
-  /** When set, the backend will load this event by primary key instead of
-   *  doing a headline-string lookup — prevents near-duplicate stories from
-   *  cross-routing.  Supplied by Market Overview card clicks. */
-  initialEventId?: number;
+  /** Everything the surface needs to open one event, typed by origin.  An
+   *  inbox candidate carries its own identity and link state and is NEVER
+   *  auto-submitted; every other origin keeps the existing behaviour where
+   *  arriving here is itself the requested action.  See lib/analysis-launch. */
+  initialLaunch?: AnalysisLaunch;
   onHeadlineConsumed?: () => void;
   onBack?: () => void;
   /** Called when analysis completes as failed (analysis_failed) or mock
@@ -3305,14 +3313,97 @@ export const CALIBRATION_ARCHIVE_NOTE_TITLE =
   "Descriptive archive share under the any-support rule — not predictive " +
   "validation, accuracy, or model performance.";
 
-export function AnalysisView({ initialHeadline, initialContext, initialEventId, onHeadlineConsumed, onBack, onAnalysisFailed, onAnalysisSucceeded }: AnalysisViewProps) {
+/**
+ * The decision step between opening an inbox candidate and running it.
+ *
+ * Three honest states, one per link status — and the conflict state offers no
+ * action at all, because selecting one of several linked analyses for the
+ * operator would silently open the wrong event.
+ */
+function CandidateConfirmation({
+  launch, onRun, onDismiss,
+}: {
+  launch: InboxLaunch;
+  onRun: () => void;
+  onDismiss: () => void;
+}) {
+  const action = analysisActionFor(launch);
+  const saved = launch.link.analysisEventId;
+  return (
+    <section
+      aria-label="Candidate awaiting confirmation"
+      className={cn(INNER_CARD,
+        "mb-8 px-5 py-4 shadow-[inset_0_0_0_1px_rgba(147,209,211,0.28)]")}
+    >
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-primary">
+          From the event inbox
+        </span>
+        <span className="font-mono text-[10px] text-on-surface-variant/70">
+          {launch.candidate.candidate_id}
+        </span>
+      </div>
+
+      <p className="mt-2.5 max-w-[62ch] text-sm leading-snug text-on-surface">
+        {launch.headline}
+      </p>
+
+      {launch.context && (
+        <p className="mt-2.5 max-w-[72ch] whitespace-pre-line text-[11px] leading-relaxed text-on-surface-variant/75">
+          {launch.context}
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        {action === "blocked_conflict" ? (
+          <p className="max-w-[62ch] text-[11px] leading-relaxed text-on-surface-variant">
+            This candidate is linked to more than one saved analysis, so no
+            single one can be opened from here. Nothing was run.
+          </p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onRun}
+              className="inline-flex h-8 items-center rounded-full bg-primary/15 px-4 text-[10px] font-medium uppercase tracking-[0.12em] text-primary transition-colors hover:bg-primary/25"
+            >
+              {action === "open_saved" ? "View saved analysis" : "Run analysis"}
+            </button>
+            <span className="text-[11px] text-on-surface-variant">
+              {action === "open_saved"
+                ? `reads saved event ${saved} — no provider call`
+                : "calls a paid provider once, for this candidate only"}
+            </span>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="ml-auto text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60 transition-colors hover:text-on-surface-variant"
+        >
+          Dismiss
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function AnalysisView({ initialLaunch, onHeadlineConsumed, onBack, onAnalysisFailed, onAnalysisSucceeded }: AnalysisViewProps) {
   const [headline, setHeadline] = useState("");
   const [eventDate] = useState("");
-  const contextRef = useRef<string | undefined>(initialContext);
+  const contextRef = useRef<string | undefined>(
+    initialLaunch?.origin === "inbox" ? initialLaunch.context : initialLaunch?.context,
+  );
   const eventDateRef = useRef(eventDate);
   eventDateRef.current = eventDate;
   // Keep track of the pending event_id across the async submit cycle.
-  const pendingEventIdRef = useRef<number | undefined>(initialEventId);
+  const pendingEventIdRef = useRef<number | undefined>(
+    initialLaunch?.origin === "direct" ? initialLaunch.eventId : undefined,
+  );
+  // The candidate awaiting an explicit decision.  Non-null ONLY while an
+  // inbox candidate is open and nothing has been run for it yet — this is
+  // what keeps opening an event separate from paying for one.
+  const [pendingCandidate, setPendingCandidate] = useState<InboxLaunch | null>(null);
   const [{ phase, result, error }, dispatch] = useReducer(
     analysisStreamReducer,
     INITIAL_ANALYSIS_STREAM_STATE,
@@ -3333,9 +3424,25 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  const submit = useCallback(async (h?: string, eventId?: number) => {
+  const submit = useCallback(async (
+    h?: string, eventId?: number, launch?: AnalysisLaunch, action?: AnalysisAction,
+  ) => {
     const text = (h ?? headline).trim();
     if (!text) return;
+    // A candidate launch builds its own request so the strict identity and
+    // the explicit confirmation travel together; typing a headline in the
+    // box is a direct run with no candidate identity to carry.
+    const request = analyzeRequestFor(
+      launch ?? launchFromHeadline(text, {
+        context: contextRef.current,
+        eventId: eventId ?? pendingEventIdRef.current,
+      }),
+      action ?? "run_paid",
+    );
+    // null means the action cannot be honestly served (a conflicted link, or
+    // a saved read with no saved id).  Send nothing — never fall back to a
+    // paid run the operator did not ask for.
+    if (request === null) return;
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -3352,12 +3459,7 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
     };
     try {
       await api.analyzeStream(
-        {
-          headline: text,
-          event_date: eventDateRef.current || undefined,
-          event_context: contextRef.current || undefined,
-          event_id: eventId ?? pendingEventIdRef.current,
-        },
+        { ...request, event_date: eventDateRef.current || undefined },
         (stage, data) => {
           if (ctrl.signal.aborted) return;
           // Row settlement is a side effect and stays here; the reducer owns
@@ -3404,15 +3506,23 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
   }, [result]);
 
   useEffect(() => {
-    if (initialHeadline) {
-      setHeadline(initialHeadline);
-      contextRef.current = initialContext;
-      pendingEventIdRef.current = initialEventId;
-      onHeadlineConsumed?.();
-      submit(initialHeadline, initialEventId);
+    if (!initialLaunch) return;
+    setHeadline(initialLaunch.headline);
+    contextRef.current = initialLaunch.context;
+    pendingEventIdRef.current =
+      initialLaunch.origin === "direct" ? initialLaunch.eventId : undefined;
+    onHeadlineConsumed?.();
+    if (shouldAutoSubmit(initialLaunch)) {
+      submit(initialLaunch.headline,
+             initialLaunch.origin === "direct" ? initialLaunch.eventId : undefined,
+             initialLaunch, analysisActionFor(initialLaunch));
+      setPendingCandidate(null);
+      return;
     }
+    // Inbox candidate: hold it for an explicit decision instead of running.
+    setPendingCandidate(initialLaunch as InboxLaunch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialHeadline]);
+  }, [initialLaunch]);
 
   const conf = result?.analysis
     ? (CONFIDENCE[result.analysis.confidence] ?? CONFIDENCE.low)
@@ -3444,6 +3554,23 @@ export function AnalysisView({ initialHeadline, initialContext, initialEventId, 
             <span className="text-[10px] font-bold uppercase tracking-[0.15em]">Market Overview</span>
           </button>
         </div>
+      )}
+
+      {/* ── CANDIDATE HELD FOR AN EXPLICIT DECISION ──
+          An event opened from the Event Inbox lands here un-run.  This panel
+          states what a run would cover and what it would cost, so the paid
+          call is a separate, deliberate act — never a side effect of
+          navigation.  It clears as soon as a decision is taken. */}
+      {pendingCandidate && !result && !loading && (
+        <CandidateConfirmation
+          launch={pendingCandidate}
+          onRun={() => {
+            const action = analysisActionFor(pendingCandidate);
+            setPendingCandidate(null);
+            submit(pendingCandidate.headline, undefined, pendingCandidate, action);
+          }}
+          onDismiss={() => setPendingCandidate(null)}
+        />
       )}
 
       {/* ── EVENT IDENTITY — tag chips · display headline · metric row ── */}

@@ -114,13 +114,13 @@ class TestMockNotPersisted(unittest.TestCase):
 
     def test_analyze_does_not_persist_mock(self):
         import api
-        persist_mock = MagicMock()
+        persist_mock = MagicMock(return_value=(None, 1))  # (error, saved id)
         with patch("api.analyze_event", return_value=_mock("overloaded")), \
              patch("api.classify_stage", return_value="developing"), \
              patch("api.classify_persistence", return_value="medium"), \
              patch("api._persist_event", persist_mock), \
              patch("api.market_check") as mkt_mock:
-            resp = api.analyze(api.AnalyzeRequest(headline="Test"))
+            resp = api.analyze(api.AnalyzeRequest(headline="Test", confirm_paid=True))
         persist_mock.assert_not_called()
         mkt_mock.assert_not_called()
         self.assertTrue(resp["analysis_failed"])

@@ -140,7 +140,7 @@ class TestHealth(APITestCase):
 
 class TestAnalyze(APITestCase):
     def test_analyze_returns_all_fields(self):
-        r = self.client.post("/analyze", json={"headline": "US imposes new tariffs on steel"})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "US imposes new tariffs on steel"})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         for key in ("headline", "stage", "persistence", "analysis", "market", "is_mock"):
@@ -148,11 +148,11 @@ class TestAnalyze(APITestCase):
         self.assertFalse(body["is_mock"])
 
     def test_analyze_empty_headline_rejected(self):
-        r = self.client.post("/analyze", json={"headline": ""})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": ""})
         self.assertEqual(r.status_code, 422)
 
     def test_analyze_with_event_date(self):
-        r = self.client.post("/analyze", json={
+        r = self.client.post("/analyze", json={"confirm_paid": True,
             "headline": "OPEC cuts production targets",
             "event_date": "2025-03-01",
         })
@@ -161,7 +161,7 @@ class TestAnalyze(APITestCase):
 
     def test_analyze_without_event_date_gets_today(self):
         """When no event_date is provided, today's date should be used."""
-        r = self.client.post("/analyze", json={"headline": "US imposes tariffs on steel"})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "US imposes tariffs on steel"})
         self.assertEqual(r.status_code, 200)
         event_date = r.json()["event_date"]
         self.assertIsNotNone(event_date)
@@ -169,7 +169,7 @@ class TestAnalyze(APITestCase):
 
     def test_analyze_saves_event_with_date(self):
         """Saved event should always have an event_date."""
-        self.client.post("/analyze", json={"headline": "OPEC cuts output again"})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": "OPEC cuts output again"})
         events = db.load_recent_events(1)
         self.assertEqual(len(events), 1)
         self.assertIsNotNone(events[0]["event_date"])
@@ -177,8 +177,8 @@ class TestAnalyze(APITestCase):
     def test_analyze_cache_hit_returns_same_shape(self):
         """Repeated analysis of the same headline returns a cached result with the same fields."""
         headline = "Cache test: EU restricts chip exports to China"
-        r1 = self.client.post("/analyze", json={"headline": headline})
-        r2 = self.client.post("/analyze", json={"headline": headline})
+        r1 = self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
+        r2 = self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         self.assertEqual(r1.status_code, 200)
         self.assertEqual(r2.status_code, 200)
         b1, b2 = r1.json(), r2.json()
@@ -192,16 +192,16 @@ class TestAnalyze(APITestCase):
 
     def test_analyze_cache_miss_for_different_headline(self):
         """Different headlines should not share a cache entry."""
-        self.client.post("/analyze", json={"headline": "Cache miss test A: tariffs on steel"})
-        r2 = self.client.post("/analyze", json={"headline": "Cache miss test B: OPEC cuts output"})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": "Cache miss test A: tariffs on steel"})
+        r2 = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Cache miss test B: OPEC cuts output"})
         self.assertEqual(r2.status_code, 200)
         self.assertNotEqual(r2.json()["headline"], "Cache miss test A: tariffs on steel")
 
     def test_analyze_cached_has_tickers_in_analysis(self):
         """Cached response should include beneficiary_tickers and loser_tickers."""
         headline = "Cache ticker test: sanctions on Russian oil"
-        self.client.post("/analyze", json={"headline": headline})
-        r2 = self.client.post("/analyze", json={"headline": headline})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
+        r2 = self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         body = r2.json()
         self.assertIn("beneficiary_tickers", body["analysis"])
         self.assertIn("loser_tickers", body["analysis"])
@@ -210,8 +210,8 @@ class TestAnalyze(APITestCase):
     def test_analyze_cached_market_has_tickers(self):
         """Cached response market field should include tickers list."""
         headline = "Cache market test: Fed signals rate cut"
-        self.client.post("/analyze", json={"headline": headline})
-        r2 = self.client.post("/analyze", json={"headline": headline})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
+        r2 = self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         body = r2.json()
         self.assertIn("tickers", body["market"])
         self.assertIsInstance(body["market"]["tickers"], list)
@@ -220,10 +220,10 @@ class TestAnalyze(APITestCase):
     def test_analyze_cache_miss_for_different_event_date(self):
         """Same headline with different event_date should not share cache."""
         headline = "Date cache test: OPEC extends cuts"
-        r1 = self.client.post("/analyze", json={
+        r1 = self.client.post("/analyze", json={"confirm_paid": True,
             "headline": headline, "event_date": "2025-01-15",
         })
-        r2 = self.client.post("/analyze", json={
+        r2 = self.client.post("/analyze", json={"confirm_paid": True,
             "headline": headline, "event_date": "2025-06-01",
         })
         self.assertEqual(r1.status_code, 200)
@@ -239,7 +239,7 @@ class TestCachedAnalysisTTL(APITestCase):
     def test_fresh_cache_hit(self):
         """A recently saved event should be returned as a cache hit."""
         headline = "TTL fresh test: EU tariff update"
-        self.client.post("/analyze", json={"headline": headline})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         cached = db.find_cached_analysis(headline, event_date=None, max_age_seconds=86400)
         # find_cached_analysis matches on event_date; the /analyze endpoint
         # auto-sets event_date to today, so pass that explicitly.
@@ -252,7 +252,7 @@ class TestCachedAnalysisTTL(APITestCase):
     def test_stale_cache_miss(self):
         """An old event should be treated as a cache miss."""
         headline = "TTL stale test: OPEC production cut"
-        self.client.post("/analyze", json={"headline": headline})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         import datetime as _dt
         today = _dt.datetime.now().strftime("%Y-%m-%d")
         # Backdate the saved event's timestamp so it looks old
@@ -310,7 +310,7 @@ class TestLoadEventById(APITestCase):
 
 
     def test_analyze_returns_transmission_chain(self):
-        r = self.client.post("/analyze", json={"headline": "Chain test: EU tariff update"})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Chain test: EU tariff update"})
         self.assertEqual(r.status_code, 200)
         chain = r.json()["analysis"].get("transmission_chain")
         self.assertIsInstance(chain, list)
@@ -318,14 +318,14 @@ class TestLoadEventById(APITestCase):
 
     def test_analyze_chain_in_cached_response(self):
         headline = "Chain cache test: OPEC output"
-        self.client.post("/analyze", json={"headline": headline})
-        r2 = self.client.post("/analyze", json={"headline": headline})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
+        r2 = self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         # Cached response should also include the chain (it's part of the analysis dict)
         chain = r2.json()["analysis"].get("transmission_chain")
         self.assertIsInstance(chain, list)
 
     def test_analyze_returns_if_persists(self):
-        r = self.client.post("/analyze", json={"headline": "Persist test: supply shock"})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Persist test: supply shock"})
         self.assertEqual(r.status_code, 200)
         ip = r.json()["analysis"].get("if_persists")
         self.assertIsInstance(ip, dict)
@@ -336,8 +336,8 @@ class TestLoadEventById(APITestCase):
 
     def test_analyze_if_persists_in_cached_response(self):
         headline = "Persist cache test: tariff escalation"
-        self.client.post("/analyze", json={"headline": headline})
-        r2 = self.client.post("/analyze", json={"headline": headline})
+        self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
+        r2 = self.client.post("/analyze", json={"confirm_paid": True, "headline": headline})
         ip = r2.json()["analysis"].get("if_persists")
         self.assertIsInstance(ip, dict)
         self.assertIn("substitution", ip)
@@ -348,7 +348,7 @@ class TestLoadEventById(APITestCase):
     })
     def test_analyze_empty_if_persists_returns_empty_dict(self, _mock):
         """When model returns all-null if_persists, normalization yields {}."""
-        r = self.client.post("/analyze", json={"headline": "Empty persist test"})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Empty persist test"})
         self.assertEqual(r.status_code, 200)
         ip = r.json()["analysis"].get("if_persists")
         self.assertIsInstance(ip, dict)
@@ -357,7 +357,7 @@ class TestLoadEventById(APITestCase):
 
     def test_analyze_response_shape_includes_all_expected_keys(self):
         """Full response shape must include all top-level and analysis keys."""
-        r = self.client.post("/analyze", json={"headline": "Shape test: trade disruption"})
+        r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Shape test: trade disruption"})
         self.assertEqual(r.status_code, 200)
         body = r.json()
         for top_key in ("headline", "stage", "persistence", "analysis", "market", "is_mock", "event_date"):
@@ -382,7 +382,7 @@ class TestAnalyzeStream(APITestCase):
 
     def test_stream_emits_phases_in_order(self):
         headline = "Stream test: EU imposes new steel tariffs"
-        r = self.client.post("/analyze/stream", json={"headline": headline})
+        r = self.client.post("/analyze/stream", json={"confirm_paid": True, "headline": headline})
         self.assertEqual(r.status_code, 200)
         events = self._parse_sse(r.text)
         phases = [e["_phase"] for e in events]
@@ -390,7 +390,7 @@ class TestAnalyzeStream(APITestCase):
 
     def test_stream_classify_has_stage_and_persistence(self):
         headline = "Stream classify: OPEC cuts output"
-        r = self.client.post("/analyze/stream", json={"headline": headline})
+        r = self.client.post("/analyze/stream", json={"confirm_paid": True, "headline": headline})
         events = self._parse_sse(r.text)
         classify_ev = next(e for e in events if e["_phase"] == "classify")
         self.assertIn("stage", classify_ev)
@@ -398,7 +398,7 @@ class TestAnalyzeStream(APITestCase):
 
     def test_stream_complete_has_full_shape(self):
         headline = "Stream complete: Federal Reserve holds rates"
-        r = self.client.post("/analyze/stream", json={"headline": headline})
+        r = self.client.post("/analyze/stream", json={"confirm_paid": True, "headline": headline})
         events = self._parse_sse(r.text)
         complete_ev = next(e for e in events if e["_phase"] == "complete")
         for key in ("headline", "stage", "persistence", "analysis", "market", "is_mock", "event_date"):
@@ -407,15 +407,15 @@ class TestAnalyzeStream(APITestCase):
     def test_stream_cached_returns_single_complete(self):
         """A cached headline should emit only a single 'complete' event."""
         headline = "Stream cache: sanctions on Russian banks"
-        self.client.post("/analyze/stream", json={"headline": headline})
-        r = self.client.post("/analyze/stream", json={"headline": headline})
+        self.client.post("/analyze/stream", json={"confirm_paid": True, "headline": headline})
+        r = self.client.post("/analyze/stream", json={"confirm_paid": True, "headline": headline})
         events = self._parse_sse(r.text)
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0]["_phase"], "complete")
 
     def test_stream_complete_has_chain(self):
         headline = "Stream chain test: OPEC cuts output sharply"
-        r = self.client.post("/analyze/stream", json={"headline": headline})
+        r = self.client.post("/analyze/stream", json={"confirm_paid": True, "headline": headline})
         events = self._parse_sse(r.text)
         complete = next(e for e in events if e["_phase"] == "complete")
         chain = complete.get("analysis", {}).get("transmission_chain")
@@ -441,7 +441,8 @@ class TestAnalyzeStream(APITestCase):
         import asyncio
         import routes.analyze as _ra
 
-        req = _api_mod.AnalyzeRequest(headline=headline, event_date=event_date)
+        req = _api_mod.AnalyzeRequest(headline=headline, event_date=event_date,
+                                       confirm_paid=True)
         resp = _ra.analyze_stream(req)
         chunks: list[str] = []
         exc = None

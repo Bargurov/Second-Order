@@ -205,7 +205,7 @@ class TestAnalyzeJsonTickerSelection(unittest.TestCase):
 
     def test_market_check_receives_cleaned_lists(self) -> None:
         with _PatchStack() as stack:
-            api.analyze(api.AnalyzeRequest(headline="Parity test JSON"))
+            api.analyze(api.AnalyzeRequest(headline="Parity test JSON", confirm_paid=True))
             ben, los = _market_check_call_lists(stack.market_mock)
         self.assertEqual(
             ben, list(_EXPECTED_CLEANED_BENEFICIARIES),
@@ -218,7 +218,7 @@ class TestAnalyzeJsonTickerSelection(unittest.TestCase):
 
     def test_response_carries_asset_selection_block(self) -> None:
         with _PatchStack():
-            resp = api.analyze(api.AnalyzeRequest(headline="Parity test JSON"))
+            resp = api.analyze(api.AnalyzeRequest(headline="Parity test JSON", confirm_paid=True))
         analysis = resp.get("analysis") or {}
         sel = analysis.get("asset_selection") or {}
         self.assertEqual(
@@ -246,7 +246,8 @@ class TestAnalyzeJsonTickerSelection(unittest.TestCase):
 
 
 def _post_stream(body: dict) -> str:
-    return TestClient(api.app).post("/analyze/stream", json=body).text
+    return TestClient(api.app).post(
+        "/analyze/stream", json={**body, "confirm_paid": True}).text
 
 
 def _parse_events(raw: str) -> list[dict]:
@@ -325,7 +326,7 @@ class TestEndpointParity(unittest.TestCase):
 
     def test_market_check_lists_identical_across_endpoints(self) -> None:
         with _PatchStack() as stack:
-            api.analyze(api.AnalyzeRequest(headline="Parity duplicate"))
+            api.analyze(api.AnalyzeRequest(headline="Parity duplicate", confirm_paid=True))
             json_ben, json_los = _market_check_call_lists(stack.market_mock)
 
         with _PatchStack() as stack:
@@ -344,7 +345,7 @@ class TestEndpointParity(unittest.TestCase):
     def test_asset_selection_block_present_on_both_endpoints(self) -> None:
         with _PatchStack():
             json_resp = api.analyze(
-                api.AnalyzeRequest(headline="Parity duplicate"),
+                api.AnalyzeRequest(headline="Parity duplicate", confirm_paid=True),
             )
 
         with _PatchStack():

@@ -334,7 +334,8 @@ class TestCachedResponseFreezePolicy(unittest.TestCase):
     def _post_analyze(self, headline: str, *, force: bool = False, event_date: str | None = None):
         if event_date is None:
             event_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-        payload = {"headline": headline, "event_date": event_date, "force": force}
+        payload = {"headline": headline, "event_date": event_date,
+                   "force": force, "confirm_paid": True}
         return self.client.post("/analyze", json=payload)
 
     def _seeded_headline_for(self, days_old: int) -> tuple[str, str]:
@@ -349,7 +350,7 @@ class TestCachedResponseFreezePolicy(unittest.TestCase):
         headline = f"Freeze policy test {uuid.uuid4().hex[:6]}"
         r = self.client.post(
             "/analyze",
-            json={"headline": headline, "event_date": event_date},
+            json={"confirm_paid": True, "headline": headline, "event_date": event_date},
         )
         self.assertEqual(r.status_code, 200, f"seed call failed: {r.text}")
         return headline, event_date
@@ -358,7 +359,7 @@ class TestCachedResponseFreezePolicy(unittest.TestCase):
         """The new optional force field is accepted by /analyze."""
         r = self.client.post(
             "/analyze",
-            json={"headline": "Force field smoke test", "force": True},
+            json={"confirm_paid": True, "headline": "Force field smoke test", "force": True},
         )
         self.assertEqual(r.status_code, 200)
 
@@ -366,7 +367,7 @@ class TestCachedResponseFreezePolicy(unittest.TestCase):
         """Existing /analyze callers don't need to know about force."""
         r = self.client.post(
             "/analyze",
-            json={"headline": "Default force smoke test"},
+            json={"confirm_paid": True, "headline": "Default force smoke test"},
         )
         self.assertEqual(r.status_code, 200)
 

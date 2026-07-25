@@ -8,6 +8,12 @@ import {
   planNavigation,
   applyHistoryAction,
 } from "@/lib/app-route";
+import {
+  launchFromHeadline,
+  launchFromInboxEvent,
+  type AnalysisLaunch,
+} from "@/lib/analysis-launch";
+import type { InboxEvent } from "@/lib/event-inbox";
 import { TopBar } from "@/components/layout/top-bar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MarketOverview } from "@/components/pages/market-overview";
@@ -62,9 +68,11 @@ export default function App() {
   const pageRef = useRef<Page>(page);
   const [collapsed, setCollapsed] = useAutoCollapse();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [pendingHeadline, setPendingHeadline] = useState<string | undefined>();
-  const [pendingContext, setPendingContext] = useState<string | undefined>();
-  const [pendingEventId, setPendingEventId] = useState<number | undefined>();
+  // One typed launch object carries everything the analysis surface needs.
+  // An inbox candidate brings its own identity and link state; every other
+  // origin brings only a headline.  The surface decides what (if anything)
+  // to run from that — navigating there is never itself a provider call.
+  const [pendingLaunch, setPendingLaunch] = useState<AnalysisLaunch | undefined>();
   // Case Library deep-link target — the archive event id to open in detail.
   const [pendingArchiveId, setPendingArchiveId] = useState<number | undefined>();
   const [failedHeadlines, setFailedHeadlines] = useState<Set<string>>(new Set());
@@ -115,14 +123,26 @@ export default function App() {
     setMobileOpen(false);
   }, []);
 
-  const analyzeHeadline = useCallback(
-    (headline: string, opts?: { eventId?: number; context?: string }) => {
-      setPendingHeadline(headline);
-      setPendingContext(opts?.context);
-      setPendingEventId(opts?.eventId);
+  const openAnalysis = useCallback(
+    (launch: AnalysisLaunch) => {
+      setPendingLaunch(launch);
       navigate("analyze");
     },
     [navigate],
+  );
+
+  const analyzeHeadline = useCallback(
+    (headline: string, opts?: { eventId?: number; context?: string }) => {
+      openAnalysis(launchFromHeadline(headline, opts));
+    },
+    [openAnalysis],
+  );
+
+  // The Event Inbox opens a strict candidate, identity intact.  It does NOT
+  // start an analysis — see analysis-launch.shouldAutoSubmit.
+  const openInboxCandidate = useCallback(
+    (ev: InboxEvent) => { openAnalysis(launchFromInboxEvent(ev)); },
+    [openAnalysis],
   );
 
   // Open a Case Library card in the in-app Archive/Event Detail view.
@@ -198,18 +218,12 @@ export default function App() {
                     <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} onOpenHeadlines={() => navigate("headlines")} onOpenEvidence={() => navigate("evidence")} />
                   )}
                   {page === "headlines" && (
-                    <InboxWorkbench onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} />
+                    <InboxWorkbench onOpenCandidate={openInboxCandidate} failedHeadlines={failedHeadlines} />
                   )}
                   {page === "analyze" && (
                     <AnalysisView
-                      initialHeadline={pendingHeadline}
-                      initialContext={pendingContext}
-                      initialEventId={pendingEventId}
-                      onHeadlineConsumed={() => {
-                        setPendingHeadline(undefined);
-                        setPendingContext(undefined);
-                        setPendingEventId(undefined);
-                      }}
+                      initialLaunch={pendingLaunch}
+                      onHeadlineConsumed={() => setPendingLaunch(undefined)}
                       // Back navigates to the default workspace landing.
                       onBack={() => navigate("market")}
                       onAnalysisFailed={handleAnalysisFailed}

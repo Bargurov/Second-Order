@@ -1,8 +1,8 @@
 /**
  * event-inbox.test.ts — fail-closed consumer contract for
- * automatic-event-inbox-v2.
+ * automatic-event-inbox-v3.
  *
- * The captured fixture (fixtures/automatic-event-inbox-v2.json) is the REAL
+ * The captured fixture (fixtures/automatic-event-inbox-v3.json) is the REAL
  * producer payload: it is deep-equal-pinned against live GET /news/inbox
  * output by tests/test_event_inbox_route_boundary.py.  Every type the parser
  * accepts is derived from that captured payload, not from field names.
@@ -24,7 +24,7 @@ import {
   type InboxPayload,
 } from "../event-inbox";
 
-const FIXTURE_PATH = resolve(__dirname, "fixtures", "automatic-event-inbox-v2.json");
+const FIXTURE_PATH = resolve(__dirname, "fixtures", "automatic-event-inbox-v3.json");
 
 function loadFixture(): unknown {
   return JSON.parse(readFileSync(FIXTURE_PATH, "utf-8"));
@@ -44,7 +44,7 @@ describe("captured producer payload", () => {
   it("parses the real captured GET /news/inbox payload", () => {
     const parsed = parseInboxPayload(loadFixture());
     expect(parsed).not.toBeNull();
-    expect(parsed!.contract).toBe("automatic-event-inbox-v2");
+    expect(parsed!.contract).toBe("automatic-event-inbox-v3");
     expect(parsed!.availability).toBe("AVAILABLE");
     expect(parsed!.events.length).toBeGreaterThan(0);
   });
@@ -91,7 +91,8 @@ describe("malformed payloads are refused", () => {
   });
 
   it("refuses a wrong contract version", () => {
-    expect(parseInboxPayload(mutate((p) => { p.contract = "automatic-event-inbox-v3"; }))).toBeNull();
+    expect(parseInboxPayload(mutate((p) => { p.contract = "automatic-event-inbox-v4"; }))).toBeNull();
+    expect(parseInboxPayload(mutate((p) => { p.contract = "automatic-event-inbox-v2"; }))).toBeNull();
   });
 
   it("refuses a missing top-level field", () => {
@@ -152,6 +153,83 @@ describe("malformed payloads are refused", () => {
   it("refuses a malformed analysis_target", () => {
     expect(parseInboxPayload(mutate((p) => {
       (p.events as Record<string, unknown>[])[0].analysis_target = { headline: "x" };
+    }))).toBeNull();
+  });
+
+  // -- v3 candidate identity ------------------------------------------------
+  // The launch object the UI hands to the analysis surface is only as
+  // trustworthy as the identity fields it carries; a drifted or partial
+  // identity must refuse rather than open the wrong candidate.
+
+  it("refuses an analysis_target missing any identity field", () => {
+    for (const field of [
+      "candidate_id", "parent_cluster_id", "title_key",
+      "analysis_link_status", "analysis_event_id",
+    ]) {
+      expect(parseInboxPayload(mutate((p) => {
+        const t = (p.events as Record<string, unknown>[])[0]
+          .analysis_target as Record<string, unknown>;
+        delete t[field];
+      })), `deleting ${field} must refuse`).toBeNull();
+    }
+  });
+
+  it("refuses a candidate_id that disagrees with the event id", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const ev = (p.events as Record<string, unknown>[])[0];
+      (ev.analysis_target as Record<string, unknown>).candidate_id = "aei-1-deadbeef";
+    }))).toBeNull();
+  });
+
+  it("refuses a parent_cluster_id that disagrees with the cluster id", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const ev = (p.events as Record<string, unknown>[])[0];
+      (ev.analysis_target as Record<string, unknown>).parent_cluster_id = 999999;
+    }))).toBeNull();
+  });
+
+  it("refuses an unknown analysis_link_status", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const ev = (p.events as Record<string, unknown>[])[0];
+      (ev.analysis_target as Record<string, unknown>).analysis_link_status = "maybe";
+    }))).toBeNull();
+  });
+
+  it("refuses an unanalyzed candidate that still carries an analysis id", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const ev = (p.events as Record<string, unknown>[])[0];
+      (ev.analysis_target as Record<string, unknown>).analysis_event_id = 7;
+    }))).toBeNull();
+  });
+
+  it("refuses an analyzed candidate with no analysis id", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const t = (p.events as Record<string, unknown>[])[0]
+        .analysis_target as Record<string, unknown>;
+      t.analysis_link_status = "analyzed";
+    }))).toBeNull();
+  });
+
+  it("accepts an analyzed candidate carrying a numeric analysis id", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const t = (p.events as Record<string, unknown>[])[0]
+        .analysis_target as Record<string, unknown>;
+      t.analysis_link_status = "analyzed";
+      t.analysis_event_id = 412;
+    }))).not.toBeNull();
+  });
+
+  it("accepts a conflicted candidate, which must select no id", () => {
+    expect(parseInboxPayload(mutate((p) => {
+      const t = (p.events as Record<string, unknown>[])[0]
+        .analysis_target as Record<string, unknown>;
+      t.analysis_link_status = "conflict";
+    }))).not.toBeNull();
+    expect(parseInboxPayload(mutate((p) => {
+      const t = (p.events as Record<string, unknown>[])[0]
+        .analysis_target as Record<string, unknown>;
+      t.analysis_link_status = "conflict";
+      t.analysis_event_id = 5;
     }))).toBeNull();
   });
 

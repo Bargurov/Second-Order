@@ -563,7 +563,8 @@ class TestApiBoundariesApplySuppression(unittest.TestCase):
         with patch("api.refresh_market_for_saved_event", side_effect=_passthrough):
             r = self.client.post(
                 "/analyze",
-                json={"headline": headline, "event_date": event_date},
+                json={"headline": headline, "event_date": event_date,
+                      "confirm_paid": True},
             )
         self.assertEqual(r.status_code, 200, r.text)
         body = r.json()

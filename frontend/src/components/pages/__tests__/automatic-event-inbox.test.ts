@@ -95,17 +95,27 @@ describe("lifecycle presentation", () => {
 });
 
 describe("analysis handoff", () => {
-  it("opens events through the existing onAnalyze boundary with the analysis_target", () => {
+  it("hands the whole validated candidate to the launch boundary", () => {
     const src = page();
-    expect(src).toContain("analysis_target");
-    expect(src).toMatch(/onAnalyze\(\s*[a-zA-Z_.]*analysis_target\.headline/);
+    // A1-1: the inbox no longer flattens a candidate into a bare headline +
+    // context.  It passes the validated event itself, so the identity fields
+    // (candidate_id / parent_cluster_id / title_key) and the link state reach
+    // the analysis surface intact rather than being reconstructed downstream.
+    expect(src).toMatch(/onOpenCandidate\(ev\)/);
+    expect(src).not.toMatch(/onAnalyze\(/);
+  });
+
+  it("reads the link state to label the action, and blocks a conflict", () => {
+    const src = page();
+    expect(src).toContain("analysis_link_status");
+    expect(src).toMatch(/disabled=\{linkState === "conflict"\}/);
   });
 
   it("never invokes analysis from an effect (no auto-LLM on load)", () => {
     const src = page();
     const effects = src.match(/useEffect\(\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*,\s*\[[^\]]*\]\s*\)/g) ?? [];
     for (const block of effects) {
-      expect(block).not.toContain("onAnalyze");
+      expect(block).not.toContain("onOpenCandidate");
       expect(block).not.toContain("newsRefresh");
     }
     expect(src).toContain("shouldAutoAnalyzeOnLoad");

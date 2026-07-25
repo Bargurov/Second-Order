@@ -248,7 +248,8 @@ class TestAnalyzeRouteInjectsBackdrop(unittest.TestCase):
             p.stop()
 
     def _post(self, headline: str) -> dict:
-        r = self.client.post("/analyze", json={"headline": headline})
+        r = self.client.post("/analyze",
+                             json={"headline": headline, "confirm_paid": True})
         self.assertEqual(r.status_code, 200, r.text)
         return r.json()
 

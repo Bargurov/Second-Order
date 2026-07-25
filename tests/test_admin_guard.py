@@ -87,7 +87,8 @@ def _dispatch_seams():
                        return_value=""), \
             mock.patch("api.find_cached_analysis", return_value=None), \
             mock.patch("api.load_event_by_id", return_value=None), \
-            mock.patch("api._persist_event", return_value=None) as persist, \
+            mock.patch("api._persist_event",
+                       return_value=(None, 1)) as persist, \
             mock.patch("api.classify_stage", return_value="developing"), \
             mock.patch("api.classify_persistence", return_value="medium"):
         yield openai_seam, anthropic_seam, persist
@@ -244,14 +245,14 @@ class AnalyzeRouteGuardIntegration(unittest.TestCase):
     def test_unauthenticated_403_and_no_provider_call(self):
         with mock.patch.dict(os.environ, {"SECOND_ORDER_ADMIN_TOKEN": _TOKEN, "ENABLE_PAID_ANALYSIS": "true"}), \
                 _analyze_seams() as prov:
-            r = self.client.post("/analyze", json={"headline": "Guard test headline"})
+            r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Guard test headline"})
         self.assertEqual(r.status_code, 403)
         prov.assert_not_called()
 
     def test_wrong_token_403(self):
         with mock.patch.dict(os.environ, {"SECOND_ORDER_ADMIN_TOKEN": _TOKEN, "ENABLE_PAID_ANALYSIS": "true"}), \
                 _analyze_seams() as prov:
-            r = self.client.post("/analyze", json={"headline": "Guard test headline"},
+            r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Guard test headline"},
                                  headers={"X-Second-Order-Admin-Token": "wrong"})
         self.assertEqual(r.status_code, 403)
         prov.assert_not_called()
@@ -259,14 +260,14 @@ class AnalyzeRouteGuardIntegration(unittest.TestCase):
     def test_paid_disabled_403_even_with_token(self):
         with mock.patch.dict(os.environ, {"SECOND_ORDER_ADMIN_TOKEN": _TOKEN, "ENABLE_PAID_ANALYSIS": "false"}), \
                 _analyze_seams() as prov:
-            r = self.client.post("/analyze", json={"headline": "Guard test headline"}, headers=_HDR)
+            r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Guard test headline"}, headers=_HDR)
         self.assertEqual(r.status_code, 403)
         prov.assert_not_called()
 
     def test_correct_token_and_paid_reaches_provider(self):
         with mock.patch.dict(os.environ, {"SECOND_ORDER_ADMIN_TOKEN": _TOKEN, "ENABLE_PAID_ANALYSIS": "true"}), \
                 _analyze_seams() as prov:
-            r = self.client.post("/analyze", json={"headline": "Fresh guard headline abc"}, headers=_HDR)
+            r = self.client.post("/analyze", json={"confirm_paid": True, "headline": "Fresh guard headline abc"}, headers=_HDR)
         self.assertNotEqual(r.status_code, 403)
         prov.assert_called_once()
 
@@ -341,7 +342,7 @@ class OpenAIGuardBypassReproduction(unittest.TestCase):
         with mock.patch.dict(os.environ, self._ENV), \
                 _dispatch_seams() as (openai_seam, anthropic_seam, persist):
             r = client.post("/analyze",
-                            json={"headline": "P0 openai bypass repro"})
+                            json={"confirm_paid": True, "headline": "P0 openai bypass repro"})
         self.assertEqual(r.status_code, 403)
         openai_seam.assert_not_called()
         anthropic_seam.assert_not_called()
@@ -352,7 +353,7 @@ class OpenAIGuardBypassReproduction(unittest.TestCase):
         with mock.patch.dict(os.environ, self._ENV), \
                 _dispatch_seams() as (openai_seam, anthropic_seam, persist):
             r = client.post("/analyze/stream",
-                            json={"headline": "P0 openai stream repro"})
+                            json={"confirm_paid": True, "headline": "P0 openai stream repro"})
         self.assertEqual(r.status_code, 403)
         openai_seam.assert_not_called()
         anthropic_seam.assert_not_called()
@@ -552,8 +553,9 @@ class AnalyzeRoutesProviderMatrixIntegration(unittest.TestCase):
         self.client = TestClient(api.app)
 
     def _post(self, route, headline, headers=None):
-        return self.client.post(route, json={"headline": headline},
-                                headers=headers or {})
+        return self.client.post(
+            route, json={"headline": headline, "confirm_paid": True},
+            headers=headers or {})
 
     def test_rejected_states_never_reach_either_seam(self):
         cases = [

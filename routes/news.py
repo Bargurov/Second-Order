@@ -176,7 +176,7 @@ def news(
 def news_inbox():
     """Automatic Event Inbox — local-state-only GET.
 
-    Derives ``automatic-event-inbox-v1`` from the persisted news_clusters
+    Derives ``automatic-event-inbox-v3`` from the persisted news_clusters
     store through a READ-ONLY SQLite connection.  Never refreshes news,
     never reaches RSS or a provider, never writes any cache or database —
     refresh ownership stays with ``POST /news/refresh``.

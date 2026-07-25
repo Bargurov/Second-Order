@@ -192,7 +192,9 @@ class BackendContractSmokeBase(unittest.TestCase):
             pass
 
     def _analyze(self, headline, **kwargs):
-        r = self.client.post("/analyze", json={"headline": headline, **kwargs})
+        r = self.client.post(
+            "/analyze",
+            json={"headline": headline, "confirm_paid": True, **kwargs})
         self.assertEqual(r.status_code, 200, r.text)
         return r.json()
 

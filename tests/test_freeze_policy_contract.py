@@ -287,7 +287,7 @@ class TestAnalyzeFreshCachedParity(unittest.TestCase):
     def _post_analyze(
         self, headline: str, event_date: str | None = None, force: bool = False,
     ):
-        body = {"headline": headline}
+        body = {"headline": headline, "confirm_paid": True}
         if event_date:
             body["event_date"] = event_date
         if force:
@@ -453,7 +453,7 @@ class TestAnalyzeFreshCachedParity(unittest.TestCase):
         headline = f"Stream parity {uuid.uuid4().hex[:6]}"
         with self.client.stream(
             "POST", "/analyze/stream",
-            json={"headline": headline},
+            json={"headline": headline, "confirm_paid": True},
         ) as r:
             self.assertEqual(r.status_code, 200)
             frames = []

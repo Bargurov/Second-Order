@@ -324,7 +324,8 @@ class TestAnalyzeWiring(unittest.TestCase):
              patch.object(self.api, "market_check", side_effect=self._stub_market_check):
             r = self.client.post(
                 "/analyze",
-                json={"headline": "OPEC slashes output by 2 mbpd"},
+                json={"headline": "OPEC slashes output by 2 mbpd",
+                      "confirm_paid": True},
             )
         self.assertEqual(r.status_code, 200)
         body = r.json()
@@ -339,7 +340,8 @@ class TestAnalyzeWiring(unittest.TestCase):
              patch.object(self.api, "market_check", side_effect=self._stub_market_check):
             r = self.client.post(
                 "/analyze",
-                json={"headline": "OPEC slashes output by 2 mbpd"},
+                json={"headline": "OPEC slashes output by 2 mbpd",
+                      "confirm_paid": True},
             )
         self.assertEqual(r.status_code, 200)
         ry = r.json()["analysis"]["real_yield_context"]
@@ -367,7 +369,8 @@ class TestAnalyzeWiring(unittest.TestCase):
              patch.object(self.api, "market_check", side_effect=self._stub_market_check):
             r = self.client.post(
                 "/analyze",
-                json={"headline": "Tech CEO steps down"},
+                json={"headline": "Tech CEO steps down",
+                      "confirm_paid": True},
             )
         self.assertEqual(r.status_code, 200)
         ry = r.json()["analysis"]["real_yield_context"]

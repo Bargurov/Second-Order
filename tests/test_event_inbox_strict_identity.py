@@ -331,9 +331,9 @@ class TestNamedControls(unittest.TestCase):
 class TestV2Counts(unittest.TestCase):
 
     def test_contract_version_is_v2(self):
-        self.assertEqual(CONTRACT_VERSION, "automatic-event-inbox-v2")
+        self.assertEqual(CONTRACT_VERSION, "automatic-event-inbox-v3")
         self.assertEqual(build_inbox([], now=_NOW)["contract"],
-                         "automatic-event-inbox-v2")
+                         "automatic-event-inbox-v3")
 
     def test_counts_field_set_is_exact_and_has_no_ambiguous_alias(self):
         counts = build_inbox([], now=_NOW)["counts"]

@@ -443,6 +443,49 @@ def _enrich_macro_context_with_country(
         if base_macro_ctx else country_ctx
     )
 
+
+def _paid_confirmation_required(headline: str, effective_date: str) -> dict:
+    """The non-provider response for an unconfirmed cache miss.
+
+    Reaching this point means no saved analysis exists, so producing one
+    would call a paid provider.  The route returns this instead — no
+    provider call, no event row, no registry write — and the operator
+    re-sends the same request with ``confirm_paid: true`` to proceed.
+    """
+    return {
+        "status": "paid_confirmation_required",
+        "headline": headline,
+        "event_date": effective_date,
+        "is_mock": False,
+        "note": (
+            "No saved analysis exists for this headline. Running one calls "
+            "a paid provider; confirm explicitly to proceed."
+        ),
+    }
+
+
+def _link_candidate_analysis(req: "_api.AnalyzeRequest",
+                             analysis_event_id: int | None) -> str | None:
+    """Stamp one persisted analysis onto its strict inbox candidate.
+
+    Only runs when the request carried the full candidate identity AND the
+    save produced a numeric id — a mock, degraded, failed or unpersisted
+    run must never leave a link behind.  Conflicts are surfaced by the db
+    layer and never repaired here.  Returns the link outcome, or ``None``
+    when no linkage was attempted.
+    """
+    if analysis_event_id is None or req.candidate_id is None:
+        return None
+    try:
+        return _api.link_candidate_analysis(
+            req.parent_cluster_id, req.title_key, int(analysis_event_id),
+            datetime.now().isoformat(timespec="seconds"),
+        )
+    except Exception:
+        _api._log.warning("candidate analysis linkage failed", exc_info=True)
+        return None
+
+
 router = APIRouter()
 
 
@@ -466,6 +509,13 @@ def analyze(req: _api.AnalyzeRequest):
         cached = _api.find_cached_analysis(headline, event_date=effective_date, model=model)
         if cached is not None:
             return _api._build_cached_response(cached, headline, effective_date, force=req.force)
+
+    # Cache miss.  Everything below this line costs money, so it runs only
+    # on an explicit per-request confirmation.  Reading a saved analysis
+    # stays free and never reaches here.
+    if not req.confirm_paid:
+        return _api._sanitize_floats(
+            _paid_confirmation_required(headline, effective_date))
 
     stage = _api.classify_stage(headline)
     persistence = _api.classify_persistence(headline)
@@ -508,10 +558,11 @@ def analyze(req: _api.AnalyzeRequest):
 
     _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
-    persistence_error = _api._persist_event(
+    persistence_error, analysis_event_id = _api._persist_event(
         headline, stage, persistence, analysis, mkt, effective_date,
         model=model,
     )
+    candidate_link = _link_candidate_analysis(req, analysis_event_id)
 
     age_classification = _api._classify_for_effective_date(effective_date, force=False)
     mkt_with_freshness = _api._augment_market_freshness(mkt, age_classification)
@@ -527,6 +578,11 @@ def analyze(req: _api.AnalyzeRequest):
         # the short reason string.
         "persistence_failed": persistence_error is not None,
         "persistence_error":  persistence_error,
+        # The numeric events.id this run produced, and what happened to
+        # the inbox candidate linkage.  ``None`` whenever the save failed
+        # or the request carried no candidate identity — never inferred.
+        "analysis_event_id": analysis_event_id,
+        "candidate_link": candidate_link,
     })
 
 
@@ -552,6 +608,14 @@ def analyze_stream(req: _api.AnalyzeRequest):
             if cached is not None:
                 yield _api._sse_event("complete", _api._build_cached_response(cached, headline, _effective_date[0], force=req.force))
                 return
+
+        # Cache miss — same explicit-confirmation gate as /analyze.  The
+        # terminal frame carries the blocked status so a streaming client
+        # sees a completed, honest stream rather than a truncated one.
+        if not req.confirm_paid:
+            yield _api._sse_event("complete", _api._sanitize_floats(
+                _paid_confirmation_required(headline, _effective_date[0])))
+            return
 
         stage = _api.classify_stage(headline)
         persistence = _api.classify_persistence(headline)
@@ -593,10 +657,11 @@ def analyze_stream(req: _api.AnalyzeRequest):
 
         _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
-        persistence_error = _api._persist_event(
+        persistence_error, analysis_event_id = _api._persist_event(
             headline, stage, persistence, analysis, mkt, effective_date,
             model=model,
         )
+        candidate_link = _link_candidate_analysis(req, analysis_event_id)
         age_classification = _api._classify_for_effective_date(effective_date, force=False)
         mkt_with_freshness = _api._augment_market_freshness(mkt, age_classification)
 
@@ -610,6 +675,10 @@ def analyze_stream(req: _api.AnalyzeRequest):
             # row was saved.  See the /analyze counterpart.
             "persistence_failed": persistence_error is not None,
             "persistence_error":  persistence_error,
+            # See the /analyze counterpart — id and linkage outcome are
+            # reported, never inferred from a clean terminal frame.
+            "analysis_event_id": analysis_event_id,
+            "candidate_link": candidate_link,
         }))
 
     return StreamingResponse(generate(), media_type="text/event-stream")

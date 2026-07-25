@@ -1,4 +1,4 @@
-"""automatic-event-inbox-v2 — pure derivation contract tests.
+"""automatic-event-inbox-v3 — pure derivation contract tests.
 
 Since A0-R2B one stored cluster is partitioned by exact normalized-headline
 identity and each partition becomes one candidate, so a single stored row may
@@ -112,8 +112,8 @@ def _load_real_rows() -> list[dict]:
 class TestContractShape(unittest.TestCase):
     def test_contract_version_and_exact_top_level_fields(self):
         payload = build_inbox([], now=_ANCHOR)
-        self.assertEqual(payload["contract"], "automatic-event-inbox-v2")
-        self.assertEqual(CONTRACT_VERSION, "automatic-event-inbox-v2")
+        self.assertEqual(payload["contract"], "automatic-event-inbox-v3")
+        self.assertEqual(CONTRACT_VERSION, "automatic-event-inbox-v3")
         self.assertEqual(set(payload.keys()), _TOP_LEVEL_FIELDS)
 
     def test_valid_empty_state_is_honest_not_unavailable(self):
@@ -476,10 +476,20 @@ class TestUniversalContract(unittest.TestCase):
         ], summary="Multiple outlets report an OPEC output cut.")]
         ev = build_inbox(rows, now=_ANCHOR)["events"][0]
         target = ev["analysis_target"]
-        self.assertEqual(set(target.keys()), {"headline", "context"})
+        # v3: the target still hands the SAME headline + context the analyze
+        # boundary already took, and adds the candidate's own identity plus
+        # its saved-analysis link state.  Four identities stay distinct — the
+        # `aei-*` handle is never the numeric events.id.
+        self.assertEqual(set(target.keys()), {
+            "headline", "context", "candidate_id", "parent_cluster_id",
+            "title_key", "analysis_link_status", "analysis_event_id"})
         self.assertEqual(target["headline"], ev["headline"])
         self.assertIn("Sources (2)", target["context"])
         self.assertIn("Summary:", target["context"])
+        self.assertEqual(target["candidate_id"], ev["event_id"])
+        self.assertEqual(target["parent_cluster_id"], ev["cluster_id"])
+        self.assertEqual(target["analysis_link_status"], "unanalyzed")
+        self.assertIsNone(target["analysis_event_id"])
 
 
 class TestVisibleLimitations(unittest.TestCase):

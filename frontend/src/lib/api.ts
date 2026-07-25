@@ -126,6 +126,17 @@ export interface AnalyzeRequest {
    *  archive event.  Only meaningful on /analyze cache hits; the
    *  fresh path ignores it.  Defaults to false. */
   force?: boolean;
+  /** Explicit per-request authorization for the paid provider call.  A cache
+   *  miss without it is refused server-side with `paid_confirmation_required`
+   *  and no provider is reached.  Reading a saved analysis stays free and
+   *  needs no confirmation. */
+  confirm_paid?: boolean;
+  /** Strict inbox-candidate identity — all three or none.  `candidate_id` is
+   *  the `aei-*` handle and is deliberately NOT the numeric `event_id`; the
+   *  backend re-derives it from the other two and rejects a mismatch. */
+  candidate_id?: string;
+  parent_cluster_id?: number;
+  title_key?: string;
 }
 
 /** Minimal shape shared by Ticker and MarketMover ticker entries. */

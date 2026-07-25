@@ -1,4 +1,4 @@
-"""automatic-event-inbox-v1 — read-only inbox over the persisted news clusters.
+"""automatic-event-inbox-v3 — read-only inbox over the persisted news clusters.
 
 Derives the Automatic Event Inbox from the EXISTING local pipeline state:
 ``news_clusters`` rows written by ``news_cluster_store.refresh_clusters``
@@ -89,7 +89,7 @@ from news_cluster_store import _RECENCY_HOURS
 
 _log = logging.getLogger("second_order.event_inbox")
 
-CONTRACT_VERSION = "automatic-event-inbox-v2"
+CONTRACT_VERSION = "automatic-event-inbox-v3"
 
 GENERATED_FROM = ("local news_clusters store (read-only SQLite), partitioned by "
                   "exact normalized-headline identity")
@@ -467,6 +467,27 @@ def _partition_headline(records: list[dict]) -> str:
     return (rep.get("title") or "").strip()
 
 
+def _candidate_analysis_link(parent_cluster_id: object, title_key: str) -> dict:
+    """Read-only candidate → persisted-analysis linkage for the payload.
+
+    Delegates to ``db.get_candidate_analysis_link``.  A read failure degrades
+    to ``unanalyzed`` so a GET can never fail or write; the analyzed state is
+    only ever asserted from a successful read.
+    """
+    try:
+        import db as _db
+        link = _db.get_candidate_analysis_link(int(parent_cluster_id), title_key)
+    except Exception:  # pragma: no cover - defensive
+        _log.warning("event_inbox: candidate link read failed", exc_info=True)
+        return {"status": "unanalyzed", "analysis_event_id": None}
+    status = link.get("status")
+    if status not in ("unanalyzed", "analyzed", "conflict"):
+        return {"status": "unanalyzed", "analysis_event_id": None}
+    event_id = link.get("analysis_event_id")
+    return {"status": status,
+            "analysis_event_id": int(event_id) if isinstance(event_id, int) else None}
+
+
 def _derive_candidate(row: dict, identity_key: str, records: list[dict], *,
                       now: datetime) -> tuple[str, Optional[dict]]:
     """Derive ONE strict event candidate from one identity partition.
@@ -576,6 +597,8 @@ def _derive_candidate(row: dict, identity_key: str, records: list[dict], *,
         unknowns.append("Announced or anticipated action; implementation "
                         "details remain unresolved")
 
+    link = _candidate_analysis_link(row.get("id"), identity_key)
+
     missing_bits: list[str] = []
     if ts_missing:
         missing_bits.append("publication timestamps unavailable")
@@ -604,6 +627,14 @@ def _derive_candidate(row: dict, identity_key: str, records: list[dict], *,
             "headline": headline,
             "context": _build_context(payload, [s["name"] for s in sources],
                                       source_count),
+            # Strict identity carried to the analysis boundary.  The parent
+            # cluster is provenance only; the analysable identity is
+            # (parent_cluster_id, title_key), never one representative source.
+            "candidate_id": candidate_event_id(row.get("id"), identity_key),
+            "parent_cluster_id": row.get("id"),
+            "title_key": identity_key,
+            "analysis_link_status": link["status"],
+            "analysis_event_id": link["analysis_event_id"],
         },
         "availability_status": availability_status,
         "missing_reason": missing_reason,
@@ -842,6 +873,13 @@ _TOP_FIELDS: tuple[str, ...] = (
     "events", "counts", "limitations", "non_claim",
 )
 
+_TARGET_FIELDS: frozenset[str] = frozenset({
+    "headline", "context", "candidate_id", "parent_cluster_id",
+    "title_key", "analysis_link_status", "analysis_event_id",
+})
+
+_LINK_STATES: tuple[str, ...] = ("unanalyzed", "analyzed", "conflict")
+
 _BANNED_FIELD_TOKENS: tuple[str, ...] = (
     "score", "priority", "urgency", "conviction", "importance",
     "impact", "direction", "buy", "sell", "tradeab", "signal",
@@ -890,8 +928,36 @@ def validate_inbox_payload(payload: dict) -> list[str]:
             problems.append(
                 f"event {ev['event_id']} is PARTIAL without a missing_reason")
         target = ev["analysis_target"]
-        if not isinstance(target, dict) or set(target.keys()) != {"headline", "context"}:
+        if not isinstance(target, dict) or set(target.keys()) != _TARGET_FIELDS:
             problems.append(f"event {ev['event_id']} analysis_target malformed")
+        else:
+            if target["analysis_link_status"] not in _LINK_STATES:
+                problems.append(
+                    f"analysis_link_status {target['analysis_link_status']!r} "
+                    "not in enum")
+            # Identity must be recomputable, never asserted.
+            if target["candidate_id"] != candidate_event_id(
+                    target["parent_cluster_id"], target["title_key"]):
+                problems.append(
+                    f"event {ev['event_id']} candidate_id does not recompute")
+            if target["candidate_id"] != ev["event_id"]:
+                problems.append(
+                    f"event {ev['event_id']} candidate_id differs from event_id")
+            if target["parent_cluster_id"] != ev["cluster_id"]:
+                problems.append(
+                    f"event {ev['event_id']} parent_cluster_id differs from "
+                    "cluster_id")
+            # A conflict must never carry a chosen event id.
+            if target["analysis_link_status"] != "analyzed" \
+                    and target["analysis_event_id"] is not None:
+                problems.append(
+                    f"event {ev['event_id']} carries an analysis_event_id "
+                    f"while {target['analysis_link_status']}")
+            if target["analysis_link_status"] == "analyzed" \
+                    and not isinstance(target["analysis_event_id"], int):
+                problems.append(
+                    f"event {ev['event_id']} is analyzed without a numeric "
+                    "analysis_event_id")
 
     def _walk(node):
         if isinstance(node, dict):

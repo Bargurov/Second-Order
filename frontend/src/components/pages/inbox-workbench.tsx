@@ -154,15 +154,16 @@ const CHANNEL_LABEL: Record<MaterialChannel, string> = {
 // ---------------------------------------------------------------------------
 
 function EventRow({
-  ev, expanded, onToggle, onAnalyze, failed,
+  ev, expanded, onToggle, onOpenCandidate, failed,
 }: {
   ev: InboxEvent;
   expanded: boolean;
   onToggle: () => void;
-  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
+  onOpenCandidate?: (ev: InboxEvent) => void;
   failed: boolean;
 }) {
   const meta = LIFECYCLE_META[ev.lifecycle];
+  const linkState = ev.analysis_target.analysis_link_status;
   return (
     <div className={cn("border-t border-[color:var(--so-rule)]",
       expanded && "bg-[color:var(--so-bg-2)]")}>
@@ -304,22 +305,31 @@ function EventRow({
             </div>
           )}
 
-          {/* Analyze — the ONLY provider-reaching action, explicit per event */}
-          {onAnalyze && (
+          {/* Open the candidate.  Opening is NOT the provider call: the
+              analysis surface shows what a run would cover and asks for an
+              explicit confirmation there.  A candidate the registry already
+              links to one saved analysis re-opens that analysis for free; a
+              conflicted link offers nothing rather than guessing an id. */}
+          {onOpenCandidate && (
             <div className="qa-section-head flex items-center gap-2 pt-3">
               <button
                 type="button"
-                className="qa-btn-primary inline-flex h-8 items-center gap-2 px-4"
-                onClick={() =>
-                  onAnalyze(ev.analysis_target.headline, {
-                    context: ev.analysis_target.context,
-                  })
-                }
+                className="qa-btn-primary inline-flex h-8 items-center gap-2 px-4 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={linkState === "conflict"}
+                onClick={() => onOpenCandidate(ev)}
               >
                 {failed ? <RotateCw className="h-3 w-3" /> : <FlaskConical className="h-3 w-3" />}
-                {failed ? "Retry analysis" : "Open for analysis"}
+                {failed ? "Retry analysis"
+                  : linkState === "analyzed" ? "Open saved analysis"
+                  : "Open for analysis"}
               </button>
-              <span className="qa-meta">provider call — explicit action only</span>
+              <span className="qa-meta">
+                {linkState === "analyzed"
+                  ? "saved analysis — no provider call"
+                  : linkState === "conflict"
+                  ? "linked to more than one saved analysis — not resolvable here"
+                  : "opens a preview; the paid run needs a separate confirmation"}
+              </span>
             </div>
           )}
         </div>
@@ -333,13 +343,13 @@ function EventRow({
 // ---------------------------------------------------------------------------
 
 function LifecycleSection({
-  lifecycle, events, expandedId, onToggle, onAnalyze, failedHeadlines,
+  lifecycle, events, expandedId, onToggle, onOpenCandidate, failedHeadlines,
 }: {
   lifecycle: Lifecycle;
   events: InboxEvent[];
   expandedId: string | null;
   onToggle: (id: string) => void;
-  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
+  onOpenCandidate?: (ev: InboxEvent) => void;
   failedHeadlines?: Set<string>;
 }) {
   const meta = LIFECYCLE_META[lifecycle];
@@ -362,7 +372,7 @@ function LifecycleSection({
               ev={ev}
               expanded={expandedId === ev.event_id}
               onToggle={() => onToggle(ev.event_id)}
-              onAnalyze={onAnalyze}
+              onOpenCandidate={onOpenCandidate}
               failed={deriveRowState(ev.headline, failedHeadlines) === "failed"}
             />
           ))}
@@ -377,11 +387,11 @@ function LifecycleSection({
 // ---------------------------------------------------------------------------
 
 interface InboxWorkbenchProps {
-  onAnalyze?: (headline: string, opts?: { eventId?: number; context?: string }) => void;
+  onOpenCandidate?: (ev: InboxEvent) => void;
   failedHeadlines?: Set<string>;
 }
 
-export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchProps) {
+export function InboxWorkbench({ onOpenCandidate, failedHeadlines }: InboxWorkbenchProps) {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [lastMeta, setLastMeta] = useState<RefreshMeta | null>(null);
@@ -502,7 +512,7 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
             Inbox payload failed validation — refusing to render.
           </p>
           <p className="mt-1 text-[10px] text-on-surface-variant/60">
-            The served payload does not match automatic-event-inbox-v1.
+            The served payload does not match automatic-event-inbox-v3.
           </p>
         </div>
       )}
@@ -565,7 +575,7 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
               events={groups[lc]}
               expandedId={expandedId}
               onToggle={toggle}
-              onAnalyze={onAnalyze}
+              onOpenCandidate={onOpenCandidate}
               failedHeadlines={failedHeadlines}
             />
           ))}
@@ -587,7 +597,7 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
                     ev={ev}
                     expanded={expandedId === ev.event_id}
                     onToggle={() => toggle(ev.event_id)}
-                    onAnalyze={onAnalyze}
+                    onOpenCandidate={onOpenCandidate}
                     failed={deriveRowState(ev.headline, failedHeadlines) === "failed"}
                   />
                 ))}

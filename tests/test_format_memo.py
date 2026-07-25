@@ -110,6 +110,7 @@ class TestAnalyzeResponseMemoShape(unittest.TestCase):
         date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         r = self.client.post("/analyze", json={
             "headline": headline, "event_date": date,
+            "confirm_paid": True,
         })
         self.assertEqual(r.status_code, 200)
         return r.json()

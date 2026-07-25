@@ -1,10 +1,10 @@
 /**
- * event-inbox.ts — fail-closed consumer of automatic-event-inbox-v2.
+ * event-inbox.ts — fail-closed consumer of automatic-event-inbox-v3.
  *
  * The inbox GET (/news/inbox) is local-state-only on the backend; this module
  * is the frontend's contract boundary.  `parseInboxPayload` accepts ONLY a
  * payload that matches the captured producer output pinned in
- * fixtures/automatic-event-inbox-v2.json (deep-equal against the live route
+ * fixtures/automatic-event-inbox-v3.json (deep-equal against the live route
  * by tests/test_event_inbox_route_boundary.py) and refuses everything else —
  * a malformed inbox must never render as a plausible inbox.
  *
@@ -37,9 +37,28 @@ export interface InboxSource {
   official: boolean;
 }
 
+/** The three link states the backend registry can honestly report. */
+export const ANALYSIS_LINK_STATES = ["unanalyzed", "analyzed", "conflict"] as const;
+export type AnalysisLinkState = (typeof ANALYSIS_LINK_STATES)[number];
+
+/**
+ * Everything needed to open ONE strict inbox candidate for analysis, and
+ * nothing inferred.  Four identities stay semantically separate:
+ *   candidate_id      - the inbox's own `aei-*` handle for this candidate;
+ *   parent_cluster_id - the stored semantic cluster it was partitioned from;
+ *   title_key         - the exact normalized headline the partition formed on;
+ *   analysis_event_id - the numeric `events.id` of a SAVED analysis, present
+ *                       only when the registry links this candidate to exactly
+ *                       one row.  A conflict selects none.
+ */
 export interface InboxAnalysisTarget {
   headline: string;
   context: string;
+  candidate_id: string;
+  parent_cluster_id: number;
+  title_key: string;
+  analysis_link_status: AnalysisLinkState;
+  analysis_event_id: number | null;
 }
 
 export interface InboxEvent {
@@ -82,7 +101,7 @@ export interface InboxCounts {
 }
 
 export interface InboxPayload {
-  contract: "automatic-event-inbox-v2";
+  contract: "automatic-event-inbox-v3";
   generated_from: string;
   as_of: string;
   availability: "AVAILABLE" | "UNAVAILABLE";
@@ -95,6 +114,11 @@ export interface InboxPayload {
 const TOP_FIELDS = [
   "contract", "generated_from", "as_of", "availability",
   "events", "counts", "limitations", "non_claim",
+] as const;
+
+const TARGET_FIELDS = [
+  "headline", "context", "candidate_id", "parent_cluster_id",
+  "title_key", "analysis_link_status", "analysis_event_id",
 ] as const;
 
 const EVENT_FIELDS = [
@@ -166,8 +190,27 @@ function validEvent(raw: unknown): raw is InboxEvent {
   if (!isStringArray(raw.why_surfaced) || raw.why_surfaced.length === 0) return false;
   if (!isStringArray(raw.known_unknowns)) return false;
   const target = raw.analysis_target;
-  if (!isRecord(target) || !exactKeys(target, ["headline", "context"])) return false;
+  if (!isRecord(target) || !exactKeys(target, TARGET_FIELDS)) return false;
   if (typeof target.headline !== "string" || typeof target.context !== "string") return false;
+  if (typeof target.candidate_id !== "string" || target.candidate_id === "") return false;
+  if (typeof target.title_key !== "string" || target.title_key === "") return false;
+  if (typeof target.parent_cluster_id !== "number") return false;
+  // The launch object must address the SAME candidate the row describes.
+  // The frontend cannot recompute the backend digest, so it pins the two
+  // identities it can check: a drifted handle refuses rather than opening
+  // some other candidate's analysis.
+  if (target.candidate_id !== raw.event_id) return false;
+  if (target.parent_cluster_id !== raw.cluster_id) return false;
+  const link = target.analysis_link_status;
+  if (!(ANALYSIS_LINK_STATES as readonly string[]).includes(link as string)) return false;
+  // Only an `analyzed` candidate resolves to one saved row.  `unanalyzed`
+  // has nothing to open and `conflict` fails closed with no id selected -
+  // either carrying an id would let the UI open the wrong analysis.
+  if (link === "analyzed") {
+    if (typeof target.analysis_event_id !== "number") return false;
+  } else if (target.analysis_event_id !== null) {
+    return false;
+  }
   if (raw.availability_status !== "AVAILABLE" && raw.availability_status !== "PARTIAL") return false;
   if (!nullableString(raw.missing_reason)) return false;
   if (raw.availability_status === "PARTIAL" &&
@@ -217,7 +260,7 @@ function validCounts(raw: unknown, events: InboxEvent[]): raw is InboxCounts {
  */
 export function parseInboxPayload(raw: unknown): InboxPayload | null {
   if (!isRecord(raw) || !exactKeys(raw, TOP_FIELDS)) return null;
-  if (raw.contract !== "automatic-event-inbox-v2") return null;
+  if (raw.contract !== "automatic-event-inbox-v3") return null;
   if (typeof raw.generated_from !== "string") return null;
   if (typeof raw.as_of !== "string" || raw.as_of === "") return null;
   if (raw.availability !== "AVAILABLE" && raw.availability !== "UNAVAILABLE") return null;

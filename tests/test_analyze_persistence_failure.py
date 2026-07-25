@@ -7,9 +7,10 @@ so a caller had no way to tell that the row was lost.
 
 These tests pin the explicit-failure contract:
 
-* ``_persist_event`` returns ``None`` on success and a short error
-  message on failure (without re-raising — every existing caller
-  relies on the function not raising past the boundary).
+* ``_persist_event`` returns ``(None, saved_id)`` on success and
+  ``(short error message, None)`` on failure (without re-raising —
+  every existing caller relies on the function not raising past the
+  boundary).
 * ``/analyze`` JSON response carries ``persistence_failed: bool``.
   When the underlying ``save_event`` raises, ``persistence_failed`` is
   ``True`` and ``persistence_error`` carries a short reason string.
@@ -181,21 +182,25 @@ class TestPersistEventReturnContract(unittest.TestCase):
             model="test-model",
         )
 
-    def test_returns_none_on_success(self) -> None:
-        # save_event returning normally must surface as ``None`` so
-        # callers can treat truthy-return == failure.
-        with patch("api.save_event", return_value=None):
-            result = api._persist_event(**self._minimal_args())
-        self.assertIsNone(result)
+    def test_returns_none_error_and_the_saved_id_on_success(self) -> None:
+        # save_event returning normally must surface a ``None`` error so
+        # callers can treat a truthy error == failure, and hand back the
+        # numeric id the save produced — the only id a candidate link may
+        # ever be stamped with.
+        with patch("api.save_event", return_value=41):
+            error, event_id = api._persist_event(**self._minimal_args())
+        self.assertIsNone(error)
+        self.assertEqual(event_id, 41)
 
-    def test_returns_error_string_on_save_event_failure(self) -> None:
+    def test_returns_error_string_and_no_id_on_save_event_failure(self) -> None:
         with patch(
             "api.save_event",
             side_effect=RuntimeError("disk full"),
         ):
-            result = api._persist_event(**self._minimal_args())
-        self.assertIsInstance(result, str)
-        self.assertIn("disk full", result)
+            error, event_id = api._persist_event(**self._minimal_args())
+        self.assertIsInstance(error, str)
+        self.assertIn("disk full", error)
+        self.assertIsNone(event_id)
 
     def test_does_not_propagate_save_event_exception(self) -> None:
         # Existing callers (movers backfill, /analyze, /analyze/stream)
@@ -225,7 +230,7 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
         with _patched_pipeline_no_provider(), patch(
             "api.save_event", side_effect=RuntimeError("disk full"),
         ):
-            resp = api.analyze(api.AnalyzeRequest(headline="Test headline"))
+            resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         self.assertTrue(
             resp.get("persistence_failed"),
             f"persistence_failed must be True on save_event failure; "
@@ -236,14 +241,14 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
         with _patched_pipeline_no_provider(), patch(
             "api.save_event", side_effect=RuntimeError("disk full"),
         ):
-            resp = api.analyze(api.AnalyzeRequest(headline="Test headline"))
+            resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         self.assertIn("disk full", resp.get("persistence_error") or "")
 
     def test_save_event_success_marks_persistence_failed_false(self) -> None:
         with _patched_pipeline_no_provider(), patch(
             "api.save_event", return_value=None,
         ):
-            resp = api.analyze(api.AnalyzeRequest(headline="Test headline"))
+            resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         self.assertIn("persistence_failed", resp)
         self.assertFalse(
             resp["persistence_failed"],
@@ -262,7 +267,7 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
         with _patched_pipeline_no_provider(), patch(
             "api.save_event", side_effect=RuntimeError("disk full"),
         ):
-            resp = api.analyze(api.AnalyzeRequest(headline="Test headline"))
+            resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         for key in (
             "headline", "stage", "persistence", "analysis",
             "market", "freshness", "is_mock", "event_date",
@@ -299,7 +304,7 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
                         ),
                     ))
                 resp = api.analyze(
-                    api.AnalyzeRequest(headline="Test headline"),
+                    api.AnalyzeRequest(headline="Test headline", confirm_paid=True),
                 )
         self.assertTrue(resp.get("persistence_failed"))
 
@@ -314,7 +319,8 @@ class TestAnalyzeStreamPersistenceFailure(unittest.TestCase):
 
     def _post_stream(self, body: dict) -> str:
         client = TestClient(api.app)
-        return client.post("/analyze/stream", json=body).text
+        return client.post(
+            "/analyze/stream", json={**body, "confirm_paid": True}).text
 
     def _parse_events(self, body: str) -> list[dict]:
         events: list[dict] = []
@@ -396,7 +402,7 @@ class TestMockFallbackUnaffected(unittest.TestCase):
     def test_mock_fallback_response_omits_persistence_fields(self) -> None:
         from analyze_event import _mock
 
-        persist_mock = MagicMock()
+        persist_mock = MagicMock(return_value=(None, 1))  # (error, saved id)
         with patch("api.analyze_event", return_value=_mock("overloaded")), \
              patch("api.classify_stage", return_value="developing"), \
              patch("api.classify_persistence", return_value="medium"), \
@@ -405,7 +411,7 @@ class TestMockFallbackUnaffected(unittest.TestCase):
              patch("api.find_cached_analysis", return_value=None), \
              patch("api.load_event_by_id", return_value=None):
             resp = api.analyze(
-                api.AnalyzeRequest(headline="Mock fallback headline"),
+                api.AnalyzeRequest(headline="Mock fallback headline", confirm_paid=True),
             )
 
         # Mock fallback never reaches the persist step or the provider.

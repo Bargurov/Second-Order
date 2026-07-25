@@ -996,8 +996,42 @@ def _compute_falsifier_block(event: dict) -> dict:
         return {}
 
 
-def save_event(event: dict) -> None:
+def _duplicate_event_id(conn: sqlite3.Connection, headline: str,
+                        event_date: str | None) -> int | None:
+    """Primary key of the row ``_is_duplicate`` matched, or None.
+
+    Same predicate as :func:`_is_duplicate`; returning the id lets
+    ``save_event`` report the row a skipped insert collapsed into, so a
+    caller that needs the numeric event id (candidate linkage) still gets
+    a usable one instead of ``None``.
+    """
+    ten_min_ago = (
+        datetime.now().replace(microsecond=0) - timedelta(minutes=10)
+    ).isoformat(timespec="seconds")
+    if event_date is None:
+        row = conn.execute(
+            "SELECT id FROM events "
+            "WHERE headline = ? AND event_date IS NULL AND timestamp >= ? "
+            "ORDER BY id DESC LIMIT 1",
+            (headline, ten_min_ago),
+        ).fetchone()
+    else:
+        row = conn.execute(
+            "SELECT id FROM events "
+            "WHERE headline = ? AND event_date = ? AND timestamp >= ? "
+            "ORDER BY id DESC LIMIT 1",
+            (headline, event_date, ten_min_ago),
+        ).fetchone()
+    return int(row[0]) if row else None
+
+
+def save_event(event: dict) -> int | None:
     """Insert one event record into the database.
+
+    Returns the numeric ``events.id`` of the stored row — the newly inserted
+    one, or the row a duplicate-window skip collapsed into.  ``None`` only
+    when no id can be resolved.  The return value is additive: callers that
+    ignore it are unaffected.
 
     Skips the insert (and prints a note) when the same headline + event_date
     was already saved within the last 10 minutes.  Lists are stored as JSON
@@ -1035,9 +1069,10 @@ def save_event(event: dict) -> None:
             event_date = event.get("event_date")
 
             if _is_duplicate(conn, headline, event_date):
+                existing_id = _duplicate_event_id(conn, headline, event_date)
                 conn.execute("COMMIT")
                 print(f"[db] Skipped duplicate save for: {headline[:80]}")
-                return
+                return existing_id
 
             ts_value = event.get(
                 "timestamp",
@@ -1162,6 +1197,7 @@ def save_event(event: dict) -> None:
                 # profiled country.
                 json.dumps(event.get("country_vulnerability_context", {})),
             ))
+            new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
             conn.execute("COMMIT")
         except Exception:
             try:
@@ -1172,6 +1208,7 @@ def save_event(event: dict) -> None:
     finally:
         conn.close()
     print(f"Saved to {get_db_path()}.")
+    return int(new_id) if new_id else None
 
 
 def update_event_market_refresh(
@@ -3458,6 +3495,76 @@ def update_registry_state(
             f"WHERE title_key = ?",
             params,
         )
+
+
+def get_candidate_analysis_link(
+    parent_cluster_id: int, title_key: str,
+) -> dict:
+    """Resolve a strict inbox candidate to its persisted analysis, if any.
+
+    A candidate is identified by ``(parent_cluster_id, title_key)`` — the
+    parent cluster supplies provenance and ``title_key`` is the exact
+    ``_dedup_key`` the partition was formed on.  A candidate may own records
+    from several sources sharing that key, so EVERY matching registry row is
+    read; no single representative source defines the link.
+
+    Returns ``{"status": ..., "analysis_event_id": ...}`` where status is:
+      ``unanalyzed`` — no matching row carries an event id;
+      ``analyzed``   — every linked row agrees on one id (partial linkage is
+                       still ``analyzed``: agreeing rows are not a conflict);
+      ``conflict``   — matching rows carry DIFFERENT ids.  Fails closed with
+                       no id selected; picking one silently would attach an
+                       analysis to the wrong event.
+    """
+    if not _db_ready or not title_key:
+        return {"status": "unanalyzed", "analysis_event_id": None}
+    with _db_session() as conn:
+        rows = conn.execute(
+            "SELECT event_id FROM headline_registry "
+            "WHERE cluster_id = ? AND title_key = ?",
+            (int(parent_cluster_id), title_key),
+        ).fetchall()
+    linked = {int(r[0]) for r in rows if r[0] is not None}
+    if not linked:
+        return {"status": "unanalyzed", "analysis_event_id": None}
+    if len(linked) > 1:
+        return {"status": "conflict", "analysis_event_id": None}
+    return {"status": "analyzed", "analysis_event_id": linked.pop()}
+
+
+def link_candidate_analysis(
+    parent_cluster_id: int, title_key: str,
+    analysis_event_id: int, analyzed_at: str,
+) -> str:
+    """Link every registry row of one strict candidate to one analysis row.
+
+    Returns ``linked`` / ``already_linked`` / ``conflict`` / ``no_rows``.
+
+    Fails closed rather than repairing: an existing DIFFERENT id, or an
+    existing conflict, is never overwritten — that would silently reassign a
+    stored analysis.  ``no_rows`` when the news-refresh path never created a
+    registry row for this candidate; this writer never invents one.
+    """
+    if not _db_ready or not title_key or not analysis_event_id:
+        return "no_rows"
+    existing = get_candidate_analysis_link(parent_cluster_id, title_key)
+    if existing["status"] == "conflict":
+        return "conflict"
+    if existing["status"] == "analyzed":
+        if existing["analysis_event_id"] != int(analysis_event_id):
+            return "conflict"
+        return "already_linked"
+    with _db_session() as conn:
+        cur = conn.execute(
+            "UPDATE headline_registry "
+            "SET event_id = ?, analyzed_at = ?, "
+            "    state = CASE WHEN state IN ('seen', 'eligible') "
+            "                 THEN 'analyzed' ELSE state END "
+            "WHERE cluster_id = ? AND title_key = ? AND event_id IS NULL",
+            (int(analysis_event_id), analyzed_at,
+             int(parent_cluster_id), title_key),
+        )
+        return "linked" if cur.rowcount > 0 else "no_rows"
 
 
 def load_registry_state_counts() -> dict[str, int]:
