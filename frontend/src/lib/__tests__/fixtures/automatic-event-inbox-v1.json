@@ -10,7 +10,7 @@
    "headline": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live",
    "event_summary": "UK house prices rise in June despite ‘wider economic uncertainty’; oil prices up after attack on tanker in strait of Hormuz - business live. Corroborated by CNBC World, Reuters World.",
    "first_seen_at": "2026-07-07T08:19:17",
-   "last_updated_at": "2026-07-07T10:42:18",
+   "last_updated_at": "2026-07-07T10:19:10",
    "lifecycle": "NEW",
    "source_count": 4,
    "sources": [
@@ -200,55 +200,13 @@
    "missing_reason": null
   },
   {
-   "event_id": "aei-12494",
-   "cluster_id": 12494,
-   "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
-   "event_summary": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (via Fed Press Releases). Also covered by , but framing differs — Fed Press Releases reports: \"Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses\".",
-   "first_seen_at": "2026-06-09T20:00:00",
-   "last_updated_at": "2026-07-05T21:03:40",
-   "lifecycle": "WATCH",
-   "source_count": 1,
-   "sources": [
-    {
-     "name": "Fed Press Releases",
-     "tier": "high",
-     "official": true
-    }
-   ],
-   "official_source_present": true,
-   "event_family": "bank_stress",
-   "event_type": "export restrictions",
-   "material_channels": [
-    "GROWTH",
-    "RATES",
-    "REGULATION"
-   ],
-   "why_surfaced": [
-    "Potential effect on growth expectations",
-    "Potential effect on short-term rate expectations or yields",
-    "May change the regulatory or antitrust regime",
-    "Official source present: Fed Press Releases"
-   ],
-   "known_unknowns": [
-    "Single source; independent corroboration missing",
-    "Conflicting source descriptions across the cluster",
-    "High source-derived uncertainty"
-   ],
-   "analysis_target": {
-    "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
-    "context": "Summary: Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (via Fed Press Releases). Also covered by , but framing differs — Fed Press Releases reports: \"Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses\".\nAgreement: mixed\nActors: Federal Reserve | Action: export restrictions | Sector: finance | Uncertainty: high"
-   },
-   "availability_status": "AVAILABLE",
-   "missing_reason": null
-  },
-  {
    "event_id": "aei-13060",
    "cluster_id": 13060,
    "headline": "China hits back at US sanctions on tech giants, restricting its exports to American defense firms",
    "event_summary": "China hits back at US sanctions on tech giants, restricting its exports to American defense firms (via AP News). Also covered by Freight & Shipping, OFAC Sanctions, but framing differs — Freight & Shipping reports: \"U.S. Bank: Truck freight rates rose considerably in April and May - DC Velocity\".",
    "first_seen_at": "2022-08-02T07:00:00",
-   "last_updated_at": "2026-07-05T21:00:00",
-   "lifecycle": "WATCH",
+   "last_updated_at": "2026-07-03T16:00:36",
+   "lifecycle": "RESOLVED",
    "source_count": 4,
    "sources": [
     {
@@ -295,6 +253,48 @@
    },
    "availability_status": "AVAILABLE",
    "missing_reason": null
+  },
+  {
+   "event_id": "aei-12494",
+   "cluster_id": 12494,
+   "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+   "event_summary": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (via Fed Press Releases). Also covered by , but framing differs — Fed Press Releases reports: \"Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses\".",
+   "first_seen_at": "2026-06-09T20:00:00",
+   "last_updated_at": "2026-07-02T15:00:00",
+   "lifecycle": "RESOLVED",
+   "source_count": 1,
+   "sources": [
+    {
+     "name": "Fed Press Releases",
+     "tier": "high",
+     "official": true
+    }
+   ],
+   "official_source_present": true,
+   "event_family": "bank_stress",
+   "event_type": "export restrictions",
+   "material_channels": [
+    "GROWTH",
+    "RATES",
+    "REGULATION"
+   ],
+   "why_surfaced": [
+    "Potential effect on growth expectations",
+    "Potential effect on short-term rate expectations or yields",
+    "May change the regulatory or antitrust regime",
+    "Official source present: Fed Press Releases"
+   ],
+   "known_unknowns": [
+    "Single source; independent corroboration missing",
+    "Conflicting source descriptions across the cluster",
+    "High source-derived uncertainty"
+   ],
+   "analysis_target": {
+    "headline": "Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc.",
+    "context": "Summary: Federal Reserve Board issues enforcement action with Small Business Bank and announces termination enforcement actions with BNP Paribas S.A., BNP Paribas USA, Inc., BNP Paribas Securities Corp., and Community Bankshares, Inc. (via Fed Press Releases). Also covered by , but framing differs — Fed Press Releases reports: \"Federal Reserve Board's annual bank stress test confirms that large banks are well positioned to weather a severe recession and able to continue to lend to households and businesses\".\nAgreement: mixed\nActors: Federal Reserve | Action: export restrictions | Sector: finance | Uncertainty: high"
+   },
+   "availability_status": "AVAILABLE",
+   "missing_reason": null
   }
  ],
  "counts": {
@@ -306,8 +306,8 @@
   "by_lifecycle": {
    "NEW": 1,
    "DEVELOPING": 0,
-   "WATCH": 5,
-   "RESOLVED": 0
+   "WATCH": 3,
+   "RESOLVED": 2
   }
  },
  "limitations": [

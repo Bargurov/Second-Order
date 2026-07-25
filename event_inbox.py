@@ -7,6 +7,21 @@ local-state-only: the store is opened through a read-only SQLite connection
 (``mode=ro``), and no function in this module fetches, refreshes, clusters,
 or writes anything.
 
+Cluster time identity (A0-R1)
+-----------------------------
+Every time-dependent field is derived by ``derive_cluster_times`` from the
+publication timestamps of the records the cluster OWNS — first/last seen,
+publication ordering, 14-day window eligibility and lifecycle age all read
+that one rule.  The stored ``latest_published_at`` column is NOT consulted:
+it is maintained by the refresh writer from the in-memory clusterer output
+and was observed drifting in both directions (ahead of every owned record,
+which promoted a nine-day-old notice to the top of the inbox; and behind a
+fresh owned record, which counted a cluster holding yesterday's article as
+``beyond_window``).  Records with a missing or unparsable ``published_at``
+contribute nothing and are never back-filled with the current time; a
+cluster where no owned record carries a parsable timestamp keeps null
+stamps, stays visible, and is disclosed as PARTIAL/WATCH.
+
 Reused pipeline primitives (no second clustering system, no new identity):
   * cluster identity      — the ``news_clusters`` integer primary key
   * headline dedup key    — ``news_sources._dedup_key`` (same normalizer the
@@ -67,7 +82,7 @@ import re
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import NamedTuple, Optional
 
 from news_cluster_store import _RECENCY_HOURS
 
@@ -227,6 +242,55 @@ def derive_channels(text: str) -> list[str]:
 # Timestamp helpers
 # ---------------------------------------------------------------------------
 
+class ClusterTimes(NamedTuple):
+    """Publication-time identity of ONE cluster, derived from its own records."""
+
+    first_seen: Optional[datetime]
+    last_updated: Optional[datetime]
+    newest_record: Optional[dict]
+    valid_count: int
+    record_count: int
+
+
+def derive_cluster_times(records: object) -> ClusterTimes:
+    """The single publication-time rule for a cluster (A0-R1).
+
+    ``first_seen`` / ``last_updated`` are the earliest / latest parsable
+    ``published_at`` among the records the cluster OWNS.  Nothing else is
+    consulted: not the stored ``latest_published_at`` metadata column, not
+    ``updated_at``, not the refresh or ingestion clock, and never another
+    cluster's records.  The stored metadata column is maintained by the
+    refresh writer from the in-memory clusterer output and is known to drift
+    both ahead of and behind the cluster's own articles, so the inbox does
+    not read it.
+
+    ``newest_record`` is the record that supplies ``last_updated``; when
+    several records share that timestamp the tie-break is the smallest
+    ``(title, source)`` pair, so the choice is deterministic.
+
+    Records whose ``published_at`` is missing, blank or unparsable contribute
+    nothing and are NEVER back-filled with the current time.  When no owned
+    record carries a parsable timestamp both bounds are ``None`` — the caller
+    surfaces that as explicit missingness rather than inventing a time.
+    """
+    recs = records if isinstance(records, list) else []
+    dated: list[tuple[datetime, str, str, dict]] = []
+    for rec in recs:
+        if not isinstance(rec, dict):
+            continue
+        dt = _parse_dt(rec.get("published_at"))
+        if dt is None:
+            continue
+        dated.append((dt, rec.get("title") or "", rec.get("source") or "", rec))
+    if not dated:
+        return ClusterTimes(None, None, None, 0, len(recs))
+    first = min(dt for dt, _, _, _ in dated)
+    last = max(dt for dt, _, _, _ in dated)
+    newest = min((d for d in dated if d[0] == last),
+                 key=lambda d: (d[1], d[2]))[3]
+    return ClusterTimes(first, last, newest, len(dated), len(recs))
+
+
 def _parse_dt(value: object) -> Optional[datetime]:
     if not isinstance(value, str) or not value.strip():
         return None
@@ -326,9 +390,30 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
     from classify import classify_stage
     from family_inference import resolve_effective_family
 
-    headline: str = row.get("headline") or ""
+    stored_headline: str = row.get("headline") or ""
     payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
     records = row.get("records") if isinstance(row.get("records"), list) else []
+
+    # One time identity for this cluster, owned records only.
+    times = derive_cluster_times(records)
+    first_seen = times.first_seen
+    last_pub = times.last_updated
+
+    # Headline ownership.  The clusterer's representative-headline policy
+    # (most central / highest-tier member) is a selection rule, not a recency
+    # rule, and an owned representative is left exactly as stored.  What must
+    # not survive is a displayed headline the cluster does not own at all —
+    # the same foreign-metadata leak as the timestamp defect — so that case
+    # falls back to the cluster's newest owned record.
+    owned_titles = {(r.get("title") or "").strip()
+                    for r in records if isinstance(r, dict)}
+    headline = stored_headline
+    headline_repointed = False
+    if stored_headline.strip() not in owned_titles and times.newest_record is not None:
+        newest_title = (times.newest_record.get("title") or "").strip()
+        if newest_title:
+            headline = newest_title
+            headline_repointed = True
 
     summary = payload.get("summary")
     summary = summary.strip() if isinstance(summary, str) and summary.strip() else None
@@ -337,13 +422,6 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
     channels = derive_channels(text)
     if not channels:
         return None
-
-    pub_dts = [d for d in (_parse_dt(r.get("published_at")) for r in records)
-               if d is not None]
-    first_seen = min(pub_dts) if pub_dts else None
-    last_pub_candidates = pub_dts + [d for d in (_parse_dt(row.get("latest_published_at")),)
-                                     if d is not None]
-    last_pub = max(last_pub_candidates) if last_pub_candidates else None
 
     payload_sources = payload.get("sources")
     if isinstance(payload_sources, list) and payload_sources:
@@ -405,6 +483,10 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
         unknowns.append("High source-derived uncertainty")
     if event_family is None:
         unknowns.append("No event-family mapping for this cluster")
+    if headline_repointed:
+        unknowns.append("Stored representative headline was not among this "
+                        "cluster's records; the cluster's newest article is "
+                        "shown instead")
     try:
         stage = classify_stage(headline)
     except Exception:
@@ -474,12 +556,10 @@ def build_inbox(rows: list[dict], *, now: datetime) -> dict:
                 or not isinstance(row.get("payload"), dict):
             counts["malformed_rows"] += 1
             continue
-        last_pub = _parse_dt(row.get("latest_published_at"))
-        if last_pub is None:
-            recs = row.get("records") if isinstance(row.get("records"), list) else []
-            rec_dts = [d for d in (_parse_dt(r.get("published_at")) for r in recs)
-                       if d is not None]
-            last_pub = max(rec_dts) if rec_dts else None
+        # Window eligibility reads the SAME owned-record rule the event body
+        # uses, so a fresh owned article can never be windowed out by an older
+        # stored ``latest_published_at``.
+        last_pub = derive_cluster_times(row.get("records")).last_updated
         # A cluster with NO parsable timestamp cannot be proven old — it stays
         # visible (as PARTIAL/WATCH) rather than being silently windowed out.
         if last_pub is not None and (now - last_pub) > window:
