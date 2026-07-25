@@ -50,8 +50,9 @@ from db import (
     append_revisit_snapshot, load_revisit_snapshots,
     get_confidence_calibration_stats,
     events_db_override, db_binding_is_live, get_db_path,
-    link_candidate_analysis,
+    link_candidate_analysis, load_analysis_result_snapshot,
 )
+from analysis_result_snapshot import apply_result_snapshot
 from classify import classify_stage, classify_persistence
 from analyze_event import (
     analyze_event, is_mock as _is_mock_analysis, _DEFAULT_MODEL,
@@ -1337,6 +1338,15 @@ def _build_cached_response(
     from reaction_profile_hydration import build_reaction_profile_v1
     analysis_block["validation_status_v2"] = score_validation_status(cached)
     analysis_block["reaction_profile_v1"] = build_reaction_profile_v1(cached)
+
+    # A1-3R: restore the saved mechanism-and-resolution output.  Applied LAST
+    # so the saved values win over the empty column defaults a legacy write
+    # left behind — but only over the snapshot's own fields, so the macro
+    # overlay freeze policy and the detail-read blocks above are untouched.
+    # An absent or tampered snapshot leaves the legacy columns speaking for
+    # themselves; nothing is recomputed and no provider is reached.
+    analysis_block = apply_result_snapshot(
+        analysis_block, load_analysis_result_snapshot(cached.get("id")))
 
     response = {
         "headline":    headline,

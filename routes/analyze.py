@@ -607,13 +607,24 @@ def _persist_with_provenance(
     run keeps the existing single-row path and stores no provenance — it has
     no candidate basis to record.
     """
+    # A direct (non-candidate) run keeps the existing single-row path and its
+    # ``save_event`` seam untouched.  A1-3R scopes the three-way transaction
+    # to Inbox-originated analyses, so routing direct runs through it would be
+    # collateral change — reopening a direct analysis keeps the pre-existing
+    # honest missingness.  See the deferred note in the A1-3R report.
     if candidate_snapshot is None or req.candidate_id is None:
         error, event_id = _api._persist_event(
             headline, stage, persistence, analysis, mkt, effective_date,
             model=model)
         return error, event_id, None
 
+    import analysis_result_snapshot as _ars
     import db as _dbm
+
+    # A1-3R: the saved readout output, built from the FINAL validated
+    # `analysis` — exactly what the operator received.  See
+    # analysis_result_snapshot for the inclusion boundary.
+    snapshot = _ars.build_result_snapshot(analysis)
     builder = _provenance_builder(
         req, candidate_snapshot=candidate_snapshot, stage=stage,
         persistence=persistence, macro_context=macro_context, model=model)
@@ -622,7 +633,8 @@ def _persist_with_provenance(
             headline, stage, persistence, analysis, mkt, effective_date,
             model=model)
         event_id, provenance = _dbm.save_event_with_analysis_provenance(
-            record, builder)
+            record, builder, lambda _new_id: snapshot,
+            created_at=datetime.now().isoformat(timespec="seconds"))
     except Exception as e:
         _api._log.warning("save_event_with_analysis_provenance failed: %s", e,
                           exc_info=True)

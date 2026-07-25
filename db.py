@@ -786,6 +786,40 @@ def init_db() -> None:
             ON analysis_provenance (parent_cluster_id, title_key)
         """)
 
+        # ------------------------------------------------------------------
+        # analysis_result_snapshot — A1-3R immutable saved OUTPUT, 1:1 with an
+        # ``events`` row.
+        #
+        # The counterpart to analysis_provenance above, and deliberately NOT
+        # the same table:
+        #     analysis_provenance      = what went IN
+        #     analysis_result_snapshot = what came OUT
+        # Output must never be stored inside the provenance record, or a
+        # reader could mistake an intact input hash for a validated result.
+        #
+        # Notes:
+        #   * ``analysis_event_id`` is the PRIMARY KEY, so SQLite enforces one
+        #     snapshot per analysis; the writer uses a plain INSERT so a second
+        #     write raises instead of silently rewriting saved output.
+        #   * ``result_json`` holds only the A1-3 readout subset — the shape is
+        #     owned by ``analysis_result_snapshot.py`` and versioned by
+        #     ``schema_version``, so widening it later needs no table rebuild.
+        #   * This table is a DISPLAY record.  No track-record, evidence,
+        #     Mission or event-study consumer may read it; a static consumer
+        #     scan in the tests pins that.
+        #   * Added at the existing SCHEMA_VERSION — a bump would rename every
+        #     local database to .bak.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS analysis_result_snapshot (
+                analysis_event_id INTEGER PRIMARY KEY,
+                schema_version    TEXT NOT NULL,
+                result_json       TEXT NOT NULL,
+                result_hash       TEXT NOT NULL,
+                created_at        TEXT NOT NULL,
+                FOREIGN KEY (analysis_event_id) REFERENCES events (id)
+            )
+        """)
+
     _db_ready = True
 
 
@@ -3627,33 +3661,123 @@ def save_analysis_provenance(provenance: dict) -> None:
         _insert_analysis_provenance(conn, provenance)
 
 
+def _insert_analysis_result_snapshot(
+    conn: sqlite3.Connection, analysis_event_id: int, snapshot: dict,
+    created_at: str,
+) -> None:
+    """Insert one A1-3R result snapshot inside an already-open transaction.
+
+    Plain INSERT — never OR REPLACE.  ``analysis_event_id`` is the primary
+    key, so a second write for the same analysis raises rather than silently
+    rewriting saved output.  Saved output is append-only: what an analysis
+    reported cannot be edited after the fact.
+    """
+    conn.execute(
+        "INSERT INTO analysis_result_snapshot "
+        "(analysis_event_id, schema_version, result_json, result_hash, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (int(analysis_event_id), snapshot["schema_version"],
+         json.dumps(snapshot["result"], sort_keys=True, ensure_ascii=False,
+                    separators=(",", ":"), default=str),
+         snapshot["result_hash"], created_at),
+    )
+
+
+def save_analysis_result_snapshot(
+    analysis_event_id: int, snapshot: dict, created_at: str,
+) -> None:
+    """Persist one result snapshot on its own transaction.
+
+    The paired :func:`save_event_with_analysis_provenance` is the path the
+    analyze routes use; this standalone entry point exists for tests.  Raises
+    when a snapshot already exists for the analysis.
+    """
+    with _event_write_transaction() as conn:
+        _insert_analysis_result_snapshot(conn, analysis_event_id, snapshot,
+                                         created_at)
+
+
+def load_analysis_result_snapshot(analysis_event_id: int) -> dict | None:
+    """Read one saved result snapshot, or ``None`` when there is none.
+
+    ``None`` also covers malformed or tampered rows: the caller then falls
+    back to the legacy columns rather than serving partially-trusted output.
+    A snapshot is never reconstructed from current state — a result rebuilt
+    today is not what an older analysis reported.
+    """
+    if not _db_ready:
+        return None
+    # No usable id means no snapshot — fail closed rather than raising.
+    # ``_build_cached_response`` is also called directly with hand-built rows
+    # that carry no ``id``, and a reader that raised there would take the
+    # whole cached response down over an absent optional record.
+    try:
+        event_id = int(analysis_event_id)
+    except (TypeError, ValueError):
+        return None
+    try:
+        with _db_session() as conn:
+            row = conn.execute(
+                "SELECT schema_version, result_json, result_hash "
+                "FROM analysis_result_snapshot WHERE analysis_event_id = ?",
+                (event_id,),
+            ).fetchone()
+    except sqlite3.Error:
+        return None
+    if row is None:
+        return None
+    schema_version, result_json, result_hash = row
+    try:
+        result = json.loads(result_json)
+    except (TypeError, ValueError):
+        return None
+    snapshot = {"schema_version": schema_version, "result": result,
+                "result_hash": result_hash}
+    from analysis_result_snapshot import validate_snapshot
+    if validate_snapshot(snapshot):
+        return None
+    return snapshot
+
+
 def save_event_with_analysis_provenance(
-    event: dict, build_provenance,
+    event: dict, build_provenance, build_result_snapshot=None,
+    created_at: str | None = None,
 ) -> tuple[int | None, dict | None]:
-    """Insert an events row and its provenance snapshot in ONE transaction.
+    """Insert an events row, its provenance and its result snapshot in ONE
+    transaction.
 
-    ``build_provenance`` receives the new numeric ``events.id`` and returns the
-    provenance object to store — the id only exists mid-transaction, so the
-    caller supplies a builder rather than a finished object.
+    ``build_provenance`` and ``build_result_snapshot`` each receive the new
+    numeric ``events.id`` — the id only exists mid-transaction, so callers
+    supply builders rather than finished objects.  Either builder may be
+    ``None``: a direct (non-candidate) analysis has no provenance to record
+    but still saves its output, so the two are independent.
 
-    Either both rows commit or neither does.  A provenance failure must not
-    leave a saved analysis that looks complete but cannot be reconstructed, so
-    the exception propagates and the events insert rolls back with it.
+    All requested rows commit or none do.  A provenance failure must not leave
+    an analysis that looks complete but cannot be reconstructed, and a
+    snapshot failure must not leave one that reopens as a degraded shadow of
+    itself — so the exception propagates and the events insert rolls back with
+    it.
 
     Returns ``(analysis_event_id, provenance)``.  A duplicate-window skip
     returns the existing id with ``None`` provenance and writes nothing: that
-    row already has whatever provenance it was saved with, and overwriting it
-    is exactly what append-only forbids.
+    row already has whatever provenance and output it was saved with, and
+    overwriting either is exactly what append-only forbids.
     """
+    stamp = created_at or datetime.now().isoformat(timespec="seconds")
     with _event_write_transaction() as conn:
         before = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
         new_id = _insert_event_row(conn, event)
         after = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
         if new_id is None or after == before:
-            # Duplicate-window skip — no new row, so no new provenance.
+            # Duplicate-window skip — no new row, so nothing downstream.
             return new_id, None
-        provenance = build_provenance(int(new_id))
-        _insert_analysis_provenance(conn, provenance)
+        provenance = None
+        if build_provenance is not None:
+            provenance = build_provenance(int(new_id))
+            _insert_analysis_provenance(conn, provenance)
+        if build_result_snapshot is not None:
+            _insert_analysis_result_snapshot(
+                conn, int(new_id), build_result_snapshot(int(new_id)), stamp)
         return int(new_id), provenance
 
 
