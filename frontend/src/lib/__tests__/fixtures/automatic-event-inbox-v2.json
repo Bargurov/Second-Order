@@ -826,6 +826,9 @@
   "Materiality channels are assigned by a documented deterministic keyword rule; the semantic novelty of an update is not verified.",
   "Event-family mapping is an optional enrichment; clusters without a mapping show that explicitly.",
   "Event candidates are exact normalized-headline partitions of a stored cluster, so a cross-source paraphrase of one event can appear as separate candidates; conservative splitting is preferred to merging distinct events.",
+  "Because event identity is exact, corroboration is counted only when sources publish the same normalized headline; cross-source agreement can therefore be understated.",
+  "Lifecycle labels describe candidate timing and workflow age, not economic resolution: RESOLVED means the candidate stopped drawing new articles, and DEVELOPING is not currently produced because a materially different headline becomes a separate candidate.",
+  "Why-surfaced names the deterministic inclusion channel rather than a full event-specific assessment, and material-channel coverage is incomplete — corporate earnings and guidance are a known gap.",
   "5 of 6 stored clusters contained more than one identity partition and were surfaced as separate candidates.",
   "11 event candidates last updated more than 14 days ago are outside the inbox window (counted, not shown).",
   "3 event candidates matched no explicit material channel and are excluded (counted, not shown)."

@@ -52,6 +52,17 @@ describe("permanent explanations", () => {
       "No newly detected events currently pass the materiality gate.",
     );
   });
+
+  it("renders every payload limitation in a visible basis-and-limits section", () => {
+    // The contract's limitations[] is the canonical carrier for the identity,
+    // lifecycle and why-surfaced caveats; the page must render all of them
+    // (only the absence note is lifted out, shown separately above).
+    const src = page();
+    expect(src).toContain("Basis and limits");
+    expect(src).toMatch(
+      /parsed\.limitations\s*\.filter\(\s*\(l\)\s*=>\s*l\s*!==\s*INBOX_ABSENCE_NOTE\s*\)\s*\.map\(/,
+    );
+  });
 });
 
 describe("contract consumption is fail-closed", () => {

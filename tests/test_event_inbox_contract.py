@@ -482,6 +482,46 @@ class TestUniversalContract(unittest.TestCase):
         self.assertIn("Summary:", target["context"])
 
 
+class TestVisibleLimitations(unittest.TestCase):
+    """The three limitation families an operator must see without reading code.
+
+    ``limitations`` is the canonical carrier and the page renders every entry,
+    so these assertions pin what reaches the screen.  They check semantics, not
+    whole paragraphs, so wording can be tightened without breaking the guard.
+    """
+
+    def _limitations(self) -> str:
+        rows = [_row(1, [
+            _rec("Reuters World", "OPEC announces oil output cut",
+                 _ANCHOR - timedelta(hours=2)),
+        ])]
+        return " ".join(build_inbox(rows, now=_ANCHOR)["limitations"]).lower()
+
+    def test_conservative_identity_and_understated_corroboration_are_visible(self):
+        text = self._limitations()
+        self.assertIn("separate candidates", text)
+        self.assertIn("corroboration", text)
+        self.assertIn("understated", text)
+
+    def test_lifecycle_is_disclosed_as_timing_not_economic_resolution(self):
+        text = self._limitations()
+        self.assertIn("not economic resolution", text)
+        self.assertIn("developing is not currently produced", text)
+
+    def test_why_surfaced_scope_and_channel_gap_are_visible(self):
+        text = self._limitations()
+        self.assertIn("inclusion channel", text)
+        self.assertIn("coverage is incomplete", text)
+        self.assertIn("corporate earnings", text)
+
+    def test_the_three_families_are_permanent_not_conditional(self):
+        """They describe the contract, so they appear even with no events."""
+        text = " ".join(build_inbox([], now=_ANCHOR)["limitations"]).lower()
+        self.assertIn("separate candidates", text)
+        self.assertIn("not economic resolution", text)
+        self.assertIn("inclusion channel", text)
+
+
 class TestFrozenThresholdsDocumented(unittest.TestCase):
     def test_thresholds_match_frozen_empirical_basis(self):
         # RESOLVED reuses the cluster store's calibrated 48h archive window;

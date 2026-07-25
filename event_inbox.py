@@ -697,6 +697,19 @@ def build_inbox(rows: list[dict], *, now: datetime) -> dict:
         "cluster, so a cross-source paraphrase of one event can appear as "
         "separate candidates; conservative splitting is preferred to merging "
         "distinct events.")
+    limitations.append(
+        "Because event identity is exact, corroboration is counted only when "
+        "sources publish the same normalized headline; cross-source agreement "
+        "can therefore be understated.")
+    limitations.append(
+        "Lifecycle labels describe candidate timing and workflow age, not "
+        "economic resolution: RESOLVED means the candidate stopped drawing new "
+        "articles, and DEVELOPING is not currently produced because a "
+        "materially different headline becomes a separate candidate.")
+    limitations.append(
+        "Why-surfaced names the deterministic inclusion channel rather than a "
+        "full event-specific assessment, and material-channel coverage is "
+        "incomplete — corporate earnings and guidance are a known gap.")
     if split_parents:
         limitations.append(
             f"{split_parents} of {counts['partitioned_parent_clusters']} stored "
