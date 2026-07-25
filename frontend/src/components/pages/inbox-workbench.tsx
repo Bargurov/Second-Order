@@ -529,7 +529,8 @@ export function InboxWorkbench({ onAnalyze, failedHeadlines }: InboxWorkbenchPro
             No newly detected events currently pass the materiality gate.
           </p>
           <p className="mt-1 text-[10px] text-on-surface-variant/60">
-            {parsed.counts.clusters_total} stored clusters were evaluated
+            {parsed.counts.parent_clusters_total} stored clusters produced{" "}
+            {parsed.counts.candidates_total} event candidates
             {parsed.counts.beyond_window > 0 &&
               ` — ${parsed.counts.beyond_window} outside the 14-day window`}
             {parsed.counts.excluded_no_material_channel > 0 &&

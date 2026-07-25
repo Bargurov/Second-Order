@@ -1,4 +1,10 @@
-"""automatic-event-inbox-v1 — pure derivation contract tests.
+"""automatic-event-inbox-v2 — pure derivation contract tests.
+
+Since A0-R2B one stored cluster is partitioned by exact normalized-headline
+identity and each partition becomes one candidate, so a single stored row may
+yield several events.  Cross-source reports of ONE normalized headline still
+dedupe; differently-worded reports of the same story split conservatively and
+that split is disclosed in ``limitations``.
 
 Three input layers stay distinct (project testing rule):
 
@@ -106,15 +112,16 @@ def _load_real_rows() -> list[dict]:
 class TestContractShape(unittest.TestCase):
     def test_contract_version_and_exact_top_level_fields(self):
         payload = build_inbox([], now=_ANCHOR)
-        self.assertEqual(payload["contract"], "automatic-event-inbox-v1")
-        self.assertEqual(CONTRACT_VERSION, "automatic-event-inbox-v1")
+        self.assertEqual(payload["contract"], "automatic-event-inbox-v2")
+        self.assertEqual(CONTRACT_VERSION, "automatic-event-inbox-v2")
         self.assertEqual(set(payload.keys()), _TOP_LEVEL_FIELDS)
 
     def test_valid_empty_state_is_honest_not_unavailable(self):
         payload = build_inbox([], now=_ANCHOR)
         self.assertEqual(payload["availability"], "AVAILABLE")
         self.assertEqual(payload["events"], [])
-        self.assertEqual(payload["counts"]["clusters_total"], 0)
+        self.assertEqual(payload["counts"]["parent_clusters_total"], 0)
+        self.assertEqual(payload["counts"]["candidates_total"], 0)
         self.assertEqual(payload["counts"]["surfaced"], 0)
         # The absence disclosure is permanent, not conditional on content.
         self.assertTrue(any("Absence from the inbox" in l
@@ -122,8 +129,10 @@ class TestContractShape(unittest.TestCase):
         self.assertIn("not a prediction", payload["non_claim"])
 
     def test_event_field_set_is_exact_and_carries_no_bodies(self):
-        rows = [_row(1, [_rec("Reuters World", "Fed raises interest rates", _ANCHOR - timedelta(hours=2)),
-                         _rec("BBC World", "Federal Reserve lifts policy rate", _ANCHOR - timedelta(hours=1))])]
+        # One identity reported by two sources -> one candidate.
+        title = "Fed raises interest rates"
+        rows = [_row(1, [_rec("Reuters World", title, _ANCHOR - timedelta(hours=2)),
+                         _rec("BBC World", title, _ANCHOR - timedelta(hours=1))])]
         payload = build_inbox(rows, now=_ANCHOR)
         self.assertEqual(len(payload["events"]), 1)
         ev = payload["events"][0]
@@ -134,20 +143,34 @@ class TestContractShape(unittest.TestCase):
 
 
 class TestDeduplication(unittest.TestCase):
-    def test_one_cluster_with_multiple_sources_is_one_event(self):
+    def test_one_identity_across_sources_is_one_event(self):
+        """Cross-source corroboration of ONE normalized headline dedupes."""
+        title = "OPEC announces oil output cut"
         rows = [_row(7, [
-            _rec("Reuters World", "OPEC announces oil output cut", _ANCHOR - timedelta(hours=3)),
-            _rec("BBC World", "OPEC agrees to cut oil production", _ANCHOR - timedelta(hours=3)),
-            _rec("FT World", "Oil producers agree to output cut", _ANCHOR - timedelta(hours=2)),
+            _rec("Reuters World", title, _ANCHOR - timedelta(hours=3)),
+            _rec("BBC World", title, _ANCHOR - timedelta(hours=3)),
+            _rec("FT World", title, _ANCHOR - timedelta(hours=2)),
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
         self.assertEqual(len(payload["events"]), 1)
         ev = payload["events"][0]
         self.assertEqual(ev["cluster_id"], 7)
-        self.assertEqual(ev["event_id"], "aei-7")
+        self.assertTrue(ev["event_id"].startswith("aei-7-"))
         self.assertEqual(ev["source_count"], 3)
         names = [s["name"] for s in ev["sources"]]
         self.assertEqual(sorted(names), ["BBC World", "FT World", "Reuters World"])
+
+    def test_differently_worded_reports_split_conservatively(self):
+        """The disclosed cost of strict identity: paraphrases of one story
+        become separate candidates rather than one merged event."""
+        rows = [_row(8, [
+            _rec("Reuters World", "OPEC announces oil output cut", _ANCHOR - timedelta(hours=3)),
+            _rec("BBC World", "OPEC agrees to cut oil production", _ANCHOR - timedelta(hours=2)),
+        ])]
+        payload = build_inbox(rows, now=_ANCHOR)
+        self.assertEqual(len(payload["events"]), 2)
+        self.assertTrue(any("separate candidates" in l.lower()
+                            for l in payload["limitations"]))
 
 
 class TestLifecycle(unittest.TestCase):
@@ -159,9 +182,10 @@ class TestLifecycle(unittest.TestCase):
             self.assertIn(ev["lifecycle"], LIFECYCLE_STATES)
 
     def test_recent_multi_source_cluster_is_new(self):
+        title = "ECB cuts interest rates"
         rows = [_row(1, [
-            _rec("Reuters World", "ECB cuts interest rates", _ANCHOR - timedelta(hours=2)),
-            _rec("BBC World", "ECB lowers policy rate", _ANCHOR - timedelta(hours=1, minutes=30)),
+            _rec("Reuters World", title, _ANCHOR - timedelta(hours=2)),
+            _rec("BBC World", title, _ANCHOR - timedelta(hours=1, minutes=30)),
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
         self.assertEqual(payload["events"][0]["lifecycle"], "NEW")
@@ -176,18 +200,24 @@ class TestLifecycle(unittest.TestCase):
         payload = build_inbox(rows, now=_ANCHOR)
         self.assertEqual(payload["events"][0]["lifecycle"], "NEW")
 
-    def test_same_wave_rewording_is_not_developing(self):
-        # A differently-worded report inside the first coverage wave
-        # (< DEVELOPING_WAVE_GAP_HOURS) is one wave, not a development.
+    def test_same_wave_rewording_is_a_separate_candidate_not_a_development(self):
+        # A differently-worded report is a different normalized identity, so
+        # under strict partitioning it is its own candidate — a rewording can
+        # never be recorded as a development of another candidate.
         rows = [_row(3, [
             _rec("Reuters World", "ECB cuts interest rates", _ANCHOR - timedelta(hours=3)),
             _rec("BBC World", "European Central Bank lowers rates by 25 basis points",
                  _ANCHOR - timedelta(hours=2)),
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
-        self.assertEqual(payload["events"][0]["lifecycle"], "NEW")
+        self.assertEqual(len(payload["events"]), 2)
+        for ev in payload["events"]:
+            self.assertNotEqual(ev["lifecycle"], "DEVELOPING")
 
-    def test_substantive_late_official_update_is_developing(self):
+    def test_late_official_update_is_its_own_candidate(self):
+        """Structural consequence of strict identity: a later, differently
+        worded official update is a SEPARATE candidate, so it cannot promote
+        another candidate to DEVELOPING.  Recorded, not hidden."""
         rows = [_row(4, [
             _rec("Reuters World", "Fed expected to hold interest rates steady",
                  _ANCHOR - timedelta(hours=20)),
@@ -196,9 +226,20 @@ class TestLifecycle(unittest.TestCase):
                  _ANCHOR - timedelta(hours=2)),
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
-        ev = payload["events"][0]
-        self.assertEqual(ev["lifecycle"], "DEVELOPING")
-        self.assertTrue(ev["official_source_present"])
+        self.assertEqual(len(payload["events"]), 2)
+        official = [ev for ev in payload["events"] if ev["official_source_present"]]
+        self.assertEqual(len(official), 1)
+        self.assertIn("FOMC statement", official[0]["headline"])
+
+    def test_developing_is_structurally_unreachable_under_strict_identity(self):
+        """DEVELOPING needs a later record with a DIFFERENT normalized title;
+        inside one identity partition every record shares that title, so the
+        state stays in the vocabulary but cannot currently arise.  Re-linking
+        related candidates is deferred process/theme work."""
+        rows = _load_real_rows()
+        payload = build_inbox(rows, now=datetime(2026, 7, 7, 12, 0, 0))
+        self.assertIn("DEVELOPING", LIFECYCLE_STATES)
+        self.assertEqual(payload["counts"]["by_lifecycle"]["DEVELOPING"], 0)
 
     def test_single_nonofficial_source_is_watch_with_visible_reason(self):
         rows = [_row(5, [
@@ -210,21 +251,29 @@ class TestLifecycle(unittest.TestCase):
         self.assertEqual(ev["lifecycle"], "WATCH")
         self.assertTrue(any("single source" in u.lower() for u in ev["known_unknowns"]))
 
-    def test_mixed_agreement_is_watch_with_conflict_reason(self):
+    def test_parent_mixed_agreement_does_not_leak_into_a_candidate(self):
+        """Conflicting reports are different identities, so they become
+        different candidates and the PARENT's 'mixed' agreement label — which
+        described the union — must not be attached to either of them."""
         rows = [_row(6, [
             _rec("Reuters World", "Oil output cut announced by OPEC", _ANCHOR - timedelta(hours=2)),
             _rec("BBC World", "OPEC oil supply increase under discussion", _ANCHOR - timedelta(hours=1)),
         ], agreement="mixed")]
         payload = build_inbox(rows, now=_ANCHOR)
-        ev = payload["events"][0]
-        self.assertEqual(ev["lifecycle"], "WATCH")
-        self.assertTrue(any("conflict" in u.lower() for u in ev["known_unknowns"]))
+        self.assertEqual(len(payload["events"]), 2)
+        for ev in payload["events"]:
+            self.assertEqual(ev["lifecycle"], "WATCH")
+            self.assertTrue(any("single source" in u.lower()
+                                for u in ev["known_unknowns"]))
+            self.assertFalse(any("conflict" in u.lower()
+                                 for u in ev["known_unknowns"]))
 
     def test_cluster_quiet_past_archive_window_is_resolved(self):
+        title = "Fed raises interest rates"
         rows = [_row(8, [
-            _rec("Reuters World", "Fed raises interest rates",
+            _rec("Reuters World", title,
                  _ANCHOR - timedelta(hours=RESOLVED_AFTER_HOURS + 6)),
-            _rec("BBC World", "Federal Reserve lifts policy rate",
+            _rec("BBC World", title,
                  _ANCHOR - timedelta(hours=RESOLVED_AFTER_HOURS + 1)),
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
@@ -241,8 +290,9 @@ class TestMaterialityGate(unittest.TestCase):
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
         self.assertEqual(payload["events"], [])
-        self.assertEqual(payload["counts"]["clusters_total"], 1)
-        self.assertEqual(payload["counts"]["excluded_no_material_channel"], 1)
+        self.assertEqual(payload["counts"]["parent_clusters_total"], 1)
+        self.assertEqual(payload["counts"]["candidates_total"], 2)
+        self.assertEqual(payload["counts"]["excluded_no_material_channel"], 2)
 
     def test_every_surfaced_event_has_channel_and_reason(self):
         payload = build_inbox(_load_real_rows(), now=datetime(2026, 7, 7, 12, 0, 0))
@@ -275,21 +325,21 @@ class TestMaterialityGate(unittest.TestCase):
                 self.assertIn(ch, MATERIAL_CHANNELS)
 
     def test_official_source_reason_surfaced(self):
+        title = "Federal Reserve issues FOMC statement on interest rates"
         rows = [_row(10, [
-            _rec("Fed Press Releases", "Federal Reserve issues FOMC statement",
-                 _ANCHOR - timedelta(hours=2)),
-            _rec("Reuters World", "Fed statement flags interest rate path",
-                 _ANCHOR - timedelta(hours=1)),
+            _rec("Fed Press Releases", title, _ANCHOR - timedelta(hours=2)),
+            _rec("Reuters World", title, _ANCHOR - timedelta(hours=1)),
         ])]
         ev = build_inbox(rows, now=_ANCHOR)["events"][0]
         self.assertTrue(ev["official_source_present"])
         self.assertTrue(any("official" in w.lower() for w in ev["why_surfaced"]))
 
     def test_source_diversity_reason_surfaced(self):
+        title = "OPEC announces oil output cut"
         rows = [_row(11, [
-            _rec("Reuters World", "OPEC announces oil output cut", _ANCHOR - timedelta(hours=3)),
-            _rec("BBC World", "OPEC agrees to cut oil production", _ANCHOR - timedelta(hours=3)),
-            _rec("FT World", "Oil producers agree to output cut", _ANCHOR - timedelta(hours=2)),
+            _rec("Reuters World", title, _ANCHOR - timedelta(hours=3)),
+            _rec("BBC World", title, _ANCHOR - timedelta(hours=3)),
+            _rec("FT World", title, _ANCHOR - timedelta(hours=2)),
         ])]
         ev = build_inbox(rows, now=_ANCHOR)["events"][0]
         self.assertTrue(any("3 independent sources" in w for w in ev["why_surfaced"]))
@@ -380,30 +430,37 @@ class TestOrderingAndDeterminism(unittest.TestCase):
         stamps = [(ev["last_updated_at"] or "", ev["cluster_id"]) for ev in a["events"]]
         self.assertEqual(stamps, sorted(stamps, reverse=True))
 
-    def test_beyond_window_rows_excluded_but_counted(self):
+    def test_beyond_window_candidates_excluded_but_counted(self):
         old = _ANCHOR - timedelta(days=INBOX_WINDOW_DAYS, hours=6)
+        title = "Fed raises interest rates"
         rows = [_row(14, [
-            _rec("Reuters World", "Fed raises interest rates", old),
-            _rec("BBC World", "Federal Reserve lifts policy rate", old),
+            _rec("Reuters World", title, old),
+            _rec("BBC World", title, old),
         ])]
         payload = build_inbox(rows, now=_ANCHOR)
         self.assertEqual(payload["events"], [])
         self.assertEqual(payload["counts"]["beyond_window"], 1)
+        self.assertEqual(payload["counts"]["candidates_total"], 1)
 
 
 class TestUniversalContract(unittest.TestCase):
     def test_oil_and_non_oil_categories_share_one_contract(self):
         rows = _load_real_rows()
         payload = build_inbox(rows, now=datetime(2026, 7, 7, 12, 0, 0))
-        by_id = {ev["cluster_id"]: ev for ev in payload["events"]}
+        # One parent can now yield several candidates, so collect the channels
+        # each parent contributed across all of its candidates.
+        by_parent: dict[int, set] = {}
+        for ev in payload["events"]:
+            by_parent.setdefault(ev["cluster_id"], set()).update(
+                ev["material_channels"])
         # Real captured rows: energy (13504), geopolitics (13036),
         # technology (13451), official Fed (12494), sanctions/tech (13060).
-        self.assertIn(13504, by_id)
-        self.assertIn(13451, by_id)
-        self.assertIn("ENERGY_COMMODITIES", by_id[13504]["material_channels"])
-        self.assertIn("TECHNOLOGY_PRODUCTIVITY", by_id[13451]["material_channels"])
-        if 13036 in by_id:
-            self.assertIn("GEOPOLITICAL_RISK", by_id[13036]["material_channels"])
+        self.assertIn(13504, by_parent)
+        self.assertIn(13451, by_parent)
+        self.assertIn("ENERGY_COMMODITIES", by_parent[13504])
+        self.assertIn("TECHNOLOGY_PRODUCTIVITY", by_parent[13451])
+        if 13036 in by_parent:
+            self.assertIn("GEOPOLITICAL_RISK", by_parent[13036])
         field_sets = {frozenset(ev.keys()) for ev in payload["events"]}
         self.assertEqual(len(field_sets), 1)
 
@@ -412,9 +469,10 @@ class TestUniversalContract(unittest.TestCase):
         self.assertEqual(validate_inbox_payload(payload), [])
 
     def test_analysis_target_reuses_existing_analyze_boundary(self):
+        title = "OPEC announces oil output cut"
         rows = [_row(15, [
-            _rec("Reuters World", "OPEC announces oil output cut", _ANCHOR - timedelta(hours=3)),
-            _rec("BBC World", "OPEC agrees to cut oil production", _ANCHOR - timedelta(hours=2)),
+            _rec("Reuters World", title, _ANCHOR - timedelta(hours=3)),
+            _rec("BBC World", title, _ANCHOR - timedelta(hours=2)),
         ], summary="Multiple outlets report an OPEC output cut.")]
         ev = build_inbox(rows, now=_ANCHOR)["events"][0]
         target = ev["analysis_target"]

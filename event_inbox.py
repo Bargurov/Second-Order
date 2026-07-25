@@ -75,6 +75,7 @@ No opaque score exists anywhere in this contract.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -88,9 +89,10 @@ from news_cluster_store import _RECENCY_HOURS
 
 _log = logging.getLogger("second_order.event_inbox")
 
-CONTRACT_VERSION = "automatic-event-inbox-v1"
+CONTRACT_VERSION = "automatic-event-inbox-v2"
 
-GENERATED_FROM = "local news_clusters store (read-only SQLite)"
+GENERATED_FROM = ("local news_clusters store (read-only SQLite), partitioned by "
+                  "exact normalized-headline identity")
 
 LIFECYCLE_STATES: tuple[str, ...] = ("NEW", "DEVELOPING", "WATCH", "RESOLVED")
 
@@ -384,36 +386,116 @@ def _build_context(payload: dict, source_names: list[str],
     return "\n".join(parts)
 
 
-def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
-    """Derive one inbox event from a news_clusters row, or None when the
-    materiality gate finds no explicit channel (caller counts it)."""
+def partition_records_by_identity(records: object) -> list[tuple[str, list[dict]]]:
+    """Split a stored cluster's OWNED records into strict identity partitions.
+
+    The key is the pipeline's existing exact normalized-headline primitive
+    (``news_sources._dedup_key``) — the same normalizer ``fetch_all`` and the
+    cluster store already use for repeat detection.  No similarity threshold,
+    no fuzzy matching and no new heuristic is introduced: two records share a
+    partition only when their normalized headlines are identical.
+
+    Returns ``[(identity_key, records), ...]`` in first-appearance order; the
+    caller sorts the derived candidates.
+    """
+    from news_sources import _dedup_key
+    groups: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for rec in records if isinstance(records, list) else []:
+        if not isinstance(rec, dict):
+            continue
+        key = _dedup_key(rec.get("title", "") or "")
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(rec)
+    return [(k, groups[k]) for k in order]
+
+
+def candidate_event_id(parent_cluster_id: object, identity_key: str) -> str:
+    """Deterministic candidate id: parent provenance + stable identity digest.
+
+    ``blake2s`` (not Python's process-randomised ``hash``) so the id is stable
+    across reads and processes, distinct per identity partition inside one
+    parent, and does not carry raw headline text.
+    """
+    digest = hashlib.blake2s((identity_key or "").encode("utf-8"),
+                             digest_size=4).hexdigest()
+    return f"aei-{parent_cluster_id}-{digest}"
+
+
+def _candidate_payload(records: list[dict]) -> dict:
+    """Rebuild the narrative payload from the candidate's records ONLY.
+
+    Reuses the canonical builder (``news_sources.cluster_headlines``) exactly as
+    ``news_cluster_store._build_cluster_payload`` does, so a candidate's
+    summary / consensus / agreement can never describe a record it does not
+    own.  Returns ``{}`` when there is nothing to rebuild from.
+    """
+    if not records:
+        return {}
+    try:
+        from news_sources import cluster_headlines
+        rebuilt = cluster_headlines(records) or []
+    except Exception:  # pragma: no cover - defensive
+        _log.warning("event_inbox: candidate payload rebuild failed",
+                     exc_info=True)
+        return {}
+    if not rebuilt:
+        return {}
+    rebuilt.sort(key=lambda c: c.get("source_count", 0), reverse=True)
+    return rebuilt[0] if isinstance(rebuilt[0], dict) else {}
+
+
+def _partition_headline(records: list[dict]) -> str:
+    """Representative headline for one identity partition.
+
+    Same convention the clusterer already uses (highest source tier, then
+    longest title), with a final title tie-break so the choice is total and
+    deterministic.  Every record in a partition shares one normalized headline,
+    so this only picks between surface variants of the same identity.
+    """
+    from news_fetch import source_tier, _TIER_RANK
+    usable = [r for r in records if (r.get("title") or "").strip()]
+    if not usable:
+        return ""
+    rep = min(usable, key=lambda r: (
+        _TIER_RANK.get(source_tier(r.get("source", "") or ""), 2),
+        -len(r.get("title") or ""),
+        r.get("title") or "",
+    ))
+    return (rep.get("title") or "").strip()
+
+
+def _derive_candidate(row: dict, identity_key: str, records: list[dict], *,
+                      now: datetime) -> tuple[str, Optional[dict]]:
+    """Derive ONE strict event candidate from one identity partition.
+
+    Returns ``(status, event)`` where status is ``"ok"``, ``"no_channel"`` or
+    ``"malformed"``.  Every analysis-facing field is rebuilt from ``records``;
+    the parent row contributes provenance (``cluster_id``) and, when the
+    partition has no records at all, the displayed headline.
+    """
     from classify import classify_stage
     from family_inference import resolve_effective_family
 
-    stored_headline: str = row.get("headline") or ""
-    payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
-    records = row.get("records") if isinstance(row.get("records"), list) else []
+    headline = _partition_headline(records)
+    if not headline:
+        # A partition with no usable headline cannot name an event.  When the
+        # parent itself has no records this is the degenerate single-candidate
+        # case and the stored headline stands in; otherwise it is malformed.
+        if records:
+            return "malformed", None
+        headline = (row.get("headline") or "").strip()
+        if not headline:
+            return "malformed", None
 
-    # One time identity for this cluster, owned records only.
+    payload = _candidate_payload(records)
+
+    # One time identity for this candidate, its own records only.
     times = derive_cluster_times(records)
     first_seen = times.first_seen
     last_pub = times.last_updated
-
-    # Headline ownership.  The clusterer's representative-headline policy
-    # (most central / highest-tier member) is a selection rule, not a recency
-    # rule, and an owned representative is left exactly as stored.  What must
-    # not survive is a displayed headline the cluster does not own at all —
-    # the same foreign-metadata leak as the timestamp defect — so that case
-    # falls back to the cluster's newest owned record.
-    owned_titles = {(r.get("title") or "").strip()
-                    for r in records if isinstance(r, dict)}
-    headline = stored_headline
-    headline_repointed = False
-    if stored_headline.strip() not in owned_titles and times.newest_record is not None:
-        newest_title = (times.newest_record.get("title") or "").strip()
-        if newest_title:
-            headline = newest_title
-            headline_repointed = True
 
     summary = payload.get("summary")
     summary = summary.strip() if isinstance(summary, str) and summary.strip() else None
@@ -421,7 +503,7 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
     text = headline if summary is None else f"{headline} {summary}"
     channels = derive_channels(text)
     if not channels:
-        return None
+        return "no_channel", None
 
     payload_sources = payload.get("sources")
     if isinstance(payload_sources, list) and payload_sources:
@@ -483,10 +565,9 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
         unknowns.append("High source-derived uncertainty")
     if event_family is None:
         unknowns.append("No event-family mapping for this cluster")
-    if headline_repointed:
-        unknowns.append("Stored representative headline was not among this "
-                        "cluster's records; the cluster's newest article is "
-                        "shown instead")
+    if not records:
+        unknowns.append("No owned records for this candidate; derived from the "
+                        "stored cluster headline only")
     try:
         stage = classify_stage(headline)
     except Exception:
@@ -503,8 +584,8 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
     availability_status = "PARTIAL" if missing_bits else "AVAILABLE"
     missing_reason = "; ".join(missing_bits) if missing_bits else None
 
-    return {
-        "event_id": f"aei-{row.get('id')}",
+    return "ok", {
+        "event_id": candidate_event_id(row.get("id"), identity_key),
         "cluster_id": row.get("id"),
         "headline": headline,
         "event_summary": summary,
@@ -535,43 +616,70 @@ def _derive_event(row: dict, *, now: datetime) -> Optional[dict]:
 
 def _empty_counts() -> dict:
     return {
-        "clusters_total": 0,
+        # Parent level — stored semantic clusters.
+        "parent_clusters_total": 0,
+        "partitioned_parent_clusters": 0,
+        "malformed_parent_clusters": 0,
+        # Candidate level — strict identity partitions derived from them.
+        "candidates_total": 0,
         "surfaced": 0,
         "beyond_window": 0,
         "excluded_no_material_channel": 0,
-        "malformed_rows": 0,
+        "malformed_candidates": 0,
         "by_lifecycle": {state: 0 for state in LIFECYCLE_STATES},
     }
 
 
 def build_inbox(rows: list[dict], *, now: datetime) -> dict:
-    """Pure derivation: news_clusters rows + clock in, inbox payload out."""
+    """Pure derivation: news_clusters rows + clock in, inbox payload out.
+
+    Each stored cluster is partitioned by exact normalized-headline identity
+    and every partition becomes one candidate, so one stored cluster may yield
+    several events.  Parent-level and candidate-level counts are kept in
+    separate, separately reconciled families — they are different units.
+    """
     counts = _empty_counts()
-    counts["clusters_total"] = len(rows or [])
     events: list[dict] = []
     window = timedelta(days=INBOX_WINDOW_DAYS)
+    split_parents = 0
 
     for row in rows or []:
+        counts["parent_clusters_total"] += 1
         if not isinstance(row, dict) or not (row.get("headline") or "").strip() \
                 or not isinstance(row.get("payload"), dict):
-            counts["malformed_rows"] += 1
+            counts["malformed_parent_clusters"] += 1
             continue
-        # Window eligibility reads the SAME owned-record rule the event body
-        # uses, so a fresh owned article can never be windowed out by an older
-        # stored ``latest_published_at``.
-        last_pub = derive_cluster_times(row.get("records")).last_updated
-        # A cluster with NO parsable timestamp cannot be proven old — it stays
-        # visible (as PARTIAL/WATCH) rather than being silently windowed out.
-        if last_pub is not None and (now - last_pub) > window:
-            counts["beyond_window"] += 1
-            continue
-        event = _derive_event(row, now=now)
-        if event is None:
-            counts["excluded_no_material_channel"] += 1
-            continue
-        events.append(event)
+        counts["partitioned_parent_clusters"] += 1
 
-    events.sort(key=lambda ev: (ev["last_updated_at"] or "", ev["cluster_id"] or 0),
+        partitions = partition_records_by_identity(row.get("records"))
+        if not partitions:
+            # A well-formed parent with no owned records still names one
+            # candidate; it stays visible as PARTIAL rather than disappearing.
+            from news_sources import _dedup_key
+            partitions = [(_dedup_key(row.get("headline") or ""), [])]
+        if len(partitions) > 1:
+            split_parents += 1
+
+        for identity_key, part in partitions:
+            counts["candidates_total"] += 1
+            # Window eligibility reads the SAME owned-record rule the candidate
+            # body uses.  A candidate with NO parsable timestamp cannot be
+            # proven old — it stays visible (as PARTIAL/WATCH).
+            last_pub = derive_cluster_times(part).last_updated
+            if last_pub is not None and (now - last_pub) > window:
+                counts["beyond_window"] += 1
+                continue
+            status, event = _derive_candidate(row, identity_key, part, now=now)
+            if status == "malformed":
+                counts["malformed_candidates"] += 1
+                continue
+            if status == "no_channel":
+                counts["excluded_no_material_channel"] += 1
+                continue
+            events.append(event)
+
+    events.sort(key=lambda ev: (ev["last_updated_at"] or "",
+                                ev["cluster_id"] or 0, ev["event_id"]),
                 reverse=True)
     counts["surfaced"] = len(events)
     for ev in events:
@@ -584,19 +692,33 @@ def build_inbox(rows: list[dict], *, now: datetime) -> dict:
     limitations.append(
         "Event-family mapping is an optional enrichment; clusters without a "
         "mapping show that explicitly.")
+    limitations.append(
+        "Event candidates are exact normalized-headline partitions of a stored "
+        "cluster, so a cross-source paraphrase of one event can appear as "
+        "separate candidates; conservative splitting is preferred to merging "
+        "distinct events.")
+    if split_parents:
+        limitations.append(
+            f"{split_parents} of {counts['partitioned_parent_clusters']} stored "
+            "clusters contained more than one identity partition and were "
+            "surfaced as separate candidates.")
     if counts["beyond_window"]:
         limitations.append(
-            f"{counts['beyond_window']} stored clusters last updated more than "
+            f"{counts['beyond_window']} event candidates last updated more than "
             f"{INBOX_WINDOW_DAYS} days ago are outside the inbox window "
             "(counted, not shown).")
     if counts["excluded_no_material_channel"]:
         limitations.append(
-            f"{counts['excluded_no_material_channel']} clusters matched no "
-            "explicit material channel and are excluded (counted, not shown).")
-    if counts["malformed_rows"]:
+            f"{counts['excluded_no_material_channel']} event candidates matched "
+            "no explicit material channel and are excluded (counted, not shown).")
+    if counts["malformed_parent_clusters"]:
         limitations.append(
-            f"{counts['malformed_rows']} stored rows were malformed and could "
-            "not be represented.")
+            f"{counts['malformed_parent_clusters']} stored clusters were "
+            "malformed and could not be partitioned.")
+    if counts["malformed_candidates"]:
+        limitations.append(
+            f"{counts['malformed_candidates']} derived candidates had no usable "
+            "headline and could not be represented.")
     if events:
         energy = sum(1 for ev in events
                      if "ENERGY_COMMODITIES" in ev["material_channels"])
@@ -776,18 +898,28 @@ def validate_inbox_payload(payload: dict) -> list[str]:
     if not isinstance(counts, dict):
         problems.append("counts is not an object")
     else:
+        expected = set(_empty_counts().keys())
+        if set(counts.keys()) != expected:
+            problems.append(f"counts field set differs: {sorted(counts.keys())}")
         if counts.get("surfaced") != len(events):
             problems.append("counts.surfaced does not equal len(events)")
         by_lc = counts.get("by_lifecycle") or {}
         if set(by_lc.keys()) != set(LIFECYCLE_STATES):
             problems.append("counts.by_lifecycle keys differ from the enum")
-        elif sum(by_lc.values()) != len(events):
-            problems.append("counts.by_lifecycle does not sum to len(events)")
-        accounted = (len(events) + counts.get("beyond_window", 0)
-                     + counts.get("excluded_no_material_channel", 0)
-                     + counts.get("malformed_rows", 0))
-        if counts.get("clusters_total") != accounted:
-            problems.append("counts do not reconcile with clusters_total")
+        elif sum(by_lc.values()) != counts.get("surfaced"):
+            problems.append("counts.by_lifecycle does not sum to counts.surfaced")
+        # Parent level and candidate level are different units and reconcile
+        # separately; a malformed parent is never a malformed candidate.
+        if counts.get("parent_clusters_total") != (
+                counts.get("partitioned_parent_clusters", 0)
+                + counts.get("malformed_parent_clusters", 0)):
+            problems.append("parent-level counts do not reconcile")
+        candidates = (counts.get("surfaced", 0)
+                      + counts.get("beyond_window", 0)
+                      + counts.get("excluded_no_material_channel", 0)
+                      + counts.get("malformed_candidates", 0))
+        if counts.get("candidates_total") != candidates:
+            problems.append("candidate-level counts do not reconcile")
     stamps = [(ev.get("last_updated_at") or "", ev.get("cluster_id") or 0)
               for ev in events if isinstance(ev, dict)]
     if stamps != sorted(stamps, reverse=True):

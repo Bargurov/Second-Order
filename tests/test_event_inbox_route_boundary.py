@@ -29,7 +29,7 @@ _FIXTURE_PATH = os.path.join(
     os.path.dirname(__file__), "fixtures", "event_inbox_cluster_rows.json")
 _FRONTEND_FIXTURE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "frontend", "src", "lib",
-    "__tests__", "fixtures", "automatic-event-inbox-v1.json")
+    "__tests__", "fixtures", "automatic-event-inbox-v2.json")
 
 # Frozen clock for the shared cross-layer fixture: noon on the day the
 # captured rows' latest publications land, so lifecycle ages are stable.
@@ -120,7 +120,7 @@ class TestInboxGetBoundary(_InboxRouteBase):
         resp = self.client.get("/news/inbox")
         self.assertEqual(resp.status_code, 200)
         payload = resp.json()
-        self.assertEqual(payload["contract"], "automatic-event-inbox-v1")
+        self.assertEqual(payload["contract"], "automatic-event-inbox-v2")
         self.assertEqual(payload["availability"], "AVAILABLE")
         self.assert_db_untouched()
 
@@ -148,7 +148,8 @@ class TestInboxEmptyStore(_InboxRouteBase):
         payload = resp.json()
         self.assertEqual(payload["availability"], "AVAILABLE")
         self.assertEqual(payload["events"], [])
-        self.assertEqual(payload["counts"]["clusters_total"], 0)
+        self.assertEqual(payload["counts"]["parent_clusters_total"], 0)
+        self.assertEqual(payload["counts"]["candidates_total"], 0)
         self.assert_db_untouched()
 
 

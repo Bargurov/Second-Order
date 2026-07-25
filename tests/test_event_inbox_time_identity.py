@@ -102,11 +102,21 @@ def _row(cid: int, records: list[dict], *, headline: str | None = None,
 
 
 def _by_id(payload: dict, cid: int) -> dict:
-    for ev in payload["events"]:
-        if ev["cluster_id"] == cid:
-            return ev
-    raise AssertionError(f"cluster {cid} not surfaced: "
-                         f"{[e['cluster_id'] for e in payload['events']]}")
+    """The single candidate of a parent cluster (fails loudly if it split)."""
+    hits = [ev for ev in payload["events"] if ev["cluster_id"] == cid]
+    if len(hits) != 1:
+        raise AssertionError(
+            f"expected exactly one candidate for cluster {cid}, got {len(hits)}: "
+            f"{[e['headline'] for e in hits]}")
+    return hits[0]
+
+
+def _partition_for(row: dict, event: dict) -> list[dict]:
+    """The identity partition that produced ``event``."""
+    for key, recs in event_inbox.partition_records_by_identity(row["records"]):
+        if event_inbox.candidate_event_id(row["id"], key) == event["event_id"]:
+            return recs
+    raise AssertionError(f"no partition matches {event['event_id']}")
 
 
 def _load_real_rows() -> list[dict]:
@@ -188,34 +198,40 @@ class TestTimestampOwnership(unittest.TestCase):
         self.assertEqual(order[0], 102, "fresh cluster must lead the inbox")
         self.assertEqual(order, [102, 101])
 
+    def _copper_row(self, latest: str) -> dict:
+        """One identity carried by three sources at three different times."""
+        title = "Copper output falls at Chile mine"
+        return _row(110, [
+            _rec("Reuters World", title, _ago(days=4)),
+            _rec("Mining.com", title, _ago(hours=7)),
+            _rec("BBC Business", title, _ago(days=2)),
+        ], latest=latest)
+
     def test_newest_owned_record_determines_last_updated_at(self):
-        row = _row(110, [
-            _rec("Reuters World", "Copper output falls at Chile mine", _ago(days=4)),
-            _rec("Mining.com", "Copper smelter restart delayed", _ago(hours=7)),
-            _rec("BBC Business", "Copper demand steady", _ago(days=2)),
-        ], latest="")
-        ev = _by_id(build_inbox([row], now=_NOW), 110)
+        ev = _by_id(build_inbox([self._copper_row("")], now=_NOW), 110)
         self.assertEqual(ev["last_updated_at"], _iso(_ago(hours=7)))
 
     def test_oldest_owned_record_determines_first_seen_at(self):
-        row = _row(110, [
-            _rec("Reuters World", "Copper output falls at Chile mine", _ago(days=4)),
-            _rec("Mining.com", "Copper smelter restart delayed", _ago(hours=7)),
-            _rec("BBC Business", "Copper demand steady", _ago(days=2)),
-        ], latest=_iso(_ago(minutes=5)))
-        ev = _by_id(build_inbox([row], now=_NOW), 110)
+        ev = _by_id(build_inbox([self._copper_row(_iso(_ago(minutes=5)))],
+                                now=_NOW), 110)
         self.assertEqual(ev["first_seen_at"], _iso(_ago(days=4)))
         self.assertLessEqual(ev["first_seen_at"], ev["last_updated_at"])
 
     def test_no_surfaced_event_time_exceeds_its_newest_owned_record(self):
-        """Producer-shaped invariant over the tracked captured rows."""
+        """Producer-shaped invariant over the tracked captured rows.
+
+        Since A0-R2B the owning unit is the identity partition, not the parent
+        row, so each candidate is checked against the records IT owns.
+        """
         rows = _load_real_rows()
         payload = build_inbox(rows, now=datetime(2026, 7, 7, 12, 0, 0))
         by_cid = {r["id"]: r for r in rows}
         self.assertGreater(len(payload["events"]), 0)
         for ev in payload["events"]:
-            owned = _owned_times(by_cid[ev["cluster_id"]])
-            self.assertTrue(owned, f"cluster {ev['cluster_id']} has no owned times")
+            part = _partition_for(by_cid[ev["cluster_id"]], ev)
+            owned = [d for d in (event_inbox._parse_dt(r.get("published_at"))
+                                 for r in part) if d is not None]
+            self.assertTrue(owned, f"{ev['event_id']} has no owned times")
             self.assertEqual(ev["last_updated_at"], _iso(max(owned)))
             self.assertEqual(ev["first_seen_at"], _iso(min(owned)))
 
@@ -238,17 +254,21 @@ class TestTimestampOwnership(unittest.TestCase):
 class TestWindowEligibility(unittest.TestCase):
 
     def test_in_window_owned_record_survives_older_cluster_metadata(self):
-        """Proven defect B: fresh cluster excluded as beyond_window."""
+        """Proven defect B: a fresh owned record must not be windowed out by
+        stale parent metadata.  Under strict identity the two AFP items are
+        different events, so the fresh one surfaces on its own timestamps and
+        the genuinely old one is counted beyond_window."""
         row = _row(301, [
             _rec("AFP World", "US tariff schedule published for review", _ago(days=30)),
             _rec("AFP World", "US imposes new tariffs on 60 partners", _ago(days=1)),
         ], headline="US tariff schedule published for review",
             latest=_iso(_ago(days=INBOX_WINDOW_DAYS + 26)))
         payload = build_inbox([row], now=_NOW)
-        self.assertEqual(payload["counts"]["beyond_window"], 0)
+        self.assertEqual(payload["counts"]["beyond_window"], 1)
         ev = _by_id(payload, 301)
+        self.assertEqual(ev["headline"], "US imposes new tariffs on 60 partners")
         self.assertEqual(ev["last_updated_at"], _iso(_ago(days=1)))
-        self.assertEqual(ev["first_seen_at"], _iso(_ago(days=30)))
+        self.assertEqual(ev["first_seen_at"], _iso(_ago(days=1)))
 
     def test_newest_owned_record_outside_window_is_counted_beyond_window(self):
         row = _row(302, [
@@ -290,71 +310,72 @@ class TestLifecycleTiming(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestRepresentativeHeadline(unittest.TestCase):
-    """Headline ownership only.
+    """Headline ownership under strict identity partitioning.
 
-    The clusterer's representative-headline POLICY (most central / highest-tier
-    member) is not recency selection and is out of scope here — an owned
-    representative stays exactly as stored.  What must not survive is a
-    displayed headline the cluster does not own at all: that is the same
-    foreign-metadata leak as the timestamp defect, and it is repaired by
-    falling back to the cluster's newest owned record.
+    A candidate's headline is the representative of ITS OWN partition, so the
+    parent's stored representative can never stand in for a record it does not
+    describe.  A parent headline belonging to no record simply names no
+    candidate.
     """
 
-    def test_headline_repointed_when_stored_headline_is_not_owned(self):
+    def test_unowned_parent_headline_names_no_candidate(self):
         row = _row(501, [
             _rec("Reuters World", "Oil steady in Asian trade", _ago(hours=9)),
             _rec("Bloomberg Markets", "OPEC extends output cut through December",
                  _ago(hours=2)),
         ], headline="Samsung and SK Hynix unveil chip supply partnerships")
-        ev = _by_id(build_inbox([row], now=_NOW), 501)
-        self.assertEqual(ev["headline"], "OPEC extends output cut through December")
-        self.assertEqual(ev["analysis_target"]["headline"],
-                         "OPEC extends output cut through December")
-        self.assertTrue(any("not among this cluster" in u.lower()
-                            for u in ev["known_unknowns"]),
-                        "a repointed headline must disclose why it changed")
+        payload = build_inbox([row], now=_NOW)
+        heads = {ev["headline"] for ev in payload["events"]}
+        self.assertEqual(heads, {"Oil steady in Asian trade",
+                                 "OPEC extends output cut through December"})
+        self.assertNotIn("Samsung and SK Hynix unveil chip supply partnerships",
+                         heads)
+        for ev in payload["events"]:
+            self.assertEqual(ev["analysis_target"]["headline"], ev["headline"])
 
-    def test_owned_representative_headline_is_left_alone(self):
-        """An older-but-owned representative is a selection policy, not a leak."""
+    def test_each_candidate_headline_is_owned_by_its_partition(self):
         row = _row(502, [
             _rec("Reuters World", "Oil steady in Asian trade", _ago(hours=9)),
             _rec("Bloomberg Markets", "OPEC extends output cut through December",
                  _ago(hours=2)),
         ], headline="Oil steady in Asian trade")
-        ev = _by_id(build_inbox([row], now=_NOW), 502)
-        self.assertEqual(ev["headline"], "Oil steady in Asian trade")
-        self.assertEqual(ev["last_updated_at"], _iso(_ago(hours=2)))
-        self.assertFalse(any("not among this cluster" in u.lower()
-                             for u in ev["known_unknowns"]))
+        payload = build_inbox([row], now=_NOW)
+        for ev in payload["events"]:
+            part = _partition_for(row, ev)
+            self.assertIn(ev["headline"], {r["title"] for r in part})
 
-    def test_equal_timestamps_use_a_deterministic_tie_break(self):
+    def test_surface_variants_of_one_identity_use_a_deterministic_tie_break(self):
+        """Same normalized identity, different raw punctuation/case: the
+        displayed variant is chosen deterministically and stably."""
         same = _ago(hours=2)
         row = _row(503, [
-            _rec("Reuters World", "Zinc oil blend export ban confirmed", same),
+            _rec("Reuters World", "Alpha oil terminal halts loading!", same),
             _rec("Bloomberg Markets", "Alpha oil terminal halts loading", same),
-            _rec("BBC Business", "Oil steady in Asian trade", _ago(hours=9)),
         ], headline="Unowned oil headline from another cluster")
         first = _by_id(build_inbox([row], now=_NOW), 503)
         second = _by_id(build_inbox([row], now=_NOW), 503)
-        self.assertEqual(first["headline"], "Alpha oil terminal halts loading")
         self.assertEqual(first["headline"], second["headline"])
+        self.assertEqual(first["event_id"], second["event_id"])
+        self.assertEqual(first["source_count"], 2)
         self.assertEqual(first["last_updated_at"], _iso(same))
 
-    def test_headline_kept_when_no_owned_record_has_a_valid_timestamp(self):
-        """Nothing to fall back to — the stored headline stays, undated."""
-        row = _row(504, [
-            _rec("Reuters World", "Oil market note", ""),
-        ], headline="Unowned oil headline from another cluster")
+    def test_parent_headline_stands_in_only_when_there_are_no_records(self):
+        row = _row(504, [], headline="Oil market note with no owned records")
         ev = _by_id(build_inbox([row], now=_NOW), 504)
-        self.assertEqual(ev["headline"], "Unowned oil headline from another cluster")
+        self.assertEqual(ev["headline"], "Oil market note with no owned records")
         self.assertIsNone(ev["last_updated_at"])
+        self.assertEqual(ev["availability_status"], "PARTIAL")
+        self.assertTrue(any("no owned records" in u.lower()
+                            for u in ev["known_unknowns"]))
 
     def test_tracked_producer_rows_keep_their_owned_representative_headlines(self):
         rows = _load_real_rows()
         payload = build_inbox(rows, now=datetime(2026, 7, 7, 12, 0, 0))
         by_cid = {r["id"]: r for r in rows}
         for ev in payload["events"]:
-            self.assertEqual(ev["headline"], by_cid[ev["cluster_id"]]["headline"])
+            owned = {(r.get("title") or "").strip()
+                     for r in by_cid[ev["cluster_id"]]["records"]}
+            self.assertIn(ev["headline"], owned)
 
 
 # ---------------------------------------------------------------------------
@@ -364,9 +385,10 @@ class TestRepresentativeHeadline(unittest.TestCase):
 class TestMissingTimestamps(unittest.TestCase):
 
     def test_malformed_timestamp_never_becomes_the_current_time(self):
+        title = "Oil pipeline outage reported"
         row = _row(601, [
-            _rec("Reuters World", "Oil pipeline outage reported", "not-a-timestamp"),
-            _rec("BBC Business", "Oil pipeline repair underway", _ago(days=3)),
+            _rec("Reuters World", title, "not-a-timestamp"),
+            _rec("BBC Business", title, _ago(days=3)),
         ], latest=_iso(_ago(minutes=1)))
         ev = _by_id(build_inbox([row], now=_NOW), 601)
         self.assertEqual(ev["last_updated_at"], _iso(_ago(days=3)))
@@ -374,9 +396,10 @@ class TestMissingTimestamps(unittest.TestCase):
         self.assertNotEqual(ev["last_updated_at"], _iso(_NOW))
 
     def test_all_timestamps_missing_is_explicit_partial_and_still_visible(self):
+        title = "Oil market briefing"
         row = _row(602, [
-            _rec("Reuters World", "Oil market briefing", ""),
-            _rec("BBC Business", "Oil market briefing follow-up", None),
+            _rec("Reuters World", title, ""),
+            _rec("BBC Business", title, None),
         ], latest=_iso(_ago(minutes=1)))
         payload = build_inbox([row], now=_NOW)
         ev = _by_id(payload, 602)
@@ -480,7 +503,7 @@ class TestInboxRouteTimeIdentity(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         return resp.json()
 
-    def test_route_payload_still_satisfies_the_v1_contract(self):
+    def test_route_payload_still_satisfies_the_contract(self):
         payload = self._get()
         self.assertEqual(payload["contract"], CONTRACT_VERSION)
         self.assertEqual(validate_inbox_payload(payload), [])
@@ -489,7 +512,9 @@ class TestInboxRouteTimeIdentity(unittest.TestCase):
         payload = self._get()
         by_cid = {r["id"]: r for r in self.rows}
         for ev in payload["events"]:
-            owned = _owned_times(by_cid[ev["cluster_id"]])
+            part = _partition_for(by_cid[ev["cluster_id"]], ev)
+            owned = [d for d in (event_inbox._parse_dt(r.get("published_at"))
+                                 for r in part) if d is not None]
             self.assertEqual(ev["last_updated_at"], _iso(max(owned)))
             self.assertEqual(ev["first_seen_at"], _iso(min(owned)))
 
@@ -497,8 +522,12 @@ class TestInboxRouteTimeIdentity(unittest.TestCase):
         payload = self._get()
         order = [ev["cluster_id"] for ev in payload["events"]]
         self.assertEqual(order, [702, 703, 701])
-        self.assertEqual(payload["counts"]["beyond_window"], 0)
-        self.assertEqual(_by_id(payload, 703)["last_updated_at"], _iso(_ago(days=1)))
+        # 703's older tariff-schedule record is a different identity and is
+        # genuinely outside the window; its fresh sibling still surfaces.
+        self.assertEqual(payload["counts"]["beyond_window"], 1)
+        fresh = _by_id(payload, 703)
+        self.assertEqual(fresh["headline"], "US imposes new tariffs on 60 partners")
+        self.assertEqual(fresh["last_updated_at"], _iso(_ago(days=1)))
 
     def test_route_stays_write_free(self):
         self._get()

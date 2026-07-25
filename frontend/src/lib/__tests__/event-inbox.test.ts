@@ -1,8 +1,8 @@
 /**
  * event-inbox.test.ts — fail-closed consumer contract for
- * automatic-event-inbox-v1.
+ * automatic-event-inbox-v2.
  *
- * The captured fixture (fixtures/automatic-event-inbox-v1.json) is the REAL
+ * The captured fixture (fixtures/automatic-event-inbox-v2.json) is the REAL
  * producer payload: it is deep-equal-pinned against live GET /news/inbox
  * output by tests/test_event_inbox_route_boundary.py.  Every type the parser
  * accepts is derived from that captured payload, not from field names.
@@ -24,7 +24,7 @@ import {
   type InboxPayload,
 } from "../event-inbox";
 
-const FIXTURE_PATH = resolve(__dirname, "fixtures", "automatic-event-inbox-v1.json");
+const FIXTURE_PATH = resolve(__dirname, "fixtures", "automatic-event-inbox-v2.json");
 
 function loadFixture(): unknown {
   return JSON.parse(readFileSync(FIXTURE_PATH, "utf-8"));
@@ -44,7 +44,7 @@ describe("captured producer payload", () => {
   it("parses the real captured GET /news/inbox payload", () => {
     const parsed = parseInboxPayload(loadFixture());
     expect(parsed).not.toBeNull();
-    expect(parsed!.contract).toBe("automatic-event-inbox-v1");
+    expect(parsed!.contract).toBe("automatic-event-inbox-v2");
     expect(parsed!.availability).toBe("AVAILABLE");
     expect(parsed!.events.length).toBeGreaterThan(0);
   });
@@ -91,7 +91,7 @@ describe("malformed payloads are refused", () => {
   });
 
   it("refuses a wrong contract version", () => {
-    expect(parseInboxPayload(mutate((p) => { p.contract = "automatic-event-inbox-v2"; }))).toBeNull();
+    expect(parseInboxPayload(mutate((p) => { p.contract = "automatic-event-inbox-v3"; }))).toBeNull();
   });
 
   it("refuses a missing top-level field", () => {
@@ -174,8 +174,10 @@ describe("honest empty and unavailable states", () => {
     p.availability = availability;
     p.events = [];
     p.counts = {
-      clusters_total: 0, surfaced: 0, beyond_window: 0,
-      excluded_no_material_channel: 0, malformed_rows: 0,
+      parent_clusters_total: 0, partitioned_parent_clusters: 0,
+      malformed_parent_clusters: 0, candidates_total: 0, surfaced: 0,
+      beyond_window: 0, excluded_no_material_channel: 0,
+      malformed_candidates: 0,
       by_lifecycle: { NEW: 0, DEVELOPING: 0, WATCH: 0, RESOLVED: 0 },
     };
     return p;

@@ -1,10 +1,10 @@
 /**
- * event-inbox.ts — fail-closed consumer of automatic-event-inbox-v1.
+ * event-inbox.ts — fail-closed consumer of automatic-event-inbox-v2.
  *
  * The inbox GET (/news/inbox) is local-state-only on the backend; this module
  * is the frontend's contract boundary.  `parseInboxPayload` accepts ONLY a
  * payload that matches the captured producer output pinned in
- * fixtures/automatic-event-inbox-v1.json (deep-equal against the live route
+ * fixtures/automatic-event-inbox-v2.json (deep-equal against the live route
  * by tests/test_event_inbox_route_boundary.py) and refuses everything else —
  * a malformed inbox must never render as a plausible inbox.
  *
@@ -63,17 +63,26 @@ export interface InboxEvent {
   missing_reason: string | null;
 }
 
+/**
+ * Two separate units, reconciled separately: a PARENT is a stored semantic
+ * cluster, a CANDIDATE is one exact normalized-headline partition of it.  One
+ * parent may yield several candidates, so the two families must never be mixed
+ * in a single reconciliation.
+ */
 export interface InboxCounts {
-  clusters_total: number;
+  parent_clusters_total: number;
+  partitioned_parent_clusters: number;
+  malformed_parent_clusters: number;
+  candidates_total: number;
   surfaced: number;
   beyond_window: number;
   excluded_no_material_channel: number;
-  malformed_rows: number;
+  malformed_candidates: number;
   by_lifecycle: Record<Lifecycle, number>;
 }
 
 export interface InboxPayload {
-  contract: "automatic-event-inbox-v1";
+  contract: "automatic-event-inbox-v2";
   generated_from: string;
   as_of: string;
   availability: "AVAILABLE" | "UNAVAILABLE";
@@ -168,8 +177,10 @@ function validEvent(raw: unknown): raw is InboxEvent {
 
 function validCounts(raw: unknown, events: InboxEvent[]): raw is InboxCounts {
   if (!isRecord(raw)) return false;
-  const numeric = ["clusters_total", "surfaced", "beyond_window",
-    "excluded_no_material_channel", "malformed_rows"] as const;
+  const numeric = ["parent_clusters_total", "partitioned_parent_clusters",
+    "malformed_parent_clusters", "candidates_total", "surfaced",
+    "beyond_window", "excluded_no_material_channel",
+    "malformed_candidates"] as const;
   if (!exactKeys(raw, [...numeric, "by_lifecycle"])) return false;
   for (const f of numeric) {
     if (typeof raw[f] !== "number") return false;
@@ -184,9 +195,15 @@ function validCounts(raw: unknown, events: InboxEvent[]): raw is InboxCounts {
   }
   // Cross-section reconciliation: the counts must describe THESE events.
   if (raw.surfaced !== events.length || sum !== events.length) return false;
-  const accounted = events.length + (raw.beyond_window as number) +
-    (raw.excluded_no_material_channel as number) + (raw.malformed_rows as number);
-  if (raw.clusters_total !== accounted) return false;
+  // Parent level and candidate level are different units and reconcile
+  // separately; a malformed parent is never a malformed candidate.
+  const parents = (raw.partitioned_parent_clusters as number) +
+    (raw.malformed_parent_clusters as number);
+  if (raw.parent_clusters_total !== parents) return false;
+  const candidates = events.length + (raw.beyond_window as number) +
+    (raw.excluded_no_material_channel as number) +
+    (raw.malformed_candidates as number);
+  if (raw.candidates_total !== candidates) return false;
   for (const lc of LIFECYCLES) {
     if (byLc[lc] !== events.filter((e) => e.lifecycle === lc).length) return false;
   }
@@ -200,7 +217,7 @@ function validCounts(raw: unknown, events: InboxEvent[]): raw is InboxCounts {
  */
 export function parseInboxPayload(raw: unknown): InboxPayload | null {
   if (!isRecord(raw) || !exactKeys(raw, TOP_FIELDS)) return null;
-  if (raw.contract !== "automatic-event-inbox-v1") return null;
+  if (raw.contract !== "automatic-event-inbox-v2") return null;
   if (typeof raw.generated_from !== "string") return null;
   if (typeof raw.as_of !== "string" || raw.as_of === "") return null;
   if (raw.availability !== "AVAILABLE" && raw.availability !== "UNAVAILABLE") return null;
