@@ -1107,6 +1107,10 @@ export interface AnalyzeResponse {
   validation_status_v2?: ValidationStatusV2Block;
   /** Detail-read reaction profile block, emitted by saved event detail surfaces. */
   reaction_profile_v1?: ReactionProfileV1Block;
+  /** A1-2 Analysis Basis summary — what this analysis USED.  Absent on
+   *  surfaces that do not carry it; validated by lib/analysis-provenance.
+   *  Never evidence that the analysis is correct. */
+  provenance?: unknown;
 }
 
 export interface PersistenceSignal {

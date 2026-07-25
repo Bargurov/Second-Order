@@ -1373,8 +1373,78 @@ def _build_cached_response(
         # actually produced the analysis — so candidate_link stays None.
         "analysis_event_id": cached.get("id"),
         "candidate_link": None,
+        # A1-2 Analysis Basis.  Attached HERE rather than at each call site so
+        # both cached paths (by event_id and by headline) and the fresh path
+        # carry the same top-level keys by construction — the fresh/cached
+        # parity contract has no exceptions to remember.
+        "provenance": provenance_summary_for_event(cached.get("id")),
     }
     return _sanitize_floats(response)
+
+
+def provenance_summary_for_event(analysis_event_id: object) -> dict:
+    """Read-only Analysis Basis summary for one saved analysis.
+
+    Never calls a provider and never writes: it reads the stored snapshot,
+    rebuilds the CURRENT basis from local state, and reports the comparison.
+    A stale or invalid result is surfaced as-is, never repaired and never
+    used to trigger a re-run.
+    """
+    import analysis_provenance as _ap
+
+    def _legacy() -> dict:
+        return _ap.summarize_for_response(
+            None, _ap.derive_provenance_state(None, None))
+
+    if analysis_event_id is None:
+        return _legacy()
+    try:
+        import db as _dbm
+        stored = _dbm.load_analysis_provenance(int(analysis_event_id))
+    except Exception:
+        _log.warning("provenance read failed", exc_info=True)
+        return _legacy()
+    if stored is None:
+        return _legacy()
+
+    current = None
+    if not _ap.verify_provenance(stored):
+        # Only worth rebuilding the current basis for an intact record — a
+        # tampered one is INVALID regardless of what current state says.
+        try:
+            from analyze_event import (
+                SYSTEM_PROMPT, render_analysis_prompt,
+                resolve_provider_configuration,
+            )
+            from event_inbox import read_cluster_rows
+            import db as _dbm
+            rows, _reason = read_cluster_rows(_dbm.DB_FILE)
+            snapshot = None
+            if rows is not None:
+                snapshot = _ap.build_candidate_snapshot(
+                    rows, stored.get("parent_cluster_id"),
+                    stored.get("title_key"))
+            if snapshot is not None:
+                current = _ap.current_analysis_basis(
+                    candidate_snapshot=snapshot,
+                    candidate_context_snapshot=stored.get("candidate_context_snapshot", ""),
+                    macro_context_snapshot=stored.get("macro_context_snapshot", ""),
+                    provider=resolve_provider_configuration().provider,
+                    model=_active_model(),
+                    system_prompt_snapshot=SYSTEM_PROMPT,
+                    rendered_user_prompt_snapshot=render_analysis_prompt(
+                        headline=stored.get("candidate_headline", ""),
+                        stage=stored.get("stage", ""),
+                        persistence=stored.get("persistence", ""),
+                        event_context=stored.get("candidate_context_snapshot", ""),
+                        macro_context=stored.get("macro_context_snapshot", ""),
+                    ),
+                )
+        except Exception:
+            _log.warning("current provenance basis rebuild failed", exc_info=True)
+            current = None
+    return _ap.summarize_for_response(
+        stored, _ap.derive_provenance_state(stored, current))
 
 
 def _is_low_signal(analysis: dict) -> bool:
@@ -1421,6 +1491,37 @@ def _persist_event(
     persisted so the frozen-cached response path can surface the
     exact macro snapshot the event was analysed under — without
     re-running live-macro computations against the current tape.
+    """
+    event_record = _build_event_record(
+        headline, stage, persistence, analysis, mkt, effective_date,
+        model=model)
+    try:
+        saved_id = save_event(event_record)
+    except Exception as e:
+        # Caller (typically /analyze or /analyze/stream) surfaces
+        # this as ``persistence_failed: True`` so the response is
+        # never silently reported as a clean save.  The exception is
+        # NOT re-raised — every existing caller depends on this
+        # function not raising past its boundary.
+        _log.warning("save_event failed: %s", e, exc_info=True)
+        return f"{type(e).__name__}: {e}", None
+    # Bust the today-movers in-memory cache so /movers/today reflects
+    # the new event without waiting for the 5-minute TTL to expire.
+    _TODAYS_MOVERS_CACHE["data"] = None
+    return None, saved_id
+
+
+def _build_event_record(
+    headline: str, stage: str, persistence: str,
+    analysis: AnalysisResult, mkt: dict, effective_date: str,
+    model: str | None = None,
+) -> dict:
+    """Assemble the ``events`` row payload from one analysis result.
+
+    Extracted from :func:`_persist_event` so the A1-2 candidate path — which
+    inserts the row and its provenance snapshot in one transaction — builds
+    the SAME record, rather than maintaining a second copy that could drift.
+    Pure: builds and returns, never writes.
     """
     event_record = {
         "timestamp":         datetime.now().isoformat(timespec="seconds"),
@@ -1505,20 +1606,7 @@ def _persist_event(
             exc_info=True,
         )
         event_record["country_vulnerability_context"] = {}
-    try:
-        saved_id = save_event(event_record)
-    except Exception as e:
-        # Caller (typically /analyze or /analyze/stream) surfaces
-        # this as ``persistence_failed: True`` so the response is
-        # never silently reported as a clean save.  The exception is
-        # NOT re-raised — every existing caller depends on this
-        # function not raising past its boundary.
-        _log.warning("save_event failed: %s", e, exc_info=True)
-        return f"{type(e).__name__}: {e}", None
-    # Bust the today-movers in-memory cache so /movers/today reflects
-    # the new event without waiting for the 5-minute TTL to expire.
-    _TODAYS_MOVERS_CACHE["data"] = None
-    return None, saved_id
+    return event_record
 
 
 # ---------------------------------------------------------------------------

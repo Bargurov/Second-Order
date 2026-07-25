@@ -38,6 +38,13 @@ import {
   type AnalysisLaunch,
   type InboxLaunch,
 } from "@/lib/analysis-launch";
+import {
+  changedDimensionLabel,
+  parseProvenance,
+  provenanceLabel,
+  PROVENANCE_NON_CLAIM,
+  type AnalysisProvenance,
+} from "@/lib/analysis-provenance";
 import "@/styles/analyze-canvas.css";
 import { cn } from "@/lib/utils";
 import { pct } from "@/lib/ticker-utils";
@@ -4024,8 +4031,165 @@ export function AnalysisView({ initialLaunch, onHeadlineConsumed, onBack, onAnal
           {result.analysis && (
             <EnginePhaseSummary analysis={result.analysis} />
           )}
+          <AnalysisBasisSection provenance={parseProvenance(result.provenance)} />
         </div>
       )}
     </div>
+  );
+}
+
+
+/**
+ * Analysis Basis — what this analysis used, and whether that still holds.
+ *
+ * Sits in the trailing reference band: a reviewer who wants to reconstruct the
+ * run can, without it competing with the thesis above.  Deliberately states
+ * inputs only — nothing here is evidence that the analysis is right, which is
+ * why the non-claim is rendered unconditionally rather than on hover.
+ *
+ * Renders nothing when the surface received no provenance at all (a direct,
+ * non-candidate run), rather than showing an empty scaffold.
+ */
+function AnalysisBasisSection({ provenance }: { provenance: AnalysisProvenance | null }) {
+  const [open, setOpen] = useState(false);
+  if (!provenance) return null;
+
+  const { status } = provenance;
+  const invalid = status === "PROVENANCE_INVALID";
+  const legacy = status === "LEGACY_PROVENANCE_UNAVAILABLE";
+  const stale = status === "SAVED_WITH_OLDER_BASIS";
+  const pill = invalid
+    ? "bg-error-dim/20 text-error"
+    : stale
+    ? "bg-surface-container-highest text-on-surface-variant"
+    : legacy
+    ? "bg-surface-container-highest text-on-surface-variant/70"
+    : "bg-primary/15 text-primary";
+
+  const rows: Array<[string, string]> = [];
+  if (provenance.candidateId) rows.push(["Candidate", provenance.candidateId]);
+  if (provenance.sourceCount !== null) {
+    rows.push(["Sources", `${provenance.sourceCount}`]);
+  }
+  if (provenance.firstSeenAt || provenance.lastUpdatedAt) {
+    rows.push(["Captured", `${provenance.firstSeenAt ?? "—"} → ${provenance.lastUpdatedAt ?? "—"}`]);
+  }
+  if (provenance.provider || provenance.model) {
+    rows.push(["Engine", [provenance.provider, provenance.model].filter(Boolean).join(" · ")]);
+  }
+  if (provenance.promptVersion) rows.push(["Prompt", provenance.promptVersion]);
+  if (provenance.schemaVersion) rows.push(["Schema", provenance.schemaVersion]);
+  if (provenance.createdAt) rows.push(["Analyzed", provenance.createdAt]);
+  if (provenance.provenanceHash) {
+    rows.push(["Basis hash", `${provenance.provenanceHash.slice(0, 12)}…`]);
+  }
+
+  const inspectable = !!provenance.contextSnapshot || provenance.records.length > 0;
+
+  return (
+    <section aria-label="Analysis basis" className={cn(SECTION_CARD, "p-6")}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="az-kick">— Analysis basis</span>
+        <span className={cn(
+          "inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]",
+          pill)}
+        >
+          {provenanceLabel(status)}
+        </span>
+      </div>
+
+      {legacy ? (
+        <p className="mt-3 max-w-[68ch] text-[12px] leading-relaxed text-on-surface-variant">
+          Analysis provenance was not captured for this earlier record.
+        </p>
+      ) : invalid ? (
+        <div className="mt-3 max-w-[68ch]">
+          <p className="text-[12px] leading-relaxed text-error">
+            The stored basis for this analysis did not pass its integrity
+            check, so it cannot be used to reconstruct the run.
+          </p>
+          <ul className="mt-1.5 flex flex-col gap-1">
+            {provenance.problems.map((p) => (
+              <li key={p} className="text-[11px] leading-relaxed text-on-surface-variant">
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <>
+          {stale && (
+            <p className="mt-3 max-w-[68ch] text-[12px] leading-relaxed text-on-surface-variant">
+              Saved under a basis that differs from the current one:{" "}
+              {provenance.changedDimensions.map(changedDimensionLabel).join(", ")}.
+              The saved analysis is unchanged and nothing was re-run.
+            </p>
+          )}
+          {rows.length > 0 && (
+            <dl className="mt-3.5 grid grid-cols-1 gap-x-8 gap-y-1.5 sm:grid-cols-2">
+              {rows.map(([label, value]) => (
+                <div key={label} className="flex items-baseline gap-2">
+                  <dt className="min-w-[5.5rem] shrink-0 text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60">
+                    {label}
+                  </dt>
+                  <dd className="font-mono text-[11px] leading-snug text-on-surface-variant break-all">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </>
+      )}
+
+      {inspectable && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60 transition-colors hover:text-on-surface-variant"
+          >
+            {open ? "Hide captured basis" : "Inspect captured basis"}
+          </button>
+          {open && (
+            <div className="mt-3 flex flex-col gap-4">
+              {provenance.contextSnapshot && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60">
+                    Context sent
+                  </span>
+                  <p className="mt-1 max-w-[78ch] whitespace-pre-line text-[11px] leading-relaxed text-on-surface-variant/80">
+                    {provenance.contextSnapshot}
+                  </p>
+                </div>
+              )}
+              {provenance.records.length > 0 && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60">
+                    Source records ({provenance.records.length})
+                  </span>
+                  <ul className="mt-1 flex flex-col gap-1.5">
+                    {provenance.records.map((r) => (
+                      <li key={`${r.source}-${r.published_at}-${r.url}`}
+                          className="text-[11px] leading-snug text-on-surface-variant/80">
+                        <span className="font-mono text-on-surface-variant">{r.source}</span>
+                        {r.published_at && (
+                          <span className="text-on-surface-variant/60"> · {r.published_at}</span>
+                        )}
+                        <span className="block break-all text-on-surface-variant/70">{r.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <p className="mt-4 max-w-[68ch] text-[11px] leading-relaxed text-on-surface-variant/60">
+        {PROVENANCE_NON_CLAIM}
+      </p>
+    </section>
   );
 }

@@ -3814,6 +3814,27 @@ def _call_llm_provider(provider: str, api_key: str, model: str, prompt: str) -> 
         return _call_openai(api_key, model, prompt)
     return _call_anthropic(api_key, model, prompt)
 
+
+def render_analysis_prompt(
+    *, headline: str, stage: str, persistence: str,
+    event_context: str, macro_context: str,
+) -> str:
+    """Render the user prompt exactly as ``analyze_event`` sends it.
+
+    Extracted so provenance capture and the provider call share ONE renderer:
+    a second implementation would drift, and a stored prompt that differs from
+    the sent prompt is worse than no stored prompt at all.  The template and
+    its wording are unchanged — this is the same ``.format`` call, named.
+    """
+    return EVENT_ANALYSIS_PROMPT.format(
+        headline=headline,
+        stage=stage,
+        persistence=persistence,
+        event_context=event_context,
+        macro_context=macro_context,
+    )
+
+
 def analyze_event(
     inp_or_headline: "AnalyzeEventInput | str",
     stage: str = "", persistence: str = "",
@@ -3857,7 +3878,7 @@ def analyze_event(
         print(f"  -> Set {key_name} in your .env file to get real analysis.\n")
         return _mock(f"no {provider} API key")
 
-    prompt = EVENT_ANALYSIS_PROMPT.format(
+    prompt = render_analysis_prompt(
         headline=headline,
         stage=stage,
         persistence=persistence,

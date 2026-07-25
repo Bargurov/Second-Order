@@ -57,6 +57,7 @@ class _RouteBase(unittest.TestCase):
                                  f"test_paid_confirm_{uuid.uuid4().hex}.db")
         _db.DB_FILE = self._tmp
         _db.init_db()
+        self._seed_clusters()
         self.client = TestClient(_api.app)
         self.provider_calls: list[tuple] = []
 
@@ -69,6 +70,32 @@ class _RouteBase(unittest.TestCase):
                 pass
 
     # -- helpers -------------------------------------------------------
+    def _seed_clusters(self):
+        """Back the candidate with a real cluster row.
+
+        Since A1-2 the analyze route rebuilds the candidate's owned records
+        server-side BEFORE the paid call and fails closed when the candidate
+        cannot be resolved.  Without this row every candidate test here would
+        stop at ``candidate_provenance_unavailable`` and pass vacuously.
+        """
+        records = [
+            {"source": "Reuters World", "title": _TITLE,
+             "published_at": "2026-07-25T09:00:00",
+             "url": "https://example.test/reuters"},
+            {"source": "BBC Business", "title": _TITLE,
+             "published_at": "2026-07-25T10:30:00",
+             "url": "https://example.test/bbc"},
+        ]
+        conn = sqlite3.connect(self._tmp)
+        conn.execute(
+            "INSERT OR REPLACE INTO news_clusters "
+            "(id, headline, payload_json, records_json, latest_published_at, "
+            " updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (_PARENT, _TITLE, json.dumps({}), json.dumps(records),
+             "2026-07-25T10:30:00", "2026-07-25T10:30:00"))
+        conn.commit()
+        conn.close()
+
     def _seed_registry(self, rows):
         conn = sqlite3.connect(self._tmp)
         for source, key, cluster_id, event_id in rows:
@@ -208,8 +235,8 @@ class TestFailedRunsNeverLink(_RouteBase):
         with patch("routes.analyze._call_analyze_event", self._fake_provider), \
                 patch.object(_api, "market_check",
                              return_value={"note": "", "tickers": []}), \
-                patch.object(_api, "_persist_event",
-                             return_value=("disk full", None)):
+                patch.object(_db, "_insert_event_row",
+                             side_effect=RuntimeError("disk full")):
             resp = self.client.post("/analyze",
                                     json=self._candidate_body(confirm_paid=True))
         body = resp.json()

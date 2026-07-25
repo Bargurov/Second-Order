@@ -728,6 +728,64 @@ def init_db() -> None:
             )
         """)
 
+        # ------------------------------------------------------------------
+        # analysis_provenance — A1-2 immutable analysis-basis snapshot, 1:1
+        # with an ``events`` row.
+        #
+        # NOT the same thing as ``event_provenance`` above.  That one is the
+        # D1A ARCHIVE-SOURCE sidecar (publisher / URL / intake path).  This one
+        # records what an ANALYSIS RUN used: the strict Inbox candidate, its
+        # owned records, the exact context and prompts sent, and the provider /
+        # model / contract versions in force.  Keep them apart.
+        #
+        # Notes:
+        #   * ``analysis_event_id`` is the PRIMARY KEY, so SQLite itself
+        #     enforces at most one snapshot per analysis; the writer inserts
+        #     without OR REPLACE so an overwrite raises instead of silently
+        #     rewriting history.
+        #   * Snapshots are JSON TEXT: the shape is owned by
+        #     ``analysis_provenance.py`` and versioned by
+        #     ``provenance_contract_version``, so widening it later needs no
+        #     table rebuild.
+        #   * Added at the existing SCHEMA_VERSION — a version bump would
+        #     rename every local database to .bak.  CREATE TABLE IF NOT EXISTS
+        #     is the additive path an existing v3 database takes on next init.
+        #   * The FK is declared for intent; PRAGMA foreign_keys is left at its
+        #     default (unenforced) so no existing connection path changes.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS analysis_provenance (
+                analysis_event_id           INTEGER PRIMARY KEY,
+                provenance_contract_version TEXT NOT NULL,
+                candidate_id                TEXT NOT NULL,
+                parent_cluster_id           INTEGER NOT NULL,
+                title_key                   TEXT NOT NULL,
+                candidate_headline          TEXT,
+                candidate_first_seen_at     TEXT,
+                candidate_last_updated_at   TEXT,
+                candidate_snapshot          TEXT NOT NULL,
+                candidate_context_snapshot  TEXT NOT NULL,
+                macro_context_snapshot      TEXT,
+                stage                       TEXT,
+                persistence                 TEXT,
+                provider                    TEXT NOT NULL,
+                model                       TEXT NOT NULL,
+                analysis_prompt_version     TEXT NOT NULL,
+                analysis_schema_version     TEXT NOT NULL,
+                system_prompt_snapshot      TEXT NOT NULL,
+                rendered_user_prompt_snapshot TEXT NOT NULL,
+                candidate_snapshot_hash     TEXT NOT NULL,
+                prompt_snapshot_hash        TEXT NOT NULL,
+                analysis_input_hash         TEXT NOT NULL,
+                provenance_hash             TEXT NOT NULL,
+                created_at                  TEXT NOT NULL,
+                FOREIGN KEY (analysis_event_id) REFERENCES events (id)
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_analysis_provenance_candidate
+            ON analysis_provenance (parent_cluster_id, title_key)
+        """)
+
     _db_ready = True
 
 
@@ -1050,163 +1108,184 @@ def save_event(event: dict) -> int | None:
 
     Raises RuntimeError if init_db() has not been called or did not succeed.
     """
+    with _event_write_transaction() as conn:
+        return _insert_event_row(conn, event)
+
+
+@contextmanager
+def _event_write_transaction():
+    """One ``BEGIN IMMEDIATE`` write transaction over the events database.
+
+    BEGIN IMMEDIATE acquires the SQLite write lock right now — any concurrent
+    writer blocks here until this transaction commits (or rolls back).
+    Without it the default deferred transaction only upgrades to a write lock
+    on the first INSERT, leaving a race window between the duplicate check and
+    the INSERT itself.
+
+    Exposed as a context manager so an events insert and its A1-2 provenance
+    insert can share ONE transaction: if the provenance write raises, the
+    events row rolls back with it and no half-saved analysis survives.
+    """
     if not _db_ready:
         raise RuntimeError(
             "Database not initialised. Call init_db() before save_event()."
         )
-
     conn = _connect_db(isolation_level=None, timeout=30.0)
     try:
-        # BEGIN IMMEDIATE acquires the SQLite write lock right now —
-        # any concurrent save_event call will block here until this
-        # transaction commits (or rolls back).  Without this the
-        # default deferred transaction only upgrades to a write lock
-        # on the first INSERT, leaving a race window between _is_duplicate
-        # and the INSERT itself.
         conn.execute("BEGIN IMMEDIATE")
         try:
-            headline   = event["headline"]
-            event_date = event.get("event_date")
-
-            if _is_duplicate(conn, headline, event_date):
-                existing_id = _duplicate_event_id(conn, headline, event_date)
-                conn.execute("COMMIT")
-                print(f"[db] Skipped duplicate save for: {headline[:80]}")
-                return existing_id
-
-            ts_value = event.get(
-                "timestamp",
-                datetime.now().isoformat(timespec="seconds"),
-            )
-            # A newly-saved event has, by definition, just had its market
-            # tickers computed — stamp the freshness timestamp so subsequent
-            # reads can reuse the stored tickers without a refresh.
-            last_check = event.get("last_market_check_at") or ts_value
-
-            conn.execute("""
-                INSERT INTO events (
-                    timestamp, headline, stage, persistence,
-                    what_changed, mechanism_summary, beneficiaries, losers,
-                    assets_to_watch, confidence, market_note, market_tickers,
-                    event_date, notes, model, transmission_chain, if_persists,
-                    low_signal, currency_channel, policy_sensitivity, inventory_context,
-                    regime_snapshot, last_market_check_at,
-                    real_yield_context, policy_constraint, shock_decomposition,
-                    reaction_function_divergence, surprise_vs_anticipation,
-                    terms_of_trade, reserve_stress, narrative_divergence,
-                    credit_regime, credit_transmission,
-                    transmission_path, substitution_barriers, counterforces,
-                    adversarial_challenge, horizon_checkpoints,
-                    mechanism_family, expected_first_order_channels,
-                    expected_second_order_channels, regime_conditioned_caveat,
-                    primary_assets, secondary_assets, hedge_or_signal_assets,
-                    key_falsifiers, minimum_proof_set,
-                    competing_thesis,
-                    proof_status, falsifier_status,
-                    macro_release_context,
-                    policy_timing_context,
-                    country_vulnerability_context
-                ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?,
-                    ?, ?, ?,
-                    ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?,
-                    ?,
-                    ?, ?,
-                    ?,
-                    ?,
-                    ?
-                )
-            """, (
-                ts_value,
-                headline,
-                event["stage"],
-                event["persistence"],
-                event.get("what_changed", ""),
-                event.get("mechanism_summary", ""),
-                json.dumps(event.get("beneficiaries", [])),
-                json.dumps(event.get("losers", [])),
-                json.dumps(event.get("assets_to_watch", [])),
-                event.get("confidence", "low"),
-                event.get("market_note", ""),
-                json.dumps(event.get("market_tickers", [])),
-                event_date,
-                event.get("notes", ""),
-                event.get("model"),
-                json.dumps(event.get("transmission_chain", [])),
-                json.dumps(event.get("if_persists", {})),
-                event.get("low_signal", 0),
-                json.dumps(event.get("currency_channel", {})),
-                json.dumps(event.get("policy_sensitivity", {})),
-                json.dumps(event.get("inventory_context", {})),
-                json.dumps(event.get("regime_snapshot", {})),
-                last_check,
-                json.dumps(event.get("real_yield_context", {})),
-                json.dumps(event.get("policy_constraint", {})),
-                json.dumps(event.get("shock_decomposition", {})),
-                json.dumps(event.get("reaction_function_divergence", {})),
-                json.dumps(event.get("surprise_vs_anticipation", {})),
-                json.dumps(event.get("terms_of_trade", {})),
-                json.dumps(event.get("reserve_stress", {})),
-                json.dumps(event.get("narrative_divergence", {})),
-                json.dumps(event.get("credit_regime", {})),
-                json.dumps(event.get("credit_transmission", {})),
-                json.dumps(event.get("transmission_path", [])),
-                json.dumps(event.get("substitution_barriers", [])),
-                json.dumps(event.get("counterforces", [])),
-                event.get("adversarial_challenge", ""),
-                json.dumps(event.get("horizon_checkpoints", {})),
-                event.get("mechanism_family", "none"),
-                json.dumps(event.get("expected_first_order_channels", [])),
-                json.dumps(event.get("expected_second_order_channels", [])),
-                event.get("regime_conditioned_caveat", ""),
-                # Institutional research fields — stored as JSON lists.
-                json.dumps(event.get("primary_assets", [])),
-                json.dumps(event.get("secondary_assets", [])),
-                json.dumps(event.get("hedge_or_signal_assets", [])),
-                json.dumps(event.get("key_falsifiers", [])),
-                json.dumps(event.get("minimum_proof_set", [])),
-                # competing_thesis — dict or {} when LLM omits it.
-                json.dumps(event.get("competing_thesis", {})),
-                # Derived proof / falsifier verdicts — evaluated from
-                # the same ticker evidence the validation layer uses.
-                # Late import avoids a db → proof_evaluator →
-                # validation_outcome → db bootstrap loop.
-                json.dumps(_compute_proof_block(event)),
-                json.dumps(_compute_falsifier_block(event)),
-                # Macro release context — caller is expected to have
-                # already built the block (analysis pipeline calls
-                # ``macro_surprise.build_event_macro_release_context``).
-                # Events that don't map to any release land as ``{}``
-                # and are coerced at the HTTP boundary.
-                json.dumps(event.get("macro_release_context", {})),
-                # Policy timing context — same pattern as
-                # macro_release_context: caller pre-builds via
-                # ``policy_timing.build_event_policy_timing_context``,
-                # empty dict stored for unmatched headlines, coerced
-                # at the HTTP boundary.
-                json.dumps(event.get("policy_timing_context", {})),
-                # Country vulnerability context — same pattern again:
-                # caller pre-builds via
-                # ``country_backdrop.build_event_country_vulnerability_context``;
-                # empty dict for events that don't mention any
-                # profiled country.
-                json.dumps(event.get("country_vulnerability_context", {})),
-            ))
-            new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            conn.execute("COMMIT")
+            yield conn
         except Exception:
             try:
                 conn.execute("ROLLBACK")
             except sqlite3.Error:
                 pass
             raise
+        else:
+            conn.execute("COMMIT")
     finally:
         conn.close()
+
+
+def _insert_event_row(conn: sqlite3.Connection, event: dict) -> int | None:
+    """Insert one events row inside an already-open write transaction.
+
+    The body of :func:`save_event`, extracted so the same implementation
+    serves both the standalone save and the provenance-paired save.  Commits
+    nothing — the caller's transaction owns that.
+    """
+    headline   = event["headline"]
+    event_date = event.get("event_date")
+
+    if _is_duplicate(conn, headline, event_date):
+        existing_id = _duplicate_event_id(conn, headline, event_date)
+        print(f"[db] Skipped duplicate save for: {headline[:80]}")
+        return existing_id
+
+    ts_value = event.get(
+        "timestamp",
+        datetime.now().isoformat(timespec="seconds"),
+    )
+    # A newly-saved event has, by definition, just had its market
+    # tickers computed — stamp the freshness timestamp so subsequent
+    # reads can reuse the stored tickers without a refresh.
+    last_check = event.get("last_market_check_at") or ts_value
+
+    conn.execute("""
+        INSERT INTO events (
+            timestamp, headline, stage, persistence,
+            what_changed, mechanism_summary, beneficiaries, losers,
+            assets_to_watch, confidence, market_note, market_tickers,
+            event_date, notes, model, transmission_chain, if_persists,
+            low_signal, currency_channel, policy_sensitivity, inventory_context,
+            regime_snapshot, last_market_check_at,
+            real_yield_context, policy_constraint, shock_decomposition,
+            reaction_function_divergence, surprise_vs_anticipation,
+            terms_of_trade, reserve_stress, narrative_divergence,
+            credit_regime, credit_transmission,
+            transmission_path, substitution_barriers, counterforces,
+            adversarial_challenge, horizon_checkpoints,
+            mechanism_family, expected_first_order_channels,
+            expected_second_order_channels, regime_conditioned_caveat,
+            primary_assets, secondary_assets, hedge_or_signal_assets,
+            key_falsifiers, minimum_proof_set,
+            competing_thesis,
+            proof_status, falsifier_status,
+            macro_release_context,
+            policy_timing_context,
+            country_vulnerability_context
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?,
+            ?, ?, ?,
+            ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?, ?,
+            ?,
+            ?, ?,
+            ?,
+            ?,
+            ?
+        )
+    """, (
+        ts_value,
+        headline,
+        event["stage"],
+        event["persistence"],
+        event.get("what_changed", ""),
+        event.get("mechanism_summary", ""),
+        json.dumps(event.get("beneficiaries", [])),
+        json.dumps(event.get("losers", [])),
+        json.dumps(event.get("assets_to_watch", [])),
+        event.get("confidence", "low"),
+        event.get("market_note", ""),
+        json.dumps(event.get("market_tickers", [])),
+        event_date,
+        event.get("notes", ""),
+        event.get("model"),
+        json.dumps(event.get("transmission_chain", [])),
+        json.dumps(event.get("if_persists", {})),
+        event.get("low_signal", 0),
+        json.dumps(event.get("currency_channel", {})),
+        json.dumps(event.get("policy_sensitivity", {})),
+        json.dumps(event.get("inventory_context", {})),
+        json.dumps(event.get("regime_snapshot", {})),
+        last_check,
+        json.dumps(event.get("real_yield_context", {})),
+        json.dumps(event.get("policy_constraint", {})),
+        json.dumps(event.get("shock_decomposition", {})),
+        json.dumps(event.get("reaction_function_divergence", {})),
+        json.dumps(event.get("surprise_vs_anticipation", {})),
+        json.dumps(event.get("terms_of_trade", {})),
+        json.dumps(event.get("reserve_stress", {})),
+        json.dumps(event.get("narrative_divergence", {})),
+        json.dumps(event.get("credit_regime", {})),
+        json.dumps(event.get("credit_transmission", {})),
+        json.dumps(event.get("transmission_path", [])),
+        json.dumps(event.get("substitution_barriers", [])),
+        json.dumps(event.get("counterforces", [])),
+        event.get("adversarial_challenge", ""),
+        json.dumps(event.get("horizon_checkpoints", {})),
+        event.get("mechanism_family", "none"),
+        json.dumps(event.get("expected_first_order_channels", [])),
+        json.dumps(event.get("expected_second_order_channels", [])),
+        event.get("regime_conditioned_caveat", ""),
+        # Institutional research fields — stored as JSON lists.
+        json.dumps(event.get("primary_assets", [])),
+        json.dumps(event.get("secondary_assets", [])),
+        json.dumps(event.get("hedge_or_signal_assets", [])),
+        json.dumps(event.get("key_falsifiers", [])),
+        json.dumps(event.get("minimum_proof_set", [])),
+        # competing_thesis — dict or {} when LLM omits it.
+        json.dumps(event.get("competing_thesis", {})),
+        # Derived proof / falsifier verdicts — evaluated from
+        # the same ticker evidence the validation layer uses.
+        # Late import avoids a db → proof_evaluator →
+        # validation_outcome → db bootstrap loop.
+        json.dumps(_compute_proof_block(event)),
+        json.dumps(_compute_falsifier_block(event)),
+        # Macro release context — caller is expected to have
+        # already built the block (analysis pipeline calls
+        # ``macro_surprise.build_event_macro_release_context``).
+        # Events that don't map to any release land as ``{}``
+        # and are coerced at the HTTP boundary.
+        json.dumps(event.get("macro_release_context", {})),
+        # Policy timing context — same pattern as
+        # macro_release_context: caller pre-builds via
+        # ``policy_timing.build_event_policy_timing_context``,
+        # empty dict stored for unmatched headlines, coerced
+        # at the HTTP boundary.
+        json.dumps(event.get("policy_timing_context", {})),
+        # Country vulnerability context — same pattern again:
+        # caller pre-builds via
+        # ``country_backdrop.build_event_country_vulnerability_context``;
+        # empty dict for events that don't mention any
+        # profiled country.
+        json.dumps(event.get("country_vulnerability_context", {})),
+    ))
+    new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     print(f"Saved to {get_db_path()}.")
     return int(new_id) if new_id else None
 
@@ -3495,6 +3574,118 @@ def update_registry_state(
             f"WHERE title_key = ?",
             params,
         )
+
+
+_ANALYSIS_PROVENANCE_COLUMNS: tuple[str, ...] = (
+    "analysis_event_id", "provenance_contract_version", "candidate_id",
+    "parent_cluster_id", "title_key", "candidate_headline",
+    "candidate_first_seen_at", "candidate_last_updated_at",
+    "candidate_snapshot", "candidate_context_snapshot",
+    "macro_context_snapshot", "stage", "persistence", "provider", "model",
+    "analysis_prompt_version", "analysis_schema_version",
+    "system_prompt_snapshot", "rendered_user_prompt_snapshot",
+    "candidate_snapshot_hash", "prompt_snapshot_hash", "analysis_input_hash",
+    "provenance_hash", "created_at",
+)
+
+#: Columns stored as JSON text and decoded on read.
+_ANALYSIS_PROVENANCE_JSON: frozenset[str] = frozenset({"candidate_snapshot"})
+
+
+def _insert_analysis_provenance(
+    conn: sqlite3.Connection, provenance: dict,
+) -> None:
+    """Insert one A1-2 provenance row inside an already-open transaction.
+
+    Plain INSERT — never OR REPLACE.  ``analysis_event_id`` is the primary
+    key, so a second write for the same analysis raises IntegrityError instead
+    of silently rewriting a stored basis.  Provenance is append-only: the
+    record of what an analysis used cannot be edited after the fact.
+    """
+    values = []
+    for column in _ANALYSIS_PROVENANCE_COLUMNS:
+        value = provenance.get(column)
+        if column in _ANALYSIS_PROVENANCE_JSON:
+            value = json.dumps(value, sort_keys=True, ensure_ascii=False)
+        values.append(value)
+    placeholders = ", ".join("?" for _ in _ANALYSIS_PROVENANCE_COLUMNS)
+    conn.execute(
+        f"INSERT INTO analysis_provenance "
+        f"({', '.join(_ANALYSIS_PROVENANCE_COLUMNS)}) VALUES ({placeholders})",
+        tuple(values),
+    )
+
+
+def save_analysis_provenance(provenance: dict) -> None:
+    """Persist one provenance snapshot on its own transaction.
+
+    The paired :func:`save_event_with_analysis_provenance` is the path the
+    analyze routes use; this standalone entry point exists for backfill and
+    tests.  Raises when a snapshot already exists for the analysis.
+    """
+    with _event_write_transaction() as conn:
+        _insert_analysis_provenance(conn, provenance)
+
+
+def save_event_with_analysis_provenance(
+    event: dict, build_provenance,
+) -> tuple[int | None, dict | None]:
+    """Insert an events row and its provenance snapshot in ONE transaction.
+
+    ``build_provenance`` receives the new numeric ``events.id`` and returns the
+    provenance object to store — the id only exists mid-transaction, so the
+    caller supplies a builder rather than a finished object.
+
+    Either both rows commit or neither does.  A provenance failure must not
+    leave a saved analysis that looks complete but cannot be reconstructed, so
+    the exception propagates and the events insert rolls back with it.
+
+    Returns ``(analysis_event_id, provenance)``.  A duplicate-window skip
+    returns the existing id with ``None`` provenance and writes nothing: that
+    row already has whatever provenance it was saved with, and overwriting it
+    is exactly what append-only forbids.
+    """
+    with _event_write_transaction() as conn:
+        before = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        new_id = _insert_event_row(conn, event)
+        after = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        if new_id is None or after == before:
+            # Duplicate-window skip — no new row, so no new provenance.
+            return new_id, None
+        provenance = build_provenance(int(new_id))
+        _insert_analysis_provenance(conn, provenance)
+        return int(new_id), provenance
+
+
+def load_analysis_provenance(analysis_event_id: int) -> dict | None:
+    """Read one stored provenance snapshot, or ``None`` when there is none.
+
+    ``None`` means LEGACY_PROVENANCE_UNAVAILABLE upstream — it is never
+    reconstructed from current state, because a snapshot rebuilt today is not
+    evidence of what an older analysis actually used.
+    """
+    if not _db_ready:
+        return None
+    try:
+        with _db_session() as conn:
+            row = conn.execute(
+                f"SELECT {', '.join(_ANALYSIS_PROVENANCE_COLUMNS)} "
+                f"FROM analysis_provenance WHERE analysis_event_id = ?",
+                (int(analysis_event_id),),
+            ).fetchone()
+    except sqlite3.Error:
+        return None
+    if row is None:
+        return None
+    stored = dict(zip(_ANALYSIS_PROVENANCE_COLUMNS, row))
+    for column in _ANALYSIS_PROVENANCE_JSON:
+        try:
+            stored[column] = json.loads(stored[column])
+        except (TypeError, ValueError):
+            # Leave the raw value in place: verify_provenance will report the
+            # hash mismatch as PROVENANCE_INVALID rather than hiding it.
+            pass
+    return stored
 
 
 def get_candidate_analysis_link(

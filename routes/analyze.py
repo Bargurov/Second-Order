@@ -486,6 +486,151 @@ def _link_candidate_analysis(req: "_api.AnalyzeRequest",
         return None
 
 
+# ---------------------------------------------------------------------------
+# A1-2 — analysis provenance
+# ---------------------------------------------------------------------------
+
+def _candidate_provenance_unavailable(headline: str, effective_date: str) -> dict:
+    """Fail-closed response when a candidate can no longer be reconstructed.
+
+    Reached BEFORE any provider call.  An analysis whose basis cannot be
+    captured would be unreconstructable the moment it was saved, so the run is
+    refused rather than billed and stored without provenance.
+    """
+    return {
+        "status": "candidate_provenance_unavailable",
+        "headline": headline,
+        "event_date": effective_date,
+        "is_mock": False,
+        "note": (
+            "This candidate could not be resolved in the local news store, so "
+            "the analysis basis cannot be recorded. No analysis was run."
+        ),
+    }
+
+
+def _resolve_candidate_snapshot(req: "_api.AnalyzeRequest") -> dict | None:
+    """Rebuild the candidate's owned records SERVER-SIDE, read-only.
+
+    The request's source list is never consulted: provenance that trusted the
+    caller would prove nothing.  Returns ``None`` when the candidate cannot be
+    resolved, which callers must treat as fail-closed.
+    """
+    import analysis_provenance as _ap
+    import db as _dbm
+    from event_inbox import read_cluster_rows
+    rows, _reason = read_cluster_rows(_dbm.DB_FILE)
+    if rows is None:
+        return None
+    return _ap.build_candidate_snapshot(rows, req.parent_cluster_id, req.title_key)
+
+
+def _provenance_builder(
+    req: "_api.AnalyzeRequest", *, candidate_snapshot: dict, stage: str,
+    persistence: str, macro_context: str, model: str,
+):
+    """Return a callable that seals provenance around the new events.id.
+
+    The id only exists inside the write transaction, so the builder is handed
+    to the db layer rather than a finished object.  Prompts are rendered
+    through the SAME renderer ``analyze_event`` uses, so the stored prompt is
+    the sent prompt and not a reconstruction.
+    """
+    import analysis_provenance as _ap
+    from analyze_event import SYSTEM_PROMPT, render_analysis_prompt, resolve_provider_configuration
+
+    provider = resolve_provider_configuration().provider
+    rendered = render_analysis_prompt(
+        headline=req.headline, stage=stage, persistence=persistence,
+        event_context=req.event_context or "", macro_context=macro_context,
+    )
+
+    def _build(analysis_event_id: int) -> dict:
+        return _ap.build_provenance(
+            analysis_event_id=analysis_event_id,
+            parent_cluster_id=req.parent_cluster_id,
+            title_key=req.title_key,
+            candidate_snapshot=candidate_snapshot,
+            candidate_context_snapshot=req.event_context or "",
+            macro_context_snapshot=macro_context,
+            stage=stage, persistence=persistence,
+            provider=provider, model=model,
+            system_prompt_snapshot=SYSTEM_PROMPT,
+            rendered_user_prompt_snapshot=rendered,
+            created_at=datetime.now().isoformat(timespec="seconds"),
+        )
+    return _build
+
+
+def _fresh_provenance_summary(
+    provenance: dict | None, analysis_event_id: int | None,
+    candidate_link: str | None,
+) -> dict:
+    """Summarize provenance for the run that just produced it.
+
+    A run reads VERIFIED_CURRENT only when it saved a provenance snapshot AND
+    the candidate linkage did not conflict.  A conflicted candidate points at
+    more than one analysis, so nothing about it is verified — reporting it as
+    current would hide the conflict behind a reassuring label.
+    """
+    import analysis_provenance as _ap
+    if provenance is None or analysis_event_id is None:
+        return _ap.summarize_for_response(
+            None, _ap.derive_provenance_state(None, None))
+    if candidate_link == "conflict":
+        state = {"status": "SAVED_WITH_OLDER_BASIS",
+                 "changed_dimensions": ["candidate_link_conflict"],
+                 "problems": [],
+                 "non_claim": _ap.PROVENANCE_NON_CLAIM}
+        return _ap.summarize_for_response(provenance, state)
+    problems = _ap.verify_provenance(provenance)
+    if problems:
+        return _ap.summarize_for_response(
+            provenance, {"status": "PROVENANCE_INVALID",
+                         "changed_dimensions": [], "problems": problems,
+                         "non_claim": _ap.PROVENANCE_NON_CLAIM})
+    return _ap.summarize_for_response(
+        provenance, {"status": "VERIFIED_CURRENT", "changed_dimensions": [],
+                     "problems": [], "non_claim": _ap.PROVENANCE_NON_CLAIM})
+
+
+def _persist_with_provenance(
+    req: "_api.AnalyzeRequest", headline: str, stage: str, persistence: str,
+    analysis: dict, mkt: dict, effective_date: str, model: str,
+    candidate_snapshot: dict | None, macro_context: str,
+) -> tuple[str | None, int | None, dict | None]:
+    """Persist the events row and (for a candidate run) its provenance.
+
+    Returns ``(error, analysis_event_id, provenance)``.  A candidate-backed run
+    writes both rows in ONE transaction, so a provenance failure rolls the
+    events row back and the caller links nothing.  A direct (non-candidate)
+    run keeps the existing single-row path and stores no provenance — it has
+    no candidate basis to record.
+    """
+    if candidate_snapshot is None or req.candidate_id is None:
+        error, event_id = _api._persist_event(
+            headline, stage, persistence, analysis, mkt, effective_date,
+            model=model)
+        return error, event_id, None
+
+    import db as _dbm
+    builder = _provenance_builder(
+        req, candidate_snapshot=candidate_snapshot, stage=stage,
+        persistence=persistence, macro_context=macro_context, model=model)
+    try:
+        record = _api._build_event_record(
+            headline, stage, persistence, analysis, mkt, effective_date,
+            model=model)
+        event_id, provenance = _dbm.save_event_with_analysis_provenance(
+            record, builder)
+    except Exception as e:
+        _api._log.warning("save_event_with_analysis_provenance failed: %s", e,
+                          exc_info=True)
+        return f"{type(e).__name__}: {e}", None, None
+    _api._TODAYS_MOVERS_CACHE["data"] = None
+    return None, event_id, provenance
+
+
 router = APIRouter()
 
 
@@ -516,6 +661,17 @@ def analyze(req: _api.AnalyzeRequest):
     if not req.confirm_paid:
         return _api._sanitize_floats(
             _paid_confirmation_required(headline, effective_date))
+
+    # A candidate run must be reconstructable, so its basis is captured
+    # BEFORE the paid call.  An unresolvable candidate fails closed here —
+    # billing for an analysis whose basis cannot be recorded would produce
+    # exactly the un-auditable row this slice exists to prevent.
+    candidate_snapshot = None
+    if req.candidate_id is not None:
+        candidate_snapshot = _resolve_candidate_snapshot(req)
+        if candidate_snapshot is None:
+            return _api._sanitize_floats(
+                _candidate_provenance_unavailable(headline, effective_date))
 
     stage = _api.classify_stage(headline)
     persistence = _api.classify_persistence(headline)
@@ -558,11 +714,16 @@ def analyze(req: _api.AnalyzeRequest):
 
     _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
-    persistence_error, analysis_event_id = _api._persist_event(
-        headline, stage, persistence, analysis, mkt, effective_date,
-        model=model,
+    persistence_error, analysis_event_id, provenance = _persist_with_provenance(
+        req, headline, stage, persistence, analysis, mkt, effective_date,
+        model, candidate_snapshot, _macro_ctx,
     )
+    # Linkage runs only after BOTH the events row and its provenance are
+    # committed — a candidate marked analyzed without a recorded basis is
+    # exactly the misleading state this ordering prevents.
     candidate_link = _link_candidate_analysis(req, analysis_event_id)
+    provenance_summary = _fresh_provenance_summary(
+        provenance, analysis_event_id, candidate_link)
 
     age_classification = _api._classify_for_effective_date(effective_date, force=False)
     mkt_with_freshness = _api._augment_market_freshness(mkt, age_classification)
@@ -583,6 +744,7 @@ def analyze(req: _api.AnalyzeRequest):
         # or the request carried no candidate identity — never inferred.
         "analysis_event_id": analysis_event_id,
         "candidate_link": candidate_link,
+        "provenance": provenance_summary,
     })
 
 
@@ -616,6 +778,16 @@ def analyze_stream(req: _api.AnalyzeRequest):
             yield _api._sse_event("complete", _api._sanitize_floats(
                 _paid_confirmation_required(headline, _effective_date[0])))
             return
+
+        # Same pre-provider capture as /analyze — see the counterpart there.
+        candidate_snapshot = None
+        if req.candidate_id is not None:
+            candidate_snapshot = _resolve_candidate_snapshot(req)
+            if candidate_snapshot is None:
+                yield _api._sse_event("complete", _api._sanitize_floats(
+                    _candidate_provenance_unavailable(
+                        headline, _effective_date[0])))
+                return
 
         stage = _api.classify_stage(headline)
         persistence = _api.classify_persistence(headline)
@@ -657,11 +829,13 @@ def analyze_stream(req: _api.AnalyzeRequest):
 
         _run_post_market_overlays(analysis, mkt, headline, mech_text, rates_for_overlays, stress_for_overlays, stage, event_date=req.event_date)
 
-        persistence_error, analysis_event_id = _api._persist_event(
-            headline, stage, persistence, analysis, mkt, effective_date,
-            model=model,
+        persistence_error, analysis_event_id, provenance = _persist_with_provenance(
+            req, headline, stage, persistence, analysis, mkt, effective_date,
+            model, candidate_snapshot, _macro_ctx,
         )
         candidate_link = _link_candidate_analysis(req, analysis_event_id)
+        provenance_summary = _fresh_provenance_summary(
+            provenance, analysis_event_id, candidate_link)
         age_classification = _api._classify_for_effective_date(effective_date, force=False)
         mkt_with_freshness = _api._augment_market_freshness(mkt, age_classification)
 
@@ -679,6 +853,7 @@ def analyze_stream(req: _api.AnalyzeRequest):
             # reported, never inferred from a clean terminal frame.
             "analysis_event_id": analysis_event_id,
             "candidate_link": candidate_link,
+            "provenance": provenance_summary,
         }))
 
     return StreamingResponse(generate(), media_type="text/event-stream")
