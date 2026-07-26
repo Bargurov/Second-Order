@@ -171,7 +171,12 @@ class TestSavedReadoutParity(_RouteBase):
         fresh = self._post("/analyze", self._body()).json()
         eid = fresh["analysis_event_id"]
         by_id = self._post("/analyze", {"headline": _TITLE, "event_id": eid}).json()
-        by_head = self._post("/analyze", {"headline": _TITLE}).json()
+        # Since A1-4 the non-numeric path is the DURABLE request hash, so an
+        # exact repeat must resend the same context.  The old form relied on
+        # the weak headline key ignoring context, which is precisely what
+        # A1-4 removed.
+        by_head = self._post("/analyze", {"headline": _TITLE,
+                                          "event_context": "Sources (2)"}).json()
 
         want = self._readout(fresh["analysis"])
         self.assertGreater(len(want), 15, "the fixture must exercise the readout")

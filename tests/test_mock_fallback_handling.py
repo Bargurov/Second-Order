@@ -101,12 +101,12 @@ class TestAnalyzeEndpointMockNotPersisted(unittest.TestCase):
     def test_mock_not_persisted_and_returns_failure(self):
         import api
 
-        persist_mock = MagicMock(return_value=(None, 1))  # (error, saved id)
+        persist_mock = MagicMock(return_value=(None, 1, None))  # (error, id, provenance)
 
         with patch("api.analyze_event", return_value=_mock("overloaded")), \
              patch("api.classify_stage", return_value="developing"), \
              patch("api.classify_persistence", return_value="medium"), \
-             patch("api._persist_event", persist_mock), \
+             patch("routes.analyze._persist_with_provenance", persist_mock), \
              patch("api.market_check") as market_mock:
 
             resp = api.analyze(api.AnalyzeRequest(headline="Test overload", confirm_paid=True))
@@ -136,7 +136,7 @@ class TestAnalyzeEndpointMockNotPersisted(unittest.TestCase):
             "if_persists": {},
             "currency_channel": {},
         }
-        persist_mock = MagicMock(return_value=(None, 1))  # (error, saved id)
+        persist_mock = MagicMock(return_value=(None, 1, None))  # (error, id, provenance)
 
         # Only the true external boundaries are mocked: the LLM
         # (``api.analyze_event``) and the market data provider
@@ -146,10 +146,11 @@ class TestAnalyzeEndpointMockNotPersisted(unittest.TestCase):
         # surprise / terms_of_trade / reserve_stress / …) also runs for
         # real against a starved data provider, so each composer's own
         # graceful-degradation branch is exercised instead of being
-        # stubbed out.  ``_persist_event`` stays mocked as an observation
-        # probe so the assertion below can inspect call count.
+        # stubbed out.  The route's persistence boundary
+        # (``_persist_with_provenance``) stays mocked as an observation probe
+        # so the assertion below can inspect call count.
         with patch("api.analyze_event", return_value=real_analysis), \
-             patch("api._persist_event", persist_mock), \
+             patch("routes.analyze._persist_with_provenance", persist_mock), \
              patch("market_check._fetch", return_value=None):
 
             resp = api.analyze(api.AnalyzeRequest(headline="Fed raises rates", confirm_paid=True))
@@ -171,12 +172,12 @@ class TestAnalyzeStreamMockShortCircuit(unittest.TestCase):
         import api
         import json
 
-        persist_mock = MagicMock(return_value=(None, 1))  # (error, saved id)
+        persist_mock = MagicMock(return_value=(None, 1, None))  # (error, id, provenance)
 
         with patch("api.analyze_event", return_value=_mock("overloaded")), \
              patch("api.classify_stage", return_value="developing"), \
              patch("api.classify_persistence", return_value="medium"), \
-             patch("api._persist_event", persist_mock), \
+             patch("routes.analyze._persist_with_provenance", persist_mock), \
              patch("api.market_check") as market_mock, \
              patch("api.find_cached_analysis", return_value=None), \
              patch("api.load_event_by_id", return_value=None):

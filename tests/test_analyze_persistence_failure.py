@@ -71,7 +71,8 @@ def _patched_pipeline_no_provider():
     patched to a no-op stub.
 
     Tests then layer one more patch on top — typically
-    ``api.save_event`` — to control the persistence outcome.
+    ``db.save_event_with_analysis_provenance`` (the route's own
+    persistence boundary since A1-4) — to control the outcome.
     """
     return _PatchStack()
 
@@ -187,6 +188,9 @@ class TestPersistEventReturnContract(unittest.TestCase):
         # callers can treat a truthy error == failure, and hand back the
         # numeric id the save produced — the only id a candidate link may
         # ever be stamped with.
+        # _persist_event is the single-row path (movers backfill, and the
+        # A1-4 fallback when no request basis exists); it still writes
+        # through save_event, so that remains the correct seam here.
         with patch("api.save_event", return_value=41):
             error, event_id = api._persist_event(**self._minimal_args())
         self.assertIsNone(error)
@@ -228,7 +232,8 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
 
     def test_save_event_failure_marks_persistence_failed_true(self) -> None:
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", side_effect=RuntimeError("disk full"),
+            "db.save_event_with_analysis_provenance",
+            side_effect=RuntimeError("disk full"),
         ):
             resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         self.assertTrue(
@@ -239,14 +244,15 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
 
     def test_save_event_failure_carries_error_message(self) -> None:
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", side_effect=RuntimeError("disk full"),
+            "db.save_event_with_analysis_provenance",
+            side_effect=RuntimeError("disk full"),
         ):
             resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         self.assertIn("disk full", resp.get("persistence_error") or "")
 
     def test_save_event_success_marks_persistence_failed_false(self) -> None:
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", return_value=None,
+            "db.save_event_with_analysis_provenance", return_value=(41, None),
         ):
             resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         self.assertIn("persistence_failed", resp)
@@ -265,7 +271,8 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
         # Operators need the analysis output even when the row was
         # lost so they can investigate without re-running the LLM.
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", side_effect=RuntimeError("disk full"),
+            "db.save_event_with_analysis_provenance",
+            side_effect=RuntimeError("disk full"),
         ):
             resp = api.analyze(api.AnalyzeRequest(headline="Test headline", confirm_paid=True))
         for key in (
@@ -285,7 +292,8 @@ class TestAnalyzePersistenceFailure(unittest.TestCase):
             "price_cache.fetch_daily_cached",
         ]
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", side_effect=RuntimeError("disk full"),
+            "db.save_event_with_analysis_provenance",
+            side_effect=RuntimeError("disk full"),
         ):
             from contextlib import ExitStack
             with ExitStack() as stack:
@@ -333,7 +341,8 @@ class TestAnalyzeStreamPersistenceFailure(unittest.TestCase):
         self,
     ) -> None:
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", side_effect=RuntimeError("disk full"),
+            "db.save_event_with_analysis_provenance",
+            side_effect=RuntimeError("disk full"),
         ):
             body = self._post_stream({"headline": "Test stream headline"})
 
@@ -354,7 +363,7 @@ class TestAnalyzeStreamPersistenceFailure(unittest.TestCase):
 
     def test_stream_save_event_success_marks_complete_event_clean(self) -> None:
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", return_value=None,
+            "db.save_event_with_analysis_provenance", return_value=(41, None),
         ):
             body = self._post_stream({"headline": "Test stream healthy"})
 
@@ -370,7 +379,8 @@ class TestAnalyzeStreamPersistenceFailure(unittest.TestCase):
         self,
     ) -> None:
         with _patched_pipeline_no_provider(), patch(
-            "api.save_event", side_effect=RuntimeError("disk full"),
+            "db.save_event_with_analysis_provenance",
+            side_effect=RuntimeError("disk full"),
         ):
             body = self._post_stream({"headline": "Test stream payload"})
 

@@ -820,6 +820,45 @@ def init_db() -> None:
             )
         """)
 
+        # ------------------------------------------------------------------
+        # analysis_request_cache — A1-4 durable request identity, 1:1 both ways
+        # with an ``events`` row.
+        #
+        # Replaces the weak (headline + event_date + model + 24h TTL) reuse key
+        # for NEWLY created analyses.  ``request_hash`` is SHA-256 over the
+        # exact provider request basis (provider, model, both prompt snapshots,
+        # both contract versions), so an unchanged request reuses forever and a
+        # changed one can never be served an old result.
+        #
+        # Distinct from the other two analysis sidecars:
+        #     analysis_provenance      what went IN to an Inbox run
+        #     analysis_result_snapshot what came OUT
+        #     analysis_request_cache   which exact request produced it
+        #
+        # Notes:
+        #   * ``request_hash`` is the PRIMARY KEY and ``analysis_event_id`` is
+        #     UNIQUE, so SQLite enforces the 1:1 mapping in both directions; the
+        #     writer uses a plain INSERT so a second write raises rather than
+        #     silently repointing a cache entry at a different analysis.
+        #   * Prompts are NOT duplicated here — provenance (Inbox) and the
+        #     result snapshot (all runs) already hold what they need.
+        #   * A DISPLAY/reuse record only.  No track-record, evidence, Mission
+        #     or event-study consumer may read it; a static scan pins that.
+        #   * Added at the existing SCHEMA_VERSION — a bump would rename every
+        #     local database to .bak.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS analysis_request_cache (
+                request_hash      TEXT PRIMARY KEY,
+                analysis_event_id INTEGER NOT NULL UNIQUE,
+                provider          TEXT NOT NULL,
+                model             TEXT NOT NULL,
+                prompt_version    TEXT NOT NULL,
+                schema_version    TEXT NOT NULL,
+                created_at        TEXT NOT NULL,
+                FOREIGN KEY (analysis_event_id) REFERENCES events (id)
+            )
+        """)
+
     _db_ready = True
 
 
@@ -3739,29 +3778,85 @@ def load_analysis_result_snapshot(analysis_event_id: int) -> dict | None:
     return snapshot
 
 
+def _insert_analysis_request_mapping(
+    conn: sqlite3.Connection, analysis_event_id: int, mapping: dict,
+    created_at: str,
+) -> None:
+    """Insert one A1-4 request mapping inside an already-open transaction.
+
+    Plain INSERT — never OR REPLACE.  ``request_hash`` is the primary key and
+    ``analysis_event_id`` is UNIQUE, so a second write for either side raises
+    instead of silently repointing a cache entry at a different analysis.
+    A cache that could be repointed is a cache that can serve the wrong result.
+    """
+    conn.execute(
+        "INSERT INTO analysis_request_cache "
+        "(request_hash, analysis_event_id, provider, model, prompt_version, "
+        " schema_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (mapping["request_hash"], int(analysis_event_id), mapping["provider"],
+         mapping["model"], mapping["prompt_version"], mapping["schema_version"],
+         created_at),
+    )
+
+
+def save_analysis_request_mapping(
+    analysis_event_id: int, mapping: dict, created_at: str,
+) -> None:
+    """Persist one request mapping on its own transaction (tests / backfill)."""
+    with _event_write_transaction() as conn:
+        _insert_analysis_request_mapping(conn, analysis_event_id, mapping,
+                                         created_at)
+
+
+def find_event_id_by_request_hash(request_hash: object) -> int | None:
+    """Resolve an exact request hash to its numeric ``events.id``.
+
+    Read-only and write-free: a cache lookup must never create the entry it
+    failed to find.  An absent, empty or non-string hash fails closed rather
+    than raising, because this runs inside the request path where a raise
+    would take the whole response down over a missing optional record.
+    """
+    if not _db_ready or not isinstance(request_hash, str) or not request_hash:
+        return None
+    try:
+        with _db_session() as conn:
+            row = conn.execute(
+                "SELECT analysis_event_id FROM analysis_request_cache "
+                "WHERE request_hash = ?", (request_hash,),
+            ).fetchone()
+    except sqlite3.Error:
+        return None
+    return int(row[0]) if row else None
+
+
 def save_event_with_analysis_provenance(
     event: dict, build_provenance, build_result_snapshot=None,
-    created_at: str | None = None,
+    build_request_mapping=None, created_at: str | None = None,
 ) -> tuple[int | None, dict | None]:
-    """Insert an events row, its provenance and its result snapshot in ONE
+    """Insert one analysis bundle — events row plus its sidecars — in ONE
     transaction.
 
-    ``build_provenance`` and ``build_result_snapshot`` each receive the new
-    numeric ``events.id`` — the id only exists mid-transaction, so callers
-    supply builders rather than finished objects.  Either builder may be
-    ``None``: a direct (non-candidate) analysis has no provenance to record
-    but still saves its output, so the two are independent.
+    Each builder receives the new numeric ``events.id``; the id only exists
+    mid-transaction, so callers supply builders rather than finished objects.
+    Any builder may be ``None``, which is what distinguishes the two bundles:
+
+        Inbox run   event + provenance + result snapshot + request mapping
+        direct run  event +              result snapshot + request mapping
+
+    A direct analysis has no candidate provenance to record, but it still
+    saves its output and its request identity — that is the A1-4 repair.
 
     All requested rows commit or none do.  A provenance failure must not leave
-    an analysis that looks complete but cannot be reconstructed, and a
-    snapshot failure must not leave one that reopens as a degraded shadow of
-    itself — so the exception propagates and the events insert rolls back with
-    it.
+    an analysis that looks complete but cannot be reconstructed; a snapshot
+    failure must not leave one that reopens as a degraded shadow of itself;
+    and a mapping failure must not leave a saved analysis that the durable
+    cache can never find.  So any exception propagates and the events insert
+    rolls back with it.
 
     Returns ``(analysis_event_id, provenance)``.  A duplicate-window skip
     returns the existing id with ``None`` provenance and writes nothing: that
-    row already has whatever provenance and output it was saved with, and
-    overwriting either is exactly what append-only forbids.
+    row already has whatever provenance, output and request identity it was
+    saved with, and overwriting any of them is what append-only forbids.
     """
     stamp = created_at or datetime.now().isoformat(timespec="seconds")
     with _event_write_transaction() as conn:
@@ -3778,6 +3873,9 @@ def save_event_with_analysis_provenance(
         if build_result_snapshot is not None:
             _insert_analysis_result_snapshot(
                 conn, int(new_id), build_result_snapshot(int(new_id)), stamp)
+        if build_request_mapping is not None:
+            _insert_analysis_request_mapping(
+                conn, int(new_id), build_request_mapping(int(new_id)), stamp)
         return int(new_id), provenance
 
 

@@ -598,49 +598,175 @@ def _persist_with_provenance(
     req: "_api.AnalyzeRequest", headline: str, stage: str, persistence: str,
     analysis: dict, mkt: dict, effective_date: str, model: str,
     candidate_snapshot: dict | None, macro_context: str,
+    request_basis=None,
 ) -> tuple[str | None, int | None, dict | None]:
-    """Persist the events row and (for a candidate run) its provenance.
+    """Persist one analysis bundle atomically.
 
-    Returns ``(error, analysis_event_id, provenance)``.  A candidate-backed run
-    writes both rows in ONE transaction, so a provenance failure rolls the
-    events row back and the caller links nothing.  A direct (non-candidate)
-    run keeps the existing single-row path and stores no provenance — it has
-    no candidate basis to record.
+    Two bundles, one transaction each:
+
+        Inbox run   event + provenance + result snapshot + request mapping
+        direct run  event +              result snapshot + request mapping
+
+    A direct run has no candidate provenance to record — and A1-4 deliberately
+    does NOT fabricate one — but it now saves its output and its request
+    identity in the same transaction as its events row, so reopening restores
+    the full readout and an exact repeat reuses it.
+
+    Returns ``(error, analysis_event_id, provenance)``.  Any writer failing
+    rolls the whole bundle back, so the caller links nothing.
     """
-    # A direct (non-candidate) run keeps the existing single-row path and its
-    # ``save_event`` seam untouched.  A1-3R scopes the three-way transaction
-    # to Inbox-originated analyses, so routing direct runs through it would be
-    # collateral change — reopening a direct analysis keeps the pre-existing
-    # honest missingness.  See the deferred note in the A1-3R report.
-    if candidate_snapshot is None or req.candidate_id is None:
-        error, event_id = _api._persist_event(
-            headline, stage, persistence, analysis, mkt, effective_date,
-            model=model)
-        return error, event_id, None
-
+    import analysis_request_identity as _ari
     import analysis_result_snapshot as _ars
     import db as _dbm
 
-    # A1-3R: the saved readout output, built from the FINAL validated
-    # `analysis` — exactly what the operator received.  See
-    # analysis_result_snapshot for the inclusion boundary.
+    # Built from the FINAL validated `analysis` — exactly what the operator
+    # received.  See analysis_result_snapshot for the inclusion boundary.
     snapshot = _ars.build_result_snapshot(analysis)
-    builder = _provenance_builder(
-        req, candidate_snapshot=candidate_snapshot, stage=stage,
-        persistence=persistence, macro_context=macro_context, model=model)
+
+    provenance_builder = None
+    if candidate_snapshot is not None and req.candidate_id is not None:
+        provenance_builder = _provenance_builder(
+            req, candidate_snapshot=candidate_snapshot, stage=stage,
+            persistence=persistence, macro_context=macro_context, model=model)
+
+    # No basis means no durable identity could be computed; persist the event
+    # and its output rather than dropping the run, and let the next identical
+    # request miss honestly instead of reusing something unidentified.
+    mapping_builder = None
+    if request_basis is not None:
+        mapping = _ari.request_mapping_record(request_basis.basis)
+        mapping_builder = lambda _new_id: mapping  # noqa: E731
+
     try:
         record = _api._build_event_record(
             headline, stage, persistence, analysis, mkt, effective_date,
             model=model)
         event_id, provenance = _dbm.save_event_with_analysis_provenance(
-            record, builder, lambda _new_id: snapshot,
+            record, provenance_builder, lambda _new_id: snapshot,
+            mapping_builder,
             created_at=datetime.now().isoformat(timespec="seconds"))
     except Exception as e:
-        _api._log.warning("save_event_with_analysis_provenance failed: %s", e,
+        _api._log.warning("analysis bundle persistence failed: %s", e,
                           exc_info=True)
         return f"{type(e).__name__}: {e}", None, None
     _api._TODAYS_MOVERS_CACHE["data"] = None
     return None, event_id, provenance
+
+
+# ---------------------------------------------------------------------------
+# A1-4 — durable request identity
+# ---------------------------------------------------------------------------
+
+class _RequestBasis:
+    """The prompt-relevant basis of one analysis request, computed once.
+
+    Built BEFORE the durable-cache lookup because the request hash is derived
+    from the exact rendered prompt.  ``stage`` / ``persistence`` are pure
+    keyword classifiers and ``macro_context`` reads the existing TTL cache —
+    and the same values are reused for the provider call below, so a request
+    still computes each of them exactly once.
+    """
+
+    __slots__ = ("stage", "persistence", "macro_context", "basis", "hash")
+
+    def __init__(self, stage, persistence, macro_context, basis, request_hash):
+        self.stage = stage
+        self.persistence = persistence
+        self.macro_context = macro_context
+        self.basis = basis
+        self.hash = request_hash
+
+
+def _build_request_basis(headline: str, event_context: str,
+                         event_date: str) -> "_RequestBasis":
+    """Resolve the exact request basis and its durable hash.
+
+    Uses the SAME renderer the provider call uses, so a prompt change can
+    never leave a stale cache entry reachable.
+    """
+    import analysis_provenance as _ap
+    import analysis_request_identity as _ari
+    from analyze_event import (SYSTEM_PROMPT, render_analysis_prompt,
+                               resolve_provider_configuration)
+
+    stage = _api.classify_stage(headline)
+    persistence = _api.classify_persistence(headline)
+    macro_context = ""
+    try:
+        macro_context = _api.build_macro_context_for_prompt()
+    except Exception:
+        _api._log.warning("macro context pre-fetch failed (analyze)", exc_info=True)
+    macro_context = _enrich_macro_context_with_country(macro_context, headline)
+
+    basis = _ari.build_request_basis(
+        provider=resolve_provider_configuration().provider,
+        model=_api._active_model(),
+        system_prompt=SYSTEM_PROMPT,
+        rendered_user_prompt=render_analysis_prompt(
+            headline=headline, stage=stage, persistence=persistence,
+            event_context=event_context, macro_context=macro_context),
+        prompt_version=_ap.ANALYSIS_PROMPT_VERSION,
+        schema_version=_ap.ANALYSIS_SCHEMA_VERSION,
+        event_date=event_date,
+    )
+    return _RequestBasis(stage, persistence, macro_context, basis,
+                         _ari.request_hash(basis))
+
+
+def _durable_cached_event(request_hash: str) -> dict | None:
+    """Resolve an exact request hash to its saved event, or ``None``.
+
+    Fails closed on a mapping whose event is gone or whose result snapshot is
+    unreadable: serving a half-restored analysis would be worse than asking
+    for a fresh confirmation.  Read-only — a lookup never writes the entry it
+    failed to find, and never reaches a provider.
+    """
+    import db as _dbm
+    try:
+        event_id = _dbm.find_event_id_by_request_hash(request_hash)
+        if event_id is None:
+            return None
+        cached = _api.load_event_by_id(event_id)
+        if cached is None:
+            _api._log.warning("durable request cache points at a missing event")
+            return None
+        # The mapping promises a restorable readout; without its snapshot the
+        # entry cannot deliver what it claims.
+        if _dbm.load_analysis_result_snapshot(event_id) is None:
+            _api._log.warning("durable request cache entry has no usable snapshot")
+            return None
+        return cached
+    except Exception:
+        _api._log.warning("durable request cache lookup failed", exc_info=True)
+        return None
+
+
+def _legacy_headline_cached_event(headline: str, effective_date: str,
+                                  model: str):
+    """The pre-A1-4 (headline + event_date + model + 24h TTL) fallback.
+
+    Eligibility rule, stated once: it serves ONLY a row that has no durable
+    request mapping — i.e. one saved before A1-4.  A row created since A1-4
+    is reachable exclusively through its exact request hash, so a weak
+    headline match can never override a changed context, provider, model,
+    prompt or schema.
+    """
+    import db as _dbm
+    cached = _api.find_cached_analysis(headline, event_date=effective_date,
+                                       model=model)
+    if cached is None:
+        return None
+    try:
+        with _dbm._db_session() as conn:
+            has_mapping = conn.execute(
+                "SELECT 1 FROM analysis_request_cache WHERE analysis_event_id = ?",
+                (int(cached.get("id")),)).fetchone()
+    except Exception:
+        _api._log.warning("legacy fallback eligibility check failed", exc_info=True)
+        return None
+    if has_mapping:
+        return None
+    return cached
 
 
 router = APIRouter()
@@ -662,8 +788,19 @@ def analyze(req: _api.AnalyzeRequest):
         # NOT fall through to the headline + 24h cache lookup, since
         # near-duplicate headlines within the TTL window could be
         # served instead of the requested row.  Re-analyze.
-    else:
-        cached = _api.find_cached_analysis(headline, event_date=effective_date, model=model)
+    # A1-4 lookup order: numeric id (above) -> durable request hash ->
+    # legacy headline fallback -> paid confirmation -> provider run.
+    # The basis is computed once here and reused for the provider call, so
+    # a request never renders its prompt twice.
+    basis = _build_request_basis(headline, req.event_context or "",
+                                 effective_date)
+    if req.event_id is None:
+        cached = _durable_cached_event(basis.hash)
+        if cached is not None:
+            return _api._build_cached_response(
+                cached, headline, cached.get("event_date") or effective_date,
+                force=req.force)
+        cached = _legacy_headline_cached_event(headline, effective_date, model)
         if cached is not None:
             return _api._build_cached_response(cached, headline, effective_date, force=req.force)
 
@@ -685,22 +822,12 @@ def analyze(req: _api.AnalyzeRequest):
             return _api._sanitize_floats(
                 _candidate_provenance_unavailable(headline, effective_date))
 
-    stage = _api.classify_stage(headline)
-    persistence = _api.classify_persistence(headline)
-
-    # Pre-fetch macro context for prompt injection (uses TTL cache;
-    # subsequent overlay calls below are instant cache hits).
-    _macro_ctx = ""
-    try:
-        _macro_ctx = _api.build_macro_context_for_prompt()
-    except Exception:
-        _api._log.warning("macro context pre-fetch failed (analyze)", exc_info=True)
-
-    # Sharpen mechanism wording + asset logic on import-shock /
-    # reserve-stress / external-balance cases by appending the cached
-    # country vulnerability backdrop when the headline clearly maps to
-    # a country we have a profile for.  No-op otherwise.
-    _macro_ctx = _enrich_macro_context_with_country(_macro_ctx, headline)
+    # Reuse the basis computed for the request hash — same stage,
+    # persistence and macro context the hash was derived from, so the
+    # provider receives exactly the request that identity describes.
+    stage = basis.stage
+    persistence = basis.persistence
+    _macro_ctx = basis.macro_context
 
     analysis = _call_analyze_event(headline, stage, persistence,
                                     event_context=req.event_context or "",
@@ -728,7 +855,7 @@ def analyze(req: _api.AnalyzeRequest):
 
     persistence_error, analysis_event_id, provenance = _persist_with_provenance(
         req, headline, stage, persistence, analysis, mkt, effective_date,
-        model, candidate_snapshot, _macro_ctx,
+        model, candidate_snapshot, _macro_ctx, basis,
     )
     # Linkage runs only after BOTH the events row and its provenance are
     # committed — a candidate marked analyzed without a recorded basis is
@@ -777,8 +904,18 @@ def analyze_stream(req: _api.AnalyzeRequest):
                 return
             # event_id given but row is missing — skip headline cache
             # lookup so a colliding near-duplicate isn't served.
-        else:
-            cached = _api.find_cached_analysis(headline, event_date=_effective_date[0], model=model)
+        # Same A1-4 lookup order as /analyze — the two routes must never
+        # disagree about which reuse path is authoritative.
+        basis = _build_request_basis(headline, req.event_context or "",
+                                     _effective_date[0])
+        if req.event_id is None:
+            cached = _durable_cached_event(basis.hash)
+            if cached is not None:
+                _effective_date[0] = cached.get("event_date") or _effective_date[0]
+                yield _api._sse_event("complete", _api._build_cached_response(
+                    cached, headline, _effective_date[0], force=req.force))
+                return
+            cached = _legacy_headline_cached_event(headline, _effective_date[0], model)
             if cached is not None:
                 yield _api._sse_event("complete", _api._build_cached_response(cached, headline, _effective_date[0], force=req.force))
                 return
@@ -801,20 +938,11 @@ def analyze_stream(req: _api.AnalyzeRequest):
                         headline, _effective_date[0])))
                 return
 
-        stage = _api.classify_stage(headline)
-        persistence = _api.classify_persistence(headline)
+        # Reuse the basis computed for the request hash — see /analyze.
+        stage = basis.stage
+        persistence = basis.persistence
+        _macro_ctx = basis.macro_context
         yield _api._sse_event("classify", {"headline": headline, "stage": stage, "persistence": persistence})
-
-        # Pre-fetch macro context for prompt injection (uses TTL cache).
-        _macro_ctx = ""
-        try:
-            _macro_ctx = _api.build_macro_context_for_prompt()
-        except Exception:
-            _api._log.warning("macro context pre-fetch failed (stream)", exc_info=True)
-
-        # Country vulnerability backdrop — attached only when the
-        # headline resolves to a cached profile.  See _enrich_macro_context_with_country.
-        _macro_ctx = _enrich_macro_context_with_country(_macro_ctx, headline)
 
         analysis = _call_analyze_event(headline, stage, persistence,
                                         event_context=req.event_context or "",
@@ -843,7 +971,7 @@ def analyze_stream(req: _api.AnalyzeRequest):
 
         persistence_error, analysis_event_id, provenance = _persist_with_provenance(
             req, headline, stage, persistence, analysis, mkt, effective_date,
-            model, candidate_snapshot, _macro_ctx,
+            model, candidate_snapshot, _macro_ctx, basis,
         )
         candidate_link = _link_candidate_analysis(req, analysis_event_id)
         provenance_summary = _fresh_provenance_summary(
