@@ -134,7 +134,14 @@ class _RouteBase(unittest.TestCase):
         return body
 
     def _post(self, path: str, body: dict):
+        # Fixed macro backdrop: since A1-4R the pre-confirmation lookup
+        # rebuilds its basis from LOCAL data only, and an empty test price
+        # cache would report that basis unreconstructable (also provider-free
+        # and write-free, but a different state) instead of reaching the
+        # confirmation gate these tests exist to pin.
         with patch("routes.analyze._call_analyze_event", self._fake_provider), \
+                patch.object(_api, "build_macro_context_for_prompt",
+                             return_value="Macro backdrop: fixed for tests"), \
                 patch.object(_api, "market_check",
                              return_value={"note": "", "tickers": []}):
             return self.client.post(path, json=body)

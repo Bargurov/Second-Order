@@ -568,9 +568,23 @@ def fetch_daily_cached(
     # bootstrap cycle and lets tests swap the provider via set_provider().
     from market_data import (
         get_provider,
+        local_reads_recorded,
+        note_local_read,
         provider_fetch_blocked,
         resolve_provider_identity,
     )
+
+    # Completeness recording (opt-in, off unless a caller opened a
+    # record_local_reads() sink).  "Complete" means the persisted rows already
+    # COVER the requested window — the auto_adjust trailing re-refresh is a
+    # freshness policy over days the cache already holds, not missing data, so
+    # planning with auto_adjust=False isolates true coverage.  Recording only;
+    # the value returned below is unchanged either way.
+    if local_reads_recorded():
+        note_local_read(
+            ticker,
+            complete=not _plan_fetch_ranges(req_start, req_end, cached, False),
+        )
 
     # Structural GET boundary (defense in depth beside the get_provider()
     # proxy): in a no-provider-fetch context this function is cache-only —

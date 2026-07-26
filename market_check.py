@@ -356,6 +356,28 @@ def _cache_len() -> int:
         return len(_cache_data)
 
 
+def evict_ticker_cache(tickers) -> int:
+    """Drop every memo entry for these tickers.  Returns how many were dropped.
+
+    Lets a deliberately cache-only pass leave the shared memo exactly as it
+    found it.  Without this, a no-fetch read would memoize a frame that skipped
+    the normal trailing refresh, and the next fetch-enabled caller in the same
+    TTL window would silently reuse it instead of refreshing.
+
+    Every memo key is ``<kind>:<TICKER>[:...]``, so the ticker is the second
+    colon-separated field.
+    """
+    wanted = {str(t).upper() for t in tickers if t}
+    if not wanted:
+        return 0
+    with _cache_lock:
+        doomed = [k for k in _cache_data
+                  if k.split(":")[1:2] and k.split(":")[1].upper() in wanted]
+        for k in doomed:
+            _cache_data.pop(k, None)
+    return len(doomed)
+
+
 from datetime import date as _date_type, timedelta as _timedelta
 
 # ---------------------------------------------------------------------------

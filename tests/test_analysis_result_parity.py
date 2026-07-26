@@ -126,7 +126,13 @@ class _RouteBase(unittest.TestCase):
         return b
 
     def _post(self, path, body, extra=None):
+        # Fixed macro backdrop — the exact-request reuse path rebuilds its
+        # basis from LOCAL data only since A1-4R, and an empty test price
+        # cache would otherwise report that basis unreconstructable instead
+        # of exercising the readout parity under test.
         stack = [patch("routes.analyze._call_analyze_event", self._provider),
+                 patch.object(_api, "build_macro_context_for_prompt",
+                              return_value="Macro backdrop: fixed for tests"),
                  patch.object(_api, "market_check",
                               return_value={"note": "", "tickers": []})]
         if extra:

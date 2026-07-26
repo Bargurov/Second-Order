@@ -1,0 +1,20 @@
+{
+  "_phase": "complete",
+  "status": "durable_lookup_basis_unavailable",
+  "headline": "Central bank leaves policy rate unchanged",
+  "stage": "",
+  "persistence": "",
+  "analysis": {},
+  "market": {
+    "note": "",
+    "details": {},
+    "tickers": []
+  },
+  "freshness": {},
+  "is_mock": false,
+  "event_date": "2026-01-01",
+  "analysis_failed": true,
+  "failure_reason": "exact macro basis unavailable from local cache",
+  "provider_called": false,
+  "note": "Whether a saved analysis exists for this exact request could not be determined from local data. Nothing external was contacted and nothing was written. Confirm explicitly to rebuild the basis and check again before any paid call."
+}

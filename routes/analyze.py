@@ -464,6 +464,66 @@ def _paid_confirmation_required(headline: str, effective_date: str) -> dict:
     }
 
 
+def _basis_unavailable(status: str, headline: str, effective_date: str,
+                       reason: str, note: str) -> dict:
+    """The provider-free response for a request whose basis could not be built.
+
+    Two distinct states share this envelope (``status`` says which):
+
+      * ``durable_lookup_basis_unavailable`` — the exact saved-request basis
+        could not be reconstructed from local data, so whether a saved
+        analysis exists is UNKNOWN.  It is not a verified cache miss, not a
+        provider or persistence error, and not permission to run paid work.
+      * ``analysis_basis_unavailable`` — a confirmed run could not build its
+        macro backdrop at all, so there is no honest request to send.
+
+    Shaped like a handled terminal failure (``analysis_failed`` plus a
+    human-readable ``failure_reason``, an empty market block) so the streaming
+    route can emit it as a COMPLETE terminal event rather than a truncated
+    stream.  Carries only bounded facts — no path, cache internal, credential
+    or raw exception text.
+    """
+    return {
+        "status": status,
+        "headline": headline,
+        "stage": "",
+        "persistence": "",
+        "analysis": {},
+        "market": {"note": "", "details": {}, "tickers": []},
+        "freshness": {},
+        "is_mock": False,
+        "event_date": effective_date,
+        "analysis_failed": True,
+        "failure_reason": reason,
+        "provider_called": False,
+        "note": note,
+    }
+
+
+def _durable_lookup_basis_unavailable(headline: str, effective_date: str,
+                                      reason: str | None) -> dict:
+    """Local data could not reconstruct the exact request basis."""
+    return _basis_unavailable(
+        "durable_lookup_basis_unavailable", headline, effective_date,
+        reason or "exact macro basis unavailable from local cache",
+        "Whether a saved analysis exists for this exact request could not be "
+        "determined from local data. Nothing external was contacted and "
+        "nothing was written. Confirm explicitly to rebuild the basis and "
+        "check again before any paid call.",
+    )
+
+
+def _analysis_basis_unavailable(headline: str, effective_date: str,
+                                reason: str | None) -> dict:
+    """A confirmed run could not build the backdrop its prompt requires."""
+    return _basis_unavailable(
+        "analysis_basis_unavailable", headline, effective_date,
+        reason or "macro backdrop could not be built for this request",
+        "The macro backdrop this analysis would be conditioned on could not "
+        "be built, so no provider call was made and nothing was saved.",
+    )
+
+
 def _link_candidate_analysis(req: "_api.AnalyzeRequest",
                              analysis_event_id: int | None) -> str | None:
     """Stamp one persisted analysis onto its strict inbox candidate.
@@ -657,32 +717,83 @@ def _persist_with_provenance(
 # A1-4 — durable request identity
 # ---------------------------------------------------------------------------
 
-class _RequestBasis:
-    """The prompt-relevant basis of one analysis request, computed once.
+# Two explicitly named ways to acquire the macro backdrop the request hash is
+# derived from.  They differ in ONE respect — whether reaching an external
+# market-data provider is permitted — and in nothing else: same stage and
+# persistence classifiers, same prompt renderer, same hash function.
+BASIS_READ_ONLY_LOOKUP = "read_only_lookup"
+BASIS_CONFIRMED_FRESH_RUN = "confirmed_fresh_run"
 
-    Built BEFORE the durable-cache lookup because the request hash is derived
-    from the exact rendered prompt.  ``stage`` / ``persistence`` are pure
-    keyword classifiers and ``macro_context`` reads the existing TTL cache —
-    and the same values are reused for the provider call below, so a request
-    still computes each of them exactly once.
+# Outcomes of building a basis.
+BASIS_COMPLETE = "complete"
+BASIS_LOCAL_MACRO_UNAVAILABLE = "local_macro_unavailable"
+BASIS_MACRO_FAILED = "macro_failed"
+
+
+class _RequestBasis:
+    """The prompt-relevant basis of one analysis request, and its outcome.
+
+    ``status`` is the honest part: only ``BASIS_COMPLETE`` carries a hash that
+    describes a real, reproducible request.  The other states carry no hash at
+    all, because a hash built from a knowingly-degraded prompt would look
+    exactly like an exact one while answering a different question.
     """
 
-    __slots__ = ("stage", "persistence", "macro_context", "basis", "hash")
+    __slots__ = ("stage", "persistence", "macro_context", "basis", "hash",
+                 "status", "reason")
 
-    def __init__(self, stage, persistence, macro_context, basis, request_hash):
+    def __init__(self, stage, persistence, macro_context, basis, request_hash,
+                 status=BASIS_COMPLETE, reason=None):
         self.stage = stage
         self.persistence = persistence
         self.macro_context = macro_context
         self.basis = basis
         self.hash = request_hash
+        self.status = status
+        self.reason = reason
+
+
+def _read_only_macro_context() -> "tuple[str, bool]":
+    """Build the macro backdrop from local data only.
+
+    Returns ``(macro_context, locally_complete)``.  Runs inside
+    ``no_provider_fetch()``, so the cache layer serves what it already holds
+    and refuses every gap-fill: no provider call, no refresh, no row written.
+
+    ``locally_complete`` is False as soon as one input's persisted rows did not
+    cover its window — the resulting backdrop would then be a DIFFERENT
+    backdrop from the one a normal build produces, and hashing it would
+    manufacture a false answer about the durable cache.
+
+    The pass also leaves the shared macro memo as it found it: any entry this
+    cache-only read created is dropped again, so the confirmed build below
+    still refreshes exactly as it did before this boundary existed.
+    """
+    import market_check as _mc
+    from market_data import no_provider_fetch, record_local_reads
+
+    reads: list = []
+    try:
+        with no_provider_fetch(), record_local_reads() as sink:
+            reads = sink
+            macro_context = _api.build_macro_context_for_prompt()
+    except Exception:
+        _api._log.warning("read-only macro context failed (analyze)",
+                          exc_info=True)
+        return "", False
+    finally:
+        if reads:
+            _mc.evict_ticker_cache([t for t, _ in reads])
+    return macro_context, all(ok for _, ok in reads)
 
 
 def _build_request_basis(headline: str, event_context: str,
-                         event_date: str) -> "_RequestBasis":
+                         event_date: str, *, mode: str) -> "_RequestBasis":
     """Resolve the exact request basis and its durable hash.
 
     Uses the SAME renderer the provider call uses, so a prompt change can
-    never leave a stale cache entry reachable.
+    never leave a stale cache entry reachable.  ``mode`` selects only how the
+    macro backdrop is acquired — see the two ``BASIS_*`` mode constants.
     """
     import analysis_provenance as _ap
     import analysis_request_identity as _ari
@@ -691,11 +802,25 @@ def _build_request_basis(headline: str, event_context: str,
 
     stage = _api.classify_stage(headline)
     persistence = _api.classify_persistence(headline)
-    macro_context = ""
-    try:
-        macro_context = _api.build_macro_context_for_prompt()
-    except Exception:
-        _api._log.warning("macro context pre-fetch failed (analyze)", exc_info=True)
+
+    if mode == BASIS_READ_ONLY_LOOKUP:
+        macro_context, complete = _read_only_macro_context()
+        if not complete:
+            return _RequestBasis(
+                stage, persistence, None, None, None,
+                status=BASIS_LOCAL_MACRO_UNAVAILABLE,
+                reason="exact macro basis unavailable from local cache")
+    else:
+        try:
+            macro_context = _api.build_macro_context_for_prompt()
+        except Exception:
+            _api._log.warning("macro context pre-fetch failed (analyze)",
+                              exc_info=True)
+            return _RequestBasis(
+                stage, persistence, None, None, None,
+                status=BASIS_MACRO_FAILED,
+                reason="macro backdrop could not be built for this request")
+
     macro_context = _enrich_macro_context_with_country(macro_context, headline)
 
     basis = _ari.build_request_basis(
@@ -790,19 +915,30 @@ def analyze(req: _api.AnalyzeRequest):
         # served instead of the requested row.  Re-analyze.
     # A1-4 lookup order: numeric id (above) -> durable request hash ->
     # legacy headline fallback -> paid confirmation -> provider run.
-    # The basis is computed once here and reused for the provider call, so
-    # a request never renders its prompt twice.
-    basis = _build_request_basis(headline, req.event_context or "",
-                                 effective_date)
+    # A1-4R: everything up to the confirmation gate runs on LOCAL READS ONLY.
+    # The lookup basis is built inside the no-fetch boundary, so asking
+    # "does a saved analysis already exist?" can never reach a market-data
+    # provider, refresh a cache, or write a row.
     if req.event_id is None:
-        cached = _durable_cached_event(basis.hash)
-        if cached is not None:
-            return _api._build_cached_response(
-                cached, headline, cached.get("event_date") or effective_date,
-                force=req.force)
-        cached = _legacy_headline_cached_event(headline, effective_date, model)
-        if cached is not None:
-            return _api._build_cached_response(cached, headline, effective_date, force=req.force)
+        lookup = _build_request_basis(headline, req.event_context or "",
+                                      effective_date,
+                                      mode=BASIS_READ_ONLY_LOOKUP)
+        if lookup.status == BASIS_COMPLETE:
+            cached = _durable_cached_event(lookup.hash)
+            if cached is not None:
+                return _api._build_cached_response(
+                    cached, headline,
+                    cached.get("event_date") or effective_date,
+                    force=req.force)
+            cached = _legacy_headline_cached_event(headline, effective_date, model)
+            if cached is not None:
+                return _api._build_cached_response(cached, headline, effective_date, force=req.force)
+        elif not req.confirm_paid:
+            # The exact basis could not be rebuilt locally, so this is NOT a
+            # verified miss and must not be answered by a weak headline match
+            # or by silently offering to pay.  Say what is unknown and stop.
+            return _api._sanitize_floats(_durable_lookup_basis_unavailable(
+                headline, effective_date, lookup.reason))
 
     # Cache miss.  Everything below this line costs money, so it runs only
     # on an explicit per-request confirmation.  Reading a saved analysis
@@ -822,9 +958,27 @@ def analyze(req: _api.AnalyzeRequest):
             return _api._sanitize_floats(
                 _candidate_provenance_unavailable(headline, effective_date))
 
-    # Reuse the basis computed for the request hash — same stage,
-    # persistence and macro context the hash was derived from, so the
-    # provider receives exactly the request that identity describes.
+    # Confirmed: build the basis the normal way (this MAY refresh market data
+    # under the existing provider policy), then look the durable cache up once
+    # more.  A refreshed backdrop that reconstructs an already-saved basis must
+    # reuse it — otherwise a lookup that could not run locally would bill for
+    # an analysis that already exists.
+    basis = _build_request_basis(headline, req.event_context or "",
+                                 effective_date,
+                                 mode=BASIS_CONFIRMED_FRESH_RUN)
+    if basis.status != BASIS_COMPLETE:
+        return _api._sanitize_floats(_analysis_basis_unavailable(
+            headline, effective_date, basis.reason))
+    if req.event_id is None:
+        cached = _durable_cached_event(basis.hash)
+        if cached is not None:
+            return _api._build_cached_response(
+                cached, headline, cached.get("event_date") or effective_date,
+                force=req.force)
+
+    # Reuse the basis just computed — same stage, persistence and macro
+    # context the hash was derived from, so the provider receives exactly
+    # the request that identity describes.
     stage = basis.stage
     persistence = basis.persistence
     _macro_ctx = basis.macro_context
@@ -904,20 +1058,29 @@ def analyze_stream(req: _api.AnalyzeRequest):
                 return
             # event_id given but row is missing — skip headline cache
             # lookup so a colliding near-duplicate isn't served.
-        # Same A1-4 lookup order as /analyze — the two routes must never
-        # disagree about which reuse path is authoritative.
-        basis = _build_request_basis(headline, req.event_context or "",
-                                     _effective_date[0])
+        # Same A1-4 lookup order and same A1-4R local-only boundary as
+        # /analyze — the two routes must never disagree about which reuse
+        # path is authoritative, nor about what costs external work.
         if req.event_id is None:
-            cached = _durable_cached_event(basis.hash)
-            if cached is not None:
-                _effective_date[0] = cached.get("event_date") or _effective_date[0]
-                yield _api._sse_event("complete", _api._build_cached_response(
-                    cached, headline, _effective_date[0], force=req.force))
-                return
-            cached = _legacy_headline_cached_event(headline, _effective_date[0], model)
-            if cached is not None:
-                yield _api._sse_event("complete", _api._build_cached_response(cached, headline, _effective_date[0], force=req.force))
+            lookup = _build_request_basis(headline, req.event_context or "",
+                                          _effective_date[0],
+                                          mode=BASIS_READ_ONLY_LOOKUP)
+            if lookup.status == BASIS_COMPLETE:
+                cached = _durable_cached_event(lookup.hash)
+                if cached is not None:
+                    _effective_date[0] = cached.get("event_date") or _effective_date[0]
+                    yield _api._sse_event("complete", _api._build_cached_response(
+                        cached, headline, _effective_date[0], force=req.force))
+                    return
+                cached = _legacy_headline_cached_event(headline, _effective_date[0], model)
+                if cached is not None:
+                    yield _api._sse_event("complete", _api._build_cached_response(cached, headline, _effective_date[0], force=req.force))
+                    return
+            elif not req.confirm_paid:
+                # Terminal, valid, provider-free — see the /analyze counterpart.
+                yield _api._sse_event("complete", _api._sanitize_floats(
+                    _durable_lookup_basis_unavailable(
+                        headline, _effective_date[0], lookup.reason)))
                 return
 
         # Cache miss — same explicit-confirmation gate as /analyze.  The
@@ -938,7 +1101,24 @@ def analyze_stream(req: _api.AnalyzeRequest):
                         headline, _effective_date[0])))
                 return
 
-        # Reuse the basis computed for the request hash — see /analyze.
+        # Confirmed fresh basis + second durable lookup — see /analyze.
+        basis = _build_request_basis(headline, req.event_context or "",
+                                     _effective_date[0],
+                                     mode=BASIS_CONFIRMED_FRESH_RUN)
+        if basis.status != BASIS_COMPLETE:
+            yield _api._sse_event("complete", _api._sanitize_floats(
+                _analysis_basis_unavailable(
+                    headline, _effective_date[0], basis.reason)))
+            return
+        if req.event_id is None:
+            cached = _durable_cached_event(basis.hash)
+            if cached is not None:
+                _effective_date[0] = cached.get("event_date") or _effective_date[0]
+                yield _api._sse_event("complete", _api._build_cached_response(
+                    cached, headline, _effective_date[0], force=req.force))
+                return
+
+        # Reuse the basis just computed — see /analyze.
         stage = basis.stage
         persistence = basis.persistence
         _macro_ctx = basis.macro_context

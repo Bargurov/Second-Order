@@ -510,6 +510,55 @@ class TestAnalyzeStream(APITestCase):
             "real backend handled-failure `complete` frame drifted from the "
             "shared cross-layer fixture the frontend regression imports")
 
+    def test_stream_basis_unavailable_matches_frontend_fixture(self):
+        """A1-4R parity: the local-basis-unavailable terminal is a REAL,
+        complete, valid terminal frame — not a truncated stream.
+
+        Captured from the live generator with NO seam replaced on the basis
+        path at all: the empty test price cache genuinely makes the exact
+        request basis unreconstructable, which is the state under test.  The
+        frontend regression imports this same file, so the two layers cannot
+        drift apart silently.
+        """
+        import json
+        import routes.analyze as _ra
+        import market_check as _mc
+
+        req = _api_mod.AnalyzeRequest(
+            headline="Central bank leaves policy rate unchanged",
+            event_date="2026-01-01", confirm_paid=False)
+        _mc._cache_data.clear()
+        with patch.object(_api_mod, "market_check",
+                          return_value={"note": "", "tickers": []}):
+            resp = _ra.analyze_stream(req)
+            import asyncio
+            chunks: list[str] = []
+
+            async def _drain():
+                async for chunk in resp.body_iterator:
+                    chunks.append(chunk if isinstance(chunk, str)
+                                  else chunk.decode())
+
+            asyncio.run(_drain())
+
+        events: list[dict] = []
+        for text in chunks:
+            events.extend(self._parse_sse(text))
+        self.assertEqual([e["_phase"] for e in events], ["complete"])
+        complete = events[0]
+        self.assertEqual(complete["status"], "durable_lookup_basis_unavailable")
+
+        fixture_path = os.path.join(
+            os.path.dirname(__file__), "..", "frontend", "src", "lib",
+            "__tests__", "fixtures",
+            "durable-lookup-basis-unavailable-complete.json")
+        with open(fixture_path, encoding="utf-8") as fh:
+            fixture = json.load(fh)
+        self.assertEqual(
+            complete, fixture,
+            "real backend local-basis-unavailable `complete` frame drifted "
+            "from the shared cross-layer fixture the frontend imports")
+
     def test_stream_handled_failure_reason_never_empty(self):
         """A message-less provider exception reaches `_mock(str(e))` with
         ``str(e) == ""`` → ``what_changed == "[mock: ]"`` → an empty extracted

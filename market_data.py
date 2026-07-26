@@ -647,6 +647,52 @@ def provider_fetch_blocked() -> bool:
     return _PROVIDER_FETCH_BLOCKED.get()
 
 
+# ---------------------------------------------------------------------------
+# Local-read completeness recording
+# ---------------------------------------------------------------------------
+#
+# A no-fetch read serves whatever the local cache already holds.  That is the
+# right answer for a display route, but a caller that must reconstruct an
+# EXACT prior input (the durable analysis-request basis) has to know the
+# difference between "the local cache covered the window" and "the local cache
+# was short and the refill was refused".  Both return data; only the first is
+# reproducible.  The recorder below carries that distinction out of the cache
+# layer without changing what any existing caller receives.
+
+_LOCAL_READ_RECORD: contextvars.ContextVar["list | None"] = contextvars.ContextVar(
+    "local_read_record", default=None,
+)
+
+
+@contextmanager
+def record_local_reads():
+    """Collect ``(ticker, locally_complete)`` for cache reads in this context.
+
+    Context-local like ``no_provider_fetch()``, so concurrent requests never
+    see each other's records.  Yields the sink list itself; it keeps filling
+    until the context exits.
+    """
+    sink: list = []
+    token = _LOCAL_READ_RECORD.set(sink)
+    try:
+        yield sink
+    finally:
+        _LOCAL_READ_RECORD.reset(token)
+
+
+def local_reads_recorded() -> bool:
+    """True while a ``record_local_reads()`` sink is active."""
+    return _LOCAL_READ_RECORD.get() is not None
+
+
+def note_local_read(ticker: str, *, complete: bool) -> None:
+    """Record one cache read's local completeness.  Inert with no sink."""
+    sink = _LOCAL_READ_RECORD.get()
+    if sink is None:
+        return
+    sink.append((str(ticker), bool(complete)))
+
+
 def get_provider() -> MarketDataProvider:
     """Return the currently active market-data provider.
 

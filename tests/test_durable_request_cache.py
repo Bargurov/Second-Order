@@ -116,7 +116,17 @@ class _Base(unittest.TestCase):
         return dict(FULL)
 
     def _post(self, path, body, extra=None):
+        # A fixed macro backdrop.  These tests are about request IDENTITY, and
+        # since A1-4R the lookup basis is rebuilt from LOCAL data only: with an
+        # empty price cache the route would (correctly) report the exact basis
+        # unreconstructable and never reach the identity logic under test.
+        # Pinning the backdrop makes the local basis deterministic and complete
+        # while keeping the macro context genuinely inside the hash.
+        # tests/test_analyze_local_lookup_boundary.py covers the real macro
+        # path — warm memo, cold-but-covered, partial and absent local prices.
         stack = [patch("routes.analyze._call_analyze_event", self._provider),
+                 patch.object(_api, "build_macro_context_for_prompt",
+                              return_value="Macro backdrop: fixed for tests"),
                  patch.object(_api, "market_check",
                               return_value={"note": "", "tickers": []})]
         if extra:
