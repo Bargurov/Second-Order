@@ -49,6 +49,7 @@ import {
   buildReadout,
   qualityTierLabel,
   MECHANISM_NON_CLAIM,
+  type RankedAsset,
 } from "@/lib/analysis-readout";
 import "@/styles/analyze-canvas.css";
 import { cn } from "@/lib/utils";
@@ -4082,6 +4083,23 @@ function ReadoutGroup({
   );
 }
 
+/** Ranked asset bucket — symbol in mono, rationale in muted body text.
+ *  Declared rank order is preserved; no score or weight is invented. */
+function RankedAssetList({ assets }: { assets: RankedAsset[] }) {
+  return (
+    <ul className="flex flex-col gap-1">
+      {assets.map((a) => (
+        <li key={a.symbol}>
+          <span className="font-mono text-[11px]">{a.symbol}</span>
+          {a.rationale && (
+            <span className="ml-1.5 text-on-surface-variant/65">— {a.rationale}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Inline list rendering — dense, no bullets competing with the label column. */
 function ReadoutList({ values }: { values: string[] }) {
   return (
@@ -4143,16 +4161,23 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
           </ReadoutGroup>
           <ReadoutGroup label="Transmission" available={r.mechanism.path.length > 0}
                         note={r.mechanism.pathLabel}>
-            <ol className="flex flex-col gap-1">
-              {r.mechanism.path.map((s, i) => (
-                <li key={`${s.node}-${i}`} className="flex gap-2">
-                  <span className="shrink-0 font-mono text-[10px] text-on-surface-variant/50">
-                    {String(s.step ?? i + 1).padStart(2, "0")}
+            <ol className="flex flex-col gap-1.5">
+              {r.mechanism.path.map((s) => (
+                <li key={`${s.action}-${s.sequence}`} className="flex gap-2">
+                  <span className="shrink-0 pt-px font-mono text-[10px] text-on-surface-variant/50">
+                    {String(s.sequence).padStart(2, "0")}
                   </span>
-                  <span>
-                    {s.node}
-                    {s.soWhat && (
-                      <span className="text-on-surface-variant/65"> — {s.soWhat}</span>
+                  <span className="min-w-0">
+                    {s.action}
+                    {(s.actor || s.channel || s.expectedMarketEffect || s.timing) && (
+                      <span className="mt-0.5 block font-mono text-[10px] text-on-surface-variant/55">
+                        {[
+                          s.actor,
+                          s.channel && s.channel.replace(/_/g, " "),
+                          s.expectedMarketEffect && `→ ${s.expectedMarketEffect}`,
+                          s.timing,
+                        ].filter(Boolean).join(" · ")}
+                      </span>
                     )}
                   </span>
                 </li>
@@ -4176,13 +4201,13 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
             <ReadoutList values={r.exposure.directNegative.values} />
           </ReadoutGroup>
           <ReadoutGroup label="Primary assets" available={r.exposure.primaryAssets.available}>
-            <span className="font-mono text-[11px]">{r.exposure.primaryAssets.values.join(" · ")}</span>
+            <RankedAssetList assets={r.exposure.primaryAssets.values} />
           </ReadoutGroup>
           <ReadoutGroup label="Secondary assets" available={r.exposure.secondaryAssets.available}>
-            <span className="font-mono text-[11px]">{r.exposure.secondaryAssets.values.join(" · ")}</span>
+            <RankedAssetList assets={r.exposure.secondaryAssets.values} />
           </ReadoutGroup>
           <ReadoutGroup label="Hedge / signal" available={r.exposure.hedgeOrSignal.available}>
-            <span className="font-mono text-[11px]">{r.exposure.hedgeOrSignal.values.join(" · ")}</span>
+            <RankedAssetList assets={r.exposure.hedgeOrSignal.values} />
           </ReadoutGroup>
           <ReadoutGroup label="Indirect channels" available={r.exposure.indirectChannels.available}>
             <span className="font-mono text-[11px]">{r.exposure.indirectChannels.values.join(" · ")}</span>
@@ -4192,14 +4217,21 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
         {/* 3 — Counterforces and competing explanations */}
         <ReadoutBand title="Counterforces" question="What could weaken or reverse it?">
           <ReadoutGroup label="Counterforces" available={r.counterforces.forces.available}>
-            <ul className="flex flex-col gap-1">
+            <ul className="flex flex-col gap-1.5">
               {r.counterforces.forces.values.map((f) => (
                 <li key={f.force}>
+                  <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-on-surface-variant/50">
+                    {f.kind}
+                  </span>
                   {f.force}
-                  {f.effect && <span className="text-on-surface-variant/65"> — {f.effect}</span>}
-                  {f.likelihood && (
+                  {(f.actor || f.likelihood) && (
                     <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
-                      [{f.likelihood}]
+                      [{[f.actor, f.likelihood].filter(Boolean).join(" · ")}]
+                    </span>
+                  )}
+                  {f.linkedHop && (
+                    <span className="mt-0.5 block font-mono text-[10px] text-on-surface-variant/55">
+                      interrupts: {f.linkedHop}
                     </span>
                   )}
                 </li>
@@ -4219,7 +4251,19 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
             </div>
           </ReadoutGroup>
           <ReadoutGroup label="Substitution" available={r.counterforces.substitutionBarriers.available}>
-            <ReadoutList values={r.counterforces.substitutionBarriers.values} />
+            <ul className="flex flex-col gap-0.5">
+              {r.counterforces.substitutionBarriers.values.map((b) => (
+                <li key={b.barrier}>
+                  {b.barrier}
+                  {(b.kind || b.severity) && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{[b.kind && b.kind.replace(/_/g, " "), b.severity]
+                        .filter(Boolean).join(" · ")}]
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </ReadoutGroup>
           <ReadoutGroup label="Escape path" available={r.counterforces.escapePath.available}>
             {r.counterforces.escapePath.value}
@@ -4236,11 +4280,48 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
           <ReadoutGroup label="Key falsifiers" available={r.falsifiers.keyFalsifiers.available}>
             <ReadoutList values={r.falsifiers.keyFalsifiers.values} />
           </ReadoutGroup>
-          <ReadoutGroup label="Minimum proof" available={r.falsifiers.minimumProof.available}>
-            <ReadoutList values={r.falsifiers.minimumProof.values} />
+          <ReadoutGroup label="Minimum proof" available={r.falsifiers.minimumProof.available}
+                        note="Must-see observations — presence in this list is not confirmation.">
+            <ul className="flex flex-col gap-0.5">
+              {r.falsifiers.minimumProof.values.map((p) => (
+                <li key={p.observation}>
+                  {p.observation}
+                  {(p.channel || p.threshold || p.timing) && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{[p.channel, p.threshold, p.timing].filter(Boolean).join(" · ")}]
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </ReadoutGroup>
-          <ReadoutGroup label="Breakpoints" available={r.falsifiers.criticalBreakpoints.available}>
-            <ReadoutList values={r.falsifiers.criticalBreakpoints.values} />
+          <ReadoutGroup label="Breakpoints" available={r.falsifiers.criticalBreakpoints.available}
+                        note="Fast falsifiers that break the primary reading — distinct from the slower key falsifiers above.">
+            <ul className="flex flex-col gap-1.5">
+              {r.falsifiers.criticalBreakpoints.values.map((bp) => (
+                <li key={bp.observation}>
+                  {bp.observation}
+                  {(bp.channel || bp.timing) && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{[bp.channel, bp.timing].filter(Boolean).join(" · ")}]
+                    </span>
+                  )}
+                  {(bp.condition || bp.thresholdOrObservation || bp.whyItChangesThesis
+                    || bp.linkedProofOrFalsifier) && (
+                    <span className="mt-0.5 block text-[11px] text-on-surface-variant/65">
+                      {bp.condition && <>If: {bp.condition}. </>}
+                      {bp.thresholdOrObservation && <>Watch: {bp.thresholdOrObservation}. </>}
+                      {bp.whyItChangesThesis && <>{bp.whyItChangesThesis}. </>}
+                      {bp.linkedProofOrFalsifier && (
+                        <span className="font-mono text-[10px] text-on-surface-variant/50">
+                          linked: {bp.linkedProofOrFalsifier}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </ReadoutGroup>
           <ReadoutGroup label="Status" available>
             <span className="font-mono text-[11px] text-on-surface-variant">
@@ -4251,10 +4332,37 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
 
         {/* 5 — Next evidence and resolution points */}
         <ReadoutBand title="Next evidence" question="What evidence would help resolve the mechanism?">
-          <ReadoutGroup label="By horizon" available={r.resolution.horizons.length > 0}
+          <ReadoutGroup label="By horizon"
+                        available={r.resolution.horizons.checkpoints.length > 0
+                          || r.resolution.horizons.legacy.length > 0}
                         note="Observation points, not predictions.">
-            <ul className="flex flex-col gap-0.5">
-              {r.resolution.horizons.map((h) => (
+            {r.resolution.horizons.timingProfile && (
+              <p className="mb-1 font-mono text-[10px] text-on-surface-variant/55">
+                profile: {r.resolution.horizons.timingProfile.replace(/_/g, " ")}
+              </p>
+            )}
+            <ul className="flex flex-col gap-1.5">
+              {r.resolution.horizons.checkpoints.map((h) => (
+                <li key={h.horizon} className="flex gap-2">
+                  <span className="w-8 shrink-0 pt-px font-mono text-[10px] uppercase text-on-surface-variant/50">
+                    {h.horizon}
+                  </span>
+                  <span className="min-w-0">
+                    {h.expected.length > 0 && <>{h.expected.join("; ")}</>}
+                    {h.confirmsIf.length > 0 && (
+                      <span className="mt-0.5 block text-[11px] text-on-surface-variant/65">
+                        Consistent if: {h.confirmsIf.join("; ")}
+                      </span>
+                    )}
+                    {h.falsifiesIf.length > 0 && (
+                      <span className="mt-0.5 block text-[11px] text-on-surface-variant/65">
+                        Against if: {h.falsifiesIf.join("; ")}
+                      </span>
+                    )}
+                  </span>
+                </li>
+              ))}
+              {r.resolution.horizons.legacy.map((h) => (
                 <li key={h.horizon} className="flex gap-2">
                   <span className="w-8 shrink-0 font-mono text-[10px] uppercase text-on-surface-variant/50">
                     {h.horizon}
@@ -4265,13 +4373,78 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
             </ul>
           </ReadoutGroup>
           <ReadoutGroup label="Monitor" available={r.resolution.monitorPlan.available}>
-            <ReadoutList values={r.resolution.monitorPlan.values} />
+            <div className="flex flex-col gap-1">
+              {r.resolution.monitorPlan.tell && (
+                <p>
+                  <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-on-surface-variant/50">
+                    first tell
+                  </span>
+                  {r.resolution.monitorPlan.tell.observation}
+                  {r.resolution.monitorPlan.tell.channel && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{r.resolution.monitorPlan.tell.channel}]
+                    </span>
+                  )}
+                  {r.resolution.monitorPlan.tell.whatItMeans && (
+                    <span className="mt-0.5 block text-[11px] text-on-surface-variant/65">
+                      {r.resolution.monitorPlan.tell.whatItMeans}
+                    </span>
+                  )}
+                </p>
+              )}
+              {r.resolution.monitorPlan.noCallSignals.map((s) => (
+                <p key={s.observation}>
+                  <span className="mr-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-on-surface-variant/50">
+                    no-call
+                  </span>
+                  {s.observation}
+                  {s.channel && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{s.channel}]
+                    </span>
+                  )}
+                  {s.whyNoCall && (
+                    <span className="mt-0.5 block text-[11px] text-on-surface-variant/65">
+                      {s.whyNoCall}
+                    </span>
+                  )}
+                </p>
+              ))}
+            </div>
           </ReadoutGroup>
-          <ReadoutGroup label="Confirming evidence" available={r.resolution.confirmingEvidence.available}>
-            <ReadoutList values={r.resolution.confirmingEvidence.values} />
+          <ReadoutGroup label="Confirming evidence" available={r.resolution.confirmingEvidence.available}
+                        note="Optional strengtheners to watch — not yet observed, never proof.">
+            <ul className="flex flex-col gap-0.5">
+              {r.resolution.confirmingEvidence.values.map((ev) => (
+                <li key={ev.observation}>
+                  {ev.observation}
+                  {ev.channel && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{ev.channel}]
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </ReadoutGroup>
           <ReadoutGroup label="Revisit if" available={r.resolution.evidenceToRevisit.available}>
-            <ReadoutList values={r.resolution.evidenceToRevisit.values} />
+            <ul className="flex flex-col gap-1">
+              {r.resolution.evidenceToRevisit.values.map((c) => (
+                <li key={c.condition}>
+                  {c.condition}
+                  {c.domain && (
+                    <span className="ml-1.5 font-mono text-[10px] text-on-surface-variant/45">
+                      [{c.domain}]
+                    </span>
+                  )}
+                  {c.evidenceToRevisit && (
+                    <span className="mt-0.5 block text-[11px] text-on-surface-variant/65">
+                      Revisit on: {c.evidenceToRevisit}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </ReadoutGroup>
         </ReadoutBand>
 
@@ -4289,11 +4462,19 @@ function MechanismResolutionReadout({ analysis }: { analysis: unknown }) {
             {tierLabel}
           </ReadoutGroup>
           <ReadoutGroup label="Source quality" available={r.limits.sourceQuality.available}
-                        note="Source quality is not model confidence.">
-            <span className="font-mono text-[11px]">{r.limits.sourceQuality.value}</span>
+                        note="Describes the originating report — not model confidence.">
+            <span className="font-mono text-[11px]">
+              {[
+                r.limits.sourceQuality.value?.replace(/_/g, " "),
+                r.limits.sourceSpecificity.value
+                  && `specificity: ${r.limits.sourceSpecificity.value}`,
+                r.limits.sourceUncertainty.value
+                  && `uncertainty: ${r.limits.sourceUncertainty.value}`,
+              ].filter(Boolean).join(" · ")}
+            </span>
           </ReadoutGroup>
           <ReadoutGroup label="Evidence limits" available={r.limits.evidenceLimitations.available}>
-            <ReadoutList values={r.limits.evidenceLimitations.values} />
+            {r.limits.evidenceLimitations.value}
           </ReadoutGroup>
           <ReadoutGroup label="Quality warnings" available={r.limits.qualityWarnings.available}>
             <ReadoutList values={r.limits.qualityWarnings.values} />

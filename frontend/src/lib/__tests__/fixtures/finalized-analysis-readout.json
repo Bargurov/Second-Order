@@ -1,0 +1,295 @@
+{
+  "actionability_check": {
+    "invalidation_trigger": "OFAC licence revoked or suspended before first liftings resume",
+    "max_confidence_before_confirmation": "low",
+    "required_confirmation": [
+      "WCS-WTI discount versus pre-licence level",
+      "VLO 5d relative move versus XLE",
+      "OFAC licence revoked or suspended before first liftings resume"
+    ],
+    "risk_level": "elevated",
+    "sizing_caveat": "Half-size at most until confirmation prints; full sizing only on confirmed signal.",
+    "tradable": true,
+    "why_tradable_or_not": "watch_only: causal chain is real but the read is conditional — sizable only after the listed confirmation prints."
+  },
+  "adversarial_challenge": "The licence advantage may already be priced: VLO and PBF crack-spread proxies rallied on the initial licence headline, and the WCS-WTI discount narrowed 1.2pp before any physical lifting resumed. If the volume ramp disappoints, the margin repricing reverses.",
+  "assets_to_watch": [
+    "VLO",
+    "PBF",
+    "XLE",
+    "SU",
+    "CVE"
+  ],
+  "beneficiaries": [
+    "Valero Energy",
+    "PBF Energy"
+  ],
+  "beneficiary_tickers": [
+    "VLO",
+    "PBF",
+    "XLE"
+  ],
+  "competing_thesis": {
+    "alternative_thesis": "Licence volumes stay token-sized; Gulf Coast slates barely change and the WCS-WTI discount re-widens as Canadian supply growth dominates.",
+    "evidence_favoring_alternative": [],
+    "evidence_favoring_primary": [],
+    "primary_thesis": "OFAC licence restores Chevron Venezuelan heavy-sour liftings; cheaper API 8-16 feedstock reaches Gulf Coast cokers; VLO and PBF refining margins lift while WCS sellers SU and CVE lose outlet share; confirmed if the WCS-WTI discount narrows >=1.5pp within 5d.",
+    "thesis_timing": {
+      "expected_reaction_window": "1d",
+      "follow_through_window": "5-20d",
+      "stale_after": "20d+",
+      "timing_rationale": "realized + structural + family=supply_shock"
+    }
+  },
+  "confidence": "medium",
+  "confidence_rationale": "Confidence medium: structure clean but proof/falsifier coverage too thin for a high-conviction call.",
+  "counterfactual_check": {
+    "evidence_to_watch": [
+      "OFAC licence revoked or suspended before first liftings resume",
+      "WCS-WTI discount unchanged or wider after five sessions",
+      "VLO and PBF underperform XLE over the first five sessions"
+    ],
+    "what_should_not_happen": "OFAC licence revoked or suspended before first liftings resume",
+    "why_it_would_break_thesis": "Observing this would invalidate the committed read: OFAC licence restores Chevron Venezuelan heavy-sour liftings; cheaper API 8-16 feedstock reaches Gulf Coast cokers; VLO and PBF refining margins lift while WCS sellers SU and CVE lose outlet share; confirmed if the WCS-WTI discount narrows >=1.5pp within 5d.."
+  },
+  "counterforces": [
+    {
+      "actor": "OPEC+",
+      "force": "OPEC+ raises heavy-sour export quotas, restoring alternative supply and compressing the licence advantage",
+      "kind": "counterforce",
+      "likelihood": "medium"
+    },
+    {
+      "actor": "US Treasury OFAC",
+      "chain_hop": "cuts off step 1: the licence is the regulatory gate the whole chain passes through",
+      "force": "OFAC revokes or declines to renew the licence before meaningful liftings resume",
+      "kind": "blocker",
+      "likelihood": "medium"
+    }
+  ],
+  "currency_channel": {},
+  "expected_first_order_channels": [
+    "commodities",
+    "equities"
+  ],
+  "expected_second_order_channels": [
+    "credit"
+  ],
+  "hedge_or_signal_assets": [
+    {
+      "rank": 1,
+      "rationale": "Sector control: separates refiner-specific margin effect from broad energy beta",
+      "symbol": "XLE"
+    }
+  ],
+  "hidden_mechanism": {
+    "asset_rationales": {
+      "PBF": "Chalmette and Torrance cokers run the exact heavy slate Venezuelan barrels feed",
+      "VLO": "Largest Gulf Coast coking capacity configured for the heavy-sour grades the licence restores"
+    },
+    "bottleneck_type": "commodity_quality_mismatch",
+    "channel_domain": "supply_chain",
+    "critical_breakpoints": [
+      {
+        "channel": "commodities",
+        "condition": "Treasury reverses the licence under sanctions pressure",
+        "linked_proof_or_falsifier": "key_falsifiers:0",
+        "signal": "OFAC licence revoked or renewal denied before first liftings",
+        "threshold_or_observation": "OFAC public notice withdrawing or suspending the licence",
+        "timing": "1-5d",
+        "why_it_changes_thesis": "The licence is the regulatory gate; without it no barrel moves and the margin thesis dies"
+      }
+    ],
+    "forensic_note": "Gulf Coast coking refineries are configured for heavy-sour API 8-16 crude; light-sweet is not a 1:1 substitute.",
+    "minimum_proof_set": [
+      {
+        "channel": "commodities",
+        "observation": "WCS-WTI discount versus pre-licence level",
+        "threshold": ">=1.5pp narrower",
+        "timing": "1-5d"
+      },
+      {
+        "channel": "equities",
+        "observation": "VLO 5d relative move versus XLE",
+        "threshold": ">= +2% relative",
+        "timing": "1-5d"
+      }
+    ],
+    "optional_confirming_evidence": [
+      {
+        "channel": "commodities",
+        "observation": "US Gulf Coast heavy crude import volumes in the weekly EIA print"
+      }
+    ],
+    "regime_caveats": [
+      {
+        "condition": "Crude demand holds near current levels through the licence window",
+        "domain": "credit",
+        "effect_on_thesis": "A demand downturn would compress all coking margins and swamp the feedstock advantage",
+        "evidence_to_revisit": "US refinery utilisation printing below 85% for two consecutive weeks"
+      }
+    ],
+    "source_quality": {
+      "evidence_limitations": "Licence volume caps and renewal conditions are not yet published.",
+      "source_type": "policy_action",
+      "specificity": "high",
+      "uncertainty_level": "low"
+    },
+    "substitution_escape_path": "Canadian sellers reroute WCS barrels to West Coast and Asian buyers via TMX, bypassing the Gulf Coast competition.",
+    "transmission_type": "physical_flow"
+  },
+  "horizon_checkpoints": {
+    "horizons": [
+      {
+        "confirms_if": [
+          "VLO and PBF outperform XLE on the day"
+        ],
+        "expected": [
+          "Refiner equities open firmer on licence headline"
+        ],
+        "falsifies_if": [
+          "No refiner reaction despite the licence"
+        ],
+        "horizon": "1d"
+      },
+      {
+        "confirms_if": [
+          "Discount narrows >=1.5pp versus pre-licence"
+        ],
+        "expected": [
+          "WCS-WTI discount starts narrowing"
+        ],
+        "falsifies_if": [
+          "Discount unchanged or wider"
+        ],
+        "horizon": "5d"
+      },
+      {
+        "confirms_if": [
+          "EIA shows rising Gulf heavy-sour imports"
+        ],
+        "expected": [
+          "First Venezuelan cargoes discharge at Gulf ports"
+        ],
+        "falsifies_if": [
+          "No physical liftings within the window"
+        ],
+        "horizon": "20d"
+      }
+    ],
+    "timing_profile": "delayed_pass_through"
+  },
+  "if_persists": {},
+  "key_falsifiers": [
+    "OFAC licence revoked or suspended before first liftings resume",
+    "WCS-WTI discount unchanged or wider after five sessions",
+    "VLO and PBF underperform XLE over the first five sessions"
+  ],
+  "loser_tickers": [
+    "SU",
+    "CVE"
+  ],
+  "losers": [
+    "Suncor Energy",
+    "Cenovus Energy"
+  ],
+  "mechanism_family": "supply_shock",
+  "mechanism_summary": "The primary transmission channel is a regulatory gate: the OFAC licence reopens a physical heavy-sour crude supply line into US Gulf Coast coking refineries. Gulf Coast cokers such as Valero and PBF gain feedstock optionality and margin, while Canadian heavy producers Suncor and Cenovus lose captive discount pricing on WCS barrels. The second-order repricing is a substitution effect: the WCS-WTI differential narrows as Gulf Coast buyers rotate to Venezuelan grades, compressing the discount Canadian sellers must offer to clear volumes.",
+  "minimum_proof_set": [
+    {
+      "channel": "commodities",
+      "observation": "WCS-WTI discount versus pre-licence level",
+      "threshold": ">=1.5pp narrower",
+      "timing": "1-5d"
+    },
+    {
+      "channel": "equities",
+      "observation": "VLO 5d relative move versus XLE",
+      "threshold": ">= +2% relative",
+      "timing": "1-5d"
+    }
+  ],
+  "monitor_plan": {
+    "first_decisive_tell": {
+      "channel": "commodities",
+      "observation": "First reported Venezuelan cargo fixture for a US Gulf Coast discharge port",
+      "timing": "1d",
+      "what_it_means": "Physical liftings are actually resuming, not just headline optionality"
+    },
+    "no_call_signals": [
+      {
+        "channel": "commodities",
+        "observation": "WCS-WTI discount and VLO/PBF crack proxies both flat for ten sessions",
+        "why_no_call": "Neither the primary nor the alternative reading is transmitting; the licence is market-irrelevant so far"
+      }
+    ]
+  },
+  "primary_assets": [
+    {
+      "rank": 1,
+      "rationale": "Largest Gulf Coast coking capacity for the restored heavy-sour feedstock",
+      "symbol": "VLO"
+    },
+    {
+      "rank": 2,
+      "rationale": "Highest margin sensitivity to heavy-sour feedstock cost among Gulf refiners",
+      "symbol": "PBF"
+    }
+  ],
+  "quality_tier": "watch_only",
+  "regime_conditioned_caveat": "Holds while US refinery utilisation stays above the mid-80s; a demand-led margin downturn would swamp the feedstock advantage.",
+  "secondary_assets": [
+    {
+      "rank": 1,
+      "rationale": "Loses captive Gulf Coast outlet pricing as Venezuelan barrels return",
+      "symbol": "SU"
+    }
+  ],
+  "substitution_barriers": [
+    {
+      "barrier": "Gulf Coast coking units are configured for API 8-16 heavy-sour crude; light-sweet grades are not a 1:1 substitute",
+      "kind": "physical_sole_source",
+      "severity": "high"
+    },
+    {
+      "barrier": "Jones Act tanker availability limits how quickly alternative domestic barrels can reach Gulf Coast berths",
+      "kind": "unclassified",
+      "severity": "medium"
+    }
+  ],
+  "transmission_chain": [
+    "OFAC licence issued",
+    "Gulf Coast cokers rotate feedstock",
+    "WCS-WTI differential narrows"
+  ],
+  "transmission_path": [
+    {
+      "action": "US Treasury OFAC issues a 6-month specific licence authorising Chevron Venezuelan crude liftings",
+      "actor": "US Treasury OFAC",
+      "channel": "regulatory",
+      "expected_market_effect": "Heavy-sour feedstock supply to the US Gulf Coast increases within the licence window",
+      "hop": "US Treasury OFAC issues a 6-month specific licence authorising Chevron Venezuelan crude liftings",
+      "timing": "1-5d"
+    },
+    {
+      "action": "Gulf Coast coking refiners Valero and PBF rotate feedstock slates toward discounted Venezuelan heavy-sour grades",
+      "actor": "Valero, PBF",
+      "channel": "supply",
+      "expected_market_effect": "Coking margins for VLO and PBF widen on cheaper feedstock",
+      "hop": "Gulf Coast coking refiners Valero and PBF rotate feedstock slates toward discounted Venezuelan heavy-sour grades",
+      "timing": "5-20d"
+    },
+    {
+      "action": "Canadian heavy-sour sellers cut the WCS discount to keep Gulf Coast outlet share against Venezuelan barrels",
+      "actor": "Suncor, Cenovus",
+      "channel": "pricing_power",
+      "expected_market_effect": "WCS-WTI discount narrows; SU and CVE realised pricing weakens",
+      "hop": "Canadian heavy-sour sellers cut the WCS discount to keep Gulf Coast outlet share against Venezuelan barrels",
+      "timing": "5-20d"
+    }
+  ],
+  "validation_warnings": [
+    "evidence_quality: watch_only"
+  ],
+  "what_changed": "The US Treasury issued a 6-month OFAC licence allowing Chevron to resume lifting Venezuelan heavy-sour crude for delivery to US Gulf Coast refiners."
+}

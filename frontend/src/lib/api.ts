@@ -262,11 +262,17 @@ export interface FreshnessBlock {
 
 export type Confidence = "low" | "medium" | "high";
 
-/** One hop in the structured transmission path — actor + channel + step. */
+/** One hop in the structured transmission path — actor + channel + step.
+ *  The finalizer also carries the structural-chain fields when the model
+ *  emitted them: `action` (alias of `hop`), the concrete market landing,
+ *  and an optional hop timing from the 1d/1-5d/5-20d/20d+ vocabulary. */
 export interface TransmissionPathHop {
   hop: string;
   channel: string;
   actor: string;
+  action?: string;
+  expected_market_effect?: string;
+  timing?: string;
 }
 
 /** One entry in the substitution-barrier list. */
@@ -276,11 +282,16 @@ export interface SubstitutionBarrier {
   severity: "low" | "medium" | "high" | string;
 }
 
-/** One entry in the counterforces list. */
+/** One entry in the counterforces list.  `kind` distinguishes a force that
+ *  weakens the thesis after it transmits (`counterforce`, the default) from
+ *  one that interrupts the transmission chain itself (`blocker`); a blocker
+ *  may carry a free-text `chain_hop` pointer to the step it hits. */
 export interface Counterforce {
   force: string;
   actor: string;
   likelihood: "low" | "medium" | "high" | string;
+  kind?: "counterforce" | "blocker" | string;
+  chain_hop?: string;
 }
 
 export interface AnalysisDetail {
