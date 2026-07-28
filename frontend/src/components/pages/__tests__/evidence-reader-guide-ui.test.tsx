@@ -21,6 +21,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { EvidenceOverview } from "../evidence-overview";
 import { qk } from "@/lib/queryKeys";
+import { REPRESENTATIVE_LIVE_CASE_CANDIDATE_ID } from "@/components/ui/representative-live-case";
 import { EVIDENCE_GLOSSARY } from "@/lib/evidence-reader-guide";
 import { missionJFixture } from "@/components/ui/__tests__/mission-j-fixture";
 import { missionIFixture } from "@/components/ui/__tests__/mission-i-fixture";
@@ -208,6 +209,12 @@ describe("EvidenceOverview — reviewer guide disclosure (M3)", () => {
         JSON.stringify(qk.missionGEvidence()),
         JSON.stringify(qk.missionIEvidence()),
         JSON.stringify(qk.missionJEvidence()),
+        // A4 — the Representative Live Case orientation read (provider-free
+        // GET /analysis/representative-case/{id}); the page's only
+        // non-evidence query, reconciled here exactly.
+        JSON.stringify(
+          qk.representativeCase(REPRESENTATIVE_LIVE_CASE_CANDIDATE_ID),
+        ),
       ].sort(),
     );
   });

@@ -3657,6 +3657,30 @@ export interface EventDossierSourceRef {
 /** One ledger row of the index — identity and explicit states only;
  *  the contract exposes no response, percentile, or aggregate label at
  *  this level. */
+/** Availability states for the representative-case orientation read. */
+export type RepresentativeCaseAvailability =
+  | "AVAILABLE"
+  | "CASE_UNLINKED"
+  | "CASE_NOT_FOUND"
+  | "SAVED_ANALYSIS_UNAVAILABLE"
+  | "PROVENANCE_UNAVAILABLE"
+  | "INVALID";
+
+/** GET /analysis/representative-case/{candidate_id} — orientation fields
+ *  only; the full saved analysis is never carried by this contract. */
+export interface RepresentativeCase {
+  availability: RepresentativeCaseAvailability;
+  candidate_id: string;
+  analysis_event_id: number | null;
+  headline?: string | null;
+  event_date?: string | null;
+  /** Source identities from the CAPTURED provenance snapshot. */
+  sources?: string[];
+  quality_tier?: string | null;
+  /** A1-2 basis status token (see analysis-provenance labels). */
+  basis_status?: string | null;
+}
+
 export interface EventDossierIndexEntry {
   candidate_id: string;
   family: EventDossierFamily;
@@ -4059,6 +4083,15 @@ export const api = {
 
   missionJEvidence: () =>
     request<MissionJEvidenceSummary>("/evidence/mission-j"),
+
+  /** Representative live case — resolves one immutable candidate identity
+   *  to its linked saved analysis for the Evidence Overview entry point.
+   *  Provider-free, write-free DB read; an unlinked or unknown identity is
+   *  an explicit availability state, never a substitute case. */
+  representativeCase: (candidateId: string) =>
+    request<RepresentativeCase>(
+      `/analysis/representative-case/${encodeURIComponent(candidateId)}`,
+    ),
 
   /** Universal event dossier index — the complete 97-event published
    *  historical universe in publication order.  Read-only endpoint backed

@@ -237,7 +237,7 @@ export default function App() {
                     />
                   )}
                   {page === "cases" && <CaseLibrary onOpenCase={openCase} />}
-                  {page === "evidence" && <EvidenceOverview />}
+                  {page === "evidence" && <EvidenceOverview onAnalyze={analyzeHeadline} />}
                   {page === "backtest" && <Backtest />}
                   {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
                   {page === "demo" && <SectionCDemo />}

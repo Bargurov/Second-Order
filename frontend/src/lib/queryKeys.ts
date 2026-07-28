@@ -40,6 +40,8 @@ export const qk = {
   missionGEvidence:       () => ["evidence", "mission-g"] as const,
   missionIEvidence:       () => ["evidence", "mission-i"] as const,
   missionJEvidence:       () => ["evidence", "mission-j"] as const,
+  representativeCase:     (candidateId: string) =>
+    ["analysis", "representative-case", candidateId] as const,
   eventDossierIndex:      () => ["evidence", "event-dossiers"] as const,
   eventDossierDetail:     (candidateId: string) =>
     ["evidence", "event-dossiers", candidateId] as const,

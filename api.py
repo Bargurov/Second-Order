@@ -51,6 +51,7 @@ from db import (
     get_confidence_calibration_stats,
     events_db_override, db_binding_is_live, get_db_path,
     link_candidate_analysis, load_analysis_result_snapshot,
+    get_candidate_analysis_link, load_analysis_provenance,
 )
 from analysis_result_snapshot import apply_result_snapshot
 from classify import classify_stage, classify_persistence
@@ -4006,6 +4007,95 @@ def _demo_evidence_summary_endpoint():
             _resolve_demo_artifact_dir() / _DEMO_FREEZE_ARTIFACT_FILENAME
         ),
     )
+
+
+_REPRESENTATIVE_CASE_ID_RE = re.compile(r"^aei-(\d+)-([0-9a-f]{8})$")
+
+
+@app.get("/analysis/representative-case/{candidate_id}")
+def _representative_case_endpoint(candidate_id: str):
+    """Resolve one immutable candidate identity to its linked saved analysis.
+
+    A provider-free, write-free orientation read for the Evidence Overview
+    "Representative Live Case" entry point.  Deliberately NOT under
+    ``/evidence/*`` — that lane stays tracked-only.  Returns only the fields
+    the entry point displays; never the result snapshot body.  A missing or
+    unlinked identity is an explicit availability state, never a substitute
+    case, and nothing here can trigger generation or repair.
+    """
+    from event_inbox import candidate_event_id as _cand_id
+
+    def _state(availability: str, **extra) -> dict:
+        return {"availability": availability, "candidate_id": candidate_id,
+                "analysis_event_id": None, **extra}
+
+    m = _REPRESENTATIVE_CASE_ID_RE.match(candidate_id or "")
+    if not m:
+        return _state("INVALID")
+    parent_cluster_id = int(m.group(1))
+
+    # Recover the identity key: the id embeds a digest of the title_key, so
+    # scan the registry keys recorded for this cluster and match exactly.
+    try:
+        import db as _dbm
+        with _dbm._db_session() as conn:
+            keys = [r[0] for r in conn.execute(
+                "SELECT DISTINCT title_key FROM headline_registry"
+                " WHERE cluster_id = ?", (parent_cluster_id,)).fetchall()]
+    except Exception:
+        _log.warning("representative-case registry read failed", exc_info=True)
+        keys = []
+    title_key = next((k for k in keys
+                      if _cand_id(parent_cluster_id, k) == candidate_id), None)
+    if title_key is None:
+        return _state("CASE_NOT_FOUND")
+
+    link = get_candidate_analysis_link(parent_cluster_id, title_key)
+    if link.get("status") == "conflict":
+        return _state("INVALID")
+    event_id = link.get("analysis_event_id")
+    if link.get("status") != "analyzed" or event_id is None:
+        return _state("CASE_UNLINKED")
+
+    event = load_event_by_id(int(event_id))
+    if event is None:
+        return _state("SAVED_ANALYSIS_UNAVAILABLE")
+
+    provenance = provenance_summary_for_event(int(event_id))
+    basis_status = (provenance or {}).get("status")
+
+    # Source identities come from the CAPTURED provenance snapshot when it
+    # exists — the exact records the analysis was produced from.
+    sources: list = []
+    try:
+        stored = load_analysis_provenance(int(event_id))
+        if stored:
+            snap = stored.get("candidate_snapshot")
+            if isinstance(snap, str):
+                snap = _json.loads(snap)
+            if isinstance(snap, dict):
+                sources = [s for s in (snap.get("sources") or [])
+                           if isinstance(s, str)]
+    except Exception:
+        _log.warning("representative-case provenance read failed",
+                     exc_info=True)
+
+    snapshot = load_analysis_result_snapshot(int(event_id))
+    base = {
+        "candidate_id": candidate_id,
+        "analysis_event_id": int(event_id),
+        "headline": event.get("headline"),
+        "event_date": event.get("event_date"),
+        "sources": sources,
+        "quality_tier": ((snapshot or {}).get("result") or {}).get(
+            "quality_tier"),
+        "basis_status": basis_status,
+    }
+    if snapshot is None:
+        return {"availability": "SAVED_ANALYSIS_UNAVAILABLE", **base}
+    if basis_status in (None, "LEGACY_PROVENANCE_UNAVAILABLE"):
+        return {"availability": "PROVENANCE_UNAVAILABLE", **base}
+    return {"availability": "AVAILABLE", **base}
 
 
 @app.get("/evidence/summary")

@@ -19,6 +19,7 @@ import { MissionGEvidenceCard } from "@/components/ui/mission-g-evidence-card";
 import { MissionIEvidenceCard } from "@/components/ui/mission-i-evidence-card";
 import { MissionJEvidenceCard } from "@/components/ui/mission-j-evidence-card";
 import { UniversalEventDossiersCard } from "@/components/ui/universal-event-dossiers";
+import { RepresentativeLiveCase } from "@/components/ui/representative-live-case";
 import {
   buildResearchRecordMemo,
   downloadResearchRecordMemo,
@@ -140,7 +141,14 @@ function Verdict({ children }: { children: React.ReactNode }) {
 // is a DIFFERENT denominator answering a DIFFERENT question — not a competing
 // estimate of one number.
 
-export function EvidenceOverview() {
+export function EvidenceOverview({
+  onAnalyze,
+}: {
+  /** Opens the normal saved-analysis experience (numeric reopen); supplied
+   *  by the App shell.  Absent in isolated renders — the band then shows
+   *  the case without a navigation action. */
+  onAnalyze?: (headline: string, opts: { eventId: number }) => void;
+} = {}) {
   // H3 — Mission G record from the tracked-only GET /evidence/mission-g
   // contract. Long staleTime: the payload only changes on a tracked commit.
   const {
@@ -299,6 +307,17 @@ export function EvidenceOverview() {
           frozen or tracked provenance, and dated snapshots are labeled per section.
         </p>
       </header>
+
+      {/* A4 — Representative Live Case: one restrained orientation band
+          between the introduction and the reviewer guide.  Resolves the one
+          published live case from its immutable candidate identity through
+          the provider-free orientation read; links to the normal saved
+          analysis; renders explicit unavailable states.  Product framing —
+          never pooled with the evidence lanes below and never a research
+          conclusion. */}
+      <div className="mb-3">
+        <RepresentativeLiveCase onOpenAnalysis={onAnalyze} />
+      </div>
 
       {/* M3 — reviewer guide: one compact native disclosure, collapsed by
           default, between the page introduction and the denominator ledger.
