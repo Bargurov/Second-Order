@@ -509,7 +509,12 @@ _API_KEY_PLACEHOLDERS = {
     "changeme",
 }
 _DEFAULT_PROVIDER = "anthropic"
-_DEFAULT_MODEL = "claude-sonnet-4-20250514"
+# Runtime default when ANTHROPIC_MODEL is unset.  claude-sonnet-4-20250514
+# was retired by the API (404 model_not_found, observed 2026-07-27); the
+# replacement was verified against the live Models API and four authorized
+# generations before this default changed.  Historical saved analyses keep
+# whatever model produced them — this constant never rewrites provenance.
+_DEFAULT_MODEL = "claude-sonnet-4-6"
 _DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 _PROVIDERS = {"anthropic", "openai"}
 
