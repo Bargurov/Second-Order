@@ -3673,7 +3673,13 @@ export interface RepresentativeCase {
   candidate_id: string;
   analysis_event_id: number | null;
   headline?: string | null;
-  event_date?: string | null;
+  /** SOURCE occurrence date (YYYY-MM-DD) from immutable saved provenance
+   *  (candidate first-seen).  Never the saved analysis-record date, and
+   *  never re-derived from the mutable live registry. */
+  occurrence_date?: string | null;
+  /** "provenance_first_seen" when the date above came from immutable saved
+   *  provenance; "unavailable" when provenance captured no date. */
+  occurrence_date_basis?: string | null;
   /** Source identities from the CAPTURED provenance snapshot. */
   sources?: string[];
   quality_tier?: string | null;

@@ -27,7 +27,8 @@ const AVAILABLE: RepresentativeCase = {
   headline:
     "Ambassador Greer Issues Statement on President Trump Imposing " +
     "Section 338 Tariffs on Canada",
-  event_date: "2026-07-20",
+  occurrence_date: "2026-07-20",
+  occurrence_date_basis: "provenance_first_seen",
   sources: ["USTR Trade Policy"],
   quality_tier: "watch_only",
   basis_status: "VERIFIED_CURRENT",
@@ -40,11 +41,33 @@ function html(state = viewStateFor(AVAILABLE, false, false)) {
 }
 
 describe("available case", () => {
-  it("renders the headline, date and official USTR source", () => {
+  it("renders the headline, occurrence date and official USTR source", () => {
     const out = html();
     expect(out).toContain("Section 338 Tariffs on Canada");
+    expect(out).toContain("occurred");
     expect(out).toContain("2026-07-20");
     expect(out).toContain("source: USTR Trade Policy");
+  });
+
+  it("never renders the analysis-record date as the event date", () => {
+    // The saved record was written 2026-07-28; only the provenance
+    // occurrence date may appear as the case's date.
+    expect(html()).not.toContain("2026-07-28");
+  });
+
+  it("an unavailable occurrence date is stated, not substituted", () => {
+    const out = html(
+      viewStateFor(
+        { ...AVAILABLE, occurrence_date: null,
+          occurrence_date_basis: "unavailable" },
+        false,
+        false,
+      ),
+    );
+    expect(out).toContain("occurrence date unavailable");
+    expect(out).not.toContain("2026-07-28");
+    // The case still resolves and the CTA still works.
+    expect(out).toContain("Open full analysis");
   });
 
   it("renders tier and basis as review language, never raw tokens", () => {

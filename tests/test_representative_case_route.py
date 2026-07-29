@@ -89,6 +89,7 @@ class _Base(unittest.TestCase):
                 title_key=_KEY,
                 candidate_snapshot={"headline": _HEADLINE,
                                     "sources": ["USTR Trade Policy"],
+                                    "first_seen_at": "2026-07-20T21:00:00",
                                     "record_count": 1, "records": []},
                 candidate_context_snapshot="Summary: official statement",
                 provider="anthropic", model="claude-sonnet-4-6",
@@ -158,7 +159,14 @@ class TestLinkedCaseResolves(_Base):
         self.assertEqual(body.get("candidate_id"), _CID)
         self.assertEqual(body.get("analysis_event_id"), eid)
         self.assertEqual(body.get("headline"), _HEADLINE)
-        self.assertEqual(body.get("event_date"), "2026-07-20")
+        self.assertEqual(body.get("occurrence_date"), "2026-07-20")
+        self.assertEqual(body.get("occurrence_date_basis"),
+                         "provenance_first_seen")
+        # The saved analysis-record date must never be relabeled as the
+        # event/occurrence date.
+        self.assertNotEqual(body.get("occurrence_date"),
+                            body.get("analysis_record_date") or "2026-07-28")
+        self.assertNotIn("event_date", body)
         self.assertEqual(body.get("sources"), ["USTR Trade Policy"])
         self.assertEqual(body.get("quality_tier"), "watch_only")
         self.assertIn(body.get("basis_status"),
@@ -226,3 +234,72 @@ class TestUnavailableStatesAreExplicit(_Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOccurrenceDateSemantics(_Base):
+    """A4R — the band's date is the SOURCE occurrence date from immutable
+    saved provenance, never the saved analysis-record date, and never a value
+    re-derived from the mutable live registry."""
+
+    def test_occurrence_date_comes_from_immutable_provenance(self):
+        self._publish()
+        body = self._get(_CID).json()
+        self.assertEqual(body.get("occurrence_date"), "2026-07-20")
+        self.assertEqual(body.get("occurrence_date_basis"),
+                         "provenance_first_seen")
+
+    def test_a_changed_registry_cannot_rewrite_the_occurrence_date(self):
+        self._publish()
+        conn = sqlite3.connect(self._tmp)
+        conn.execute("UPDATE headline_registry SET first_seen_at = ?,"
+                     " last_seen_at = ? WHERE title_key = ?",
+                     ("2026-09-09T00:00:00", "2026-09-09T00:00:00", _KEY))
+        conn.execute("UPDATE news_clusters SET latest_published_at = ?,"
+                     " updated_at = ? WHERE id = ?",
+                     ("2026-09-09T00:00:00", "2026-09-09T00:00:00", _PARENT))
+        conn.commit()
+        conn.close()
+        body = self._get(_CID).json()
+        self.assertEqual(body.get("occurrence_date"), "2026-07-20",
+                         "mutable registry state rewrote the saved "
+                         "occurrence date")
+
+    def test_missing_provenance_date_is_explicitly_unavailable(self):
+        # Provenance exists but captured no first_seen — the route must say
+        # so, not silently relabel events.event_date as the occurrence date.
+        import analysis_provenance as ap2
+
+        def undated(i):
+            return ap2.build_provenance(
+                analysis_event_id=i, parent_cluster_id=_PARENT,
+                title_key=_KEY,
+                candidate_snapshot={"headline": _HEADLINE,
+                                    "sources": ["USTR Trade Policy"],
+                                    "record_count": 1, "records": []},
+                candidate_context_snapshot="ctx",
+                provider="anthropic", model="claude-sonnet-4-6",
+                system_prompt_snapshot="s",
+                rendered_user_prompt_snapshot="p",
+                created_at="2026-07-28T00:00:00",
+                macro_context_snapshot="m", stage="realized",
+                persistence="structural")
+
+        basis = ari.build_request_basis(
+            provider="anthropic", model="claude-sonnet-4-6",
+            system_prompt="s", rendered_user_prompt="p-undated",
+            prompt_version="pv", schema_version="sv",
+            event_date="2026-07-20")
+        eid, _ = _db.save_event_with_analysis_provenance(
+            {"headline": _HEADLINE, "stage": "realized",
+             "persistence": "structural", "event_date": "2026-07-28",
+             "mechanism_summary": "m", "what_changed": "w",
+             "confidence": "medium", "model": "claude-sonnet-4-6"},
+            undated,
+            lambda i: ars.build_result_snapshot(_ANALYSIS),
+            lambda i: ari.request_mapping_record(basis))
+        _db.link_candidate_analysis(_PARENT, _KEY, int(eid),
+                                    "2026-07-28T00:00:00")
+        body = self._get(_CID).json()
+        self.assertIsNone(body.get("occurrence_date"))
+        self.assertEqual(body.get("occurrence_date_basis"), "unavailable")
+        self.assertNotIn("event_date", body)

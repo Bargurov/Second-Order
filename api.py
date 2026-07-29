@@ -4067,6 +4067,7 @@ def _representative_case_endpoint(candidate_id: str):
     # Source identities come from the CAPTURED provenance snapshot when it
     # exists — the exact records the analysis was produced from.
     sources: list = []
+    stored = None
     try:
         stored = load_analysis_provenance(int(event_id))
         if stored:
@@ -4080,12 +4081,27 @@ def _representative_case_endpoint(candidate_id: str):
         _log.warning("representative-case provenance read failed",
                      exc_info=True)
 
+    # Occurrence date: the SOURCE first-seen instant captured in immutable
+    # saved provenance.  Never the saved events.event_date — in this flow
+    # that is the analysis-record date, and relabeling it as the event date
+    # misstates when the event occurred.  Never re-derived from the mutable
+    # live registry either: the saved case's date must not move when feeds
+    # refresh.  Absent provenance date => explicitly unavailable.
+    occurrence_date = None
+    occurrence_basis = "unavailable"
+    if stored:
+        first_seen = (stored.get("candidate_first_seen_at") or "").strip()
+        if len(first_seen) >= 10:
+            occurrence_date = first_seen[:10]
+            occurrence_basis = "provenance_first_seen"
+
     snapshot = load_analysis_result_snapshot(int(event_id))
     base = {
         "candidate_id": candidate_id,
         "analysis_event_id": int(event_id),
         "headline": event.get("headline"),
-        "event_date": event.get("event_date"),
+        "occurrence_date": occurrence_date,
+        "occurrence_date_basis": occurrence_basis,
         "sources": sources,
         "quality_tier": ((snapshot or {}).get("result") or {}).get(
             "quality_tier"),
