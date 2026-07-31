@@ -144,6 +144,33 @@ describe("deriveValidationStatus", () => {
     expect(s!.detail).toMatch(/not refresh/i);
   });
 
+  // Failed refresh attempt (A5A-R) — a refresh that obtained zero usable
+  // data must present an explicit failed state, never a success label.
+  it("labels stale_refresh_failed as an explicit failed attempt", () => {
+    const s = deriveValidationStatus(
+      makeMarket({
+        market_check_staleness: "stale_refresh_failed",
+        last_market_check_at: isoMinutesAgo(90 * 60),
+      }),
+      null,
+      NOW,
+    );
+    expect(s).not.toBeNull();
+    expect(s!.label).toBe("Refresh failed");
+    expect(s!.tone).toBe("stale");
+    expect(s!.detail).toMatch(/no market data|stored .*retained/i);
+  });
+
+  it("labels legacy_refresh_failed the same way", () => {
+    const s = deriveValidationStatus(
+      makeMarket({ market_check_staleness: "legacy_refresh_failed" }),
+      null,
+      NOW,
+    );
+    expect(s).not.toBeNull();
+    expect(s!.label).toBe("Refresh failed");
+  });
+
   // Refreshed variants
   it("returns refreshed tone for stale_refreshed", () => {
     const s = deriveValidationStatus(

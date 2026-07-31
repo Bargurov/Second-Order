@@ -92,6 +92,21 @@ export function deriveValidationStatus(
     };
   }
 
+  // 2c. Failed refresh attempt (A5A-R): a refresh ran but zero symbols
+  // returned usable data — an explicit failed state, never a success
+  // label; the stored data and its original stamp remain.
+  if (
+    staleness === "stale_refresh_failed" ||
+    staleness === "legacy_refresh_failed"
+  ) {
+    return {
+      label: "Refresh failed",
+      tone: "stale",
+      age: mins != null ? formatAge(mins) : null,
+      detail: "No market data returned — stored market data retained",
+    };
+  }
+
   // 3. Just refreshed (stale_refreshed, legacy_refreshed, forced_refreshed)
   if (
     staleness === "stale_refreshed" ||

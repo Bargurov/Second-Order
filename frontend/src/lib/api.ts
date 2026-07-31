@@ -222,6 +222,9 @@ export interface MarketFreshness {
    *  "stale_refreshed"  — refresh window exceeded → just re-fetched
    *  "legacy_refreshed" — row pre-dated the freshness column
    *  "forced_refreshed" — force=True bypassed the freeze cutoff
+   *  "stale_refresh_failed" / "legacy_refresh_failed" — a refresh was
+   *                       attempted but ZERO symbols returned usable
+   *                       data; stored values and stamp retained (A5A-R)
    *  "frozen"           — archived, not refreshed (no force)
    *  "error"            — upstream failure, stored payload returned */
   market_check_staleness?:
@@ -231,6 +234,8 @@ export interface MarketFreshness {
     | "stale_refreshed"
     | "legacy_refreshed"
     | "forced_refreshed"
+    | "stale_refresh_failed"
+    | "legacy_refresh_failed"
     | "frozen"
     | "error";
   /** Age of the underlying event in calendar days (>= 0). */
@@ -1330,12 +1335,16 @@ export interface BacktestResult {
   outcomes: BacktestOutcome[];
   score: { supporting: number; total: number } | null;
   /** Result of the freshness layer for the backtest pull.  Omitted
-   *  on the legacy fallback path when the freshness refresh raised. */
+   *  on the legacy fallback path when the freshness refresh raised.
+   *  "*_refresh_failed": the pull attempted a refresh but zero symbols
+   *  returned usable data — stored values and stamp retained (A5A-R). */
   market_check_staleness?:
     | "fresh"
     | "stale_refreshed"
     | "legacy_refreshed"
     | "forced_refreshed"
+    | "stale_refresh_failed"
+    | "legacy_refresh_failed"
     | "frozen";
   last_market_check_at?: string | null;
   error?: string;

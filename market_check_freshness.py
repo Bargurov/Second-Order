@@ -366,6 +366,26 @@ def _merge_followup_into_stored(
     return out
 
 
+def _usable_refresh_rows(rows: Any) -> int:
+    """Count provider result rows carrying a usable calculated update.
+
+    A row is usable only when at least one of its calculated return
+    windows is an actual number — a normally-returning provider call
+    whose rows are all ``None`` acquired nothing.  The predicate reads
+    the CALCULATED output fields, never "the function returned" or "a
+    ticker key exists" (A5A-R).
+    """
+    n = 0
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        if any(r.get(k) is not None
+               for k in ("return_1d", "return_5d", "return_20d",
+                         "return_60d")):
+            n += 1
+    return n
+
+
 # ---------------------------------------------------------------------------
 # Public: imperative refresh
 # ---------------------------------------------------------------------------
@@ -471,9 +491,13 @@ def refresh_market_for_saved_event(
             market_check_fn = _default_market_check
 
     event_date = event.get("event_date")
+    attempted = False
+    usable = 0
     try:
         if event_date and stored_tickers:
+            attempted = True
             followup = followup_check_fn(stored_tickers, event_date)
+            usable = _usable_refresh_rows(followup)
             new_tickers = _merge_followup_into_stored(stored_tickers, followup)
             new_note = stored_note
         else:
@@ -494,7 +518,9 @@ def refresh_market_for_saved_event(
                 new_tickers = stored_tickers
                 new_note = stored_note
             else:
+                attempted = True
                 mkt = market_check_fn(bens, losers, event_date=None)
+                usable = _usable_refresh_rows(mkt.get("tickers"))
                 new_tickers = mkt.get("tickers") or stored_tickers
                 new_note = mkt.get("note") or stored_note
     except Exception:
@@ -504,6 +530,24 @@ def refresh_market_for_saved_event(
             exc_info=True,
         )
         return base_payload
+
+    # A5A-R: a refresh may stamp, persist, and claim "*_refreshed" only
+    # when the attempt returned at least one usable calculated update.  A
+    # normally-returning attempt whose rows are all empty acquired
+    # NOTHING — stamping it would falsely mark stale data as freshly
+    # checked and suppress the next real refresh, so the stored payload
+    # and stamp are returned untouched under an explicit failed-attempt
+    # label.  (Thrown provider errors take the except-branch above; the
+    # no-symbols branch never attempts, so its legacy stamp behaviour is
+    # deliberately preserved.)
+    if attempted and usable == 0:
+        failed = dict(base_payload)
+        failed["market_check_staleness"] = (
+            staleness["status"] + "_refresh_failed")
+        failed["freshness_reason"] = (
+            "refresh attempted: no usable market data returned; "
+            "stored market data retained")
+        return failed
 
     new_last_check = now_dt.replace(microsecond=0).isoformat()
 
