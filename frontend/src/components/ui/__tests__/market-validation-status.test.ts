@@ -115,6 +115,35 @@ describe("deriveValidationStatus", () => {
     expect(s.tone).toBe("frozen");
   });
 
+  // Stored-only view (A5A) — a stale/legacy saved row is served AS SAVED;
+  // the badge must state that honestly instead of hiding or relabeling it.
+  it("labels staleness=stale as stale stored data, never as refreshed", () => {
+    const s = deriveValidationStatus(
+      makeMarket({
+        market_check_staleness: "stale",
+        last_market_check_at: isoMinutesAgo(90 * 60),
+      }),
+      null,
+      NOW,
+    );
+    expect(s).not.toBeNull();
+    expect(s!.tone).toBe("stale");
+    expect(s!.label).toBe("Stale");
+    expect(s!.detail).toMatch(/not refresh/i);
+  });
+
+  it("labels staleness=legacy without a check timestamp as unchecked, not hidden", () => {
+    const s = deriveValidationStatus(
+      makeMarket({ market_check_staleness: "legacy" }),
+      null,
+      NOW,
+    );
+    expect(s).not.toBeNull();
+    expect(s!.tone).toBe("stale");
+    expect(s!.label).toBe("Unchecked");
+    expect(s!.detail).toMatch(/not refresh/i);
+  });
+
   // Refreshed variants
   it("returns refreshed tone for stale_refreshed", () => {
     const s = deriveValidationStatus(

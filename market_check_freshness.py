@@ -379,6 +379,7 @@ def refresh_market_for_saved_event(
     followup_check_fn: Optional[Any] = None,
     market_check_fn: Optional[Any] = None,
     persist_fn: Optional[Any] = None,
+    allow_refresh: bool = True,
 ) -> dict[str, Any]:
     """Return a market block for a saved event, refreshing it if stale.
 
@@ -390,6 +391,13 @@ def refresh_market_for_saved_event(
         ``last_market_check_at``.
       * Fresh / frozen (unforced) rows return immediately with the stored
         payload unchanged — no provider call, no DB write.
+      * ``allow_refresh=False`` extends that stored-only behaviour to EVERY
+        row: stale/legacy rows return the stored payload labelled with their
+        truthful ``stale`` / ``legacy`` status instead of being refreshed.
+        View paths (saved reopen) pass False so merely opening a saved
+        analysis can never fetch, overwrite stored returns, advance
+        ``last_market_check_at``, or rewrite derived proof/falsifier state;
+        mutation stays with the explicit refresh boundary.
       * Stale / legacy / forced-frozen rows pull fresh returns via
         ``followup_check`` (event-dated) or ``market_check`` (rolling),
         merge them onto the stored rows, and persist through
@@ -439,7 +447,7 @@ def refresh_market_for_saved_event(
     if _derive_dq is not None:
         base_payload.update(_derive_dq(stored_tickers))
 
-    if not should_refresh(staleness):
+    if not allow_refresh or not should_refresh(staleness):
         return base_payload
 
     # Resolve injectable provider entry points.  Late imports so this

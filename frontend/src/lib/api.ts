@@ -215,6 +215,10 @@ export interface MarketFreshness {
   last_market_check_at?: string | null;
   /** Result of the market-check freshness layer.
    *  "fresh"            — cache hit, nothing was re-fetched
+   *  "stale"            — past its refresh window; served AS SAVED (A5A:
+   *                       an unforced reopen never refreshes)
+   *  "legacy"           — row pre-dates freshness tracking or has no
+   *                       numeric returns; served AS SAVED, unrefreshed
    *  "stale_refreshed"  — refresh window exceeded → just re-fetched
    *  "legacy_refreshed" — row pre-dated the freshness column
    *  "forced_refreshed" — force=True bypassed the freeze cutoff
@@ -222,6 +226,8 @@ export interface MarketFreshness {
    *  "error"            — upstream failure, stored payload returned */
   market_check_staleness?:
     | "fresh"
+    | "stale"
+    | "legacy"
     | "stale_refreshed"
     | "legacy_refreshed"
     | "forced_refreshed"

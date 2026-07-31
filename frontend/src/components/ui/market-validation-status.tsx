@@ -79,6 +79,19 @@ export function deriveValidationStatus(
     }
   }
 
+  // 2b. Stored-only view (A5A): the saved row is past its refresh window
+  // but opening it served the data AS SAVED — say so honestly instead of
+  // hiding the badge or implying a fresh check.  "legacy" rows may carry
+  // no check timestamp at all.
+  if (staleness === "stale" || staleness === "legacy") {
+    return {
+      label: checkAt ? "Stale" : "Unchecked",
+      tone: "stale",
+      age: mins != null ? formatAge(mins) : null,
+      detail: "Stored market data as saved — opening did not refresh it",
+    };
+  }
+
   // 3. Just refreshed (stale_refreshed, legacy_refreshed, forced_refreshed)
   if (
     staleness === "stale_refreshed" ||

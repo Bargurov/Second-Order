@@ -447,13 +447,16 @@ class TestLookupPathTouchesNoProvider(_Base):
 # ---------------------------------------------------------------------------
 
 class TestRetrievalOverlayIsOutOfScope(_Base):
-    """Serving a saved event recomputes live market overlays.
+    """Phase attribution for the response-builder overlay work.
 
-    That happens AFTER retrieval, inside ``_build_cached_response``, and a
-    numeric ``event_id`` reopen has always paid it — it is pre-existing
-    behaviour this repair deliberately leaves alone.  Pinning it here keeps
-    the narrower assertions above honest: they stub the response builder
-    because of THIS, not to hide a provider call on the lookup path.
+    Historically the builder recomputed live market overlays with real
+    provider fetches after retrieval, and this class pinned that excluded
+    phase so the lookup assertions above stayed honest.  Since A5A the
+    unforced view path runs inside ``no_provider_fetch()`` — the builder
+    phase is now ALSO provider-free on saved reopens (stored market state,
+    cached-only overlays).  The phase instrument stays so any future
+    provider call is attributed to the phase that made it, not merely
+    counted; the expectations below state the post-A5A boundary.
     """
 
     def _fetches_by_phase(self, body):
@@ -488,7 +491,12 @@ class TestRetrievalOverlayIsOutOfScope(_Base):
                 p.stop()
         return resp, by_phase
 
-    def test_a_durable_hit_reaches_no_provider_until_the_response_is_built(self):
+    def test_a_durable_hit_reaches_no_provider_in_any_phase(self):
+        # A5A restatement: the durable-hit response builder is now also
+        # provider-free — a view serves stored market state and cached-only
+        # overlays inside no_provider_fetch(), so BOTH phases attribute
+        # zero fetches.  (Pre-A5A this asserted the builder phase made the
+        # overlay fetches; that excluded phase no longer exists on views.)
         self._seed_prices()
         seeded = self._seed_saved_analysis()
         _mc._cache_data.clear()
@@ -496,7 +504,7 @@ class TestRetrievalOverlayIsOutOfScope(_Base):
         self.assertEqual(resp.get("analysis_event_id"),
                          seeded["analysis_event_id"])
         self.assertEqual(by_phase["lookup"], [])
-        self.assertGreater(len(by_phase["response_builder"]), 0)
+        self.assertEqual(by_phase["response_builder"], [])
 
     def test_a_durable_reopen_costs_what_a_numeric_reopen_already_cost(self):
         """The reuse path must not be more expensive than reopening the same

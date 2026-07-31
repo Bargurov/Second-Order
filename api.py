@@ -868,6 +868,34 @@ def _build_cached_response(
     *,
     force: bool = False,
 ) -> dict:
+    """Non-destructive view boundary over ``_build_cached_response_unfenced``.
+
+    A5A: opening a saved analysis (numeric or durable reopen) is a VIEW —
+    it must serve stored evidence without external work or writes.  The
+    unforced path therefore runs inside ``no_provider_fetch()`` (overlay
+    recomputes read the price cache only; a cold cache degrades to explicit
+    unavailable markers, never a hidden fetch) and passes
+    ``allow_refresh=False`` down to the market-freshness layer so stale
+    rows are served AS SAVED with their truthful stale/legacy label.
+    ``force=True`` (the explicit archive-review refresh) keeps the full
+    provider-backed recompute-and-persist behaviour.
+    """
+    if force:
+        return _build_cached_response_unfenced(
+            cached, headline, effective_date, force=True)
+    from market_data import no_provider_fetch
+    with no_provider_fetch():
+        return _build_cached_response_unfenced(
+            cached, headline, effective_date, force=False)
+
+
+def _build_cached_response_unfenced(
+    cached: dict,
+    headline: str,
+    effective_date: str,
+    *,
+    force: bool = False,
+) -> dict:
     """Reconstruct the full /analyze response shape from a saved event.
 
     Recomputes inventory_context and policy_sensitivity on-the-fly if
@@ -915,6 +943,10 @@ def _build_cached_response(
             force=force,
             followup_check_fn=followup_check,
             market_check_fn=market_check,
+            # A5A: only the explicit force path may refresh-and-persist;
+            # an unforced view serves the stored payload with its truthful
+            # stale/legacy label.
+            allow_refresh=force,
         )
     except Exception:
         _log.warning(
