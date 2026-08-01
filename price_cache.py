@@ -152,6 +152,30 @@ def _ensure_table() -> bool:
     if _table_ready:
         return True
 
+    # A5A-R2: a cached-only (no-provider-fetch) context is a VIEW — it may
+    # read whatever cache already exists but must never bootstrap, migrate,
+    # or purge.  Probe sqlite_master read-only; an absent table reads as
+    # unavailable, and the ready flag stays untouched so the first
+    # intentional (unblocked) consumer still runs the full bootstrap,
+    # including the ALTER migration and the corrupt-row purge.
+    from market_data import provider_fetch_blocked
+    if provider_fetch_blocked():
+        try:
+            with _db.connect_db() as conn:
+                row = conn.execute(
+                    "SELECT 1 FROM sqlite_master"
+                    " WHERE type='table' AND name='price_cache'"
+                ).fetchone()
+        except sqlite3.Error as e:
+            _log.warning("price_cache: read-only table probe failed: %s", e)
+            return False
+        if row is None:
+            _log.info(
+                "price_cache: table absent in no-fetch context; serving "
+                "unavailable (no bootstrap from a view)")
+            return False
+        return True
+
     with _table_lock:
         if _table_ready:
             return True

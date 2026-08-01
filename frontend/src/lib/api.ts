@@ -222,6 +222,9 @@ export interface MarketFreshness {
    *  "stale_refreshed"  — refresh window exceeded → just re-fetched
    *  "legacy_refreshed" — row pre-dated the freshness column
    *  "forced_refreshed" — force=True bypassed the freeze cutoff
+   *  "partially_refreshed" — some symbols updated, the rest retain prior
+   *                       stored values; coverage detail arrives via
+   *                       data_quality_note (A5A-R2)
    *  "stale_refresh_failed" / "legacy_refresh_failed" — a refresh was
    *                       attempted but ZERO symbols returned usable
    *                       data; stored values and stamp retained (A5A-R)
@@ -234,6 +237,7 @@ export interface MarketFreshness {
     | "stale_refreshed"
     | "legacy_refreshed"
     | "forced_refreshed"
+    | "partially_refreshed"
     | "stale_refresh_failed"
     | "legacy_refresh_failed"
     | "frozen"
@@ -1343,6 +1347,7 @@ export interface BacktestResult {
     | "stale_refreshed"
     | "legacy_refreshed"
     | "forced_refreshed"
+    | "partially_refreshed"
     | "stale_refresh_failed"
     | "legacy_refresh_failed"
     | "frozen";

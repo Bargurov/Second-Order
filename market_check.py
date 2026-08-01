@@ -289,6 +289,24 @@ def derive_data_quality(tickers: list) -> dict:
                 "market validation is incomplete"
             ),
         }
+    # A5A-R2 — partial-refresh coverage.  Rows the last refresh could not
+    # update carry ``retained_prior`` (persisted in the ticker JSON), so
+    # every read of the row — the immediate refresh response AND all later
+    # saved reopens — discloses mixed vintage instead of presenting a
+    # partially refreshed set as uniformly current.
+    n_retained = sum(
+        1 for t in tickers
+        if isinstance(t, dict) and t.get("retained_prior")
+    )
+    if 0 < n_retained < n_total:
+        updated = n_total - n_retained
+        return {
+            "data_quality": "degraded",
+            "data_quality_note": (
+                f"partially refreshed: {updated}/{n_total} symbols "
+                f"updated; {n_retained} retain prior stored values"
+            ),
+        }
     return {"data_quality": "ok"}
 
 # A ticker whose latest bar is older than this many calendar days is

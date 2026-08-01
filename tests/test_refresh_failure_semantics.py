@@ -77,6 +77,24 @@ def _all_none_rows(tickers, event_date):
             for t in tickers]
 
 
+def _partial_rows(tickers, event_date):
+    """First requested symbol usable, every other symbol empty."""
+    rows = _all_none_rows(tickers, event_date)
+    rows[0] = {"symbol": tickers[0].get("symbol"),
+               "role": tickers[0].get("role"),
+               "return_1d": 10.0, "return_5d": 20.0, "return_20d": 30.0,
+               "return_60d": None, "direction": "supports",
+               "anchor_date": event_date}
+    return rows
+
+
+def _full_rows(tickers, event_date):
+    return [{"symbol": t.get("symbol"), "role": t.get("role"),
+             "return_1d": 5.0, "return_5d": 6.0, "return_20d": 7.0,
+             "return_60d": None, "direction": "supports",
+             "anchor_date": event_date} for t in tickers]
+
+
 class _Base(unittest.TestCase):
 
     def setUp(self):
@@ -216,26 +234,20 @@ class TestRefreshSuccessControls(_Base):
     """Success, partial-success and thrown-failure behavior is unchanged."""
 
     def test_partial_success_is_not_treated_as_total_failure(self):
-        def partial(tickers, event_date):
-            rows = _all_none_rows(tickers, event_date)
-            rows[0] = {"symbol": tickers[0].get("symbol"),
-                       "role": tickers[0].get("role"),
-                       "return_1d": 10.0, "return_5d": 20.0,
-                       "return_20d": 30.0, "return_60d": None,
-                       "direction": "supports", "anchor_date": event_date}
-            return rows
-
+        # A5A-R2 restatement: a 1-of-N refresh persists and stamps, but its
+        # status is the dedicated partial token, never the complete label.
         from unittest.mock import MagicMock
         movers = MagicMock()
         before = self._market_row()
-        body = self._refresh(partial, movers=movers).json()
+        body = self._refresh(_partial_rows, movers=movers).json()
         after = self._market_row()
         self.assertNotEqual(after["check_at"], before["check_at"])
         # The usable symbol updated; the unavailable one kept stored values.
         self.assertEqual(after["tickers"][0][1], 10.0)
         self.assertEqual(after["tickers"][1][1], before["tickers"][1][1])
         self.assertEqual((body.get("market") or {})
-                         .get("market_check_staleness"), "stale_refreshed")
+                         .get("market_check_staleness"),
+                         "partially_refreshed")
         movers.assert_called_once()
 
     def test_full_success_still_persists_and_stamps(self):
@@ -259,6 +271,60 @@ class TestRefreshSuccessControls(_Base):
         resp = self._refresh(raising)
         self.assertEqual(self._row_fingerprint(), before)
         self.assertEqual(resp.status_code, 200)
+
+
+class TestPartialCoverageDisclosure(_Base):
+    """A5A-R2 — a partial refresh must SAY it is partial, immediately and
+    on every subsequent saved reopen, through fields the reviewer surface
+    actually consumes (data_quality / data_quality_note)."""
+
+    def _reopen_view(self):
+        stack = [patch.object(_api, "followup_check",
+                              lambda *a, **k: (_ for _ in ()).throw(
+                                  AssertionError("followup reached"))),
+                 patch("routes.analyze._call_analyze_event", _boom)]
+        for p in stack:
+            p.start()
+        try:
+            return self.client.post("/analyze", json={
+                "headline": _HEADLINE, "event_id": self.eid,
+                "confirm_paid": False})
+        finally:
+            for p in reversed(stack):
+                p.stop()
+
+    def test_partial_refresh_note_names_exact_coverage(self):
+        body = self._refresh(_partial_rows).json()
+        market = body.get("market") or {}
+        self.assertEqual(market.get("data_quality"), "degraded")
+        note = market.get("data_quality_note") or ""
+        self.assertIn("1/2 symbols updated", note)
+        self.assertIn("1 retain prior stored values", note)
+
+    def test_partial_coverage_survives_a_subsequent_saved_reopen(self):
+        self._refresh(_partial_rows)
+        market = self._reopen_view().json().get("market") or {}
+        note = market.get("data_quality_note") or ""
+        self.assertEqual(market.get("data_quality"), "degraded")
+        self.assertIn("1/2 symbols updated", note)
+        self.assertIn("retain prior stored values", note)
+        # The retained symbol still serves its prior stored values.
+        vals = [(t.get("symbol"), t.get("return_5d"))
+                for t in market.get("tickers") or []]
+        self.assertIn(("VLO", -0.9), vals)
+
+    def test_a_later_full_refresh_clears_the_partial_disclosure(self):
+        self._refresh(_partial_rows)
+        self._age_to_stale()  # the partial stamp made the row fresh again
+        body = self._refresh(_full_rows).json()
+        market = body.get("market") or {}
+        self.assertEqual(market.get("market_check_staleness"),
+                         "stale_refreshed")
+        self.assertNotIn("retain prior", market.get("data_quality_note")
+                         or "")
+        reopened = self._reopen_view().json().get("market") or {}
+        self.assertNotIn("retain prior", reopened.get("data_quality_note")
+                         or "")
 
 
 class TestRollingModeZeroData(_Base):

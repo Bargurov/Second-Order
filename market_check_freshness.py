@@ -493,11 +493,19 @@ def refresh_market_for_saved_event(
     event_date = event.get("event_date")
     attempted = False
     usable = 0
+    requested = 0
+    usable_symbols: set = set()
+    followup_mode = False
     try:
         if event_date and stored_tickers:
             attempted = True
+            followup_mode = True
             followup = followup_check_fn(stored_tickers, event_date)
             usable = _usable_refresh_rows(followup)
+            requested = len([t for t in stored_tickers if t.get("symbol")])
+            usable_symbols = {
+                r.get("symbol") for r in (followup or [])
+                if isinstance(r, dict) and _usable_refresh_rows([r])}
             new_tickers = _merge_followup_into_stored(stored_tickers, followup)
             new_note = stored_note
         else:
@@ -521,6 +529,7 @@ def refresh_market_for_saved_event(
                 attempted = True
                 mkt = market_check_fn(bens, losers, event_date=None)
                 usable = _usable_refresh_rows(mkt.get("tickers"))
+                requested = len(bens) + len(losers)
                 new_tickers = mkt.get("tickers") or stored_tickers
                 new_note = mkt.get("note") or stored_note
     except Exception:
@@ -549,6 +558,29 @@ def refresh_market_for_saved_event(
             "stored market data retained")
         return failed
 
+    # A5A-R2: vintage markers (followup mode only — the merge keeps stored
+    # values for symbols the attempt could not update, so each persisted
+    # row records whether THIS refresh updated it).  A row updated now
+    # drops any old marker; a row served from prior stored values gains
+    # ``retained_prior`` so every later read — including saved reopens —
+    # can disclose partial coverage through derive_data_quality.  Rolling
+    # mode replaces rows wholesale (empty rows stay visibly empty), so it
+    # carries no markers.
+    retained_n = 0
+    if attempted and followup_mode:
+        marked = []
+        for t in new_tickers:
+            row = dict(t)
+            if row.get("symbol") in usable_symbols:
+                row.pop("retained_prior", None)
+            else:
+                row["retained_prior"] = True
+                retained_n += 1
+            marked.append(row)
+        new_tickers = marked
+    partial = attempted and usable > 0 and (
+        retained_n > 0 or usable < requested)
+
     new_last_check = now_dt.replace(microsecond=0).isoformat()
 
     # Persist.  DB failure is non-fatal — the caller still gets fresh data.
@@ -572,8 +604,11 @@ def refresh_market_for_saved_event(
     # Label the refreshed row.  A forced refresh on a frozen row reports
     # "forced_refreshed" so dashboards can distinguish "user asked for it"
     # from the normal stale/legacy paths — the natural_status still reflects
-    # the unforced view.
-    if staleness["natural_status"] == "frozen" and force:
+    # the unforced view.  A partial refresh (some symbols updated, some
+    # not) is never labelled with a complete-refresh token (A5A-R2).
+    if partial:
+        new_staleness = "partially_refreshed"
+    elif staleness["natural_status"] == "frozen" and force:
         new_staleness = "forced_refreshed"
     elif staleness["status"] == "stale":
         new_staleness = "stale_refreshed"

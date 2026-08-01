@@ -1044,6 +1044,10 @@ def refresh_market_endpoint(event_id: int, force: bool = Query(False)):
             "note": market_block.get("note", ""), "details": {}, "tickers": tickers,
             "last_market_check_at": market_block.get("last_market_check_at"),
             "market_check_staleness": market_block.get("market_check_staleness"),
+            # A5A-R2: the immediate refresh response must disclose partial
+            # coverage the same way later reads do.
+            "data_quality": market_block.get("data_quality"),
+            "data_quality_note": market_block.get("data_quality_note"),
         },
     })
 

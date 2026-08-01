@@ -3887,9 +3887,12 @@ export function AnalysisView({ initialLaunch, onHeadlineConsumed, onBack, onAnal
           ) : (
             <section className={cn(SECTION_CARD, "p-6")}>
               <div className="flex items-start justify-between mb-5">
-                <div>
+                {/* min-w-0 + flex-wrap let the freshness/status row shrink
+                    and stack at narrow widths instead of widening the page
+                    (A5A-R2). */}
+                <div className="min-w-0">
                   <p className="section-kicker mb-1.5">{MARKET_REACTION_LABEL}</p>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2.5 min-w-0">
                     <h3
                       className="text-[13px] font-semibold leading-none tracking-[-0.01em] text-on-surface"
                       style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}

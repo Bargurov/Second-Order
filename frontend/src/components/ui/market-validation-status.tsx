@@ -107,6 +107,20 @@ export function deriveValidationStatus(
     };
   }
 
+  // 2d. Partial refresh (A5A-R2): some symbols updated, the rest retain
+  // prior stored values — never presented as a complete refresh.  The
+  // coverage note is the visible detail.
+  if (staleness === "partially_refreshed") {
+    return {
+      label: "Partially refreshed",
+      tone: "stale",
+      age: mins != null ? formatAge(mins) : null,
+      detail:
+        qualityNote ||
+        "Some symbols updated; the rest retain prior stored values",
+    };
+  }
+
   // 3. Just refreshed (stale_refreshed, legacy_refreshed, forced_refreshed)
   if (
     staleness === "stale_refreshed" ||
@@ -220,7 +234,11 @@ export function MarketValidationStatus({
   const Icon = t.icon;
 
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    // flex-wrap + a shrinkable, text-wrapping detail keep the row inside
+    // narrow (375px) viewports: the stale/failed/coverage explanation
+    // wraps instead of widening the page or truncating meaning away
+    // (A5A-R2).
+    <div className="flex flex-wrap items-center gap-2 min-w-0">
       <div
         className={cn(
           "inline-flex items-center gap-1.5 h-5 px-2 rounded-full shrink-0",
@@ -239,7 +257,7 @@ export function MarketValidationStatus({
         )}
       </div>
       {status.detail && (
-        <span className="text-[9px] text-on-surface-variant/40 truncate min-w-0" title={status.detail}>
+        <span className="text-[9px] text-on-surface-variant/40 min-w-0 flex-1 whitespace-normal break-words">
           {status.detail}
         </span>
       )}

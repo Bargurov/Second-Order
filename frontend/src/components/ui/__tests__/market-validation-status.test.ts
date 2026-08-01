@@ -5,9 +5,12 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   deriveValidationStatus,
   formatAge,
+  MarketValidationStatus,
   type ValidationStatus,
 } from "../market-validation-status";
 import type { MarketResult, FreshnessBlock } from "@/lib/api";
@@ -115,6 +118,23 @@ describe("deriveValidationStatus", () => {
     expect(s.tone).toBe("frozen");
   });
 
+  // Layout contract (A5A-R2) — the badge row must be able to WRAP so the
+  // stale/failed/coverage detail never widens the page at 375px, and the
+  // detail must wrap its text rather than truncate meaning away.
+  it("renders a wrappable row with a non-truncating detail", () => {
+    const html = renderToStaticMarkup(
+      createElement(MarketValidationStatus, {
+        market: makeMarket({
+          market_check_staleness: "stale",
+          last_market_check_at: isoMinutesAgo(90 * 60),
+        }),
+      }),
+    );
+    expect(html).toContain("flex-wrap");
+    expect(html).toContain("break-words");
+    expect(html).not.toContain("truncate");
+  });
+
   // Stored-only view (A5A) — a stale/legacy saved row is served AS SAVED;
   // the badge must state that honestly instead of hiding or relabeling it.
   it("labels staleness=stale as stale stored data, never as refreshed", () => {
@@ -169,6 +189,27 @@ describe("deriveValidationStatus", () => {
     );
     expect(s).not.toBeNull();
     expect(s!.label).toBe("Refresh failed");
+  });
+
+  // Partial refresh (A5A-R2) — a 1-of-N refresh must present itself as
+  // partial, with the coverage note as its visible detail.
+  it("labels partially_refreshed with the coverage note as detail", () => {
+    const s = deriveValidationStatus(
+      makeMarket({
+        market_check_staleness: "partially_refreshed",
+        last_market_check_at: isoMinutesAgo(3),
+        data_quality: "degraded",
+        data_quality_note:
+          "partially refreshed: 1/2 symbols updated; 1 retain prior " +
+          "stored values",
+      }),
+      null,
+      NOW,
+    );
+    expect(s).not.toBeNull();
+    expect(s!.label).toBe("Partially refreshed");
+    expect(s!.tone).toBe("stale");
+    expect(s!.detail).toMatch(/1\/2 symbols updated/);
   });
 
   // Refreshed variants
