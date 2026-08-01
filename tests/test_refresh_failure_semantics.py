@@ -327,6 +327,125 @@ class TestPartialCoverageDisclosure(_Base):
                          or "")
 
 
+class TestRetainedPlusMissingComposition(_Base):
+    """A5A-R3 — retained-prior coverage must never be erased by the
+    missing-current-data warning: when a retained symbol ALSO has no
+    numeric values, both truths compose in the consumed quality note, on
+    the immediate response and on every subsequent reopen."""
+
+    def _null_out_symbol(self, symbol):
+        """Make one STORED row carry no numeric returns (a symbol whose
+        original market check never produced values)."""
+        import json as _json
+        conn = sqlite3.connect(self._tmp)
+        row = conn.execute("SELECT market_tickers FROM events WHERE id=?",
+                           (self.eid,)).fetchone()
+        tickers = _json.loads(row[0])
+        for t in tickers:
+            if t.get("symbol") == symbol:
+                t["return_1d"] = None
+                t["return_5d"] = None
+                t["return_20d"] = None
+        conn.execute("UPDATE events SET market_tickers=? WHERE id=?",
+                     (_json.dumps(tickers), self.eid))
+        conn.commit()
+        conn.close()
+
+    def _reopen_numeric(self):
+        stack = [patch.object(_api, "followup_check",
+                              lambda *a, **k: (_ for _ in ()).throw(
+                                  AssertionError("followup reached"))),
+                 patch("routes.analyze._call_analyze_event", _boom)]
+        for p in stack:
+            p.start()
+        try:
+            return self.client.post("/analyze", json={
+                "headline": _HEADLINE, "event_id": self.eid,
+                "confirm_paid": False})
+        finally:
+            for p in reversed(stack):
+                p.stop()
+
+    def _reopen_durable(self):
+        stack = [patch.object(_api, "followup_check",
+                              lambda *a, **k: (_ for _ in ()).throw(
+                                  AssertionError("followup reached"))),
+                 patch("routes.analyze._legacy_headline_cached_event",
+                       lambda *a, **k: None),
+                 patch("routes.analyze._call_analyze_event", _boom),
+                 patch.object(_api, "build_macro_context_for_prompt",
+                              return_value="Macro backdrop: fixed for tests"),
+                 patch.object(_api, "market_check",
+                              return_value={"note": "", "tickers": []})]
+        for p in stack:
+            p.start()
+        try:
+            return self.client.post("/analyze", json={"headline": _HEADLINE})
+        finally:
+            for p in reversed(stack):
+                p.stop()
+
+    def _assert_both_meanings(self, market):
+        note = market.get("data_quality_note") or ""
+        self.assertEqual(market.get("data_quality"), "degraded")
+        self.assertIn("1/2 symbols updated", note)
+        self.assertIn("retain prior stored values", note)
+        self.assertIn("no price data", note)
+
+    def test_immediate_response_composes_both_meanings(self):
+        self._null_out_symbol("VLO")
+        body = self._refresh(_partial_rows).json()
+        market = body.get("market") or {}
+        self.assertEqual(market.get("market_check_staleness"),
+                         "partially_refreshed")
+        self._assert_both_meanings(market)
+
+    def test_numeric_reopen_preserves_both_meanings(self):
+        self._null_out_symbol("VLO")
+        self._refresh(_partial_rows)
+        market = self._reopen_numeric().json().get("market") or {}
+        self._assert_both_meanings(market)
+
+    def test_durable_reopen_preserves_both_meanings(self):
+        self._null_out_symbol("VLO")
+        self._refresh(_partial_rows)
+        resp = self._reopen_durable()
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body.get("analysis", {}).get("mechanism_summary"),
+                         _ANALYSIS["mechanism_summary"])
+        self._assert_both_meanings(body.get("market") or {})
+
+    def test_opposite_subset_flips_markers_and_drops_missingness(self):
+        self._null_out_symbol("VLO")
+        self._refresh(_partial_rows)  # UNP usable, VLO retained+missing
+        self._age_to_stale()
+
+        def vlo_usable(tickers, event_date):
+            rows = _all_none_rows(tickers, event_date)
+            for r in rows:
+                if r.get("symbol") == "VLO":
+                    r.update({"return_1d": 3.0, "return_5d": 4.0,
+                              "return_20d": 5.0, "direction": "supports",
+                              "anchor_date": event_date})
+            return rows
+
+        body = self._refresh(vlo_usable).json()
+        market = body.get("market") or {}
+        note = market.get("data_quality_note") or ""
+        self.assertEqual(market.get("market_check_staleness"),
+                         "partially_refreshed")
+        self.assertIn("1/2 symbols updated", note)
+        self.assertIn("1 retain prior stored values", note)
+        # Both rows now carry numeric values (UNP retains stored numerics,
+        # VLO was just updated) — the missing-data warning must be gone.
+        self.assertNotIn("no price data", note)
+        ev = _db.load_event_by_id(self.eid)
+        markers = {t.get("symbol"): bool(t.get("retained_prior"))
+                   for t in ev.get("market_tickers") or []}
+        self.assertEqual(markers, {"UNP": True, "VLO": False})
+
+
 class TestRollingModeZeroData(_Base):
     """The rolling branch (no event_date) obeys the same rule, proven at
     the shared seam with an injected persist recorder."""

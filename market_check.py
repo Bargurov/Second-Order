@@ -281,15 +281,15 @@ def derive_data_quality(tickers: list) -> dict:
         if t.get("return_5d") is None and t.get("return_1d") is None
     )
     ratio = n_missing / n_total
-    if ratio >= _DATA_QUALITY_DEGRADED_THRESHOLD:
-        return {
-            "data_quality": "degraded",
-            "data_quality_note": (
-                f"{n_missing}/{n_total} tickers returned no price data — "
-                "market validation is incomplete"
-            ),
-        }
-    # A5A-R2 — partial-refresh coverage.  Rows the last refresh could not
+
+    # A5A-R3 — quality reasons COMPOSE; they never race.  Semantic
+    # precedence in the note: retained-prior coverage first (the temporal
+    # fact a reviewer must not lose), then current missingness.  A row set
+    # that is both partially refreshed AND missing current data for the
+    # retained symbols reports both truths in one note; either alone keeps
+    # its exact historical wording.
+    #
+    # Retained-prior coverage (A5A-R2): rows the last refresh could not
     # update carry ``retained_prior`` (persisted in the ticker JSON), so
     # every read of the row — the immediate refresh response AND all later
     # saved reopens — discloses mixed vintage instead of presenting a
@@ -298,15 +298,21 @@ def derive_data_quality(tickers: list) -> dict:
         1 for t in tickers
         if isinstance(t, dict) and t.get("retained_prior")
     )
+    notes: list[str] = []
     if 0 < n_retained < n_total:
         updated = n_total - n_retained
-        return {
-            "data_quality": "degraded",
-            "data_quality_note": (
-                f"partially refreshed: {updated}/{n_total} symbols "
-                f"updated; {n_retained} retain prior stored values"
-            ),
-        }
+        notes.append(
+            f"partially refreshed: {updated}/{n_total} symbols "
+            f"updated; {n_retained} retain prior stored values"
+        )
+    if ratio >= _DATA_QUALITY_DEGRADED_THRESHOLD:
+        notes.append(
+            f"{n_missing}/{n_total} tickers returned no price data — "
+            "market validation is incomplete"
+        )
+    if notes:
+        return {"data_quality": "degraded",
+                "data_quality_note": "; ".join(notes)}
     return {"data_quality": "ok"}
 
 # A ticker whose latest bar is older than this many calendar days is

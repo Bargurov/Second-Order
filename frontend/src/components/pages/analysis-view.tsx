@@ -3886,10 +3886,13 @@ export function AnalysisView({ initialLaunch, onHeadlineConsumed, onBack, onAnal
             </div>
           ) : (
             <section className={cn(SECTION_CARD, "p-6")}>
-              <div className="flex items-start justify-between mb-5">
-                {/* min-w-0 + flex-wrap let the freshness/status row shrink
-                    and stack at narrow widths instead of widening the page
-                    (A5A-R2). */}
+              {/* A5A-R3: below sm the two header regions STACK so the
+                  freshness/status area and the right-side controls each get
+                  full usable width — a non-shrinking ~300px control group
+                  beside a min-w-0 column had squeezed the status area to
+                  0px at 375px, wrapping the disclosure one character per
+                  line.  Desktop keeps the side-by-side composition. */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
                 <div className="min-w-0">
                   <p className="section-kicker mb-1.5">{MARKET_REACTION_LABEL}</p>
                   <div className="flex flex-wrap items-center gap-2.5 min-w-0">
