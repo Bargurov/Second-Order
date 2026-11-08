@@ -1,5 +1,26 @@
 # Second Order
 
+**Event-driven research on how geopolitical, macro and policy news moves markets.**
+
+Second Order takes a real-world event (a tariff, a defense contract, a Fed decision, an OPEC cut),
+writes down the economic mechanism behind it, identifies the exposed stocks and sectors, and then
+measures how those assets actually moved over the next 1, 5 and 20 trading days.
+It is a research tool, not a trading product: every result is published with its limits.
+
+*Independent research project by Bar Gurov, Economics & Management student (2026).*
+
+| | |
+|---|---|
+| **Question** | When an event happens, did the market react the way the economic mechanism says it should? |
+| **Method** | Market-model event studies (OLS): abnormal and cumulative abnormal returns, standardized abnormal returns, sector and market benchmarks, Benjamini-Hochberg FDR across pre-registered tests |
+| **Pre-registered cases** | Events where the expected direction was written down before testing, e.g. the 2018 washer tariffs (Whirlpool), the 2019 Vale dam collapse (Rio Tinto), the 2022 IRA deal (First Solar) and the 2022 Army FLRAA award (Textron). [Evidence](evidence_artifacts/section_c_v2/) |
+| **Historical study** | 65 Fed decisions (2018–2025) and 32 OPEC+ decisions, using only market data available at the time (Fed path, VIX, yield curve). Main finding: no broad "market regime" effect, with one narrow OPEC association. The null result is reported, not hidden. [Overview](RESEARCH_OVERVIEW.md) |
+| **Stack** | Python · pandas · FastAPI · React · SQLite · Claude API · Telegram bot |
+
+**Where to start:** [Research overview](RESEARCH_OVERVIEW.md) · [Pre-registered event evidence](evidence_artifacts/section_c_v2/) · [Run locally](#run-locally)
+
+---
+
 Second Order is an honest research dashboard for geopolitical, macro, and policy
 events. It traces an event's plausible second-order transmission to assets and
 reads the market's event-window reaction descriptively — as evidence, never as a
