@@ -102,8 +102,16 @@ def workbook(sheets: dict[str, dict[str, str]], *, doctype: bool = False, inline
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         for name, text in parts.items():
-            archive.writestr(zipfile.ZipInfo(name, FIXED_TIME), text.encode("utf-8"), compress_type=zipfile.ZIP_DEFLATED)
+            archive.writestr(zip_entry(name), text.encode("utf-8"), compress_type=zipfile.ZIP_DEFLATED)
     return buffer.getvalue()
+
+
+def zip_entry(name: str, when: tuple = FIXED_TIME) -> zipfile.ZipInfo:
+    """An entry whose header bytes are the same on every platform. zipfile takes the "made by" system from the machine
+    (0, MS-DOS, on Windows; 3, Unix, elsewhere); it is fixed at 0, the value the committed fixtures and records hold."""
+    info = zipfile.ZipInfo(name, when)
+    info.create_system = 0
+    return info
 
 
 # ---------------------------------------------------------------- the synthetic files

@@ -19,7 +19,7 @@ from html.parser import HTMLParser
 import json
 import re
 
-from . import fed_publication
+from . import fed_publication, html_markup
 
 TEXT_VERSION = "official-page-text-0.1"
 MAX_CHARACTERS = 60_000
@@ -181,9 +181,12 @@ def _kept(blocks: list[tuple[str, str]]) -> tuple[list[str], bool]:
 
 def read_page(raw: bytes, content_type: str, layout: Layout) -> dict:
     """The publication's text as the page prints it, with what was left out; Unreadable otherwise."""
+    text = decoded(raw, content_type, layout.encodings)
+    if html_markup.unreadable(text):  # The rule comes before the parser, so every Python version gives one answer.
+        raise Unreadable("The page has markup that cannot be read")
     reader = _Reader(layout)
     try:
-        reader.feed(decoded(raw, content_type, layout.encodings))
+        reader.feed(text)
         reader.close()
     except Unreadable:
         raise

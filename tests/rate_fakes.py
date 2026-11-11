@@ -150,7 +150,9 @@ def workbook(rows: list[tuple], *, header=rate_workbook.HEADER, definitions: dic
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         for name, text in parts.items():
-            archive.writestr(zipfile.ZipInfo(name, FIXED_TIME), text.encode("utf-8"), compress_type=compression)
+            info = zipfile.ZipInfo(name, FIXED_TIME)
+            info.create_system = 0  # zipfile takes it from the machine (3 off Windows); the fixtures hold 0.
+            archive.writestr(info, text.encode("utf-8"), compress_type=compression)
     return buffer.getvalue()
 
 

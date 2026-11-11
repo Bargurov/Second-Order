@@ -111,6 +111,7 @@ class EvidenceTests(Harness):
                                                                 "Release Date: September 17, 2026")},
             "a summary that disagrees": {"release.html": g17_fakes.summary("20260918", {
                 **SCENARIO, (None, "INDUSTRY GROUP / Manufacturing", "2026-08"): "-9.9"})},
+            "a marked section the readers do not read": {"table1.htm": page.replace("</h2>", "</h2><![bogus[x]]>")},
         }
         originals = {"table1.htm": page, "release.html": g17_fakes.summary("20260918", SCENARIO)}
         for name, pages in cases.items():

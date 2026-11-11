@@ -247,7 +247,8 @@ class ExtractionTests(Folders):
         self.assertEqual((len(long_["text"]["paragraphs"]), long_["text"]["truncated"]),
                          (bis_snapshot.MAX_PARAGRAPHS, True))
         self.assertEqual((huge["text"]["state"], huge["text"]["paragraphs"]), ("unreadable", []))
-        self.assertIn(odd["text"]["state"], ("unreadable", "listing_text"))
+        # A marked section html_markup does not read: unreadable on every Python version, never read in part.
+        self.assertEqual((odd["text"]["state"], odd["text"]["paragraphs"]), ("unreadable", []))
 
 
 # ---------------------------------------------------------------- the index

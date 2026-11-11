@@ -12,7 +12,8 @@ import sqlite3
 import tempfile
 import unittest
 from unittest import mock
-from urllib.parse import unquote
+from urllib.parse import urlsplit
+from urllib.request import url2pathname
 
 from fastapi.testclient import TestClient
 
@@ -29,6 +30,22 @@ UTC = timezone.utc
 def drill_form() -> dict:
     return pilot_form(story_id="fomc-2026-12-09",
                       headline="SYNTHETIC drill: FOMC statement of 9 December 2026 (practice, not a real case)")
+
+
+def opened_file(name: str) -> Path:
+    """The file a sqlite3 connection was given: a path, or a read-only URI (file:///C:/...?mode=ro on Windows,
+    file:///tmp/...?mode=ro elsewhere) turned back into a path by the platform's own rule."""
+    return Path(url2pathname(urlsplit(name).path)) if name.startswith("file:") else Path(name)
+
+
+class OpenedFileTests(unittest.TestCase):
+    def test_a_read_only_uri_names_the_file_store_opens_on_this_platform(self):
+        """store.py opens f"{path.resolve().as_uri()}?mode=ro"; that URI turns back into the same path, so the isolation
+        check below compares files, not spellings. Nothing is written."""
+        path = Path(tempfile.gettempdir()).resolve() / "second-order drill ü" / "research.db"
+        self.assertEqual(opened_file(f"{path.as_uri()}?mode=ro"), path)
+        self.assertEqual(opened_file(str(path)), path)
+        self.assertFalse(opened_file(f"{path.as_uri()}?mode=ro").is_relative_to(path.parent.parent / "drill"))
 
 
 class Folder(unittest.TestCase):
@@ -196,11 +213,10 @@ class WholeCaseTests(Folder):
             "reassessment": bound["reassessment"], "previewed_binding": bound}, 201)
         self.assertEqual(self.ledger_row()["state"], "assessed")
 
-        drill = str(self.root.resolve())
+        drill = self.root.resolve()
         self.assertTrue(self.opened)
-        for path in self.opened:  # A read-only connection names its file as a URI: file:///C:/...?mode=ro
-            plain = unquote(path.removeprefix("file:///").removeprefix("file:").split("?")[0])
-            self.assertTrue(path == ":memory:" or str(Path(plain).resolve()).startswith(drill), path)
+        for path in self.opened:  # A read-only connection names its file as a URI (see opened_file).
+            self.assertTrue(path == ":memory:" or opened_file(path).resolve().is_relative_to(drill), path)
 
     def test_a_download_before_the_friday_release_lacks_the_target_as_the_boards_would(self):
         """The fake Board server keeps the posting time: at 3 p.m. New York on the 18th the 17th is not posted yet."""

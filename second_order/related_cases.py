@@ -29,7 +29,7 @@ import re
 import unicodedata
 from urllib.parse import urlsplit
 
-from . import related_rules
+from . import html_markup, related_rules
 
 COLLECTION_VERSION = "related-cases-0.1"
 VIEW_VERSION = "related-cases-view-0.1"
@@ -120,12 +120,18 @@ class _PageText(HTMLParser):
 
 def page_blocks(raw: bytes) -> list[str]:
     """The page's visible text as blocks, each with its whitespace collapsed (NFC). Nothing is executed or fetched."""
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        raise ValueError("the page could not be read as UTF-8 HTML (UnicodeDecodeError)") from None
+    if html_markup.unreadable(text):  # The rule comes before the parser, so every Python version gives one answer.
+        raise ValueError("the page could not be read as UTF-8 HTML (an unknown marked section such as <![bogus[)")
     parser = _PageText()
     try:
-        parser.feed(raw.decode("utf-8"))
+        parser.feed(text)
         parser.close()
-    except (UnicodeDecodeError, AssertionError) as exc:  # html.parser raises AssertionError on some malformed input.
-        raise ValueError(f"the page could not be read as UTF-8 HTML ({type(exc).__name__})") from None
+    except AssertionError:  # A refusal html.parser itself still raises (none is known once the rule has passed).
+        raise ValueError("the page could not be read as UTF-8 HTML (AssertionError)") from None
     blocks = (unicodedata.normalize("NFC", " ".join("".join(parts).split())) for parts in parser.blocks)
     return [block for block in blocks if block]
 

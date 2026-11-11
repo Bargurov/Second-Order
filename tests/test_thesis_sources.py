@@ -35,11 +35,13 @@ def writable_rmtree(path: Path) -> None:
 
 
 def rewritten(raw: bytes, change, compression: int = zipfile.ZIP_DEFLATED) -> bytes:
-    """A workbook's archive written again entry by entry, each entry's bytes passed through ``change(name, data)``."""
+    """A workbook's archive written again entry by entry, each entry's bytes passed through ``change(name, data)``;
+    each entry keeps its time, so the same change makes the same bytes on every platform and every run."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(io.BytesIO(raw)) as source, zipfile.ZipFile(buffer, "w") as target:
         for info in source.infolist():
-            target.writestr(info.filename, change(info.filename, source.read(info)), compress_type=compression)
+            target.writestr(thesis_fakes.zip_entry(info.filename, info.date_time),
+                            change(info.filename, source.read(info)), compress_type=compression)
     return buffer.getvalue()
 
 

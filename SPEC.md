@@ -40,6 +40,25 @@ The comparison fcx-annual-2025-to-q3-2026 and the chains grasberg-mud-rush and b
 pinned to the SEC copies (published 2026-11-11, content unchanged; version 1 stays and its acquisitions read as
 superseded), and the captured frontend fixtures are regenerated; the company-page fixtures represent the package as
 the public tree holds it, without the earlier investor-relations acquisitions.
+Unreadable HTML markup is the product's own rule, no longer html.parser's: Python 3.12.8's parser refused a marked
+section such as `<![bogus[` or `<![ x` (AssertionError), while 3.12.16's reads every input as HTML5 does and drops such
+a section, its text with it. second_order/html_markup.py reads only the text: a marked section (`<![`) is read when its
+name is CDATA, TEMP, IGNORE, INCLUDE or RCDATA, or IF, ELSE or ENDIF as conditional comments use it (the sections 3.12.8
+read); any other makes the markup unreadable, wherever it stands. Every reader that uses html.parser applies it before
+parsing, with its existing refusal: event inbox titles and excerpts (the entry is skipped), copper thesis and tools
+sources, BIS listing text, the Federal Reserve press-release import, the Related Cases source check, official
+publication page texts and G.17 evidence; whether markup is readable is then the same verdict on every Python version,
+and no version changes. The text a reader takes from other markup can still differ between Python versions: 3.12.16, for
+one, reads the contents of title and textarea as plain text and those of iframe, xmp, noembed and noframes as raw text,
+where 3.12.8 parsed them as markup, so retained sources should be verified again after a Python upgrade.
+The tests' synthetic workbooks and H.15 packages fix each zip entry's "made by" system at 0, as Windows wrote them when
+the committed frontend fixtures and the 87425ba preservation record were captured (zipfile writes 3 elsewhere), so both
+hold on Linux unchanged; the pilot drill test turns a read-only database URI back into a path by the platform's own
+rule; and the research-readiness fixture test pins the expat version the validation record names (the snapshot ID
+covers it), as the rate-path fixture test already did, because Python 3.12.16 bundles a newer expat.
+A market snapshot's stored series copies (FRED and H.15) are gzip with one header on every platform: no time and the
+OS byte fixed at 10, the value every stored copy already carries (zlib writes 3 off Windows); no ID, digest or reader
+changes.
 
 Changes in 0.5.52 (rules unchanged at 0.5.0; store schema unchanged at 4; the pilot protocol, its settings and the
 ledger unchanged): the copper research loop (section "Copper research"). A copper desk at /copper ("Copper" in the top
@@ -1652,9 +1671,11 @@ event-inbox-view-0.1, in `second_order/event_inbox.py`.
   Atom.
   - Titles and excerpts become plain text (HTML stripped, control characters removed)
     and are cut at 300 and 1,200 characters, with a mark. An entry whose title or
-    excerpt markup the HTML parser cannot read (Python's parser refuses some malformed
-    declarations, such as `<![bogus[`) is skipped and counted; the feed's other entries
-    and the other sources are still read.
+    excerpt markup cannot be read is skipped and counted; the feed's other entries and
+    the other sources are still read. Unreadable markup is a marked section other than
+    those html_markup reads (CDATA, TEMP, IGNORE, INCLUDE, RCDATA, IF, ELSE, ENDIF), such
+    as `<![bogus[` or `<![ x`, found in the text before the HTML parser reads it, so
+    the verdict is the same on every Python version.
   - An entry needs an `https` link on its publisher's own host, with no user, no bare
     root and no port other than 443, the https default, which names the same
     destination; otherwise it is skipped and counted.
@@ -1771,15 +1792,16 @@ event-inbox-view-0.1, in `second_order/event_inbox.py`.
   matching /press-release/[a-z0-9][a-z0-9.-]* (no "..") on www.bis.gov; its identity is that address and its key the
   first 20 hex digits of the address's SHA-256. Text and summary are reduced to plain paragraphs by html.parser (block
   elements break; script, style, iframe, svg and similar elements and all markup dropped; entities decoded; at most 600
-  paragraphs and 60,000 characters, cut flagged; a body over 200,000 characters is not read). An external link is kept
-  only as a plain https address. Listing timestamps (publishedOn, created, changed) are listed (ISO time with offset,
-  epoch seconds and zone agreeing, UTC), missing or ambiguous; created and changed are CMS metadata and never stand in for
-  a publication time. Keyword filters use related_rules' semiconductors and export-controls word lists over title and
-  text. An address listed twice is an identical copy (first kept) or, if the copies differ, withheld; the same title on
-  different addresses is never merged. A record whose release page was retained is compared paragraph by paragraph
-  (identical, differs or not compared), and that page's dateline is recorded apart. Text completeness: checked,
-  checked_differs, listing_text, title_only or unreadable. record_sha256 covers identity, document UUID, publisher fields,
-  text and the listing publication time (not CMS times, position or filters).
+  paragraphs and 60,000 characters, cut flagged; a body over 200,000 characters is not read, and markup holding a marked
+  section html_markup does not read is unreadable). An external link is kept only as a plain https address. Listing
+  timestamps (publishedOn, created, changed) are listed (ISO time with offset, epoch seconds and zone agreeing, UTC),
+  missing or ambiguous; created and changed are CMS metadata and never stand in for a publication time. Keyword filters
+  use related_rules' semiconductors and export-controls word lists over title and text. An address listed twice is an
+  identical copy (first kept) or, if the copies differ, withheld; the same title on different addresses is never merged.
+  A record whose release page was retained is compared paragraph by paragraph (identical, differs or not compared), and
+  that page's dateline is recorded apart. Text completeness: checked, checked_differs, listing_text, title_only or
+  unreadable. record_sha256 covers identity, document UUID, publisher fields, text and the listing publication time (not
+  CMS times, position or filters).
 - Index (bis-snapshot-index-0.1): written once by the explicit open (POST /api/inbox/snapshots/bis/open, empty object)
   to data/bis-snapshot/index/<package sha256 prefix>-<extractor version>.json, read-only, with a content SHA-256; reused
   afterwards. GET routes never build or write; an index that does not verify is refused and left as it is.
@@ -2482,8 +2504,9 @@ provider or network is involved.
   months marked [r] with the last [p]; a repeated path or id; a value cell not naming its
   row; a value other than a one-decimal rate or blank (a blank stays missing); Table 1's
   Total IP, Manufacturing, Mining or Utilities differing from the release summary in any
-  month, or months and markers differing. An extract's ID covers its content and source
-  hashes, not retrieval times.
+  month, or months and markers differing; a page holding a marked section html_markup
+  does not read. An extract's ID covers its content and source hashes, not retrieval
+  times.
 - Comparisons (exact decimals on printed rates; a printed 0.0 has no resolvable
   direction; blank = missing): within one release and reference month, Manufacturing,
   Mining (21) and Utilities (2211,2) against Total IP, and each NAICS-coded child of
@@ -2678,7 +2701,8 @@ scoring or research evidence. No model, provider, embedding or network is involv
   times, content type). States: verified, absent (served, saying the copy is not here),
   different (the size or hash differs, so quotes are not checked; or the quotes are found but
   the acquisition record disagrees). Missing quotes in a page with the recorded hash refuse
-  the case (500). The page is never served.
+  the case (500), as does a page that cannot be read (not UTF-8, or holding a marked
+  section html_markup does not read). The page is never served.
 - Inputs: an Inbox entry's current version (or latest archived one): title and feed
   excerpt (none when the excerpt repeats the title); a capture: headline, supplied source
   text and the host of its source address. Hint: the accepted paid headline-triage result
@@ -2955,8 +2979,9 @@ is not a view on the price, not a monitor of current markets and not evidence of
   SHA-256 must match. The source is verified, changed (anything differs, or the record is not one strict JSON object)
   or missing (the record or the file is absent). A verified file is read once, in memory, memoized per retained file
   and SHA-256 and never written: HTML as plain-text paragraphs (strict UTF-8; at most 60,000 paragraphs and 8,000,000
-  characters), CSV as rows (strict quoting, in its declared encoding), XLSX one named sheet at a time without trusting
-  the archive (thesis_workbook). A reader that meets a limit refuses the whole file, never reading part of it; only a
+  characters; a marked section html_markup does not read, such as `<![bogus[`, makes the page unreadable), CSV as rows
+  (strict quoting, in its declared encoding), XLSX one named sheet at a time without trusting the archive
+  (thesis_workbook). A reader that meets a limit refuses the whole file, never reading part of it; only a
   workbook sheet whose own part fails is refused alone, leaving the other sheets usable. Each item is then located: an
   HTML item's quote in its paragraph (and a figure's as_shown in that quote); an XLSX figure's label cell reading its
   label and its cell holding the value (a text cell printing it exactly; a number cell storing a number that, rounded

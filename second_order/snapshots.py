@@ -23,6 +23,15 @@ from .store import digest, user_tables
 
 # Adapters that classified from the requested start before the boundary was stored explicitly.
 CLASSIFIED_FROM_REQUEST = {"fred-2"}
+GZIP_OS = 10  # The gzip header's OS byte every stored copy carries; zlib writes 10 on Windows and 3 elsewhere.
+
+
+def stored_gzip(data: bytes) -> bytes:
+    """A series' stored copy, gzip with the same header on every platform: no time (mtime 0) and the OS byte fixed at
+    GZIP_OS, the value every copy stored so far carries. No checksum covers that byte (the header has no FHCRC flag;
+    the trailer's CRC-32 covers the data), and decompression ignores it."""
+    packed = gzip.compress(data, mtime=0)
+    return packed[:9] + bytes([GZIP_OS]) + packed[10:]
 
 
 @dataclass(frozen=True)

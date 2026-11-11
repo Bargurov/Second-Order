@@ -21,7 +21,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from market_fakes import keep_package, release_data, release_zip
-from second_order import market_retrieval, research_readiness
+from second_order import market_package, market_retrieval, research_readiness
 from second_order.api import create_app
 from second_order.demo import load_market
 from second_order.drafts import freeze_draft
@@ -407,6 +407,15 @@ class BoundaryTests(Readiness):
 
 class FrontendFixtureTests(Readiness):
     """The page's reader is tested against these exact served replies (frontend/tests/readiness.test.ts)."""
+
+    def setUp(self):
+        super().setUp()
+        # The validation record names the parser library's version, and the snapshot ID covers that record. Pinned to
+        # the expat the committed fixtures were captured with, so they do not depend on the expat this machine's Python
+        # ships (3.12.16 bundles a newer one), as test_rate_context pins rate_workbook's.
+        patcher = patch.dict(market_package.PARSER, {"library": "expat expat_2.6.4"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def served(self) -> dict:
         client = TestClient(create_app(self.root / "no-dossiers", None, self.root / "drafts", market=self.market,

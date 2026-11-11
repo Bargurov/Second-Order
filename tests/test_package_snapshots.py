@@ -31,8 +31,8 @@ from second_order.evaluation import evaluate
 from second_order.model_draft import prospective_observables
 from second_order.package_snapshots import PackageImportRefused, import_package
 from second_order.schema import Hypothesis
-from second_order.snapshots import (evaluate_bound, list_snapshots, load_snapshot, pinned_series, snapshot_readiness,
-                                    snapshot_revisions)
+from second_order.snapshots import (GZIP_OS, evaluate_bound, list_snapshots, load_snapshot, pinned_series,
+                                    snapshot_readiness, snapshot_revisions, stored_gzip)
 from second_order.store import connect_read_only, freeze, open_store, save_evaluation
 from test_daily import cmt_hypothesis, ny
 from test_drafts import CLOCK, draft_from
@@ -121,6 +121,26 @@ class Packages(unittest.TestCase):
     def writable(self, path: Path) -> Path:
         path.chmod(0o600)  # Kept records are read-only; a test that corrupts one must unlock it first.
         return path
+
+
+class StoredCopyTests(unittest.TestCase):
+    def test_a_stored_copy_has_one_gzip_header_on_every_platform_and_reads_back(self):
+        """zlib writes the gzip header's OS byte as 10 on Windows and 3 elsewhere; stored_gzip (both snapshot writers)
+        fixes it at 10, with no time, so a copy is the same bytes on any machine. No checksum covers the byte (no FHCRC
+        flag) and reading ignores it."""
+        data = b'{"2026-09-14": "3.50", "2026-09-15": null}'
+        packed = stored_gzip(data)
+        self.assertEqual(packed[:10], b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\x0a")  # Deflate, no flags, mtime 0, OS 10.
+        self.assertEqual((GZIP_OS, gzip.decompress(packed)), (10, data))
+        self.assertEqual(gzip.decompress(packed[:9] + b"\x03" + packed[10:]), data)
+        compress = gzip.compress
+
+        def as_elsewhere(raw, *args, **kwargs):  # The header zlib writes off Windows.
+            out = compress(raw, *args, **kwargs)
+            return out[:9] + b"\x03" + out[10:]
+
+        with patch.object(gzip, "compress", as_elsewhere):
+            self.assertEqual(stored_gzip(data), packed)
 
 
 class ImportTests(Packages):

@@ -31,7 +31,7 @@ import stat
 import tempfile
 from urllib.parse import urlsplit
 
-from . import related_rules
+from . import html_markup, related_rules
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES_DIR = ROOT / "data" / "sector-sources" / "bis"
@@ -238,11 +238,13 @@ class _Paragraphs(HTMLParser):
 
 def paragraphs(fragment: str) -> tuple[list[str], bool]:
     """(plain-text paragraphs, whether the bounds cut them short). Unreadable if the markup cannot be read."""
+    if html_markup.unreadable(fragment):  # The rule comes before the parser, so every Python version gives one answer.
+        raise Unreadable("markup that cannot be read as plain text")
     parser = _Paragraphs()
     try:
         parser.feed(fragment)
         parser.close()
-    except AssertionError:  # html.parser's refusal of some malformed declarations (see event_inbox.plain_text).
+    except AssertionError:  # A refusal html.parser itself still raises (none is known once the rule has passed).
         raise Unreadable("markup that cannot be read as plain text") from None
     parser.flush()
     return parser.out, parser.cut

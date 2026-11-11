@@ -11,7 +11,8 @@ recorded_at equal to the entry's retrieved_at; and when the file's size and SHA-
 missing (the record or the file is absent) or changed (anything differs).
 
 Readers. HTML becomes plain-text paragraphs: strict UTF-8 (a byte-order mark allowed), block elements break, hidden
-elements and all markup are dropped, entities are decoded and whitespace is collapsed. CSV becomes rows, decoded with
+elements and all markup are dropped, entities are decoded and whitespace is collapsed; a marked section html_markup
+does not read makes the page unreadable. CSV becomes rows, decoded with
 the source entry's declared encoding (ruling R13): strict UTF-8 (a byte-order mark allowed) or strict Windows-1252 (a
 UTF-8 byte-order mark refused), never guessed; strict quoting. XLSX becomes {sheet: {cell: text}} for the sheets asked for
 (thesis_workbook). A PDF is not read at all: a figure or passage from a PDF is a transcription, bound to the PDF by its
@@ -35,7 +36,7 @@ from pathlib import Path
 import re
 import threading
 
-from . import bis_snapshot, thesis_rules, thesis_workbook
+from . import bis_snapshot, html_markup, thesis_rules, thesis_workbook
 from .bis_snapshot import BLOCK_TAGS, HIDDEN_TAGS, sha256
 from .thesis_arithmetic import _quantize, decimal_of, shown_value
 
@@ -183,11 +184,13 @@ def html_paragraphs(raw: bytes) -> list[str]:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
         raise Unreadable("The page is not UTF-8 text") from None
+    if html_markup.unreadable(text):  # The rule comes before the parser, so every Python version gives one answer.
+        raise Unreadable("The page has markup that cannot be read as plain text")
     parser = _Paragraphs()
     try:
         parser.feed(text)
         parser.close()
-    except AssertionError:  # html.parser's refusal of some malformed declarations (see event_inbox.plain_text).
+    except AssertionError:  # A refusal html.parser itself still raises (none is known once the rule has passed).
         raise Unreadable("The page has markup that cannot be read as plain text") from None
     parser.flush()
     return parser.out

@@ -113,12 +113,13 @@ def wto_rss(items: list[str]) -> bytes:
 QUIET = {EIA: [(200, eia_rss([]))], WTO: [(200, wto_rss([]))]}
 
 
-# Escaped markup that Python's html.parser refuses with AssertionError (an unknown or unnamed marked section).
+# Escaped markup the reader refuses: a marked section with an unknown name or none (the html_markup rule, checked
+# before html.parser, which on 3.12.16 would read it and drop its text).
 UNREADABLE = ("&lt;![bogus[ x ]]&gt;", "&lt;![ x")
 
 
 def unreadable_rss_item(n: int, markup: str) -> str:
-    """An RSS item whose escaped HTML description holds markup the HTML parser cannot read."""
+    """An RSS item whose escaped HTML description holds markup the reader refuses (an unknown marked section)."""
     return (f"<item><title>Unreadable Fed release {n}</title>"
             f"<link>https://www.federalreserve.gov/newsevents/pressreleases/monetary2026092{n}a.htm</link>"
             f"<guid>unreadable-{n}</guid><description>Statement {markup} text</description>"
@@ -126,7 +127,7 @@ def unreadable_rss_item(n: int, markup: str) -> str:
 
 
 def unreadable_atom_entry(n: int, part: str, markup: str) -> str:
-    """An Atom entry whose html-typed title, summary or content holds markup the HTML parser cannot read."""
+    """An Atom entry whose html-typed title, summary or content holds markup the reader refuses."""
     title = f'<title type="html">Jobs {markup}</title>' if part == "title" else f"<title>Unreadable entry {n}</title>"
     body = f'<{part} type="html">Excerpt {markup}</{part}>' if part in ("summary", "content") else ""
     return (f'<entry>{title}<link href="https://www.bls.gov/news.release/archives/empsit_unreadable{n}.htm"/>'
@@ -303,7 +304,7 @@ class ParsingTests(unittest.TestCase):
         with self.assertRaises(FeedRejected):  # Characters XML itself forbids refuse the whole document.
             parse_feed(rss([rss_item(1, description="E\u0000\u0007")]), self.FED_SOURCE)
 
-    def test_markup_the_html_parser_cannot_read_skips_only_that_entry(self):
+    def test_an_unknown_marked_section_skips_only_that_entry(self):
         for markup in UNREADABLE:
             feeds = {"an RSS description": (rss([rss_item(1), unreadable_rss_item(2, markup)]), self.FED_SOURCE, "excerpt"),
                      **{f"an Atom html {part}": (atom([atom_entry(1), unreadable_atom_entry(2, part, markup)]),
@@ -489,7 +490,7 @@ class ApiTests(Folder):
                     self.assertIsNone(item["feed_timestamp"]["instant_utc"])
                     self.assertIsNone(item["feed_timestamp"]["suggestion"])
 
-    def test_markup_the_html_parser_cannot_read_never_aborts_the_first_or_a_middle_source(self):
+    def test_an_unknown_marked_section_never_aborts_the_first_or_a_middle_source(self):
         """A first refresh caches every source; the second carries unreadable markup in one source. That entry is
         skipped and counted; the source's good entries, the later sources and the earlier cache all survive."""
         bad_fed = rss([rss_item(1, pub="Wed, 16 Sep 2026 18:00:00 GMT"), unreadable_rss_item(3, UNREADABLE[0]),

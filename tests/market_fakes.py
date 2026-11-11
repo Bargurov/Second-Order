@@ -171,6 +171,7 @@ def release_zip(data: bytes, entries: dict | None = None) -> bytes:
                 info = zipfile.ZipInfo(name, date_time=ZIP_ENTRY_TIME)
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = 0o600 << 16  # As writestr sets for a named file.
+                info.create_system = 0  # zipfile takes it from the machine (3 off Windows); the fixtures hold 0.
                 archive.writestr(info, content)
     return buffer.getvalue()
 

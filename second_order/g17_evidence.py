@@ -13,7 +13,8 @@ A page or table is refused when:
 - the table heading, title or unit differs from the expected text (Table 1: percent change, seasonally adjusted);
 - its monthly columns are not six consecutive monthly rates marked [r], with the last one [p];
 - a row's indent class contradicts its header path, a path or id repeats, or a value cell does not name its own row;
-- a value is anything other than a one-decimal printed rate or a blank, which stays missing.
+- a value is anything other than a one-decimal printed rate or a blank, which stays missing;
+- the page holds a marked section html_markup does not read.
 Consistency. Table 1's Total IP, Manufacturing, Mining and Utilities must equal the release summary's Total index,
 Manufacturing (see note below), Mining and Utilities in every month, with the same months and markers.
 
@@ -27,6 +28,7 @@ import json
 from pathlib import Path
 import re
 
+from . import html_markup
 from .store import digest
 
 EXTRACT_VERSION = "g17-extract-0.1"
@@ -137,6 +139,8 @@ def _page(data: bytes, where: str) -> _Page:
         decoded = data.decode("utf-8")
     except UnicodeDecodeError:
         raise EvidenceRefused(f"{where} is not UTF-8") from None
+    if html_markup.unreadable(decoded):  # The rule comes before the parser, so every Python version gives one answer.
+        raise EvidenceRefused(f"{where} has markup that cannot be read (an unknown marked section such as <![bogus[)")
     page = _Page()
     page.feed(decoded)
     page.close()

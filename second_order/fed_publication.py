@@ -16,6 +16,8 @@ from html.parser import HTMLParser
 import re
 from urllib.parse import urljoin
 
+from . import html_markup
+
 EXTRACTOR_VERSION = "fed-press-release-extract-0.1"
 PAGE_HOST = "https://www.federalreserve.gov"
 MAX_CHARACTERS = 50_000  # The user source limit (model_draft.MAX_SOURCE_CHARS); a longer release is refused whole.
@@ -194,11 +196,14 @@ def release_time(text: str) -> dict | None:
 
 def extract(raw: bytes, content_type: str) -> dict:
     """The release as printed: its parts, the kept paragraphs, what was left out and the linked documents."""
+    text = decode(raw, content_type)
+    if html_markup.unreadable(text):  # The rule comes before the parser, so every Python version gives one answer.
+        raise Unreadable("The page has markup that cannot be read")
     page = _Page()
     try:
-        page.feed(decode(raw, content_type))
+        page.feed(text)
         page.close()
-    except AssertionError:  # html.parser refuses some malformed declarations this way (see _markupbase).
+    except AssertionError:  # A refusal html.parser itself still raises (none is known once the rule has passed).
         raise Unreadable("The page has markup that cannot be read") from None
     if page.articles != 1:
         raise Unreadable("The page does not have the press-release layout this import reads (one article block)")

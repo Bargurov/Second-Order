@@ -39,7 +39,6 @@ separate snapshot.
 """
 from collections import Counter
 from datetime import date, datetime, timezone
-import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -51,7 +50,7 @@ from .market_calendar import calendar_identity, expected_sessions, load_exceptio
 from .market_context import NO_VALUE, SERIES, SOURCE, TERMS
 from .registry import BOARD_H15, source_bound
 from .schema import utc
-from .snapshots import has_market_tables, load_snapshot
+from .snapshots import has_market_tables, load_snapshot, stored_gzip
 from .store import canonical, digest
 
 ADAPTER_VERSION = "board-h15-package-import-0.1"
@@ -220,8 +219,8 @@ def import_package(connection: sqlite3.Connection, package_id: str, observation_
         for series_id in targets.values():
             connection.execute("INSERT INTO market_series VALUES (?,?,?,?,?)",
                                (snapshot_id, series_id, canonical(metadata[series_id]),
-                                gzip.compress(canonical(metadata[series_id]).encode("utf-8"), mtime=0),
-                                gzip.compress(canonical(copied[series_id]).encode("utf-8"), mtime=0)))
+                                stored_gzip(canonical(metadata[series_id]).encode("utf-8")),
+                                stored_gzip(canonical(copied[series_id]).encode("utf-8"))))
             stated = copied[series_id]
             connection.executemany(
                 "INSERT INTO market_observations VALUES (?,?,?,?,?,?,?,?)",

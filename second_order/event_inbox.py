@@ -58,7 +58,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from . import feed_credits, inbox_acquisitions, inbox_archive, inbox_imports, inbox_raw
+from . import feed_credits, html_markup, inbox_acquisitions, inbox_archive, inbox_imports, inbox_raw
 
 INBOX_VERSION = "event-inbox-0.1"
 VIEW_VERSION = "event-inbox-view-0.1"
@@ -287,11 +287,13 @@ class _Text(HTMLParser):
 def plain_text(value: str | None, html: bool, limit: int, part: str = "the text") -> tuple[str, bool]:
     """One line of plain text, control characters removed, at most `limit` characters (and whether it was cut).
 
-    FeedRejected, naming `part`, if HTML cannot be read: Python's html.parser refuses some malformed declarations, such
-    as `<![bogus[` or `<![ x`, by raising AssertionError (see _markupbase), so that error is caught here and only here."""
+    FeedRejected, naming `part`, if HTML cannot be read: a marked section html_markup does not read, such as `<![bogus[`
+    or `<![ x`, checked before the parser, or a refusal html.parser itself still raises (AssertionError)."""
     if not value:
         return "", False
     if html:
+        if html_markup.unreadable(value):
+            raise FeedRejected(f"{part} has markup that cannot be read as plain text")
         parser = _Text()
         try:
             parser.feed(value)

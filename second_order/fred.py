@@ -13,7 +13,6 @@ logged or included in an error message.
 """
 from collections import Counter
 from datetime import date, datetime, timezone
-import gzip
 import hashlib
 import json
 import math
@@ -24,7 +23,7 @@ from .data import ny_date
 from .market_calendar import calendar_identity, expected_sessions, load_exceptions, reconcile
 from .registry import FRED, source_bound
 from .schema import utc
-from .snapshots import list_snapshots, load_snapshot, snapshot_readiness, snapshot_revisions
+from .snapshots import list_snapshots, load_snapshot, snapshot_readiness, snapshot_revisions, stored_gzip
 from .store import canonical, digest
 
 FRED_API = "https://api.stlouisfed.org/fred"
@@ -169,8 +168,8 @@ def import_snapshot(connection: sqlite3.Connection, api_key: str, observation_st
                            (snapshot_id, "fred", vintage.isoformat(), retrieved_at.isoformat(), canonical(payload)))
         for series_id, (_, metadata, rows, raw_metadata, raw_observations) in parsed.items():
             connection.execute("INSERT INTO market_series VALUES (?,?,?,?,?)",
-                               (snapshot_id, series_id, canonical(metadata), gzip.compress(raw_metadata, mtime=0),
-                                gzip.compress(raw_observations, mtime=0)))
+                               (snapshot_id, series_id, canonical(metadata), stored_gzip(raw_metadata),
+                                stored_gzip(raw_observations)))
             provided = {day: (raw, start, end) for day, raw, _, start, end in rows}
             stored = []
             for day, value, status in classified[series_id]:
