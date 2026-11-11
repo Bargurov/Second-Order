@@ -1,0 +1,255 @@
+/* The user Client. Scoped under .client (and the client-* classes); it uses only the global colour and type variables
+   and the shared topbar, ledger, card and button classes from styles.css. The three result surfaces look different on purpose:
+   the publisher's quoted words, the generated interpretation and what remains unknown. */
+
+.client { display: grid; gap: 18px; padding-top: 22px; }
+.client-topbar { border-bottom-color: var(--ink); }
+.client .button { text-decoration: none; color: var(--ink); display: inline-block; }
+.client .button:disabled, .client .button:disabled:hover { border-color: var(--rule-strong); background: var(--paper-sunk);
+  color: var(--ink-3); cursor: not-allowed; }
+.client .button-quiet { border-color: var(--rule-strong); background: transparent; }
+.client a { color: var(--accent); text-underline-offset: 3px; }
+
+/* Where focus is sent rather than tabbed to (a page title on arrival, a new quote, the result, the state card): places,
+   not controls, so like the shell's and public pages' titles they take focus without a ring. */
+.client [tabindex="-1"]:focus { outline: none; }
+
+.client-header .kicker { margin: 0; }
+.client-title { margin: 6px 0 8px; font: 400 clamp(26px, 4vw, 36px)/1.15 var(--serif); letter-spacing: -0.01em;
+  overflow-wrap: anywhere; }
+.client-lede { max-width: 70ch; margin: 0 0 12px; color: var(--ink-2); }
+.client-card { min-width: 0; }
+.client-card h2 { margin: 0 0 10px; }
+.client-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0 0; }
+.client-status, .client-empty { color: var(--ink-3); }
+.client-sub { display: block; margin-top: 3px; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.client-sub.is-over { color: var(--stamp); }
+.client-note { max-width: 74ch; font-size: 13.5px; color: var(--ink-2); }
+.client-advisory { max-width: 74ch; margin: 0 0 8px; padding: 7px 11px; border-left: 3px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 13.5px; color: var(--ink); }
+.client-basis { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-3); }
+.client-link-button { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px; }
+.client-label { display: block; margin: 0 0 8px; font: 500 10.5px/1.4 var(--mono); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3); }
+
+/* The account strip under the topbar, aligned with it: who is signed in, and Sign out as a quiet text button. */
+.account-strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 2px 16px;
+  max-width: 1200px; margin: 0 auto; padding: 4px var(--gutter); border-bottom: 1px solid var(--rule);
+  font-size: 13px; color: var(--ink-2); }
+.account-strip-name { min-width: 0; overflow-wrap: anywhere; }
+.account-strip-label { color: var(--ink-3); }
+.account-strip button { min-height: 32px; padding: 4px 2px; border: 0; background: none; color: var(--accent);
+  font: 500 13px var(--sans); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.account-strip button:hover { text-decoration-thickness: 2px; }
+.account-strip button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Chips and the allowance. */
+.client-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.client-chip { display: inline-block; padding: 2px 8px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  font: 500 11px/1.5 var(--mono); letter-spacing: 0.03em; color: var(--ink-2); background: var(--paper-raised); }
+.client-chip.is-state[data-state="recorded"], .client-chip.is-outcome { border-color: var(--supported);
+  color: var(--supported); background: var(--supported-soft); }
+.client-chip.is-state[data-state="failed"], .client-chip.is-state[data-state="unresolved"],
+.client-chip.is-state[data-state="uncertain"] {
+  border-color: var(--inconclusive); color: var(--inconclusive); background: var(--inconclusive-soft); }
+.client-chip.is-outcome[data-outcome="invalid"], .client-chip.is-outcome[data-outcome="declined"],
+.client-chip.is-outcome[data-outcome="incomplete"] { border-color: var(--inconclusive); color: var(--inconclusive);
+  background: var(--inconclusive-soft); }
+.client-ledger { margin: 0 0 6px; }
+.client-ledger dd { font-size: 13.5px; }
+.client-entitlements.is-compact { padding-top: 12px; padding-bottom: 12px; }
+
+/* Before an analysis can run: each missing step, in the server's order and words. */
+.client-first-use { border-left: 3px solid var(--inconclusive); }
+.client-steps { display: grid; gap: 10px; margin: 0 0 10px; padding-left: 20px; }
+.client-steps li p { max-width: 74ch; margin: 0 0 2px; }
+.client-step-title { font-weight: 600; }
+
+/* Work given back after the same user signed in again: listed until its page takes it back. */
+.client-recovered { border-left: 3px solid var(--accent); }
+.client-recovered-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.client-recovered-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 6px 16px; padding: 8px 0; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
+.client-recovered-list .client-actions { margin: 0; }
+.client-notice .client-ended-text { width: 100%; min-height: 90px; margin: 4px 0 0; }
+
+/* Notices: a refusal says what was refused and the next deliberate step; an unconfirmed reply proves nothing. */
+.client-notice { margin: 0 0 12px; padding: 10px 13px; border-left: 3px solid var(--stamp);
+  background: var(--contradicted-soft); }
+.client-notice.is-unconfirmed { border-left-color: var(--inconclusive); background: var(--inconclusive-soft); }
+.client-notice p { margin: 0 0 6px; }
+.client-notice-title { font-weight: 600; color: var(--ink); }
+.client-notice-facts { margin: 4px 0 6px; padding-left: 18px; font-size: 13.5px; }
+.client-notice-next { font-size: 13px; color: var(--ink-2); }
+.client-notice .client-actions { margin-top: 4px; }
+
+/* History. */
+.client-history { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.client-history-row { padding: 11px 0; border-bottom: 1px solid var(--rule); }
+.client-history-title { font: 400 19px/1.3 var(--serif); color: var(--ink); text-decoration-color: var(--rule-strong);
+  overflow-wrap: anywhere; }
+
+/* Forms: source and Effort. */
+.client-form { display: grid; gap: 14px; }
+.client-form label, .client-review-notes { display: grid; gap: 5px; font-size: 13px; color: var(--ink-2); }
+.client-form input, .client-form select, .client-form textarea, .client-review-notes textarea, .client-ended-text {
+  min-width: 0; padding: 8px 10px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  background: var(--paper-raised); color: var(--ink); font: 15px/1.5 var(--sans); }
+.client-form textarea, .client-review-notes textarea, .client-ended-text { resize: vertical; }
+.client-when { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 0; padding: 10px 12px; border: 1px solid var(--rule); }
+.client-when legend, .client-efforts legend, .client-review-status legend { padding: 0 4px; font-weight: 600;
+  font-size: 13px; color: var(--ink); }
+.client-efforts, .client-review-status { display: grid; gap: 8px; margin: 0 0 10px; padding: 10px 12px;
+  border: 1px solid var(--rule); }
+.client-effort-option, .client-review-status label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  font-size: 14.5px; }
+.client-effort-option .client-sub { margin: 0; }
+.client-source-facts { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.client-source-text summary, .client-marked summary { cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+.client-source-text pre, .client-marked-text { max-height: 420px; overflow: auto; margin: 10px 0 0; padding: 12px;
+  background: var(--paper-raised); border: 1px solid var(--rule); font: 13.5px/1.6 var(--sans); white-space: pre-wrap;
+  overflow-wrap: anywhere; }
+.client-marked-text mark { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* The analysis: state, quote and approval. */
+.client-state-detail { max-width: 74ch; margin: 0 0 8px; color: var(--ink); }
+.client-charge { margin: 0 0 10px; font: 400 13px/1.5 var(--mono); color: var(--ink-2); }
+.client-quote.is-approval { padding: 12px 14px; border: 1px solid var(--ink); background: var(--paper-raised); }
+.client-approve { display: flex; gap: 10px; align-items: flex-start; max-width: 78ch; margin: 10px 0 0; font-size: 14.5px; }
+.client-approve input { margin-top: 4px; flex: none; }
+.client-held p:first-child { max-width: 74ch; }
+
+/* The result: three surfaces. */
+.client-outcome h2 { margin-bottom: 6px; }
+.client-explanation { margin: 10px 0; padding: 10px 12px; border-left: 3px solid var(--rule-strong);
+  background: var(--paper-sunk); white-space: pre-wrap; }
+.client-surface { min-width: 0; padding: 18px 20px; border: 1px solid var(--rule); }
+.client-surface h2 { margin: 0 0 6px; font: 400 23px/1.2 var(--serif); }
+.client-surface h3 { margin: 14px 0 4px; font: 600 12px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-2); }
+.client-evidence { border-top: 3px solid var(--accent); background: var(--paper-raised); }
+.client-statements { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.client-statements > li { padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.client-statements > li:last-child { padding-bottom: 0; border-bottom: 0; }
+.client-basis-label { margin: 0 0 4px; font: 500 11px/1.4 var(--mono); letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--accent); }
+.client-statement { margin: 0 0 8px; }
+.client-quote-figure { margin: 6px 0 0; }
+.client-quote-figure blockquote { margin: 0; padding: 4px 0 4px 14px; border-left: 2px solid var(--accent);
+  font: italic 400 17px/1.45 var(--serif); color: var(--ink); }
+.client-quote-figure figcaption { margin-top: 4px; font: 400 11.5px/1.4 var(--mono); color: var(--ink-3); }
+.client-interpretation { border-style: dashed; border-color: var(--rule-strong); background: transparent; }
+.client-interpretation-text { max-width: 74ch; font-size: 15.5px; }
+.client-unknowns { background: color-mix(in srgb, var(--paper-sunk) 55%, transparent); }
+.client-unknowns ul { margin: 0; padding-left: 18px; }
+.client-unknowns li + li { margin-top: 4px; }
+
+/* Research checks: after the result, before the review. A flag asks for a look and is marked as such, never as a
+   failure; the limits stand above the findings, and the full list of checks folds away. */
+.client-checks { overflow-wrap: anywhere; }
+.client-checks h3 { margin: 16px 0 6px; font: 600 12px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-2); }
+.client-checks-statement { max-width: 78ch; margin: 0 0 8px; }
+.client-check-findings { margin: 0; padding: 0; list-style: none; }
+.client-check-findings li { margin: 0 0 8px; padding: 8px 12px; border-left: 3px solid var(--inconclusive);
+  background: color-mix(in srgb, var(--inconclusive-soft) 60%, transparent); }
+.client-check-place { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.client-check-name { font-weight: 600; color: var(--ink); }
+.client-check-detail { max-width: 78ch; margin: 3px 0 0; }
+.client-check-review { max-width: 78ch; margin: 0; padding-left: 18px; }
+.client-check-review li + li { margin-top: 4px; }
+.client-check-list { margin-top: 14px; }
+.client-check-list summary { cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+.client-check-list dl { display: grid; gap: 8px; margin: 10px 0 0; }
+.client-check-list dt { font-size: 13px; font-weight: 600; }
+.client-check-list dd { max-width: 78ch; margin: 2px 0 0; font-size: 13px; color: var(--ink-2); }
+
+/* Review. */
+.client-problems { margin: 0; padding-left: 18px; font-size: 13px; color: var(--stamp); }
+.client-versions { margin: 16px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.client-versions li { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.client-version-head { margin: 0; font: 400 12px/1.5 var(--mono); color: var(--ink-2); }
+.client-version-notes { margin: 4px 0 0; white-space: pre-wrap; }
+.client-export { margin: 0; }
+
+/* The session ended with unsaved text. */
+.client-ended .client-ended-text { width: 100%; min-height: 120px; margin: 0 0 12px; }
+
+/* Current news: entries are discovery metadata in a ruled list; the feeds' states, interests, search and limits sit
+   around them as quiet cards. An excerpt is set apart from the headline and labelled as not the publication. */
+.client-news-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; }
+.client-news-head h2 { margin: 0; }
+.client-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0; padding: 0; border: 0; }
+.client-scope legend { float: left; margin: 0 4px 0 0; padding: 0; }
+.client-check { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--ink-2); }
+.client-news input:not([type]), .client-search input[name="query"], .client-news select, .client-search select {
+  min-width: 0; padding: 7px 9px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  background: var(--paper-raised); color: var(--ink); font: 14.5px/1.4 var(--sans); }
+.client-news-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 18px; margin: 12px 0 4px;
+  padding: 10px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.client-news-filter > label:not(.client-check) { display: grid; gap: 3px; font-size: 12.5px; color: var(--ink-3); }
+.client-news-filter select, .client-search-options select { max-width: 22em; }
+.client-news-list { margin: 6px 0 0; padding: 0; list-style: none; }
+.client-news-entry { min-width: 0; padding: 14px 0; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
+.client-news-entry:first-child { border-top: 0; }
+.client-news-entry .client-label { margin: 0 0 4px; }
+.client-news-entry .client-actions { margin-top: 10px; }
+.client-news-title { margin: 0 0 6px; font: 400 19px/1.3 var(--serif); }
+.client-news-title a { color: var(--ink); text-decoration-color: var(--rule-strong); }
+.client-news-title a:hover { text-decoration-color: var(--ink); }
+.client-news-times { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 16px; margin: 6px 0 0;
+  font-size: 13.5px; color: var(--ink); }
+.client-news-times .client-sub { margin: 0; }
+.client-news-excerpt { max-width: 78ch; margin: 10px 0 6px; padding: 4px 0 4px 12px; border-left: 2px solid var(--rule-strong);
+  font-size: 14px; color: var(--ink-2); }
+.client-news-excerpt .client-label { margin-bottom: 4px; }
+.client-chip.is-quiet { color: var(--ink-3); background: transparent; }
+.client-chip.is-warning { border-color: var(--inconclusive); color: var(--inconclusive); background: var(--inconclusive-soft); }
+.client-feed-list { margin: 8px 0 0; padding: 0; list-style: none; }
+.client-feed-list li { padding: 10px 0; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
+.client-feed-name { margin: 0; font-weight: 600; }
+.client-feed-name .client-sub { display: inline; font-weight: 400; }
+.client-feed-state { max-width: 80ch; margin: 3px 0; font-size: 13.5px; color: var(--ink-2); }
+.client-feed-state.is-stale { padding-left: 8px; border-left: 3px solid var(--inconclusive); color: var(--ink); }
+.client-feed-state.is-missing { color: var(--ink-3); }
+.client-interests summary { cursor: pointer; }
+.client-interests-title { font: 400 21px/1.25 var(--serif); color: var(--ink); }
+.client-interests summary .client-sub { display: inline; margin-left: 6px; }
+.client-interest-options { display: grid; gap: 10px; margin: 12px 0 8px; padding: 0; border: 0; }
+.client-interest-options legend { margin-bottom: 8px; padding: 0; font-size: 13px; color: var(--ink-2); }
+.client-interest { display: flex; align-items: flex-start; gap: 9px; max-width: 80ch; }
+.client-interest input { margin-top: 4px; flex: none; }
+.client-interest-label { display: block; font-weight: 600; }
+.client-search { display: grid; gap: 8px; }
+.client-search h2 { margin: 0; }
+.client-search > label { display: grid; gap: 4px; max-width: 560px; font-size: 13px; color: var(--ink-2); }
+.client-search-options { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 20px; }
+.client-search-options > label:not(.client-check) { display: grid; gap: 3px; font-size: 12.5px; color: var(--ink-3); }
+.client-search .client-actions { margin-top: 4px; }
+.client-limits-list { margin: 0 0 6px; padding: 0; list-style: none; font: 12.5px/1.65 var(--mono); color: var(--ink-2); }
+.client-limits-list li.is-used { color: var(--stamp); }
+.client-limits.is-compact { padding-top: 12px; padding-bottom: 12px; }
+.client-limits h2 { margin-bottom: 6px; }
+.client-import { overflow-wrap: anywhere; }  /* The server's statements and facts name long addresses and fingerprints. */
+.client-import-statements { max-width: 80ch; margin: 0 0 12px; padding-left: 18px; font-size: 14px; color: var(--ink-2); }
+.client-import-statements li + li { margin-top: 4px; }
+.client-import-facts { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.client-import-facts dd { overflow-wrap: anywhere; }
+.client-import-confirm { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.client-import-left-out ul, .client-import-linked ul { margin: 8px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+.client-import-left-out summary { cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+.client-from-news { margin: 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--paper-raised); }
+.client-from-news p { margin: 0; }
+.client-from-news ul { margin: 4px 0 0; padding-left: 18px; }
+
+@media (max-width: 640px) {
+  .account-strip { justify-content: space-between; }
+  .account-strip button { min-height: 40px; }
+  .client-surface { padding: 14px 12px; }
+  .client-quote-figure blockquote { font-size: 16px; }
+  .client-when { flex-direction: column; }
+  .client-news-filter, .client-search-options { flex-direction: column; align-items: stretch; }
+  .client-news-title { font-size: 17.5px; }
+}

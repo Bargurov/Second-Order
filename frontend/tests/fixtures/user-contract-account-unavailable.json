@@ -1,0 +1,47 @@
+{
+  "contract": "user-api-0.2",
+  "user": {
+    "user_id": "u-5ca1ab1e0000a001",
+    "username": "reader-a",
+    "display_name": "Reader A (synthetic)",
+    "role": "user"
+  },
+  "credits": {
+    "available": 40,
+    "held": 0
+  },
+  "daily": {
+    "timezone": "Asia/Jerusalem",
+    "day": "2026-10-14",
+    "limit": null,
+    "used": 0,
+    "remaining": null,
+    "resets_at": "2026-10-14T21:00:00+00:00"
+  },
+  "efforts": [
+    {
+      "effort": "low",
+      "label": "Low"
+    },
+    {
+      "effort": "medium",
+      "label": "Medium"
+    },
+    {
+      "effort": "high",
+      "label": "High"
+    }
+  ],
+  "effort_note": "Higher Effort lets the analysis spend more of its output allowance on reasoning. It does not promise a better result or a fixed running time, and it can need more credits.",
+  "analysis": {
+    "available": false,
+    "reason": "no_daily_limit",
+    "detail": "No daily analysis limit is set for your account yet. Ask the administrator.",
+    "reasons": [
+      {
+        "reason": "no_daily_limit",
+        "detail": "No daily analysis limit is set for your account yet. Ask the administrator."
+      }
+    ]
+  }
+}

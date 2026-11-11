@@ -1,0 +1,116 @@
+{
+  "collection_version": "related-cases-0.1",
+  "id": "bis-2022-10-07",
+  "title": "Commerce restricts advanced computing and chipmaking items for the PRC",
+  "topic": "Semiconductor export controls",
+  "summary": {
+    "text": "On October 7, 2022, the Commerce Department’s Bureau of Industry and Security announced two rules that restrict the PRC’s ability to obtain advanced computing chips, develop and maintain supercomputers and manufacture advanced semiconductors. They add license requirements for advanced chips, for supercomputer and semiconductor end uses in the PRC, for chipmaking equipment and for PRC fabrication facilities, and take effect in phases from October 7 to October 21, 2022.",
+    "facts": ["release", "two-rules", "ccl-chips", "end-use", "sme", "fab-licenses", "phases"]
+  },
+  "source": {
+    "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS), Office of Congressional and Public Affairs",
+    "title": "Commerce Implements New Export Controls on Advanced Computing and Semiconductor Manufacturing Items to the People’s Republic of China (PRC)",
+    "url": "https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples",
+    "kind": "Press release",
+    "date_as_stated": "FOR IMMEDIATE RELEASE | October 7, 2022",
+    "retained": {
+      "approval_id": "related-cases-sources-01",
+      "attempt": 1,
+      "folder": "bis-2022-10-07",
+      "file": "source.html",
+      "sha256": "c25ea1239348b29549e7bf1965a9940db92fefda7c5f1c7d3db08a20bf4227bb",
+      "bytes": 76841,
+      "media_type": "text/html; charset=utf-8",
+      "requested_at": "2026-10-12T08:58:20.277884+00:00",
+      "received_at": "2026-10-12T08:58:22.032699+00:00"
+    }
+  },
+  "dates": [
+    {"kind": "announcement", "label": "Press release issued", "date": "2022-10-07", "as_stated": "FOR IMMEDIATE RELEASE | October 7, 2022", "facts": ["release"], "note": "A date only: the release states no time of day, so none is recorded."},
+    {"kind": "effective", "label": "Semiconductor manufacturing items restrictions take effect, on filing for Public Inspection", "date": "2022-10-07", "as_stated": "effective upon filing for Public Inspection (October 7, 2022)", "facts": ["phases"], "note": null},
+    {"kind": "effective", "label": "Unverified List rule takes effect", "date": "2022-10-07", "as_stated": "The rule takes effect on October 7, 2022.", "facts": ["uvl-changes"], "note": null},
+    {"kind": "effective", "label": "Restrictions on U.S. persons’ support for certain PRC fabrication facilities take effect", "date": "2022-10-12", "as_stated": "is effective five days later (October 12, 2022)", "facts": ["phases"], "note": null},
+    {"kind": "effective", "label": "Advanced computing and supercomputer controls, and the rule’s other changes, take effect", "date": "2022-10-21", "as_stated": "are effective 14 days later (October 21, 2022)", "facts": ["phases"], "note": null},
+    {"kind": "publication", "label": "Federal Register publication of the rules", "date": null, "as_stated": null, "facts": ["phases", "comments"], "note": "Not stated on the page. The rule texts it links were not acquired, so the publication date is unknown here."},
+    {"kind": "deadline", "label": "Public comments due", "date": null, "as_stated": "no later than 60 days from the date of Federal Register publication", "facts": ["comments"], "note": "Not computable here, because the Federal Register publication date is unknown."}
+  ],
+  "facts": [
+    {"id": "release", "text": "BIS’s Office of Congressional and Public Affairs issued the press release for immediate release on October 7, 2022.", "quotes": ["Office of Congressional and Public Affairs", "FOR IMMEDIATE RELEASE | October 7, 2022"]},
+    {"id": "issuer", "text": "The Department of Commerce’s Bureau of Industry and Security (BIS) is the agency implementing the updates to its export controls.", "quotes": ["The Department of Commerce’s Bureau of Industry and Security (BIS) is implementing a series of targeted updates to its export controls"]},
+    {"id": "stated-purpose", "text": "BIS says the updates restrict the PRC’s ability to purchase and manufacture certain high-end chips used in military applications, as part of its efforts to protect U.S. national security and foreign policy interests.", "quotes": ["These updates will restrict the People’s Republic of China’s (PRC’s) ability to both purchase and manufacture certain high-end chips used in military applications", "as part of BIS’s ongoing efforts to protect U.S. national security and foreign policy interests"]},
+    {"id": "two-rules", "text": "Two rules were announced; BIS says they restrict the PRC’s ability to obtain advanced computing chips, develop and maintain supercomputers, and manufacture advanced semiconductors.", "quotes": ["The export controls announced in the two rules today restrict the PRC’s ability to obtain advanced computing chips, develop and maintain supercomputers, and manufacture advanced semiconductors."]},
+    {"id": "stated-uses", "text": "The release states that the PRC uses these items and capabilities to produce advanced military systems, including weapons of mass destruction.", "quotes": ["These items and capabilities are used by the PRC to produce advanced military systems including weapons of mass destruction"]},
+    {"id": "ccl-chips", "text": "The advanced computing and semiconductor manufacturing rule adds certain advanced and high-performance computing chips, and computer commodities containing them, to the Commerce Control List (CCL).", "quotes": ["Adds certain advanced and high-performance computing chips and computer commodities that contain such chips to the Commerce Control List (CCL)"]},
+    {"id": "end-use", "text": "It adds license requirements for items destined for a supercomputer or semiconductor development or production end use in the PRC.", "quotes": ["Adds new license requirements for items destined for a supercomputer or semiconductor development or production end use in the PRC"]},
+    {"id": "foreign-produced", "text": "It expands the scope of the Export Administration Regulations (EAR) over certain foreign-produced advanced computing items and foreign-produced items for supercomputer end uses.", "quotes": ["Expands the scope of the Export Administration Regulations (EAR) over certain foreign-produced advanced computing items and foreign produced items for supercomputer end uses"]},
+    {"id": "entity-list", "text": "It extends the foreign-produced items subject to license requirements to twenty-eight existing Entity List entities located in the PRC.", "quotes": ["Expands the scope of foreign-produced items subject to license requirements to twenty-eight existing entities on the Entity List that are located in the PRC"]},
+    {"id": "sme", "text": "It adds certain semiconductor manufacturing equipment and related items to the CCL, and license requirements for exporting items to develop or produce such equipment.", "quotes": ["Adds certain semiconductor manufacturing equipment and related items to the CCL", "Adds new license requirements to export items to develop or produce semiconductor manufacturing equipment and related items"]},
+    {"id": "fab-licenses", "text": "It adds license requirements for items destined to a semiconductor fabrication “facility” in the PRC, at thresholds the release lists; licenses for facilities owned by PRC entities face a “presumption of denial”, and those for facilities owned by multinationals are decided case by case.", "quotes": ["Adds new license requirements for items destined to a semiconductor fabrication “facility” in the PRC", "Licenses for facilities owned by PRC entities will face a “presumption of denial,” and facilities owned by multinationals will be decided on a case-by-case basis.", "The relevant thresholds are as follows:"]},
+    {"id": "thresholds", "text": "The listed thresholds are logic chips with non-planar transistor architectures (FinFET or GAAFET) of 16nm or 14nm or below, DRAM memory chips of 18nm half-pitch or less, and NAND flash memory chips with 128 layers or more.", "quotes": ["Logic chips with non-planar transistor architectures (I.e., FinFET or GAAFET) of 16nm or 14nm, or below", "DRAM memory chips of 18nm half-pitch or less", "NAND flash memory chips with 128 layers or more"]},
+    {"id": "us-persons", "text": "It restricts the ability of U.S. persons to support the development or production of integrated circuits at certain PRC-located fabrication facilities without a license.", "quotes": ["Restricts the ability of U.S. persons to support the development, or production, of ICs at certain PRC-located semiconductor fabrication “facilities” without a license"]},
+    {"id": "tgl", "text": "It establishes a Temporary General License (TGL) that allows specific, limited manufacturing activities related to items destined for use outside the PRC, to minimize the short-term impact on the semiconductor supply chain.", "quotes": ["Establishes a Temporary General License (TGL) to minimize the short-term impact on the semiconductor supply chain by allowing specific, limited manufacturing activities related to items destined for use outside the PRC"]},
+    {"id": "phases", "text": "The rule takes effect in phases after filing for Public Inspection with the Federal Register: the semiconductor manufacturing items restrictions on filing (October 7, 2022), the U.S.-person restrictions five days later (October 12, 2022), and the advanced computing and supercomputer controls and the rule’s other changes 14 days later (October 21, 2022).", "quotes": ["The rule is effective in phases after being filed for Public Inspection with the Federal Register.", "The semiconductor manufacturing items restrictions are effective upon filing for Public Inspection (October 7, 2022)", "is effective five days later (October 12, 2022)", "the advanced computing and supercomputer controls, as well as the other changes in the rule, are effective 14 days later (October 21, 2022)"]},
+    {"id": "comments", "text": "Public comments on all of these changes are due to BIS no later than 60 days from the date of Federal Register publication.", "quotes": ["public comments on all of these changes are due to BIS no later than 60 days from the date of Federal Register publication"]},
+    {"id": "uvl-policy", "text": "The second rule clarifies that a sustained lack of cooperation by a host government that prevents BIS from determining compliance with the EAR may lead to an entity’s addition to the Entity List.", "quotes": ["a sustained lack of cooperation by the host government that effectively prevents BIS from determining compliance with the EAR may lead to the addition of an entity to the Entity List"]},
+    {"id": "uvl-changes", "text": "That rule adds 31 entities to the Unverified List (UVL), removes 9, and takes effect on October 7, 2022.", "quotes": ["The rule adds 31 new entities to the UVL and removes 9 entities that have met relevant requirements.", "The rule takes effect on October 7, 2022."]},
+    {"id": "eurc", "text": "Additions, removals and revisions to the Entity List remain subject to approval by the End-User Review Committee of the Departments of Commerce, State, Defense and Energy.", "quotes": ["All additions, removals, or revisions to the Entity List are still subject to the approval of the End-User Review Committee, which is made up of the Departments of Commerce, State, Defense, and Energy pursuant to existing rules."]},
+    {"id": "memo", "text": "An Export Enforcement policy memorandum calls for adding parties to the Unverified List 60 days after checks are requested but host-government inaction prevents them, and an additional 60-day process for moving such parties to the Entity List.", "quotes": ["The policy calls for adding parties to the Unverified List 60 days after checks are requested but host government inaction prevents their completion, and an additional 60-day process for adding UVL parties to the Entity List when there is a sustained lack of cooperation by a host government to facilitate completion of the checks."]},
+    {"id": "allies", "text": "The Department of Commerce briefed and consulted with close allies and partners on these controls.", "quotes": ["The Department of Commerce briefed and consulted with close allies and partners on these controls."]},
+    {"id": "authority", "text": "BIS acted under the Export Control Reform Act of 2018 and its implementing regulations, the EAR.", "quotes": ["BIS’s actions today were taken under the authority of the Export Control Reform Act of 2018 and its implementing regulations, the EAR."]},
+    {"id": "background", "text": "The release presents the rules as part of an ongoing review of BIS’s export control policies towards the PRC announced in July 2022, following earlier company-specific restrictions on advanced integrated circuits for artificial intelligence applications.", "quotes": ["The rules announced today are part of the ongoing review of BIS’s export control policies towards the PRC announced by Under Secretary Estevez during Congressional hearings in July 2022", "A series of company-specific restrictions placed in recent months on the trade and servicing of specific advanced integrated circuits essential for highly capable artificial intelligence applications."]},
+    {"id": "officials", "text": "The release quotes Under Secretary of Commerce for Industry and Security Alan Estevez.", "quotes": ["said Under Secretary of Commerce for Industry and Security Alan Estevez"]}
+  ],
+  "scope": [
+    {"text": "Items: certain advanced computing chips and products containing them, and certain semiconductor manufacturing equipment and related items.", "facts": ["ccl-chips", "sme"]},
+    {"text": "End uses and destinations: supercomputer or semiconductor development or production end uses in the PRC, and PRC fabrication facilities at the listed technology thresholds.", "facts": ["end-use", "fab-licenses", "thresholds"]},
+    {"text": "Licensing policy for fabrication facilities: a presumption of denial for facilities owned by PRC entities, and case-by-case review for facilities owned by multinationals.", "facts": ["fab-licenses"]},
+    {"text": "Reach beyond U.S.-made items: certain foreign-produced items, including for twenty-eight Entity List entities in the PRC, and support by U.S. persons for certain PRC fabrication facilities.", "facts": ["foreign-produced", "entity-list", "us-persons"]},
+    {"text": "Exception: a Temporary General License for specific, limited manufacturing activities related to items destined for use outside the PRC.", "facts": ["tgl"]},
+    {"text": "Timing: effective in phases on October 7, October 12 and October 21, 2022, with public comments due 60 days after Federal Register publication.", "facts": ["phases", "comments"]}
+  ],
+  "actors": [
+    {"name": "Bureau of Industry and Security (BIS), U.S. Department of Commerce", "role": "Issued the rules and the press release", "facts": ["issuer", "release"]},
+    {"name": "Alan Estevez, Under Secretary of Commerce for Industry and Security", "role": "Quoted in the release", "facts": ["officials"]},
+    {"name": "End-User Review Committee (Commerce, State, Defense and Energy)", "role": "Approves additions, removals and revisions to the Entity List, as the release states", "facts": ["eurc"]},
+    {"name": "Entities on the Entity List located in the PRC", "role": "Twenty-eight existing entities face expanded license requirements for foreign-produced items", "facts": ["entity-list"]}
+  ],
+  "tags": {
+    "instrument": [{"slug": "export-controls", "facts": ["two-rules", "ccl-chips", "entity-list"]}],
+    "sector": [{"slug": "semiconductors", "facts": ["two-rules", "sme", "thresholds"]}],
+    "geography": [{"slug": "prc", "facts": ["two-rules", "end-use"]}],
+    "agency": [{"slug": "bis", "facts": ["issuer"]}]
+  },
+  "comparison_points": [
+    {"label": "Items covered", "case_value": "Advanced computing chips and products containing them; semiconductor manufacturing equipment and related items", "facts": ["ccl-chips", "sme"]},
+    {"label": "End uses and destinations", "case_value": "Supercomputer or semiconductor development or production end uses in the PRC; PRC fabrication facilities at the listed thresholds", "facts": ["end-use", "fab-licenses", "thresholds"]},
+    {"label": "Licensing policy", "case_value": "Presumption of denial for PRC-owned facilities; case by case for multinational-owned facilities", "facts": ["fab-licenses"]},
+    {"label": "Reach beyond U.S.-made items and firms", "case_value": "Certain foreign-produced items, and support by U.S. persons", "facts": ["foreign-produced", "us-persons"]},
+    {"label": "Exceptions", "case_value": "A Temporary General License for limited activities related to items destined for use outside the PRC", "facts": ["tgl"]},
+    {"label": "Timing", "case_value": "Phased: October 7, October 12 and October 21, 2022", "facts": ["phases"]}
+  ],
+  "interpretation": {
+    "channels": [
+      {"title": "Supply of advanced chips and chipmaking tools to the PRC", "facts": ["ccl-chips", "sme", "fab-licenses"], "text": "If licenses for these items were mostly denied, as the presumption of denial for PRC-owned facilities suggests, sellers of the covered chips and equipment could lose some PRC sales, and PRC fabrication facilities could find some advanced production harder to expand. The release states the licensing policy, not how many licenses were later granted, so the size of any effect is unknown from this source."},
+      {"title": "Reach through foreign-produced items and U.S. persons", "facts": ["foreign-produced", "entity-list", "us-persons"], "text": "Because the rule reaches certain foreign-produced items and the support of U.S. persons, its effects could extend beyond companies that ship from the United States. How far depends on the rule text, which was not acquired."},
+      {"title": "Phasing as a timing detail", "facts": ["phases", "tgl"], "text": "The staggered effective dates and the temporary general license mean the restrictions did not all bind on the announcement date. A later announcement should be compared with this one on effective dates, not only on announcement dates."}
+    ],
+    "why_read": "Read this case when an event concerns export controls on chips or chipmaking equipment, especially toward China. It sets out one announced design in detail (items, end uses, reach beyond U.S.-made items, licensing policy, a temporary exception and phased timing), which gives concrete points of comparison. It does not show what happened afterwards."
+  },
+  "unknowns": [
+    "The rule texts in the Federal Register, which govern, were not acquired: their definitions, conditions and Federal Register publication date are unknown here.",
+    "The Temporary General License’s terms beyond the release’s one-sentence description.",
+    "Which companies and facilities were affected, and how many licenses were later granted or denied.",
+    "Any later amendment, expansion or withdrawal of these rules: the case describes the announcement as of its date, not current law.",
+    "Market or industry consequences: the source states policy, not outcomes, and none were measured here."
+  ],
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-12",
+    "method": "Written only from the retained copy of the press release (approval related-cases-sources-01). Facts restate the release and quote it; every quote is checked against the retained copy whenever it is on the machine. The channels and the reading note are the assistant’s interpretation. No rule text, news coverage, market data or earlier AI summary was used.",
+    "sources_read": ["https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples"],
+    "ai_assisted": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded",
+    "currency": "historical"
+  }
+}

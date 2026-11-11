@@ -1,0 +1,97 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "cpi-2025-07-15",
+  "title": "June 2025 CPI: 0.3% on the month, 2.7% over the year, core 0.2%",
+  "category": "Inflation",
+  "summary": "Consumer prices rose 0.3 percent seasonally adjusted in June after 0.1 percent in May, and 2.7 percent over 12 months, up from 2.4 percent. Core prices rose 0.2 percent (2.9 percent over the year). Shelter was the main driver; gasoline rose only after seasonal adjustment; household goods and apparel rose while vehicles and airfares fell.",
+  "source": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "title": "Consumer Price Index — June 2025",
+    "url": "https://www.bls.gov/news.release/archives/cpi_07152025.htm",
+    "document_id": "USDL-25-1148",
+    "published_at": "2025-07-15T08:30:00-04:00",
+    "published_as_stated": "Embargoed until 8:30 a.m. (ET) Tuesday, July 15, 2025",
+    "timezone_note": "In July, Eastern Time is Eastern Daylight Time, UTC−04:00, so the release time is 12:30 UTC.",
+    "reference_period": "June 2025",
+    "page_last_updated": "2025-07-15",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "The all items CPI-U rose 0.3 percent in June on a seasonally adjusted basis, after 0.1 percent in May. Over the 12 months ending in June it rose 2.7 percent before seasonal adjustment, up from 2.4 percent for the 12 months ending in May. Excluding food and energy, prices rose 0.2 percent on the month (0.1 percent in May) and 2.9 percent over the year.",
+    "Shelter rose 0.2 percent and was, in the release's words, 'the primary factor' in the monthly increase: owners' equivalent rent rose 0.3 percent and rent 0.2 percent, while lodging away from home fell 2.9 percent. Energy rose 0.9 percent as seasonally adjusted gasoline rose 1.0 percent, but before seasonal adjustment gasoline prices rose only 0.1 percent. Food rose 0.3 percent.",
+    "Within core, goods were mixed. Household furnishings and operations rose 1.0 percent, apparel and recreation 0.4 percent each, and commodities less food and energy commodities 0.2 percent after no change in May. Used cars and trucks fell 0.7 percent, new vehicles 0.3 percent and airline fares 0.1 percent. Medical care services rose 0.6 percent."
+  ],
+  "key_facts": [
+    {"label": "All items, monthly", "value": "+0.3% (May +0.1%)", "basis": "Seasonally adjusted"},
+    {"label": "All items, 12 months", "value": "+2.7% (12 months to May +2.4%)", "basis": "Not seasonally adjusted"},
+    {"label": "Core (less food and energy), monthly", "value": "+0.2% (May +0.1%)", "basis": "Seasonally adjusted"},
+    {"label": "Core, 12 months", "value": "+2.9%", "basis": "Not seasonally adjusted"},
+    {"label": "Shelter", "value": "+0.2% monthly; +3.8% over 12 months", "basis": "Monthly change seasonally adjusted; 'the primary factor in the all items monthly increase'"},
+    {"label": "Gasoline", "value": "+1.0% adjusted; +0.1% unadjusted; −8.3% over 12 months", "basis": "Monthly seasonally adjusted and unadjusted changes, as reported"},
+    {"label": "Core goods", "value": "+0.2% (May 0.0%); +0.7% over 12 months", "basis": "Commodities less food and energy commodities, Table A"},
+    {"label": "Core services", "value": "+0.3% monthly; +3.6% over 12 months", "basis": "Services less energy services, Table A"}
+  ],
+  "channels": [
+    {
+      "title": "Expected policy path (shorter maturities)",
+      "source_fact": "Headline +0.3 percent and core +0.2 percent on the month; core 2.9 percent over the year.",
+      "interpretation": "Shorter Treasury yields price the expected path of the federal funds rate. A reading investors judged firmer than expected would push expected cuts later and support those yields; a softer reading would do the reverse. Because no sourced expectation is used here, the release alone does not say which applied."
+    },
+    {
+      "title": "Goods prices and inflation persistence (all maturities)",
+      "source_fact": "Household furnishings and operations +1.0 percent, apparel +0.4 percent, recreation +0.4 percent, and core goods +0.2 percent after no change in May; vehicles and airfares fell.",
+      "interpretation": "If investors read the rises in household goods and apparel as early pass-through of higher import tariffs, they could expect inflation to stay above target for longer, which would support yields across maturities. The release mentions neither tariffs nor import content: the link is an interpretation, and the mixed goods picture weakens it."
+    },
+    {
+      "title": "Inflation compensation (longer maturities)",
+      "source_fact": "The 12-month rate rose to 2.7 percent from 2.4 percent; over 12 months energy fell 0.8 percent while food rose 3.0 percent.",
+      "interpretation": "Longer yields include compensation for expected inflation. A higher 12-month rate matters for that compensation only if it changes the perceived trend; a step-up driven by one month, or by the comparison month leaving the window, carries little information about the future."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Shelter keeps cooling", "detail": "Shelter, the largest component, rose only 0.2 percent and lodging away from home fell 2.9 percent. A reader who sees shelter as the main driver of the inflation trend could treat the goods firmness as transitory and expect little change in policy."},
+    {"title": "Seasonal adjustment and energy", "detail": "Seasonally adjusted gasoline rose 1.0 percent against 0.1 percent unadjusted, so part of the headline's monthly rise comes from seasonal factors rather than from price pressure investors would extrapolate."},
+    {"title": "Core pace within a narrow band", "detail": "Monthly core inflation was 0.2, 0.1 and 0.2 percent in April, May and June (Table A). A reader focused on that pace rather than on the year-over-year headline could see the release as no change in trend."}
+  ],
+  "assumptions": [
+    "Investors read core goods as the sign of tariff pass-through, and core services and shelter as the sign of underlying persistence.",
+    "One month's composition carries information about the trend, although monthly changes of 0.1 to 0.3 percent are close to rounding.",
+    "Policy at the time was sensitive at the margin to inflation news, so inflation data could move the expected path."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous consensus for headline and core CPI. Without it this case cannot say whether the release was a surprise.",
+    "The June 2024 monthly change that left the 12-month window, which would separate new pressure from a base effect in the rise from 2.4 to 2.7 percent.",
+    "Import shares by category, or import price data, to test the tariff pass-through reading.",
+    "The personal consumption expenditures price index for June, the Federal Reserve's target measure, published later; not used."
+  ],
+  "weakening_observations": [
+    "If core goods prices fell back in the following months, reading June as the start of pass-through would weaken.",
+    "If the seasonal factors updated in February 2026 materially changed June's seasonally adjusted figures, readings built on the first-published monthly changes would weaken; this case does not check the revised values.",
+    "If a sourced consensus showed June in line with expectations, the policy-path channel would be close to inactive for this release."
+  ],
+  "critique": [
+    {"title": "The year-over-year step-up is not all new news", "detail": "The rise in the 12-month rate from 2.4 to 2.7 percent depends both on June 2025 and on the June 2024 change that left the window. The case does not decompose the two, so it should not treat the step-up as purely new inflation pressure."},
+    {"title": "The tariff reading is the most interesting and the least supported", "detail": "The categories that rose (furnishings, apparel, recreation) and fell (new and used vehicles, airfares) are mixed, and the release gives no import shares. Presenting pass-through as the main story would outrun the evidence; a better test would weight categories by import intensity."},
+    {"title": "Tenths of a point carry the story", "detail": "Several contrasts here, 0.2 against 0.1 for core and 0.3 against 0.1 for the headline, are one-tenth differences in rounded data, within what rounding and seasonal-factor revisions can move. The case should say so wherever it relies on them."},
+    {"title": "Hindsight and selection", "detail": "Written in October 2026 by an AI assistant that may know how inflation and policy evolved after July 2025, about the last of four consecutive CPI releases included by rule. The text avoids later outcomes, but emphasis can still be shaped by hindsight."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The archived release as published, which shows 'Last Modified Date: July 15, 2025'. Figures come from the release text and Table A.", "url": null},
+    {"title": "Seasonal-factor revisions", "detail": "Per the release, seasonal factors are updated each February and revise the previous five years of seasonally adjusted data. The monthly changes here are as first published; later revised values are not checked.", "url": null},
+    {"title": "Chained CPI", "detail": "The release notes that chained CPI (C-CPI-U) indexes for the past 10 to 12 months are subject to revision. This case does not use them.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived June 2025 CPI release on 2026-10-05. Facts come from the release text and Table A; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.bls.gov/news.release/archives/cpi_07152025.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

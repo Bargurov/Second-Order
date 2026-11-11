@@ -1,0 +1,9 @@
+{
+ "approval_id": "fcx-sec-locate-02",
+ "n": 1,
+ "url": "https://data.sec.gov/submissions/CIK0000831259.json",
+ "kind": "json",
+ "state": "about_to_send",
+ "recorded_at": "2026-11-11T00:39:46.922482+02:00",
+ "user_agent": "SecondOrder/0.1 (local research tool; contact from SECOND_ORDER_FEED_CONTACT, user level)"
+}

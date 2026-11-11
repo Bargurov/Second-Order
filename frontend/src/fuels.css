@@ -1,0 +1,554 @@
+/* The fuels page (/fuels): the site's paper and ink, the engraved barrel of hero-barrel-v4.html with its strong fills,
+   square corners and 1px rules. The only new colours are the barrel tokens on :root (styles.css). */
+
+.fu-header { max-width: none; padding-bottom: 16px; border-bottom: 0; }
+.fu-page-label { margin: 0; font: 400 12px/1.5 var(--mono); color: var(--ink-3); }
+
+/* A sticky section nav under the top bar; a direct child of the article so it stays in view down the page. */
+.fu-sections {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  padding: 8px 0 7px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.fu-sections a {
+  padding: 3px 8px 2px;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-2);
+  font: 500 10.5px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.fu-sections a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+.fu-page section[id] { scroll-margin-top: 52px; }
+
+/* The review server's SYNTHETIC world: a stamped banner above the barrel, and a stamp kept in the sticky nav. */
+.fu-synthetic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--stamp);
+  color: var(--stamp);
+}
+.fu-synthetic .stamp { transform: none; }
+.fu-synthetic p { flex: 1 1 320px; margin: 0; font: 400 14px/1.45 var(--sans); color: var(--ink); }
+.fu-synthetic-stamp {
+  margin-left: auto;
+  align-self: center;
+  padding: 2px 7px 1px;
+  border: 1.5px solid var(--stamp);
+  color: var(--stamp);
+  font: 500 10.5px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---------- The barrel and the situation now ---------- */
+
+.fu-hero.headline-row {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 24px 48px;
+  align-items: center;
+  padding: 26px 0 30px;
+  border-bottom: 1px solid var(--rule);
+}
+.fu-stamp-row { margin-bottom: 8px; gap: 10px 16px; }
+.fu-dates { margin: 0 0 16px; font: 400 11.5px/1.5 var(--mono); color: var(--ink-3); }
+.fu-headline {
+  margin: 0 0 12px;
+  font: 400 clamp(25px, 3vw, 38px)/1.1 var(--serif);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.fu-lede { margin: 0 0 16px; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+.fu-drivers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 14px; border-top: 1px solid var(--rule); }
+.fu-driver { padding: 10px 14px 4px 0; }
+.fu-driver + .fu-driver { padding-left: 14px; border-left: 1px solid var(--rule); }
+.fu-driver h3 {
+  margin: 0;
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-driver p { margin: 3px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.fu-note-meta { margin: 0; font: 400 11.5px/1.55 var(--mono); color: var(--ink-3); }
+.fu-review {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 1px 8px;
+  border: 1px solid var(--rule-strong);
+  font: 500 11px/1.6 var(--mono);
+  color: var(--ink-2);
+}
+.fu-note-sources { margin: 10px 0 0; padding-left: 16px; font-size: 12.5px; color: var(--ink-3); }
+/* A fuels-note-0.2's analysis: one short button under the summary; the analysis opens in its own row under the
+   summary and the barrel, at a reading width, so the barrel's row never stretches. */
+.fu-analysis-toggle { display: flex; width: fit-content; align-items: center; gap: 8px; margin: 12px 0 4px; padding: 8px 12px;
+  border: 1px solid var(--rule-strong); border-radius: 0; cursor: pointer; font: 500 11px/1.45 var(--mono);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--paper-raised); }
+.fu-analysis-toggle::before { content: "+"; font-weight: 600; }
+.fu-analysis-toggle[aria-expanded="true"]::before { content: "\2212"; }
+.fu-analysis-toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fu-analysis { grid-column: 1 / -1; justify-self: start; width: 100%; max-width: 760px; padding-top: 4px;
+  border-top: 1px solid var(--rule-strong); }
+.fu-analysis[hidden] { display: none; }
+.fu-an-part h3 { margin: 14px 0 4px; font: 600 11px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); }
+.fu-an-list { margin: 0; padding: 0; list-style: none; }
+.fu-an-list li { display: grid; grid-template-columns: 10.5rem minmax(0, 1fr); gap: 2px 12px; padding: 7px 0;
+  border-top: 1px solid var(--rule); font-size: 14px; line-height: 1.5; color: var(--ink); }
+.fu-an-kind { display: inline-flex; align-items: flex-start; gap: 6px; font: 500 10.5px/1.7 var(--mono);
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.fu-an-mech { grid-column: 2; font-size: 12.5px; color: var(--ink-3); }
+.fu-an-refs a { font: 500 11.5px/1 var(--mono); text-decoration: none; }
+.fu-an-caveats, .fu-an-sources { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.fu-an-caveats li, .fu-an-sources li { padding: 3px 0; }
+.fu-an-legend { margin: 12px 0 0; max-width: 80ch; font-size: 12.5px; line-height: 1.5; color: var(--ink-3); }
+.fu-refreshed, .fu-problem {
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--stamp);
+  background: var(--paper-raised);
+  font-size: 14px;
+  color: var(--ink);
+}
+.fu-problem p { margin: 0; }
+.fu-problem pre { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---------- The barrel card ---------- */
+
+.fu-barrel-card { margin: 0; }
+.fu-barrel-frame {
+  padding: 14px 14px 10px;
+  border: 1px solid var(--rule-strong);
+  border-top: 4px solid var(--ink);
+  background: var(--paper-raised);
+}
+.fu-barrel-card figcaption { margin-top: 8px; font: italic 400 13.5px/1.45 var(--serif); color: var(--ink-3); }
+.fu-barrel-drawing { position: relative; }
+.fu-barrel-drawing svg { display: block; width: 100%; height: auto; overflow: visible; }
+.fu-barrel-note { margin: 8px 0 0; font: 400 11.5px/1.5 var(--mono); color: var(--stamp); }
+
+.fu-body { fill: var(--paper-raised); }
+.fu-outline { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.fu-bung { fill: none; stroke: var(--ink); stroke-width: 1; }
+.fu-crude-ground { fill: var(--barrel-crude); }
+.fu-crude-hatch { stroke: var(--ink); stroke-width: 2.6; }
+.fu-crack-ground { fill: var(--barrel-crack); }
+.fu-crack-hatch { stroke: var(--barrel-crack-hatch); stroke-width: 1.6; }
+.fu-hoop { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.fu-hoop-low { stroke: var(--paper); stroke-opacity: 0.35; }
+.fu-barrel[data-drawable="false"] .fu-hoop-low { stroke: var(--rule-strong); stroke-opacity: 1; }
+.fu-tick { stroke: var(--ink); stroke-width: 1; }
+.fu-bracket { fill: none; stroke: var(--barrel-crack-hatch); stroke-width: 1.2; }
+.fu-line { stroke: var(--barrel-line); stroke-width: 1.4; stroke-dasharray: 5 4; }
+
+/* On load the crude fills to the line, then the crack band fills above it. */
+.fu-fill, .fu-band { transform-box: fill-box; transform-origin: bottom; }
+.fu-fill { animation: fu-rise 1.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.fu-band { animation: fu-rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) 1.6s both; }
+@keyframes fu-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .fu-fill, .fu-band { animation: none; }
+}
+
+/* Labels sit over the drawing's left margin (x 0 to 144 of 340) at the heights they describe. Their sizes are in
+   drawing units (1 unit = 100cqw / 340, so 9.5 units = 2.794cqw), as the mockup's SVG text was: the label stack then
+   scales with the barrel, and anchors 40 units apart keep the labels clear of each other at every width. */
+.fu-barrel-drawing { container-type: inline-size; }
+.fu-labels { position: absolute; inset: 0; pointer-events: none; }
+.fu-label { position: absolute; left: 0; width: 42.5%; margin: 0; text-align: right; }
+.fu-label[data-anchor="above"] { transform: translateY(calc(-100% - 0.88cqw)); }
+.fu-label[data-anchor="middle"] { transform: translateY(-50%); }
+.fu-label[data-anchor="below"] { transform: translateY(1.47cqw); }
+.fu-label-k {
+  display: block;
+  font: 500 2.794cqw/1.3 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-label-n { display: block; font: 500 6.47cqw/1.1 var(--serif); color: var(--ink); white-space: nowrap; }
+.fu-label-n .ct-kind { margin-left: 0; vertical-align: 0.3em; }
+.fu-label-change { display: block; font: 400 2.94cqw/1.4 var(--mono); color: var(--ink-2); white-space: nowrap; }
+.fu-label[data-label="crack"] .fu-label-k, .fu-label[data-label="crack"] .fu-label-n { color: var(--barrel-crack-hatch); }
+.fu-label[data-label="crack"][data-sign="negative"] .fu-label-n { font-size: 4.7cqw; line-height: 1.15; white-space: normal; }
+.fu-label[data-label="brent"] .fu-label-k { color: var(--barrel-line); }
+
+/* ---------- Prices ---------- */
+
+.fu-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+.fu-tile {
+  min-width: 0;
+  padding: 12px 14px 12px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-raised);
+}
+.fu-tile-label {
+  margin: 0;
+  font: 500 10px/1.45 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-tile-value { margin: 6px 0 2px; font: 500 27px/1.15 var(--serif); color: var(--ink); }
+.fu-tile-value .ct-kind { vertical-align: 6px; }
+.fu-tile[data-tile="crack"] .fu-tile-value { color: var(--barrel-crack-hatch); }
+.fu-tile-missing { font: 400 13px/1.5 var(--sans); color: var(--ink-3); }
+.fu-tile-missing .ct-kind { margin-left: 0; vertical-align: 0; }
+.fu-tile-dates, .fu-tile-meta { margin: 0; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.fu-tile-problem { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+.fu-spark { margin: 10px 0 6px; }
+.fu-spark svg { display: block; width: 100%; height: 36px; }
+.fu-spark path { fill: none; stroke: var(--ink); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.fu-tile[data-tile="crack"] .fu-spark path { stroke: var(--barrel-crack-hatch); }
+.fu-spark figcaption { margin-top: 2px; font: 400 10px/1.4 var(--mono); color: var(--ink-3); }
+.fu-attribution { margin: 6px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); overflow-wrap: anywhere; }
+
+.fu-coverage {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule-strong);
+}
+.fu-coverage li { display: flex; flex-direction: column; gap: 2px; padding: 10px 0 12px; border-bottom: 1px solid var(--rule); }
+.fu-coverage-label { font: 600 13px/1.4 var(--sans); color: var(--ink); }
+.fu-coverage-value { font: 500 18px/1.3 var(--serif); }
+.fu-coverage-value .ct-kind { vertical-align: 3px; }
+.fu-coverage-value > .ct-kind:only-child { margin-left: 0; }
+.fu-coverage-date, .fu-coverage-meta { font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.fu-coverage-problem { font-size: 12.5px; color: var(--ink-2); }
+/* A verified price more than ten days behind the newest on the page: kept, dated, and marked like the stale note. */
+.fu-behind {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border-left: 3px solid var(--stamp);
+  background: var(--paper-raised);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.fu-coverage-credit { font-size: 11px; line-height: 1.45; color: var(--ink-3); overflow-wrap: anywhere; }
+
+/* ---------- Method ---------- */
+
+.fu-formula {
+  margin: 4px 0 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--ink);
+  background: var(--paper-raised);
+  font: 400 14px/1.7 var(--mono);
+  color: var(--ink);
+}
+.fu-formula p { margin: 0; overflow-wrap: anywhere; }
+.fu-formula-term { font-weight: 500; }
+.fu-formula p.fu-formula-note { margin-top: 6px; font: 400 13px/1.5 var(--sans); color: var(--ink-2); }
+.fu-credit { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+.fu-terms, .fu-refresh { margin: 8px 0 0; font-size: 14px; color: var(--ink-2); }
+.fu-refresh code, .fu-problem code { overflow-wrap: anywhere; }
+
+.fu-more { margin-top: 18px; border-top: 1px solid var(--rule); }
+.fu-more > summary {
+  padding: 10px 0;
+  cursor: pointer;
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.fu-more > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fu-sources-table td, .fu-sources-table th { min-width: 110px; }
+.fu-sources-table td:last-child { min-width: 320px; }
+.fu-scope { display: block; margin-top: 4px; color: var(--ink-3); }
+.fu-sources-table .fu-attribution { display: block; margin-top: 4px; }
+.fu-not-list, .fu-notes { margin: 0; padding-left: 18px; font-size: 14px; max-width: 90ch; }
+.fu-example { margin: 18px 0 0; padding: 10px 14px; border: 1px dashed var(--rule-strong); font-size: 14px; }
+.fu-example p { margin: 0; }
+.fu-example .fu-example-label { margin-bottom: 4px; font: 600 12.5px/1.4 var(--sans); color: var(--ink); }
+.fu-glossary { margin: 0; max-width: 90ch; }
+.fu-glossary div { padding: 7px 0; border-bottom: 1px solid var(--rule); }
+.fu-glossary dt { font: 600 13.5px/1.4 var(--sans); color: var(--ink); }
+.fu-glossary dd { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
+.fu-more .ct-legend { margin-top: 14px; }
+.fu-mech-note { margin: 8px 0 0; max-width: 90ch; font-size: 14px; color: var(--ink-2); }
+.fu-rules, .fu-mech-sources { margin: 0; padding-left: 18px; max-width: 90ch; font-size: 13.5px; line-height: 1.5; }
+.fu-rules li + li, .fu-mech-sources li + li { margin-top: 4px; }
+.fu-cited { color: var(--ink-3); }
+
+/* ---------- Statement kinds (Stage 2): E a possible explanation, S a sourced claim ---------- */
+
+.ct-kind[data-kind="explanation"] { background: transparent; font-style: italic; color: var(--ink-2); }
+.ct-kind[data-kind="sourced"] { border-color: var(--ink-3); background: var(--paper-raised); color: var(--ink); }
+
+/* ---------- Situation now ---------- */
+
+.fu-summary {
+  margin: 4px 0 12px;
+  max-width: 62ch;
+  font: 400 clamp(18px, 2vw, 22px)/1.35 var(--serif);
+  color: var(--ink);
+  text-wrap: balance;
+}
+.fu-summary .ct-kind { vertical-align: 3px; }
+.fu-sit-note, .fu-sit-problem {
+  margin: 0 0 12px;
+  max-width: 90ch;
+  padding: 8px 12px;
+  border-left: 3px solid var(--rule-strong);
+  background: var(--paper-raised);
+  font-size: 14px;
+  color: var(--ink);
+}
+.fu-sit-note[data-note="stale"], .fu-sit-problem { border-left-color: var(--stamp); }
+.fu-sit-problem p { margin: 0; }
+
+.fu-windows { min-width: 660px; }
+.fu-windows thead .ct-unit, .fu-levels-table thead .ct-unit { font-weight: 400; letter-spacing: 0; text-transform: none; }
+.fu-windows tbody th { min-width: 150px; }
+.fu-windows td { white-space: nowrap; }
+.fu-window-name { display: block; font-weight: 600; }
+.fu-window-dates { display: block; margin-top: 1px; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.fu-change { font: 500 13px/1.5 var(--mono); color: var(--ink); }
+.fu-pct { margin-left: 6px; font: 400 10.5px/1.5 var(--mono); color: var(--ink-3); }
+.fu-windows td.fu-window-reason { white-space: normal; font-style: italic; color: var(--ink-3); }
+
+.fu-levels { margin-top: 10px; }
+.fu-levels > summary { padding: 6px 0; }
+.fu-levels .ct-table-wrap { margin-top: 4px; }
+.fu-levels-table tbody th { min-width: 150px; }
+.fu-levels-table td { white-space: nowrap; }
+.fu-level { font: 400 12.5px/1.5 var(--mono); color: var(--ink); }
+
+.fu-bar-key { margin-top: 0; }
+.fu-splits { margin: 6px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.fu-split {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) minmax(0, 15rem);
+  gap: 6px 18px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.fu-split-name { margin: 0; font: 600 13px/1.4 var(--sans); color: var(--ink); }
+.fu-split-bar { display: block; width: 100%; max-width: 520px; height: auto; overflow: visible; }
+.fu-split-zero { stroke: var(--ink); stroke-width: 1.2; }
+.fu-split-net { fill: var(--ink); }
+.fu-split-values { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 0; font: 400 12.5px/1.6 var(--mono);
+  color: var(--ink); }
+.fu-split-value { white-space: nowrap; }
+.fu-split-value[data-part="basket"] { font-weight: 600; }
+.fu-swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px;
+  border: 1px solid var(--ink); }
+.fu-swatch[data-part="crude"] {
+  background: repeating-linear-gradient(45deg, var(--ink) 0 1.6px, var(--barrel-crude) 1.6px 3.2px);
+}
+.fu-swatch[data-part="crack"] {
+  border-color: var(--barrel-crack-hatch);
+  background: repeating-linear-gradient(-45deg, var(--barrel-crack-hatch) 0 1px, var(--barrel-crack) 1px 3.5px);
+}
+.fu-swatch[data-part="basket"] { border: 0; background: var(--ink); clip-path: polygon(50% 8%, 100% 92%, 0 92%); }
+
+.fu-can { margin-top: 16px; border-top: 1px solid var(--rule); }
+.fu-can > summary, .fu-levels > summary, .fu-mech-more > summary {
+  cursor: pointer;
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.fu-can > summary { padding: 10px 0; }
+.fu-can > summary:focus-visible, .fu-levels > summary:focus-visible, .fu-mech-more > summary:focus-visible,
+.fu-sector > summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.fu-can h3 { margin: 10px 0 6px; }
+.fu-can-say, .fu-cannot-say { margin: 0; padding-left: 18px; max-width: 90ch; font-size: 14px; line-height: 1.55; }
+.fu-can-say li + li, .fu-cannot-say li + li { margin-top: 4px; }
+
+/* ---------- Market drivers ---------- */
+
+.fu-mech-review {
+  display: inline-block;
+  margin: 0 0 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--rule-strong);
+  font: 500 11px/1.6 var(--mono);
+  color: var(--ink-2);
+}
+.fu-not-written { margin: 6px 0 0; font-style: italic; color: var(--ink-3); }
+.fu-mechs { margin: 12px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule-strong); }
+.fu-mech {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 4px 28px;
+  padding: 14px 0 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.fu-mech .fu-mech-title { margin: 0; font: 500 17px/1.3 var(--serif); color: var(--ink); }
+.fu-mech-title .ct-kind { vertical-align: 2px; }
+.fu-acts {
+  margin: 5px 0 0;
+  font: 400 10.5px/1.5 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-acts-on { font-weight: 600; color: var(--ink); }
+.fu-mech-text { min-width: 0; }
+.fu-mech-lead { margin: 0; max-width: 75ch; font-size: 15px; line-height: 1.55; color: var(--ink); }
+.fu-mech-more { margin-top: 6px; }
+.fu-mech-more > summary { padding: 4px 0; color: var(--ink-2); }
+.fu-mech-rest, .fu-effect-rest { margin: 4px 0 0; max-width: 75ch; font-size: 14.5px; line-height: 1.55; color: var(--ink); }
+.fu-mech-more h4, .fu-sector-body h4 {
+  margin: 14px 0 4px;
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-mech-more ul, .fu-sector-body ul { margin: 0; padding-left: 18px; max-width: 80ch; font-size: 14px; line-height: 1.5;
+  color: var(--ink-2); }
+.fu-mech-more li + li, .fu-sector-body li + li { margin-top: 3px; }
+.fu-src-list { font-size: 13px; }
+.fu-src-checked, .fu-src-locator { color: var(--ink-3); }
+.fu-no-source { margin: 0; font-size: 13px; font-style: italic; color: var(--ink-3); }
+
+.fu-events { margin: 18px 0 0; max-width: 90ch; padding: 10px 14px; border: 1px dashed var(--rule-strong); }
+.fu-events-k {
+  margin: 0 0 3px;
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-events-text { margin: 0; font-size: 14px; color: var(--ink-2); }
+
+/* ---------- Economic transmission: one card open at a time ---------- */
+
+.fu-sectors { margin-top: 12px; border-top: 1px solid var(--rule-strong); }
+.fu-sector { border-bottom: 1px solid var(--rule); border-left: 3px solid transparent; }
+.fu-sector[open] { border-left-color: var(--ink); background: var(--paper-raised); }
+.fu-sector > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  gap: 3px 24px;
+  padding: 12px 12px 12px 9px;
+  cursor: pointer;
+  list-style: none;
+}
+.fu-sector > summary::-webkit-details-marker { display: none; }
+.fu-sector-name { grid-row: span 2; font: 500 17px/1.3 var(--serif); color: var(--ink); }
+.fu-sector-name::before {
+  content: "+";
+  content: "+" / "";
+  display: inline-block;
+  width: 1.1em;
+  font: 500 14px/1 var(--mono);
+  color: var(--ink-3);
+}
+.fu-sector[open] .fu-sector-name::before { content: "\2212"; content: "\2212" / ""; color: var(--ink); }
+.fu-sector-name .ct-kind { vertical-align: 2px; }
+.fu-k {
+  margin-right: 6px;
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fu-sector-trigger { font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+.fu-sector-effect { font-size: 14px; line-height: 1.5; color: var(--ink); }
+.fu-sector-effect .fu-k { color: var(--ink); }
+.fu-sector-body { padding: 0 12px 16px calc(13rem + 33px); }
+.fu-sector-body > h4:first-child { margin-top: 2px; }
+
+/* The chain's steps wrap as whole boxes; each arrow follows its step, so a wrapped line ends on an arrow. */
+.fu-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; margin: 2px 0 10px; padding: 0;
+  list-style: none; }
+.fu-chain li { display: flex; align-items: center; min-width: 0; max-width: 100%; }
+.fu-step {
+  min-width: 0;
+  padding: 4px 9px;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper);
+  font: 500 12.5px/1.4 var(--sans);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.fu-chain li:not(:last-child)::after {
+  content: "\2192";
+  content: "\2192" / "";
+  flex: none;
+  padding: 0 8px;
+  font: 400 13px/1 var(--mono);
+  color: var(--ink-3);
+}
+.fu-lag { margin: 0; max-width: 80ch; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.fu-not-sourced {
+  padding: 0 4px;
+  border: 1px dashed var(--rule-strong);
+  font: 500 10px/1.5 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 960px) {
+  .fu-hero.headline-row { grid-template-columns: minmax(0, 1fr) minmax(300px, 340px); gap: 24px 28px; }
+  .fu-split { grid-template-columns: minmax(0, 10rem) minmax(0, 1fr); }
+  .fu-split-values { grid-column: 2; }
+}
+
+@media (max-width: 720px) {
+  .fu-hero.headline-row { grid-template-columns: minmax(0, 1fr); }
+  .fu-barrel-card { order: -1; width: 100%; max-width: 380px; }
+  .fu-split, .fu-mech, .fu-sector > summary { grid-template-columns: minmax(0, 1fr); }
+  .fu-split-values { grid-column: auto; }
+  .fu-sector-name { grid-row: auto; }
+  .fu-sector-body { padding-left: 9px; }
+}
+
+/* The six-link nav wraps to two lines (about 60px tall) below roughly 505px, or wider with a broader fallback font;
+   section targets then land below the taller band. */
+@media (max-width: 560px) {
+  .fu-page section[id] { scroll-margin-top: 80px; }
+}
+
+@media (max-width: 560px) {
+  .fu-an-list li { grid-template-columns: minmax(0, 1fr); }
+  .fu-an-mech { grid-column: 1; }
+}
+@media (max-width: 520px) {
+  .fu-drivers { grid-template-columns: minmax(0, 1fr); }
+  .fu-driver, .fu-driver + .fu-driver { padding: 8px 0; border-left: 0; }
+  .fu-driver + .fu-driver { border-top: 1px solid var(--rule); }
+}

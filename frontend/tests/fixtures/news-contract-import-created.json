@@ -1,0 +1,78 @@
+{
+  "contract": "user-api-0.5",
+  "import": {
+    "import_version": "publication-import-0.1",
+    "import_id": "imp-0123456789abcdef",
+    "state": "ready",
+    "problem": null,
+    "created_at": "2026-10-14T09:00:00+00:00",
+    "entry": {
+      "entry_id": "fed-monetary:e6ea86fba2aa8bf06700",
+      "version_sha256": "090c533881826e01798ad817129a6c48ebf4ea1f883ac37bae7255c4fbc8fe33",
+      "source": "fed-monetary",
+      "title": "Simulated Committee issues synthetic statement",
+      "link": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260911a.htm",
+      "publisher": "Board of Governors of the Federal Reserve System",
+      "attribution": "Source: Board of Governors of the Federal Reserve System"
+    },
+    "publication": {
+      "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260911a.htm",
+      "retrieved_at": "2026-10-14T09:00:00+00:00",
+      "retrieval": "fetched",
+      "bytes": 1545,
+      "sha256": "f69244ee51b2fd1630224d9314f535ab7c9f8dc17fd3c23bf586688125cac4eb",
+      "last_modified": "Wed, 16 Sep 2026 18:00:17 GMT",
+      "extractor": "fed-press-release-extract-0.1",
+      "terms_url": "https://www.federalreserve.gov/disclaimer.htm"
+    },
+    "proposed_source": {
+      "headline": "Simulated Committee issues synthetic statement",
+      "source_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260911a.htm",
+      "published_at": "2026-09-16T18:00:00+00:00",
+      "published_basis": "The publisher's feed states Wed, 16 Sep 2026 18:00:00 GMT; the page prints the date September 16, 2026 and \"For release at 2:00 p.m. EDT\", the same instant.",
+      "characters": 355,
+      "paragraphs": 3,
+      "text_sha256": "022a28a51b13d424b29cf331957502c75c449fe702d29af0d4441a20b6a1b826",
+      "text": "September 16, 2026\n\nSimulated Committee issues synthetic statement\n\nFor release at 2:00 p.m. EDT\n\nThe Simulated Committee decided to keep its synthetic policy setting unchanged at 3 percent.\n\nSynthetic indicators suggest that activity expanded at a moderate pace in the third quarter.\n\nVoting for the synthetic action were Member A, Member B and Member C."
+    },
+    "left_out": [
+      {
+        "kind": "share_controls",
+        "text": "Share"
+      },
+      {
+        "kind": "contact_line",
+        "text": "For media inquiries, please email [email protected] or call 202-555-0100."
+      },
+      {
+        "kind": "linked_document",
+        "text": "Implementation Note issued September 16, 2026"
+      },
+      {
+        "kind": "last_update",
+        "text": "Last Update: September 16, 2026"
+      }
+    ],
+    "linked_documents": [
+      {
+        "title": "Implementation Note issued September 16, 2026",
+        "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a1.htm"
+      }
+    ],
+    "source_id": null,
+    "statements": [
+      "The text was read from the official page https://www.federalreserve.gov/newsevents/pressreleases/monetary20260911a.htm as this server retrieved it on 2026-10-14T09:00:00+00:00: the release's own words in its order. Lines listed as left out are not in it; linked documents were not retrieved.",
+      "Publication time: The publisher's feed states Wed, 16 Sep 2026 18:00:00 GMT; the page prints the date September 16, 2026 and \"For release at 2:00 p.m. EDT\", the same instant.",
+      "Source: Board of Governors of the Federal Reserve System. The publisher's terms: https://www.federalreserve.gov/disclaimer.htm.",
+      "Nothing has been analysed. Confirming saves exactly this text as your source; preparing, quoting and running an analysis remain separate steps."
+    ]
+  },
+  "created": true,
+  "quota": {
+    "operation": "import",
+    "label": "Publication imports",
+    "limit": 5,
+    "used": 2,
+    "remaining": 3
+  }
+}

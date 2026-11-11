@@ -1,37 +1,17 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
 
-// Dev proxy target - env-driven so running the backend on a different
-// host / port during local dev does not require editing this file.
-// Production builds never see this; the browser calls the URL returned
-// by resolveApiBase() in src/lib/api.ts (driven by VITE_API_BASE_URL).
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-  const devBackend =
-    env.VITE_DEV_API_PROXY_TARGET?.trim() || "http://127.0.0.1:8000";
-
-  return {
-    plugins: [react()],
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
-    },
-    server: {
-      port: 5173,
-      proxy: {
-        // Dev-only rewrite: "/api/foo" -> "<devBackend>/foo". Keeps
-        // every request same-origin from the browser's perspective so
-        // CORS is never an issue during local development. In prod
-        // there is no proxy - the frontend hits VITE_API_BASE_URL
-        // directly (default "/api", rewritten by the reverse proxy).
-        "/api": {
-          target: devBackend,
-          changeOrigin: true,
-          rewrite: (p) => p.replace(/^\/api/, ""),
-        },
-      },
-    },
-  };
-});
+// Two builds from one source tree (docs/admin-user-contract.md, section 11). `vite build` writes the Admin build
+// (index.html) to dist/; `vite build --mode client` writes the Client build (client.html) to dist-client/. The server
+// serves each role only its own build. Development only: the API runs separately (python -m second_order serve), and
+// the dev server proxies /api to it; open /client.html for the Client.
+export default defineConfig(({ mode }) => ({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: { "/api": "http://127.0.0.1:8000" },
+  },
+  build: mode === "client"
+    ? { outDir: "dist-client", emptyOutDir: true, rollupOptions: { input: "client.html" } }
+    : { outDir: "dist", emptyOutDir: true },
+}));

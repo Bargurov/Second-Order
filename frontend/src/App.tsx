@@ -1,253 +1,146 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Sidebar, type Page } from "@/components/layout/sidebar";
-import {
-  resolveInitialRoute,
-  installPopstateListener,
-  planNavigation,
-  applyHistoryAction,
-} from "@/lib/app-route";
-import {
-  launchFromHeadline,
-  launchFromInboxEvent,
-  type AnalysisLaunch,
-} from "@/lib/analysis-launch";
-import type { InboxEvent } from "@/lib/event-inbox";
-import { TopBar } from "@/components/layout/top-bar";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { MarketOverview } from "@/components/pages/market-overview";
-import { InboxWorkbench } from "@/components/pages/inbox-workbench";
-import { AnalysisView } from "@/components/pages/analysis-view";
-import { RecentEvents } from "@/components/pages/recent-events";
-import { CaseLibrary } from "@/components/pages/case-library";
-import { EvidenceOverview } from "@/components/pages/evidence-overview";
-import { Backtest } from "@/components/pages/backtest";
-import { PortfolioPage } from "@/components/pages/portfolio-page";
-import { SectionCDemo } from "@/components/pages/section-c-demo";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { lazy, Suspense, type ComponentType } from "react";
+import { fetchIndex, useLoad } from "./api";
+import { Page, TopBar } from "./components/Chrome";
+import { AnalysesPage } from "./pages/AnalysesPage";
+import { AssessmentPage } from "./pages/AssessmentPage";
+import { DossierPage } from "./pages/DossierPage";
+import { EventOverviewPage } from "./pages/EventOverviewPage";
+import { HypothesesPage } from "./pages/HypothesesPage";
+import { HypothesisPage } from "./pages/HypothesisPage";
+import { LibraryCasePage } from "./pages/LibraryCasePage";
+import { LibraryPage } from "./pages/LibraryPage";
+import { LifecycleDossierPage } from "./pages/LifecycleDossierPage";
+import { EventContextPage, MarketContextListPage } from "./pages/MarketContextPage";
+import { MethodPage } from "./pages/MethodPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { TrackerPage } from "./pages/TrackerPage";
+import { useLocation } from "./router";
+import { matchRoute } from "./routes";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
-function useAutoCollapse() {
-  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const handler = (e: MediaQueryListEvent) => setCollapsed(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  return [collapsed, setCollapsed] as const;
+/** A page loaded on its first visit, kept out of the main bundle; a chunk that cannot be loaded (for example after a
+ * rebuild while the page was open) says so instead of leaving the page blank. */
+function deferred<P extends object>(load: () => Promise<ComponentType<P>>) {
+  return lazy(() => load().then((page) => ({ default: page }), () => ({
+    default: (() => <p role="alert">This page could not be loaded. Reload to try again.</p>) as ComponentType<P>,
+  })));
 }
 
-export default function App() {
-  // Default home page is Market Context — the macro / uncertainty /
-  // headlines stack the sidebar leads Workspace with.  ``overview`` is
-  // a legacy alias that still resolves to the same surface.
-  //
-  // M1 — one page is directly addressable: a mount at /evidence opens the
-  // Evidence Overview; every other full-shell path resolves to Market (a
-  // fresh root load never trusts prior history state).  The pure route
-  // seam in lib/app-route.ts owns all of these decisions.
-  const [page, setPage] = useState<Page>(
-    () => resolveInitialRoute(window.location.pathname).page,
-  );
-  // Mirrors ``page`` so the stable navigate callback can plan history
-  // actions from the actual current page without re-creating itself (and
-  // therefore its consumers' props) on every page change.
-  const pageRef = useRef<Page>(page);
-  const [collapsed, setCollapsed] = useAutoCollapse();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  // One typed launch object carries everything the analysis surface needs.
-  // An inbox candidate brings its own identity and link state; every other
-  // origin brings only a headline.  The surface decides what (if anything)
-  // to run from that — navigating there is never itself a provider call.
-  const [pendingLaunch, setPendingLaunch] = useState<AnalysisLaunch | undefined>();
-  // Case Library deep-link target — the archive event id to open in detail.
-  const [pendingArchiveId, setPendingArchiveId] = useState<number | undefined>();
-  const [failedHeadlines, setFailedHeadlines] = useState<Set<string>>(new Set());
+const FindingsPage = deferred(() => import("./pages/FindingsPage").then((module) => module.FindingsPage));
+const FindingsOccasionPage = deferred(() => import("./pages/FindingsOccasionPage")
+  .then((module) => module.FindingsOccasionPage));
+const G17TablesPage = deferred(() => import("./pages/G17TablesPage").then((module) => module.G17TablesPage));
+const HistoricalCasePage = deferred(() => import("./pages/HistoricalCasePage")
+  .then((module) => module.HistoricalCasePage));
+const SnapshotPage = deferred(() => import("./pages/SnapshotPage").then((module) => module.SnapshotPage));
+const PolicyResearchPage = deferred(() => import("./pages/PolicyResearchPage")
+  .then((module) => module.PolicyResearchPage));
+const ResearchAnalysisPage = deferred(() => import("./pages/ResearchAnalysisPage")
+  .then((module) => module.ResearchAnalysisPage));
+const ThesisPage = deferred(() => import("./pages/ThesisPage").then((module) => module.ThesisPage));
+const CopperToolsPage = deferred(() => import("./pages/CopperToolsPage").then((module) => module.CopperToolsPage));
+const EventChainsPage = deferred(() => import("./pages/EventChainsPage")
+  .then((module) => module.EventChainsPage));
+const CopperDeskPage = deferred(() => import("./pages/CopperDeskPage").then((module) => module.CopperDeskPage));
+const ComparisonPage = deferred(() => import("./pages/ComparisonPage").then((module) => module.ComparisonPage));
+const MetalsPage = deferred(() => import("./pages/MetalsPage").then((module) => module.MetalsPage));
+const FuelsPage = deferred(() => import("./pages/FuelsPage").then((module) => module.FuelsPage));
+const CompanyPage = deferred(() => import("./pages/CompanyPage").then((module) => module.CompanyPage));
+const loadingPage = <p role="status">Loading the page…</p>;
 
-  const handleAnalysisFailed = useCallback((headline: string) => {
-    setFailedHeadlines((prev) => {
-      const next = new Set(prev);
-      next.add(headline);
-      return next;
-    });
-  }, []);
+export function App() {
+  const { pathname, search } = useLocation();
+  const [index, retryIndex] = useLoad(fetchIndex, "index");
+  const route = matchRoute(pathname);
 
-  const handleAnalysisSucceeded = useCallback((headline: string) => {
-    setFailedHeadlines((prev) => {
-      if (!prev.has(headline)) return prev;
-      const next = new Set(prev);
-      next.delete(headline);
-      return next;
-    });
-  }, []);
-
-  // M1 history contract — one effect owns the browser-history wiring:
-  // normalize the entry URL (/evidence/ → /evidence, unknown → /), seed the
-  // current entry's { page } state, and resolve Back/Forward through the
-  // pure route seam.  The popstate handler only reads history; replaceState
-  // here is idempotent and the returned cleanup removes the listener, so a
-  // StrictMode setup → cleanup → setup cycle leaves exactly one listener.
-  useEffect(() => {
-    const route = resolveInitialRoute(
-      window.location.pathname,
-      window.location.hash,
-    );
-    window.history.replaceState({ page: route.page }, "", route.canonicalUrl);
-    return installPopstateListener(window, (p) => {
-      pageRef.current = p;
-      setPage(p);
-    });
-  }, []);
-
-  // Central navigation — every programmatic page transition goes through
-  // here so the URL/history contract can never desynchronize: entering or
-  // leaving Evidence pushes an entry (Back restores the origin page),
-  // moving among the state-driven pages replaces in place at "/".
-  const navigate = useCallback((p: Page) => {
-    applyHistoryAction(window.history, planNavigation(pageRef.current, p));
-    pageRef.current = p;
-    setPage(p);
-    setMobileOpen(false);
-  }, []);
-
-  const openAnalysis = useCallback(
-    (launch: AnalysisLaunch) => {
-      setPendingLaunch(launch);
-      navigate("analyze");
-    },
-    [navigate],
-  );
-
-  const analyzeHeadline = useCallback(
-    (headline: string, opts?: { eventId?: number; context?: string }) => {
-      openAnalysis(launchFromHeadline(headline, opts));
-    },
-    [openAnalysis],
-  );
-
-  // The Event Inbox opens a strict candidate, identity intact.  It does NOT
-  // start an analysis — see analysis-launch.shouldAutoSubmit.
-  const openInboxCandidate = useCallback(
-    (ev: InboxEvent) => { openAnalysis(launchFromInboxEvent(ev)); },
-    [openAnalysis],
-  );
-
-  // Open a Case Library card in the in-app Archive/Event Detail view.
-  const openCase = useCallback(
-    (eventId: number) => {
-      setPendingArchiveId(eventId);
-      navigate("events");
-    },
-    [navigate],
-  );
+  let content;
+  if (route.page === "index") {
+    content = <TrackerPage index={index} onRetry={retryIndex} search={search} />;
+  } else if (route.page === "method") {
+    content = <MethodPage index={index} />;
+  } else if (route.page === "dossier") {
+    content = <DossierPage key={route.id} id={route.id} search={search} index={index} />;
+  } else if (route.page === "library") {
+    content = <LibraryPage search={search} />;
+  } else if (route.page === "library-case") {
+    content = <LibraryCasePage key={route.id} id={route.id} />;
+  } else if (route.page === "historical-case") {
+    content = <Suspense fallback={loadingPage}><HistoricalCasePage key={route.id} id={route.id} /></Suspense>;
+  } else if (route.page === "research") {
+    content = <Suspense fallback={loadingPage}><PolicyResearchPage key={route.id} id={route.id} /></Suspense>;
+  } else if (route.page === "bis-snapshot") {
+    content = <Suspense fallback={loadingPage}><SnapshotPage /></Suspense>;
+  } else if (route.page === "analyses") {
+    content = <AnalysesPage search={search} />;
+  } else if (route.page === "market-context") {
+    content = <MarketContextListPage />;
+  } else if (route.page === "market-context-event") {
+    content = <EventContextPage key={`${route.kind}:${route.id}`} kind={route.kind} id={route.id} />;
+  } else if (route.page === "hypotheses") {
+    content = <HypothesesPage />;
+  } else if (route.page === "hypothesis") {
+    content = <HypothesisPage key={route.id} id={route.id} />;
+  } else if (route.page === "hypothesis-assessment") {
+    content = <AssessmentPage key={`${route.id}:${route.evaluationId}`} id={route.id} evaluationId={route.evaluationId} />;
+  } else if (route.page === "hypothesis-dossier") {
+    content = <LifecycleDossierPage key={`${route.id}:${route.evaluationId}`} id={route.id}
+                                    evaluationId={route.evaluationId} search={search} />;
+  } else if (route.page === "findings") {
+    content = <Suspense fallback={loadingPage}><FindingsPage /></Suspense>;
+  } else if (route.page === "findings-g17") {
+    content = <Suspense fallback={loadingPage}><G17TablesPage /></Suspense>;
+  } else if (route.page === "findings-occasion") {
+    content = <Suspense fallback={loadingPage}><FindingsOccasionPage key={route.day} day={route.day} /></Suspense>;
+  } else if (route.page === "event-overview") {
+    content = <EventOverviewPage key={`${route.kind}:${route.id}`} kind={route.kind} id={route.id} />;
+  } else if (route.page === "research-analysis") {
+    content = <Suspense fallback={loadingPage}><ResearchAnalysisPage key={route.captureId}
+                                                                    captureId={route.captureId} /></Suspense>;
+  } else if (route.page === "thesis") {
+    content = <Suspense fallback={loadingPage}><ThesisPage key={`${route.id}:${route.version ?? "latest"}`}
+                                                            id={route.id} version={route.version} /></Suspense>;
+  } else if (route.page === "copper-tools") {
+    content = <Suspense fallback={loadingPage}><CopperToolsPage /></Suspense>;
+  } else if (route.page === "copper-events") {
+    content = <Suspense fallback={loadingPage}><EventChainsPage /></Suspense>;
+  } else if (route.page === "copper-desk") {
+    content = <Suspense fallback={loadingPage}><CopperDeskPage /></Suspense>;
+  } else if (route.page === "copper-comparison") {
+    content = <Suspense fallback={loadingPage}><ComparisonPage key={route.id} id={route.id} /></Suspense>;
+  } else if (route.page === "metals") {
+    content = <Suspense fallback={loadingPage}><MetalsPage /></Suspense>;
+  } else if (route.page === "fuels") {
+    content = <Suspense fallback={loadingPage}><FuelsPage /></Suspense>;
+  } else if (route.page === "company") {
+    content = <Suspense fallback={loadingPage}><CompanyPage /></Suspense>;
+  } else {
+    const what = route.reason === "malformed"
+      ? `The address ${pathname} contains an invalid percent-encoded sequence.`
+      : `Nothing is served at ${pathname}.`;
+    content = <NotFoundPage key={pathname} index={index} what={what} />;
+  }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider delayDuration={0}>
-        {/*
-          Layout shell — page-level scrolling.
-          ------------------------------------
-          The shell intentionally has NO height cap and NO `overflow-hidden`,
-          so the document body scrolls naturally as one continuous page.
-          The sidebar stays visible via `position: sticky` (sticky works
-          inside a flex parent that is itself unconstrained in height) and
-          the TopBar stays visible the same way.  Pages no longer need
-          their own `h-full + overflow-y-auto` wrappers.
-        */}
-        <div className="relative flex min-h-dvh bg-background">
-          {mobileOpen && (
-            <div
-              className="fixed inset-0 z-40 bg-black/50 md:hidden"
-              onClick={() => setMobileOpen(false)}
-            />
-          )}
-          <div
-            className={`
-              ${mobileOpen ? "fixed inset-y-0 left-0 z-50" : "hidden"}
-              md:sticky md:top-0 md:block md:h-dvh md:self-start md:shrink-0
-            `}
-          >
-            <Sidebar
-              current={page}
-              onNavigate={navigate}
-              collapsed={collapsed}
-            />
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col">
-            <div className="sticky top-0 z-30">
-              <TopBar
-                page={page}
-                sidebarCollapsed={collapsed}
-                onToggleSidebar={() => {
-                  if (window.innerWidth < 768) {
-                    setMobileOpen((o) => !o);
-                  } else {
-                    setCollapsed((c) => !c);
-                  }
-                }}
-              />
-            </div>
-            <main className="relative flex-1 px-3 pb-16 pt-3 md:px-5 md:pb-5 md:pt-4">
-              <div className="page-enter w-full" key={page}>
-                {/* Per-page error boundary.  The outer ``key={page}`` on the
-                    wrapper div remounts the subtree on navigation, so the
-                    boundary resets automatically when the user moves to a
-                    different page.  A crash inside one page therefore
-                    cannot blank the surrounding shell or persist past the
-                    next navigation. */}
-                <ErrorBoundary scope="page">
-                  {/* Market Context — the macro/uncertainty/headlines surface,
-                      reached explicitly via the ``market`` route.  ``overview``
-                      is a back-compat alias so older deep links and any
-                      navigate("overview") callers still resolve to the same
-                      page; preserve until callers migrate. */}
-                  {(page === "market" || page === "overview") && (
-                    <MarketOverview onAnalyze={analyzeHeadline} failedHeadlines={failedHeadlines} onOpenHeadlines={() => navigate("headlines")} onOpenEvidence={() => navigate("evidence")} />
-                  )}
-                  {page === "headlines" && (
-                    <InboxWorkbench onOpenCandidate={openInboxCandidate} failedHeadlines={failedHeadlines} />
-                  )}
-                  {page === "analyze" && (
-                    <AnalysisView
-                      initialLaunch={pendingLaunch}
-                      onHeadlineConsumed={() => setPendingLaunch(undefined)}
-                      // Back navigates to the default workspace landing.
-                      onBack={() => navigate("market")}
-                      onAnalysisFailed={handleAnalysisFailed}
-                      onAnalysisSucceeded={handleAnalysisSucceeded}
-                    />
-                  )}
-                  {page === "events" && (
-                    <RecentEvents
-                      openEventId={pendingArchiveId}
-                      onEventOpened={() => setPendingArchiveId(undefined)}
-                    />
-                  )}
-                  {page === "cases" && <CaseLibrary onOpenCase={openCase} />}
-                  {page === "evidence" && <EvidenceOverview onAnalyze={analyzeHeadline} />}
-                  {page === "backtest" && <Backtest />}
-                  {page === "portfolio" && <PortfolioPage onAnalyze={analyzeHeadline} />}
-                  {page === "demo" && <SectionCDemo />}
-                </ErrorBoundary>
-              </div>
-            </main>
-          </div>
-          <BottomNav current={page} onNavigate={navigate} />
-        </div>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <>
+      <TopBar
+        index={index}
+        section={route.page === "index" || route.page === "bis-snapshot" ? "tracker" : route.page === "not-found" ? null
+          : route.page === "library-case" || route.page === "historical-case" || route.page === "research"
+            || route.page === "thesis" || route.page === "copper-tools" || route.page === "copper-events"
+            || route.page === "metals"
+            || route.page === "company" ? "library"
+          : route.page === "copper-desk" || route.page === "copper-comparison" ? "copper"
+          : route.page === "market-context-event" ? "market-context"
+          : route.page === "event-overview" || route.page === "research-analysis" ? "event"
+          : route.page === "hypothesis" || route.page === "hypothesis-assessment" || route.page === "hypothesis-dossier"
+            ? "hypotheses" : route.page === "findings-occasion" || route.page === "findings-g17" ? "findings" : route.page}
+        currentId={route.page === "dossier" ? route.id : undefined}
+      />
+      <Page>{content}</Page>
+      <footer className="site-footer">
+        <p>
+          Second Order · local research tool, not trading advice. Nothing is frozen, downloaded, evaluated or prepared automatically: each needs its own explicit approval.
+        </p>
+      </footer>
+    </>
   );
 }

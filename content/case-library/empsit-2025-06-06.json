@@ -1,0 +1,99 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "empsit-2025-06-06",
+  "title": "May 2025 jobs: payrolls +139,000, unemployment 4.2%, March and April revised down 95,000",
+  "category": "Employment",
+  "summary": "Payrolls rose 139,000, near the 12-month average of 149,000, led by health care and leisure and hospitality. Unemployment held at 4.2 percent, but participation fell 0.2 point and household employment fell 696,000. Hourly earnings rose 0.4 percent, and March and April were revised down by a combined 95,000.",
+  "source": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "title": "The Employment Situation — May 2025",
+    "url": "https://www.bls.gov/news.release/archives/empsit_06062025.htm",
+    "document_id": "USDL-25-0927",
+    "published_at": "2025-06-06T08:30:00-04:00",
+    "published_as_stated": "Embargoed until 8:30 a.m. (ET) Friday, June 6, 2025",
+    "timezone_note": "In June, Eastern Time is Eastern Daylight Time, UTC−04:00, so the release time is 12:30 UTC.",
+    "reference_period": "May 2025: the pay period including May 12 (establishment survey) and the week containing May 12 (household survey)",
+    "page_last_updated": "2025-06-06",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "Payrolls rose 139,000, similar to the 12-month average of 149,000. Private payrolls rose 140,000 and government fell 1,000; federal employment fell 22,000 and was 59,000 lower than in January. Health care added 62,000, leisure and hospitality 48,000 (food services and drinking places +30,000) and social assistance 16,000, while professional and business services fell 18,000, with temporary help services down 20,200.",
+    "The revisions were the largest of the year so far in this library: March was revised from +185,000 to +120,000 and April from +177,000 to +147,000, together 95,000 lower. The three-month average of payroll gains in the release's summary table fell to 135,000.",
+    "The household survey looked weaker than the payroll survey. The unemployment rate held at 4.2 percent, but the labor force fell 625,000, participation fell 0.2 point to 62.4 percent, the employment-population ratio fell 0.3 point to 59.7 percent, and household employment fell 696,000. Average hourly earnings rose 0.4 percent to $36.24, 3.9 percent over 12 months, and the private workweek was 34.3 hours for a third month."
+  ],
+  "key_facts": [
+    {"label": "Nonfarm payrolls", "value": "+139,000", "basis": "Seasonally adjusted, preliminary; prior 12-month average 149,000"},
+    {"label": "Private / government", "value": "+140,000 / −1,000", "basis": "Federal −22,000; down 59,000 since January"},
+    {"label": "Revisions to earlier months", "value": "March +120,000 (was +185,000); April +147,000 (was +177,000)", "basis": "Combined −95,000; from late reports and recalculated seasonal factors"},
+    {"label": "Three-month average", "value": "+135,000", "basis": "Total nonfarm, Summary table B"},
+    {"label": "Unemployment rate", "value": "4.2% (unchanged)", "basis": "Seasonally adjusted; household survey"},
+    {"label": "Household survey", "value": "Employment −696,000; labor force −625,000; participation 62.4% (−0.2 point)", "basis": "Seasonally adjusted; household survey"},
+    {"label": "Average hourly earnings", "value": "+0.4% to $36.24; +3.9% over 12 months", "basis": "All private employees; seasonally adjusted series"},
+    {"label": "Temporary help services", "value": "−20,200", "basis": "Seasonally adjusted, preliminary; Summary table B"}
+  ],
+  "channels": [
+    {
+      "title": "A steady payroll headline (shorter maturities)",
+      "source_fact": "Payrolls +139,000, near the 12-month average; unemployment unchanged at 4.2 percent.",
+      "interpretation": "Taken alone, the payroll figure is consistent with steady hiring and would not move the expected policy path much in either direction."
+    },
+    {
+      "title": "Revisions and household weakness (shorter maturities)",
+      "source_fact": "March and April revised down 95,000; household employment −696,000; participation down 0.2 point.",
+      "interpretation": "A reader weighting the revisions and the household survey would see a cooling labor market behind a steady headline, which would point toward more expected easing and lower shorter yields. This channel runs against the first."
+    },
+    {
+      "title": "Wages and inflation compensation (longer maturities)",
+      "source_fact": "Average hourly earnings +0.4 percent on the month and +3.9 percent over 12 months.",
+      "interpretation": "A firm monthly wage gain is an upside risk to services inflation and, if read that way, would support inflation compensation in longer yields. It also runs against the cooling reading, so the release offers evidence for both."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "A volatile household survey", "detail": "Household employment needs a change of about 600,000 to be statistically significant, so a 696,000 drop barely clears the bar, and the survey had introduced a redesigned sample in April. One month of household weakness is weak evidence on its own."},
+    {"title": "Industry moves from a reclassification", "detail": "The release notes that April establishment estimates reflected workers moving from home health care services to individual and family services because of a New York state program change. Health care and social assistance detail around April and May is therefore harder to read as hiring."},
+    {"title": "Revisions can reverse", "detail": "Revisions come from late reports and recalculated seasonal factors, and later revisions can move in either direction. A run of downward revisions is a signal about first prints, not proof that the labor market was weakening."}
+  ],
+  "assumptions": [
+    "Investors give weight to revisions and the household survey, not only to the payroll headline.",
+    "The household survey's weakness reflects labor-market conditions more than the sample redesign.",
+    "Wage growth feeds services inflation with a lag, so a firm month matters for longer maturities."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous consensus for payrolls and the unemployment rate. Without it this case cannot say whether the report was a surprise.",
+    "The corrected April household estimates and their effect on April-to-May comparisons, which the release refers to but this case does not use.",
+    "Not-seasonally-adjusted data and the seasonal factors applied in May.",
+    "Other labor-market data from around the same time, such as job openings and claims; none is used."
+  ],
+  "weakening_observations": [
+    "If the following releases revised May up and the household survey rebounded, the cooling reading would look like noise; see Sources and limits for what the next releases did.",
+    "If the household drop came mainly from the sample redesign rather than from conditions, the second channel would lose support.",
+    "If wage growth slowed the next month, the inflation-compensation channel would look like a one-month blip."
+  ],
+  "critique": [
+    {"title": "A steady headline over a shifting base", "detail": "The case presents May as steady on payrolls, which is what the release said. But the July release revised May up to +144,000 and the August release cut it to +19,000. The later estimates moved toward the weaker picture the household survey had painted, though the two surveys measure different things and the agreement may be coincidental."},
+    {"title": "The household drop is large but barely significant", "detail": "A 696,000 fall in household employment sounds decisive. Against a significance threshold of about 600,000 and a recently redesigned sample, the case is right to treat it as suggestive, and wrong if it treated it as more."},
+    {"title": "Firm wages against cooling jobs", "detail": "The wage gain and the employment weakness point in opposite directions for yields. The case presents both honestly but cannot rank them, and it should not imply a net direction."},
+    {"title": "Third of four, read later", "detail": "The third of four consecutive Employment Situation releases in the library, included by that rule. It was analysed in October 2026, and its later revisions are known; they are reported separately, but they may still shape which channel the case seems to favour."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The archived release as published, which shows 'Last Modified Date: June 06, 2025'. Figures come from the release text and Summary tables A and B. The release also carries notices about corrected April household estimates and the April reclassification between health care and social assistance.", "url": null},
+    {"title": "Later revision: July 3, 2025", "detail": "The June report revised May from +139,000 to +144,000. Not known at publication; that release is also a case in this library.", "url": "https://www.bls.gov/news.release/archives/empsit_07032025.htm"},
+    {"title": "Later revision: August 1, 2025", "detail": "The July report revised May from +144,000 to +19,000 and said revisions for May and June were larger than normal. Not known at publication.", "url": "https://www.bls.gov/news.release/archives/empsit_08012025.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived May 2025 release on 2026-10-05, and the archived June and July 2025 releases only for their revisions to May. Facts come from the release text and summary tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.bls.gov/news.release/archives/empsit_06062025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_07032025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_08012025.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

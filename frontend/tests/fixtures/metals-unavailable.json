@@ -1,0 +1,1435 @@
+{
+  "view_version": "metals-view-0.5",
+  "provider_called": false,
+  "deep": [
+    "copper",
+    "lithium",
+    "cobalt",
+    "rare-earths",
+    "nickel",
+    "aluminum"
+  ],
+  "sources": [
+    {
+      "id": "usgs-csv-2026",
+      "publisher": "Synthetic",
+      "title": "Synthetic usgs-csv-2026",
+      "edition": "2026",
+      "edition_date": "2026-07-01",
+      "url": "https://example.org/synthetic-metals/usgs-csv-2026/MCS2026_Commodities_Data.csv",
+      "kind": "csv",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up files for tests."
+      },
+      "retrieved_at": "2026-11-05T08:01:00+00:00",
+      "sha256": "3356b9eb7e934a8ee37c16a942f3077e8034763e6a065b02552933fda52e9aee",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "iea-dataset-2026",
+      "publisher": "Synthetic",
+      "title": "Synthetic iea-dataset-2026",
+      "edition": "2026",
+      "edition_date": "2026-07-01",
+      "url": "https://example.org/synthetic-metals/iea-dataset-2026/dataset.xlsx",
+      "kind": "xlsx",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up files for tests."
+      },
+      "retrieved_at": "2026-11-05T08:02:00+00:00",
+      "sha256": "60572543788ab5d348c8d7de34d027fd26f4af30cf63f77eb34cd6f8c5ac7012",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+    }
+  ],
+  "usgs": {
+    "engine": "metals-usgs-0.3",
+    "state": "withheld",
+    "problem": "The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read.",
+    "chapters": [
+      {
+        "id": "aluminum",
+        "chapter": "ALUMINUM",
+        "name": "Aluminum"
+      },
+      {
+        "id": "bauxite-and-alumina",
+        "chapter": "BAUXITE AND ALUMINA",
+        "name": "Bauxite and alumina"
+      },
+      {
+        "id": "antimony",
+        "chapter": "ANTIMONY",
+        "name": "Antimony"
+      },
+      {
+        "id": "arsenic",
+        "chapter": "ARSENIC",
+        "name": "Arsenic"
+      },
+      {
+        "id": "beryllium",
+        "chapter": "BERYLLIUM",
+        "name": "Beryllium"
+      },
+      {
+        "id": "bismuth",
+        "chapter": "BISMUTH",
+        "name": "Bismuth"
+      },
+      {
+        "id": "cadmium",
+        "chapter": "CADMIUM",
+        "name": "Cadmium"
+      },
+      {
+        "id": "cesium",
+        "chapter": "CESIUM",
+        "name": "Cesium"
+      },
+      {
+        "id": "chromium",
+        "chapter": "CHROMIUM",
+        "name": "Chromium"
+      },
+      {
+        "id": "cobalt",
+        "chapter": "COBALT",
+        "name": "Cobalt"
+      },
+      {
+        "id": "copper",
+        "chapter": "COPPER",
+        "name": "Copper"
+      },
+      {
+        "id": "gallium",
+        "chapter": "GALLIUM",
+        "name": "Gallium"
+      },
+      {
+        "id": "germanium",
+        "chapter": "GERMANIUM",
+        "name": "Germanium"
+      },
+      {
+        "id": "gold",
+        "chapter": "GOLD",
+        "name": "Gold"
+      },
+      {
+        "id": "graphite-natural",
+        "chapter": "GRAPHITE (NATURAL)",
+        "name": "Graphite (natural)"
+      },
+      {
+        "id": "indium",
+        "chapter": "INDIUM",
+        "name": "Indium"
+      },
+      {
+        "id": "iron-ore",
+        "chapter": "IRON ORE",
+        "name": "Iron ore"
+      },
+      {
+        "id": "lead",
+        "chapter": "LEAD",
+        "name": "Lead"
+      },
+      {
+        "id": "lithium",
+        "chapter": "LITHIUM",
+        "name": "Lithium"
+      },
+      {
+        "id": "magnesium-metal",
+        "chapter": "MAGNESIUM METAL",
+        "name": "Magnesium metal"
+      },
+      {
+        "id": "manganese",
+        "chapter": "MANGANESE",
+        "name": "Manganese"
+      },
+      {
+        "id": "mercury",
+        "chapter": "MERCURY",
+        "name": "Mercury"
+      },
+      {
+        "id": "molybdenum",
+        "chapter": "MOLYBDENUM",
+        "name": "Molybdenum"
+      },
+      {
+        "id": "nickel",
+        "chapter": "NICKEL",
+        "name": "Nickel"
+      },
+      {
+        "id": "niobium-columbium",
+        "chapter": "NIOBIUM (COLUMBIUM)",
+        "name": "Niobium (columbium)"
+      },
+      {
+        "id": "platinum-group-metals",
+        "chapter": "PLATINUM-GROUP METALS",
+        "name": "Platinum-group metals"
+      },
+      {
+        "id": "rare-earths",
+        "chapter": "RARE EARTHS",
+        "name": "Rare earths"
+      },
+      {
+        "id": "rare-earths-heavy",
+        "chapter": "RARE EARTHS (Heavy)",
+        "name": "Rare earths (heavy)"
+      },
+      {
+        "id": "rhenium",
+        "chapter": "RHENIUM",
+        "name": "Rhenium"
+      },
+      {
+        "id": "rubidium",
+        "chapter": "RUBIDIUM",
+        "name": "Rubidium"
+      },
+      {
+        "id": "scandium",
+        "chapter": "SCANDIUM",
+        "name": "Scandium"
+      },
+      {
+        "id": "selenium",
+        "chapter": "SELENIUM",
+        "name": "Selenium"
+      },
+      {
+        "id": "silicon",
+        "chapter": "SILICON",
+        "name": "Silicon"
+      },
+      {
+        "id": "silver",
+        "chapter": "SILVER",
+        "name": "Silver"
+      },
+      {
+        "id": "tantalum",
+        "chapter": "TANTALUM",
+        "name": "Tantalum"
+      },
+      {
+        "id": "tellurium",
+        "chapter": "TELLURIUM",
+        "name": "Tellurium"
+      },
+      {
+        "id": "thallium",
+        "chapter": "THALLIUM",
+        "name": "Thallium"
+      },
+      {
+        "id": "tin",
+        "chapter": "TIN",
+        "name": "Tin"
+      },
+      {
+        "id": "titanium-and-titanium-dioxide",
+        "chapter": "TITANIUM AND TITANIUM DIOXIDE",
+        "name": "Titanium and titanium dioxide"
+      },
+      {
+        "id": "titanium-mineral-concentrates",
+        "chapter": "TITANIUM MINERAL CONCENTRATES",
+        "name": "Titanium mineral concentrates"
+      },
+      {
+        "id": "tungsten",
+        "chapter": "TUNGSTEN",
+        "name": "Tungsten"
+      },
+      {
+        "id": "vanadium",
+        "chapter": "VANADIUM",
+        "name": "Vanadium"
+      },
+      {
+        "id": "yttrium",
+        "chapter": "YTTRIUM",
+        "name": "Yttrium"
+      },
+      {
+        "id": "zinc",
+        "chapter": "ZINC",
+        "name": "Zinc"
+      },
+      {
+        "id": "zirconium-and-hafnium",
+        "chapter": "ZIRCONIUM AND HAFNIUM",
+        "name": "Zirconium and hafnium"
+      }
+    ]
+  },
+  "iea": {
+    "engine": "metals-iea-0.1",
+    "state": "withheld",
+    "problem": "The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+    "minerals": [
+      {
+        "id": "copper",
+        "name": "Copper",
+        "chapter": "copper"
+      },
+      {
+        "id": "cobalt",
+        "name": "Cobalt",
+        "chapter": "cobalt"
+      },
+      {
+        "id": "lithium",
+        "name": "Lithium",
+        "chapter": "lithium"
+      },
+      {
+        "id": "nickel",
+        "name": "Nickel",
+        "chapter": "nickel"
+      },
+      {
+        "id": "magnet-rare-earths",
+        "name": "Magnet rare earth elements",
+        "chapter": "rare-earths"
+      },
+      {
+        "id": "graphite",
+        "name": "Graphite (all grades: natural and synthetic)",
+        "chapter": "graphite-natural"
+      }
+    ]
+  },
+  "risk": {
+    "engine": "metals-risk-0.1",
+    "state": "withheld",
+    "problem": "The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read.",
+    "chapters": [
+      {
+        "id": "aluminum",
+        "chapter": "ALUMINUM",
+        "name": "Aluminum"
+      },
+      {
+        "id": "bauxite-and-alumina",
+        "chapter": "BAUXITE AND ALUMINA",
+        "name": "Bauxite and alumina"
+      },
+      {
+        "id": "antimony",
+        "chapter": "ANTIMONY",
+        "name": "Antimony"
+      },
+      {
+        "id": "arsenic",
+        "chapter": "ARSENIC",
+        "name": "Arsenic"
+      },
+      {
+        "id": "beryllium",
+        "chapter": "BERYLLIUM",
+        "name": "Beryllium"
+      },
+      {
+        "id": "bismuth",
+        "chapter": "BISMUTH",
+        "name": "Bismuth"
+      },
+      {
+        "id": "cadmium",
+        "chapter": "CADMIUM",
+        "name": "Cadmium"
+      },
+      {
+        "id": "cesium",
+        "chapter": "CESIUM",
+        "name": "Cesium"
+      },
+      {
+        "id": "chromium",
+        "chapter": "CHROMIUM",
+        "name": "Chromium"
+      },
+      {
+        "id": "cobalt",
+        "chapter": "COBALT",
+        "name": "Cobalt"
+      },
+      {
+        "id": "copper",
+        "chapter": "COPPER",
+        "name": "Copper"
+      },
+      {
+        "id": "gallium",
+        "chapter": "GALLIUM",
+        "name": "Gallium"
+      },
+      {
+        "id": "germanium",
+        "chapter": "GERMANIUM",
+        "name": "Germanium"
+      },
+      {
+        "id": "gold",
+        "chapter": "GOLD",
+        "name": "Gold"
+      },
+      {
+        "id": "graphite-natural",
+        "chapter": "GRAPHITE (NATURAL)",
+        "name": "Graphite (natural)"
+      },
+      {
+        "id": "indium",
+        "chapter": "INDIUM",
+        "name": "Indium"
+      },
+      {
+        "id": "iron-ore",
+        "chapter": "IRON ORE",
+        "name": "Iron ore"
+      },
+      {
+        "id": "lead",
+        "chapter": "LEAD",
+        "name": "Lead"
+      },
+      {
+        "id": "lithium",
+        "chapter": "LITHIUM",
+        "name": "Lithium"
+      },
+      {
+        "id": "magnesium-metal",
+        "chapter": "MAGNESIUM METAL",
+        "name": "Magnesium metal"
+      },
+      {
+        "id": "manganese",
+        "chapter": "MANGANESE",
+        "name": "Manganese"
+      },
+      {
+        "id": "mercury",
+        "chapter": "MERCURY",
+        "name": "Mercury"
+      },
+      {
+        "id": "molybdenum",
+        "chapter": "MOLYBDENUM",
+        "name": "Molybdenum"
+      },
+      {
+        "id": "nickel",
+        "chapter": "NICKEL",
+        "name": "Nickel"
+      },
+      {
+        "id": "niobium-columbium",
+        "chapter": "NIOBIUM (COLUMBIUM)",
+        "name": "Niobium (columbium)"
+      },
+      {
+        "id": "platinum-group-metals",
+        "chapter": "PLATINUM-GROUP METALS",
+        "name": "Platinum-group metals"
+      },
+      {
+        "id": "rare-earths",
+        "chapter": "RARE EARTHS",
+        "name": "Rare earths"
+      },
+      {
+        "id": "rare-earths-heavy",
+        "chapter": "RARE EARTHS (Heavy)",
+        "name": "Rare earths (heavy)"
+      },
+      {
+        "id": "rhenium",
+        "chapter": "RHENIUM",
+        "name": "Rhenium"
+      },
+      {
+        "id": "rubidium",
+        "chapter": "RUBIDIUM",
+        "name": "Rubidium"
+      },
+      {
+        "id": "scandium",
+        "chapter": "SCANDIUM",
+        "name": "Scandium"
+      },
+      {
+        "id": "selenium",
+        "chapter": "SELENIUM",
+        "name": "Selenium"
+      },
+      {
+        "id": "silicon",
+        "chapter": "SILICON",
+        "name": "Silicon"
+      },
+      {
+        "id": "silver",
+        "chapter": "SILVER",
+        "name": "Silver"
+      },
+      {
+        "id": "tantalum",
+        "chapter": "TANTALUM",
+        "name": "Tantalum"
+      },
+      {
+        "id": "tellurium",
+        "chapter": "TELLURIUM",
+        "name": "Tellurium"
+      },
+      {
+        "id": "thallium",
+        "chapter": "THALLIUM",
+        "name": "Thallium"
+      },
+      {
+        "id": "tin",
+        "chapter": "TIN",
+        "name": "Tin"
+      },
+      {
+        "id": "titanium-and-titanium-dioxide",
+        "chapter": "TITANIUM AND TITANIUM DIOXIDE",
+        "name": "Titanium and titanium dioxide"
+      },
+      {
+        "id": "titanium-mineral-concentrates",
+        "chapter": "TITANIUM MINERAL CONCENTRATES",
+        "name": "Titanium mineral concentrates"
+      },
+      {
+        "id": "tungsten",
+        "chapter": "TUNGSTEN",
+        "name": "Tungsten"
+      },
+      {
+        "id": "vanadium",
+        "chapter": "VANADIUM",
+        "name": "Vanadium"
+      },
+      {
+        "id": "yttrium",
+        "chapter": "YTTRIUM",
+        "name": "Yttrium"
+      },
+      {
+        "id": "zinc",
+        "chapter": "ZINC",
+        "name": "Zinc"
+      },
+      {
+        "id": "zirconium-and-hafnium",
+        "chapter": "ZIRCONIUM AND HAFNIUM",
+        "name": "Zirconium and hafnium"
+      }
+    ]
+  },
+  "uses": {
+    "engine": "metals-iea-uses-0.1",
+    "state": "withheld",
+    "problem": "The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+    "entries": [
+      {
+        "name": "Cadmium",
+        "chapter": "cadmium"
+      },
+      {
+        "name": "Chromium",
+        "chapter": "chromium"
+      },
+      {
+        "name": "Copper",
+        "chapter": "copper"
+      },
+      {
+        "name": "Cobalt",
+        "chapter": "cobalt"
+      },
+      {
+        "name": "Gallium",
+        "chapter": "gallium"
+      },
+      {
+        "name": "Germanium",
+        "chapter": "germanium"
+      },
+      {
+        "name": "Battery-grade graphite",
+        "chapter": "graphite-natural"
+      },
+      {
+        "name": "Hafnium",
+        "chapter": "zirconium-and-hafnium"
+      },
+      {
+        "name": "Zirconium",
+        "chapter": "zirconium-and-hafnium"
+      },
+      {
+        "name": "Indium",
+        "chapter": "indium"
+      },
+      {
+        "name": "Iridium",
+        "chapter": "platinum-group-metals"
+      },
+      {
+        "name": "PGMs (other than iridum)",
+        "chapter": "platinum-group-metals"
+      },
+      {
+        "name": "Lead",
+        "chapter": "lead"
+      },
+      {
+        "name": "Lithium",
+        "chapter": "lithium"
+      },
+      {
+        "name": "Magnesium",
+        "chapter": "magnesium-metal"
+      },
+      {
+        "name": "Manganese",
+        "chapter": "manganese"
+      },
+      {
+        "name": "Molybdenum",
+        "chapter": "molybdenum"
+      },
+      {
+        "name": "Nickel",
+        "chapter": "nickel"
+      },
+      {
+        "name": "Niobium",
+        "chapter": "niobium-columbium"
+      },
+      {
+        "name": "Selenium",
+        "chapter": "selenium"
+      },
+      {
+        "name": "Silicon",
+        "chapter": "silicon"
+      },
+      {
+        "name": "Silver",
+        "chapter": "silver"
+      },
+      {
+        "name": "Tantalum",
+        "chapter": "tantalum"
+      },
+      {
+        "name": "Tellurium",
+        "chapter": "tellurium"
+      },
+      {
+        "name": "Tin",
+        "chapter": "tin"
+      },
+      {
+        "name": "Titanium",
+        "chapter": "titanium-and-titanium-dioxide"
+      },
+      {
+        "name": "Tungsten",
+        "chapter": "tungsten"
+      },
+      {
+        "name": "Vanadium",
+        "chapter": "vanadium"
+      },
+      {
+        "name": "Zinc",
+        "chapter": "zinc"
+      },
+      {
+        "name": "Arsenic",
+        "chapter": "arsenic"
+      },
+      {
+        "name": "Neodymium",
+        "chapter": "rare-earths"
+      },
+      {
+        "name": "Dysprosium",
+        "chapter": "rare-earths"
+      },
+      {
+        "name": "Praseodymium",
+        "chapter": "rare-earths"
+      },
+      {
+        "name": "Terbium",
+        "chapter": "rare-earths"
+      },
+      {
+        "name": "Lanthanum",
+        "chapter": "rare-earths"
+      },
+      {
+        "name": "Total rare earth elements",
+        "chapter": "rare-earths"
+      },
+      {
+        "name": "Yttrium",
+        "chapter": "yttrium"
+      }
+    ]
+  },
+  "research": {
+    "engine": "metals-research-0.3",
+    "state": "available",
+    "problem": null,
+    "written_by": "Written by the assistant from the figures on this page and retained sources; not reviewed by the owner.",
+    "metals": {
+      "copper": {
+        "thesis": "copper",
+        "uses": [
+          {
+            "passage": "copper:usgs26-end-uses",
+            "evidence": {
+              "id": "usgs26-end-uses",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          }
+        ],
+        "substitution": [
+          {
+            "passage": "copper:usgs26-substitutes",
+            "evidence": {
+              "id": "usgs26-substitutes",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "passage": "copper:mli-aluminum-2025",
+            "evidence": {
+              "id": "mli-aluminum-2025",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          }
+        ],
+        "recycling": [
+          {
+            "passage": "copper:usgs26-scrap-share",
+            "evidence": {
+              "id": "usgs26-scrap-share",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "passage": "copper:usgs26-recycling",
+            "evidence": {
+              "id": "usgs26-recycling",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          }
+        ],
+        "events": [
+          {
+            "kind": "Supply disruption",
+            "when": "2025",
+            "passage": "copper:usgs26-mine-events",
+            "evidence": {
+              "id": "usgs26-mine-events",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "kind": "Supply disruption",
+            "when": "September 2025",
+            "passage": "copper:fcx-mud-rush-2025",
+            "evidence": {
+              "id": "fcx-mud-rush-2025",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "kind": "Investment decision",
+            "when": "November 2026",
+            "passage": "fcx:q3-p-bagdad-approval",
+            "evidence": {
+              "id": "q3-p-bagdad-approval",
+              "source": "10q-2026q3",
+              "title": "Freeport-McMoRan Inc., Quarterly Report on Form 10-Q for the quarterly period ended September 30, 2026",
+              "publisher": "Freeport-McMoRan Inc. (SEC CIK 831259)",
+              "edition": "10-Q",
+              "edition_date": "2026-11-06",
+              "quote": null,
+              "where": "page 23",
+              "state": "missing",
+              "problem": "10q-2026q3: The retained file sec-10q-2026q3/fcx-20260930.htm is not on this machine."
+            }
+          }
+        ],
+        "chains": [
+          {
+            "id": "copper-grid-construction",
+            "title": "A copper supply disruption and the cost of grids and buildings",
+            "disruption": "Output falls at mines or refineries in a leading producing country, through outages, lower ore grades or policy.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Largest named producer of 2025 world refinery output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "refining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "A recorded disruption, in USGS's words",
+                "kind": "stated",
+                "passage": "copper:usgs26-mine-events",
+                "evidence": {
+                  "id": "usgs26-mine-events",
+                  "source": null,
+                  "title": null,
+                  "publisher": null,
+                  "edition": null,
+                  "edition_date": null,
+                  "quote": null,
+                  "where": null,
+                  "state": "unavailable",
+                  "problem": "The copper thesis cannot be read, so its passages are not shown"
+                },
+                "unavailable": "The copper thesis cannot be read, so its passages are not shown"
+              },
+              {
+                "text": "Electricity networks' part of copper demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Copper",
+                  "technology": "Electricity networks"
+                },
+                "shown": null,
+                "unavailable": "The IEA part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Copper's US end uses, as USGS cites them",
+                "kind": "stated",
+                "passage": "copper:usgs26-end-uses",
+                "evidence": {
+                  "id": "usgs26-end-uses",
+                  "source": null,
+                  "title": null,
+                  "publisher": null,
+                  "edition": null,
+                  "edition_date": null,
+                  "quote": null,
+                  "where": null,
+                  "state": "unavailable",
+                  "problem": "The copper thesis cannot be read, so its passages are not shown"
+                },
+                "unavailable": "The copper thesis cannot be read, so its passages are not shown"
+              },
+              {
+                "text": "One US fabricator on passing raw-material costs to customers",
+                "kind": "stated",
+                "passage": "copper:mli-pass-through-2025",
+                "evidence": {
+                  "id": "mli-pass-through-2025",
+                  "source": null,
+                  "title": null,
+                  "publisher": null,
+                  "edition": null,
+                  "edition_date": null,
+                  "quote": null,
+                  "where": null,
+                  "state": "unavailable",
+                  "problem": "The copper thesis cannot be read, so its passages are not shown"
+                },
+                "unavailable": "The copper thesis cannot be read, so its passages are not shown"
+              },
+              {
+                "text": "If refined copper becomes scarcer, cable, transformer and building-wire costs would rise, and projects with fixed budgets could be delayed or rescoped.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Any effect on inflation or growth would depend on how large and lasting the disruption is; this page does not measure it.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Copper refiners and fabricators",
+              "Grid equipment and cable makers",
+              "Building-wire and plumbing suppliers"
+            ],
+            "indirect": [
+              "Utilities and their customers, through network costs",
+              "Builders and their clients",
+              "Electric vehicle and electrical equipment makers"
+            ],
+            "gains_losses": [
+              {
+                "who": "Copper producers outside the disrupted region",
+                "direction": "may gain",
+                "mechanism": "Higher prices on output that is not disrupted."
+              },
+              {
+                "who": "Scrap collectors and secondary refiners",
+                "direction": "may gain",
+                "mechanism": "Scrap is worth more when refined copper costs more."
+              },
+              {
+                "who": "Fabricators that cannot pass costs through quickly",
+                "direction": "may lose",
+                "mechanism": "Margins narrow between raw-material cost and product prices until prices adjust."
+              },
+              {
+                "who": "Builders and grid contractors on fixed-price contracts",
+                "direction": "may lose",
+                "mechanism": "Input costs rise while contract revenue does not."
+              }
+            ],
+            "mitigants": [
+              "Aluminum substitution in cable, radiators and tubing, which USGS names",
+              "More scrap recovery",
+              "Stocks or spare refining capacity elsewhere",
+              "Weaker demand"
+            ],
+            "learned": "Measured here: the largest named producers of copper mine and refinery output, and the IEA's split of energy-technology demand. Stated by sources in this chain: a recorded disruption, US end uses and one fabricator's cost pass-through.",
+            "assumed": "Not measured here: price responses, project delays, and any effect on inflation or growth."
+          }
+        ]
+      },
+      "cobalt": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "cobalt-export-restriction",
+            "title": "Cobalt export restrictions and battery supply",
+            "disruption": "The leading producing country restricts or halts cobalt exports.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Concentration of 2025 world mine output (HHI bounds)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "hhi"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Electric vehicles' part of cobalt demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Cobalt",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "US net import reliance, 2025, as USGS prints it",
+                "kind": "measured",
+                "ref": {
+                  "reliance": "2025"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "A cut in exports from the leading country would reduce the cobalt available to refiners and battery makers elsewhere.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Battery makers could shift to chemistries that use less or no cobalt, or secure supply from other countries; both take time.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Cobalt refiners",
+              "Battery cathode and cell makers",
+              "Superalloy makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Consumer electronics makers",
+              "Aerospace suppliers"
+            ],
+            "gains_losses": [
+              {
+                "who": "Cobalt producers in other countries",
+                "direction": "may gain",
+                "mechanism": "Higher prices for supply that is not restricted."
+              },
+              {
+                "who": "Makers of low-cobalt or cobalt-free battery chemistries",
+                "direction": "may gain",
+                "mechanism": "Demand moves toward chemistries less exposed to the restriction."
+              },
+              {
+                "who": "Battery makers tied to cobalt-rich chemistries",
+                "direction": "may lose",
+                "mechanism": "Higher input costs and less certain supply."
+              }
+            ],
+            "mitigants": [
+              "Battery chemistries using less cobalt",
+              "Stocks held by refiners and users",
+              "Recycling of batteries",
+              "Output from other producing countries"
+            ],
+            "learned": "Measured here: how concentrated cobalt mining is, the IEA's share of electric vehicles in energy-technology demand, and US reliance as printed.",
+            "assumed": "Not measured here: any restriction itself, price effects, and how fast battery makers can change chemistry."
+          }
+        ]
+      },
+      "lithium": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "lithium-battery-supply",
+            "title": "A lithium supply shortfall and battery costs",
+            "disruption": "Lithium mining or refining falls short of battery makers' needs.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Largest named holder of 2025 world reserves",
+                "kind": "measured",
+                "ref": {
+                  "stage": "reserves",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Years of reserves at the 2025 rate (not a depletion date)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "reserves",
+                  "figure": "years"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Electric vehicles' part of lithium demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Lithium",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "A shortfall would raise battery-cell costs or slow deliveries to electric vehicle and storage makers.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Reserves large relative to output allow supply to grow over time, but new mines and refineries take years to build.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Lithium refiners",
+              "Battery cathode and cell makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Grid storage developers",
+              "Electricity customers where storage is planned"
+            ],
+            "gains_losses": [
+              {
+                "who": "Lithium producers with spare or new capacity",
+                "direction": "may gain",
+                "mechanism": "Higher prices while supply is short."
+              },
+              {
+                "who": "Battery and vehicle makers without secured supply",
+                "direction": "may lose",
+                "mechanism": "Higher input costs or delayed production."
+              }
+            ],
+            "mitigants": [
+              "New mines and refineries",
+              "Battery recycling",
+              "Chemistries that use lithium more efficiently",
+              "Slower electric vehicle sales"
+            ],
+            "learned": "Measured here, where USGS names the order: who leads mining and reserves, years of reserves at the 2025 rate, and the IEA's share of electric vehicles in energy-technology demand.",
+            "assumed": "Not measured here: whether a shortfall occurs, its size, and price or delivery effects."
+          }
+        ]
+      },
+      "rare-earths": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "rare-earths-magnets",
+            "title": "Rare earth export limits and permanent magnets",
+            "disruption": "The leading producing country limits exports of rare earths or of the magnets made from them.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Wind's part of neodymium demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Neodymium",
+                  "technology": "Wind"
+                },
+                "shown": null,
+                "unavailable": "The IEA part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Electric vehicles' part of neodymium demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Neodymium",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Export limits would reduce the magnet materials available to motor, turbine and equipment makers elsewhere.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Makers could redesign motors to use fewer rare earths or build supply in other countries; both take time.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Magnet makers",
+              "Electric motor and generator makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Wind turbine makers",
+              "Defense and aerospace suppliers"
+            ],
+            "gains_losses": [
+              {
+                "who": "Rare earth miners and processors in other countries",
+                "direction": "may gain",
+                "mechanism": "Demand turns to supply outside the restricting country."
+              },
+              {
+                "who": "Makers that depend on imported magnets",
+                "direction": "may lose",
+                "mechanism": "Higher costs or interrupted supply."
+              }
+            ],
+            "mitigants": [
+              "Motor designs using fewer rare earths",
+              "Stocks of magnets and oxides",
+              "Processing capacity in other countries",
+              "Recycling of magnets"
+            ],
+            "learned": "Measured here: the largest named producer of rare earth mine output, and the parts of neodymium's energy-technology demand that go to wind and to electric vehicles, as the IEA splits it.",
+            "assumed": "Not measured here: any export limit itself, magnet supply, and the time redesign takes."
+          }
+        ]
+      },
+      "nickel": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "nickel-producer-policy",
+            "title": "Policy change in the leading nickel producer",
+            "disruption": "The leading producing country changes its rules on mining, processing or exports.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Concentration of 2025 world mine output (HHI bounds)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "hhi"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Electric vehicles' part of nickel demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Nickel",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 2) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "US net import reliance, 2025, as USGS prints it",
+                "kind": "measured",
+                "ref": {
+                  "reliance": "2025"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "A change in the leading country's rules could shift where nickel is processed and what it costs users elsewhere.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Nickel processors and refiners",
+              "Stainless steel makers",
+              "Battery cathode makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Construction and appliance makers using stainless steel"
+            ],
+            "gains_losses": [
+              {
+                "who": "Processors inside the leading country",
+                "direction": "may gain",
+                "mechanism": "Rules that favour local processing move work to them."
+              },
+              {
+                "who": "Processors elsewhere that depend on its ore",
+                "direction": "may lose",
+                "mechanism": "Less ore available to import."
+              }
+            ],
+            "mitigants": [
+              "Output from other producing countries",
+              "Battery chemistries using less nickel",
+              "Recycling of stainless steel and batteries"
+            ],
+            "learned": "Measured here: how concentrated nickel mining is, the IEA's share of electric vehicles in energy-technology demand, and US reliance as printed.",
+            "assumed": "Not measured here: any rule change, and its effect on prices or processing."
+          }
+        ]
+      },
+      "aluminum": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "aluminum-smelting",
+            "title": "Curbs on aluminum smelting in the leading producer",
+            "disruption": "Smelting output falls in the leading producing country, for example through power limits or policy.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world smelter output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "refining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Concentration of 2025 world smelter output (HHI bounds)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "refining",
+                  "figure": "hhi"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "US net import reliance, 2025, as USGS prints it",
+                "kind": "measured",
+                "ref": {
+                  "reliance": "2025"
+                },
+                "shown": null,
+                "unavailable": "The USGS part is withheld: The acquisition record (approval synthetic-metals-owner-01, attempt 1) is not on this machine; the retained file is not read."
+              },
+              {
+                "text": "Smelting uses a great deal of electricity, so power costs or limits in the leading country could change world supply.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Less smelter output would raise costs for packaging, transport, construction and power-line makers that use aluminum.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Aluminum fabricators",
+              "Packaging makers",
+              "Vehicle and aircraft makers"
+            ],
+            "indirect": [
+              "Builders",
+              "Power-line makers",
+              "Consumers of packaged goods"
+            ],
+            "gains_losses": [
+              {
+                "who": "Smelters in other countries with available power",
+                "direction": "may gain",
+                "mechanism": "Higher prices for metal that is not curtailed."
+              },
+              {
+                "who": "Fabricators relying on imported metal",
+                "direction": "may lose",
+                "mechanism": "Higher input costs."
+              }
+            ],
+            "mitigants": [
+              "Recycled aluminum",
+              "Smelter restarts elsewhere",
+              "Stocks"
+            ],
+            "learned": "Measured here: how concentrated smelting is and US reliance as printed.",
+            "assumed": "Not measured here: power conditions, any curb, and price effects. The electricity intensity of smelting is general knowledge, not from a retained source."
+          }
+        ]
+      }
+    }
+  }
+}

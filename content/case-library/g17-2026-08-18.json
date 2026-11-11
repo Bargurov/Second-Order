@@ -1,0 +1,110 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "g17-2026-08-18",
+  "title": "July 2026 industrial production +0.2%; motor vehicles and parts −2.1%, semiconductors +2.4%",
+  "category": "Industrial production",
+  "summary": "The G.17 release of August 18, 2026 reported industrial and manufacturing output each up 0.2 percent in July, with manufacturing outside motor vehicles and parts up 0.4 percent. Motor vehicles and parts fell 2.1 percent and assemblies slipped to 10.68 million units at an annual rate, while semiconductor output rose 2.4 percent and was 11.9 percent above a year earlier.",
+  "sectors": ["manufacturing-automotive", "technology-semiconductors", "mining-materials"],
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Industrial Production and Capacity Utilization - G.17",
+    "url": "https://www.federalreserve.gov/releases/g17/20260818/",
+    "document_id": "G.17",
+    "published_at": "2026-08-18",
+    "published_precision": "date",
+    "published_as_stated": "Release Date: August 18, 2026",
+    "timezone_note": "The release page states a date only. The Board's G.17 release-dates page says monthly releases are issued at 9:15 a.m. but names no time zone, so no time or offset is recorded.",
+    "reference_period": "July 2026 (preliminary), with revised estimates for February to June 2026; seasonally adjusted",
+    "page_last_updated": "2026-08-18",
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "Industrial production and manufacturing output each rose 0.2 percent in July 2026, after rising 0.3 percent in June; the first estimates for June had been 0.1 and 0.0 percent. Mining rose 0.2 percent and utilities 0.5 percent. Total output was 1.1 percent above its level a year earlier, and capacity utilization edged up to 76.3 percent, 3.1 points below its long-run average.",
+    "Gains were broad within durable goods, which rose 0.7 percent with most categories up more than 1.0 percent; only nonmetallic mineral products and motor vehicles and parts fell, by 0.2 and 2.1 percent. Assemblies slipped to 10.68 million units at an annual rate from 10.99 million in June. Excluding motor vehicles and parts, manufacturing rose 0.4 percent. Nondurable manufacturing fell 0.4 percent.",
+    "High-technology output kept rising. Semiconductors and related electronic components rose 2.4 percent in July and 11.9 percent over 12 months, and selected high-technology industries 11.8 percent over 12 months. Business equipment rose 0.8 percent, with information processing among the gains, while consumer goods fell 0.4 percent and durable consumer goods 1.4 percent."
+  ],
+  "key_facts": [
+    {"label": "Industrial production, July", "value": "+0.2%; +1.1% over 12 months", "basis": "Index 103.0 (2017 = 100); seasonally adjusted; preliminary"},
+    {"label": "Manufacturing, July", "value": "+0.2%; excluding motor vehicles and parts +0.4%", "basis": "Durables +0.7%, nondurables −0.4%"},
+    {"label": "Motor vehicles and parts", "value": "−2.1% in July; +2.1% over 12 months", "basis": "Table 2; motor vehicles −4.1%, parts 0.0%"},
+    {"label": "Motor vehicle assemblies", "value": "10.68 million in July; 10.99 million in June", "basis": "Units at a seasonally adjusted annual rate (Table 3)"},
+    {"label": "Semiconductors and related components", "value": "+2.4% in July; +11.9% over 12 months", "basis": "NAICS 3344; 1.49% of industrial output in 2025 (Table 2)"},
+    {"label": "Capacity utilization, July", "value": "Total 76.3%; manufacturing 76.0%", "basis": "Manufacturing 2.2 points below its 1972–2025 average"},
+    {"label": "Revision to June", "value": "Total +0.3% (was +0.1%); manufacturing +0.3% (was 0.0%)", "basis": "Compared with the July 17 release"},
+    {"label": "Mining output, July", "value": "+0.2%; +1.0% over 12 months; operating rate 86.1%", "basis": "Index 122.4 (2017 = 100); operating rate 0.9 point above its 1972–2025 average; seasonally adjusted; preliminary"},
+    {"label": "Materials output, July", "value": "+0.3%; +1.0% over 12 months", "basis": "Market group index 107.8 (2017 = 100); seasonally adjusted; preliminary"}
+  ],
+  "channels": [
+    {
+      "title": "Vehicle output (automakers and suppliers)",
+      "source_fact": "Motor vehicles fell 4.1% and parts were unchanged in July; assemblies dropped to 10.68 million from 10.99 million.",
+      "interpretation": "A drop in vehicle output in July can reflect summer retooling or production cuts in response to demand. G.17 does not say which, so what it means for automakers stays open."
+    },
+    {
+      "title": "Chip production (semiconductor makers and their suppliers)",
+      "source_fact": "Semiconductor output rose 2.4% in July and 11.9% over 12 months.",
+      "interpretation": "Sustained double-digit growth in US semiconductor output would be consistent with new fabrication capacity coming into use and with strong demand for chips, which matters for chip makers and equipment suppliers. G.17 measures production indexes, not capacity additions or demand directly."
+    },
+    {
+      "title": "Investment goods (equipment makers)",
+      "source_fact": "Business equipment +0.8%, including information processing; consumer goods −0.4%.",
+      "interpretation": "Output rising for business equipment while falling for consumer goods points to a tilt toward investment goods. If it lasted, it would favor equipment producers over consumer-goods makers; one month is a weak basis."
+    },
+    {
+      "title": "Mining output (mining industries, NAICS 21)",
+      "source_fact": "Mining output rose 0.2% in July and was 1.0% above a year earlier; its operating rate was 86.1%, 0.9 point above its 1972–2025 average.",
+      "interpretation": "An operating rate above its long-run average means mining was using more of its estimated capacity than usual. If that persisted, the industry would have less spare capacity on this measure to raise output without adding capacity. G.17 gives mining as one index of volumes, so it does not say which fuels or minerals moved, and it says nothing about prices or profits."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Model changeovers", "detail": "July is when automakers typically retool. If seasonal adjustment did not fully capture the timing this year, the motor vehicle decline may be calendar noise rather than weaker production."},
+    {"title": "A high-technology first print that moved", "detail": "The September 18 release revised July semiconductor growth from 2.4% to 1.5%. High-technology indexes rely partly on estimated inputs, so their first estimates can change materially."},
+    {"title": "Capacity estimates still to be revised", "detail": "The operating rate is output as a percent of estimated capacity, and the release says capacity will be revised with new data from the U.S. Geological Survey, the U.S. Department of Energy and other organizations. The September 18 release revised July's mining output change to +0.1% and its operating rate to 86.2%, so 'above average' rests on estimates that can change."}
+  ],
+  "assumptions": [
+    "The semiconductor index measures production in the United States; it does not cover chips designed in the United States and made abroad.",
+    "Seasonal adjustment handles the July changeover pattern in vehicles; if it does not, monthly changes are distorted.",
+    "Mining and materials are the release's own categories: mining is all industries in NAICS sector 21, and materials is a market group that the pages read do not define further. The summary table gives each as one index, so it does not show which fuels or minerals moved within mining, or which materials moved."
+  ],
+  "missing_information": [
+    "Semiconductor shipments, prices and capacity investment, none of which G.17 reports.",
+    "Vehicle sales and dealer inventories for July.",
+    "The industry detail behind 'most categories expanding more than 1.0 percent'; only the summary and Tables 2 and 3 were read.",
+    "Prices of fuels, metals and other materials, and mining companies' results, which G.17 does not report and which were not read for this case."
+  ],
+  "weakening_observations": [
+    "If semiconductor output growth slowed sharply in later months, the steady-expansion reading would weaken.",
+    "If July vehicle output were revised up substantially, the auto weakness would fade; the next release revised the July motor vehicles and parts decline from 2.1% to 0.8%."
+  ],
+  "critique": [
+    {"title": "Two sectors pull in opposite directions", "detail": "Vehicles fell while chips rose in the same month. The case is listed under both sectors, and a reader browsing either sector page sees only half of the release; neither half alone describes US manufacturing."},
+    {"title": "A small share with a large growth rate", "detail": "Semiconductors were 1.49% of industrial output in 2025. Double-digit growth in a small component adds little to the total, so the strong figure says more about the industry than about manufacturing overall."},
+    {"title": "The headline details were revised within a month", "detail": "Both the July auto decline and the July chip gain were revised substantially in the next release. The case reports the first estimates faithfully, but they would mislead if used as settled figures."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The release page, which shows 'Last Update: August 18, 2026', and its Tables 2 and 3, as shown on 2026-10-11.", "url": null},
+    {"title": "Later revision: September 18, 2026", "detail": "July motor vehicles and parts were revised from −2.1% to −0.8%, semiconductors from +2.4% to +1.5%, and July assemblies from 10.68 to 10.81 million. Not known at publication.", "url": "https://www.federalreserve.gov/releases/g17/20260918/"},
+    {"title": "Annual revision notice", "detail": "This release said the annual revision would come in the autumn of 2026, with Census Bureau benchmark data for 2023. The September release set November 24, 2026 and added benchmark data for 2024.", "url": "https://www.federalreserve.gov/releases/g17/20260918/"},
+    {"title": "Release time", "detail": "This release says the 2027 G.17 releases will be published at 9:15 a.m., and the release-dates page says the same of monthly releases; neither names a time zone.", "url": "https://www.federalreserve.gov/releases/g17/default.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the August 18, 2026 release with its Tables 2 and 3, the G.17 release-dates page, and the September 18 release with its Tables 2 and 3 only for its revisions to July, in a browser on 2026-10-11. Facts come from the release text and tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/releases/g17/20260818/",
+      "https://www.federalreserve.gov/releases/g17/20260818/table2.htm",
+      "https://www.federalreserve.gov/releases/g17/20260818/table3.htm",
+      "https://www.federalreserve.gov/releases/g17/default.htm",
+      "https://www.federalreserve.gov/releases/g17/20260918/",
+      "https://www.federalreserve.gov/releases/g17/20260918/table2.htm",
+      "https://www.federalreserve.gov/releases/g17/20260918/table3.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

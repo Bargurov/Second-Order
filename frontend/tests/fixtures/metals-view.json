@@ -1,0 +1,6231 @@
+{
+  "view_version": "metals-view-0.5",
+  "provider_called": false,
+  "deep": [
+    "copper",
+    "lithium",
+    "cobalt",
+    "rare-earths",
+    "nickel",
+    "aluminum"
+  ],
+  "sources": [
+    {
+      "id": "usgs-csv-2026",
+      "publisher": "Synthetic",
+      "title": "Synthetic usgs-csv-2026",
+      "edition": "2026",
+      "edition_date": "2026-07-01",
+      "url": "https://example.org/synthetic-metals/usgs-csv-2026/MCS2026_Commodities_Data.csv",
+      "kind": "csv",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up files for tests."
+      },
+      "retrieved_at": "2026-11-05T08:01:00+00:00",
+      "sha256": "3356b9eb7e934a8ee37c16a942f3077e8034763e6a065b02552933fda52e9aee",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "iea-dataset-2026",
+      "publisher": "Synthetic",
+      "title": "Synthetic iea-dataset-2026",
+      "edition": "2026",
+      "edition_date": "2026-07-01",
+      "url": "https://example.org/synthetic-metals/iea-dataset-2026/dataset.xlsx",
+      "kind": "xlsx",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up files for tests."
+      },
+      "retrieved_at": "2026-11-05T08:02:00+00:00",
+      "sha256": "60572543788ab5d348c8d7de34d027fd26f4af30cf63f77eb34cd6f8c5ac7012",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    }
+  ],
+  "usgs": {
+    "engine": "metals-usgs-0.3",
+    "state": "available",
+    "problem": null,
+    "chapters": [
+      {
+        "id": "aluminum",
+        "chapter": "ALUMINUM",
+        "name": "Aluminum",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "bauxite-and-alumina",
+        "chapter": "BAUXITE AND ALUMINA",
+        "name": "Bauxite and alumina",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "bauxite-and-alumina/production/bauxite-mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Bauxite",
+            "statistic": "Production",
+            "detail": "Bauxite, mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "450",
+              "number": "450",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "130",
+                "number": "130",
+                "notes": "Synthetic note.",
+                "country": "Guinea",
+                "share": {
+                  "shown": "28.9",
+                  "reason": null
+                }
+              },
+              {
+                "value": "100",
+                "number": "100",
+                "notes": "Synthetic note.",
+                "country": "Australia",
+                "share": {
+                  "shown": "22.2",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Guinea"
+              ],
+              "shown": "28.9",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "bauxite-and-alumina/reserves/bauxite-reserves/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Bauxite",
+            "statistic": "Reserves",
+            "detail": "Bauxite reserves",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "29,000",
+              "number": "29000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "7,400",
+                "number": "7400",
+                "notes": "Synthetic note.",
+                "country": "Guinea",
+                "share": {
+                  "shown": "25.5",
+                  "reason": null
+                }
+              },
+              {
+                "value": "3,500",
+                "number": "3500",
+                "notes": "Synthetic note.",
+                "country": "Australia",
+                "share": {
+                  "shown": "12.1",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Guinea"
+              ],
+              "shown": "25.5",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [
+          {
+            "reserves": "bauxite-and-alumina/reserves/bauxite-reserves/metric-tons/2025",
+            "production": "bauxite-and-alumina/production/bauxite-mine-production/metric-tons/2025",
+            "shown": "64",
+            "reason": null,
+            "label": "at the 2025 rate; not a depletion date"
+          }
+        ],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "antimony",
+        "chapter": "ANTIMONY",
+        "name": "Antimony",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "arsenic",
+        "chapter": "ARSENIC",
+        "name": "Arsenic",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "beryllium",
+        "chapter": "BERYLLIUM",
+        "name": "Beryllium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "bismuth",
+        "chapter": "BISMUTH",
+        "name": "Bismuth",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "cadmium",
+        "chapter": "CADMIUM",
+        "name": "Cadmium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "cesium",
+        "chapter": "CESIUM",
+        "name": "Cesium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "chromium",
+        "chapter": "CHROMIUM",
+        "name": "Chromium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "cobalt",
+        "chapter": "COBALT",
+        "name": "Cobalt",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "cobalt/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Cobalt",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "310,000",
+              "number": "310000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": {
+              "value": "9,100",
+              "number": "9100",
+              "notes": "Synthetic note.",
+              "share": {
+                "shown": "2.9",
+                "reason": null
+              }
+            },
+            "countries": [
+              {
+                "value": "300",
+                "number": "300",
+                "notes": "Synthetic note.",
+                "country": "United States",
+                "share": {
+                  "shown": "0.1",
+                  "reason": null
+                }
+              },
+              {
+                "value": "230,000",
+                "number": "230000",
+                "notes": "Synthetic note.",
+                "country": "Congo (Kinshasa)",
+                "share": {
+                  "shown": "74.2",
+                  "reason": null
+                }
+              },
+              {
+                "value": "44,000",
+                "number": "44000",
+                "notes": "Synthetic note.",
+                "country": "Indonesia",
+                "share": {
+                  "shown": "14.2",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Congo (Kinshasa)"
+              ],
+              "shown": "74.2",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Congo (Kinshasa)",
+                "Indonesia",
+                "United States"
+              ],
+              "shown": "88.5",
+              "reason": null
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [
+          {
+            "detail": "Cobalt metal",
+            "years": "2021–24",
+            "rows": [
+              {
+                "country": "Norway",
+                "value": "40",
+                "number": "40"
+              },
+              {
+                "country": "Finland",
+                "value": "30",
+                "number": "30"
+              },
+              {
+                "country": "Japan",
+                "value": "10",
+                "number": "10"
+              },
+              {
+                "country": "Other countries",
+                "value": "20",
+                "number": "20"
+              }
+            ]
+          },
+          {
+            "detail": "Cobalt oxide",
+            "years": "2021–24",
+            "rows": [
+              {
+                "country": "Korea",
+                "value": "W",
+                "number": null
+              },
+              {
+                "country": "Japan",
+                "value": "50",
+                "number": "50"
+              },
+              {
+                "country": "Other countries",
+                "value": "10",
+                "number": "10"
+              }
+            ]
+          }
+        ],
+        "reliance": []
+      },
+      {
+        "id": "copper",
+        "chapter": "COPPER",
+        "name": "Copper",
+        "present": true,
+        "critical": "No",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "copper/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Copper",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "23,000",
+              "number": "23000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": {
+              "value": "14,400",
+              "number": "14400",
+              "notes": "Synthetic note.",
+              "share": {
+                "shown": "62.6",
+                "reason": null
+              }
+            },
+            "countries": [
+              {
+                "value": "5,300",
+                "number": "5300",
+                "notes": "Synthetic note.",
+                "country": "Chile",
+                "share": {
+                  "shown": "23.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "3,300",
+                "number": "3300",
+                "notes": "Synthetic note.",
+                "country": "Congo (Kinshasa)",
+                "share": {
+                  "shown": "14.3",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Chile"
+              ],
+              "shown": "23.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "copper/reserves/reserves/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Copper",
+            "statistic": "Reserves",
+            "detail": "Reserves",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "980,000",
+              "number": "980000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": {
+              "value": "670,000",
+              "number": "670000",
+              "notes": "Synthetic note.",
+              "share": {
+                "shown": "68.4",
+                "reason": null
+              }
+            },
+            "countries": [
+              {
+                "value": "190,000",
+                "number": "190000",
+                "notes": "Synthetic note.",
+                "country": "Chile",
+                "share": {
+                  "shown": "19.4",
+                  "reason": null
+                }
+              },
+              {
+                "value": "120,000",
+                "number": "120000",
+                "notes": "Synthetic note.",
+                "country": "Peru",
+                "share": {
+                  "shown": "12.2",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Chile"
+              ],
+              "shown": "19.4",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "copper/production/refinery-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Copper",
+            "statistic": "Production",
+            "detail": "Refinery production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "27,000",
+              "number": "27000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "12,000",
+                "number": "12000",
+                "notes": "Synthetic note.",
+                "country": "China",
+                "share": {
+                  "shown": "44.4",
+                  "reason": null
+                }
+              },
+              {
+                "value": "2,000",
+                "number": "2000",
+                "notes": "Synthetic note.",
+                "country": "Chile",
+                "share": {
+                  "shown": "7.4",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "China"
+              ],
+              "shown": "44.4",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [
+          {
+            "reserves": "copper/reserves/reserves/metric-tons/2025",
+            "production": "copper/production/mine-production/metric-tons/2025",
+            "shown": "43",
+            "reason": null,
+            "label": "at the 2025 rate; not a depletion date"
+          }
+        ],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "gallium",
+        "chapter": "GALLIUM",
+        "name": "Gallium",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "gallium/production/primary-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Gallium",
+            "statistic": "Production",
+            "detail": "Primary production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "800",
+              "number": "800",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "700",
+                "number": "700",
+                "notes": "Synthetic note.",
+                "country": "China",
+                "share": {
+                  "shown": null,
+                  "reason": "USGS prints more than one world total for this series"
+                }
+              }
+            ],
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints more than one world total for this series"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints more than one world total for this series"
+            },
+            "no_shares": "USGS prints more than one world total for this series",
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "germanium",
+        "chapter": "GERMANIUM",
+        "name": "Germanium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "gold",
+        "chapter": "GOLD",
+        "name": "Gold",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "gold/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Gold",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "3,000",
+              "number": "3000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "300",
+                "number": "300",
+                "notes": "Synthetic note.",
+                "country": "Australia",
+                "share": {
+                  "shown": "10.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "380",
+                "number": "380",
+                "notes": "Synthetic note.",
+                "country": "China",
+                "share": {
+                  "shown": "12.7",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "China"
+              ],
+              "shown": "12.7",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "graphite-natural",
+        "chapter": "GRAPHITE (NATURAL)",
+        "name": "Graphite (natural)",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "indium",
+        "chapter": "INDIUM",
+        "name": "Indium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "iron-ore",
+        "chapter": "IRON ORE",
+        "name": "Iron ore",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "iron-ore/production/mine-production-iron-content/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Iron ore",
+            "statistic": "Production",
+            "detail": "Mine production: Iron content",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "1,500",
+              "number": "1500",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "930",
+                "number": "930",
+                "notes": "Synthetic note.",
+                "country": "Australia",
+                "share": {
+                  "shown": "62.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "250",
+                "number": "250",
+                "notes": "Synthetic note.",
+                "country": "Brazil",
+                "share": {
+                  "shown": "16.7",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Australia"
+              ],
+              "shown": "62.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "iron-ore/reserves/reserves-million-metric-tons-crude-ore/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Iron ore",
+            "statistic": "Reserves",
+            "detail": "Reserves (million metric tons): Crude ore",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "190,000",
+              "number": "190000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "58,000",
+                "number": "58000",
+                "notes": "Synthetic note.",
+                "country": "Australia",
+                "share": {
+                  "shown": "30.5",
+                  "reason": null
+                }
+              },
+              {
+                "value": "34,000",
+                "number": "34000",
+                "notes": "Synthetic note.",
+                "country": "Brazil",
+                "share": {
+                  "shown": "17.9",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Australia"
+              ],
+              "shown": "30.5",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "lead",
+        "chapter": "LEAD",
+        "name": "Lead",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "lead/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Lead",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "100",
+              "number": "100",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "50",
+                "number": "50",
+                "notes": "Synthetic note.",
+                "country": "Big",
+                "share": {
+                  "shown": "50.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "20",
+                "number": "20",
+                "notes": "Synthetic note.",
+                "country": "Mid",
+                "share": {
+                  "shown": "20.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "5",
+                "number": "5",
+                "notes": "Synthetic note.",
+                "country": "Zeta",
+                "share": {
+                  "shown": "5.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "5",
+                "number": "5",
+                "notes": "Synthetic note.",
+                "country": "Alpha",
+                "share": {
+                  "shown": "5.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Big"
+              ],
+              "shown": "50.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Big",
+                "Mid",
+                "Alpha"
+              ],
+              "shown": "75.0",
+              "reason": null
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "lithium",
+        "chapter": "LITHIUM",
+        "name": "Lithium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "magnesium-metal",
+        "chapter": "MAGNESIUM METAL",
+        "name": "Magnesium metal",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "manganese",
+        "chapter": "MANGANESE",
+        "name": "Manganese",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "manganese/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Manganese",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "100",
+              "number": "100",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "60",
+                "number": "60",
+                "notes": "Synthetic note.",
+                "country": "Alpha",
+                "share": {
+                  "shown": "60.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "50",
+                "number": "50",
+                "notes": "Synthetic note.",
+                "country": "Beta",
+                "share": {
+                  "shown": "50.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Alpha"
+              ],
+              "shown": "60.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "manganese/reserves/reserves/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Manganese",
+            "statistic": "Reserves",
+            "detail": "Reserves",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "100",
+              "number": "100",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "20",
+                "number": "20",
+                "notes": "Synthetic note.",
+                "country": "Alpha",
+                "share": {
+                  "shown": "20.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "60",
+                "number": "60",
+                "notes": "Synthetic note.",
+                "country": "Beta",
+                "share": {
+                  "shown": "60.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "5",
+                "number": "5",
+                "notes": "Synthetic note.",
+                "country": "Gamma",
+                "share": {
+                  "shown": "5.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Beta"
+              ],
+              "shown": "60.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Beta",
+                "Alpha",
+                "Gamma"
+              ],
+              "shown": "85.0",
+              "reason": null
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [
+          {
+            "reserves": "manganese/reserves/reserves/metric-tons/2025",
+            "production": "manganese/production/mine-production/metric-tons/2025",
+            "shown": "1",
+            "reason": null,
+            "label": "at the 2025 rate; not a depletion date"
+          }
+        ],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "mercury",
+        "chapter": "MERCURY",
+        "name": "Mercury",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "molybdenum",
+        "chapter": "MOLYBDENUM",
+        "name": "Molybdenum",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "nickel",
+        "chapter": "NICKEL",
+        "name": "Nickel",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "nickel/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Nickel",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "3,700,000",
+              "number": "3700000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "2,200,000",
+                "number": "2200000",
+                "notes": "Synthetic note.",
+                "country": "Indonesia",
+                "share": {
+                  "shown": "59.5",
+                  "reason": null
+                }
+              },
+              {
+                "value": "W",
+                "number": null,
+                "notes": "Synthetic note.",
+                "country": "United States",
+                "share": {
+                  "shown": null,
+                  "reason": "Printed as “W”"
+                }
+              },
+              {
+                "value": "330,000",
+                "number": "330000",
+                "notes": "Synthetic note.",
+                "country": "Philippines",
+                "share": {
+                  "shown": "8.9",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "United States is printed as “W”, so the order is unknown"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "United States is printed as “W”, so the order is unknown"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "niobium-columbium",
+        "chapter": "NIOBIUM (COLUMBIUM)",
+        "name": "Niobium (columbium)",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "platinum-group-metals",
+        "chapter": "PLATINUM-GROUP METALS",
+        "name": "Platinum-group metals",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "rare-earths",
+        "chapter": "RARE EARTHS",
+        "name": "Rare earths",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "rare-earths/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Rare earths",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": ">2,000,000",
+              "number": null,
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "270,000",
+                "number": "270000",
+                "notes": "Synthetic note.",
+                "country": "China",
+                "share": {
+                  "shown": null,
+                  "reason": "The world total is printed as “>2,000,000”, not as a number"
+                }
+              },
+              {
+                "value": "45,000",
+                "number": "45000",
+                "notes": "Synthetic note.",
+                "country": "United States",
+                "share": {
+                  "shown": null,
+                  "reason": "The world total is printed as “>2,000,000”, not as a number"
+                }
+              }
+            ],
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "The world total is printed as “>2,000,000”, not as a number"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "The world total is printed as “>2,000,000”, not as a number"
+            },
+            "no_shares": "The world total is printed as “>2,000,000”, not as a number",
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [
+          {
+            "detail": "Rare-earth compounds and metals",
+            "years": "2021–24",
+            "rows": [
+              {
+                "country": "China",
+                "value": "70",
+                "number": "70"
+              },
+              {
+                "country": "Malaysia",
+                "value": "13",
+                "number": "13"
+              },
+              {
+                "country": "Other countries",
+                "value": "17",
+                "number": "17"
+              }
+            ]
+          },
+          {
+            "detail": "Rare-earth magnets",
+            "years": "2021–24",
+            "rows": [
+              {
+                "country": "China",
+                "value": "93",
+                "number": "93"
+              }
+            ]
+          }
+        ],
+        "reliance": [
+          {
+            "commodity": "Rare earths",
+            "detail": "Net import reliance as a percentage of apparent consumption",
+            "year": "2024",
+            "value": "E"
+          },
+          {
+            "commodity": "Rare earths",
+            "detail": "Net import reliance as a percentage of apparent consumption",
+            "year": "2025",
+            "value": ">95"
+          }
+        ]
+      },
+      {
+        "id": "rare-earths-heavy",
+        "chapter": "RARE EARTHS (Heavy)",
+        "name": "Rare earths (heavy)",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "rhenium",
+        "chapter": "RHENIUM",
+        "name": "Rhenium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "rubidium",
+        "chapter": "RUBIDIUM",
+        "name": "Rubidium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "scandium",
+        "chapter": "SCANDIUM",
+        "name": "Scandium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "selenium",
+        "chapter": "SELENIUM",
+        "name": "Selenium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "silicon",
+        "chapter": "SILICON",
+        "name": "Silicon",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "silver",
+        "chapter": "SILVER",
+        "name": "Silver",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "silver/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Silver",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "1,000",
+              "number": "1000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "600",
+                "number": "600",
+                "notes": "Synthetic note.",
+                "country": "Iota",
+                "share": {
+                  "shown": "60.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "300",
+                "number": "300",
+                "notes": "Synthetic note.",
+                "country": "Lambda",
+                "share": {
+                  "shown": "30.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Iota"
+              ],
+              "shown": "60.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "silver/reserves/reserves/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Silver",
+            "statistic": "Reserves",
+            "detail": "Reserves",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "500",
+              "number": "500",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "300",
+                "number": "300",
+                "notes": "Synthetic note.",
+                "country": "Iota",
+                "share": {
+                  "shown": "60.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "100",
+                "number": "100",
+                "notes": "Synthetic note.",
+                "country": "Lambda",
+                "share": {
+                  "shown": "20.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Iota"
+              ],
+              "shown": "60.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [
+          {
+            "reserves": "silver/reserves/reserves/metric-tons/2025",
+            "production": "silver/production/mine-production/metric-tons/2025",
+            "shown": "less than 1",
+            "reason": null,
+            "label": "at the 2025 rate; not a depletion date"
+          }
+        ],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "tantalum",
+        "chapter": "TANTALUM",
+        "name": "Tantalum",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "tellurium",
+        "chapter": "TELLURIUM",
+        "name": "Tellurium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "thallium",
+        "chapter": "THALLIUM",
+        "name": "Thallium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "tin",
+        "chapter": "TIN",
+        "name": "Tin",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "tin/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Tin",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "100",
+              "number": "100",
+              "notes": "Synthetic note.",
+              "rounded": false
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "—",
+                "number": null,
+                "notes": "Synthetic note.",
+                "country": "Delta",
+                "share": {
+                  "shown": null,
+                  "reason": "Printed as “—”"
+                }
+              },
+              {
+                "value": "40",
+                "number": "40",
+                "notes": "Synthetic note.",
+                "country": "Kappa",
+                "share": {
+                  "shown": "40.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "30",
+                "number": "30",
+                "notes": "Synthetic note.",
+                "country": "Omega",
+                "share": {
+                  "shown": "30.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "20",
+                "number": "20",
+                "notes": "Synthetic note.",
+                "country": "Sigma",
+                "share": {
+                  "shown": "20.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Kappa"
+              ],
+              "shown": "40.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Kappa",
+                "Omega",
+                "Sigma"
+              ],
+              "shown": "90.0",
+              "reason": null
+            },
+            "no_shares": null,
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "titanium-and-titanium-dioxide",
+        "chapter": "TITANIUM AND TITANIUM DIOXIDE",
+        "name": "Titanium and titanium dioxide",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "titanium-and-titanium-dioxide/production/mine-production-ilmenite/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Titanium",
+            "statistic": "Production",
+            "detail": "Mine production: Ilmenite",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "6,000",
+              "number": "6000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "400",
+                "number": "400",
+                "notes": "Synthetic note.",
+                "country": "Australia",
+                "share": {
+                  "shown": "6.7",
+                  "reason": null
+                }
+              },
+              {
+                "value": "2,000",
+                "number": "2000",
+                "notes": "Synthetic note.",
+                "country": "China",
+                "share": {
+                  "shown": "33.3",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "China"
+              ],
+              "shown": "33.3",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "titanium-and-titanium-dioxide/production/mine-production-ilmenite-and-rutile/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Titanium",
+            "statistic": "Production",
+            "detail": "Mine production: ilmenite and rutile",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "7,000",
+              "number": "7000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [],
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints no country for this series"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints no country for this series"
+            },
+            "no_shares": "USGS prints no country for this series",
+            "unit_issue": null
+          }
+        ],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": [
+          {
+            "commodity": "Titanium sponge metal",
+            "detail": "Net import reliance as a percentage of apparent consumption",
+            "year": "2025",
+            "value": "100"
+          },
+          {
+            "commodity": "TiO2 pigment",
+            "detail": "Net import reliance as a percentage of apparent consumption",
+            "year": "2025",
+            "value": "E"
+          }
+        ]
+      },
+      {
+        "id": "titanium-mineral-concentrates",
+        "chapter": "TITANIUM MINERAL CONCENTRATES",
+        "name": "Titanium mineral concentrates",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "tungsten",
+        "chapter": "TUNGSTEN",
+        "name": "Tungsten",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "vanadium",
+        "chapter": "VANADIUM",
+        "name": "Vanadium",
+        "present": true,
+        "critical": "Yes",
+        "world_table": true,
+        "data_notes": [],
+        "series": [
+          {
+            "id": "vanadium/production/mine-production/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Vanadium",
+            "statistic": "Production",
+            "detail": "Mine production",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "100,000",
+              "number": "100000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "70,000",
+                "number": "70000",
+                "notes": "Synthetic note.",
+                "country": "Epsilon",
+                "share": {
+                  "shown": "70.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "20,000",
+                "number": "20000",
+                "notes": "Synthetic note.",
+                "country": "Theta",
+                "share": {
+                  "shown": "20.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Epsilon"
+              ],
+              "shown": "70.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": null
+          },
+          {
+            "id": "vanadium/reserves/reserves/metric-tons/2025",
+            "section": "World Mine Production and Reserves",
+            "commodity": "Vanadium",
+            "statistic": "Reserves",
+            "detail": "Reserves",
+            "unit": "metric tons",
+            "year": "2025",
+            "world": {
+              "value": "20,000",
+              "number": "20000",
+              "notes": "Synthetic note.",
+              "rounded": true
+            },
+            "other": null,
+            "countries": [
+              {
+                "value": "5,000",
+                "number": "5000",
+                "notes": "Synthetic note.",
+                "country": "Epsilon",
+                "share": {
+                  "shown": "25.0",
+                  "reason": null
+                }
+              },
+              {
+                "value": "10,000",
+                "number": "10000",
+                "notes": "Synthetic note.",
+                "country": "Theta",
+                "share": {
+                  "shown": "50.0",
+                  "reason": null
+                }
+              }
+            ],
+            "leader": {
+              "countries": [
+                "Theta"
+              ],
+              "shown": "50.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            },
+            "no_shares": null,
+            "unit_issue": "Unit in doubt: the printed USGS chapter (Mineral Commodity Summaries 2026, vanadium, page 2) gives these reserves in thousand metric tons, while this data file labels them metric tons. The chapter is not a source this page verifies, so the quantities and the years of reserves are not shown. The shares do not depend on the unit."
+          }
+        ],
+        "years_of_reserves": [
+          {
+            "reserves": "vanadium/reserves/reserves/metric-tons/2025",
+            "production": "vanadium/production/mine-production/metric-tons/2025",
+            "shown": null,
+            "reason": "Reserves: Unit in doubt: the printed USGS chapter (Mineral Commodity Summaries 2026, vanadium, page 2) gives these reserves in thousand metric tons, while this data file labels them metric tons. The chapter is not a source this page verifies, so the quantities and the years of reserves are not shown. The shares do not depend on the unit.",
+            "label": "at the 2025 rate; not a depletion date"
+          }
+        ],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "yttrium",
+        "chapter": "YTTRIUM",
+        "name": "Yttrium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "zinc",
+        "chapter": "ZINC",
+        "name": "Zinc",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      },
+      {
+        "id": "zirconium-and-hafnium",
+        "chapter": "ZIRCONIUM AND HAFNIUM",
+        "name": "Zirconium and hafnium",
+        "present": false,
+        "critical": null,
+        "world_table": false,
+        "data_notes": [],
+        "series": [],
+        "years_of_reserves": [],
+        "imports": [],
+        "reliance": []
+      }
+    ]
+  },
+  "iea": {
+    "engine": "metals-iea-0.1",
+    "state": "available",
+    "problem": null,
+    "minerals": [
+      {
+        "id": "copper",
+        "name": "Copper",
+        "chapter": "copper",
+        "scope_note": null,
+        "demand": {
+          "rows": [
+            {
+              "label": "Electric vehicles",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Total energy technologies",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Other uses",
+              "values": {
+                "2025": "30",
+                "cps-2030": "33",
+                "cps-2035": "36",
+                "cps-2040": "39",
+                "cps-2045": "42",
+                "cps-2050": "45",
+                "steps-2030": "48",
+                "steps-2035": "51",
+                "steps-2040": "54",
+                "steps-2045": "57",
+                "steps-2050": "60",
+                "hd-2030": "63",
+                "hd-2035": "66",
+                "hd-2040": "69",
+                "hd-2045": "72",
+                "hd-2050": "75"
+              }
+            },
+            {
+              "label": "Total demand",
+              "values": {
+                "2025": "40",
+                "cps-2030": "44",
+                "cps-2035": "48",
+                "cps-2040": "52",
+                "cps-2045": "56",
+                "cps-2050": "60",
+                "steps-2030": "64",
+                "steps-2035": "68",
+                "steps-2040": "72",
+                "steps-2045": "76",
+                "steps-2050": "80",
+                "hd-2030": "84",
+                "hd-2035": "88",
+                "hd-2040": "92",
+                "hd-2045": "96",
+                "hd-2050": "100"
+              }
+            }
+          ],
+          "energy_share": {
+            "2025": "35",
+            "cps-2030": "35",
+            "cps-2035": "35",
+            "cps-2040": "35",
+            "cps-2045": "35",
+            "cps-2050": "35",
+            "steps-2030": "35",
+            "steps-2035": "35",
+            "steps-2040": "35",
+            "steps-2045": "35",
+            "steps-2050": "35",
+            "hd-2030": "35",
+            "hd-2035": "35",
+            "hd-2040": "35",
+            "hd-2045": "35",
+            "hd-2050": "35"
+          }
+        },
+        "supply": [
+          {
+            "stage": "Copper - Mining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          },
+          {
+            "stage": "Copper - Refining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          }
+        ],
+        "notes": {
+          "demand": [
+            "Notes: Lithium demand is in lithium (Li) content, not carbonate equivalent (LCE). Synthetic."
+          ],
+          "supply": [
+            "Notes: Supply projections are synthetic.",
+            "Base case is made up for tests."
+          ]
+        }
+      },
+      {
+        "id": "cobalt",
+        "name": "Cobalt",
+        "chapter": "cobalt",
+        "scope_note": null,
+        "demand": {
+          "rows": [
+            {
+              "label": "Low emissions power generation",
+              "values": {
+                "2025": "0.0123",
+                "cps-2030": "0.0135",
+                "cps-2035": "0.0148",
+                "cps-2040": "0.016",
+                "cps-2045": "0.0172",
+                "cps-2050": "0.0185",
+                "steps-2030": "0.0197",
+                "steps-2035": "0.0209",
+                "steps-2040": "0.0221",
+                "steps-2045": "0.0234",
+                "steps-2050": "0.0246",
+                "hd-2030": "0.0258",
+                "hd-2035": "0.0271",
+                "hd-2040": "0.0283",
+                "hd-2045": "0.0295",
+                "hd-2050": "0.0307"
+              }
+            },
+            {
+              "label": "Electric vehicles",
+              "values": {
+                "2025": "84.5",
+                "cps-2030": "92.95",
+                "cps-2035": "101.4",
+                "cps-2040": "109.85",
+                "cps-2045": "118.3",
+                "cps-2050": "126.75",
+                "steps-2030": "135.2",
+                "steps-2035": "143.65",
+                "steps-2040": "152.1",
+                "steps-2045": "160.55",
+                "steps-2050": "169",
+                "hd-2030": "177.45",
+                "hd-2035": "185.9",
+                "hd-2040": "194.35",
+                "hd-2045": "202.8",
+                "hd-2050": "211.25"
+              }
+            },
+            {
+              "label": "Grid battery storage",
+              "values": {
+                "2025": "5.92",
+                "cps-2030": "6.512",
+                "cps-2035": "7.104",
+                "cps-2040": "7.696",
+                "cps-2045": "8.288",
+                "cps-2050": "8.88",
+                "steps-2030": "9.472",
+                "steps-2035": "10.064",
+                "steps-2040": "10.656",
+                "steps-2045": "11.248",
+                "steps-2050": "11.84",
+                "hd-2030": "12.432",
+                "hd-2035": "13.024",
+                "hd-2040": "13.616",
+                "hd-2045": "14.208",
+                "hd-2050": "14.8"
+              }
+            },
+            {
+              "label": "Hydrogen technologies",
+              "values": {
+                "2025": "0.00972",
+                "cps-2030": "0.0107",
+                "cps-2035": "0.0117",
+                "cps-2040": "0.0126",
+                "cps-2045": "0.0136",
+                "cps-2050": "0.0146",
+                "steps-2030": "0.0156",
+                "steps-2035": "0.0165",
+                "steps-2040": "0.0175",
+                "steps-2045": "0.0185",
+                "steps-2050": "0.0194",
+                "hd-2030": "0.0204",
+                "hd-2035": "0.0214",
+                "hd-2040": "0.0224",
+                "hd-2045": "0.0233",
+                "hd-2050": "0.0243"
+              }
+            },
+            {
+              "label": "Total energy technologies",
+              "values": {
+                "2025": "90.4",
+                "cps-2030": "99.44",
+                "cps-2035": "108.48",
+                "cps-2040": "117.52",
+                "cps-2045": "126.56",
+                "cps-2050": "135.6",
+                "steps-2030": "144.64",
+                "steps-2035": "153.68",
+                "steps-2040": "162.72",
+                "steps-2045": "171.76",
+                "steps-2050": "180.8",
+                "hd-2030": "189.84",
+                "hd-2035": "198.88",
+                "hd-2040": "207.92",
+                "hd-2045": "216.96",
+                "hd-2050": "226"
+              }
+            },
+            {
+              "label": "Other uses",
+              "values": {
+                "2025": "169",
+                "cps-2030": "185.9",
+                "cps-2035": "202.8",
+                "cps-2040": "219.7",
+                "cps-2045": "236.6",
+                "cps-2050": "253.5",
+                "steps-2030": "270.4",
+                "steps-2035": "287.3",
+                "steps-2040": "304.2",
+                "steps-2045": "321.1",
+                "steps-2050": "338",
+                "hd-2030": "354.9",
+                "hd-2035": "371.8",
+                "hd-2040": "388.7",
+                "hd-2045": "405.6",
+                "hd-2050": "422.5"
+              }
+            },
+            {
+              "label": "Total demand",
+              "values": {
+                "2025": "259",
+                "cps-2030": "284.9",
+                "cps-2035": "310.8",
+                "cps-2040": "336.7",
+                "cps-2045": "362.6",
+                "cps-2050": "388.5",
+                "steps-2030": "414.4",
+                "steps-2035": "440.3",
+                "steps-2040": "466.2",
+                "steps-2045": "492.1",
+                "steps-2050": "518",
+                "hd-2030": "543.9",
+                "hd-2035": "569.8",
+                "hd-2040": "595.7",
+                "hd-2045": "621.6",
+                "hd-2050": "647.5"
+              }
+            }
+          ],
+          "energy_share": {
+            "2025": "34.9",
+            "cps-2030": "35",
+            "cps-2035": "35",
+            "cps-2040": "35",
+            "cps-2045": "35",
+            "cps-2050": "35",
+            "steps-2030": "35",
+            "steps-2035": "35",
+            "steps-2040": "35",
+            "steps-2045": "35",
+            "steps-2050": "35",
+            "hd-2030": "35",
+            "hd-2035": "35",
+            "hd-2040": "35",
+            "hd-2045": "35",
+            "hd-2050": "35"
+          }
+        },
+        "supply": [
+          {
+            "stage": "Cobalt - Mining",
+            "countries": [
+              {
+                "country": "Democratic Republic of Congo",
+                "values": {
+                  "2025": "210",
+                  "2030": "231",
+                  "2035": "252",
+                  "2040": "273"
+                },
+                "shares": {
+                  "2025": "65.6",
+                  "2030": "65.6",
+                  "2035": "65.6",
+                  "2040": "65.6"
+                }
+              },
+              {
+                "country": "Indonesia",
+                "values": {
+                  "2025": "48.3",
+                  "2030": "53.13",
+                  "2035": "57.96",
+                  "2040": "62.79"
+                },
+                "shares": {
+                  "2025": "15.1",
+                  "2030": "15.1",
+                  "2035": "15.1",
+                  "2040": "15.1"
+                }
+              },
+              {
+                "country": "Russia",
+                "values": {
+                  "2025": "7.69",
+                  "2030": "8.459",
+                  "2035": "9.228",
+                  "2040": "9.997"
+                },
+                "shares": {
+                  "2025": "2.4",
+                  "2030": "2.4",
+                  "2035": "2.4",
+                  "2040": "2.4"
+                }
+              },
+              {
+                "country": "China",
+                "values": {
+                  "2025": "7.38",
+                  "2030": "8.118",
+                  "2035": "8.856",
+                  "2040": "9.594"
+                },
+                "shares": {
+                  "2025": "2.3",
+                  "2030": "2.3",
+                  "2035": "2.3",
+                  "2040": "2.3"
+                }
+              },
+              {
+                "country": "Australia",
+                "values": {
+                  "2025": "4.15",
+                  "2030": "4.565",
+                  "2035": "4.98",
+                  "2040": "5.395"
+                },
+                "shares": {
+                  "2025": "1.3",
+                  "2030": "1.3",
+                  "2035": "1.3",
+                  "2040": "1.3"
+                }
+              },
+              {
+                "country": "Zambia",
+                "values": {
+                  "2025": "4.33",
+                  "2030": "4.763",
+                  "2035": "5.196",
+                  "2040": "5.629"
+                },
+                "shares": {
+                  "2025": "1.4",
+                  "2030": "1.4",
+                  "2035": "1.4",
+                  "2040": "1.4"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "38.6",
+                "2030": "42.46",
+                "2035": "46.32",
+                "2040": "50.18"
+              },
+              "shares": {
+                "2025": "12.1",
+                "2030": "12.1",
+                "2035": "12.1",
+                "2040": "12.1"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "320",
+              "2030": "352",
+              "2035": "384",
+              "2040": "416"
+            },
+            "top3_published": {
+              "2025": "83",
+              "2030": "83",
+              "2035": "83",
+              "2040": "83"
+            }
+          },
+          {
+            "stage": "Cobalt - Refining",
+            "countries": [
+              {
+                "country": "China",
+                "values": {
+                  "2025": "180",
+                  "2030": "198",
+                  "2035": "216",
+                  "2040": "234"
+                },
+                "shares": {
+                  "2025": "75.6",
+                  "2030": "75.6",
+                  "2035": "75.6",
+                  "2040": "75.6"
+                }
+              },
+              {
+                "country": "Finland",
+                "values": {
+                  "2025": "20.3",
+                  "2030": "22.33",
+                  "2035": "24.36",
+                  "2040": "26.39"
+                },
+                "shares": {
+                  "2025": "8.5",
+                  "2030": "8.5",
+                  "2035": "8.5",
+                  "2040": "8.5"
+                }
+              },
+              {
+                "country": "Japan",
+                "values": {
+                  "2025": "5.83",
+                  "2030": "6.413",
+                  "2035": "6.996",
+                  "2040": "7.579"
+                },
+                "shares": {
+                  "2025": "2.4",
+                  "2030": "2.4",
+                  "2035": "2.4",
+                  "2040": "2.4"
+                }
+              },
+              {
+                "country": "Indonesia",
+                "values": {
+                  "2025": "6.17",
+                  "2030": "6.787",
+                  "2035": "7.404",
+                  "2040": "8.021"
+                },
+                "shares": {
+                  "2025": "2.6",
+                  "2030": "2.6",
+                  "2035": "2.6",
+                  "2040": "2.6"
+                }
+              },
+              {
+                "country": "Canada",
+                "values": {
+                  "2025": "6.4",
+                  "2030": "7.04",
+                  "2035": "7.68",
+                  "2040": "8.32"
+                },
+                "shares": {
+                  "2025": "2.7",
+                  "2030": "2.7",
+                  "2035": "2.7",
+                  "2040": "2.7"
+                }
+              },
+              {
+                "country": "Norway",
+                "values": {
+                  "2025": "2.8",
+                  "2030": "3.08",
+                  "2035": "3.36",
+                  "2040": "3.64"
+                },
+                "shares": {
+                  "2025": "1.2",
+                  "2030": "1.2",
+                  "2035": "1.2",
+                  "2040": "1.2"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "16.5",
+                "2030": "18.15",
+                "2035": "19.8",
+                "2040": "21.45"
+              },
+              "shares": {
+                "2025": "6.9",
+                "2030": "6.9",
+                "2035": "6.9",
+                "2040": "6.9"
+              }
+            },
+            "total_label": "Total clean technologies",
+            "total": {
+              "2025": "238",
+              "2030": "261.8",
+              "2035": "285.6",
+              "2040": "309.4"
+            },
+            "top3_published": {
+              "2025": "86.8",
+              "2030": "86.8",
+              "2035": "86.8",
+              "2040": "86.8"
+            }
+          }
+        ],
+        "notes": {
+          "demand": [
+            "Notes: Lithium demand is in lithium (Li) content, not carbonate equivalent (LCE). Synthetic."
+          ],
+          "supply": [
+            "Notes: Supply projections are synthetic.",
+            "Base case is made up for tests."
+          ]
+        }
+      },
+      {
+        "id": "lithium",
+        "name": "Lithium",
+        "chapter": "lithium",
+        "scope_note": "The IEA states lithium content, as its note says.",
+        "demand": {
+          "rows": [
+            {
+              "label": "Electric vehicles",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Total energy technologies",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Other uses",
+              "values": {
+                "2025": "30",
+                "cps-2030": "33",
+                "cps-2035": "36",
+                "cps-2040": "39",
+                "cps-2045": "42",
+                "cps-2050": "45",
+                "steps-2030": "48",
+                "steps-2035": "51",
+                "steps-2040": "54",
+                "steps-2045": "57",
+                "steps-2050": "60",
+                "hd-2030": "63",
+                "hd-2035": "66",
+                "hd-2040": "69",
+                "hd-2045": "72",
+                "hd-2050": "75"
+              }
+            },
+            {
+              "label": "Total demand",
+              "values": {
+                "2025": "40",
+                "cps-2030": "44",
+                "cps-2035": "48",
+                "cps-2040": "52",
+                "cps-2045": "56",
+                "cps-2050": "60",
+                "steps-2030": "64",
+                "steps-2035": "68",
+                "steps-2040": "72",
+                "steps-2045": "76",
+                "steps-2050": "80",
+                "hd-2030": "84",
+                "hd-2035": "88",
+                "hd-2040": "92",
+                "hd-2045": "96",
+                "hd-2050": "100"
+              }
+            }
+          ],
+          "energy_share": {
+            "2025": "35",
+            "cps-2030": "35",
+            "cps-2035": "35",
+            "cps-2040": "35",
+            "cps-2045": "35",
+            "cps-2050": "35",
+            "steps-2030": "35",
+            "steps-2035": "35",
+            "steps-2040": "35",
+            "steps-2045": "35",
+            "steps-2050": "35",
+            "hd-2030": "35",
+            "hd-2035": "35",
+            "hd-2040": "35",
+            "hd-2045": "35",
+            "hd-2050": "35"
+          }
+        },
+        "supply": [
+          {
+            "stage": "Lithium - Mining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          },
+          {
+            "stage": "Lithium - Refining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          }
+        ],
+        "notes": {
+          "demand": [
+            "Notes: Lithium demand is in lithium (Li) content, not carbonate equivalent (LCE). Synthetic."
+          ],
+          "supply": [
+            "Notes: Supply projections are synthetic.",
+            "Base case is made up for tests."
+          ]
+        }
+      },
+      {
+        "id": "nickel",
+        "name": "Nickel",
+        "chapter": "nickel",
+        "scope_note": null,
+        "demand": {
+          "rows": [
+            {
+              "label": "Electric vehicles",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Total energy technologies",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Other uses",
+              "values": {
+                "2025": "30",
+                "cps-2030": "33",
+                "cps-2035": "36",
+                "cps-2040": "39",
+                "cps-2045": "42",
+                "cps-2050": "45",
+                "steps-2030": "48",
+                "steps-2035": "51",
+                "steps-2040": "54",
+                "steps-2045": "57",
+                "steps-2050": "60",
+                "hd-2030": "63",
+                "hd-2035": "66",
+                "hd-2040": "69",
+                "hd-2045": "72",
+                "hd-2050": "75"
+              }
+            },
+            {
+              "label": "Total demand",
+              "values": {
+                "2025": "40",
+                "cps-2030": "44",
+                "cps-2035": "48",
+                "cps-2040": "52",
+                "cps-2045": "56",
+                "cps-2050": "60",
+                "steps-2030": "64",
+                "steps-2035": "68",
+                "steps-2040": "72",
+                "steps-2045": "76",
+                "steps-2050": "80",
+                "hd-2030": "84",
+                "hd-2035": "88",
+                "hd-2040": "92",
+                "hd-2045": "96",
+                "hd-2050": "100"
+              }
+            }
+          ],
+          "energy_share": {
+            "2025": "35",
+            "cps-2030": "35",
+            "cps-2035": "35",
+            "cps-2040": "35",
+            "cps-2045": "35",
+            "cps-2050": "35",
+            "steps-2030": "35",
+            "steps-2035": "35",
+            "steps-2040": "35",
+            "steps-2045": "35",
+            "steps-2050": "35",
+            "hd-2030": "35",
+            "hd-2035": "35",
+            "hd-2040": "35",
+            "hd-2045": "35",
+            "hd-2050": "35"
+          }
+        },
+        "supply": [
+          {
+            "stage": "Nickel - Mining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          },
+          {
+            "stage": "Nickel - Refining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          }
+        ],
+        "notes": {
+          "demand": [
+            "Notes: Lithium demand is in lithium (Li) content, not carbonate equivalent (LCE). Synthetic."
+          ],
+          "supply": [
+            "Notes: Supply projections are synthetic.",
+            "Base case is made up for tests."
+          ]
+        }
+      },
+      {
+        "id": "magnet-rare-earths",
+        "name": "Magnet rare earth elements",
+        "chapter": "rare-earths",
+        "scope_note": "The IEA counts magnet rare earth elements, and USGS counts all rare earths. They are different scopes, never compared.",
+        "demand": {
+          "rows": [
+            {
+              "label": "Electric vehicles",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Total energy technologies",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Other uses",
+              "values": {
+                "2025": "30",
+                "cps-2030": "33",
+                "cps-2035": "36",
+                "cps-2040": "39",
+                "cps-2045": "42",
+                "cps-2050": "45",
+                "steps-2030": "48",
+                "steps-2035": "51",
+                "steps-2040": "54",
+                "steps-2045": "57",
+                "steps-2050": "60",
+                "hd-2030": "63",
+                "hd-2035": "66",
+                "hd-2040": "69",
+                "hd-2045": "72",
+                "hd-2050": "75"
+              }
+            },
+            {
+              "label": "Total demand",
+              "values": {
+                "2025": "40",
+                "cps-2030": "44",
+                "cps-2035": "48",
+                "cps-2040": "52",
+                "cps-2045": "56",
+                "cps-2050": "60",
+                "steps-2030": "64",
+                "steps-2035": "68",
+                "steps-2040": "72",
+                "steps-2045": "76",
+                "steps-2050": "80",
+                "hd-2030": "84",
+                "hd-2035": "88",
+                "hd-2040": "92",
+                "hd-2045": "96",
+                "hd-2050": "100"
+              }
+            }
+          ],
+          "energy_share": {
+            "2025": "35",
+            "cps-2030": "35",
+            "cps-2035": "35",
+            "cps-2040": "35",
+            "cps-2045": "35",
+            "cps-2050": "35",
+            "steps-2030": "35",
+            "steps-2035": "35",
+            "steps-2040": "35",
+            "steps-2045": "35",
+            "steps-2050": "35",
+            "hd-2030": "35",
+            "hd-2035": "35",
+            "hd-2040": "35",
+            "hd-2045": "35",
+            "hd-2050": "35"
+          }
+        },
+        "supply": [
+          {
+            "stage": "Magnet rare earth elements - Mining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          },
+          {
+            "stage": "Magnet rare earth elements - Refining",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          }
+        ],
+        "notes": {
+          "demand": [
+            "Notes: Lithium demand is in lithium (Li) content, not carbonate equivalent (LCE). Synthetic."
+          ],
+          "supply": [
+            "Notes: Supply projections are synthetic.",
+            "Base case is made up for tests."
+          ]
+        }
+      },
+      {
+        "id": "graphite",
+        "name": "Graphite (all grades: natural and synthetic)",
+        "chapter": "graphite-natural",
+        "scope_note": "IEA demand covers all grades; its first supply block is natural mining and its second is battery grade.",
+        "demand": {
+          "rows": [
+            {
+              "label": "Electric vehicles",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Total energy technologies",
+              "values": {
+                "2025": "10",
+                "cps-2030": "11",
+                "cps-2035": "12",
+                "cps-2040": "13",
+                "cps-2045": "14",
+                "cps-2050": "15",
+                "steps-2030": "16",
+                "steps-2035": "17",
+                "steps-2040": "18",
+                "steps-2045": "19",
+                "steps-2050": "20",
+                "hd-2030": "21",
+                "hd-2035": "22",
+                "hd-2040": "23",
+                "hd-2045": "24",
+                "hd-2050": "25"
+              }
+            },
+            {
+              "label": "Other uses",
+              "values": {
+                "2025": "30",
+                "cps-2030": "33",
+                "cps-2035": "36",
+                "cps-2040": "39",
+                "cps-2045": "42",
+                "cps-2050": "45",
+                "steps-2030": "48",
+                "steps-2035": "51",
+                "steps-2040": "54",
+                "steps-2045": "57",
+                "steps-2050": "60",
+                "hd-2030": "63",
+                "hd-2035": "66",
+                "hd-2040": "69",
+                "hd-2045": "72",
+                "hd-2050": "75"
+              }
+            },
+            {
+              "label": "Total demand",
+              "values": {
+                "2025": "40",
+                "cps-2030": "44",
+                "cps-2035": "48",
+                "cps-2040": "52",
+                "cps-2045": "56",
+                "cps-2050": "60",
+                "steps-2030": "64",
+                "steps-2035": "68",
+                "steps-2040": "72",
+                "steps-2045": "76",
+                "steps-2050": "80",
+                "hd-2030": "84",
+                "hd-2035": "88",
+                "hd-2040": "92",
+                "hd-2045": "96",
+                "hd-2050": "100"
+              }
+            }
+          ],
+          "energy_share": {
+            "2025": "35",
+            "cps-2030": "35",
+            "cps-2035": "35",
+            "cps-2040": "35",
+            "cps-2045": "35",
+            "cps-2050": "35",
+            "steps-2030": "35",
+            "steps-2035": "35",
+            "steps-2040": "35",
+            "steps-2045": "35",
+            "steps-2050": "35",
+            "hd-2030": "35",
+            "hd-2035": "35",
+            "hd-2040": "35",
+            "hd-2045": "35",
+            "hd-2050": "35"
+          }
+        },
+        "supply": [
+          {
+            "stage": "Graphite - Mining (natural)",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          },
+          {
+            "stage": "Graphite - Battery grade",
+            "countries": [
+              {
+                "country": "Alpha",
+                "values": {
+                  "2025": "50",
+                  "2030": "55",
+                  "2035": "60",
+                  "2040": "65"
+                },
+                "shares": {
+                  "2025": "50.0",
+                  "2030": "50.0",
+                  "2035": "50.0",
+                  "2040": "50.0"
+                }
+              },
+              {
+                "country": "Beta",
+                "values": {
+                  "2025": "30",
+                  "2030": "33",
+                  "2035": "36",
+                  "2040": "39"
+                },
+                "shares": {
+                  "2025": "30.0",
+                  "2030": "30.0",
+                  "2035": "30.0",
+                  "2040": "30.0"
+                }
+              },
+              {
+                "country": "Gamma",
+                "values": {
+                  "2025": "10",
+                  "2030": "11",
+                  "2035": "12",
+                  "2040": "13"
+                },
+                "shares": {
+                  "2025": "10.0",
+                  "2030": "10.0",
+                  "2035": "10.0",
+                  "2040": "10.0"
+                }
+              }
+            ],
+            "rest": {
+              "values": {
+                "2025": "10",
+                "2030": "11",
+                "2035": "12",
+                "2040": "13"
+              },
+              "shares": {
+                "2025": "10.0",
+                "2030": "10.0",
+                "2035": "10.0",
+                "2040": "10.0"
+              }
+            },
+            "total_label": "Total",
+            "total": {
+              "2025": "100",
+              "2030": "110",
+              "2035": "120",
+              "2040": "130"
+            },
+            "top3_published": {
+              "2025": "90",
+              "2030": "90",
+              "2035": "90",
+              "2040": "90"
+            }
+          }
+        ],
+        "notes": {
+          "demand": [
+            "Notes: Lithium demand is in lithium (Li) content, not carbonate equivalent (LCE). Synthetic."
+          ],
+          "supply": [
+            "Notes: Supply projections are synthetic.",
+            "Base case is made up for tests."
+          ]
+        }
+      }
+    ]
+  },
+  "risk": {
+    "engine": "metals-risk-0.1",
+    "state": "available",
+    "problem": null,
+    "chapters": [
+      {
+        "id": "aluminum",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "bauxite-and-alumina",
+        "series": {
+          "bauxite-and-alumina/production/bauxite-mine-production/metric-tons/2025": {
+            "named_share": "51.1",
+            "over_total": false,
+            "hhi_low": "1328",
+            "hhi_high": "3719",
+            "named": 2,
+            "reason": null
+          },
+          "bauxite-and-alumina/reserves/bauxite-reserves/metric-tons/2025": {
+            "named_share": "37.6",
+            "over_total": false,
+            "hhi_low": "797",
+            "hhi_high": "4692",
+            "named": 2,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "bauxite-and-alumina/production/bauxite-mine-production/metric-tons/2025",
+            "detail": "Bauxite, mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Guinea"
+              ],
+              "shown": "28.9",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "bauxite-and-alumina/production/bauxite-mine-production/metric-tons/2025",
+        "alternatives": [],
+        "reserves_only": [],
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "antimony",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "arsenic",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "beryllium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "bismuth",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "cadmium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "cesium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "chromium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "cobalt",
+        "series": {
+          "cobalt/production/mine-production/metric-tons/2025": {
+            "named_share": "88.5",
+            "over_total": false,
+            "hhi_low": "5706",
+            "hhi_high": "5839",
+            "named": 3,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "cobalt/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Congo (Kinshasa)"
+              ],
+              "shown": "74.2",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Congo (Kinshasa)",
+                "Indonesia",
+                "United States"
+              ],
+              "shown": "88.5",
+              "reason": null
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "cobalt/production/mine-production/metric-tons/2025",
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [
+            {
+              "detail": "Cobalt metal",
+              "years": "2021–24",
+              "leader": {
+                "country": "Norway",
+                "value": "40"
+              },
+              "top3": "80.0",
+              "hhi_low": "2600",
+              "hhi_high": "3000",
+              "named_share": "80.0",
+              "reason": null
+            },
+            {
+              "detail": "Cobalt oxide",
+              "years": "2021–24",
+              "leader": null,
+              "top3": null,
+              "hhi_low": null,
+              "hhi_high": null,
+              "named_share": null,
+              "reason": "A named source is printed as “W”"
+            }
+          ],
+          "secondary": []
+        }
+      },
+      {
+        "id": "copper",
+        "series": {
+          "copper/production/mine-production/metric-tons/2025": {
+            "named_share": "37.4",
+            "over_total": false,
+            "hhi_low": "737",
+            "hhi_high": "4657",
+            "named": 2,
+            "reason": null
+          },
+          "copper/reserves/reserves/metric-tons/2025": {
+            "named_share": "31.6",
+            "over_total": false,
+            "hhi_low": "526",
+            "hhi_high": "5200",
+            "named": 2,
+            "reason": null
+          },
+          "copper/production/refinery-production/metric-tons/2025": {
+            "named_share": "51.9",
+            "over_total": false,
+            "hhi_low": "2030",
+            "hhi_high": "4348",
+            "named": 2,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "copper/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Chile"
+              ],
+              "shown": "23.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          },
+          {
+            "series": "copper/production/refinery-production/metric-tons/2025",
+            "detail": "Refinery production",
+            "stage": "refining",
+            "leader": {
+              "countries": [
+                "China"
+              ],
+              "shown": "44.4",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [],
+        "leaders_differ": true,
+        "most_concentrated": "copper/production/refinery-production/metric-tons/2025",
+        "alternatives": [],
+        "reserves_only": [
+          {
+            "country": "Peru",
+            "reserves": "12.2"
+          }
+        ],
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": [
+            {
+              "detail": "Secondary production (new and old scrap)",
+              "unit": "thousand metric tons",
+              "value": "820"
+            },
+            {
+              "detail": "Recovered from scrap, old",
+              "unit": "thousand metric tons",
+              "value": "W"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gallium",
+        "series": {
+          "gallium/production/primary-production/metric-tons/2025": {
+            "named_share": null,
+            "over_total": null,
+            "hhi_low": null,
+            "hhi_high": null,
+            "named": null,
+            "reason": "USGS prints more than one world total for this series"
+          }
+        },
+        "stages": [
+          {
+            "series": "gallium/production/primary-production/metric-tons/2025",
+            "detail": "Primary production",
+            "stage": "other",
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints more than one world total for this series"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints more than one world total for this series"
+            }
+          }
+        ],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "germanium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "gold",
+        "series": {
+          "gold/production/mine-production/metric-tons/2025": {
+            "named_share": "22.7",
+            "over_total": false,
+            "hhi_low": "260",
+            "hhi_high": "6241",
+            "named": 2,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "gold/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "China"
+              ],
+              "shown": "12.7",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "gold/production/mine-production/metric-tons/2025",
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "graphite-natural",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "indium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "iron-ore",
+        "series": {
+          "iron-ore/production/mine-production-iron-content/metric-tons/2025": {
+            "named_share": "78.7",
+            "over_total": false,
+            "hhi_low": "4122",
+            "hhi_high": "4577",
+            "named": 2,
+            "reason": null
+          },
+          "iron-ore/reserves/reserves-million-metric-tons-crude-ore/metric-tons/2025": {
+            "named_share": "48.4",
+            "over_total": false,
+            "hhi_low": "1252",
+            "hhi_high": "3912",
+            "named": 2,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "iron-ore/production/mine-production-iron-content/metric-tons/2025",
+            "detail": "Mine production: Iron content",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Australia"
+              ],
+              "shown": "62.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "iron-ore/production/mine-production-iron-content/metric-tons/2025",
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "lead",
+        "series": {
+          "lead/production/mine-production/metric-tons/2025": {
+            "named_share": "80.0",
+            "over_total": false,
+            "hhi_low": "2950",
+            "hhi_high": "3350",
+            "named": 4,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "lead/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Big"
+              ],
+              "shown": "50.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Big",
+                "Mid",
+                "Alpha"
+              ],
+              "shown": "75.0",
+              "reason": null
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "lead/production/mine-production/metric-tons/2025",
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "lithium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "magnesium-metal",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "manganese",
+        "series": {
+          "manganese/production/mine-production/metric-tons/2025": {
+            "named_share": "110.0",
+            "over_total": true,
+            "hhi_low": "6100",
+            "hhi_high": "6100",
+            "named": 2,
+            "reason": null
+          },
+          "manganese/reserves/reserves/metric-tons/2025": {
+            "named_share": "85.0",
+            "over_total": false,
+            "hhi_low": "4025",
+            "hhi_high": "4250",
+            "named": 3,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "manganese/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Alpha"
+              ],
+              "shown": "60.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "manganese/production/mine-production/metric-tons/2025",
+        "alternatives": [
+          {
+            "country": "Beta",
+            "reserves": "60.0",
+            "production": "50.0"
+          }
+        ],
+        "reserves_only": [
+          {
+            "country": "Gamma",
+            "reserves": "5.0"
+          }
+        ],
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "mercury",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "molybdenum",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "nickel",
+        "series": {
+          "nickel/production/mine-production/metric-tons/2025": {
+            "named_share": null,
+            "over_total": null,
+            "hhi_low": null,
+            "hhi_high": null,
+            "named": null,
+            "reason": "United States is printed as “W”, so the order is unknown"
+          }
+        },
+        "stages": [
+          {
+            "series": "nickel/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "United States is printed as “W”, so the order is unknown"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "United States is printed as “W”, so the order is unknown"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "niobium-columbium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "platinum-group-metals",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "rare-earths",
+        "series": {
+          "rare-earths/production/mine-production/metric-tons/2025": {
+            "named_share": null,
+            "over_total": null,
+            "hhi_low": null,
+            "hhi_high": null,
+            "named": null,
+            "reason": "The world total is printed as “>2,000,000”, not as a number"
+          }
+        },
+        "stages": [
+          {
+            "series": "rare-earths/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "The world total is printed as “>2,000,000”, not as a number"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "The world total is printed as “>2,000,000”, not as a number"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": {
+            "commodity": "Rare earths",
+            "detail": "Net import reliance as a percentage of apparent consumption",
+            "value": ">95"
+          },
+          "imports": [
+            {
+              "detail": "Rare-earth compounds and metals",
+              "years": "2021–24",
+              "leader": {
+                "country": "China",
+                "value": "70"
+              },
+              "top3": null,
+              "hhi_low": "5069",
+              "hhi_high": "5358",
+              "named_share": "83.0",
+              "reason": null
+            },
+            {
+              "detail": "Rare-earth magnets",
+              "years": "2021–24",
+              "leader": {
+                "country": "China",
+                "value": "93"
+              },
+              "top3": null,
+              "hhi_low": "8649",
+              "hhi_high": "8698",
+              "named_share": "93.0",
+              "reason": null
+            }
+          ],
+          "secondary": []
+        }
+      },
+      {
+        "id": "rare-earths-heavy",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "rhenium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "rubidium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "scandium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "selenium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "silicon",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "silver",
+        "series": {
+          "silver/production/mine-production/metric-tons/2025": {
+            "named_share": "90.0",
+            "over_total": false,
+            "hhi_low": "4500",
+            "hhi_high": "4600",
+            "named": 2,
+            "reason": null
+          },
+          "silver/reserves/reserves/metric-tons/2025": {
+            "named_share": "80.0",
+            "over_total": false,
+            "hhi_low": "4000",
+            "hhi_high": "4400",
+            "named": 2,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "silver/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Iota"
+              ],
+              "shown": "60.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "silver/production/mine-production/metric-tons/2025",
+        "alternatives": [],
+        "reserves_only": [],
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "tantalum",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "tellurium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "thallium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "tin",
+        "series": {
+          "tin/production/mine-production/metric-tons/2025": {
+            "named_share": "90.0",
+            "over_total": false,
+            "hhi_low": "2900",
+            "hhi_high": "3000",
+            "named": 3,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "tin/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Kappa"
+              ],
+              "shown": "40.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [
+                "Kappa",
+                "Omega",
+                "Sigma"
+              ],
+              "shown": "90.0",
+              "reason": null
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "tin/production/mine-production/metric-tons/2025",
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "titanium-and-titanium-dioxide",
+        "series": {
+          "titanium-and-titanium-dioxide/production/mine-production-ilmenite/metric-tons/2025": {
+            "named_share": "40.0",
+            "over_total": false,
+            "hhi_low": "1156",
+            "hhi_high": "4756",
+            "named": 2,
+            "reason": null
+          },
+          "titanium-and-titanium-dioxide/production/mine-production-ilmenite-and-rutile/metric-tons/2025": {
+            "named_share": null,
+            "over_total": null,
+            "hhi_low": null,
+            "hhi_high": null,
+            "named": null,
+            "reason": "USGS prints no country for this series"
+          }
+        },
+        "stages": [
+          {
+            "series": "titanium-and-titanium-dioxide/production/mine-production-ilmenite/metric-tons/2025",
+            "detail": "Mine production: Ilmenite",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "China"
+              ],
+              "shown": "33.3",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          },
+          {
+            "series": "titanium-and-titanium-dioxide/production/mine-production-ilmenite-and-rutile/metric-tons/2025",
+            "detail": "Mine production: ilmenite and rutile",
+            "stage": "mining",
+            "leader": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints no country for this series"
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "USGS prints no country for this series"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "titanium-and-titanium-dioxide/production/mine-production-ilmenite/metric-tons/2025",
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": {
+            "commodity": "Titanium sponge metal",
+            "detail": "Net import reliance as a percentage of apparent consumption",
+            "value": "100"
+          },
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "titanium-mineral-concentrates",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "tungsten",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "vanadium",
+        "series": {
+          "vanadium/production/mine-production/metric-tons/2025": {
+            "named_share": "90.0",
+            "over_total": false,
+            "hhi_low": "5300",
+            "hhi_high": "5400",
+            "named": 2,
+            "reason": null
+          },
+          "vanadium/reserves/reserves/metric-tons/2025": {
+            "named_share": "75.0",
+            "over_total": false,
+            "hhi_low": "3125",
+            "hhi_high": "3750",
+            "named": 2,
+            "reason": null
+          }
+        },
+        "stages": [
+          {
+            "series": "vanadium/production/mine-production/metric-tons/2025",
+            "detail": "Mine production",
+            "stage": "mining",
+            "leader": {
+              "countries": [
+                "Epsilon"
+              ],
+              "shown": "70.0",
+              "reason": null
+            },
+            "top3": {
+              "countries": [],
+              "shown": null,
+              "reason": "Fewer than three countries are named"
+            }
+          }
+        ],
+        "missing_stages": [
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": "vanadium/production/mine-production/metric-tons/2025",
+        "alternatives": [
+          {
+            "country": "Theta",
+            "reserves": "50.0",
+            "production": "20.0"
+          }
+        ],
+        "reserves_only": [],
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "yttrium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "zinc",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      },
+      {
+        "id": "zirconium-and-hafnium",
+        "series": {},
+        "stages": [],
+        "missing_stages": [
+          "mining",
+          "refining"
+        ],
+        "leaders_differ": null,
+        "most_concentrated": null,
+        "alternatives": null,
+        "reserves_only": null,
+        "us": {
+          "reliance": null,
+          "imports": [],
+          "secondary": []
+        }
+      }
+    ]
+  },
+  "uses": {
+    "engine": "metals-iea-uses-0.1",
+    "state": "available",
+    "problem": null,
+    "entries": [
+      {
+        "name": "Cadmium",
+        "chapter": "cadmium",
+        "scope_note": null,
+        "total": {
+          "2025": "2",
+          "cps-2030": "2.2",
+          "cps-2035": "2.4",
+          "cps-2040": "2.6",
+          "cps-2045": "2.8",
+          "cps-2050": "3",
+          "steps-2030": "3.2",
+          "steps-2035": "3.4",
+          "steps-2040": "3.6",
+          "steps-2045": "3.8",
+          "steps-2050": "4",
+          "hd-2030": "4.2",
+          "hd-2035": "4.4",
+          "hd-2040": "4.6",
+          "hd-2045": "4.8",
+          "hd-2050": "5"
+        },
+        "technologies": null
+      },
+      {
+        "name": "Copper",
+        "chapter": "copper",
+        "scope_note": null,
+        "total": {
+          "2025": "1000",
+          "cps-2030": "1100",
+          "cps-2035": "1200",
+          "cps-2040": "1300",
+          "cps-2045": "1400",
+          "cps-2050": "1500",
+          "steps-2030": "1600",
+          "steps-2035": "1700",
+          "steps-2040": "1800",
+          "steps-2045": "1900",
+          "steps-2050": "2000",
+          "hd-2030": "2100",
+          "hd-2035": "2200",
+          "hd-2040": "2300",
+          "hd-2045": "2400",
+          "hd-2050": "2500"
+        },
+        "technologies": [
+          {
+            "label": "Wind",
+            "values": {
+              "2025": "100",
+              "cps-2030": "110",
+              "cps-2035": "120",
+              "cps-2040": "130",
+              "cps-2045": "140",
+              "cps-2050": "150",
+              "steps-2030": "160",
+              "steps-2035": "170",
+              "steps-2040": "180",
+              "steps-2045": "190",
+              "steps-2050": "200",
+              "hd-2030": "210",
+              "hd-2035": "220",
+              "hd-2040": "230",
+              "hd-2045": "240",
+              "hd-2050": "250"
+            },
+            "share_2025": "10.0"
+          },
+          {
+            "label": "Other low emissions power generation",
+            "values": {
+              "2025": "250",
+              "cps-2030": "275",
+              "cps-2035": "300",
+              "cps-2040": "325",
+              "cps-2045": "350",
+              "cps-2050": "375",
+              "steps-2030": "400",
+              "steps-2035": "425",
+              "steps-2040": "450",
+              "steps-2045": "475",
+              "steps-2050": "500",
+              "hd-2030": "525",
+              "hd-2035": "550",
+              "hd-2040": "575",
+              "hd-2045": "600",
+              "hd-2050": "625"
+            },
+            "share_2025": "25.0"
+          }
+        ]
+      },
+      {
+        "name": "Iridium",
+        "chapter": "platinum-group-metals",
+        "scope_note": "The IEA counts iridium apart from the other PGMs",
+        "total": {
+          "2025": "0.5",
+          "cps-2030": "0.55",
+          "cps-2035": "0.6",
+          "cps-2040": "0.65",
+          "cps-2045": "0.7",
+          "cps-2050": "0.75",
+          "steps-2030": "0.8",
+          "steps-2035": "0.85",
+          "steps-2040": "0.9",
+          "steps-2045": "0.95",
+          "steps-2050": "1",
+          "hd-2030": "1.05",
+          "hd-2035": "1.1",
+          "hd-2040": "1.15",
+          "hd-2045": "1.2",
+          "hd-2050": "1.25"
+        },
+        "technologies": null
+      },
+      {
+        "name": "PGMs (other than iridum)",
+        "chapter": "platinum-group-metals",
+        "scope_note": "The IEA counts iridium apart from the other PGMs",
+        "total": {
+          "2025": "30",
+          "cps-2030": "33",
+          "cps-2035": "36",
+          "cps-2040": "39",
+          "cps-2045": "42",
+          "cps-2050": "45",
+          "steps-2030": "48",
+          "steps-2035": "51",
+          "steps-2040": "54",
+          "steps-2045": "57",
+          "steps-2050": "60",
+          "hd-2030": "63",
+          "hd-2035": "66",
+          "hd-2040": "69",
+          "hd-2045": "72",
+          "hd-2050": "75"
+        },
+        "technologies": null
+      },
+      {
+        "name": "Lithium",
+        "chapter": "lithium",
+        "scope_note": "lithium content",
+        "total": {
+          "2025": "200",
+          "cps-2030": "220",
+          "cps-2035": "240",
+          "cps-2040": "260",
+          "cps-2045": "280",
+          "cps-2050": "300",
+          "steps-2030": "320",
+          "steps-2035": "340",
+          "steps-2040": "360",
+          "steps-2045": "380",
+          "steps-2050": "400",
+          "hd-2030": "420",
+          "hd-2035": "440",
+          "hd-2040": "460",
+          "hd-2045": "480",
+          "hd-2050": "500"
+        },
+        "technologies": [
+          {
+            "label": "Electric vehicles",
+            "values": {
+              "2025": "150",
+              "cps-2030": "165",
+              "cps-2035": "180",
+              "cps-2040": "195",
+              "cps-2045": "210",
+              "cps-2050": "225",
+              "steps-2030": "240",
+              "steps-2035": "255",
+              "steps-2040": "270",
+              "steps-2045": "285",
+              "steps-2050": "300",
+              "hd-2030": "315",
+              "hd-2035": "330",
+              "hd-2040": "345",
+              "hd-2045": "360",
+              "hd-2050": "375"
+            },
+            "share_2025": "75.0"
+          },
+          {
+            "label": "Grid battery storage",
+            "values": {
+              "2025": "50",
+              "cps-2030": "55",
+              "cps-2035": "60",
+              "cps-2040": "65",
+              "cps-2045": "70",
+              "cps-2050": "75",
+              "steps-2030": "80",
+              "steps-2035": "85",
+              "steps-2040": "90",
+              "steps-2045": "95",
+              "steps-2050": "100",
+              "hd-2030": "105",
+              "hd-2035": "110",
+              "hd-2040": "115",
+              "hd-2045": "120",
+              "hd-2050": "125"
+            },
+            "share_2025": "25.0"
+          }
+        ]
+      },
+      {
+        "name": "Neodymium",
+        "chapter": "rare-earths",
+        "scope_note": "Rare earth elements as the IEA lists them, not all rare earths",
+        "total": {
+          "2025": "0",
+          "cps-2030": "0",
+          "cps-2035": "0",
+          "cps-2040": "0",
+          "cps-2045": "0",
+          "cps-2050": "0",
+          "steps-2030": "0",
+          "steps-2035": "0",
+          "steps-2040": "0",
+          "steps-2045": "0",
+          "steps-2050": "0",
+          "hd-2030": "0",
+          "hd-2035": "0",
+          "hd-2040": "0",
+          "hd-2045": "0",
+          "hd-2050": "0"
+        },
+        "technologies": [
+          {
+            "label": "Wind",
+            "values": {
+              "2025": "0",
+              "cps-2030": "0",
+              "cps-2035": "0",
+              "cps-2040": "0",
+              "cps-2045": "0",
+              "cps-2050": "0",
+              "steps-2030": "0",
+              "steps-2035": "0",
+              "steps-2040": "0",
+              "steps-2045": "0",
+              "steps-2050": "0",
+              "hd-2030": "0",
+              "hd-2035": "0",
+              "hd-2040": "0",
+              "hd-2045": "0",
+              "hd-2050": "0"
+            },
+            "share_2025": null
+          }
+        ]
+      },
+      {
+        "name": "Total rare earth elements",
+        "chapter": "rare-earths",
+        "scope_note": "Rare earth elements as the IEA lists them, not all rare earths",
+        "total": {
+          "2025": "10",
+          "cps-2030": "11",
+          "cps-2035": "12",
+          "cps-2040": "13",
+          "cps-2045": "14",
+          "cps-2050": "15",
+          "steps-2030": "16",
+          "steps-2035": "17",
+          "steps-2040": "18",
+          "steps-2045": "19",
+          "steps-2050": "20",
+          "hd-2030": "21",
+          "hd-2035": "22",
+          "hd-2040": "23",
+          "hd-2045": "24",
+          "hd-2050": "25"
+        },
+        "technologies": null
+      }
+    ]
+  },
+  "research": {
+    "engine": "metals-research-0.3",
+    "state": "available",
+    "problem": null,
+    "written_by": "Written by the assistant from the figures on this page and retained sources; not reviewed by the owner.",
+    "metals": {
+      "copper": {
+        "thesis": "copper",
+        "uses": [
+          {
+            "passage": "copper:usgs26-end-uses",
+            "evidence": {
+              "id": "usgs26-end-uses",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          }
+        ],
+        "substitution": [
+          {
+            "passage": "copper:usgs26-substitutes",
+            "evidence": {
+              "id": "usgs26-substitutes",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "passage": "copper:mli-aluminum-2025",
+            "evidence": {
+              "id": "mli-aluminum-2025",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          }
+        ],
+        "recycling": [
+          {
+            "passage": "copper:usgs26-scrap-share",
+            "evidence": {
+              "id": "usgs26-scrap-share",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "passage": "copper:usgs26-recycling",
+            "evidence": {
+              "id": "usgs26-recycling",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          }
+        ],
+        "events": [
+          {
+            "kind": "Supply disruption",
+            "when": "2025",
+            "passage": "copper:usgs26-mine-events",
+            "evidence": {
+              "id": "usgs26-mine-events",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "kind": "Supply disruption",
+            "when": "September 2025",
+            "passage": "copper:fcx-mud-rush-2025",
+            "evidence": {
+              "id": "fcx-mud-rush-2025",
+              "source": null,
+              "title": null,
+              "publisher": null,
+              "edition": null,
+              "edition_date": null,
+              "quote": null,
+              "where": null,
+              "state": "unavailable",
+              "problem": "The copper thesis cannot be read, so its passages are not shown"
+            }
+          },
+          {
+            "kind": "Investment decision",
+            "when": "November 2026",
+            "passage": "fcx:q3-p-bagdad-approval",
+            "evidence": {
+              "id": "q3-p-bagdad-approval",
+              "source": "10q-2026q3",
+              "title": "Freeport-McMoRan Inc., Quarterly Report on Form 10-Q for the quarterly period ended September 30, 2026",
+              "publisher": "Freeport-McMoRan Inc. (SEC CIK 831259)",
+              "edition": "10-Q",
+              "edition_date": "2026-11-06",
+              "quote": null,
+              "where": "page 23",
+              "state": "missing",
+              "problem": "10q-2026q3: The retained file sec-10q-2026q3/fcx-20260930.htm is not on this machine."
+            }
+          }
+        ],
+        "chains": [
+          {
+            "id": "copper-grid-construction",
+            "title": "A copper supply disruption and the cost of grids and buildings",
+            "disruption": "Output falls at mines or refineries in a leading producing country, through outages, lower ore grades or policy.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": "Chile 23.0%",
+                "unavailable": null
+              },
+              {
+                "text": "Largest named producer of 2025 world refinery output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "refining",
+                  "figure": "leader"
+                },
+                "shown": "China 44.4%",
+                "unavailable": null
+              },
+              {
+                "text": "A recorded disruption, in USGS's words",
+                "kind": "stated",
+                "passage": "copper:usgs26-mine-events",
+                "evidence": {
+                  "id": "usgs26-mine-events",
+                  "source": null,
+                  "title": null,
+                  "publisher": null,
+                  "edition": null,
+                  "edition_date": null,
+                  "quote": null,
+                  "where": null,
+                  "state": "unavailable",
+                  "problem": "The copper thesis cannot be read, so its passages are not shown"
+                },
+                "unavailable": "The copper thesis cannot be read, so its passages are not shown"
+              },
+              {
+                "text": "Electricity networks' part of copper demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Copper",
+                  "technology": "Electricity networks"
+                },
+                "shown": null,
+                "unavailable": "The IEA lists no Electricity networks use for Copper in this table"
+              },
+              {
+                "text": "Copper's US end uses, as USGS cites them",
+                "kind": "stated",
+                "passage": "copper:usgs26-end-uses",
+                "evidence": {
+                  "id": "usgs26-end-uses",
+                  "source": null,
+                  "title": null,
+                  "publisher": null,
+                  "edition": null,
+                  "edition_date": null,
+                  "quote": null,
+                  "where": null,
+                  "state": "unavailable",
+                  "problem": "The copper thesis cannot be read, so its passages are not shown"
+                },
+                "unavailable": "The copper thesis cannot be read, so its passages are not shown"
+              },
+              {
+                "text": "One US fabricator on passing raw-material costs to customers",
+                "kind": "stated",
+                "passage": "copper:mli-pass-through-2025",
+                "evidence": {
+                  "id": "mli-pass-through-2025",
+                  "source": null,
+                  "title": null,
+                  "publisher": null,
+                  "edition": null,
+                  "edition_date": null,
+                  "quote": null,
+                  "where": null,
+                  "state": "unavailable",
+                  "problem": "The copper thesis cannot be read, so its passages are not shown"
+                },
+                "unavailable": "The copper thesis cannot be read, so its passages are not shown"
+              },
+              {
+                "text": "If refined copper becomes scarcer, cable, transformer and building-wire costs would rise, and projects with fixed budgets could be delayed or rescoped.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Any effect on inflation or growth would depend on how large and lasting the disruption is; this page does not measure it.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Copper refiners and fabricators",
+              "Grid equipment and cable makers",
+              "Building-wire and plumbing suppliers"
+            ],
+            "indirect": [
+              "Utilities and their customers, through network costs",
+              "Builders and their clients",
+              "Electric vehicle and electrical equipment makers"
+            ],
+            "gains_losses": [
+              {
+                "who": "Copper producers outside the disrupted region",
+                "direction": "may gain",
+                "mechanism": "Higher prices on output that is not disrupted."
+              },
+              {
+                "who": "Scrap collectors and secondary refiners",
+                "direction": "may gain",
+                "mechanism": "Scrap is worth more when refined copper costs more."
+              },
+              {
+                "who": "Fabricators that cannot pass costs through quickly",
+                "direction": "may lose",
+                "mechanism": "Margins narrow between raw-material cost and product prices until prices adjust."
+              },
+              {
+                "who": "Builders and grid contractors on fixed-price contracts",
+                "direction": "may lose",
+                "mechanism": "Input costs rise while contract revenue does not."
+              }
+            ],
+            "mitigants": [
+              "Aluminum substitution in cable, radiators and tubing, which USGS names",
+              "More scrap recovery",
+              "Stocks or spare refining capacity elsewhere",
+              "Weaker demand"
+            ],
+            "learned": "Measured here: the largest named producers of copper mine and refinery output, and the IEA's split of energy-technology demand. Stated by sources in this chain: a recorded disruption, US end uses and one fabricator's cost pass-through.",
+            "assumed": "Not measured here: price responses, project delays, and any effect on inflation or growth."
+          }
+        ]
+      },
+      "cobalt": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "cobalt-export-restriction",
+            "title": "Cobalt export restrictions and battery supply",
+            "disruption": "The leading producing country restricts or halts cobalt exports.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": "Congo (Kinshasa) 74.2%",
+                "unavailable": null
+              },
+              {
+                "text": "Concentration of 2025 world mine output (HHI bounds)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "hhi"
+                },
+                "shown": "5,706–5,839",
+                "unavailable": null
+              },
+              {
+                "text": "Electric vehicles' part of cobalt demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Cobalt",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA lists no Electric vehicles use for Cobalt in this table"
+              },
+              {
+                "text": "US net import reliance, 2025, as USGS prints it",
+                "kind": "measured",
+                "ref": {
+                  "reliance": "2025"
+                },
+                "shown": null,
+                "unavailable": "USGS prints no 2025 net import reliance for this metal"
+              },
+              {
+                "text": "A cut in exports from the leading country would reduce the cobalt available to refiners and battery makers elsewhere.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Battery makers could shift to chemistries that use less or no cobalt, or secure supply from other countries; both take time.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Cobalt refiners",
+              "Battery cathode and cell makers",
+              "Superalloy makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Consumer electronics makers",
+              "Aerospace suppliers"
+            ],
+            "gains_losses": [
+              {
+                "who": "Cobalt producers in other countries",
+                "direction": "may gain",
+                "mechanism": "Higher prices for supply that is not restricted."
+              },
+              {
+                "who": "Makers of low-cobalt or cobalt-free battery chemistries",
+                "direction": "may gain",
+                "mechanism": "Demand moves toward chemistries less exposed to the restriction."
+              },
+              {
+                "who": "Battery makers tied to cobalt-rich chemistries",
+                "direction": "may lose",
+                "mechanism": "Higher input costs and less certain supply."
+              }
+            ],
+            "mitigants": [
+              "Battery chemistries using less cobalt",
+              "Stocks held by refiners and users",
+              "Recycling of batteries",
+              "Output from other producing countries"
+            ],
+            "learned": "Measured here: how concentrated cobalt mining is, the IEA's share of electric vehicles in energy-technology demand, and US reliance as printed.",
+            "assumed": "Not measured here: any restriction itself, price effects, and how fast battery makers can change chemistry."
+          }
+        ]
+      },
+      "lithium": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "lithium-battery-supply",
+            "title": "A lithium supply shortfall and battery costs",
+            "disruption": "Lithium mining or refining falls short of battery makers' needs.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "USGS prints no 2025 production series at the mining stage for this metal"
+              },
+              {
+                "text": "Largest named holder of 2025 world reserves",
+                "kind": "measured",
+                "ref": {
+                  "stage": "reserves",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "No matching 2025 reserves series"
+              },
+              {
+                "text": "Years of reserves at the 2025 rate (not a depletion date)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "reserves",
+                  "figure": "years"
+                },
+                "shown": null,
+                "unavailable": "No matching 2025 reserves series"
+              },
+              {
+                "text": "Electric vehicles' part of lithium demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Lithium",
+                  "technology": "Electric vehicles"
+                },
+                "shown": "75.0% of 2025 energy-technology demand (150 kt of 200 kt)",
+                "unavailable": null
+              },
+              {
+                "text": "A shortfall would raise battery-cell costs or slow deliveries to electric vehicle and storage makers.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Reserves large relative to output allow supply to grow over time, but new mines and refineries take years to build.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Lithium refiners",
+              "Battery cathode and cell makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Grid storage developers",
+              "Electricity customers where storage is planned"
+            ],
+            "gains_losses": [
+              {
+                "who": "Lithium producers with spare or new capacity",
+                "direction": "may gain",
+                "mechanism": "Higher prices while supply is short."
+              },
+              {
+                "who": "Battery and vehicle makers without secured supply",
+                "direction": "may lose",
+                "mechanism": "Higher input costs or delayed production."
+              }
+            ],
+            "mitigants": [
+              "New mines and refineries",
+              "Battery recycling",
+              "Chemistries that use lithium more efficiently",
+              "Slower electric vehicle sales"
+            ],
+            "learned": "Measured here, where USGS names the order: who leads mining and reserves, years of reserves at the 2025 rate, and the IEA's share of electric vehicles in energy-technology demand.",
+            "assumed": "Not measured here: whether a shortfall occurs, its size, and price or delivery effects."
+          }
+        ]
+      },
+      "rare-earths": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "rare-earths-magnets",
+            "title": "Rare earth export limits and permanent magnets",
+            "disruption": "The leading producing country limits exports of rare earths or of the magnets made from them.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "The world total is printed as “>2,000,000”, not as a number"
+              },
+              {
+                "text": "Wind's part of neodymium demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Neodymium",
+                  "technology": "Wind"
+                },
+                "shown": null,
+                "unavailable": "The IEA's 2025 energy-technology total for Neodymium is not positive, so no share is computed"
+              },
+              {
+                "text": "Electric vehicles' part of neodymium demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Neodymium",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA lists no Electric vehicles use for Neodymium in this table"
+              },
+              {
+                "text": "Export limits would reduce the magnet materials available to motor, turbine and equipment makers elsewhere.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Makers could redesign motors to use fewer rare earths or build supply in other countries; both take time.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Magnet makers",
+              "Electric motor and generator makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Wind turbine makers",
+              "Defense and aerospace suppliers"
+            ],
+            "gains_losses": [
+              {
+                "who": "Rare earth miners and processors in other countries",
+                "direction": "may gain",
+                "mechanism": "Demand turns to supply outside the restricting country."
+              },
+              {
+                "who": "Makers that depend on imported magnets",
+                "direction": "may lose",
+                "mechanism": "Higher costs or interrupted supply."
+              }
+            ],
+            "mitigants": [
+              "Motor designs using fewer rare earths",
+              "Stocks of magnets and oxides",
+              "Processing capacity in other countries",
+              "Recycling of magnets"
+            ],
+            "learned": "Measured here: the largest named producer of rare earth mine output, and the parts of neodymium's energy-technology demand that go to wind and to electric vehicles, as the IEA splits it.",
+            "assumed": "Not measured here: any export limit itself, magnet supply, and the time redesign takes."
+          }
+        ]
+      },
+      "nickel": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "nickel-producer-policy",
+            "title": "Policy change in the leading nickel producer",
+            "disruption": "The leading producing country changes its rules on mining, processing or exports.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world mine output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "United States is printed as “W”, so the order is unknown"
+              },
+              {
+                "text": "Concentration of 2025 world mine output (HHI bounds)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "mining",
+                  "figure": "hhi"
+                },
+                "shown": null,
+                "unavailable": "United States is printed as “W”, so the order is unknown"
+              },
+              {
+                "text": "Electric vehicles' part of nickel demand from energy technologies, IEA 2025",
+                "kind": "measured",
+                "ref": {
+                  "iea": "Nickel",
+                  "technology": "Electric vehicles"
+                },
+                "shown": null,
+                "unavailable": "The IEA lists no Electric vehicles use for Nickel in this table"
+              },
+              {
+                "text": "US net import reliance, 2025, as USGS prints it",
+                "kind": "measured",
+                "ref": {
+                  "reliance": "2025"
+                },
+                "shown": null,
+                "unavailable": "USGS prints no 2025 net import reliance for this metal"
+              },
+              {
+                "text": "A change in the leading country's rules could shift where nickel is processed and what it costs users elsewhere.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Nickel processors and refiners",
+              "Stainless steel makers",
+              "Battery cathode makers"
+            ],
+            "indirect": [
+              "Electric vehicle makers",
+              "Construction and appliance makers using stainless steel"
+            ],
+            "gains_losses": [
+              {
+                "who": "Processors inside the leading country",
+                "direction": "may gain",
+                "mechanism": "Rules that favour local processing move work to them."
+              },
+              {
+                "who": "Processors elsewhere that depend on its ore",
+                "direction": "may lose",
+                "mechanism": "Less ore available to import."
+              }
+            ],
+            "mitigants": [
+              "Output from other producing countries",
+              "Battery chemistries using less nickel",
+              "Recycling of stainless steel and batteries"
+            ],
+            "learned": "Measured here: how concentrated nickel mining is, the IEA's share of electric vehicles in energy-technology demand, and US reliance as printed.",
+            "assumed": "Not measured here: any rule change, and its effect on prices or processing."
+          }
+        ]
+      },
+      "aluminum": {
+        "thesis": null,
+        "uses": [],
+        "substitution": [],
+        "recycling": [],
+        "events": [],
+        "chains": [
+          {
+            "id": "aluminum-smelting",
+            "title": "Curbs on aluminum smelting in the leading producer",
+            "disruption": "Smelting output falls in the leading producing country, for example through power limits or policy.",
+            "links": [
+              {
+                "text": "Largest named producer of 2025 world smelter output",
+                "kind": "measured",
+                "ref": {
+                  "stage": "refining",
+                  "figure": "leader"
+                },
+                "shown": null,
+                "unavailable": "USGS prints no 2025 production series at the refining stage for this metal"
+              },
+              {
+                "text": "Concentration of 2025 world smelter output (HHI bounds)",
+                "kind": "measured",
+                "ref": {
+                  "stage": "refining",
+                  "figure": "hhi"
+                },
+                "shown": null,
+                "unavailable": "USGS prints no 2025 production series at the refining stage for this metal"
+              },
+              {
+                "text": "US net import reliance, 2025, as USGS prints it",
+                "kind": "measured",
+                "ref": {
+                  "reliance": "2025"
+                },
+                "shown": null,
+                "unavailable": "USGS prints no 2025 net import reliance for this metal"
+              },
+              {
+                "text": "Smelting uses a great deal of electricity, so power costs or limits in the leading country could change world supply.",
+                "kind": "hypothesis"
+              },
+              {
+                "text": "Less smelter output would raise costs for packaging, transport, construction and power-line makers that use aluminum.",
+                "kind": "hypothesis"
+              }
+            ],
+            "direct": [
+              "Aluminum fabricators",
+              "Packaging makers",
+              "Vehicle and aircraft makers"
+            ],
+            "indirect": [
+              "Builders",
+              "Power-line makers",
+              "Consumers of packaged goods"
+            ],
+            "gains_losses": [
+              {
+                "who": "Smelters in other countries with available power",
+                "direction": "may gain",
+                "mechanism": "Higher prices for metal that is not curtailed."
+              },
+              {
+                "who": "Fabricators relying on imported metal",
+                "direction": "may lose",
+                "mechanism": "Higher input costs."
+              }
+            ],
+            "mitigants": [
+              "Recycled aluminum",
+              "Smelter restarts elsewhere",
+              "Stocks"
+            ],
+            "learned": "Measured here: how concentrated smelting is and US reliance as printed.",
+            "assumed": "Not measured here: power conditions, any curb, and price effects. The electricity intensity of smelting is general knowledge, not from a retained source."
+          }
+        ]
+      }
+    }
+  }
+}

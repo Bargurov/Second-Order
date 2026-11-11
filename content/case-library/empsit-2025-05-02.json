@@ -1,0 +1,101 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "empsit-2025-05-02",
+  "title": "April 2025 jobs: payrolls +177,000, unemployment steady at 4.2%, March revised down",
+  "category": "Employment",
+  "summary": "Payrolls rose 177,000, roughly in line with the prior 12-month average of 152,000, led by health care, transportation and warehousing, financial activities and social assistance. Unemployment held at 4.2 percent, hourly earnings rose 0.2 percent, and February and March were revised down 58,000. BLS later reissued the release over minor household-survey errors.",
+  "source": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "title": "The Employment Situation — April 2025",
+    "url": "https://www.bls.gov/news.release/archives/empsit_05022025.htm",
+    "document_id": "USDL-25-0658",
+    "published_at": "2025-05-02T08:30:00-04:00",
+    "published_as_stated": "Embargoed until 8:30 a.m. (ET) Friday, May 2, 2025",
+    "timezone_note": "In May, Eastern Time is Eastern Daylight Time, UTC−04:00, so the release time is 12:30 UTC.",
+    "reference_period": "April 2025: the pay period including April 12 (establishment survey) and the week containing April 12 (household survey)",
+    "page_last_updated": "2025-06-03",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "Payrolls rose 177,000, roughly in line with the 12-month average of 152,000. Private payrolls rose 167,000 and government 10,000; federal employment fell 9,000 and was 26,000 lower than in January. Health care added 51,000, transportation and warehousing 29,000 after little change in March, financial activities 14,000, and social assistance 8,000, slower than its 12-month average of 20,000.",
+    "The two earlier months were revised down, as January and February had been a month before: February from +117,000 to +102,000 and March from +228,000 to +185,000, together 58,000 lower. The three-month average of payroll gains in the release's summary table was 155,000.",
+    "The unemployment rate was unchanged at 4.2 percent. The household survey showed the labor force up 518,000, household employment up 436,000 and participation up 0.1 point to 62.6 percent. Average hourly earnings rose 0.2 percent to $36.06, 3.8 percent over 12 months, and the private workweek was unchanged at 34.3 hours."
+  ],
+  "key_facts": [
+    {"label": "Nonfarm payrolls", "value": "+177,000", "basis": "Seasonally adjusted, preliminary; prior 12-month average 152,000"},
+    {"label": "Private / government", "value": "+167,000 / +10,000", "basis": "Federal −9,000; down 26,000 since January"},
+    {"label": "Revisions to earlier months", "value": "February +102,000 (was +117,000); March +185,000 (was +228,000)", "basis": "Combined −58,000; from late reports and recalculated seasonal factors"},
+    {"label": "Three-month average", "value": "+155,000", "basis": "Total nonfarm, Summary table B"},
+    {"label": "Unemployment rate", "value": "4.2% (unchanged)", "basis": "Seasonally adjusted; household survey"},
+    {"label": "Household survey", "value": "Labor force +518,000; employment +436,000; participation 62.6% (+0.1 point)", "basis": "Seasonally adjusted, as first published; some April household estimates were later corrected (see Sources and limits)"},
+    {"label": "Average hourly earnings", "value": "+0.2% to $36.06; +3.8% over 12 months", "basis": "All private employees; seasonally adjusted series"},
+    {"label": "Significance thresholds", "value": "About 136,000 (payrolls); about 600,000 (household employment)", "basis": "Monthly change needed to be statistically significant, per the release"}
+  ],
+  "channels": [
+    {
+      "title": "A near-trend print and the policy path (shorter maturities)",
+      "source_fact": "Payrolls +177,000, close to the 12-month average; unemployment unchanged at 4.2 percent.",
+      "interpretation": "A print near trend with stable unemployment offers little reason to change the expected path of policy. If investors had expected weakness, a steady report would support shorter yields; if they had expected about this, it would move little. The release cannot say which."
+    },
+    {
+      "title": "Revision drift (shorter maturities)",
+      "source_fact": "February and March revised down by 58,000, March alone by 43,000, after the previous release revised January and February down by 48,000.",
+      "interpretation": "Two releases in a row cut their predecessors. A reader who expected April to be cut too would discount the headline, pointing toward a softer path and lower shorter yields than the print alone implies."
+    },
+    {
+      "title": "Wages and inflation compensation (longer maturities)",
+      "source_fact": "Average hourly earnings +0.2 percent on the month and +3.8 percent over 12 months.",
+      "interpretation": "Moderate wage growth limits labor-cost pressure on inflation and, if read that way, eases upward pressure on inflation compensation in longer yields."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Federal reductions not yet in the count", "detail": "Federal employment is down 26,000 since January, but people on paid leave or receiving ongoing severance pay are counted as employed. If more reductions were pending in that form, the payroll figures understate the eventual decline."},
+    {"title": "Household strength may be partly measurement", "detail": "The household survey's large labor-force and employment gains came in the month a redesigned survey sample was introduced, and BLS later corrected a weighting error linked to it. Its detail for April is a weak basis for any reading, even though the major measures were unaffected and BLS calls the impact negligible."},
+    {"title": "A volatile industry's rebound", "detail": "Transportation and warehousing added 29,000 after +3,000 in March. One month's swing in a volatile industry may not repeat, so the composition of the gain is less reassuring than the total."}
+  ],
+  "assumptions": [
+    "First prints are read with an expectation of revision, based on the recent revision pattern.",
+    "Payroll counts capture labor demand despite the paid-leave and severance rules.",
+    "A near-trend print moves the expected policy path only if expectations differed from it."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous consensus for payrolls and the unemployment rate. Without it this case cannot say whether the report was a surprise.",
+    "The size of federal reductions not yet reflected in payrolls.",
+    "The full list of corrected April household series, which BLS published as a spreadsheet with its errata notice; this case does not use it beyond the two levels quoted under Sources and limits.",
+    "Not-seasonally-adjusted data and the seasonal factors applied in April."
+  ],
+  "weakening_observations": [
+    "Downward revisions to April in the following releases would weaken a reading built on the headline; see Sources and limits.",
+    "If the household corrections had touched the major measures, the household reading would need revisiting; BLS says they did not.",
+    "If federal reductions appeared quickly in the next payroll counts, the paid-leave caveat would matter less."
+  ],
+  "critique": [
+    {"title": "Trend comparisons inherit first-print bias", "detail": "The case calls April near trend, but the two prior first prints had both been revised down, and April itself was later revised from +177,000 to +147,000 and then to +158,000. A trend built from first prints carries their bias, and the case should say so before calling any month typical."},
+    {"title": "The archived page is not the page of May 2", "detail": "The archived release carries a note added when BLS reissued it on June 3, 2025, and its last-modified date is June 3. A reader on May 2 saw the release without that note. The case uses release-time figures, but the page it cites now contains later information."},
+    {"title": "Household and payroll stories diverge", "detail": "Household employment rose 436,000 against payrolls of 177,000, but the household survey needs a change of about 600,000 to be significant and was affected by a sample redesign. The divergence is weak evidence of anything, and the case treats it that way."},
+    {"title": "Second of four, read later", "detail": "The second of four consecutive Employment Situation releases in the library, included by that rule. It was analysed in October 2026; revisions are reported separately, but hindsight about the rest of 2025 may still colour the emphasis."}
+  ],
+  "source_notes": [
+    {"title": "Reissued June 3, 2025", "detail": "The archived page carries a note that BLS reissued the release on June 3, 2025 to flag minor errors in April household-survey data associated with a redesigned sample. The unemployment rate, participation rate and employment-population ratio were unaffected, and the release was not updated with corrected estimates. Its 'Last Modified Date' is June 03, 2025.", "url": null},
+    {"title": "Errata: April 2025 household survey corrections", "detail": "BLS's errata notice (page last modified June 3, 2025) says a geographic variable used in weighting the redesigned sample was miscoded, treating micropolitan areas like metropolitan areas, so some noninterview weights were misapplied. Corrected April estimates were published with the May data on June 6, 2025; the unemployment rate, participation rate and employment-population ratio were unaffected, BLS calls the impact negligible, and the April release itself was not updated. In the May release, April's labor force is 171,135,000 and household employment 163,969,000, against 171,109,000 and 163,944,000 as first published. This case keeps the release-time figures.", "url": "https://www.bls.gov/bls/errata/cps-corrections-april-2025.htm"},
+    {"title": "Later revision and reclassification: June 6, 2025", "detail": "The May report revised April from +177,000 to +147,000 and March from +185,000 to +120,000. It also noted that April establishment estimates reflected workers moving from home health care services to individual and family services because of changes in a New York state program. Not known at publication.", "url": "https://www.bls.gov/news.release/archives/empsit_06062025.htm"},
+    {"title": "Later revision: July 3, 2025", "detail": "The June report revised April again, from +147,000 to +158,000. Not known at publication.", "url": "https://www.bls.gov/news.release/archives/empsit_07032025.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived April 2025 release, including its reissue note, on 2026-10-05; the BLS errata notice for the April 2025 household survey; and the archived May and June 2025 releases only for their revisions, corrected April levels and notes about April. On 2026-10-08 the errata statements were re-checked against the errata notice, the April release's reissue note and household table, and the May release's corrections box and April levels; nothing needed changing. Facts come from the release text and summary tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.bls.gov/news.release/archives/empsit_05022025.htm",
+      "https://www.bls.gov/bls/errata/cps-corrections-april-2025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_06062025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_07032025.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

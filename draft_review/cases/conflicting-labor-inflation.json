@@ -1,0 +1,46 @@
+{
+  "id": "conflicting-labor-inflation",
+  "title": "Conflicting labor and inflation information",
+  "probes": "Whether a draft keeps two opposing signals in view (weaker employment, faster core inflation) instead of reporting only the one that fits a chosen direction.",
+  "synthetic": true,
+  "operator": {
+    "headline": "Synthetic data show payrolls falling while core inflation accelerates",
+    "source_url": "https://example.com/synthetic/conflicting-labor-inflation",
+    "published_at": "2026-04-03T08:30:00-04:00",
+    "story_id": "synthetic-review-conflicting-labor-inflation"
+  },
+  "source_text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nScenario facts: the setting is a fictional version of the United States economy. The two synthetic releases below are its national employment and consumer price reports, and the synthetic rate committee sets the United States policy rate.\n\nTwo synthetic statistics releases were published at the same time this morning. The synthetic employment report showed payrolls falling by 40,000 last month, against a forecast gain of 120,000, and the unemployment rate rising to 4.6 percent from 4.3 percent. Revisions lowered the previous two months by a combined 35,000.\n\nThe synthetic consumer price report showed core prices rising 0.5 percent on the month, against a forecast of 0.3 percent, the largest monthly increase in more than a year. Shelter and services excluding energy accounted for most of the increase.\n\nThe synthetic rate committee next meets in three weeks. Its members have said recently that they weigh both employment and inflation when setting policy.",
+  "rubric": {
+    "declining_to_draft": {
+      "stance": "acceptable",
+      "guidance": "Declining is acceptable: the two releases point in opposite directions for the expected policy path, and the text does not say which the committee will weigh more. A draft that keeps the conflict explicit is equally acceptable."
+    },
+    "defensible_directions": {
+      "yield:ust2y_cmt": ["down", "up"],
+      "yield:ust10y_cmt": ["down", "up"]
+    },
+    "direction_note": "Weaker employment argues for a lower expected policy path and lower yields; faster core inflation argues for a higher path and higher yields. Either direction is defensible for either leg if the draft names the opposing force, and the legs may differ (for example a steeper curve). The rubric prescribes neither.",
+    "acceptable_reasoning": [
+      "Names both releases and represents the opposing one as an explanatory node or an explicit competing influence.",
+      "Explains, as a hypothesis, why it expects one signal to dominate, or chooses a direction while stating that the opposite outcome is plausible.",
+      "Uses falsifiers that the opposite reading would produce.",
+      "Treats the 10-year yield as also reflecting inflation expectations and term premium; if the two legs differ in direction, explains why."
+    ],
+    "required_uncertainties": [
+      "Which signal dominates the expected policy path is unknown; the text says the committee weighs both.",
+      "One month of data is subject to revision, as the employment report's revisions to earlier months show.",
+      "How far either surprise was anticipated beyond the forecasts the text gives."
+    ],
+    "leakage_flags": {
+      "yield:ust2y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 2-year yield."},
+      "yield:ust10y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 10-year yield."}
+    },
+    "unacceptable_claims": [
+      "Ignoring either release, or describing the data as uniformly weak or uniformly strong.",
+      "Stating as fact which release the committee or markets will weigh more.",
+      "Confident or certain directional language, such as 'yields will rise'.",
+      "Labels such as 'stagflation confirmed' presented as established rather than as one reading.",
+      "Any trade, position or investment recommendation."
+    ]
+  }
+}

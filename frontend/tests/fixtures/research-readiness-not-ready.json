@@ -1,0 +1,682 @@
+{
+ "answer": {
+  "freeze_now": "Nothing can be frozen prospectively for 2026-09-15 yet. The 4 connected observables need a baseline that classifies 2026-09-14, the last expected session before 2026-09-15. Held now: kept H.15 package p20260914T120000000000Z-251648c7fa95 through 2026-09-11, not imported. The other 8 registry entries are concepts with no provider.",
+  "next_action": "Wait until 2026-09-15 16:15 New York time before downloading (the Board posts the H.15 release on business days at 4:15 p.m. New York time, with values through the previous business day): 2026-09-14 can appear no earlier than that release, and a download before then returns data through an earlier session. Then approve one download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval), and validate and import it locally.",
+  "outcomes": "A freeze on 2026-09-15 would score from 2026-09-16; the 1-, 5- and 20-observation targets are expected on 2026-09-17, 2026-09-23, 2026-10-15 (SIFMA calendar: expected, not measured). Outcome data for a target can exist only after its date ends, so their absence never blocks a freeze.",
+  "research": "Not possible now. INCLUSION.md: research intake has not started. The freeze-draft command and the Hypotheses page freeze prospective showcase drafts only; the general freeze command stores any valid hypothesis, but a research-usage leg on a dated-only observable is recorded as unavailable. The 4 connected observables are dated, not timed (the daily date convention): a research-usage leg on them is recorded as unavailable, because research requires verified observation timestamps. The 8 registry concepts have no provider, so a research leg on them could never be measured."
+ },
+ "demonstration": {
+  "fixture": "demo-market.json",
+  "generator": "second_order/demo_market.py",
+  "plain": "The offline demo's two showcase replays of fictional events use FICTIONAL demonstration series (demo:rate, demo:fx-index; demo-market-0.1), invented by second_order/demo_market.py; nothing in them is a market observation. They cover no registry concept, and a research hypothesis cannot name them.",
+  "registry_concepts_covered": [],
+  "series": [
+   {
+    "first_date": "2022-01-03",
+    "last_date": "2024-12-31",
+    "observable_id": "demo:rate",
+    "provider": "fictional-demo",
+    "rows": 782,
+    "ticker": "DEMO-RATE"
+   },
+   {
+    "first_date": "2022-01-03",
+    "last_date": "2024-12-31",
+    "observable_id": "demo:fx-index",
+    "provider": "fictional-demo",
+    "rows": 782,
+    "ticker": "DEMO-FX"
+   }
+  ],
+  "timestamp_basis": "fictional_daily",
+  "version": "demo-market-0.1"
+ },
+ "lifecycle_version": "lifecycle-freeze-0.1",
+ "next_actions": [
+  {
+   "action": "Wait until 2026-09-15 16:15 New York time before downloading (the Board posts the H.15 release on business days at 4:15 p.m. New York time, with values through the previous business day): 2026-09-14 can appear no earlier than that release, and a download before then returns data through an earlier session. Then approve one download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval), and validate and import it locally.",
+   "name": "Federal Reserve Board H.15 release package",
+   "provider": "board-h15",
+   "status": "needs_baseline"
+  },
+  {
+   "action": "Run `python -m second_order market import --db <store> --start <YYYY-MM-DD>`: an explicit network request that needs FRED_API_KEY and your approval, with a start early enough for the reference windows the rules require.",
+   "name": "FRED (Federal Reserve Bank of St. Louis API)",
+   "provider": "fred",
+   "status": "needs_baseline"
+  },
+  {
+   "action": "No store exists yet: importing a baseline (Hypotheses page) creates one at schema 4.",
+   "name": "Research store",
+   "provider": null,
+   "status": "interface_freeze_unavailable"
+  }
+ ],
+ "observables": [
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "2-year Treasury yield (concept)",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "yield:us2y",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "next_observation",
+    "benchmark": null,
+    "measurement": "yield_bp",
+    "requires_contract": false,
+    "source": null,
+    "unit": "bp"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "10-year Treasury yield (concept)",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "yield:us10y",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "next_observation",
+    "benchmark": null,
+    "measurement": "yield_bp",
+    "requires_contract": false,
+    "source": null,
+    "unit": "bp"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "US dollar index (DXY)",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "index:dxy",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "next_observation",
+    "benchmark": null,
+    "measurement": "return_pct",
+    "requires_contract": false,
+    "source": null,
+    "unit": "%"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "US dollar / Israeli shekel",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "fx:usdils",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "next_observation",
+    "benchmark": null,
+    "measurement": "return_pct",
+    "requires_contract": false,
+    "source": null,
+    "unit": "%"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "WTI crude oil futures",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "futures:wti",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "next_observation",
+    "benchmark": null,
+    "measurement": "return_pct",
+    "requires_contract": true,
+    "source": null,
+    "unit": "%"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "Brent crude oil futures",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "futures:brent",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "next_observation",
+    "benchmark": null,
+    "measurement": "return_pct",
+    "requires_contract": true,
+    "source": null,
+    "unit": "%"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No snapshot of this provider is in the store."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "source_bound",
+   "label": "2-year Treasury yield (FRED DGS2)",
+   "next_action": "Run `python -m second_order market import --db <store> --start <YYYY-MM-DD>`: an explicit network request that needs FRED_API_KEY and your approval, with a start early enough for the reference windows the rules require.",
+   "observable_id": "yield:ust2y_cmt",
+   "outcome": {
+    "blocks_freeze": false,
+    "expected_score_anchor": "2026-09-16",
+    "freeze_date_new_york": "2026-09-15",
+    "path": "After the target dates end: a later `market import` received after them, then an assessment on the Hypotheses page or `evaluate --outcome`.",
+    "plain": "A freeze on 2026-09-15 would score from 2026-09-16; the 1-, 5- and 20-observation targets are expected on 2026-09-17, 2026-09-23, 2026-10-15 (SIFMA calendar: expected, not measured). Outcome data for a target can exist only after its date ends, so their absence never blocks a freeze.",
+    "state": "not_due",
+    "targets": {
+     "1": {
+      "counts_after": "2026-09-17T23:59:59-04:00",
+      "expected_target": "2026-09-17"
+     },
+     "20": {
+      "counts_after": "2026-10-15T23:59:59-04:00",
+      "expected_target": "2026-10-15"
+     },
+     "5": {
+      "counts_after": "2026-09-23T23:59:59-04:00",
+      "expected_target": "2026-09-23"
+     }
+    }
+   },
+   "plain": "A baseline must classify 2026-09-14, the last expected session before 2026-09-15; no snapshot of this provider is in the store.",
+   "provider": {
+    "connection": "Connected through the explicit network command `market import`, which needs FRED_API_KEY in the environment. This check reads no key, so it cannot say whether one is set.",
+    "freeze_path": "Freeze a manual draft with the freeze-draft command; the Hypotheses page freezes H.15 only.",
+    "id": "fred",
+    "name": "FRED (Federal Reserve Bank of St. Louis API)",
+    "outcome_path": "After the target dates end: a later `market import` received after them, then an assessment on the Hypotheses page or `evaluate --outcome`.",
+    "series_id": "DGS2"
+   },
+   "registry": {
+    "anchor_policy": "daily_ny_date",
+    "measurement": "yield_bp",
+    "source": "fred:DGS2",
+    "unit": "bp"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "Its observations are dated, not timed (the daily date convention), so a research-usage leg on it is recorded as unavailable: research requires verified observation timestamps."
+    ]
+   },
+   "retained": {
+    "newest_classified_date": null,
+    "newest_in_snapshot": null,
+    "snapshots": []
+   },
+   "status": "needs_baseline"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No snapshot of this provider is in the store."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "source_bound",
+   "label": "10-year Treasury yield (FRED DGS10)",
+   "next_action": "Run `python -m second_order market import --db <store> --start <YYYY-MM-DD>`: an explicit network request that needs FRED_API_KEY and your approval, with a start early enough for the reference windows the rules require.",
+   "observable_id": "yield:ust10y_cmt",
+   "outcome": {
+    "blocks_freeze": false,
+    "expected_score_anchor": "2026-09-16",
+    "freeze_date_new_york": "2026-09-15",
+    "path": "After the target dates end: a later `market import` received after them, then an assessment on the Hypotheses page or `evaluate --outcome`.",
+    "plain": "A freeze on 2026-09-15 would score from 2026-09-16; the 1-, 5- and 20-observation targets are expected on 2026-09-17, 2026-09-23, 2026-10-15 (SIFMA calendar: expected, not measured). Outcome data for a target can exist only after its date ends, so their absence never blocks a freeze.",
+    "state": "not_due",
+    "targets": {
+     "1": {
+      "counts_after": "2026-09-17T23:59:59-04:00",
+      "expected_target": "2026-09-17"
+     },
+     "20": {
+      "counts_after": "2026-10-15T23:59:59-04:00",
+      "expected_target": "2026-10-15"
+     },
+     "5": {
+      "counts_after": "2026-09-23T23:59:59-04:00",
+      "expected_target": "2026-09-23"
+     }
+    }
+   },
+   "plain": "A baseline must classify 2026-09-14, the last expected session before 2026-09-15; no snapshot of this provider is in the store.",
+   "provider": {
+    "connection": "Connected through the explicit network command `market import`, which needs FRED_API_KEY in the environment. This check reads no key, so it cannot say whether one is set.",
+    "freeze_path": "Freeze a manual draft with the freeze-draft command; the Hypotheses page freezes H.15 only.",
+    "id": "fred",
+    "name": "FRED (Federal Reserve Bank of St. Louis API)",
+    "outcome_path": "After the target dates end: a later `market import` received after them, then an assessment on the Hypotheses page or `evaluate --outcome`.",
+    "series_id": "DGS10"
+   },
+   "registry": {
+    "anchor_policy": "daily_ny_date",
+    "measurement": "yield_bp",
+    "source": "fred:DGS10",
+    "unit": "bp"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "Its observations are dated, not timed (the daily date convention), so a research-usage leg on it is recorded as unavailable: research requires verified observation timestamps."
+    ]
+   },
+   "retained": {
+    "newest_classified_date": null,
+    "newest_in_snapshot": null,
+    "snapshots": []
+   },
+   "status": "needs_baseline"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No snapshot of this provider is in the store."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "source_bound",
+   "label": "2-year Treasury yield (Board H.15)",
+   "next_action": "Wait until 2026-09-15 16:15 New York time before downloading (the Board posts the H.15 release on business days at 4:15 p.m. New York time, with values through the previous business day): 2026-09-14 can appear no earlier than that release, and a download before then returns data through an earlier session. Then approve one download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval), and validate and import it locally.",
+   "observable_id": "yield:ust2y_cmt_h15",
+   "outcome": {
+    "blocks_freeze": false,
+    "expected_score_anchor": "2026-09-16",
+    "freeze_date_new_york": "2026-09-15",
+    "path": "After the target dates end: one approved outcome download from the Hypotheses page (Outcome data) or a newer kept package, imported explicitly from the publication date, then the assessment approval.",
+    "plain": "A freeze on 2026-09-15 would score from 2026-09-16; the 1-, 5- and 20-observation targets are expected on 2026-09-17, 2026-09-23, 2026-10-15 (SIFMA calendar: expected, not measured). Outcome data for a target can exist only after its date ends, so their absence never blocks a freeze.",
+    "state": "not_due",
+    "targets": {
+     "1": {
+      "counts_after": "2026-09-17T23:59:59-04:00",
+      "expected_target": "2026-09-17"
+     },
+     "20": {
+      "counts_after": "2026-10-15T23:59:59-04:00",
+      "expected_target": "2026-10-15"
+     },
+     "5": {
+      "counts_after": "2026-09-23T23:59:59-04:00",
+      "expected_target": "2026-09-23"
+     }
+    }
+   },
+   "plain": "A baseline must classify 2026-09-14, the last expected session before 2026-09-15; no snapshot of this provider is in the store.",
+   "provider": {
+    "connection": "Connected through one explicitly approved, keyless download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval). The kept package is then validated and imported into the store, locally; reads never download.",
+    "freeze_path": "Freeze on the Hypotheses page (baseline, preview, one approval), or a manual draft with the freeze-draft command.",
+    "id": "board-h15",
+    "name": "Federal Reserve Board H.15 release package",
+    "outcome_path": "After the target dates end: one approved outcome download from the Hypotheses page (Outcome data) or a newer kept package, imported explicitly from the publication date, then the assessment approval.",
+    "series_id": "RIFLGFCY02_N.B"
+   },
+   "registry": {
+    "anchor_policy": "daily_ny_date",
+    "measurement": "yield_bp",
+    "source": "board-h15:RIFLGFCY02_N.B",
+    "unit": "bp"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "Its observations are dated, not timed (the daily date convention), so a research-usage leg on it is recorded as unavailable: research requires verified observation timestamps."
+    ]
+   },
+   "retained": {
+    "newest_classified_date": null,
+    "newest_in_snapshot": null,
+    "packages": [
+     {
+      "coverage": {
+       "first": "2025-01-02",
+       "last": "2026-09-11"
+      },
+      "imported_as": [],
+      "package_id": "p20260914T120000000000Z-251648c7fa95",
+      "reaches_required_session": false,
+      "received_at": "2026-09-14T12:00:01.000000+00:00",
+      "received_before_now": true,
+      "status": "accepted"
+     }
+    ],
+    "snapshots": []
+   },
+   "status": "needs_baseline"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No snapshot of this provider is in the store."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "source_bound",
+   "label": "10-year Treasury yield (Board H.15)",
+   "next_action": "Wait until 2026-09-15 16:15 New York time before downloading (the Board posts the H.15 release on business days at 4:15 p.m. New York time, with values through the previous business day): 2026-09-14 can appear no earlier than that release, and a download before then returns data through an earlier session. Then approve one download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval), and validate and import it locally.",
+   "observable_id": "yield:ust10y_cmt_h15",
+   "outcome": {
+    "blocks_freeze": false,
+    "expected_score_anchor": "2026-09-16",
+    "freeze_date_new_york": "2026-09-15",
+    "path": "After the target dates end: one approved outcome download from the Hypotheses page (Outcome data) or a newer kept package, imported explicitly from the publication date, then the assessment approval.",
+    "plain": "A freeze on 2026-09-15 would score from 2026-09-16; the 1-, 5- and 20-observation targets are expected on 2026-09-17, 2026-09-23, 2026-10-15 (SIFMA calendar: expected, not measured). Outcome data for a target can exist only after its date ends, so their absence never blocks a freeze.",
+    "state": "not_due",
+    "targets": {
+     "1": {
+      "counts_after": "2026-09-17T23:59:59-04:00",
+      "expected_target": "2026-09-17"
+     },
+     "20": {
+      "counts_after": "2026-10-15T23:59:59-04:00",
+      "expected_target": "2026-10-15"
+     },
+     "5": {
+      "counts_after": "2026-09-23T23:59:59-04:00",
+      "expected_target": "2026-09-23"
+     }
+    }
+   },
+   "plain": "A baseline must classify 2026-09-14, the last expected session before 2026-09-15; no snapshot of this provider is in the store.",
+   "provider": {
+    "connection": "Connected through one explicitly approved, keyless download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval). The kept package is then validated and imported into the store, locally; reads never download.",
+    "freeze_path": "Freeze on the Hypotheses page (baseline, preview, one approval), or a manual draft with the freeze-draft command.",
+    "id": "board-h15",
+    "name": "Federal Reserve Board H.15 release package",
+    "outcome_path": "After the target dates end: one approved outcome download from the Hypotheses page (Outcome data) or a newer kept package, imported explicitly from the publication date, then the assessment approval.",
+    "series_id": "RIFLGFCY10_N.B"
+   },
+   "registry": {
+    "anchor_policy": "daily_ny_date",
+    "measurement": "yield_bp",
+    "source": "board-h15:RIFLGFCY10_N.B",
+    "unit": "bp"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "Its observations are dated, not timed (the daily date convention), so a research-usage leg on it is recorded as unavailable: research requires verified observation timestamps."
+    ]
+   },
+   "retained": {
+    "newest_classified_date": null,
+    "newest_in_snapshot": null,
+    "packages": [
+     {
+      "coverage": {
+       "first": "2025-01-02",
+       "last": "2026-09-11"
+      },
+      "imported_as": [],
+      "package_id": "p20260914T120000000000Z-251648c7fa95",
+      "reaches_required_session": false,
+      "received_at": "2026-09-14T12:00:01.000000+00:00",
+      "received_before_now": true,
+      "status": "accepted"
+     }
+    ],
+    "snapshots": []
+   },
+   "status": "needs_baseline"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "US equities, any ticker",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "us_equity:<TICKER>",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project. It would also need observed regular-session close times, a session calendar and the SPY benchmark for its market model.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "us_regular_session",
+    "benchmark": "us_etf:SPY",
+    "measurement": "market_model",
+    "requires_contract": false,
+    "source": null,
+    "unit": "% AR"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  },
+  {
+   "freeze": {
+    "baselines": [],
+    "blockers": [
+     "No provider series is bound to it: no baseline can be bound, and no observation after a freeze would ever be supplied, so every leg on it would be recorded as unavailable."
+    ],
+    "ready": false,
+    "scorable_horizons": []
+   },
+   "kind": "concept_only",
+   "label": "US exchange-traded funds, any ticker",
+   "next_action": "Owner decision: bind a provider series under a new source-bound registry ID (an adapter, an approved acquisition and the source's terms checked). A concept ID is never re-pointed to another series.",
+   "observable_id": "us_etf:<TICKER>",
+   "outcome": null,
+   "plain": "Registry concept only: no provider is connected. No data for it are held anywhere in the project. It would also need observed regular-session close times, a session calendar and the SPY benchmark for its market model.",
+   "provider": null,
+   "registry": {
+    "anchor_policy": "us_regular_session",
+    "benchmark": "us_etf:SPY",
+    "measurement": "market_model",
+    "requires_contract": false,
+    "source": null,
+    "unit": "% AR"
+   },
+   "research": {
+    "eligible": false,
+    "reasons": [
+     "No provider supplies it, so a research leg on it could never be measured."
+    ]
+   },
+   "retained": {},
+   "status": "concept_only"
+  }
+ ],
+ "provenance": {
+  "calendar": {
+   "calendar": "SIFMAUS",
+   "exceptions_version": "1",
+   "library": "pandas_market_calendars",
+   "library_version": "5.4.0"
+  },
+  "checked_at": "2026-09-15T19:00:00+00:00",
+  "fixture": "demo-market.json",
+  "freshness_policy": "freshness-b-1",
+  "package_problems": [],
+  "required_session_rule": "Freshness policy B: the baseline must classify the last expected SIFMA session dated before the publication date.",
+  "rules": {
+   "hash": "a9692f0a5c0715d810370de6e2b9b269c54e9e7f8f0673c861fb70634eada7c6",
+   "min_windows": 120,
+   "version": "0.5.0"
+  },
+  "today_new_york": "2026-09-15"
+ },
+ "provider_called": false,
+ "providers": [
+  {
+   "action": "Wait until 2026-09-15 16:15 New York time before downloading (the Board posts the H.15 release on business days at 4:15 p.m. New York time, with values through the previous business day): 2026-09-14 can appear no earlier than that release, and a download before then returns data through an earlier session. Then approve one download of the Board's H.15 release package (Market context, on a server started with --enable-market-retrieval), and validate and import it locally.",
+   "baselines": [],
+   "composition": "A hypothesis on this provider needs at least two distinct observables of it and cannot mix providers; this provider has 2: 2-year Treasury yield (Board H.15), 10-year Treasury yield (Board H.15).",
+   "name": "Federal Reserve Board H.15 release package",
+   "observables": [
+    "2-year Treasury yield (Board H.15)",
+    "10-year Treasury yield (Board H.15)"
+   ],
+   "provider": "board-h15",
+   "scorable_horizons": {
+    "yield:ust10y_cmt_h15": [],
+    "yield:ust2y_cmt_h15": []
+   },
+   "status": "needs_baseline"
+  },
+  {
+   "action": "Run `python -m second_order market import --db <store> --start <YYYY-MM-DD>`: an explicit network request that needs FRED_API_KEY and your approval, with a start early enough for the reference windows the rules require.",
+   "baselines": [],
+   "composition": "A hypothesis on this provider needs at least two distinct observables of it and cannot mix providers; this provider has 2: 2-year Treasury yield (FRED DGS2), 10-year Treasury yield (FRED DGS10).",
+   "name": "FRED (Federal Reserve Bank of St. Louis API)",
+   "observables": [
+    "2-year Treasury yield (FRED DGS2)",
+    "10-year Treasury yield (FRED DGS10)"
+   ],
+   "provider": "fred",
+   "scorable_horizons": {
+    "yield:ust10y_cmt": [],
+    "yield:ust2y_cmt": []
+   },
+   "status": "needs_baseline"
+  }
+ ],
+ "published_date": "2026-09-15",
+ "readiness_version": "research-readiness-0.2",
+ "required_session": "2026-09-14",
+ "required_session_ended": true,
+ "research": {
+  "decisions": [
+   "Record a start timestamp and an allowed source list in INCLUSION.md and commit the rule before any research hypothesis (owner decision).",
+   "Decide how dated-only observations meet the research timestamp gate: connect a source with verified observation times, or adopt a new rules version that defines a separate daily-date research class. Neither is made here."
+  ],
+  "inclusion_status": "research intake has not started.",
+  "measurable_observables": [],
+  "plain": "Not possible now. INCLUSION.md: research intake has not started. The freeze-draft command and the Hypotheses page freeze prospective showcase drafts only; the general freeze command stores any valid hypothesis, but a research-usage leg on a dated-only observable is recorded as unavailable. The 4 connected observables are dated, not timed (the daily date convention): a research-usage leg on them is recorded as unavailable, because research requires verified observation timestamps. The 8 registry concepts have no provider, so a research leg on them could never be measured.",
+  "reasons": [
+   "INCLUSION.md: research intake has not started.",
+   "The freeze-draft command and the Hypotheses page freeze prospective showcase drafts only; the general freeze command stores any valid hypothesis, but a research-usage leg on a dated-only observable is recorded as unavailable.",
+   "The 4 connected observables are dated, not timed (the daily date convention): a research-usage leg on them is recorded as unavailable, because research requires verified observation timestamps.",
+   "The 8 registry concepts have no provider, so a research leg on them could never be measured."
+  ]
+ },
+ "store": {
+  "assessments": false,
+  "detail": "No store exists at the configured path yet. Importing a baseline creates it (schema 4).",
+  "exists": false,
+  "interface_freezes": false,
+  "schema": null
+ },
+ "written": false
+}

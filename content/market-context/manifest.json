@@ -1,0 +1,77 @@
+{
+  "bundle_version": "market-context-0.1",
+  "preparation_version": "market-context-prep-0.1",
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "release": "H.15 Selected Interest Rates",
+    "release_url": "https://www.federalreserve.gov/releases/h15/",
+    "data_download_url": "https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H15",
+    "help_url": "https://www.federalreserve.gov/datadownload/help/default.htm",
+    "crosswalk_url": "https://www.federalreserve.gov/data/documents/DDP-FRED%20Data%20Series%20Crosswalk.csv",
+    "underlying_source": "U.S. Treasury"
+  },
+  "terms": {
+    "url": "https://www.federalreserve.gov/disclaimer.htm",
+    "statement": "Unless otherwise indicated, information on Board's website is in the public domain and may be copied and distributed without permission. Please cite to the Board as the source of the information."
+  },
+  "series": {
+    "RIFLGFCY02_N.B": {
+      "id": "RIFLGFCY02_N.B",
+      "unique_identifier": "H15/H15/RIFLGFCY02_N.B",
+      "label": "2-year Treasury yield",
+      "short_label": "2-year",
+      "description": "Market yield on U.S. Treasury securities at 2-year   constant maturity, quoted on investment basis",
+      "unit": "Percent:_Per_Year",
+      "units_label": "Percent per year",
+      "multiplier": "1",
+      "currency": "NA",
+      "frequency": "Business day",
+      "fred_equivalent": "DGS2",
+      "fred_page": "https://fred.stlouisfed.org/series/DGS2",
+      "citation": "Board of Governors of the Federal Reserve System, H.15 Selected Interest Rates: Market yield on U.S. Treasury securities at 2-year constant maturity, quoted on investment basis [H15/H15/RIFLGFCY02_N.B], source U.S. Treasury; Data Download Program, https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H15, retrieved October 7, 2026 (UTC)."
+    },
+    "RIFLGFCY10_N.B": {
+      "id": "RIFLGFCY10_N.B",
+      "unique_identifier": "H15/H15/RIFLGFCY10_N.B",
+      "label": "10-year Treasury yield",
+      "short_label": "10-year",
+      "description": "Market yield on U.S. Treasury securities at 10-year   constant maturity, quoted on investment basis",
+      "unit": "Percent:_Per_Year",
+      "units_label": "Percent per year",
+      "multiplier": "1",
+      "currency": "NA",
+      "frequency": "Business day",
+      "fred_equivalent": "DGS10",
+      "fred_page": "https://fred.stlouisfed.org/series/DGS10",
+      "citation": "Board of Governors of the Federal Reserve System, H.15 Selected Interest Rates: Market yield on U.S. Treasury securities at 10-year constant maturity, quoted on investment basis [H15/H15/RIFLGFCY10_N.B], source U.S. Treasury; Data Download Program, https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H15, retrieved October 7, 2026 (UTC)."
+    }
+  },
+  "acquisition": {
+    "method": "Downloaded with curl on 2026-10-07 (UTC): one keyless HTTPS GET per case window, five seconds apart, from the Federal Reserve Board's Data Download Program direct-download address for a package of exactly the two H.15 series, built once in the Program's Build-your-package pages. No API key, cookies or FRED request were used. A reply was kept only if it was a non-empty text/csv with HTTP status 200; earlier trial and aborted requests, including two that received an empty text/html reply, were discarded, and the files kept come from one complete run.",
+    "tool": "curl 8.21.0 (Windows) libcurl/8.21.0 Schannel zlib/1.3.2 WinIDN WinLDAP",
+    "record": "sources/acquisition.json",
+    "record_sha256": "0885e87d3c2cf0ea88dc5bc4dfc58c52df6f3b89f0772520b537e3ae01af9b99",
+    "vintage": null,
+    "vintage_note": "No vintage was requested, and the Data Download Program offers none: its help page says data are only available as currently published and that pre-revision or real-time data are not available. These are the Board's values when retrieved, which may differ from those available on the publication date; whether any of them was revised is not known from this download."
+  },
+  "calendar": {
+    "calendar": "SIFMAUS",
+    "library": "pandas_market_calendars",
+    "library_version": "5.4.0",
+    "exceptions_version": "1"
+  },
+  "contexts": {
+    "fomc-2025-03-19": {
+      "view": "fomc-2025-03-19.json",
+      "view_sha256": "78845ca056cdea8299307807fb85cfcf03d1bfd0b9720755172475f8af7d29fb"
+    },
+    "empsit-2025-07-03": {
+      "view": "empsit-2025-07-03.json",
+      "view_sha256": "87f6f6630930b9bdcd990a46dd56bd2a490de34c5f878267f20126ca26f64d7f"
+    },
+    "cpi-2025-07-15": {
+      "view": "cpi-2025-07-15.json",
+      "view_sha256": "395d74dcd3ff196a75696bfb9860457f79b639ab1b8da10865deebb1e97f1aa7"
+    }
+  }
+}

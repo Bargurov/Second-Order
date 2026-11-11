@@ -1,0 +1,1530 @@
+{
+ "about": "The five outcomes of the fresh-news update update-2cce9eb0659988bc (28 October 2026) as regression fixtures, copied from the saved records by data/local-checks/econ-fidelity/make_fixtures.py. Real cases, not SYNTHETIC: our saved model replies and brief versions exactly; of the sources, the US Census Bureau and VOA feed excerpts whole and, of the European Commission and ECB publications, only the passages the saved figures quote. They never enter research scores.",
+ "cases": {
+  "homes": {
+   "story_id": "story-5bd27c5173d2a182",
+   "version": 1,
+   "published": true,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:1",
+        "figure:f3"
+       ],
+       "kind": "competing_explanation",
+       "text": "The small decline may be sampling noise rather than a real change, since the stated margin of error is far larger than the change itself."
+      },
+      {
+       "basis": [
+        "fact:2"
+       ],
+       "kind": "offsetting_force",
+       "text": "The revised August estimate may have moved a lot, so the September level could reflect a high base rather than a trend; the excerpt does not explain the +5.1 figure."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "a1: The excerpt's figures match the full release, which was not read."
+      },
+      {
+       "id": "a2",
+       "text": "a2: The seasonally adjusted annual rate is a fair guide to underlying new-home demand."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "figure:f1",
+       "figure:f2",
+       "figure:f3"
+      ],
+      "instrument": "official_statistic",
+      "stage": "observation",
+      "text": "The Census Bureau's feed excerpt reports new single-family house sales at {f1} in September 2026, {f3} from the revised August estimate of {f2}; the change is within the stated margin of error."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "Sales pace roughly steady month to month in the estimate, though uncertainty is wide.",
+         "kind": "industry",
+         "name": "New single-family home builders"
+        }
+       ],
+       "assumptions": [
+        "a1",
+        "a2"
+       ],
+       "basis": [
+        "fact:1",
+        "figure:f1",
+        "figure:f2",
+        "figure:f3"
+       ],
+       "conditions": "Holds only if later revisions leave the level near the current estimate.",
+       "horizon": "months",
+       "id": "m1",
+       "note": "official-statistics",
+       "scope": "micro",
+       "steps": [
+        "Sales estimate changes little from revised August",
+        "Margin of error exceeds the change",
+        "Revisions may alter the picture"
+       ],
+       "support": "framework",
+       "text": "The statistic could suggest new-home sales were roughly flat, but because the stated margin of error is much larger than the change, it may be indistinguishable from no change and later revisions could alter it."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "676,000 houses",
+       "id": "f1",
+       "label": "September 2026 new home sales",
+       "measure": "level",
+       "period": "September 2026",
+       "price": false,
+       "quote": "Sales of new single-family houses in September 2026 were at a seasonally adjusted annual rate of 676,000.",
+       "seasonal": "seasonally_adjusted",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:census-indicators:e61567d1e0916ed62457",
+       "statistic": "observed",
+       "stock_flow": "flow_annual_rate",
+       "unit": "houses",
+       "value": 676000,
+       "vintage": {
+        "label": "September 2026 estimate",
+        "published": "2026-10-27T14:00:00+00:00",
+        "source": "U.S. Census Bureau"
+       }
+      },
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "680,000 houses",
+       "id": "f2",
+       "label": "Revised August 2026 new home sales",
+       "measure": "level",
+       "period": "August 2026",
+       "price": false,
+       "quote": "below the revised August 2026 estimate of 680,000",
+       "seasonal": "seasonally_adjusted",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:census-indicators:e61567d1e0916ed62457",
+       "statistic": "observed",
+       "stock_flow": "flow_annual_rate",
+       "unit": "houses",
+       "value": 680000,
+       "vintage": {
+        "label": "revised August 2026 estimate",
+        "published": "2026-10-27T14:00:00+00:00",
+        "source": "U.S. Census Bureau"
+       }
+      },
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "consistent",
+       "display": "−0.6%",
+       "id": "f3",
+       "label": "Change in sales, September vs August 2026",
+       "measure": "change",
+       "period": "September 2026 vs August 2026",
+       "price": false,
+       "quote": "This is 0.6 percent (+/- 13.8%)* below the revised August 2026 estimate",
+       "seasonal": "seasonally_adjusted",
+       "sign": "from_words",
+       "sign_words": "below",
+       "source": "report:census-indicators:e61567d1e0916ed62457",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": -0.6,
+       "vintage": {
+        "label": "September 2026 estimate",
+        "published": "2026-10-27T14:00:00+00:00",
+        "source": "U.S. Census Bureau"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {
+       "official-statistics": "d97a6bcbe439aec5d35ec1158a60225d76a7b9eacf5b549931f26ee8e727bafa"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "official-statistics": {
+        "applies_to": [
+         "official_statistic"
+        ],
+        "id": "official-statistics",
+        "limits": "The sources describe US practice; other statistical offices publish their own vintages, adjustments and measures of sampling error.",
+        "mechanism": "Official estimates come in vintages: an early estimate built on incomplete data is revised as more data arrive, sometimes years later. Many come from samples and carry sampling error: a reported change whose confidence interval includes zero is not statistically different from no change. A change measured in current prices can reflect prices, quantities or both, so real, inflation-adjusted measures are kept apart from nominal ones. Seasonal adjustment removes recurring patterns within the year so that consecutive months or quarters can be compared, and monthly or quarterly figures are often shown at annual rates. Levels and growth rates answer different questions and are compared only like with like.",
+        "scope": "macro",
+        "sources": [
+         {
+          "publisher": "U.S. Bureau of Economic Analysis",
+          "title": "Measuring the Economy: A Primer on GDP and the National Income and Product Accounts",
+          "url": "https://www.bea.gov/resources/methodologies/measuring-the-economy",
+          "year": 2015
+         },
+         {
+          "publisher": "U.S. Census Bureau",
+          "title": "Time Series and Seasonal Adjustment",
+          "url": "https://www.census.gov/topics/research/seasonal-adjustment.html",
+          "year": null
+         },
+         {
+          "publisher": "U.S. Census Bureau",
+          "title": "New Residential Construction, explanatory notes (September 2026 release)",
+          "url": "https://www.census.gov/construction/nrc/pdf/newresconst.pdf",
+          "year": 2026
+         }
+        ],
+        "title": "Reading an official statistic"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the small change is real given the wide margin of error and possible revisions.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "figure:f1",
+       "figure:f3"
+      ],
+      "text": "New-home sales are a gauge of housing demand. Here the {f3} change sits well inside the stated margin of error, so the report may signal little change rather than a turn."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "Revisions to the September estimate in the next release",
+       "text": "A large revision would show how much weight the estimate can bear.",
+       "would": "weaken"
+      },
+      {
+       "observable": "Next month's new-home sales relative to the current level",
+       "text": "Sales staying near the current level would support a steady reading.",
+       "would": "support"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "census-indicators:e61567d1e0916ed62457"
+      ],
+      "text": "The U.S. Census Bureau's excerpt says September 2026 sales of new single-family houses were at a seasonally adjusted annual rate of 676,000, 0.6 percent (+/- 13.8%)* below the revised August 2026 estimate of 680,000."
+     },
+     {
+      "reports": [
+       "census-indicators:e61567d1e0916ed62457"
+      ],
+      "text": "The excerpt also shows August 2026 (r) at +5.1* percent change, without stating the comparison base. The asterisk is not explained in the excerpt."
+     }
+    ],
+    "headline": "Census: new home sales at 676,000 annual rate in September, 0.6% below revised August",
+    "implications": [
+     {
+      "text": "The small change, within the stated margin of error, might mean new-home demand was broadly steady rather than shifting."
+     },
+     {
+      "text": "Later revisions could change the reading, as August itself was revised."
+     },
+     {
+      "text": "Without prices, inventory or regional detail, the figure may say little about builders' conditions."
+     }
+    ],
+    "missing": [
+     "The full release text, including the explanation of the asterisk and statistical significance",
+     "Regional breakdown of sales",
+     "Median and average new home prices",
+     "Months' supply and inventory of new homes for sale",
+     "Revisions to earlier months and what the +5.1% August figure compares against"
+    ],
+    "summary": "The U.S. Census Bureau's feed excerpt says September 2026 sales of new single-family houses were at a seasonally adjusted annual rate of 676,000, 0.6 percent below the revised August estimate of 680,000. The excerpt gives a margin of error of 13.8 percent. Only the headline and excerpt were read, not the full release.",
+    "themes": [
+     {
+      "basis": "The report concerns sales of new single-family houses.",
+      "kind": "sector",
+      "name": "New single-family housing"
+     },
+     {
+      "basis": "The report is a seasonally adjusted annual-rate sales estimate from the Census Bureau.",
+      "kind": "theme",
+      "name": "Housing market activity"
+     }
+    ],
+    "uncertainties": [
+     "The full release was not read; only the headline and excerpt.",
+     "The change is within the stated margin of error.",
+     "The excerpt shows a +5.1 percent figure for August without stating its comparison base.",
+     "The asterisk is not explained in the excerpt.",
+     "Prices, inventories and regional detail are not in the excerpt."
+    ]
+   },
+   "reports": [
+    {
+     "entry_id": "census-indicators:e61567d1e0916ed62457",
+     "publisher": "U.S. Census Bureau",
+     "title": "New Home Sales",
+     "excerpt": "Sales of new single-family houses in September 2026 were at a seasonally adjusted annual rate of 676,000. This is 0.6 percent (+/- 13.8%)* below the revised August 2026 estimate of 680,000. September 2026: -0.6* % Change August 2026 (r): +5.1* % Change",
+     "link": "https://www.census.gov/construction/nrs/",
+     "published": "Tue, 27 Oct 2026 10:00:00 -0400",
+     "published_utc": "2026-10-27T14:00:00+00:00",
+     "text": null
+    }
+   ],
+   "released_at": "2026-10-27T14:00:00+00:00"
+  },
+  "durables": {
+   "story_id": "story-c277e2950831f737",
+   "version": 1,
+   "published": true,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:1",
+        "fact:2",
+        "report:census-indicators:4d10898c5e6adb2ddfd1"
+       ],
+       "kind": "competing_explanation",
+       "text": "The rise could reflect a few large, volatile orders, such as transportation equipment, rather than broad demand; the excerpt gives no industry detail to tell."
+      },
+      {
+       "basis": [
+        "fact:2",
+        "figure:f3"
+       ],
+       "kind": "offsetting_force",
+       "text": "Advance figures are revised, and the small August gain shows that monthly changes can fade or be altered, which could offset the signal from September."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "a1: The figures are the Census Bureau's advance estimates and may be revised."
+      },
+      {
+       "id": "a2",
+       "text": "a2: The excerpt's orders figures are nominal, and the price basis is not stated."
+      },
+      {
+       "id": "a3",
+       "text": "a3: Orders are read as a signal of demand for manufactured durable goods, not of actual production."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "figure:f1"
+      ],
+      "instrument": "official_statistic",
+      "stage": "observation",
+      "text": "The Census Bureau's advance estimate, as given in its feed excerpt, shows new orders for manufactured durable goods rising {f1} in September, to a level of {f2}, after a smaller revised gain in August."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "Higher new orders could point to firmer demand and a larger order book.",
+         "kind": "industry",
+         "name": "Durable goods manufacturers"
+        },
+        {
+         "how": "Orders for capital goods may later mean more production and hiring.",
+         "kind": "workers",
+         "name": "Manufacturing workers"
+        }
+       ],
+       "assumptions": [
+        "a1",
+        "a3"
+       ],
+       "basis": [
+        "fact:1",
+        "figure:f1",
+        "figure:f2"
+       ],
+       "conditions": "If the increase holds after revision and is not driven by a few large orders.",
+       "horizon": "months",
+       "id": "m1",
+       "note": "official-statistics",
+       "scope": "macro",
+       "steps": [
+        "Orders rise in September",
+        "Firms may lift output or draw on backlogs",
+        "Shipments and employment could follow"
+       ],
+       "support": "bounded_inference",
+       "text": "Rising durable goods orders may signal stronger demand for manufactured goods, which could later show up in shipments, production and hiring if the orders turn into deliveries."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "consistent",
+       "display": "1.8%",
+       "id": "f1",
+       "label": "September 2026 durable goods new orders, percent change",
+       "measure": "growth_rate",
+       "period": "September 2026",
+       "price": false,
+       "quote": "increased $6.3 billion or 1.8 percent to $345.4 billion",
+       "seasonal": "not_stated",
+       "sign": "from_words",
+       "sign_words": "increased",
+       "source": "report:census-indicators:4d10898c5e6adb2ddfd1",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 1.8,
+       "vintage": {
+        "label": "advance",
+        "published": "2026-10-27T12:30:00+00:00",
+        "source": "U.S. Census Bureau"
+       }
+      },
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "as_quoted",
+       "display": "345.4 billion dollars",
+       "id": "f2",
+       "label": "September 2026 durable goods new orders level",
+       "measure": "level",
+       "period": "September 2026",
+       "price": false,
+       "quote": "increased $6.3 billion or 1.8 percent to $345.4 billion",
+       "seasonal": "not_stated",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:census-indicators:4d10898c5e6adb2ddfd1",
+       "statistic": "observed",
+       "stock_flow": "flow_per_month",
+       "unit": "billion dollars",
+       "value": 345.4,
+       "vintage": {
+        "label": "advance",
+        "published": "2026-10-27T12:30:00+00:00",
+        "source": "U.S. Census Bureau"
+       }
+      },
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "as_quoted",
+       "display": "0.1%",
+       "id": "f3",
+       "label": "August 2026 durable goods new orders, percent change (revised)",
+       "measure": "growth_rate",
+       "period": "August 2026",
+       "price": false,
+       "quote": "August 2026 (r): +0.1° % Change",
+       "seasonal": "not_stated",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:census-indicators:4d10898c5e6adb2ddfd1",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 0.1,
+       "vintage": {
+        "label": "revised",
+        "published": "2026-10-27T12:30:00+00:00",
+        "source": "U.S. Census Bureau"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {
+       "official-statistics": "d97a6bcbe439aec5d35ec1158a60225d76a7b9eacf5b549931f26ee8e727bafa"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "official-statistics": {
+        "applies_to": [
+         "official_statistic"
+        ],
+        "id": "official-statistics",
+        "limits": "The sources describe US practice; other statistical offices publish their own vintages, adjustments and measures of sampling error.",
+        "mechanism": "Official estimates come in vintages: an early estimate built on incomplete data is revised as more data arrive, sometimes years later. Many come from samples and carry sampling error: a reported change whose confidence interval includes zero is not statistically different from no change. A change measured in current prices can reflect prices, quantities or both, so real, inflation-adjusted measures are kept apart from nominal ones. Seasonal adjustment removes recurring patterns within the year so that consecutive months or quarters can be compared, and monthly or quarterly figures are often shown at annual rates. Levels and growth rates answer different questions and are compared only like with like.",
+        "scope": "macro",
+        "sources": [
+         {
+          "publisher": "U.S. Bureau of Economic Analysis",
+          "title": "Measuring the Economy: A Primer on GDP and the National Income and Product Accounts",
+          "url": "https://www.bea.gov/resources/methodologies/measuring-the-economy",
+          "year": 2015
+         },
+         {
+          "publisher": "U.S. Census Bureau",
+          "title": "Time Series and Seasonal Adjustment",
+          "url": "https://www.census.gov/topics/research/seasonal-adjustment.html",
+          "year": null
+         },
+         {
+          "publisher": "U.S. Census Bureau",
+          "title": "New Residential Construction, explanatory notes (September 2026 release)",
+          "url": "https://www.census.gov/construction/nrc/pdf/newresconst.pdf",
+          "year": 2026
+         }
+        ],
+        "title": "Reading an official statistic"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the rise is broad-based or driven by a few volatile categories, and whether it holds after revision.",
+     "second_order": [
+      {
+       "assumptions": [
+        "a3"
+       ],
+       "basis": [
+        "fact:1",
+        "figure:f1"
+       ],
+       "conditions": "If orders convert to deliveries and the demand is sustained.",
+       "from": "m1",
+       "horizon": "quarters",
+       "id": "s1",
+       "text": "Sustained orders might encourage firms to add capacity or inventories, supporting suppliers."
+      }
+     ],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "figure:f1",
+       "figure:f2",
+       "figure:f3"
+      ],
+      "text": "Durable goods orders are a forward-looking indicator of manufacturing demand; a {f1} rise to {f2} after a {f3} revised gain in August may point to strengthening demand."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "Revision of September orders in the next release",
+       "text": "A confirmed gain would support the reading.",
+       "would": "support"
+      },
+      {
+       "observable": "Orders excluding transportation",
+       "text": "A weak figure would suggest a narrow rise.",
+       "would": "weaken"
+      },
+      {
+       "observable": "Manufacturers' shipments in coming months",
+       "text": "Rising shipments would suggest orders turning into output.",
+       "would": "support"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "census-indicators:4d10898c5e6adb2ddfd1"
+      ],
+      "text": "The U.S. Census Bureau's feed excerpt says new orders for manufactured durable goods in September, up six of the last seven months, increased $6.3 billion or 1.8 percent to $345.4 billion."
+     },
+     {
+      "reports": [
+       "census-indicators:4d10898c5e6adb2ddfd1"
+      ],
+      "text": "The excerpt shows a September 2026 change of +1.8 percent and a revised (r) August 2026 change of +0.1 percent."
+     }
+    ],
+    "headline": "Census Bureau: September durable goods new orders rise 1.8% to $345.4 billion",
+    "implications": [
+     {
+      "text": "The rise could suggest firmer demand for durable goods, if it survives revision."
+     },
+     {
+      "text": "Orders might later turn into higher shipments and output if they are filled."
+     },
+     {
+      "text": "The gain could be narrow, since the excerpt gives no industry breakdown."
+     }
+    ],
+    "missing": [
+     "Full release text, including shipments and inventories",
+     "Seasonal adjustment and price basis of the figures",
+     "Breakdown by industry and transportation equipment",
+     "Excluding-transportation order figures",
+     "Reasons for the September increase"
+    ],
+    "summary": "The U.S. Census Bureau's feed excerpt says new orders for manufactured durable goods in September, up six of the last seven months, rose $6.3 billion or 1.8 percent to $345.4 billion. It shows a revised August change of +0.1 percent. Only the headline and excerpt were read, not the full release.",
+    "themes": [
+     {
+      "basis": "Excerpt reports durable goods new orders rising 1.8 percent in September.",
+      "kind": "sector",
+      "name": "Durable goods manufacturing"
+     },
+     {
+      "basis": "Headline names manufacturers' shipments, inventories and orders; the excerpt gives only new orders.",
+      "kind": "theme",
+      "name": "Manufacturing orders"
+     }
+    ],
+    "uncertainties": [
+     "Shipments and inventories were not in the excerpt.",
+     "The seasonal adjustment and price basis are not stated.",
+     "There is no industry or transportation breakdown.",
+     "The reasons for the increase are not given.",
+     "This is an advance estimate and could be revised."
+    ]
+   },
+   "reports": [
+    {
+     "entry_id": "census-indicators:4d10898c5e6adb2ddfd1",
+     "publisher": "U.S. Census Bureau",
+     "title": "Advance Monthly Manufacturers' Shipments, Inventories, and Orders",
+     "excerpt": "New orders for manufactured durable goods in September, up six of the last seven months, increased $6.3 billion or 1.8 percent to $345.4 billion. September 2026: +1.8° % Change August 2026 (r): +0.1° % Change",
+     "link": "https://www.census.gov/manufacturing/m3/",
+     "published": "Tue, 27 Oct 2026 08:30:00 -0400",
+     "published_utc": "2026-10-27T12:30:00+00:00",
+     "text": null
+    }
+   ],
+   "released_at": "2026-10-27T12:30:00+00:00"
+  },
+  "climate": {
+   "story_id": "story-576be69cd6ff21f8",
+   "first_stage": "brief-s1-56600c43f0cf385a",
+   "second_stage": "brief-s2-3d543f378cf56601",
+   "stage_versions": [
+    "brief-evidence-1",
+    "brief-explanation-1"
+   ],
+   "first": {
+    "stages_version": "brief-stages-0.1",
+    "facts": [
+     {
+      "text": "The European Commission presented an EU Framework for Climate Resilience on 27 Oct 2026, with a proposed Climate Resilience Law that sets a common global warming reference trajectory (1.5C by 2030, 2C by 2050, 3C by 2100).",
+      "reports": [
+       "ec-press:5a28471070ac9857ecaa"
+      ]
+     },
+     {
+      "text": "The Commission says one single national strategic plan will replace separate national planning obligations, and it presents new digital tools: the European Climate Viewer, the Navigator of Climate Resilience Tools and the Solutions Explorer.",
+      "reports": [
+       "ec-press:5a28471070ac9857ecaa",
+       "ec-press:7be45892974652807bd0"
+      ]
+     },
+     {
+      "text": "The Commission estimates climate damage losses of about €200 billion in 2022-2025 (€50 billion a year) and adaptation investment needs of about €70 billion a year, with returns that can exceed 10 times the investment.",
+      "reports": [
+       "ec-press:5a28471070ac9857ecaa",
+       "ec-press:7be45892974652807bd0"
+      ]
+     },
+     {
+      "text": "A European Heatwave Plan, a Climate Insurance Alliance, a European Water initiative and identification of the 100 most vulnerable territories are to be presented separately; a strategic plan is due in 2028.",
+      "reports": [
+       "ec-press:5a28471070ac9857ecaa",
+       "ec-press:3ef0e9c1e40fc57fcfdf"
+      ]
+     },
+     {
+      "text": "Commissioner Hoekstra said only a quarter of catastrophe losses are covered by private insurance, that roughly €30 billion is earmarked for climate resilience in the current MFF, and that many elements will only be delivered in 2027.",
+      "reports": [
+       "ec-press:3ef0e9c1e40fc57fcfdf"
+      ]
+     },
+     {
+      "text": "The Commission says measures will be funded within the existing budgetary framework, Member States keep flexibility on measures, and the EIB Group plans at least €30 billion for climate resilience by 2030.",
+      "reports": [
+       "ec-press:7be45892974652807bd0"
+      ]
+     }
+    ],
+    "themes": [
+     {
+      "kind": "sector",
+      "name": "Insurance",
+      "basis": "Climate Insurance Alliance to close the insurance gap; only a quarter or one euro in five of losses insured (reports 3ef0e9c1e40fc57fcfdf, 7be45892974652807bd0)."
+     },
+     {
+      "kind": "theme",
+      "name": "Climate adaptation and competitiveness",
+      "basis": "Framework treats resilience as a condition of competitiveness; adaptation market projected at €3.5 trillion by 2050 (report 5a28471070ac9857ecaa)."
+     },
+     {
+      "kind": "sector",
+      "name": "Water",
+      "basis": "Water Resilience Strategy, European Water initiative, drought and low river levels (reports 3ef0e9c1e40fc57fcfdf, 7be45892974652807bd0)."
+     },
+     {
+      "kind": "sector",
+      "name": "Energy",
+      "basis": "Q&A cites energy security and grids strained by heatwaves and low rivers (report 7be45892974652807bd0)."
+     },
+     {
+      "kind": "company",
+      "name": "European Investment Bank",
+      "basis": "EIB plans at least €30 billion for adaptation by 2030; EU budget MFF earmarks (reports 3ef0e9c1e40fc57fcfdf, 7be45892974652807bd0)."
+     }
+    ],
+    "missing": [
+     "Legal text, adoption timeline and Parliament and Council approval of the proposed Climate Resilience Law",
+     "Budget and funding source for the measures beyond existing frameworks",
+     "Method behind loss and investment estimates",
+     "Details of the Insurance Alliance, Heatwave Plan and Water initiative",
+     "Factsheet contents (only its headline and excerpt were available)"
+    ],
+    "status": "explained",
+    "reason": null,
+    "change": {
+     "stage": "proposal",
+     "instrument": "other",
+     "text": "The Commission proposed an EU Climate Resilience Framework including a Climate Resilience Law, which sets a common warming trajectory and a single national plan. It cites estimated climate losses of {f1} a year and adaptation investment needs of {f2} a year.",
+     "basis": [
+      "fact:2",
+      "fact:3",
+      "report:ec-press:5a28471070ac9857ecaa",
+      "figure:f1",
+      "figure:f2"
+     ]
+    },
+    "figures": [
+     {
+      "id": "f1",
+      "label": "Annual climate damage losses 2022-2025",
+      "value": 50,
+      "unit": "EUR billion",
+      "measure": "level",
+      "period": "2022-2025, per year",
+      "basis": "nominal",
+      "seasonal": "not_applicable",
+      "price": false,
+      "source": "report:ec-press:5a28471070ac9857ecaa",
+      "quote": "approximately €200 billion, or €50 billion per year",
+      "vintage_label": null,
+      "sign": "as_quoted",
+      "sign_words": null,
+      "bound": "approximate",
+      "statistic": "not_stated",
+      "stock_flow": "flow_per_year"
+     },
+     {
+      "id": "f2",
+      "label": "Annual EU adaptation investment need",
+      "value": 70,
+      "unit": "EUR billion",
+      "measure": "level",
+      "period": "per year",
+      "basis": "nominal",
+      "seasonal": "not_applicable",
+      "price": false,
+      "source": "report:ec-press:5a28471070ac9857ecaa",
+      "quote": "investment of around €70 billion per year",
+      "vintage_label": null,
+      "sign": "as_quoted",
+      "sign_words": null,
+      "bound": "approximate",
+      "statistic": "not_stated",
+      "stock_flow": "flow_per_year"
+     }
+    ],
+    "calculations": [],
+    "checked": {
+     "change": {
+      "stage": "proposal",
+      "instrument": "other",
+      "text": "The Commission proposed an EU Climate Resilience Framework including a Climate Resilience Law, which sets a common warming trajectory and a single national plan. It cites estimated climate losses of {f1} a year and adaptation investment needs of {f2} a year.",
+      "basis": [
+       "fact:2",
+       "fact:3",
+       "report:ec-press:5a28471070ac9857ecaa",
+       "figure:f1",
+       "figure:f2"
+      ]
+     },
+     "figures": [
+      {
+       "id": "f1",
+       "label": "Annual climate damage losses 2022-2025",
+       "value": 50,
+       "decimals": 0,
+       "unit": "EUR billion",
+       "measure": "level",
+       "period": "2022-2025, per year",
+       "basis": "nominal",
+       "seasonal": "not_applicable",
+       "price": false,
+       "source": "report:ec-press:5a28471070ac9857ecaa",
+       "quote": "approximately €200 billion, or €50 billion per year",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "direction_check": "as_quoted",
+       "bound": "approximate",
+       "statistic": "not_stated",
+       "stock_flow": "flow_per_year",
+       "vintage": {
+        "source": "European Commission",
+        "published": "2026-10-26T23:00:00+00:00",
+        "label": null
+       },
+       "display": "about 50 EUR billion"
+      },
+      {
+       "id": "f2",
+       "label": "Annual EU adaptation investment need",
+       "value": 70,
+       "decimals": 0,
+       "unit": "EUR billion",
+       "measure": "level",
+       "period": "per year",
+       "basis": "nominal",
+       "seasonal": "not_applicable",
+       "price": false,
+       "source": "report:ec-press:5a28471070ac9857ecaa",
+       "quote": "investment of around €70 billion per year",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "direction_check": "as_quoted",
+       "bound": "approximate",
+       "statistic": "not_stated",
+       "stock_flow": "flow_per_year",
+       "vintage": {
+        "source": "European Commission",
+        "published": "2026-10-26T23:00:00+00:00",
+        "label": null
+       },
+       "display": "about 70 EUR billion"
+      }
+     ],
+     "calculations": []
+    },
+    "draft_id": "brief-s1-56600c43f0cf385a",
+    "request_sha256": "56600c43f0cf385aef6997c33404080164e57d0f0739ee660f5db097881dde1a",
+    "stage_version": "brief-evidence-1"
+   },
+   "reply": {
+    "alternatives": [
+     {
+      "basis": [
+       "fact:6",
+       "fact:5"
+      ],
+      "kind": "offsetting_force",
+      "text": "Because measures are to be funded within the existing budgetary framework and many elements arrive only in 2027, the framework may add little new financing against the stated investment need."
+     },
+     {
+      "basis": [
+       "fact:2",
+       "fact:1"
+      ],
+      "kind": "competing_explanation",
+      "text": "The main effect may be administrative simplification and shared planning rather than additional investment, since Member States keep flexibility on which measures to adopt."
+     }
+    ],
+    "assumptions": [
+     "a1: The Commission's loss and investment estimates are accurate enough to guide decisions; their method is not stated in the material.",
+     "a2: The proposed law is adopted broadly as presented, which depends on Parliament and Council."
+    ],
+    "channels": [
+     {
+      "affected": [
+       {
+        "how": "Must publish a single national plan and assess risks against a common warming trajectory.",
+        "kind": "government",
+        "name": "Member State authorities"
+       },
+       {
+        "how": "May factor climate risk into infrastructure and investment choices.",
+        "kind": "firms",
+        "name": "Businesses"
+       }
+      ],
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "fact:3",
+       "figure:f1",
+       "figure:f2",
+       "assumption:a2"
+      ],
+      "conditions": "If the Climate Resilience Law is adopted and authorities use the common trajectory in decisions.",
+      "horizon": "years",
+      "note": "",
+      "scope": "macro",
+      "steps": [
+       "A common warming trajectory sets a shared baseline for risk assessment.",
+       "Planning in one national plan lowers duplication.",
+       "Risk-informed decisions may reduce avoidable losses."
+      ],
+      "support": "event_evidence",
+      "text": "A common warming trajectory and single national plan could embed climate risk in public planning and investment, which might reduce avoidable losses of the kind the Commission puts at {f1} a year against an adaptation need of {f2} a year."
+     },
+     {
+      "affected": [
+       {
+        "how": "May gain from measures to close the insurance gap.",
+        "kind": "households",
+        "name": "Uninsured households and farms"
+       },
+       {
+        "how": "Could face less pressure as insurer of last resort.",
+        "kind": "government",
+        "name": "Public budgets"
+       }
+      ],
+      "basis": [
+       "fact:4",
+       "fact:5",
+       "assumption:a1"
+      ],
+      "conditions": "If the Climate Insurance Alliance produces workable measures; its details are not yet published.",
+      "horizon": "years",
+      "note": "",
+      "scope": "micro",
+      "steps": [
+       "The Alliance is to explore ways to raise insurance uptake.",
+       "Wider cover may shift losses from public budgets to insurers.",
+       "Prevention incentives may lower exposure."
+      ],
+      "support": "event_evidence",
+      "text": "A Climate Insurance Alliance could raise insurance cover, since only a quarter of catastrophe losses are privately insured, and might ease pressure on public budgets."
+     }
+    ],
+    "headline": "Commission proposes EU Climate Resilience Framework and law with a common warming trajectory and single national plan",
+    "implications": [
+     "A shared warming trajectory might make climate risk a routine input to public planning and investment decisions across Member States.",
+     "If insurance and private capital measures take shape, they could help close the stated protection gap and reduce strain on public budgets.",
+     "Because funding is to stay within existing frameworks, the scale of new adaptation investment may depend on the EIB, national budgets and private capital."
+    ],
+    "insufficient_explanation": "",
+    "main_uncertainty": "Whether the proposed law is adopted and mobilises investment beyond existing budgets.",
+    "second_order": [
+     {
+      "basis": [
+       "fact:3",
+       "fact:6",
+       "assumption:a2"
+      ],
+      "conditions": "If public planning signals clear demand and policy direction.",
+      "from": "m1",
+      "horizon": "years",
+      "text": "Clearer policy direction could support a market for climate resilience products and services, which the Commission projects to grow strongly."
+     }
+    ],
+    "significance": "The Commission treats climate losses as a structural cost and proposes a legal framework, so adaptation could become a regular part of public and private investment planning.",
+    "significance_basis": [
+     "fact:1",
+     "fact:3",
+     "figure:f1",
+     "figure:f2"
+    ],
+    "summary": "The European Commission, in its own publications, presented an EU Framework for Climate Resilience including a proposed Climate Resilience Law with a common warming trajectory and a single national plan. It cites estimated climate losses of {f1} a year and adaptation needs of {f2} a year. Further measures, such as a Heatwave Plan and Insurance Alliance, are to follow; the factsheet was not read.",
+    "uncertainties": [
+     "Adoption timeline and Parliament and Council approval of the proposed law are not stated.",
+     "Funding beyond existing budgetary frameworks is unclear.",
+     "The method behind the loss and investment estimates is not given.",
+     "Details of the Insurance Alliance, Heatwave Plan and Water initiative are still to come.",
+     "Only the headline and excerpt of the factsheet were available."
+    ],
+    "watch": [
+     {
+      "observable": "Parliament and Council positions on the Climate Resilience Law",
+      "text": "Adoption close to the proposal would support the reading that a common trajectory becomes binding.",
+      "would": "support"
+     },
+     {
+      "observable": "Publication of the Climate Insurance Alliance measures",
+      "text": "Concrete insurance measures would support the insurance channel; delay would weaken it.",
+      "would": "support"
+     },
+     {
+      "observable": "New funding beyond the existing budgetary framework",
+      "text": "Absence of new funding would weaken the case for large added investment.",
+      "would": "weaken"
+     }
+    ]
+   },
+   "reports": [
+    {
+     "entry_id": "ec-press:3ef0e9c1e40fc57fcfdf",
+     "publisher": "European Commission",
+     "title": "Remarks by Executive Vice-President Ribera and Commissioner Hoekstra at the press conference on the EU framework for climate resilience",
+     "excerpt": null,
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_2264",
+     "published": "Mon, 26 Oct 2026 23:00:00 GMT",
+     "published_utc": "2026-10-26T23:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the saved figures quote are kept here."
+    },
+    {
+     "entry_id": "ec-press:5a28471070ac9857ecaa",
+     "publisher": "European Commission",
+     "title": "Commission presents Climate Resilience Framework for a better prepared and protected Europe",
+     "excerpt": "approximately €200 billion, or €50 billion per year\ninvestment of around €70 billion per year",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2244",
+     "published": "Mon, 26 Oct 2026 23:00:00 GMT",
+     "published_utc": "2026-10-26T23:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the saved figures quote are kept here."
+    },
+    {
+     "entry_id": "ec-press:7be45892974652807bd0",
+     "publisher": "European Commission",
+     "title": "Questions and answers on the EU Climate Resilience Framework",
+     "excerpt": "approximately €200 billion, or €50 billion per year",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/qanda_26_2245",
+     "published": "Mon, 26 Oct 2026 23:00:00 GMT",
+     "published_utc": "2026-10-26T23:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the saved figures quote are kept here."
+    },
+    {
+     "entry_id": "ec-press:a7a337fca431dfc71ed6",
+     "publisher": "European Commission",
+     "title": "Factsheet - EU Framework for Climate Resilience",
+     "excerpt": null,
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/fs_26_2246",
+     "published": "Mon, 26 Oct 2026 23:00:00 GMT",
+     "published_utc": "2026-10-26T23:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the saved figures quote are kept here."
+    }
+   ],
+   "released_at": "2026-10-26T23:00:00+00:00",
+   "outcome": "recorded",
+   "outcome_detail": "A brief version with its economic explanation was saved for the editors to check; it is not published.",
+   "saved_findings": [
+    {
+     "detail": "A brief's text states what was reported in words; figures are shown by name only in the explanation.",
+     "matched": "{f1}",
+     "rule": "placeholder_in_brief",
+     "where": "summary"
+    }
+   ],
+   "correction_passages": {
+    "about": "The whole sentences around the saved figures' quotes, copied from the retained Commission texts on 2026-10-28 for the assisted correction of the summary (docs/news-econ-form-subject-2026-10-28.md (private; not in the public repository)). Real, not SYNTHETIC.",
+    "ec-press:5a28471070ac9857ecaa": [
+     "Estimated economic losses from climate damages from 2022-2025 stood at approximately €200 billion, or €50 billion per year.",
+     "Adapting Europe's infrastructure and economy to future climatic conditions is expected to require investment of around €70 billion per year."
+    ],
+    "ec-press:7be45892974652807bd0": [
+     "Estimated annual EU investment needs for climate resilience and adaptation around €70 billion per year.",
+     "On 22 October, complementing today's Framework, the European Investment Bank Group presented its Climate Adaptation plan doubling its financing on climate resilience to at least €30 billion by 2030."
+    ]
+   }
+  },
+  "ecb": {
+   "story_id": "story-e87eb471b880be69",
+   "first_stage": "brief-s1-816372df82dfd3d1",
+   "second_stage": "brief-s2-b1aad6a106f07f46",
+   "stage_versions": [
+    "brief-evidence-1",
+    "brief-explanation-1"
+   ],
+   "first": {
+    "stages_version": "brief-stages-0.1",
+    "facts": [
+     {
+      "text": "The ECB's October 2026 bank lending survey reports a further net tightening of credit standards for firms (net 9% of banks) and consumer credit (14%) in Q3 2026, with unchanged standards for housing loans (0%). Higher risk perceptions were the main driver.",
+      "reports": [
+       "ecb-press:d1af0e9e9c8b89b7bcd7"
+      ]
+     },
+     {
+      "text": "Banks reported a net decrease in loan demand in Q3 2026: firms -6%, housing -27% (-15% in Q2), consumer credit -2%. Interest rates were the main driver. For Q4 banks expect housing -36%, consumer credit -14%, firms -1%.",
+      "reports": [
+       "ecb-press:d1af0e9e9c8b89b7bcd7"
+      ]
+     },
+     {
+      "text": "Several banks expect a gradual but sustained rise in loan demand to finance AI digital infrastructure, particularly data centres. Most banks have not yet set specific quantitative criteria for AI-related lending.",
+      "reports": [
+       "ecb-press:d1af0e9e9c8b89b7bcd7"
+      ]
+     },
+     {
+      "text": "Banks' access to retail funding deteriorated further; the ECB says the deterioration, though still moderate, was the largest since the series began in 2011. Banks expect access to funding to deteriorate further. The survey covered 159 banks, with a 100% response rate.",
+      "reports": [
+       "ecb-press:d1af0e9e9c8b89b7bcd7"
+      ]
+     }
+    ],
+    "themes": [
+     {
+      "kind": "sector",
+      "name": "Euro area banking and credit",
+      "basis": "Banks report tighter credit standards and falling loan demand."
+     },
+     {
+      "kind": "sector",
+      "name": "Housing finance",
+      "basis": "Housing loan demand fell sharply, driven by interest rates."
+     },
+     {
+      "kind": "theme",
+      "name": "AI infrastructure lending",
+      "basis": "Banks expect rising demand for loans to finance data centres."
+     },
+     {
+      "kind": "theme",
+      "name": "Bank funding and ECB balance sheet",
+      "basis": "Access to retail funding deteriorated; the ECB asset portfolio reduction had a mildly negative effect."
+     }
+    ],
+    "missing": [
+     "Euro area country breakdowns, which are in the charts but not given in the text",
+     "Net percentages for Q2 credit standards for comparison",
+     "Actual lending volumes",
+     "Size of AI-related lending",
+     "The ECB policy rate path behind the interest rate effects"
+    ],
+    "status": "explained",
+    "reason": null,
+    "change": {
+     "stage": "observation",
+     "instrument": "official_statistic",
+     "text": "In the ECB's October 2026 survey, euro area banks reported a further net tightening of credit standards for firms ({f1}) and a net decline in demand for firm loans ({f2}) and for housing loans ({f3}) in Q3 2026, with higher interest rates the main driver of lower demand.",
+     "basis": [
+      "fact:1",
+      "fact:2",
+      "fact:3",
+      "figure:f1",
+      "figure:f2",
+      "figure:f3"
+     ]
+    },
+    "figures": [
+     {
+      "id": "f1",
+      "label": "Net tightening of credit standards for firms, Q3 2026",
+      "value": 9,
+      "unit": "percent",
+      "measure": "share",
+      "period": "Q3 2026",
+      "basis": "not_applicable",
+      "seasonal": "not_applicable",
+      "price": false,
+      "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+      "quote": "net percentage of 9% of banks",
+      "vintage_label": "October 2026 survey",
+      "sign": "as_quoted",
+      "sign_words": null,
+      "bound": "exact",
+      "statistic": "other_summary",
+      "stock_flow": "not_applicable"
+     },
+     {
+      "id": "f2",
+      "label": "Net demand for loans to firms, Q3 2026",
+      "value": -6,
+      "unit": "percent",
+      "measure": "share",
+      "period": "Q3 2026",
+      "basis": "not_applicable",
+      "seasonal": "not_applicable",
+      "price": false,
+      "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+      "quote": "net percentage of -6%",
+      "vintage_label": "October 2026 survey",
+      "sign": "as_quoted",
+      "sign_words": null,
+      "bound": "exact",
+      "statistic": "other_summary",
+      "stock_flow": "not_applicable"
+     },
+     {
+      "id": "f3",
+      "label": "Net demand for housing loans, Q3 2026",
+      "value": -27,
+      "unit": "percent",
+      "measure": "share",
+      "period": "Q3 2026",
+      "basis": "not_applicable",
+      "seasonal": "not_applicable",
+      "price": false,
+      "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+      "quote": "net percentage of -27%",
+      "vintage_label": "October 2026 survey",
+      "sign": "as_quoted",
+      "sign_words": null,
+      "bound": "exact",
+      "statistic": "other_summary",
+      "stock_flow": "not_applicable"
+     }
+    ],
+    "calculations": [],
+    "checked": {
+     "change": {
+      "stage": "observation",
+      "instrument": "official_statistic",
+      "text": "In the ECB's October 2026 survey, euro area banks reported a further net tightening of credit standards for firms ({f1}) and a net decline in demand for firm loans ({f2}) and for housing loans ({f3}) in Q3 2026, with higher interest rates the main driver of lower demand.",
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "fact:3",
+       "figure:f1",
+       "figure:f2",
+       "figure:f3"
+      ]
+     },
+     "figures": [
+      {
+       "id": "f1",
+       "label": "Net tightening of credit standards for firms, Q3 2026",
+       "value": 9,
+       "decimals": 0,
+       "unit": "percent",
+       "measure": "share",
+       "period": "Q3 2026",
+       "basis": "not_applicable",
+       "seasonal": "not_applicable",
+       "price": false,
+       "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+       "quote": "net percentage of 9% of banks",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "direction_check": "as_quoted",
+       "bound": "exact",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "vintage": {
+        "source": "European Central Bank",
+        "published": "2026-10-27T00:00:00+00:00",
+        "label": "October 2026 survey"
+       },
+       "display": "9%"
+      },
+      {
+       "id": "f2",
+       "label": "Net demand for loans to firms, Q3 2026",
+       "value": -6,
+       "decimals": 0,
+       "unit": "percent",
+       "measure": "share",
+       "period": "Q3 2026",
+       "basis": "not_applicable",
+       "seasonal": "not_applicable",
+       "price": false,
+       "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+       "quote": "net percentage of -6%",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "direction_check": "as_quoted",
+       "bound": "exact",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "vintage": {
+        "source": "European Central Bank",
+        "published": "2026-10-27T00:00:00+00:00",
+        "label": "October 2026 survey"
+       },
+       "display": "−6%"
+      },
+      {
+       "id": "f3",
+       "label": "Net demand for housing loans, Q3 2026",
+       "value": -27,
+       "decimals": 0,
+       "unit": "percent",
+       "measure": "share",
+       "period": "Q3 2026",
+       "basis": "not_applicable",
+       "seasonal": "not_applicable",
+       "price": false,
+       "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+       "quote": "net percentage of -27%",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "direction_check": "as_quoted",
+       "bound": "exact",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "vintage": {
+        "source": "European Central Bank",
+        "published": "2026-10-27T00:00:00+00:00",
+        "label": "October 2026 survey"
+       },
+       "display": "−27%"
+      }
+     ],
+     "calculations": []
+    },
+    "draft_id": "brief-s1-816372df82dfd3d1",
+    "request_sha256": "816372df82dfd3d1f0f68fbed3114c6fb04ad14a45654b03c5c0d567e6be86bc",
+    "stage_version": "brief-evidence-1"
+   },
+   "reply": {
+    "alternatives": [
+     {
+      "basis": [
+       "fact:2",
+       "report:ecb-press:d1af0e9e9c8b89b7bcd7"
+      ],
+      "kind": "competing_explanation",
+      "text": "Weaker demand may reflect falling consumer confidence and housing prospects as well as interest rates; the survey names these as further factors for housing and consumer credit."
+     },
+     {
+      "basis": [
+       "fact:3",
+       "report:ecb-press:d1af0e9e9c8b89b7bcd7"
+      ],
+      "kind": "offsetting_force",
+      "text": "Expected demand for loans to finance AI infrastructure, and for inventories and working capital, may partly offset weaker firm loan demand."
+     }
+    ],
+    "assumptions": [
+     "a1: Survey net percentages reflect banks' own assessments, not measured lending volumes.",
+     "a2: Banks' stated drivers are taken as their own reports, not as established causes."
+    ],
+    "channels": [
+     {
+      "affected": [
+       {
+        "how": "May face stricter approval criteria and weaker credit access.",
+        "kind": "firms",
+        "name": "Euro area borrowing firms"
+       },
+       {
+        "how": "May face tighter terms and more rejections, especially for consumer credit.",
+        "kind": "households",
+        "name": "Household borrowers"
+       }
+      ],
+      "basis": [
+       "fact:1",
+       "figure:f1",
+       "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+       "assumption:a1"
+      ],
+      "conditions": "If tighter standards, higher rejection rates and tighter terms persist as banks expect for Q4.",
+      "horizon": "quarters",
+      "note": "credit-conditions",
+      "scope": "macro",
+      "steps": [
+       "Banks report higher risk perceptions and lower risk tolerance",
+       "Credit standards and terms tighten",
+       "Some borrowers may postpone spending"
+      ],
+      "support": "event_evidence",
+      "text": "Tighter credit standards ({f1}) and tighter terms may restrict borrowers' access to bank finance, which could lead some firms and households to delay investment or purchases.\n"
+     },
+     {
+      "affected": [
+       {
+        "how": "Housing loan demand fell strongly, with banks expecting a further decline.",
+        "kind": "households",
+        "name": "Prospective home buyers"
+       },
+       {
+        "how": "Weaker firm loan demand may signal subdued investment.",
+        "kind": "firms",
+        "name": "Firms"
+       }
+      ],
+      "basis": [
+       "fact:2",
+       "figure:f2",
+       "figure:f3",
+       "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+       "assumption:a2"
+      ],
+      "conditions": "If interest rates stay high and consumer confidence stays low.",
+      "horizon": "quarters",
+      "note": "monetary-transmission",
+      "scope": "macro",
+      "steps": [
+       "Higher interest rates reach loan pricing",
+       "Borrowers demand fewer loans",
+       "Housing and firm credit demand declines ({f2}, {f3})"
+      ],
+      "support": "event_evidence",
+      "text": "Banks say higher interest rates were the main driver of lower loan demand, which would be consistent with policy rates passing through to financing conditions and weighing on credit-financed spending.\n"
+     }
+    ],
+    "headline": "ECB survey: euro area banks tighten credit standards further as loan demand falls",
+    "implications": [
+     "Tighter standards and falling demand could weigh on credit-financed investment and housing activity if they persist.",
+     "Expected AI infrastructure lending may become a growing part of firm credit demand, though its size is not given.",
+     "Weaker retail funding access could limit banks' lending capacity if the deterioration continues."
+    ],
+    "insufficient_explanation": "",
+    "main_uncertainty": "Whether tighter credit is mainly supply-driven or reflects weaker demand, and how long high interest rates persist.",
+    "second_order": [
+     {
+      "basis": [
+       "fact:2",
+       "figure:f3",
+       "assumption:a2"
+      ],
+      "conditions": "If housing loan demand declines further as banks expect.",
+      "from": "m2",
+      "horizon": "quarters",
+      "text": "Weaker housing credit demand might weigh on housing market activity and consumer confidence."
+     }
+    ],
+    "significance": "The survey indicates tighter credit supply alongside falling demand, which may constrain borrowing and spending in the euro area, though it measures bank reports rather than lending volumes.",
+    "significance_basis": [
+     "fact:1",
+     "fact:2",
+     "figure:f1",
+     "figure:f2",
+     "figure:f3"
+    ],
+    "summary": "The ECB's October 2026 bank lending survey reports a further net tightening of credit standards for firms ({f1}) and for consumer credit in Q3 2026, with housing standards unchanged. Banks reported falling demand for firm loans ({f2}) and housing loans ({f3}), mainly because of higher interest rates. Banks also expect rising demand for AI infrastructure loans.",
+    "uncertainties": [
+     "Country breakdowns are in the charts but not in the text.",
+     "Actual lending volumes are not reported.",
+     "The size of AI-related lending is not given.",
+     "The policy rate path behind the interest rate effects is not stated.",
+     "Banks' Q4 expectations may not materialise."
+    ],
+    "watch": [
+     {
+      "observable": "Next ECB bank lending survey results for credit standards and loan demand",
+      "text": "Whether the tightening and demand declines continue as banks expect.",
+      "would": "support"
+     },
+     {
+      "observable": "Banks' reports of AI-related lending criteria and data centre loan demand",
+      "text": "Whether AI infrastructure lending grows and offsets weaker demand.",
+      "would": "weaken"
+     }
+    ]
+   },
+   "reports": [
+    {
+     "entry_id": "ecb-press:d1af0e9e9c8b89b7bcd7",
+     "publisher": "European Central Bank",
+     "title": "October 2026 euro area bank lending survey",
+     "excerpt": "net percentage of 9% of banks\nnet percentage of -6%\nnet percentage of -27%",
+     "link": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.pr261027~506ef03145.en.html",
+     "published": "Tue, 27 Oct 2026 01:00:00 +0100",
+     "published_utc": "2026-10-27T00:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the saved figures quote are kept here."
+    }
+   ],
+   "released_at": "2026-10-27T00:00:00+00:00",
+   "outcome": "invalid",
+   "outcome_detail": "Channel 1: the mechanism “Firms' access to finance” applies to credit or financing conditions, monetary policy, not to an official statistic."
+  },
+  "undp": {
+   "story_id": "story-f6863fe5b8a4e7e6",
+   "first_stage": "brief-s1-bd032fb22204ad0f",
+   "stage_version": "brief-evidence-1",
+   "reply": {
+    "calculations": [],
+    "change_basis": [
+     "report:voa-news:b133a55cd862129ce923",
+     "fact:1",
+     "fact:2",
+     "figure:f1"
+    ],
+    "change_instrument": "other",
+    "change_stage": "observation",
+    "change_text": "UNDP in Afghanistan said that the large-scale return of Afghans, about {f1} between 2023 and 2025, has added pressure on jobs, essential services and infrastructure. This rests only on a headline and feed excerpt.",
+    "facts": [
+     {
+      "reports": [
+       "voa-news:b133a55cd862129ce923"
+      ],
+      "text": "Voice of America reports that the UN Development Program in Afghanistan said in a Tuesday post on X that the large-scale return of Afghans has added \"pressure on jobs, essential services and infrastructure.\""
+     },
+     {
+      "reports": [
+       "voa-news:b133a55cd862129ce923"
+      ],
+      "text": "Voice of America reports that UNDP says about 4.9 million Afghans returned to the country between 2023 and 2025."
+     }
+    ],
+    "figures": [
+     {
+      "basis": "not_applicable",
+      "bound": "approximate",
+      "label": "Afghans returned 2023-2025",
+      "measure": "level",
+      "period": "2023 to 2025",
+      "price": false,
+      "quote": "between 2023 and 2025, about 4.9 million Afghans returned to the country",
+      "seasonal": "not_applicable",
+      "sign_words": "",
+      "source": "report:voa-news:b133a55cd862129ce923",
+      "statistic": "not_stated",
+      "stock_flow": "not_applicable",
+      "unit": "people",
+      "value": 4900000,
+      "vintage_label": ""
+     }
+    ],
+    "insufficient_evidence": "",
+    "insufficient_material": "",
+    "missing": [
+     "Full text of the UNDP post or any UNDP report behind it",
+     "Quantified economic effects such as unemployment, wages, prices or service capacity",
+     "Where returnees came from and how many were forced returns",
+     "Regional or sectoral breakdown of the strain",
+     "Policy responses or funding to address it"
+    ],
+    "themes": [
+     {
+      "basis": "Excerpt cites pressure on jobs from returns.",
+      "kind": "theme",
+      "name": "Labour market pressure"
+     },
+     {
+      "basis": "Excerpt cites pressure on essential services and infrastructure.",
+      "kind": "sector",
+      "name": "Public services and infrastructure"
+     },
+     {
+      "basis": "Headline and excerpt: large-scale return of Afghans, about 4.9 million in 2023-2025.",
+      "kind": "theme",
+      "name": "Refugee returns and Afghan economy"
+     }
+    ]
+   },
+   "reports": [
+    {
+     "entry_id": "voa-news:b133a55cd862129ce923",
+     "publisher": "Voice of America",
+     "title": "UN: Large-scale return of Afghan refugees strains Afghan economy",
+     "excerpt": "The United Nations Development Program in Afghanistan said Tuesday in a post on X that the large-scale return of Afghans has added “pressure on jobs, essential services and infrastructure.” UNDP adds that between 2023 and 2025, about 4.9 million Afghans returned to the country.",
+     "link": "https://www.voanews.com/a/un-large-scale-return-of-afghan-refugees-strains-afghan-economy/8215803.html",
+     "published": "Tue, 27 Oct 2026 17:14:33 -0400",
+     "published_utc": "2026-10-27T21:14:33+00:00",
+     "text": null
+    }
+   ],
+   "released_at": "2026-10-27T21:14:33+00:00",
+   "outcome_detail": "Figure 1's quote does not hold its value (4900000)."
+  }
+ }
+}

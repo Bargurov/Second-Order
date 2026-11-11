@@ -1,0 +1,715 @@
+{
+ "comparisons": [
+  {
+   "evidence": null,
+   "id": "october-2023-revision",
+   "kind": "stated_change",
+   "observation": null,
+   "problems": [
+    "Advanced computing and chip-making equipment rules: the retained source is not on this machine.",
+    "Updates to the October 2022 rules: the retained source is not on this machine."
+   ],
+   "publications": [
+    "ac-sme-rules-2022",
+    "ac-sme-updates-2023"
+   ],
+   "question": "Does the October 2023 package present itself as a change from the October 2022 rules?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  },
+  {
+   "evidence": null,
+   "id": "april-2024-clarification",
+   "kind": "instrument",
+   "observation": null,
+   "problems": [
+    "Updates to the October 2022 rules: the retained source is not on this machine.",
+    "Clarifications of the October 2023 rules: the retained source is not on this machine.",
+    "Equipment, design software and memory controls: the retained source is not on this machine."
+   ],
+   "publications": [
+    "ac-sme-updates-2023",
+    "clarifications-2024",
+    "sme-hbm-2024"
+   ],
+   "question": "Is the April 2024 rule a new set of controls or a clarification of existing ones?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  },
+  {
+   "evidence": null,
+   "id": "announced-rescission",
+   "kind": "stated_change",
+   "observation": null,
+   "problems": [
+    "Framework for advanced chips and AI model weights: the retained source is not on this machine.",
+    "Announced rescission of the January 2025 framework: the retained source is not on this machine."
+   ],
+   "publications": [
+    "ai-diffusion-2025",
+    "ai-diffusion-rescission-2025"
+   ],
+   "question": "Did the May 2025 release end the January 2025 framework, and when?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  },
+  {
+   "evidence": null,
+   "id": "case-by-case-and-denial",
+   "kind": "non_equivalent",
+   "observation": null,
+   "problems": [
+    "Updates to the October 2022 rules: the retained source is not on this machine.",
+    "Framework for advanced chips and AI model weights: the retained source is not on this machine.",
+    "Case-by-case review for certain advanced chips to China: the retained source is not on this machine."
+   ],
+   "publications": [
+    "ac-sme-updates-2023",
+    "ai-diffusion-2025",
+    "license-review-2026"
+   ],
+   "question": "Does the January 2026 case-by-case policy reverse the earlier presumption of denial?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  },
+  {
+   "evidence": null,
+   "id": "veu-two-subjects",
+   "kind": "different_subjects",
+   "observation": null,
+   "problems": [
+    "Validated End User program extended to data centers: the retained source is not on this machine.",
+    "Framework for advanced chips and AI model weights: the retained source is not on this machine.",
+    "VEU authorizations ended for foreign-owned fabs in China: the retained source is not on this machine."
+   ],
+   "publications": [
+    "data-center-veu-2024",
+    "ai-diffusion-2025",
+    "fab-veu-2025"
+   ],
+   "question": "Do the 2024 and 2025 Validated End User releases concern the same authorizations?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  },
+  {
+   "evidence": null,
+   "id": "ion-implanters",
+   "kind": "instrument",
+   "observation": null,
+   "problems": [
+    "Equipment, design software and memory controls: the retained source is not on this machine.",
+    "Applied Materials penalty over ion implanters: the retained source is not on this machine."
+   ],
+   "publications": [
+    "sme-hbm-2024",
+    "applied-penalty-2026"
+   ],
+   "question": "Does the Applied Materials penalty enforce the December 2024 equipment controls?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  },
+  {
+   "evidence": null,
+   "id": "which-date",
+   "kind": "dates",
+   "observation": null,
+   "problems": [
+    "Advanced computing and chip-making equipment rules: the retained source is not on this machine.",
+    "Equipment, design software and memory controls: the retained source is not on this machine.",
+    "Framework for advanced chips and AI model weights: the retained source is not on this machine.",
+    "Announced rescission of the January 2025 framework: the retained source is not on this machine.",
+    "Case-by-case review for certain advanced chips to China: the retained source is not on this machine."
+   ],
+   "publications": [
+    "ac-sme-rules-2022",
+    "sme-hbm-2024",
+    "ai-diffusion-2025",
+    "ai-diffusion-rescission-2025",
+    "license-review-2026"
+   ],
+   "question": "Which date belongs to each publication, and how precise is it?",
+   "state": "unavailable",
+   "unknown": null,
+   "why": null,
+   "would_establish": null
+  }
+ ],
+ "corpus_notes": [
+  "All ten are press releases by BIS: one publisher's account of its own actions. Several BIS releases are not independent corroboration of one another.",
+  "Each text is the one BIS's News & Updates listing embedded on the retrieval date. Two were also checked against separately retained release pages; the others are labelled as listing text.",
+  "BIS's site records later changes to most of these pages, so the wording at first release is not established.",
+  "The rule texts, Federal Register documents and other linked documents were not retained. “Not stated in this source” describes the retained text only: the matter may be settled in a document not read here."
+ ],
+ "counts": {
+  "comparisons": {
+   "available": 0,
+   "needs_revalidation": 0,
+   "unavailable": 7
+  },
+  "publications": {
+   "changed": 0,
+   "missing": 10,
+   "verified": 0
+  }
+ },
+ "id": "semiconductor-policy",
+ "labels": {
+  "comparison_kinds": {
+   "dates": "Which date, how precise",
+   "different_subjects": "One name, two subjects",
+   "instrument": "Rule, clarification or enforcement",
+   "non_equivalent": "Alike, not shown to be the same",
+   "stated_change": "A change the source states"
+  },
+  "comparison_states": {
+   "available": "Checked against the retained sources",
+   "needs_revalidation": "Needs revalidation: a source changed",
+   "unavailable": "Unavailable: a source is not on this machine"
+  },
+  "date_kinds": {
+   "comment_deadline": "Comments due",
+   "compliance": "Compliance date",
+   "conduct": "Conduct",
+   "designation": "Placed on the Entity List",
+   "effective": "Takes effect",
+   "issued": "Issued, as stated",
+   "license_deadline": "Licenses needed"
+  },
+  "dimensions": {
+   "conditions": "Exceptions, thresholds and conditions",
+   "instrument": "Instrument",
+   "parties": "Jurisdictions, actors and end uses",
+   "relation": "Stated relation to earlier publications",
+   "scope": "Technology or product scope",
+   "supply_chain": "Supply-chain stages named",
+   "timing": "Announcement and effective dates"
+  },
+  "listing_fields": {
+   "changed": "CMS last change",
+   "created": "CMS creation time",
+   "published": "BIS listing time"
+  },
+  "precisions": {
+   "day": "Day",
+   "relative": "Relative to another date",
+   "year": "Year only"
+  },
+  "publication_states": {
+   "changed": "The retained source differs from the version this was written against",
+   "missing": "The retained source is not on this machine",
+   "verified": "Checked against the retained source on this machine"
+  },
+  "stages": {
+   "ai_models": "AI models",
+   "chips": "Advanced computing chips",
+   "computing_systems": "Supercomputers and data centers",
+   "design_software": "Chip-design software",
+   "equipment": "Chip-making equipment",
+   "fabrication": "Chip fabrication",
+   "memory": "Memory"
+  },
+  "statuses": {
+   "interpretation": "Curator interpretation",
+   "not_stated": "Not stated in this source",
+   "referenced_unread": "In a linked document not retained",
+   "stated": "Publisher statement"
+  }
+ },
+ "method_note": "The releases were chosen by reading the records that the snapshot's semiconductor keyword filter matched; the filter is a word list, not a classification, and it also matches unrelated releases. Every statement below is tied to quoted text; supply-chain stages are the curator's reading of the items each release names.",
+ "not_claimed": [
+  "That any release caused a change in trade, prices, production or company results.",
+  "That the January 2026 policy repealed or reversed an earlier rule.",
+  "That the AI Diffusion Rule was formally rescinded on any particular date.",
+  "That policy stayed the same between two selected releases.",
+  "That the selection describes the complete or current set of rules.",
+  "That several BIS releases corroborate one another.",
+  "Any legal, compliance, investment or trading conclusion."
+ ],
+ "not_included": [
+  {
+   "case": null,
+   "listed": "2022-08-12T10:59:27+00:00",
+   "reason": "Multilateral controls on materials and chip-design software. Relevant, but the October 2022 release mentions it only as background, and no comparison here rests on it.",
+   "state": "missing",
+   "title": "Commerce Implements New Multilateral Controls on Advanced Semiconductor and Gas Turbine Engine Technologies",
+   "url": "https://www.bis.gov/press-release/commerce-implements-new-multilateral-controls-advanced-semiconductor-gas-turbine-engine-technologies"
+  },
+  {
+   "case": null,
+   "listed": "2023-10-13T16:00:00+00:00",
+   "reason": "VEU authorizations for two Korean companies' fabs in the PRC. The August 2025 release refers to a 2023 VEU expansion without naming it; linking the two would be an inference the texts do not make.",
+   "state": "missing",
+   "title": "Commerce Issues Rule to Strengthen National Security Partnership to Secure Semiconductor Supply Chains with Republic of Korea",
+   "url": "https://www.bis.gov/press-release/commerce-issues-rule-strengthen-national-security-partnership-secure-semiconductor-supply-chains-republic"
+  },
+  {
+   "case": null,
+   "listed": "2022-10-28T09:48:31+00:00",
+   "reason": "A public information page listed in October 2022 whose text describes rules of October 2023: its listing date does not date its content, so it would mislead in a chronology.",
+   "state": "missing",
+   "title": "BIS updated public information page on export controls imposed on advanced computing and semiconductor manufacturing items to the People’s Republic of China (PRC)",
+   "url": "https://www.bis.gov/press-release/bis-updated-public-information-page-export-controls-imposed-advanced-computing-semiconductor"
+  },
+  {
+   "case": null,
+   "listed": "2025-01-15T13:45:00+00:00",
+   "reason": "Foundry and packaging due-diligence rules. Relevant; left out to keep the selection near ten, since the releases it builds on are selected.",
+   "state": "missing",
+   "title": "Commerce Strengthens Restrictions on Advanced Computing Semiconductors to Enhance Foundry Due Diligence and Prevent Diversion to PRC",
+   "url": "https://www.bis.gov/press-release/commerce-strengthens-restrictions-advanced-computing-semiconductors-enhance-foundry-due-diligence-prevent"
+  },
+  {
+   "case": null,
+   "listed": "2025-03-25T21:00:00+00:00",
+   "reason": "Entity List additions, including entities in the UAE. No comparison here needs them.",
+   "state": "missing",
+   "title": "Commerce Further Restricts China’s Artificial Intelligence and Advanced Computing Capabilities",
+   "url": "https://www.bis.gov/press-release/commerce-further-restricts-chinas-artificial-intelligence-advanced-computing-capabilities"
+  },
+  {
+   "case": null,
+   "listed": "2025-07-28T20:00:00+00:00",
+   "reason": "A second enforcement case, over chip-design tools. One enforcement case is enough to separate enforcement from rulemaking here.",
+   "state": "missing",
+   "title": "Cadence Design Systems to Pay $95 Million Penalty to BIS for Unauthorized Exports to Chinese Entities Tied to Development of Military Supercomputers",
+   "url": "https://www.bis.gov/press-release/cadence-design-systems-pay-95-million-penalty-bis-unauthorized-exports-chinese-entities-tied-development"
+  },
+  {
+   "case": {
+    "href": "/library/bis-2026-07-10",
+    "id": "bis-2026-07-10",
+    "kind": "library",
+    "note": "The case library's case on this release.",
+    "title": "BIS moves the UAE to Country Group A:5 and approves license-free AI chips for certain recipients"
+   },
+   "listed": "2026-07-10T15:15:00+00:00",
+   "reason": "A country-group change for the UAE with license-free approvals for advanced computing items. The selection holds no release stating the UAE's earlier treatment for these items, so no comparison could be supported.",
+   "state": "missing",
+   "title": "Department of Commerce Eases Export Controls for UAE",
+   "url": "https://www.bis.gov/press-release/department-commerce-eases-export-controls-uae"
+  },
+  {
+   "case": null,
+   "listed": "2024-06-27T10:00:00+00:00",
+   "reason": "A Boycott Requester List update: matched by the keyword filter, not a semiconductor-policy publication.",
+   "state": "missing",
+   "title": "BIS Updates Boycott Requester List",
+   "url": "https://www.bis.gov/press-release/bis-updates-boycott-requester-list"
+  },
+  {
+   "case": null,
+   "listed": "2025-05-01T21:00:00+00:00",
+   "reason": "A Section 232 steel and aluminum inclusions process: matched by the keyword filter, not a semiconductor-policy publication.",
+   "state": "missing",
+   "title": "Department of Commerce Launches Section 232 Steel and Aluminum Inclusions Process",
+   "url": "https://www.bis.gov/press-release/department-commerce-launches-section-232-steel-aluminum-inclusions-process"
+  }
+ ],
+ "provenance": {
+  "ai_assisted": true,
+  "human_review": "not_reviewed",
+  "method": "Read the retained text of the 65 records the semiconductor keyword filter matched, chose ten, and wrote each statement and comparison from quoted passages; every quote was checked against the retained text while writing.",
+  "prepared_by": "Claude (AI assistant), for the operator",
+  "prepared_on": "2026-10-12",
+  "research_use": "excluded"
+ },
+ "provider_called": false,
+ "publications": [
+  {
+   "cases": [
+    {
+     "href": "/library/historical/bis-2022-10-07",
+     "id": "bis-2022-10-07",
+     "kind": "historical",
+     "note": "The case library's historical case was written from the same release page.",
+     "title": "Commerce restricts advanced computing and chipmaking items for the PRC"
+    }
+   ],
+   "dateline": {
+    "detail": "The release page or its acquisition record is not on this machine; its dateline is not shown.",
+    "page": "bis-2022-10-07-page",
+    "state": "missing",
+    "value": null
+   },
+   "dimensions": null,
+   "id": "ac-sme-rules-2022",
+   "listing": {
+    "changed": "2026-08-28T20:35:39+00:00",
+    "created": "2022-10-07T00:00:00+00:00",
+    "published": "2022-10-07T10:28:31+00:00"
+   },
+   "position": 1,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "f95f0f00241e434cdfd5",
+    "paragraphs": 38,
+    "record_sha256": "0d391db7d0e8566119517f9555d2fb51de3042858446508e70d7024858981115"
+   },
+   "references": null,
+   "short_title": "Advanced computing and chip-making equipment rules",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page. A separately retained release page exists, but it could not be checked on this machine.",
+    "status": "listing_text"
+   },
+   "title": "Commerce Implements New Export Controls on Advanced Computing and Semiconductor Manufacturing Items to the People’s Republic of China (PRC)",
+   "url": "https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples",
+   "why_included": "The earliest selected rules: controls on advanced computing chips, supercomputer and chip-making end uses and chip-making equipment for the PRC, which the 2023 and 2024 releases in this selection name as their starting point."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "ac-sme-updates-2023",
+   "listing": {
+    "changed": "2026-08-31T21:11:32+00:00",
+    "created": "2023-10-17T00:00:00+00:00",
+    "published": "2023-10-17T16:00:00+00:00"
+   },
+   "position": 2,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "373e30c48af16d57f534",
+    "paragraphs": 48,
+    "record_sha256": "0ec9a91de68bdce7d6e111c3c6cfe4d55e2c0ef42f6adbeefb6ba196b97aad82"
+   },
+   "references": null,
+   "short_title": "Updates to the October 2022 rules",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Commerce Strengthens Restrictions on Advanced Computing Semiconductors, Semiconductor Manufacturing Equipment, and Supercomputing Items to Countries of Concern",
+   "url": "https://www.bis.gov/press-release/commerce-strengthens-restrictions-advanced-computing-semiconductors-semiconductor-manufacturing-equipment",
+   "why_included": "BIS describes this package as updates that modify and reinforce the October 2022 rules and lists key changes: the clearest change the selection's own texts state."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "clarifications-2024",
+   "listing": {
+    "changed": "2025-01-13T16:26:50+00:00",
+    "created": "2024-04-04T00:00:00+00:00",
+    "published": "2024-04-04T12:00:00+00:00"
+   },
+   "position": 3,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "d60cfa73066249a411be",
+    "paragraphs": 9,
+    "record_sha256": "7d8e8398cc1a3188895506f52a5cf0211577aa1d82a815362998da56e17c50a4"
+   },
+   "references": null,
+   "short_title": "Clarifications of the October 2023 rules",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Commerce Releases Clarifications of Export Control Rules to Restrict the PRC’s Access to Advanced Computing and Supercomputing Items and Semiconductor Manufacturing Equipment",
+   "url": "https://www.bis.gov/press-release/commerce-releases-clarifications-export-control-rules-restrict-prcs-access-advanced-computing",
+   "why_included": "A rule BIS presents as revising and clarifying the October 2023 rules in answer to stakeholders' questions: an implementation step, set beside the rules it clarifies."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "data-center-veu-2024",
+   "listing": {
+    "changed": "2025-01-10T21:39:34+00:00",
+    "created": "2024-09-30T00:00:00+00:00",
+    "published": "2024-09-30T08:45:00+00:00"
+   },
+   "position": 4,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "855e83996ebe730c75b8",
+    "paragraphs": 13,
+    "record_sha256": "ba4ac33361373c1ce26fe758c62551bdddd8e43fa4f957740478c9c872efe248"
+   },
+   "references": null,
+   "short_title": "Validated End User program extended to data centers",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Commerce Updates Validated End User (VEU) Program for Eligible Data Centers to Bolster U.S. National Security, Promote Export Control Compliance",
+   "url": "https://www.bis.gov/press-release/commerce-updates-validated-end-user-veu-program-eligible-data-centers-bolster-u.s.-national-security",
+   "why_included": "Extends the Validated End User (VEU) program to data centers; selected because the August 2025 release also concerns the VEU program, for a different subject."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "sme-hbm-2024",
+   "listing": {
+    "changed": "2025-01-13T20:04:08+00:00",
+    "created": "2024-12-02T13:45:00+00:00",
+    "published": "2024-12-02T13:45:00+00:00"
+   },
+   "position": 5,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "58bf458c4de920d068c2",
+    "paragraphs": 35,
+    "record_sha256": "8dbc03684827f8a9727c9b2875575435f01aba227fd02a63c3d204dbe91956d3"
+   },
+   "references": null,
+   "short_title": "Equipment, design software and memory controls",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Commerce Strengthens Export Controls to Restrict China’s Capability to Produce Advanced Semiconductors for Military Applications",
+   "url": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military",
+   "why_included": "A package of rules adding controls on chip-making equipment (including ion implantation tools), chip-design software and high-bandwidth memory, which names the October 2022, October 2023 and April 2024 rules as the efforts it builds on."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "ai-diffusion-2025",
+   "listing": {
+    "changed": "2026-09-04T20:48:06+00:00",
+    "created": "2025-01-13T13:45:00+00:00",
+    "published": "2025-01-13T13:45:00+00:00"
+   },
+   "position": 6,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "14063dbaf9be80450cb2",
+    "paragraphs": 28,
+    "record_sha256": "b70cc37bec17b1cb84fa37f6419c37ab325040b0d19ddc7fa1ab27063271c9f5"
+   },
+   "references": null,
+   "short_title": "Framework for advanced chips and AI model weights",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Biden-Harris Administration Announces Regulatory Framework for the Responsible Diffusion of Advanced Artificial Intelligence Technology",
+   "url": "https://www.bis.gov/press-release/biden-harris-administration-announces-regulatory-framework-responsible-diffusion-advanced-artificial",
+   "why_included": "A rule controlling advanced computing chips and certain AI model weights across a broad set of countries, with license exceptions, country allocations and changes to data-center VEUs; a later selected release announces its rescission."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "ai-diffusion-rescission-2025",
+   "listing": {
+    "changed": "2026-09-04T21:12:50+00:00",
+    "created": "2025-05-13T13:12:29+00:00",
+    "published": "2025-05-13T13:00:00+00:00"
+   },
+   "position": 7,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "b6939175cd95cd384e25",
+    "paragraphs": 10,
+    "record_sha256": "5a1d47521e3c3a1d3f6de4bd24517e4d998c54f92d71fd234b02ad010f8ed38e"
+   },
+   "references": null,
+   "short_title": "Announced rescission of the January 2025 framework",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Department of Commerce Announces Rescission of Biden-Era Artificial Intelligence Diffusion Rule, Strengthens Chip-Related Export Controls",
+   "url": "https://www.bis.gov/press-release/department-commerce-announces-rescission-biden-era-artificial-intelligence-diffusion-rule-strengthens",
+   "why_included": "Announces a rescission of the January 2025 framework, instructs non-enforcement and issues guidance; selected as an announced reversal whose formal regulation, by the release's own account, was still to come."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": null,
+   "id": "fab-veu-2025",
+   "listing": {
+    "changed": "2026-09-04T21:36:07+00:00",
+    "created": "2025-08-29T14:21:49+00:00",
+    "published": "2025-08-29T14:20:00+00:00"
+   },
+   "position": 8,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "d57a2bd5d49a443ed90d",
+    "paragraphs": 6,
+    "record_sha256": "b171649c6d5eb4dd7056c0d1a6cf797497fd4facde43ab58fb1153221994832f"
+   },
+   "references": null,
+   "short_title": "VEU authorizations ended for foreign-owned fabs in China",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Department of Commerce Closes Export Controls Loophole for Foreign-Owned Semiconductor Fabs in China",
+   "url": "https://www.bis.gov/press-release/department-commerce-closes-export-controls-loophole-foreign-owned-semiconductor-fabs-china",
+   "why_included": "Ends license-free VEU authorizations for certain foreign-owned chip fabs in China and describes itself as reversing a 2023 expansion; selected because it shares a program name with the September 2024 data-center release."
+  },
+  {
+   "cases": [
+    {
+     "href": "/library/bis-2026-02-12",
+     "id": "bis-2026-02-12",
+     "kind": "library",
+     "note": "The Applied Materials case cites this release as context and dates it January 14, 2026.",
+     "title": "Applied Materials agrees to a $252 million penalty over ion implanters shipped to China through Korea"
+    }
+   ],
+   "dateline": null,
+   "dimensions": null,
+   "id": "license-review-2026",
+   "listing": {
+    "changed": "2026-09-04T21:41:02+00:00",
+    "created": "2026-01-14T13:27:12+00:00",
+    "published": "2026-01-13T23:00:00+00:00"
+   },
+   "position": 9,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "dbeede91a9b5b09ad8e7",
+    "paragraphs": 6,
+    "record_sha256": "bc8e65074bc8fbd56bfeb4251a2b17aaf488141eb82afeec20dfa6b9bd4bf104"
+   },
+   "references": null,
+   "short_title": "Case-by-case review for certain advanced chips to China",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Department of Commerce Revises License Review Policy for Semiconductors Exported to China",
+   "url": "https://www.bis.gov/press-release/department-commerce-revises-license-review-policy-semiconductors-exported-china",
+   "why_included": "A rule moving license review for certain advanced chips to China to case-by-case review under conditions; selected because its review policy sits beside the presumption of denial stated in the 2023 and 2025 releases, and because its date is unsettled."
+  },
+  {
+   "cases": [
+    {
+     "href": "/library/bis-2026-02-12",
+     "id": "bis-2026-02-12",
+     "kind": "library",
+     "note": "The case library's case on this release.",
+     "title": "Applied Materials agrees to a $252 million penalty over ion implanters shipped to China through Korea"
+    }
+   ],
+   "dateline": {
+    "detail": "The release page or its acquisition record is not on this machine; its dateline is not shown.",
+    "page": "bis-2026-02-12-page",
+    "state": "missing",
+    "value": null
+   },
+   "dimensions": null,
+   "id": "applied-penalty-2026",
+   "listing": {
+    "changed": "2026-09-04T21:41:31+00:00",
+    "created": "2026-02-11T23:53:50+00:00",
+    "published": "2026-02-12T00:45:00+00:00"
+   },
+   "position": 10,
+   "problems": [
+    "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01"
+   ],
+   "record": {
+    "key": "711b622937e517995600",
+    "paragraphs": 6,
+    "record_sha256": "a938f0bebcee709dd6fb11402976fa53ca193af32c9440982cd68aede3208aa1"
+   },
+   "references": null,
+   "short_title": "Applied Materials penalty over ion implanters",
+   "stages": null,
+   "state": "missing",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page. A separately retained release page exists, but it could not be checked on this machine.",
+    "status": "listing_text"
+   },
+   "title": "Applied Materials to Pay $252 Million Penalty to BIS for Illegally Exporting Semiconductor Manufacturing Equipment",
+   "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+   "why_included": "An enforcement settlement over ion implanters shipped in 2021 and 2022 to a company on the Entity List; selected to separate enforcement of an earlier requirement from the equipment controls announced in December 2024."
+  }
+ ],
+ "question": "How do selected BIS releases on advanced chips and chip-making equipment, from October 2022 to February 2026, relate to one another: which are new rules, revisions, clarifications, announced reversals or enforcement, and what does each one explicitly cover?",
+ "release_pages": [
+  {
+   "approval_id": "related-cases-sources-01",
+   "bytes": 76841,
+   "dateline": "October 7, 2022",
+   "detail": "The release page or its acquisition record is not on this machine; its dateline is not shown.",
+   "id": "bis-2022-10-07-page",
+   "retrieved_at": "2026-10-12T08:58:22.032699+00:00",
+   "sha256": "c25ea1239348b29549e7bf1965a9940db92fefda7c5f1c7d3db08a20bf4227bb",
+   "state": "missing",
+   "url": "https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples"
+  },
+  {
+   "approval_id": "bis-semis-sources-01",
+   "bytes": 64517,
+   "dateline": "February 12, 2026",
+   "detail": "The release page or its acquisition record is not on this machine; its dateline is not shown.",
+   "id": "bis-2026-02-12-page",
+   "retrieved_at": "2026-10-12T14:47:55.282763+00:00",
+   "sha256": "feec7e46ffa0d9f2214d7a7f21fc5a69c04bf59e72415705af338eb788b77227",
+   "state": "missing",
+   "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment"
+  }
+ ],
+ "research_version": "policy-research-0.1",
+ "scope_note": "A retrospective comparison of ten selected BIS press releases as retained on October 12, 2026. It is not a complete or current semiconductor-policy monitor, and not legal or compliance guidance.",
+ "snapshot": {
+  "approval_id": "bis-semis-sources-01",
+  "bytes": 3585240,
+  "detail": "The retained BIS snapshot is not on this machine: there is no acquisition record for approval bis-semis-sources-01",
+  "extractor_version": "bis-snapshot-extract-0.1",
+  "filter_matches": null,
+  "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+  "sha256": "6209b876f4484c0614d363ff77a66de0c99b285fdf00f26ff49e7b6f8c910c4f",
+  "state": "missing",
+  "url": "https://www.bis.gov/news-updates"
+ },
+ "title": "Semiconductor policy evolution",
+ "view_version": "policy-research-view-0.1"
+}

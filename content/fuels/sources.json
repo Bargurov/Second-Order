@@ -1,0 +1,124 @@
+{
+  "sources_version": "fuels-sources-0.2",
+  "prepared_on": "2026-11-07",
+  "page_label": "Personal and educational use. Not for redistribution.",
+  "credit": "Spot prices from the U.S. Energy Information Administration (EIA), retrieved through its open data API. EIA does not endorse this page.",
+  "terms": [
+    {
+      "id": "eia-reuse",
+      "title": "EIA Copyrights and Reuse",
+      "url": "https://www.eia.gov/about/copyrights_reuse.php",
+      "read_on": "2026-11-07"
+    },
+    {
+      "id": "eia-api-terms",
+      "title": "EIA API Terms of Service Agreement",
+      "url": "https://www.eia.gov/opendata/terms-of-service.php",
+      "read_on": "2026-11-07"
+    },
+    {
+      "id": "eia-petroleum-spot-notes",
+      "title": "EIA petroleum spot prices: definitions, sources and notes",
+      "url": "https://www.eia.gov/dnav/pet/TblDefs/pet_pri_spt_tbldef2.asp",
+      "read_on": "2026-11-07"
+    },
+    {
+      "id": "eia-gas-price-notes",
+      "title": "EIA natural gas prices: definitions, sources and notes",
+      "url": "https://www.eia.gov/dnav/ng/TblDefs/ng_pri_fut_tbldef2.asp",
+      "read_on": "2026-11-07"
+    }
+  ],
+  "series": [
+    {
+      "series_id": "RBRTE",
+      "role": "brent",
+      "label": "Brent spot",
+      "unit": "usd_per_bbl",
+      "eia_route": "petroleum/pri/spt",
+      "eia_description": "Europe Brent Spot Price FOB (Dollars per Barrel)",
+      "eia_units": "$/BBL",
+      "cadence": "daily",
+      "publication": "weekly",
+      "publisher": "U.S. Energy Information Administration",
+      "url": "https://www.eia.gov/dnav/pet/hist/RBRTED.htm",
+      "data_vendor": null,
+      "scope": "personal_and_private_demo",
+      "basis": "EIA states that U.S. government publications are in the public domain and asks for an acknowledgment, and that material contributed or licensed by others may be protected. EIA's notes for its spot price table name no source for this series, so this record does not call it public domain. This project uses it personally and in private demonstrations, with attribution, and does not redistribute it. A reading of the published terms, not legal advice.",
+      "public": "not_assessed",
+      "terms": ["eia-reuse", "eia-api-terms", "eia-petroleum-spot-notes"]
+    },
+    {
+      "series_id": "RWTC",
+      "role": "wti",
+      "label": "WTI spot (Cushing)",
+      "unit": "usd_per_bbl",
+      "eia_route": "petroleum/pri/spt",
+      "eia_description": "Cushing, OK WTI Spot Price FOB (Dollars per Barrel)",
+      "eia_units": "$/BBL",
+      "cadence": "daily",
+      "publication": "weekly",
+      "publisher": "U.S. Energy Information Administration",
+      "url": "https://www.eia.gov/dnav/pet/hist/RWTCD.htm",
+      "data_vendor": null,
+      "scope": "personal_and_private_demo",
+      "basis": "EIA states that U.S. government publications are in the public domain and asks for an acknowledgment, and that material contributed or licensed by others may be protected. EIA's notes for its spot price table name no source for this series, so this record does not call it public domain. This project uses it personally and in private demonstrations, with attribution, and does not redistribute it. A reading of the published terms, not legal advice.",
+      "public": "not_assessed",
+      "terms": ["eia-reuse", "eia-api-terms", "eia-petroleum-spot-notes"]
+    },
+    {
+      "series_id": "EER_EPMRU_PF4_Y35NY_DPG",
+      "role": "gasoline",
+      "label": "NY Harbor conventional regular gasoline spot",
+      "unit": "usd_per_gal",
+      "eia_route": "petroleum/pri/spt",
+      "eia_description": "New York Harbor Conventional Gasoline Regular Spot Price FOB (Dollars per Gallon)",
+      "eia_units": "$/GAL",
+      "cadence": "daily",
+      "publication": "weekly",
+      "publisher": "U.S. Energy Information Administration",
+      "url": "https://www.eia.gov/dnav/pet/hist/EER_EPMRU_PF4_Y35NY_DPGD.htm",
+      "data_vendor": null,
+      "scope": "personal_and_private_demo",
+      "basis": "EIA states that U.S. government publications are in the public domain and asks for an acknowledgment, and that material contributed or licensed by others may be protected. EIA's notes for its spot price table name no source for this series, so this record does not call it public domain. This project uses it personally and in private demonstrations, with attribution, and does not redistribute it. A reading of the published terms, not legal advice.",
+      "public": "not_assessed",
+      "terms": ["eia-reuse", "eia-api-terms", "eia-petroleum-spot-notes"]
+    },
+    {
+      "series_id": "EER_EPD2DXL0_PF4_Y35NY_DPG",
+      "role": "diesel",
+      "label": "NY Harbor ULSD spot",
+      "unit": "usd_per_gal",
+      "eia_route": "petroleum/pri/spt",
+      "eia_description": "New York Harbor Ultra-Low Sulfur No 2 Diesel Spot Price (Dollars per Gallon)",
+      "eia_units": "$/GAL",
+      "cadence": "daily",
+      "publication": "weekly",
+      "publisher": "U.S. Energy Information Administration",
+      "url": "https://www.eia.gov/dnav/pet/hist/EER_EPD2DXL0_PF4_Y35NY_DPGD.htm",
+      "data_vendor": null,
+      "scope": "personal_and_private_demo",
+      "basis": "EIA states that U.S. government publications are in the public domain and asks for an acknowledgment, and that material contributed or licensed by others may be protected. EIA's notes for its spot price table name no source for this series, so this record does not call it public domain. This project uses it personally and in private demonstrations, with attribution, and does not redistribute it. A reading of the published terms, not legal advice.",
+      "public": "not_assessed",
+      "terms": ["eia-reuse", "eia-api-terms", "eia-petroleum-spot-notes"]
+    },
+    {
+      "series_id": "RNGWHHD",
+      "role": "henry_hub",
+      "label": "Henry Hub natural gas spot",
+      "unit": "usd_per_mmbtu",
+      "eia_route": "natural-gas/pri/fut",
+      "eia_description": "Henry Hub Natural Gas Spot Price (Dollars per Million Btu)",
+      "eia_units": "$/MMBTU",
+      "cadence": "daily",
+      "publication": "weekly",
+      "publisher": "U.S. Energy Information Administration",
+      "url": "https://www.eia.gov/dnav/ng/hist/rngwhhdD.htm",
+      "data_vendor": {"name": "Refinitiv, an LSEG business", "term": "eia-gas-price-notes"},
+      "scope": "personal_and_private_demo",
+      "basis": "EIA states that U.S. government publications are in the public domain and asks for an acknowledgment, and that material contributed or licensed by others may be protected. EIA names Refinitiv, an LSEG business, as the source of this spot price, so this record does not call it public domain. This project uses it personally and in private demonstrations, with attribution, and does not redistribute it. A reading of the published terms, not legal advice.",
+      "public": "not_assessed",
+      "terms": ["eia-reuse", "eia-api-terms", "eia-gas-price-notes"]
+    }
+  ]
+}

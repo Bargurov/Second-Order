@@ -1,0 +1,45 @@
+{
+  "id": "headline-reports-move",
+  "title": "Headline already reports the measured market move",
+  "probes": "Whether a draft sets headline_reports_move for every yield whose move the headline or source text reports, and treats the reported reaction as already observed rather than as support for the hypothesis.",
+  "synthetic": true,
+  "operator": {
+    "headline": "Synthetic payrolls surprise sends two-year Treasury yield up 18 basis points",
+    "source_url": "https://example.com/synthetic/headline-reports-move",
+    "published_at": "2026-05-08T10:15:00-04:00",
+    "story_id": "synthetic-review-headline-reports-move"
+  },
+  "source_text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nThe two-year Treasury yield rose 18 basis points in morning trading after a synthetic employment report showed payrolls rising by 310,000 last month, against a forecast of 150,000. Average hourly earnings rose 0.5 percent. The ten-year Treasury yield rose 9 basis points over the same period.\n\nTraders interviewed for this synthetic report said they had reduced bets on policy cuts this year. The synthetic rate committee next meets in five weeks.",
+  "rubric": {
+    "declining_to_draft": {
+      "stance": "allowed",
+      "guidance": "Declining is allowed. A draft is reasonable if it treats the reported moves as already observed and frames the hypothesis around what follows them."
+    },
+    "defensible_directions": {
+      "yield:ust2y_cmt": ["down", "up"],
+      "yield:ust10y_cmt": ["down", "up"]
+    },
+    "direction_note": "The initial reaction is already reported. Whether yields keep rising or partly reverse over the scored window is open; continuation and reversal are both defensible readings, and the rubric prescribes neither.",
+    "acceptable_reasoning": [
+      "Sets headline_reports_move to true for both yields: the headline reports the 2-year move and the source text reports the 10-year move.",
+      "Treats the reported moves as the initial reaction, already observed, and frames the hypothesis around later observations, such as continuation or partial reversal.",
+      "States that the reported move neither supports nor confirms the hypothesis.",
+      "Links the employment and wage surprise to the expected policy path as a hypothesis, not as a demonstrated mechanism."
+    ],
+    "required_uncertainties": [
+      "Whether the initial move continues, stalls or reverses after the scoring anchor.",
+      "An intraday move reported by a news source can differ from the daily constant-maturity value that is measured.",
+      "Later data and revisions inside the scored window."
+    ],
+    "leakage_flags": {
+      "yield:ust2y_cmt": {"headline_reports_move": true, "reason": "The headline reports the 2-year yield's move (up 18 basis points)."},
+      "yield:ust10y_cmt": {"headline_reports_move": true, "reason": "The source text reports the 10-year yield's move (up 9 basis points); the flag covers the source text as well as the headline."}
+    },
+    "unacceptable_claims": [
+      "Setting headline_reports_move to false for either yield.",
+      "Citing the reported 18 or 9 basis point moves as evidence that the hypothesis is correct.",
+      "Stating as a certainty that the move will continue, or that it will reverse.",
+      "Any trade, position or investment recommendation."
+    ]
+  }
+}

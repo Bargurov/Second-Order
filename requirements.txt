@@ -1,37 +1,11 @@
-# Dependency policy — scoped major-version caps (NOT a lockfile).
-#
-# These caps guard against obvious future MAJOR-version breakage; they do NOT
-# claim byte-for-byte reproducible installs. Transitive dependencies still
-# float and the project ships no Python lockfile.
-#
-# - numpy / pandas / pydantic / python-telegram-bot are capped below their next
-#   major: a major bump there breaks imports or the research math. pydantic
-#   especially is import-critical for the API, and a pydantic-3 break would not
-#   be caught by CI (CI never boots the API).
-# - fastapi / uvicorn are intentionally NOT capped: they are pre-1.0, so a "<1"
-#   cap is not meaningful protection (even 0.x minors can break). Only a
-#   lockfile would pin them safely.
-# - The provider SDKs (anthropic, openai, yfinance) are intentionally left
-#   floating to preserve compatibility with their upstream APIs.
-# - Upgrade path: if the project ever needs true install determinism, add a
-#   requirements-lock.txt (full pinned set) rather than tightening this file.
-
-anthropic
-apscheduler>=3.10
-openai
-feedparser
-fastapi
-httpx
 numpy>=2.2,<3
-pandas>=2.2,<3
-pydantic>=2,<3
-python-dotenv
-python-telegram-bot[job-queue]>=21,<22
-# Imported directly by tracked runtime scripts (candidate-pack loaders and
-# report tooling); previously satisfied only as a transitive extra of
-# uvicorn[standard], which is not a declaration.
-pyyaml
-
-streamlit
-uvicorn[standard]
-yfinance
+pydantic>=2.12,<3
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+httpx>=0.27,<1
+# Exact: its version is part of every market snapshot's recorded calendar identity, so it changes
+# snapshot IDs and the committed frontend fixtures that record them. Change it only with those fixtures.
+pandas_market_calendars==5.4.0
+tzdata>=2025.1
+# The EIA key's store (Windows Credential Manager); only `fuels key` and `fuels refresh` import it.
+keyring>=25.6,<26

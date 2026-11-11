@@ -1,0 +1,49 @@
+{
+ "active_rules_version": "0.5.0",
+ "dossiers": [
+  {
+   "as_of": "2024-12-31T23:59:59+00:00",
+   "evaluation_id": null,
+   "evidence_class": "replay",
+   "headline": "Demonstration: the fictional Central Bank of Demoland lowers its policy rate by 50 basis points",
+   "id": "9b3b48bf000ad65a975c737a2d7d17fdd4aaa1a37f407d4a172fe6524eb4e98d",
+   "label": "Manually reconstructed replay · showcase illustration",
+   "published_at": "2024-06-12T18:00:00Z",
+   "rules_version": "0.5.0",
+   "source": "fixture",
+   "state": "evaluated",
+   "usage": "showcase",
+   "verdict": "supported"
+  },
+  {
+   "as_of": "2024-12-31T23:59:59+00:00",
+   "evaluation_id": null,
+   "evidence_class": "replay",
+   "headline": "Demonstration: the fictional Central Bank of Demoland lowers its policy rate by 25 basis points",
+   "id": "1499697aff5a1af3abe29c51a9f01e24f3e1481de69b50ba240c334a4d25b551",
+   "label": "Manually reconstructed replay · showcase illustration",
+   "published_at": "2024-10-30T18:00:00Z",
+   "rules_version": "0.5.0",
+   "source": "fixture",
+   "state": "evaluated",
+   "usage": "showcase",
+   "verdict": "contradicted"
+  },
+  {
+   "as_of": "2025-06-22T12:00:00+00:00",
+   "evaluation_id": "4a6dd13e063d6e4f8de12c1b2d0f826b57f68de3a0e27682c864d4162ae0c147",
+   "evidence_class": "prospective",
+   "headline": "Synthetic Treasury announcement",
+   "id": "f9f29e75c73f29a7e6491b9cfe95ace762c358b688279d66be6c8125d7a7c27e",
+   "label": "Manual prospective hypothesis · showcase illustration",
+   "published_at": "2025-06-03T13:00:00Z",
+   "rules_version": "0.5.0",
+   "source": "store",
+   "state": "evaluated",
+   "usage": "showcase",
+   "verdict": "pending"
+  }
+ ],
+ "fixture_as_of": "2024-12-31T23:59:59+00:00",
+ "view_version": "dossier-view-0.3"
+}

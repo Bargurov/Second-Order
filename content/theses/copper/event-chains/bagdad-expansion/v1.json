@@ -1,0 +1,118 @@
+{
+ "chain_version": "event-chain-0.1",
+ "id": "bagdad-expansion",
+ "version": 1,
+ "previous_version": null,
+ "title": "The Bagdad expansion approval and the counted mine pipeline",
+ "event": "fcx:q3-p-bagdad-approval",
+ "target": {
+  "kind": "reason",
+  "id": "mine-pipeline"
+ },
+ "steps": [
+  {
+   "kind": "stated",
+   "passage": "fcx:q3-p-bagdad-approval",
+   "label": "The board's approval of the Bagdad expansion and modernization program"
+  },
+  {
+   "kind": "stated",
+   "passage": "fcx:nr-p-double-rates",
+   "label": "The company's expectation for the project's mining and milling rates"
+  },
+  {
+   "kind": "not_stated",
+   "text": "No retained source states whether the IEA base case already counts this expansion."
+  },
+  {
+   "kind": "mechanism",
+   "id": "expansion-counting"
+  }
+ ],
+ "evidence": {
+  "event": {
+   "passage": "fcx:q3-p-bagdad-approval",
+   "kind": "Investment decision",
+   "when": "November 2026"
+  },
+  "passages": [
+   {
+    "ref": "fcx:q3-p-bagdad-approval",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 23,
+     "printed_page": "23",
+     "location": "Part I, Item 2 (MD&A) > Consolidated Results"
+    },
+    "quote": "In November 2026, our Board of Directors (Board) approved a $4.5 billion expansion and modernization program at our Bagdad copper and molybdenum operation in northwest Arizona"
+   },
+   {
+    "ref": "fcx:nr-p-double-rates",
+    "source": "news-2026-11-04",
+    "location": {
+     "page": 1,
+     "printed_page": "1",
+     "location": "News release of 2026-11-04, page 1"
+    },
+    "quote": "The brownfield project is designed to maximize the full potential of the resource and is expected to more than double Bagdad’s mining and milling rates."
+   }
+  ],
+  "documents": [
+   {
+    "ref": "copper:iea-dataset-2026",
+    "acquisition": {
+     "approval_id": "copper-iea-dataset-01",
+     "attempt": 1,
+     "origin": "owner_download",
+     "url": "https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset",
+     "folder": "iea-dataset-2026",
+     "name": "IEA-Critical-Minerals-Dataset-2026.xlsx",
+     "sha256": "43bd9338a08ac8399c65471115f30ffc10dca7117e62f03cca86d49224717935",
+     "bytes": 1140286,
+     "retrieved_at": "2026-11-03T01:19:00.126297+02:00"
+    }
+   },
+   {
+    "ref": "fcx:10q-2026q3",
+    "acquisition": {
+     "approval_id": "fcx-sec-docs-02",
+     "attempt": 1,
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/fcx-20260930.htm",
+     "folder": "sec-10q-2026q3",
+     "name": "fcx-20260930.htm",
+     "sha256": "d2ddefc6b0b022abefec228e2d8407b4e502ba3d3a2807665bc028f61b4f4e6a",
+     "bytes": 4013452,
+     "retrieved_at": "2026-11-11T00:40:48.989015+02:00"
+    }
+   },
+   {
+    "ref": "fcx:news-2026-11-04",
+    "acquisition": {
+     "approval_id": "fcx-sec-docs-02",
+     "attempt": 5,
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104.htm",
+     "folder": "sec-8k-2026-11-04",
+     "name": "fcx_261104.htm",
+     "sha256": "8ebacd1534406c64b0fa7edecbc8669c4d89ada56bd93507ffdcda4dd6ba68a3",
+     "bytes": 11122,
+     "retrieved_at": "2026-11-11T00:41:00.844132+02:00"
+    }
+   }
+  ],
+  "thesis": {
+   "id": "copper",
+   "version": 1,
+   "sha256": "4893928f936d3dd3a75ffb37238526d69c809131c72351f938b134d2249e956f"
+  },
+  "mechanisms": {
+   "version": 1,
+   "sha256": "80582509f9075e3b04f82d2af7de0e6d516e0684a629da458ad52aa4d63d412b"
+  }
+ },
+ "change": null,
+ "provenance": {
+  "prepared_by": "the assistant (Claude), AI draft for the owner's review",
+  "ai_assisted": true,
+  "research_use": "excluded"
+ }
+}

@@ -1,0 +1,38 @@
+/* The copper desk (/copper) and a publication comparison (/copper/comparisons/:id). They reuse the event chains page's
+   voices (eventChains.css): the source's words as quotes ruled in ink, the owner's words set apart in the stamp
+   colour, what is withheld behind a dashed rule. A row's two lines stand side by side and nothing joins them. */
+.cr-page { max-width: 960px; }
+.cr-part { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--rule-strong); }
+.library-case-header + .cr-part { margin-top: 0; padding-top: 22px; border-top: 0; }
+.cr-part h2 { margin: 0 0 10px; font: 400 23px/1.2 var(--serif); }
+.cr-part h3 { margin: 0 0 6px; font: 600 15px/1.3 var(--sans); }
+.cr-part h4 { margin: 0 0 6px; font: 600 13px/1.35 var(--sans); color: var(--ink-2); overflow-wrap: anywhere; }
+.cr-list { margin: 0; padding: 0; list-style: none; }
+.cr-list > li { padding: 10px 0; border-top: 1px solid var(--rule); }
+.cr-list > li:first-child { padding-top: 0; border-top: 0; }
+.cr-item-title { margin: 0 0 2px; font-weight: 600; overflow-wrap: anywhere; }
+.cr-line { margin: 2px 0; font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.cr-tag { padding: 1px 6px; border: 1px solid var(--rule-strong); font: 500 10px/1.5 var(--mono);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+.cr-crumbs span { min-width: 0; overflow-wrap: anywhere; }
+.cr-row { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--rule-strong); background: var(--paper-raised); }
+.cr-row .ec-sides > div { min-width: 0; }
+.cr-sentence { margin: 10px 0 4px; padding: 6px 12px; border-left: 3px solid var(--ink); font-size: 14px;
+  background: var(--paper-raised); max-width: 90ch; }
+.cr-row .cr-sentence { background: var(--paper-sunk); }
+.cr-row-note { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); max-width: 90ch; }
+.cr-prices > li > span { display: block; overflow-wrap: anywhere; }
+
+/* A saved note of the owner's, and the form that writes one. */
+.rn-note { margin: 12px 0; padding: 10px 14px; background: var(--paper-raised); }
+.rn-mark { margin: 0 0 4px; font: 500 11px/1.45 var(--mono); letter-spacing: 0.04em; color: var(--stamp); }
+.rn-signed, .rn-subject, .rn-hindsight, .rn-line { margin: 2px 0; font-size: 13px; color: var(--ink-2);
+  overflow-wrap: anywhere; }
+.rn-hindsight { padding-left: 8px; border-left: 3px solid var(--rule-strong); }
+.rn-part { margin: 8px 0; }
+.rn-label { margin: 0; font-size: 13px; font-weight: 600; }
+.rn-form select, .rn-form input[type="date"] { display: block; max-width: 100%; margin-top: 4px; font: inherit;
+  font-size: 15px; }
+.rn-form select { width: 100%; }
+.rn-check { display: block; margin: 10px 0; padding: 4px 0; min-height: 32px; font-size: 14px; }
+.rn-form .button { margin-top: 6px; }

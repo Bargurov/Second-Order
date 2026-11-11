@@ -1,0 +1,55 @@
+{
+  "contract": "user-api-0.5",
+  "limits": {
+    "state": "set",
+    "detail": null,
+    "policy_version": "usage-policy-1",
+    "day": "2026-10-14",
+    "timezone": "Asia/Jerusalem",
+    "resets_at": "2026-10-14T21:00:00+00:00",
+    "operations": [
+      {
+        "operation": "search",
+        "label": "Searches",
+        "limit": 20,
+        "used": 4,
+        "remaining": 16
+      },
+      {
+        "operation": "import",
+        "label": "Publication imports",
+        "limit": 5,
+        "used": 2,
+        "remaining": 3
+      },
+      {
+        "operation": "source",
+        "label": "New sources",
+        "limit": 10,
+        "used": 3,
+        "remaining": 7
+      },
+      {
+        "operation": "preparation",
+        "label": "Prepared analyses",
+        "limit": 10,
+        "used": 1,
+        "remaining": 9
+      }
+    ],
+    "storage": {
+      "sources": {
+        "used": 3,
+        "limit": 200
+      },
+      "source_bytes": {
+        "used": 2461,
+        "limit": 5000000
+      }
+    },
+    "rate": {
+      "requests_per_minute": 120,
+      "concurrent_requests": 4
+    }
+  }
+}

@@ -1,0 +1,718 @@
+{
+  "holdout": "qa-quality-holdout-1",
+  "written": "2026-10-15",
+  "note": "SYNTHETIC sources and fake replies written by the QA chat after research-quality-0.2 and the disclosure of the 20 fresh cases; kept from the rubric's author until the next stable rubric version is measured. Checker measurements only, not model accuracy.",
+  "sources": {
+    "labour": {
+      "headline": "Simulated Labour Office reports October employment",
+      "text": "November 6, 2026\n\nSimulated Labour Office reports October employment\n\nThe Simulated Labour Office said payroll employment rose by 142,000 in October 2026, after a revised gain of 98,000 in September. The unemployment rate was 4.3 percent, unchanged from September.\n\nAverage hourly earnings increased 0.3 percent over the month and 3.8 percent over the year.\n\nChief Statistician Nora Pell said the October survey response rate was lower than usual. Deputy Director Sam Ortiz said manufacturing employment was little changed.\n\nThe office did not report employment by region.\n\nSYNTHETIC TEST SOURCE written for the QA holdout research-quality cases."
+    },
+    "trade": {
+      "headline": "Simulated Trade Ministry publishes monthly trade figures",
+      "text": "December 3, 2026\n\nSimulated Trade Ministry publishes monthly trade figures\n\nThe Simulated Trade Ministry said the goods trade deficit narrowed to 61.2 billion dollars in October 2026 from 67.5 billion dollars in September.\n\nExports increased 2.1 percent, while imports declined 1.4 percent.\n\nMinister Eda Kran said the ministry would not change its tariff schedule before March 2027. Undersecretary Paul Ives said shipping costs had fallen.\n\nThe ministry did not give figures for services trade.\n\nSYNTHETIC TEST SOURCE written for the QA holdout research-quality cases."
+    }
+  },
+  "gold": {
+    "labour": [
+      [
+        "payroll employment rose by 142,000 in October 2026",
+        true
+      ],
+      [
+        "revised gain of 98,000",
+        true
+      ],
+      [
+        "The unemployment rate was 4.3 percent, unchanged from September",
+        true
+      ],
+      [
+        "increased 0.3 percent over the month",
+        true
+      ],
+      [
+        "3.8 percent over the year",
+        true
+      ],
+      [
+        "Chief Statistician Nora Pell said the October survey response rate",
+        true
+      ],
+      [
+        "Deputy Director Sam Ortiz said manufacturing employment was little changed",
+        true
+      ],
+      [
+        "did not report employment by region",
+        true
+      ],
+      [
+        "recession",
+        false
+      ],
+      [
+        "job losses",
+        false
+      ],
+      [
+        "weakening",
+        false
+      ],
+      [
+        "vacanc",
+        false
+      ],
+      [
+        "industry",
+        false
+      ],
+      [
+        "Wages",
+        false
+      ]
+    ],
+    "trade": [
+      [
+        "narrowed to 61.2 billion dollars in October 2026 from 67.5 billion dollars in September",
+        true
+      ],
+      [
+        "Exports increased 2.1 percent",
+        true
+      ],
+      [
+        "imports declined 1.4 percent",
+        true
+      ],
+      [
+        "Minister Eda Kran said the ministry would not change its tariff schedule before March 2027",
+        true
+      ],
+      [
+        "Undersecretary Paul Ives said shipping costs had fallen",
+        true
+      ],
+      [
+        "did not give figures for services trade",
+        true
+      ],
+      [
+        "narrowed by",
+        false
+      ],
+      [
+        "March 2026",
+        false
+      ],
+      [
+        "Exports declined",
+        false
+      ],
+      [
+        "Port",
+        false
+      ],
+      [
+        "port volume",
+        false
+      ],
+      [
+        "freight",
+        false
+      ],
+      [
+        "Container",
+        false
+      ],
+      [
+        "container",
+        false
+      ]
+    ]
+  },
+  "cases": {
+    "l_faithful_date_outside_short_quote": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "Payroll employment rose by 142,000 in October 2026.",
+            "basis": "data",
+            "quotes": [
+              "payroll employment rose by 142,000"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "Payroll employment grew over the month."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Job vacancies are not reported.",
+          "Wages by industry are not given."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": null,
+      "category": "faithful",
+      "why": null
+    },
+    "t_faithful_level_from_to": {
+      "source": "trade",
+      "output": {
+        "established": [
+          {
+            "statement": "The goods trade deficit narrowed to 61.2 billion dollars in October 2026 from 67.5 billion dollars in September.",
+            "basis": "data",
+            "quotes": [
+              "the goods trade deficit narrowed to 61.2 billion dollars in October 2026 from 67.5 billion dollars in September"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "The goods trade deficit became smaller over the month."
+        },
+        "assumptions": [
+          "The monthly figures use the same customs records as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A one-off shipment timing effect.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Port volumes are not given.",
+          "Container freight rates are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The deficit widens again while exports keep rising."
+          }
+        ]
+      },
+      "fault": null,
+      "category": "faithful",
+      "why": null
+    },
+    "l_faithful_attributed_speaker": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "Chief Statistician Nora Pell said the October survey response rate was lower than usual.",
+            "basis": "data",
+            "quotes": [
+              "Chief Statistician Nora Pell said the October survey response rate was lower than usual"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "The survey drew fewer responses than usual."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Job vacancies are not reported.",
+          "Wages by industry are not given."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": null,
+      "category": "faithful",
+      "why": null
+    },
+    "t_faithful_negation_paraphrased": {
+      "source": "trade",
+      "output": {
+        "established": [
+          {
+            "statement": "Minister Eda Kran said the ministry would keep its tariff schedule unchanged until at least March 2027.",
+            "basis": "forecast",
+            "quotes": [
+              "Minister Eda Kran said the ministry would not change its tariff schedule before March 2027"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "The ministry signals no near-term tariff change."
+        },
+        "assumptions": [
+          "The monthly figures use the same customs records as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A one-off shipment timing effect.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Port volumes are not given.",
+          "Container freight rates are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The deficit widens again while exports keep rising."
+          }
+        ]
+      },
+      "fault": null,
+      "category": "direction",
+      "why": null
+    },
+    "t_level_as_change": {
+      "source": "trade",
+      "output": {
+        "established": [
+          {
+            "statement": "The goods trade deficit narrowed by 61.2 billion dollars in October 2026.",
+            "basis": "data",
+            "quotes": [
+              "the goods trade deficit narrowed to 61.2 billion dollars in October 2026"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "The goods trade deficit became smaller over the month."
+        },
+        "assumptions": [
+          "The monthly figures use the same customs records as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A one-off shipment timing effect.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Port volumes are not given.",
+          "Container freight rates are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The deficit widens again while exports keep rising."
+          }
+        ]
+      },
+      "fault": "established[1]",
+      "category": "numbers",
+      "why": "61.2 billion dollars is the October level; the deficit narrowed by 6.3 billion"
+    },
+    "l_negation_added": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "Average hourly earnings did not increase over the month.",
+            "basis": "data",
+            "quotes": [
+              "Average hourly earnings increased 0.3 percent over the month"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "Hourly pay was flat over the month."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Job vacancies are not reported.",
+          "Wages by industry are not given."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": "established[1]",
+      "category": "direction",
+      "why": "earnings increased 0.3 percent over the month"
+    },
+    "t_speaker_swapped_within_source": {
+      "source": "trade",
+      "output": {
+        "established": [
+          {
+            "statement": "Undersecretary Paul Ives said the ministry would not change its tariff schedule before March 2027.",
+            "basis": "forecast",
+            "quotes": [
+              "the ministry would not change its tariff schedule before March 2027"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "The ministry signals no near-term tariff change."
+        },
+        "assumptions": [
+          "The monthly figures use the same customs records as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A one-off shipment timing effect.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Port volumes are not given.",
+          "Container freight rates are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The deficit widens again while exports keep rising."
+          }
+        ]
+      },
+      "fault": "established[1]",
+      "category": "attribution",
+      "why": "Minister Eda Kran said it; Paul Ives spoke about shipping costs"
+    },
+    "l_unsupported_interpretation": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "The unemployment rate was 4.3 percent, unchanged from September.",
+            "basis": "data",
+            "quotes": [
+              "The unemployment rate was 4.3 percent, unchanged from September"
+            ]
+          },
+          {
+            "statement": "Average hourly earnings increased 0.3 percent over the month.",
+            "basis": "data",
+            "quotes": [
+              "Average hourly earnings increased 0.3 percent over the month"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1,
+            2
+          ],
+          "text": "The labour market is weakening sharply and the office expects job losses."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Job vacancies are not reported.",
+          "Wages by industry are not given."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": "interpretation",
+      "category": "conclusion",
+      "why": "nothing in the source supports weakening or expected job losses"
+    },
+    "t_period_year_swap": {
+      "source": "trade",
+      "output": {
+        "established": [
+          {
+            "statement": "Minister Eda Kran said the ministry would not change its tariff schedule before March 2026.",
+            "basis": "forecast",
+            "quotes": [
+              "Minister Eda Kran said the ministry would not change its tariff schedule before March 2027"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "The ministry signals no near-term tariff change."
+        },
+        "assumptions": [
+          "The monthly figures use the same customs records as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A one-off shipment timing effect.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Port volumes are not given.",
+          "Container freight rates are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The deficit widens again while exports keep rising."
+          }
+        ]
+      },
+      "fault": "established[1]",
+      "category": "periods",
+      "why": "March 2027, not March 2026"
+    },
+    "l_unchanged_as_rise": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "The unemployment rate rose to 4.3 percent.",
+            "basis": "data",
+            "quotes": [
+              "The unemployment rate was 4.3 percent, unchanged from September"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "Unemployment moved up over the month."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Job vacancies are not reported.",
+          "Wages by industry are not given."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": "established[1]",
+      "category": "direction",
+      "why": "the rate was unchanged from September"
+    },
+    "t_number_on_the_wrong_entity": {
+      "source": "trade",
+      "output": {
+        "established": [
+          {
+            "statement": "Exports declined 1.4 percent.",
+            "basis": "data",
+            "quotes": [
+              "Exports increased 2.1 percent, while imports declined 1.4 percent"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1
+          ],
+          "text": "Exports fell over the month."
+        },
+        "assumptions": [
+          "The monthly figures use the same customs records as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A one-off shipment timing effect.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Port volumes are not given.",
+          "Container freight rates are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The deficit widens again while exports keep rising."
+          }
+        ]
+      },
+      "fault": "established[1]",
+      "category": "attribution",
+      "why": "imports declined 1.4 percent; exports increased 2.1 percent"
+    },
+    "l_faithful_unknown_the_source_states": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "The unemployment rate was 4.3 percent, unchanged from September.",
+            "basis": "data",
+            "quotes": [
+              "The unemployment rate was 4.3 percent, unchanged from September"
+            ]
+          },
+          {
+            "statement": "Average hourly earnings increased 0.3 percent over the month.",
+            "basis": "data",
+            "quotes": [
+              "Average hourly earnings increased 0.3 percent over the month"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1,
+            2
+          ],
+          "text": "The unemployment rate held steady while hourly earnings rose."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "Employment by region is not reported.",
+          "Job vacancies are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": null,
+      "category": "unknowns",
+      "why": null
+    },
+    "l_present_fact_marked_missing": {
+      "source": "labour",
+      "output": {
+        "established": [
+          {
+            "statement": "The unemployment rate was 4.3 percent, unchanged from September.",
+            "basis": "data",
+            "quotes": [
+              "The unemployment rate was 4.3 percent, unchanged from September"
+            ]
+          },
+          {
+            "statement": "Average hourly earnings increased 0.3 percent over the month.",
+            "basis": "data",
+            "quotes": [
+              "Average hourly earnings increased 0.3 percent over the month"
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1,
+            2
+          ],
+          "text": "The unemployment rate held steady while hourly earnings rose."
+        },
+        "assumptions": [
+          "The monthly survey covers the same employers as the month before."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "A seasonal hiring pattern.",
+            "would_distinguish": "The following months' reports."
+          }
+        ],
+        "missing_information": [
+          "The unemployment rate for the month is not reported.",
+          "Job vacancies are not reported."
+        ],
+        "tests": [
+          {
+            "check": "The next monthly report.",
+            "counts_against_if": "The unemployment rate moves without a change in payrolls."
+          }
+        ]
+      },
+      "fault": "missing_information[1]",
+      "category": "unknowns",
+      "why": "the source reports the unemployment rate of 4.3 percent"
+    }
+  }
+}

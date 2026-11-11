@@ -1,0 +1,265 @@
+/* The FCX company page (/companies/fcx). Builds on metals.css (header, tabs, folds, tables) and copperTools.css (the
+   P/C/A badges); only the site's tokens: paper and ink, square corners, 1px rules, light only. The page never scrolls
+   sideways: wide tables scroll inside their own frame. */
+
+.co-page { max-width: 1120px; }
+.co-page :is(button, a, summary, input, select, [tabindex="0"]):focus-visible { outline: 2px solid var(--accent);
+  outline-offset: 2px; }
+.co-header .mt-lead { max-width: 60ch; }
+.co-tabs { margin-top: 18px; }
+.co-h2, .co-section-head h2 { margin: 0 0 8px; font: 400 clamp(20px, 2.2vw, 24px)/1.25 var(--serif); color: var(--ink); }
+.co-h3 { margin: 22px 0 8px; font: 600 15px/1.35 var(--sans); color: var(--ink); }
+.co-section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 26px 0 8px; }
+.co-section-head h2 { margin: 0; }
+.co-summary .co-section-head { margin-top: 0; }
+.co-stamp { margin: 0 0 10px; font: 500 11.5px/1.4 var(--mono); letter-spacing: 0.02em; color: var(--stamp); }
+.co-section-head .co-stamp { margin: 0; }
+.co-plain { max-width: 82ch; margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.co-sub { font: 400 12px/1.45 var(--sans); color: var(--ink-3); }
+
+/* Summary: a short paragraph, sentence by sentence. */
+.co-summary-text { max-width: 74ch; }
+.co-summary-text .co-line p { display: inline; margin: 0; font: 400 16.5px/1.6 var(--serif); color: var(--ink); }
+.co-summary-text .co-line { display: inline; }
+.co-summary-text .co-line + .co-line::before { content: " "; }
+.co-summary-text .co-quotes:not([hidden]) { display: block; margin: 8px 0; }
+
+/* A figure: its words, a dotted underline, and its badge. It opens the figure detail. */
+.co-fig { display: inline; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
+  text-align: inherit; }
+.co-fig-text { text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px;
+  text-decoration-thickness: 1px; }
+.co-fig:hover .co-fig-text { color: var(--accent); text-decoration-color: var(--accent); }
+.co-fig[data-state="withheld"] .co-fig-text { color: var(--ink-3); font-style: italic; }
+.co-fig .co-kind { margin-left: 3px; }
+.co-fig-cell { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.ct-kind.co-kind { vertical-align: 1px; }
+.ct-kind[data-kind="estimate"] { border-style: solid; border-color: var(--inconclusive); color: var(--inconclusive);
+  background: var(--inconclusive-soft); }
+
+/* The first screen. On a phone, in reading order: the short summary, the key figures, what changed. On a wide screen
+   the summary and what changed sit beside the key figures. */
+.co-first { display: grid; grid-template-areas: "summary" "figures" "changes"; gap: 4px 30px; }
+.co-summary { grid-area: summary; }
+.co-first-side { grid-area: figures; }
+.co-changes-part { grid-area: changes; }
+@media (min-width: 980px) {
+  .co-first { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); grid-template-areas: "summary figures"
+    "changes figures"; align-items: start; }
+  .co-first-side .co-section-head { margin-top: 0; }
+}
+.co-changes-part .co-section-head { margin-top: 18px; }
+.co-summary .co-fold { margin-top: 8px; }
+
+/* The key figures. */
+.co-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0;
+  padding: 0; list-style: none; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
+.co-tile { min-width: 0; padding: 12px 14px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  background: var(--paper-raised); }
+.co-tile-label { margin: 0; font: 500 10.5px/1.45 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-2); }
+.co-tile-period { color: var(--ink-3); }
+.co-tile-value { margin: 6px 0 0; font: 500 28px/1.15 var(--serif); color: var(--ink); }
+.co-tile-value .co-fig-tile .co-fig-text { text-decoration-thickness: 1px; }
+.co-tile-value .ct-kind { vertical-align: 7px; }
+.co-tile-unit { margin: 1px 0 4px; font: 400 11px/1.45 var(--mono); color: var(--ink-3); overflow-wrap: anywhere; }
+.co-tile-compare { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.co-tile-compare .co-sub { display: inline; }
+.co-tile-note-button { margin-top: 4px; padding: 0; border: 0; background: none; font: 500 12px/1.4 var(--sans);
+  color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+  cursor: pointer; text-align: left; }
+.co-tile-note { margin: 4px 0 0; padding-top: 4px; border-top: 1px solid var(--rule); font-size: 12.5px;
+  line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
+.co-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; font: 400 12px/1.5 var(--sans);
+  color: var(--ink-3); }
+
+/* What changed: one line each, the why and how behind a button. */
+.co-changes { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.co-change { padding: 9px 0; border-bottom: 1px solid var(--rule); }
+.co-change > p { margin: 0; max-width: 84ch; font-size: 15px; line-height: 1.55; color: var(--ink); }
+.co-change-detail { margin: 8px 0 2px; padding-left: 14px; border-left: 2px solid var(--rule-strong); max-width: 84ch; }
+.co-more, .co-quote-button, .co-link-button { padding: 0; border: 0; background: none; font: 500 13px/1.4 var(--sans);
+  color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+  cursor: pointer; }
+.co-link-button { font-size: inherit; text-align: left; }
+
+/* Statement tags: what the documents report, the company's reason or estimate, a computation, an AI reading. */
+.co-tag { display: inline-block; margin-right: 2px; padding: 0 6px; border: 1px solid var(--rule-strong);
+  font: 600 10px/1.6 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2);
+  vertical-align: 1px; white-space: nowrap; }
+.co-tag[data-tag="company_reason"] { border-color: var(--accent); color: var(--accent); }
+.co-tag[data-tag="estimate"] { border-color: var(--inconclusive); color: var(--inconclusive);
+  background: var(--inconclusive-soft); }
+.co-tag[data-tag="reading"] { border-color: var(--stamp); color: var(--stamp); background: var(--contradicted-soft); }
+.co-tag[data-tag="note"] { color: var(--ink-3); }
+
+.co-lines { margin: 0; padding: 0; list-style: none; }
+.co-line { margin: 0 0 8px; }
+.co-line > p { margin: 0; max-width: 84ch; font-size: 14px; line-height: 1.55; color: var(--ink); }
+.co-quotes { margin: 6px 0 4px; }
+.co-quote { margin: 6px 0; padding: 6px 12px; border-left: 2px solid var(--rule-strong); background: var(--paper-raised); }
+.co-quote blockquote { margin: 0; font: 400 14.5px/1.5 var(--serif); color: var(--ink); overflow-wrap: anywhere; }
+.co-quote figcaption { margin-top: 3px; font: 400 11px/1.4 var(--mono); color: var(--ink-3); }
+.co-withheld { color: var(--ink-3); font-size: 13px; }
+.co-withheld .co-sub { display: inline; }
+
+/* Folds and tables. */
+.co-fold { max-width: 100%; }
+.co-panel > .co-fold:first-of-type, .co-sens .co-fold { margin-top: 14px; }
+.co-table-wrap { margin: 6px 0 10px; }
+.co-table { min-width: 520px; }
+.co-table td.mt-num, .co-table th.mt-num { text-align: right; white-space: nowrap; }
+.co-unit-cell { min-width: 12em; font-size: 12px; color: var(--ink-3); }
+.co-row-note td { padding-top: 4px; background: var(--inconclusive-soft); font-size: 12.5px; line-height: 1.5;
+  color: var(--ink); }
+.co-dash { color: var(--ink-3); }
+.co-chooser { margin: 4px 0 12px; }
+.co-view { margin-bottom: 8px; }
+.co-filters { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 4px 0 6px; font-size: 13px; color: var(--ink-2); }
+.co-filters select, .co-filters input { margin-left: 6px; padding: 4px 6px; border: 1px solid var(--rule-strong);
+  border-radius: 0; background: var(--paper-raised); font: 400 13px/1.3 var(--sans); color: var(--ink); max-width: 100%; }
+.co-show-all { margin-top: 6px; }
+
+/* The mechanism chain: the exposure map's line styles, no arrowheads. */
+.co-chain { margin: 8px 0 0; padding: 0; list-style: none; counter-reset: step; }
+.co-step { position: relative; margin: 0; padding: 0 0 14px 22px; border-left: 2px solid var(--ink-2); }
+.co-step[data-link="conditional"] { border-left-style: dashed; }
+.co-step[data-link="not_measured"] { border-left-style: dotted; }
+.co-step::before { content: ""; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px;
+  border: 2px solid var(--ink-2); background: var(--paper); }
+.co-step h3 { margin: 0 0 6px; font: 600 14.5px/1.4 var(--sans); color: var(--ink); }
+.co-link-tag { margin-left: 6px; font: 500 10.5px/1.5 var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-3); }
+
+/* Sensitivity cards. */
+.co-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px;
+  margin: 8px 0 10px; padding: 0; list-style: none; }
+.co-card { min-width: 0; padding: 12px 14px; border: 1px solid var(--rule); background: var(--paper-raised); }
+.co-card .kicker { margin: 0; }
+.co-card-value { margin: 4px 0 2px; font: 500 22px/1.2 var(--serif); color: var(--ink); }
+.co-card-per { margin: 0 0 6px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
+.co-card-terms { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; margin: 0 0 6px;
+  font-size: 12.5px; line-height: 1.45; }
+.co-card-terms dt { color: var(--ink-3); }
+.co-card-terms dd { margin: 0; color: var(--ink); }
+.co-caption { margin: 8px 0 0; padding-top: 6px; border-top: 1px solid var(--rule); font: 400 11.5px/1.45 var(--sans);
+  color: var(--ink-3); }
+
+/* Bagdad: the decision apart from the company's estimates. */
+.co-bagdad { margin-top: 24px; padding: 14px 16px 6px; border: 1px solid var(--rule-strong); background: var(--paper-raised); }
+.co-bagdad .co-h3 { margin-top: 0; font: 400 20px/1.3 var(--serif); }
+.co-bagdad-part { margin: 0 0 12px; }
+.co-badge { display: inline-block; margin: 0 0 6px; padding: 1px 8px; font: 600 10.5px/1.6 var(--mono);
+  letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid var(--ink-2); color: var(--ink-2); }
+.co-badge[data-badge="estimate"] { border-color: var(--inconclusive); color: var(--inconclusive);
+  background: var(--inconclusive-soft); }
+.co-estimates { display: grid; margin: 0 0 8px; max-width: 70ch; }
+.co-estimates > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; padding: 6px 0;
+  border-bottom: 1px solid var(--rule); }
+.co-estimates dt { font-size: 13.5px; color: var(--ink-2); }
+.co-estimates dd { margin: 0; font-size: 14px; text-align: right; color: var(--ink); }
+
+/* Sources and kinds. */
+.co-sources { margin: 0; padding: 0; list-style: none; }
+.co-sources > li { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.co-sources > li:first-child { border-top: 1px solid var(--rule); }
+.co-source-title { margin: 0; font-size: 14.5px; line-height: 1.45; overflow-wrap: anywhere; }
+.co-source-meta { margin: 2px 0; font: 400 11.5px/1.5 var(--mono); color: var(--ink-3); }
+.co-source-state { margin: 2px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.co-source-state[data-state="missing"], .co-source-state[data-state="changed"] { padding: 4px 8px;
+  border-left: 3px solid var(--stamp); background: var(--contradicted-soft); color: var(--ink); }
+.co-source-details { display: grid; grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); gap: 4px 14px; margin: 0;
+  font-size: 13px; line-height: 1.5; }
+.co-source-details dt { color: var(--ink-3); }
+.co-source-details dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.co-kinds { display: grid; gap: 6px; margin: 0 0 8px; max-width: 80ch; }
+.co-kinds > div { display: grid; grid-template-columns: minmax(3rem, 12rem) minmax(0, 1fr); gap: 2px 12px; align-items: baseline; }
+.co-kinds dd { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+
+/* The figure detail: beside the page, never a modal; a sheet from the bottom on a phone. */
+.co-detail { position: fixed; z-index: 30; top: 72px; right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px));
+  overflow-y: auto; padding: 14px 16px 18px; border: 1px solid var(--rule-strong); background: var(--paper-raised);
+  box-shadow: 0 10px 30px rgba(28, 27, 24, 0.12); }
+.co-detail:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.co-detail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.co-detail-head .kicker { margin: 0; }
+.co-detail-close { padding: 4px 10px; border: 1px solid var(--rule-strong); background: var(--paper); font: 500 13px/1.3
+  var(--sans); color: var(--ink); cursor: pointer; }
+.co-detail h2 { margin: 6px 0 4px; font: 400 19px/1.3 var(--serif); color: var(--ink); overflow-wrap: anywhere; }
+.co-detail-value { margin: 0 0 10px; font: 500 22px/1.2 var(--serif); color: var(--ink); }
+.co-detail-list { display: grid; grid-template-columns: minmax(5.5rem, 7rem) minmax(0, 1fr); gap: 5px 12px; margin: 0;
+  font-size: 13px; line-height: 1.5; }
+.co-detail-list dt { color: var(--ink-3); }
+.co-detail-list dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.co-detail-quote { margin: 0; padding: 4px 10px; border-left: 2px solid var(--rule-strong); font: 400 14px/1.5 var(--serif); }
+.co-inputs { margin: 0; padding-left: 16px; }
+.co-assumption { color: var(--ink-2); }
+
+/* Scenarios (stage 2): the company's assumptions, your inputs and this project's result, each marked. The inputs and the
+   result sit side by side on a wide screen and in reading order on a phone. */
+.co-mark { display: inline-block; padding: 0 5px; border: 1px dashed var(--accent); font: 600 10px/1.5 var(--mono);
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); }
+.co-marks { margin: 0 0 10px; }
+.co-calc-tabs { margin-top: 2px; }
+.co-calc .co-h3 { margin-top: 6px; }
+.co-calc-base { margin: 0 0 12px; max-width: 70ch; }
+.co-calc-base-value { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.co-calc-notes { max-width: 84ch; margin: 0 0 12px; padding: 8px 12px; border-left: 2px solid var(--inconclusive);
+  background: var(--inconclusive-soft); }
+.co-calc-notes .co-line + .co-line { margin-top: 4px; }
+.co-calc-work { display: grid; gap: 14px 28px; margin: 4px 0 14px; }
+@media (min-width: 820px) {
+  .co-calc-work { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; }
+}
+.co-calc-form { padding: 12px 14px; border: 1px solid var(--rule); background: var(--paper-raised); }
+.co-calc-fields { display: grid; gap: 12px; }
+.co-field { display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); }
+.co-field-label { font-weight: 500; color: var(--ink); }
+.co-field input { width: 100%; max-width: 14rem; min-height: 40px; padding: 6px 10px; border: 1px solid var(--rule-strong);
+  border-radius: 0; background: var(--paper); font: 500 17px/1.3 var(--mono); color: var(--ink); }
+.co-field input[aria-invalid="true"] { border-color: var(--stamp); outline-color: var(--stamp); }
+.co-field-hint { font: 400 12px/1.4 var(--sans); color: var(--ink-3); }
+.co-field-error { font: 500 12.5px/1.45 var(--sans); color: var(--stamp); }
+.co-calc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.co-calc-actions .button { min-height: 40px; }
+.co-calc-actions .co-reset { border-color: var(--rule-strong); color: var(--ink-2); }
+.co-calc-actions .button:disabled { opacity: 0.6; cursor: progress; }
+.co-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.co-calc-result { min-height: 7rem; padding: 12px 14px; border: 1px solid var(--rule); border-top: 3px solid var(--ink-2); }
+.co-calc-result[data-result-state="ready"] { border-top-color: var(--accent); }
+.co-calc-result[data-result-state="error"], .co-calc-result[data-result-state="blocked"] { border-top-color: var(--stamp); }
+.co-calc-for { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
+.co-calc-main { margin: 0 0 6px; font: 500 30px/1.15 var(--serif); color: var(--ink); overflow-wrap: anywhere; }
+.co-calc-main-label { font: 400 14px/1.4 var(--sans); color: var(--ink-2); }
+.co-calc-definition { margin: 0 0 10px; max-width: 64ch; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.co-calc-split { display: grid; margin: 0; border-top: 1px solid var(--rule); }
+.co-calc-split > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; padding: 6px 0;
+  border-bottom: 1px solid var(--rule); }
+.co-calc-split dt { font-size: 13.5px; color: var(--ink-2); }
+.co-calc-split dd { margin: 0; font: 500 14px/1.4 var(--mono); text-align: right; color: var(--ink); white-space: nowrap; }
+.co-calc-split > div[data-row="change"] dd { font-weight: 700; }
+.co-calc-steps { margin: 0 0 8px; padding: 6px 10px; border-left: 2px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 13px; line-height: 1.5; color: var(--ink); max-width: 64ch; }
+.co-calc-empty { margin: 0; font-size: 13.5px; color: var(--ink-3); }
+.co-calc-error { margin: 0; font-size: 14px; line-height: 1.5; color: var(--stamp); }
+.co-calc-blocked { max-width: 84ch; margin: 4px 0 14px; padding: 10px 12px; border: 1px solid var(--rule-strong);
+  font-size: 14px; color: var(--ink-2); }
+.co-formulas { display: grid; gap: 6px; margin: 0 0 10px; }
+.co-formulas > div { display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr); gap: 2px 12px; }
+.co-formulas dt { font-size: 13px; color: var(--ink-2); }
+.co-formulas dd { margin: 0; }
+.co-formulas code { font: 400 13px/1.5 var(--mono); color: var(--ink); white-space: normal; overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .co-tile-value { font-size: 24px; }
+  .co-detail { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 72vh; border-left: 0; border-right: 0;
+    border-bottom: 0; }
+  .co-detail-list, .co-source-details { grid-template-columns: minmax(0, 1fr); gap: 0 12px; }
+  .co-detail-list dd, .co-source-details dd { margin-bottom: 6px; }
+  .co-kinds > div { grid-template-columns: minmax(0, 1fr); }
+  .co-step { padding-left: 16px; }
+  .mt-fold-teaser { margin-left: 0; }
+  .co-calc-main { font-size: 26px; }
+  .co-formulas > div { grid-template-columns: minmax(0, 1fr); }
+  .co-field input { max-width: none; }
+}

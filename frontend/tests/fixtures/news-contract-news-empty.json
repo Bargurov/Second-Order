@@ -1,0 +1,104 @@
+{
+  "contract": "user-api-0.5",
+  "news": {
+    "view_version": "user-news-view-0.1",
+    "vocabulary_version": "news-interests-0.2",
+    "scope": "interests",
+    "interests": [
+      "monetary-policy",
+      "energy"
+    ],
+    "sources": [
+      {
+        "source": "fed-monetary",
+        "label": "Federal Reserve: monetary policy press releases",
+        "publisher": "Board of Governors of the Federal Reserve System",
+        "interest": "monetary-policy",
+        "kind": "Policy announcement",
+        "attribution": "Source: Board of Governors of the Federal Reserve System",
+        "catalogue_url": "https://www.federalreserve.gov/feeds/feeds.htm",
+        "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "last_attempt": null,
+        "note": "No retrieval has been made on this server yet.",
+        "stale": false,
+        "entries": 0,
+        "importable": true
+      },
+      {
+        "source": "bls-empsit",
+        "label": "BLS: The Employment Situation",
+        "publisher": "U.S. Bureau of Labor Statistics",
+        "interest": "employment",
+        "kind": "Statistical release",
+        "attribution": "",
+        "catalogue_url": "https://www.bls.gov/feed/",
+        "terms_url": "https://www.bls.gov/bls/linksite.htm",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "last_attempt": null,
+        "note": "No retrieval has been made on this server yet.",
+        "stale": false,
+        "entries": 0,
+        "importable": false
+      },
+      {
+        "source": "bls-cpi",
+        "label": "BLS: Consumer Price Index",
+        "publisher": "U.S. Bureau of Labor Statistics",
+        "interest": "inflation",
+        "kind": "Statistical release",
+        "attribution": "",
+        "catalogue_url": "https://www.bls.gov/feed/",
+        "terms_url": "https://www.bls.gov/bls/linksite.htm",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "last_attempt": null,
+        "note": "No retrieval has been made on this server yet.",
+        "stale": false,
+        "entries": 0,
+        "importable": false
+      },
+      {
+        "source": "eia-todayinenergy",
+        "label": "EIA: Today in Energy",
+        "publisher": "U.S. Energy Information Administration",
+        "interest": "energy",
+        "kind": "Analysis article",
+        "attribution": "Source: U.S. Energy Information Administration",
+        "catalogue_url": "https://www.eia.gov/tools/rssfeeds/",
+        "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "last_attempt": null,
+        "note": "No retrieval has been made on this server yet.",
+        "stale": false,
+        "entries": 0,
+        "importable": false
+      },
+      {
+        "source": "wto-news",
+        "label": "WTO: Latest news",
+        "publisher": "World Trade Organization",
+        "interest": "trade",
+        "kind": "News announcement",
+        "attribution": "WTO news",
+        "catalogue_url": "https://www.wto.org/english/res_e/webcas_e/rss_e.htm",
+        "terms_url": "https://www.wto.org/english/info_e/copyrights_permissions_e.htm",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "last_attempt": null,
+        "note": "No retrieval has been made on this server yet.",
+        "stale": false,
+        "entries": 0,
+        "importable": false
+      }
+    ],
+    "entries": [],
+    "notes": [
+      "No source has been retrieved on this server yet, so there is no news to show. Nothing is filled in from elsewhere."
+    ],
+    "statement": "Entries come from the publishers' own feeds as this server last retrieved them. An excerpt is the feed's text, not the publication. Reading this list contacts no publisher."
+  }
+}

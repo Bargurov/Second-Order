@@ -1,0 +1,22 @@
+{
+  "collection_version": "related-cases-0.1",
+  "title": "Historical policy announcements",
+  "introduction": "Two historical US government announcements, each written from one official press release that this project retained: the Treasury Department’s January 2019 sanctions on Venezuela’s state-owned oil company, and the Commerce Department’s October 2022 export controls on advanced computing and chipmaking items for China. Each case separates what the release states, with its words quoted from the retained copy, from labelled interpretation, and lists what remains unknown. On an event’s overview, Related cases compares the event’s own text with these two cases.",
+  "labels": [
+    "Historical announcements",
+    "Facts quoted from a retained official page",
+    "Interpretation labelled, AI-assisted",
+    "Not human-reviewed",
+    "Not current law or policy",
+    "Never scored · not research evidence"
+  ],
+  "historical_note": "These cases describe announcements as of their dates. Rules, licenses and sanctions change after they are announced; nothing here says what applies today.",
+  "coverage_note": "A first version with two cases: one on semiconductor export controls and one on sanctions. Two cases cannot cover policy events broadly, so most events will have no related case.",
+  "matching_note": "A case is shown as related to an event only when the event’s own text names the case’s policy instrument and also its sector or its country. A shared topic alone, such as oil, is listed as an overlap, not as a related case. Saved headline classifications are used only as labelled hints. Matching runs on this machine with a fixed word list: no model, no network and no score.",
+  "unfinished": [
+    {"topic": "Tariffs and international trade", "planned_source": "The Federal Register’s page for the Section 232 steel proclamation (document 2018-05478)", "outcome": "Not built yet. The one approved request was redirected to an access check, which was not followed, so no source was retained."},
+    {"topic": "Competition and regulatory policy", "planned_source": "The Justice Department’s press release on its advertising-technology suit against Google", "outcome": "Not built yet. The one approved request returned a bot-verification page without the press release, which was not accepted as a source."},
+    {"topic": "Labor disruptions", "planned_source": "SAG-AFTRA’s strike order for TV, theatrical and streaming contracts", "outcome": "Not built yet. The one approved request was refused (HTTP 403 Forbidden), so no source was retained."}
+  ],
+  "cases": ["ofac-pdvsa-2019-01-28", "bis-2022-10-07"]
+}

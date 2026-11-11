@@ -1,0 +1,79 @@
+{
+  "enrichment_version": "case-enrichment-0.1",
+  "case_id": "bis-2026-07-10",
+  "case_file_sha256": "63ccb26b4f85f2489c921454c984a75ad8518b110ee40866689c00808cedd28c",
+  "currency": "historical",
+  "sources": [
+    {
+      "id": "release",
+      "role": "The press release the case was written from",
+      "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS), Office of Congressional and Public Affairs",
+      "title": "Department of Commerce Eases Export Controls for UAE",
+      "url": "https://www.bis.gov/press-release/department-commerce-eases-export-controls-uae",
+      "date_as_stated": "FOR IMMEDIATE RELEASE | July 10, 2026",
+      "retained": {
+        "approval_id": "bis-semis-sources-01",
+        "attempt": 2,
+        "folder": "bis-2026-07-10",
+        "sha256": "c9e8bfbae9905508e5f98827e15cb4874e0797d6bd0ab9df364a6f9493dc25be",
+        "bytes": 54979,
+        "retrieved_at": "2026-10-12T14:47:49.265273+00:00",
+        "charset": "utf-8, declared in the HTTP Content-Type header"
+      }
+    }
+  ],
+  "chain": {
+    "placement": "Advanced computing at the end of the chain: finished AI chips and servers received in the UAE. Most of the release concerns items outside the semiconductor chain (military items, satellites and spacecraft, and dual-use items for energy and water); it does not concern chip design, chip fabrication or chipmaking equipment.",
+    "attribution": "curator_interpretation",
+    "basis": "BIS names advanced computing items, including AI chips and servers, and the other item categories; it does not describe them in terms of a supply chain. The placement is the curator's reading of those categories."
+  },
+  "readout": [
+    {"aspect": "instrument", "status": "stated", "text": "A change of the UAE's Country Groups under the Export Administration Regulations: BIS will remove it from Groups D:3 and D:4 and reclassify it as Group A:5.", "source": "release", "reference": null},
+    {"aspect": "instrument", "status": "stated", "text": "Eligibility for License Exception Strategic Trade Authorization: license-free exports, reexports and in-country transfers for the UAE Government and approved commercial entities.", "source": "release", "reference": null},
+    {"aspect": "instrument", "status": "stated", "text": "A Commerce approval for the UAE Government and certain companies to receive advanced computing items in the UAE license-free, including AI chips and servers.", "source": "release", "reference": null},
+    {"aspect": "instrument", "status": "referenced_unread", "text": "The regulatory text: the release says a Federal Register notice implements the changes it describes.", "source": "release", "reference": "federal-register-notice"},
+    {"aspect": "scope", "status": "stated", "text": "Items under the exception: Commerce-controlled military items; certain commercial satellites and spacecraft; dual-use items useful in oil and gas production, desalination and civil nuclear power generation; and other items available to Country Group A:5 destinations license-free.", "source": "release", "reference": null},
+    {"aspect": "scope", "status": "not_stated", "text": "Which companies are approved to receive advanced computing items, how they are approved, and any limit on quantities or end uses.", "source": "release", "reference": null},
+    {"aspect": "timing", "status": "stated", "text": "Announced on July 10, 2026, as changes BIS will make; the Federal Register notice is described as available for public inspection.", "source": "release", "reference": null},
+    {"aspect": "timing", "status": "not_stated", "text": "An effective date for any of the changes, or the date of the notice's publication.", "source": "release", "reference": null},
+    {"aspect": "conditions", "status": "stated", "text": "Reasons given for the special status: the UAE's status as a U.S. Major Defense Partner, the military partnership, and its commitment to preventing the diversion and misuse of sensitive U.S. technology.", "source": "release", "reference": null},
+    {"aspect": "conditions", "status": "stated", "text": "The advanced-computing approval is described as consistent with the U.S.-UAE Artificial Intelligence Cooperation framework signed in May 2025, under which the UAE reaffirmed its investment commitments, including matching investments in U.S. AI digital infrastructure buildout.", "source": "release", "reference": null},
+    {"aspect": "conditions", "status": "not_stated", "text": "Any condition attached to the new status or to the approvals, or what would follow if the commitments were not kept.", "source": "release", "reference": null}
+  ],
+  "references": [
+    {"id": "federal-register-notice", "description": "The Federal Register notice implementing the changes (document 2026-14132), which the release links as available for public inspection", "url": "https://www.federalregister.gov/d/2026-14132", "source": "release", "read": false},
+    {"id": "ai-cooperation-framework", "description": "The U.S.-UAE Artificial Intelligence Cooperation framework signed in May 2025, which the release names without linking", "url": null, "source": "release", "read": false}
+  ],
+  "claim_checks": [
+    {"target": "title", "label": "Title", "status": "qualified", "source": "release", "note": "The release announces the reclassification as a change BIS will make, implemented by a Federal Register notice; it does not say when it takes effect."},
+    {"target": "summary", "label": "Summary", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[0]", "label": "Country Group change", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[1]", "label": "License exception", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[2]", "label": "Item categories named", "status": "qualified", "source": "release", "note": "The release names Commerce-controlled military items, and its last category is other items available to Country Group A:5 destinations license-free, not other uses of dual-use items."},
+    {"target": "key_facts[3]", "label": "Advanced computing", "status": "qualified", "source": "release", "note": "The release's category is advanced computing items received in the UAE, including AI chips and servers, and it presents the approval as consistent with the May 2025 framework."},
+    {"target": "key_facts[4]", "label": "Framework cited", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[5]", "label": "Effective date", "status": "consistent", "source": "release", "note": null},
+    {"target": "channels[0].source_fact", "label": "AI hardware demand from the UAE (chip and server makers)", "status": "qualified", "source": "release", "note": "The release says Commerce is approving receipt of advanced computing items, including AI chips and servers; it gives no quantities, recipients or dates."},
+    {"target": "channels[1].source_fact", "label": "Investment into US AI infrastructure", "status": "consistent", "source": "release", "note": null},
+    {"target": "channels[2].source_fact", "label": "Diversion risk and the durability of the easing", "status": "discrepancy", "source": "release", "note": "The release does not say that BIS conditions the new status on the commitment. It says the special status is warranted in light of the military partnership and the UAE's commitment to preventing diversion and misuse: a stated reason, not a stated condition."}
+  ],
+  "not_checked": "The overview, competing explanations, assumptions, missing information, weakening observations, critique and source notes were not checked; the case's channels and readings remain its own interpretation.",
+  "examination": [
+    {"channel": "AI hardware demand from the UAE (chip and server makers)", "observations": ["Exports of advanced computing items to the UAE over time, by value and quantity, from official trade statistics.", "Which recipients were approved, and what they installed.", "When the change took effect, from the Federal Register notice.", "Whether such shipments were already licensed before July 2026."]},
+    {"channel": "Investment into US AI infrastructure", "observations": ["Amounts and timing of UAE investments made under the framework, from official or company disclosures.", "Which U.S. data-center projects received that capital, and when."]},
+    {"channel": "Diversion risk and the durability of the easing", "observations": ["Any conditions stated in the Federal Register notice.", "Later BIS actions concerning the UAE: amendments, reversals, or enforcement cases involving diversion."]}
+  ],
+  "comparison": {
+    "historical_case": "bis-2022-10-07",
+    "facts": ["two-rules", "phases"],
+    "text": "The October 2022 release announced two rules restricting the PRC's ability to obtain advanced computing chips and to manufacture advanced semiconductors, effective in phases. This release moves the other way for one destination: it eases controls for the UAE and approves license-free receipt of advanced computing items, and it states no effective date. Both are announcements as of their dates, not current rules."
+  },
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-12",
+    "method": "Written offline from the retained copy of the press release (approval bis-semis-sources-01), read without running its scripts or opening its links. Each stated item and each claim check rests on passages of that copy kept in a private acceptance record; the chain placement and the observations are the curator's reading. The case file and its provenance are unchanged.",
+    "ai_assisted": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

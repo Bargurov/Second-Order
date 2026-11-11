@@ -1,0 +1,12 @@
+{
+  "contract": "user-api-0.5",
+  "mode": "local-operator",
+  "state": "signed_in",
+  "user": {
+    "user_id": "local-operator",
+    "username": "operator",
+    "display_name": "Local operator",
+    "role": "admin"
+  },
+  "expires_at": null
+}

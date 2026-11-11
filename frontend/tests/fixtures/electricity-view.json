@@ -1,0 +1,3570 @@
+{
+ "available": true,
+ "coverage": {
+  "against": {
+   "first": "2024-07",
+   "first_label": "July 2024",
+   "last": "2025-06",
+   "last_label": "June 2025"
+  },
+  "compared": {
+   "first": "2025-07",
+   "first_label": "July 2025",
+   "last": "2026-06",
+   "last_label": "June 2026"
+  },
+  "file": {
+   "annual_first": "2023",
+   "annual_last": "2025",
+   "monthly_first": "2023-01",
+   "monthly_last": "2026-06",
+   "monthly_last_label": "June 2026",
+   "retrieved_at": "2026-10-11T21:41:13.000000+00:00"
+  },
+  "geography": "The 50 states and the District of Columbia, as the printed table's notes state; the CSV has no geography field.",
+  "period": {
+   "label": "January–June 2026",
+   "prior_label": "January–June 2025"
+  },
+  "series": {
+   "ELDUPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 1,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 12,
+    "monthly_rows": 42
+   },
+   "ELTCPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 0,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 0,
+    "monthly_rows": 42
+   },
+   "ESACPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 0,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 0,
+    "monthly_rows": 42
+   },
+   "ESCCPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 0,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 0,
+    "monthly_rows": 42
+   },
+   "ESICPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 0,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 0,
+    "monthly_rows": 42
+   },
+   "ESRCPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 0,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 0,
+    "monthly_rows": 42
+   },
+   "ESTCPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 0,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 0,
+    "monthly_rows": 42
+   },
+   "ESVHPUS": {
+    "annual_first": "2023",
+    "annual_last": "2025",
+    "annual_not_available": 2,
+    "annual_rows": 3,
+    "monthly_first": "2023-01",
+    "monthly_gaps": 0,
+    "monthly_last": "2026-06",
+    "monthly_not_available": 24,
+    "monthly_rows": 42
+   }
+  }
+ },
+ "definitions": {
+  "analyzed": {
+   "ESCCPUS": "Commercial",
+   "ESICPUS": "Industrial",
+   "ESRCPUS": "Residential"
+  },
+  "change": "current minus prior, million kWh; percentage = change / prior x 100",
+  "classes": {
+   "down": "percentage <= -1",
+   "little_changed": "otherwise",
+   "unavailable": "a missing observation, or a prior value of zero or less",
+   "up": "percentage >= +1"
+  },
+  "context": {
+   "ESACPUS": "Transportation (railways only)",
+   "ESTCPUS": "Total retail sales"
+  },
+  "contributions": "changes of the four sectors and the rounding residual, only when every month involved reconciles within rounding",
+  "excluded": {
+   "ELDUPUS": "Direct use",
+   "ELTCPUS": "Total end use",
+   "ESVHPUS": "Electric vehicle use"
+  },
+  "monthly_finding": "at least one analyzed sector up and another down in the same month; one finding per month",
+  "percent_display": "two decimals, truncated toward zero",
+  "period": "sum each sector over identical complete periods, then compare; growth rates are never averaged",
+  "reconciliation": {
+   "basis": "five values each published to 0.001; independent rounding allows 5 x 0.0005",
+   "identity": "residential + commercial + industrial + transportation = total retail sales",
+   "tolerance_million_kwh": "0.0025"
+  },
+  "scope": {
+   "comparison": "same month one year earlier",
+   "months": {
+    "first": "2025-07",
+    "last": "2026-06"
+   },
+   "period": {
+    "current": {
+     "first": "2026-01",
+     "last": "2026-06"
+    },
+    "prior": {
+     "first": "2025-01",
+     "last": "2025-06"
+    }
+   }
+  },
+  "threshold": "1% is a fixed, transparent product filter: not statistical significance, not empirically calibrated, not proof of materiality.",
+  "values": "Retail sales in million kWh as published in the CSV (three decimals), exact decimal arithmetic.",
+  "version": "electricity-rules-0.1"
+ },
+ "detail": null,
+ "disclosures": [
+  "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+  "Not weather-adjusted and not calendar-adjusted.",
+  "No price normalization and no inference about economic output.",
+  "Whether an observation is preliminary is not marked in the retained data.",
+  "A single retained acquisition of the data, not a revision history.",
+  "No cause is established."
+ ],
+ "findings": {
+  "monthly": [
+   {
+    "adds": "Total retail sales changed +0.42% (+1,200.000 million kWh) against June 2025. That single figure does not show that industrial sales were down 1% or more while residential and commercial sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "1200.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "1000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "1000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "-800.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "1000.000",
+      "ESICPUS": "-800.000",
+      "ESRCPUS": "1000.000"
+     },
+     "state": "computed",
+     "total_change": "1200.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2026-06",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2026-06",
+    "label": "June 2026",
+    "notes": [
+     "June 2026 and June 2025 both have 30 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "101000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESCCPUS",
+      "current": "101000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "class": "down",
+      "code": "ESICPUS",
+      "current": "79200.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "-1.00",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "1200.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "281800.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.42",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [],
+     "unavailable": []
+    },
+    "prior_label": "June 2025",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "June 2026: residential and commercial sales up, industrial sales down from June 2025",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed +0.42% (+1,200.000 million kWh) against May 2025. That single figure does not show that industrial sales were down 1% or more while residential and commercial sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "1200.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "1000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "1000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "-800.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "1000.000",
+      "ESICPUS": "-800.000",
+      "ESRCPUS": "1000.000"
+     },
+     "state": "computed",
+     "total_change": "1200.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2026-05",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2026-05",
+    "label": "May 2026",
+    "notes": [
+     "May 2026 and May 2025 both have 31 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "101000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESCCPUS",
+      "current": "101000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "class": "down",
+      "code": "ESICPUS",
+      "current": "79200.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "-1.00",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "1200.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "281800.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.42",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [],
+     "unavailable": []
+    },
+    "prior_label": "May 2025",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "May 2026: residential and commercial sales up, industrial sales down from May 2025",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed +0.42% (+1,200.000 million kWh) against April 2025. That single figure does not show that industrial sales were down 1% or more while residential and commercial sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "1200.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "1000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "1000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "-800.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "1000.000",
+      "ESICPUS": "-800.000",
+      "ESRCPUS": "1000.000"
+     },
+     "state": "computed",
+     "total_change": "1200.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2026-04",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2026-04",
+    "label": "April 2026",
+    "notes": [
+     "April 2026 and April 2025 both have 30 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "101000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESCCPUS",
+      "current": "101000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "class": "down",
+      "code": "ESICPUS",
+      "current": "79200.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "-1.00",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "1200.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "281800.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.42",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [],
+     "unavailable": []
+    },
+    "prior_label": "April 2025",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "April 2026: residential and commercial sales up, industrial sales down from April 2025",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed +0.42% (+1,200.000 million kWh) against March 2025. That single figure does not show that industrial sales were down 1% or more while residential and commercial sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "1200.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "1000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "1000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "-800.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "1000.000",
+      "ESICPUS": "-800.000",
+      "ESRCPUS": "1000.000"
+     },
+     "state": "computed",
+     "total_change": "1200.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2026-03",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2026-03",
+    "label": "March 2026",
+    "notes": [
+     "March 2026 and March 2025 both have 31 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "101000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESCCPUS",
+      "current": "101000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "class": "down",
+      "code": "ESICPUS",
+      "current": "79200.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "-1.00",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "1200.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "281800.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.42",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [],
+     "unavailable": []
+    },
+    "prior_label": "March 2025",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "March 2026: residential and commercial sales up, industrial sales down from March 2025",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed +0.17% (+500.000 million kWh) against February 2025. That single figure does not show that residential sales were down 1% or more while commercial sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "500.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "-1500.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "2000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "2000.000",
+      "ESICPUS": "0.000",
+      "ESRCPUS": "-1500.000"
+     },
+     "state": "computed",
+     "total_change": "500.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2026-02",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2026-02",
+    "label": "February 2026",
+    "notes": [
+     "February 2026 and February 2025 both have 28 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "-1500.000",
+      "class": "down",
+      "code": "ESRCPUS",
+      "current": "98500.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "-1.50",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "2000.000",
+      "class": "up",
+      "code": "ESCCPUS",
+      "current": "102000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "2.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESICPUS",
+      "current": "80000.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "0.00",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "500.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "281100.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.17",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [
+      "Industrial"
+     ],
+     "unavailable": []
+    },
+    "prior_label": "February 2025",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "February 2026: commercial sales up, residential sales down from February 2025",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed +1.24% (+3,506.000 million kWh) against January 2025. That single figure does not show that industrial sales were down 1% or more while residential and commercial sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "3500.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "4000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "1500.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "-2000.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "6.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "6.000",
+      "ESCCPUS": "1500.000",
+      "ESICPUS": "-2000.000",
+      "ESRCPUS": "4000.000"
+     },
+     "state": "computed",
+     "total_change": "3506.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2026-01",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2026-01",
+    "label": "January 2026",
+    "notes": [
+     "January 2026 and January 2025 both have 31 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "4000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "104000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "4.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "1500.000",
+      "class": "up",
+      "code": "ESCCPUS",
+      "current": "101500.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "1.50",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-2000.000",
+      "class": "down",
+      "code": "ESICPUS",
+      "current": "78000.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "-2.50",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "6.000",
+      "class": "up",
+      "code": "ESACPUS",
+      "current": "606.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "1.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "3506.000",
+      "class": "up",
+      "code": "ESTCPUS",
+      "current": "284106.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "1.24",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [],
+     "unavailable": []
+    },
+    "prior_label": "January 2025",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "January 2026: residential and commercial sales up, industrial sales down from January 2025",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed 0.00% (0.000 million kWh) against August 2024. That single figure does not show that commercial sales were down 1% or more while residential sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "0.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "1000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "-1000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "-1000.000",
+      "ESICPUS": "0.000",
+      "ESRCPUS": "1000.000"
+     },
+     "state": "computed",
+     "total_change": "0.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2025-08",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2025-08",
+    "label": "August 2025",
+    "notes": [
+     "August 2025 and August 2024 both have 31 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "1000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "101000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-1000.000",
+      "class": "down",
+      "code": "ESCCPUS",
+      "current": "99000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "-1.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESICPUS",
+      "current": "80000.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "0.00",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "280600.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.00",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [
+      "Industrial"
+     ],
+     "unavailable": []
+    },
+    "prior_label": "August 2024",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "August 2025: residential sales up, commercial sales down from August 2024",
+    "type": "month"
+   },
+   {
+    "adds": "Total retail sales changed +0.14% (+400.000 million kWh) against July 2024. That single figure does not show that commercial sales were down 1% or more while residential sales were up 1% or more.",
+    "contributions": {
+     "analyzed_change": "400.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "rows": [
+      {
+       "change": "2000.000",
+       "code": "ESRCPUS",
+       "label": "Residential",
+       "role": "analyzed"
+      },
+      {
+       "change": "-2000.000",
+       "code": "ESCCPUS",
+       "label": "Commercial",
+       "role": "analyzed"
+      },
+      {
+       "change": "400.000",
+       "code": "ESICPUS",
+       "label": "Industrial",
+       "role": "analyzed"
+      },
+      {
+       "change": "0.000",
+       "code": "ESACPUS",
+       "label": "Transportation (railways only)",
+       "role": "context"
+      }
+     ],
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "-2000.000",
+      "ESICPUS": "400.000",
+      "ESRCPUS": "2000.000"
+     },
+     "state": "computed",
+     "total_change": "400.000"
+    },
+    "disclosures": [
+     "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+     "Not weather-adjusted and not calendar-adjusted.",
+     "No price normalization and no inference about economic output.",
+     "Whether an observation is preliminary is not marked in the retained data.",
+     "A single retained acquisition of the data, not a revision history.",
+     "No cause is established."
+    ],
+    "id": "month|2025-07",
+    "interpretation": "Against the same month a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+    "key": "2025-07",
+    "label": "July 2025",
+    "notes": [
+     "July 2025 and July 2024 both have 31 days; weekdays, holidays and billing cycles are not adjusted."
+    ],
+    "observed": [
+     {
+      "change": "2000.000",
+      "class": "up",
+      "code": "ESRCPUS",
+      "current": "102000.000",
+      "key": "residential",
+      "label": "Residential",
+      "percent": "2.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "-2000.000",
+      "class": "down",
+      "code": "ESCCPUS",
+      "current": "98000.000",
+      "key": "commercial",
+      "label": "Commercial",
+      "percent": "-2.00",
+      "prior": "100000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "400.000",
+      "class": "little_changed",
+      "code": "ESICPUS",
+      "current": "80400.000",
+      "key": "industrial",
+      "label": "Industrial",
+      "percent": "0.50",
+      "prior": "80000.000",
+      "reason": null,
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "class": "little_changed",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "key": "transportation",
+      "label": "Transportation (railways only)",
+      "percent": "0.00",
+      "prior": "600.000",
+      "reason": null,
+      "role": "context"
+     },
+     {
+      "change": "400.000",
+      "class": "little_changed",
+      "code": "ESTCPUS",
+      "current": "281000.000",
+      "key": "total",
+      "label": "Total retail sales",
+      "percent": "0.14",
+      "prior": "280600.000",
+      "reason": null,
+      "role": "context"
+     }
+    ],
+    "others": {
+     "little_changed": [
+      "Industrial"
+     ],
+     "unavailable": []
+    },
+    "prior_label": "July 2024",
+    "source": {
+     "file": "table76/T07.06.csv",
+     "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+     "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+     "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+    },
+    "title": "July 2025: residential sales up, commercial sales down from July 2024",
+    "type": "month"
+   }
+  ],
+  "order": "One card per month in which at least one analyzed sector was up and another down; latest month first, then the January-June comparison.",
+  "period": {
+   "adds": "Total retail sales changed +0.52% (+8,806.000 million kWh) against January–June 2025. That single figure does not show that industrial sales were down 1% or more while residential and commercial sales were up 1% or more.",
+   "contributions": {
+    "analyzed_change": "8800.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "6500.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "7500.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-5200.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "6.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "6.000",
+     "ESCCPUS": "7500.000",
+     "ESICPUS": "-5200.000",
+     "ESRCPUS": "6500.000"
+    },
+    "state": "computed",
+    "total_change": "8806.000"
+   },
+   "disclosures": [
+    "Retail sales of electricity to ultimate customers, not total electricity consumption: direct use (such as electricity generated and used on site) is not included.",
+    "Not weather-adjusted and not calendar-adjusted.",
+    "No price normalization and no inference about economic output.",
+    "Whether an observation is preliminary is not marked in the retained data.",
+    "A single retained acquisition of the data, not a revision history.",
+    "No cause is established."
+   ],
+   "id": "period|2026-01..2026-06",
+   "interpretation": "Against the same period a year earlier, retail sales to these sectors moved in opposite directions by at least 1% each. This describes reported retail sales only; it does not say why they differ.",
+   "key": "2026-01..2026-06",
+   "label": "January–June 2026",
+   "notes": [
+    "January–June 2026 and January–June 2025 both have 181 days; weekdays, holidays and billing cycles are not adjusted."
+   ],
+   "observed": [
+    {
+     "change": "6500.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "606500.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "1.08",
+     "prior": "600000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "7500.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "607500.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "1.25",
+     "prior": "600000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-5200.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "474800.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-1.08",
+     "prior": "480000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "6.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "3606.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.16",
+     "prior": "3600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "8806.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "1692406.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.52",
+     "prior": "1683600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "others": {
+    "little_changed": [],
+    "unavailable": []
+   },
+   "prior_label": "January–June 2025",
+   "source": {
+    "file": "table76/T07.06.csv",
+    "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+    "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+    "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+   },
+   "title": "January–June 2026: residential and commercial sales up, industrial sales down from January–June 2025",
+   "type": "period"
+  },
+  "total": 9
+ },
+ "kept_results": 1,
+ "limitations": [
+  "Residential, commercial and industrial sales include electricity used to operate and move electric vehicles (Table 7.6 footnote b). Electric vehicle use is a separate estimate; it is neither added nor subtracted here.",
+  "Transportation covers sales to public railroads and railway systems only (footnote e), not electricity used by road vehicles. It is shown as context and never enters a finding.",
+  "Industrial retail sales leave out direct use (self-generated electricity used on site, footnote g), so they are not total industrial electricity use.",
+  "The sectors are EIA classes of service (footnotes a to d). The section notes on coverage and the sources were not retained, so billing-period conventions are not established here.",
+  "The 1% band is a fixed product filter: not statistical significance, not an empirically calibrated threshold and not proof of materiality.",
+  "The comparison scope is fixed. It does not move when newer data appear, and the last month in the retained file is not necessarily the latest month EIA has published since.",
+  "The CSV states no edition. The retained PDF prints the September 2026 edition; that edition is not assigned to the CSV, and values agreeing between them would show consistency, not a shared vintage."
+ ],
+ "months": [
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "400.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "281000.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.14",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "400.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "2000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "-2000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "400.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "-2000.000",
+     "ESICPUS": "400.000",
+     "ESRCPUS": "2000.000"
+    },
+    "state": "computed",
+    "total_change": "400.000"
+   },
+   "days": 31,
+   "days_note": "July 2025 and July 2024 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Commercial"
+    ],
+    "finding": true,
+    "little_changed": [
+     "Industrial"
+    ],
+    "unavailable": [],
+    "up": [
+     "Residential"
+    ]
+   },
+   "label": "July 2025",
+   "month": "2025-07",
+   "prior": "2024-07",
+   "prior_days": 31,
+   "prior_label": "July 2024",
+   "reconciliation": [
+    {
+     "month": "2025-07",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "281000.000",
+     "total": "281000.000"
+    },
+    {
+     "month": "2024-07",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "2000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "102000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "2.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-2000.000",
+     "class": "down",
+     "code": "ESCCPUS",
+     "current": "98000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "-2.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "400.000",
+     "class": "little_changed",
+     "code": "ESICPUS",
+     "current": "80400.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "0.50",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "280600.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.00",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "0.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "1000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "-1000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "-1000.000",
+     "ESICPUS": "0.000",
+     "ESRCPUS": "1000.000"
+    },
+    "state": "computed",
+    "total_change": "0.000"
+   },
+   "days": 31,
+   "days_note": "August 2025 and August 2024 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Commercial"
+    ],
+    "finding": true,
+    "little_changed": [
+     "Industrial"
+    ],
+    "unavailable": [],
+    "up": [
+     "Residential"
+    ]
+   },
+   "label": "August 2025",
+   "month": "2025-08",
+   "prior": "2024-08",
+   "prior_days": 31,
+   "prior_label": "August 2024",
+   "reconciliation": [
+    {
+     "month": "2025-08",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    },
+    {
+     "month": "2024-08",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "101000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-1000.000",
+     "class": "down",
+     "code": "ESCCPUS",
+     "current": "99000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "-1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESICPUS",
+     "current": "80000.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "0.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "280600.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.00",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "0.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "999.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "-999.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "-999.000",
+     "ESICPUS": "0.000",
+     "ESRCPUS": "999.000"
+    },
+    "state": "computed",
+    "total_change": "0.000"
+   },
+   "days": 30,
+   "days_note": "September 2025 and September 2024 both have 30 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [],
+    "finding": false,
+    "little_changed": [
+     "Residential",
+     "Commercial",
+     "Industrial"
+    ],
+    "unavailable": [],
+    "up": []
+   },
+   "label": "September 2025",
+   "month": "2025-09",
+   "prior": "2024-09",
+   "prior_days": 30,
+   "prior_label": "September 2024",
+   "reconciliation": [
+    {
+     "month": "2025-09",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    },
+    {
+     "month": "2024-09",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "999.000",
+     "class": "little_changed",
+     "code": "ESRCPUS",
+     "current": "100999.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "0.99",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-999.000",
+     "class": "little_changed",
+     "code": "ESCCPUS",
+     "current": "99001.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "-0.99",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESICPUS",
+     "current": "80000.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "0.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "6200.000",
+     "class": "up",
+     "code": "ESTCPUS",
+     "current": "286800.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "2.20",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "6200.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "3000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "2000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "1200.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "2000.000",
+     "ESICPUS": "1200.000",
+     "ESRCPUS": "3000.000"
+    },
+    "state": "computed",
+    "total_change": "6200.000"
+   },
+   "days": 31,
+   "days_note": "October 2025 and October 2024 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [],
+    "finding": false,
+    "little_changed": [],
+    "unavailable": [],
+    "up": [
+     "Residential",
+     "Commercial",
+     "Industrial"
+    ]
+   },
+   "label": "October 2025",
+   "month": "2025-10",
+   "prior": "2024-10",
+   "prior_days": 31,
+   "prior_label": "October 2024",
+   "reconciliation": [
+    {
+     "month": "2025-10",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "286800.000",
+     "total": "286800.000"
+    },
+    {
+     "month": "2024-10",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "3000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "103000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "3.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "2000.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "102000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "2.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "1200.000",
+     "class": "up",
+     "code": "ESICPUS",
+     "current": "81200.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "1.50",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "-5800.000",
+     "class": "down",
+     "code": "ESTCPUS",
+     "current": "274800.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "-2.06",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "-5800.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "-2000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "-3000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "-3000.000",
+     "ESICPUS": "-800.000",
+     "ESRCPUS": "-2000.000"
+    },
+    "state": "computed",
+    "total_change": "-5800.000"
+   },
+   "days": 30,
+   "days_note": "November 2025 and November 2024 both have 30 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Residential",
+     "Commercial",
+     "Industrial"
+    ],
+    "finding": false,
+    "little_changed": [],
+    "unavailable": [],
+    "up": []
+   },
+   "label": "November 2025",
+   "month": "2025-11",
+   "prior": "2024-11",
+   "prior_days": 30,
+   "prior_label": "November 2024",
+   "reconciliation": [
+    {
+     "month": "2025-11",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "274800.000",
+     "total": "274800.000"
+    },
+    {
+     "month": "2024-11",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "-2000.000",
+     "class": "down",
+     "code": "ESRCPUS",
+     "current": "98000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "-2.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-3000.000",
+     "class": "down",
+     "code": "ESCCPUS",
+     "current": "97000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "-3.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-800.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "79200.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-1.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "380.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "280980.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.13",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "380.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "500.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "200.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-320.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "200.000",
+     "ESICPUS": "-320.000",
+     "ESRCPUS": "500.000"
+    },
+    "state": "computed",
+    "total_change": "380.000"
+   },
+   "days": 31,
+   "days_note": "December 2025 and December 2024 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [],
+    "finding": false,
+    "little_changed": [
+     "Residential",
+     "Commercial",
+     "Industrial"
+    ],
+    "unavailable": [],
+    "up": []
+   },
+   "label": "December 2025",
+   "month": "2025-12",
+   "prior": "2024-12",
+   "prior_days": 31,
+   "prior_label": "December 2024",
+   "reconciliation": [
+    {
+     "month": "2025-12",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280980.000",
+     "total": "280980.000"
+    },
+    {
+     "month": "2024-12",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "500.000",
+     "class": "little_changed",
+     "code": "ESRCPUS",
+     "current": "100500.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "0.50",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "200.000",
+     "class": "little_changed",
+     "code": "ESCCPUS",
+     "current": "100200.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "0.20",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-320.000",
+     "class": "little_changed",
+     "code": "ESICPUS",
+     "current": "79680.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-0.40",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "6.000",
+     "class": "up",
+     "code": "ESACPUS",
+     "current": "606.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "1.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "3506.000",
+     "class": "up",
+     "code": "ESTCPUS",
+     "current": "284106.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "1.24",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "3500.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "4000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "1500.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-2000.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "6.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "6.000",
+     "ESCCPUS": "1500.000",
+     "ESICPUS": "-2000.000",
+     "ESRCPUS": "4000.000"
+    },
+    "state": "computed",
+    "total_change": "3506.000"
+   },
+   "days": 31,
+   "days_note": "January 2026 and January 2025 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Industrial"
+    ],
+    "finding": true,
+    "little_changed": [],
+    "unavailable": [],
+    "up": [
+     "Residential",
+     "Commercial"
+    ]
+   },
+   "label": "January 2026",
+   "month": "2026-01",
+   "prior": "2025-01",
+   "prior_days": 31,
+   "prior_label": "January 2025",
+   "reconciliation": [
+    {
+     "month": "2026-01",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "284106.000",
+     "total": "284106.000"
+    },
+    {
+     "month": "2025-01",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "4000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "104000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "4.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "1500.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "101500.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "1.50",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-2000.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "78000.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-2.50",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "500.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "281100.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.17",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "500.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "-1500.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "2000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "2000.000",
+     "ESICPUS": "0.000",
+     "ESRCPUS": "-1500.000"
+    },
+    "state": "computed",
+    "total_change": "500.000"
+   },
+   "days": 28,
+   "days_note": "February 2026 and February 2025 both have 28 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Residential"
+    ],
+    "finding": true,
+    "little_changed": [
+     "Industrial"
+    ],
+    "unavailable": [],
+    "up": [
+     "Commercial"
+    ]
+   },
+   "label": "February 2026",
+   "month": "2026-02",
+   "prior": "2025-02",
+   "prior_days": 28,
+   "prior_label": "February 2025",
+   "reconciliation": [
+    {
+     "month": "2026-02",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "281100.000",
+     "total": "281100.000"
+    },
+    {
+     "month": "2025-02",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "-1500.000",
+     "class": "down",
+     "code": "ESRCPUS",
+     "current": "98500.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "-1.50",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "2000.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "102000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "2.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESICPUS",
+     "current": "80000.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "0.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "1200.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "281800.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.42",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "1200.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "1000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "1000.000",
+     "ESICPUS": "-800.000",
+     "ESRCPUS": "1000.000"
+    },
+    "state": "computed",
+    "total_change": "1200.000"
+   },
+   "days": 31,
+   "days_note": "March 2026 and March 2025 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Industrial"
+    ],
+    "finding": true,
+    "little_changed": [],
+    "unavailable": [],
+    "up": [
+     "Residential",
+     "Commercial"
+    ]
+   },
+   "label": "March 2026",
+   "month": "2026-03",
+   "prior": "2025-03",
+   "prior_days": 31,
+   "prior_label": "March 2025",
+   "reconciliation": [
+    {
+     "month": "2026-03",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "281800.000",
+     "total": "281800.000"
+    },
+    {
+     "month": "2025-03",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "101000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "101000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-800.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "79200.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-1.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "1200.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "281800.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.42",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "1200.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "1000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "1000.000",
+     "ESICPUS": "-800.000",
+     "ESRCPUS": "1000.000"
+    },
+    "state": "computed",
+    "total_change": "1200.000"
+   },
+   "days": 30,
+   "days_note": "April 2026 and April 2025 both have 30 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Industrial"
+    ],
+    "finding": true,
+    "little_changed": [],
+    "unavailable": [],
+    "up": [
+     "Residential",
+     "Commercial"
+    ]
+   },
+   "label": "April 2026",
+   "month": "2026-04",
+   "prior": "2025-04",
+   "prior_days": 30,
+   "prior_label": "April 2025",
+   "reconciliation": [
+    {
+     "month": "2026-04",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "281800.000",
+     "total": "281800.000"
+    },
+    {
+     "month": "2025-04",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "101000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "101000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-800.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "79200.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-1.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "1200.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "281800.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.42",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "1200.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "1000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "1000.000",
+     "ESICPUS": "-800.000",
+     "ESRCPUS": "1000.000"
+    },
+    "state": "computed",
+    "total_change": "1200.000"
+   },
+   "days": 31,
+   "days_note": "May 2026 and May 2025 both have 31 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Industrial"
+    ],
+    "finding": true,
+    "little_changed": [],
+    "unavailable": [],
+    "up": [
+     "Residential",
+     "Commercial"
+    ]
+   },
+   "label": "May 2026",
+   "month": "2026-05",
+   "prior": "2025-05",
+   "prior_days": 31,
+   "prior_label": "May 2025",
+   "reconciliation": [
+    {
+     "month": "2026-05",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "281800.000",
+     "total": "281800.000"
+    },
+    {
+     "month": "2025-05",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "101000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "101000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-800.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "79200.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-1.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  },
+  {
+   "context": [
+    {
+     "change": "0.000",
+     "class": "little_changed",
+     "code": "ESACPUS",
+     "current": "600.000",
+     "key": "transportation",
+     "label": "Transportation (railways only)",
+     "percent": "0.00",
+     "prior": "600.000",
+     "reason": null,
+     "role": "context"
+    },
+    {
+     "change": "1200.000",
+     "class": "little_changed",
+     "code": "ESTCPUS",
+     "current": "281800.000",
+     "key": "total",
+     "label": "Total retail sales",
+     "percent": "0.42",
+     "prior": "280600.000",
+     "reason": null,
+     "role": "context"
+    }
+   ],
+   "contributions": {
+    "analyzed_change": "1200.000",
+    "detail": null,
+    "residual_change": "0.000",
+    "rows": [
+     {
+      "change": "1000.000",
+      "code": "ESRCPUS",
+      "label": "Residential",
+      "role": "analyzed"
+     },
+     {
+      "change": "1000.000",
+      "code": "ESCCPUS",
+      "label": "Commercial",
+      "role": "analyzed"
+     },
+     {
+      "change": "-800.000",
+      "code": "ESICPUS",
+      "label": "Industrial",
+      "role": "analyzed"
+     },
+     {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "label": "Transportation (railways only)",
+      "role": "context"
+     }
+    ],
+    "sectors": {
+     "ESACPUS": "0.000",
+     "ESCCPUS": "1000.000",
+     "ESICPUS": "-800.000",
+     "ESRCPUS": "1000.000"
+    },
+    "state": "computed",
+    "total_change": "1200.000"
+   },
+   "days": 30,
+   "days_note": "June 2026 and June 2025 both have 30 days; weekdays, holidays and billing cycles are not adjusted.",
+   "divergence": {
+    "down": [
+     "Industrial"
+    ],
+    "finding": true,
+    "little_changed": [],
+    "unavailable": [],
+    "up": [
+     "Residential",
+     "Commercial"
+    ]
+   },
+   "label": "June 2026",
+   "month": "2026-06",
+   "prior": "2025-06",
+   "prior_days": 30,
+   "prior_label": "June 2025",
+   "reconciliation": [
+    {
+     "month": "2026-06",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "281800.000",
+     "total": "281800.000"
+    },
+    {
+     "month": "2025-06",
+     "residual": "0.000",
+     "state": "within_rounding",
+     "sum": "280600.000",
+     "total": "280600.000"
+    }
+   ],
+   "sectors": [
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESRCPUS",
+     "current": "101000.000",
+     "key": "residential",
+     "label": "Residential",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "1000.000",
+     "class": "up",
+     "code": "ESCCPUS",
+     "current": "101000.000",
+     "key": "commercial",
+     "label": "Commercial",
+     "percent": "1.00",
+     "prior": "100000.000",
+     "reason": null,
+     "role": "analyzed"
+    },
+    {
+     "change": "-800.000",
+     "class": "down",
+     "code": "ESICPUS",
+     "current": "79200.000",
+     "key": "industrial",
+     "label": "Industrial",
+     "percent": "-1.00",
+     "prior": "80000.000",
+     "reason": null,
+     "role": "analyzed"
+    }
+   ]
+  }
+ ],
+ "period": {
+  "context": [
+   {
+    "change": "6.000",
+    "class": "little_changed",
+    "code": "ESACPUS",
+    "current": "3606.000",
+    "key": "transportation",
+    "label": "Transportation (railways only)",
+    "percent": "0.16",
+    "prior": "3600.000",
+    "reason": null,
+    "role": "context"
+   },
+   {
+    "change": "8806.000",
+    "class": "little_changed",
+    "code": "ESTCPUS",
+    "current": "1692406.000",
+    "key": "total",
+    "label": "Total retail sales",
+    "percent": "0.52",
+    "prior": "1683600.000",
+    "reason": null,
+    "role": "context"
+   }
+  ],
+  "contributions": {
+   "analyzed_change": "8800.000",
+   "detail": null,
+   "residual_change": "0.000",
+   "rows": [
+    {
+     "change": "6500.000",
+     "code": "ESRCPUS",
+     "label": "Residential",
+     "role": "analyzed"
+    },
+    {
+     "change": "7500.000",
+     "code": "ESCCPUS",
+     "label": "Commercial",
+     "role": "analyzed"
+    },
+    {
+     "change": "-5200.000",
+     "code": "ESICPUS",
+     "label": "Industrial",
+     "role": "analyzed"
+    },
+    {
+     "change": "6.000",
+     "code": "ESACPUS",
+     "label": "Transportation (railways only)",
+     "role": "context"
+    }
+   ],
+   "sectors": {
+    "ESACPUS": "6.000",
+    "ESCCPUS": "7500.000",
+    "ESICPUS": "-5200.000",
+    "ESRCPUS": "6500.000"
+   },
+   "state": "computed",
+   "total_change": "8806.000"
+  },
+  "days": 181,
+  "days_note": "January–June 2026 and January–June 2025 both have 181 days; weekdays, holidays and billing cycles are not adjusted.",
+  "divergence": {
+   "down": [
+    "Industrial"
+   ],
+   "finding": true,
+   "little_changed": [],
+   "unavailable": [],
+   "up": [
+    "Residential",
+    "Commercial"
+   ]
+  },
+  "label": "January–June 2026",
+  "months": [
+   "2026-01",
+   "2026-02",
+   "2026-03",
+   "2026-04",
+   "2026-05",
+   "2026-06"
+  ],
+  "prior_days": 181,
+  "prior_label": "January–June 2025",
+  "prior_months": [
+   "2025-01",
+   "2025-02",
+   "2025-03",
+   "2025-04",
+   "2025-05",
+   "2025-06"
+  ],
+  "sectors": [
+   {
+    "change": "6500.000",
+    "class": "up",
+    "code": "ESRCPUS",
+    "current": "606500.000",
+    "key": "residential",
+    "label": "Residential",
+    "percent": "1.08",
+    "prior": "600000.000",
+    "reason": null,
+    "role": "analyzed"
+   },
+   {
+    "change": "7500.000",
+    "class": "up",
+    "code": "ESCCPUS",
+    "current": "607500.000",
+    "key": "commercial",
+    "label": "Commercial",
+    "percent": "1.25",
+    "prior": "600000.000",
+    "reason": null,
+    "role": "analyzed"
+   },
+   {
+    "change": "-5200.000",
+    "class": "down",
+    "code": "ESICPUS",
+    "current": "474800.000",
+    "key": "industrial",
+    "label": "Industrial",
+    "percent": "-1.08",
+    "prior": "480000.000",
+    "reason": null,
+    "role": "analyzed"
+   }
+  ]
+ },
+ "provider_called": false,
+ "reconciliation": {
+  "counts": {
+   "beyond_rounding": 0,
+   "unavailable": 0,
+   "within_rounding": 24
+  },
+  "max_abs_residual": "0.000",
+  "months": [
+   {
+    "month": "2024-07",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2024-08",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2024-09",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2024-10",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2024-11",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2024-12",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-01",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-02",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-03",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-04",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-05",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-06",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-07",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "281000.000",
+    "total": "281000.000"
+   },
+   {
+    "month": "2025-08",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-09",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280600.000",
+    "total": "280600.000"
+   },
+   {
+    "month": "2025-10",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "286800.000",
+    "total": "286800.000"
+   },
+   {
+    "month": "2025-11",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "274800.000",
+    "total": "274800.000"
+   },
+   {
+    "month": "2025-12",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "280980.000",
+    "total": "280980.000"
+   },
+   {
+    "month": "2026-01",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "284106.000",
+    "total": "284106.000"
+   },
+   {
+    "month": "2026-02",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "281100.000",
+    "total": "281100.000"
+   },
+   {
+    "month": "2026-03",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "281800.000",
+    "total": "281800.000"
+   },
+   {
+    "month": "2026-04",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "281800.000",
+    "total": "281800.000"
+   },
+   {
+    "month": "2026-05",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "281800.000",
+    "total": "281800.000"
+   },
+   {
+    "month": "2026-06",
+    "residual": "0.000",
+    "state": "within_rounding",
+    "sum": "281800.000",
+    "total": "281800.000"
+   }
+  ],
+  "tolerance": "0.0025"
+ },
+ "result": {
+  "computed_at": "2026-10-12T09:00:00+00:00",
+  "definitions_sha256": "a4b95de4308dc607749af3a3879d80a4637f34f7600bb3348c12504835a5788d",
+  "extract_id": "531bf12cf6f2aff5dd1b22d87bf8ff24974325c2d72c9e10106c234bcd10303e",
+  "result_id": "ebd7b255ccaa8cb4990f50cbe09fb3a2e3fea33fa00eafd714d4988795c894a9",
+  "rules_version": "electricity-rules-0.1"
+ },
+ "scope": "Retrospective view of retained EIA data: retail electricity sales to the residential, commercial and industrial sectors, each month compared with the same month a year earlier, from the Monthly Energy Review Table 7.6 kept on this computer. Separate from the Treasury and G.17 findings; descriptive, not research evidence, not a forecast and not a recommendation; nothing here enters research summaries.",
+ "series": [
+  {
+   "code": "ESRCPUS",
+   "column_order": "1",
+   "description": "Electricity Sales to Ultimate Customers, Residential",
+   "label": "Residential",
+   "role": "analyzed",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ESCCPUS",
+   "column_order": "2",
+   "description": "Electricity Sales to Ultimate Customers, Commercial",
+   "label": "Commercial",
+   "role": "analyzed",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ESICPUS",
+   "column_order": "3",
+   "description": "Electricity Sales to Ultimate Customers, Industrial",
+   "label": "Industrial",
+   "role": "analyzed",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ESACPUS",
+   "column_order": "4",
+   "description": "Electricity Sales to Ultimate Customers, Transportation",
+   "label": "Transportation (railways only)",
+   "role": "context",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ESTCPUS",
+   "column_order": "5",
+   "description": "Electricity Sales to Ultimate Customers, Total",
+   "label": "Total retail sales",
+   "role": "context",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ELDUPUS",
+   "column_order": "6",
+   "description": "Electricity Direct Use",
+   "label": "Direct use",
+   "role": "excluded",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ELTCPUS",
+   "column_order": "7",
+   "description": "Electricity End Use, Total",
+   "label": "Total end use",
+   "role": "excluded",
+   "unit": "Million Kilowatthours"
+  },
+  {
+   "code": "ESVHPUS",
+   "column_order": "8",
+   "description": "Electric Vehicle Use",
+   "label": "Electric vehicle use",
+   "role": "excluded",
+   "unit": "Million Kilowatthours"
+  }
+ ],
+ "sources": [
+  {
+   "approval_id": "eia-mer-table76-01",
+   "bytes": 33725,
+   "completed_at": "2026-10-11T21:41:15.000000+00:00",
+   "content_disposition": "attachment; filename=MER_T07_06.csv",
+   "content_type": "text/csv; charset=utf-8",
+   "edition": null,
+   "edition_note": "No edition is stated in the file or its response headers (no Last-Modified), so none is assigned.",
+   "etag_header": null,
+   "file": "table76/T07.06.csv",
+   "kind": "csv",
+   "last_modified_header": null,
+   "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+   "role": "Table 7.6 data (CSV)",
+   "sha256": "a7a5a96ba533be66e33ac45c2108271ecaf7708a59740bd1618d00a947136a45",
+   "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+  },
+  {
+   "approval_id": "eia-mer-table76-01",
+   "bytes": 101,
+   "completed_at": "2026-10-11T21:42:15.000000+00:00",
+   "content_disposition": null,
+   "content_type": "application/pdf",
+   "edition": "U.S. Energy Information Administration / Monthly Energy Review September 2026",
+   "edition_note": "Printed on the page; it describes this PDF, not the CSV.",
+   "edition_printed": "U.S. Energy Information Administration / Monthly Energy Review September 2026",
+   "etag_header": null,
+   "file": "table76/sec7_19.pdf",
+   "kind": "pdf",
+   "last_modified_header": "Tue, 29 Sep 2026 13:57:57 GMT",
+   "retrieved_at": "2026-10-11T21:42:13.000000+00:00",
+   "role": "Table 7.6 as printed (PDF)",
+   "sha256": "5df72f1829fb9849919bff83c96965e17fc8a5f31db4ed911b8454f3d8252d18",
+   "url": "https://www.eia.gov/totalenergy/data/monthly/pdf/sec7_19.pdf"
+  },
+  {
+   "approval_id": "eia-mer-inspection-01",
+   "bytes": 468,
+   "completed_at": "2026-10-11T21:41:15.000000+00:00",
+   "content_disposition": null,
+   "content_type": "text/html; charset=UTF-8",
+   "edition": null,
+   "edition_note": "As stated on the page when it was retrieved; it describes the page then, not the CSV.",
+   "etag_header": null,
+   "file": "inspection/landing.html",
+   "kind": "landing",
+   "last_modified_header": null,
+   "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+   "role": "Monthly Energy Review page",
+   "sha256": "df17fd8b7d36a2f5160b361c16808359f293addfe819a22658df3f39ba8d01ed",
+   "statements": {
+    "next_release_as_stated": "October 2026",
+    "readable": true,
+    "release_date_as_stated": "September 29, 2026"
+   },
+   "url": "https://www.eia.gov/totalenergy/data/monthly/"
+  }
+ ],
+ "sources_detail": null,
+ "state": "checked",
+ "table_definitions": {
+  "columns": {
+   "ELDUPUS": "Direct Use (g)",
+   "ELTCPUS": "Total End Use (h)",
+   "ESACPUS": "Sales to Ultimate Customers (a): Transportation (e)",
+   "ESCCPUS": "Sales to Ultimate Customers (a): Commercial (b, c)",
+   "ESICPUS": "Sales to Ultimate Customers (a): Industrial (b, d)",
+   "ESRCPUS": "Sales to Ultimate Customers (a): Residential (b)",
+   "ESTCPUS": "Sales to Ultimate Customers (a): Total Sales (f)",
+   "ESVHPUS": "Electric Vehicle Use (b, i, j)"
+  },
+  "edition_printed": "U.S. Energy Information Administration / Monthly Energy Review September 2026",
+  "footnotes": {
+   "a": "Electricity sales to ultimate customers based on classes of service reported by electric utilities and, beginning in 1996, other energy service providers.",
+   "b": "Electricity sales to the residential, commercial, and industrial sectors, based on class of service, including sales of electricity to operate and move electric vehicles. See Note 4, \"Estimates of Electric Vehicle Use,\" at end of section.",
+   "c": "Commercial sector, including public street and highway lighting, interdepartmental sales, and other sales to public authorities.",
+   "d": "Industrial sector. Through 2002, excludes agriculture and irrigation; beginning in 2003, includes agriculture and irrigation.",
+   "e": "Sales to public railroads and railway systems only. Excludes the estimated amount of electricity used to operate and move electric vehicles.",
+   "f": "The sum of \"Residential,\" \"Commercial,\" \"Industrial,\" and \"Transportation.\"",
+   "g": "Use of electricity that is 1) self-generated, 2) produced by either the same entity that consumes the power or an affiliate, and 3) used in direct support of a service or industrial process located within the same facility or group of facilities that house the generating equipment. Direct use is exclusive of station use.",
+   "h": "The sum of \"Total Sales to Ultimate Customers\" and \"Direct Use.\"",
+   "i": "Electricity used to operate and move on-road light-duty electric vehicles (less than or equal to 8,500 pounds). Excludes motor gasoline consumption by plug-in hybrid electric vehicles. Electric vehicle use is estimated independently and should not be added to the sales or total end use columns as it will result in double counting. See Note 4, \"Estimates of Electric Vehicle Use,\" at end of section.",
+   "j": "Beginning in 2023, the estimates are not strictly comparable with earlier years due to a change in the estimation methodology for vehicle miles traveled. For details see Table 1.9 footnote f."
+  },
+  "markers": "E=Estimate. NA=Not available.",
+  "not_retained": "The section notes (Note 1, Note 4) and the end-of-section sources were not acquired; nothing here relies on them.",
+  "notes": [
+   "See Note 1, \"Coverage of Electricity Statistics,\" at end of section.",
+   "See Note 4, \"Estimates of Electric Vehicle Use,\" at end of section.",
+   "Totals may not equal sum of components due to independent rounding.",
+   "Geographic coverage is the 50 states and the District of Columbia."
+  ],
+  "page": "149",
+  "sources": "Sources: See end of section.",
+  "title": "Table 7.6 Electricity End Use and Electric Vehicle Use",
+  "transcribed_from": {
+   "how": "Transcribed from the PDF's page image at inspection; its text layer is OCR.",
+   "sha256": "5df72f1829fb9849919bff83c96965e17fc8a5f31db4ed911b8454f3d8252d18",
+   "url": "https://www.eia.gov/totalenergy/data/monthly/pdf/sec7_19.pdf"
+  },
+  "unit": "Million Kilowatthours",
+  "web_page": "See http://www.eia.gov/totalenergy/data/monthly/#electricity (Excel and CSV files) for all available annual data beginning in 1949 and monthly data beginning in 1973."
+ },
+ "view_version": "electricity-view-0.1",
+ "written": false
+}

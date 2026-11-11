@@ -1,0 +1,95 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "bis-2026-06-17",
+  "title": "Bosch agrees to a $36 million penalty over MEMS sensors and automotive software shipped to Huawei",
+  "category": "Export controls",
+  "summary": "BIS announced a settlement with Robert Bosch GmbH over about $72.4 million of foreign-produced MEMS sensors and automotive software shipped between September 2020 and September 2024 to Huawei and its affiliates on the Entity List without a license. Bosch disclosed the violations itself; the penalty is $36,184,680, with about $3.6 million suspended as credit for a disgorgement agreed with the Department of Justice.",
+  "sectors": ["technology-semiconductors", "manufacturing-automotive"],
+  "source": {
+    "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS)",
+    "title": "Robert Bosch GmbH (Bosch) To Pay $36 Million Penalty to BIS for Violations Pertaining to Shipments to Huawei",
+    "url": "https://www.bis.gov/press-release/robert-bosch-gmbh-bosch-pay-36-million-penalty-bis-violations-pertaining-shipments-huawei",
+    "document_id": null,
+    "published_at": "2026-06-17",
+    "published_precision": "date",
+    "published_as_stated": "FOR IMMEDIATE RELEASE | June 17, 2026",
+    "timezone_note": "The press release states a date only. No time is stated, so none is recorded and the date is not converted to another time zone.",
+    "reference_period": "Shipments from September 16, 2020 to September 26, 2024; settlement announced June 17, 2026",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "BIS announced a settlement with Robert Bosch GmbH, headquartered in Stuttgart, Germany, over shipments of foreign-produced items to Huawei Technologies Co. and its affiliates. Between September 16, 2020 and September 26, 2024, Bosch exported from abroad approximately $72,369,361 worth of Micro-Electro-Mechanical Systems (MEMS) sensor products and automotive software without the required license or other authorization.",
+    "The items were subject to the Export Administration Regulations through the Foreign Direct Product Rule, which reaches certain items made outside the United States, and Huawei and its affiliates are on the Entity List. BIS says the MEMS sensors have a broad range of consumer applications, including smartphones, wearable technology and automobiles.",
+    "Bosch filed a Voluntary Self-Disclosure and cooperated with the investigation. It agreed to a penalty of $36,184,680 and, with the Department of Justice, to disgorge profits, partially suspended, with an actual payment of approximately $3.6 million; BIS suspends approximately $3.6 million of its penalty as credit for that disgorgement. The Assistant Secretary for Export Enforcement said Bosch had several opportunities to avoid the violations."
+  ],
+  "key_facts": [
+    {"label": "Penalty", "value": "$36,184,680", "basis": "About $3.6 million suspended as credit for the disgorgement"},
+    {"label": "Disgorgement", "value": "About $3.6 million actually paid", "basis": "Agreed with the Department of Justice; partially suspended"},
+    {"label": "Value of the shipments", "value": "About $72,369,361", "basis": "MEMS sensor products and automotive software, September 16, 2020 to September 26, 2024"},
+    {"label": "Legal basis", "value": "Foreign Direct Product Rule; recipients on the Entity List", "basis": "Foreign-produced items subject to the EAR, exported from abroad"},
+    {"label": "Uses named", "value": "Smartphones, wearable technology, automobiles", "basis": "The release's description of the MEMS sensors' applications"},
+    {"label": "Disclosure", "value": "Voluntary Self-Disclosure; cooperation", "basis": "As stated by BIS"}
+  ],
+  "channels": [
+    {
+      "title": "Reach of US rules to foreign-made components (sensor and electronics makers)",
+      "source_fact": "Foreign-produced MEMS sensors and software shipped from abroad were subject to US export rules through the Foreign Direct Product Rule.",
+      "interpretation": "Enforcement against a non-US supplier for items made outside the United States signals that component makers abroad carry US licensing exposure when they sell to listed firms. That could raise compliance screening across sensor and electronics supply chains; the release reports no wider effect."
+    },
+    {
+      "title": "Automotive supply chains",
+      "source_fact": "The shipments included automotive software, and the release names automobiles among the sensors' uses.",
+      "interpretation": "If automotive suppliers come to treat sales of sensors and software to listed Chinese firms as higher-risk, vehicle and electronics makers that rely on those firms could face sourcing changes. This is a conditional reading: the release does not say what Huawei did with the items or how much of the value was automotive."
+    },
+    {
+      "title": "Penalty size after self-disclosure",
+      "source_fact": "A penalty of $36.2 million on $72.4 million of shipments, after a voluntary self-disclosure; in February BIS imposed about $252 million on about $126 million of Applied Materials shipments.",
+      "interpretation": "This penalty was about half the shipment value, against twice the value in the Applied Materials case. Neither release explains the difference; self-disclosure and cooperation are plausible factors given BIS's own emphasis on them, but that is an inference."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Past conduct that ended in 2024", "detail": "The shipments ended in September 2024. Reading the settlement as evidence about current supply to Huawei would misplace it in time; it describes enforcement of earlier conduct."},
+    {"title": "Small relative to the market", "detail": "About $72 million over four years may be small next to the overall market for such sensors. The release gives no market size, so the case cannot say whether the shipments mattered for supply."}
+  ],
+  "assumptions": [
+    "The release's statement about uses describes MEMS sensors in general; it does not say what share of these particular shipments went into vehicles.",
+    "The amounts are as BIS states them; the order and settlement agreement were not read."
+  ],
+  "missing_information": [
+    "The order, settlement agreement and proposed charging letter, which BIS links as separate documents and which were not opened for this case.",
+    "Which products, quantities and Huawei affiliates were involved, and how the items were used.",
+    "The terms of the disgorgement agreed with the Department of Justice.",
+    "Bosch's own statements or financial disclosures about the matter."
+  ],
+  "weakening_observations": [
+    "If the shipments were mostly smartphone components, the automotive channel would weaken.",
+    "If later BIS actions treated comparable self-disclosed cases more harshly, reading disclosure as the reason for the lower ratio would weaken."
+  ],
+  "critique": [
+    {"title": "Two sectors, one combined figure", "detail": "The case is listed under Technology & semiconductors for the MEMS sensors and under Manufacturing & automotive for the automotive software and vehicle uses. The release gives one combined value, so the case cannot say how much of it concerned vehicles."},
+    {"title": "Comparing penalties across cases is loose", "detail": "Setting this penalty beside the Applied Materials penalty is informative but rough: the cases differ in products, routing, disclosure and years, and BIS does not compare them. The ratio is arithmetic on two releases, not a rule."},
+    {"title": "An official characterization is not a finding", "detail": "The Assistant Secretary's statement that Bosch had several opportunities to avoid the violations characterizes the case; the facts behind it are in documents that were not read."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The press release as shown on bis.gov on 2026-10-11. The linked order, settlement agreement and proposed charging letter were not opened.", "url": null},
+    {"title": "Earlier release compared", "detail": "BIS's February 12, 2026 settlement with Applied Materials: a penalty of about $252 million, twice the value of about $126 million of ion implanters shipped to China through Korea.", "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment"},
+    {"title": "Selection", "detail": "The BIS news page, filtered to all types, lists this release among those with their own text naming semiconductors or related items.", "url": "https://www.bis.gov/news-updates"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the press release, the February 12, 2026 BIS release it is compared with, and the BIS news page in a browser on 2026-10-11. Facts come from the release texts; the channels, competing explanations and critique are the assistant's interpretation. The linked enforcement documents, company disclosures, market prices and news coverage were not used.",
+    "sources_read": [
+      "https://www.bis.gov/press-release/robert-bosch-gmbh-bosch-pay-36-million-penalty-bis-violations-pertaining-shipments-huawei",
+      "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+      "https://www.bis.gov/news-updates"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

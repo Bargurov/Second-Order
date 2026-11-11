@@ -1,0 +1,23 @@
+{
+ "n": 1,
+ "approval_id": "copper-sec-01",
+ "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+ "kind": "html",
+ "outcome": "complete",
+ "http_status": 200,
+ "sha256": "7ba50efcd0e758e47fca51dc9a88f8c2bb0d8308c881314288b49ae5efd6f167",
+ "bytes": 6347587,
+ "hash_kind": "complete_response",
+ "retained": "data/sector-sources/copper/sec-fcx-2025/fcx-20251231.htm",
+ "dispatched_at": "2026-11-02T19:25:16.185809+02:00",
+ "body_completed_at": "2026-11-02T19:25:20.379798+02:00",
+ "media_type": "text/html",
+ "named_headers": {
+  "content-type": "text/html",
+  "last-modified": "Fri, 13 Feb 2026 19:45:28 GMT"
+ },
+ "contact_declared": true,
+ "network_error": null,
+ "truncated": false,
+ "max_body_bytes": 25165824
+}

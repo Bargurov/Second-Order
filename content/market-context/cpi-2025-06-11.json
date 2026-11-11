@@ -1,0 +1,547 @@
+{
+  "context_version": "market-context-0.1",
+  "case_id": "cpi-2025-06-11",
+  "publication": {
+    "published_at": "2025-06-11T08:30:00-04:00",
+    "new_york_date": "2025-06-11"
+  },
+  "window": {
+    "start": "2025-05-28",
+    "end": "2025-06-25",
+    "days_before": 14,
+    "days_after": 14
+  },
+  "source": {
+    "file": "sources/cpi-2025-06-11.csv",
+    "sha256": "606f070bf1b39f61b382daf8a3aec4845458379e6209a8893f003436414916b4",
+    "bytes": 898,
+    "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=05/28/2025&to=06/25/2025&filetype=csv&label=include&layout=seriescolumn",
+    "requested_start": "2025-05-28",
+    "requested_end": "2025-06-25",
+    "returned_first": "2025-05-28",
+    "returned_last": "2025-06-25",
+    "rows": 21,
+    "requested_at": "2026-10-07T22:50:08+00:00",
+    "received_at": "2026-10-07T22:50:12+00:00",
+    "http_status": 200,
+    "content_type": "text/csv",
+    "response_date": "Wed, 07 Oct 2026 22:50:11 GMT"
+  },
+  "sessions": [
+    "2025-05-28",
+    "2025-05-29",
+    "2025-05-30",
+    "2025-06-02",
+    "2025-06-03",
+    "2025-06-04",
+    "2025-06-05",
+    "2025-06-06",
+    "2025-06-09",
+    "2025-06-10",
+    "2025-06-11",
+    "2025-06-12",
+    "2025-06-13",
+    "2025-06-16",
+    "2025-06-17",
+    "2025-06-18",
+    "2025-06-20",
+    "2025-06-23",
+    "2025-06-24",
+    "2025-06-25"
+  ],
+  "days": [
+    {
+      "date": "2025-05-28",
+      "weekday": "Wed",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.96",
+          "value": 3.96,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.47",
+          "value": 4.47,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-05-29",
+      "weekday": "Thu",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.92",
+          "value": 3.92,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.43",
+          "value": 4.43,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-05-30",
+      "weekday": "Fri",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.89",
+          "value": 3.89,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.41",
+          "value": 4.41,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-05-31",
+      "weekday": "Sat",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-01",
+      "weekday": "Sun",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-02",
+      "weekday": "Mon",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.94",
+          "value": 3.94,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.46",
+          "value": 4.46,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-03",
+      "weekday": "Tue",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.96",
+          "value": 3.96,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.46",
+          "value": 4.46,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-04",
+      "weekday": "Wed",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.87",
+          "value": 3.87,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.37",
+          "value": 4.37,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-05",
+      "weekday": "Thu",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.92",
+          "value": 3.92,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.40",
+          "value": 4.4,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-06",
+      "weekday": "Fri",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "4.04",
+          "value": 4.04,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.51",
+          "value": 4.51,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-07",
+      "weekday": "Sat",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-08",
+      "weekday": "Sun",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-09",
+      "weekday": "Mon",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "4.01",
+          "value": 4.01,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.49",
+          "value": 4.49,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-10",
+      "weekday": "Tue",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "4.01",
+          "value": 4.01,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.47",
+          "value": 4.47,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-11",
+      "weekday": "Wed",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.94",
+          "value": 3.94,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.41",
+          "value": 4.41,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-12",
+      "weekday": "Thu",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.90",
+          "value": 3.9,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.36",
+          "value": 4.36,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-13",
+      "weekday": "Fri",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.96",
+          "value": 3.96,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.41",
+          "value": 4.41,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-14",
+      "weekday": "Sat",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-15",
+      "weekday": "Sun",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-16",
+      "weekday": "Mon",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.97",
+          "value": 3.97,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.46",
+          "value": 4.46,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-17",
+      "weekday": "Tue",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.94",
+          "value": 3.94,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.39",
+          "value": 4.39,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-18",
+      "weekday": "Wed",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.94",
+          "value": 3.94,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.38",
+          "value": 4.38,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-19",
+      "weekday": "Thu",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "ND",
+          "value": null,
+          "status": "calendar_holiday"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "ND",
+          "value": null,
+          "status": "calendar_holiday"
+        }
+      }
+    },
+    {
+      "date": "2025-06-20",
+      "weekday": "Fri",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.90",
+          "value": 3.9,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.38",
+          "value": 4.38,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-21",
+      "weekday": "Sat",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-22",
+      "weekday": "Sun",
+      "session": false,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": null,
+          "value": null,
+          "status": "not_a_session"
+        }
+      }
+    },
+    {
+      "date": "2025-06-23",
+      "weekday": "Mon",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.84",
+          "value": 3.84,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.34",
+          "value": 4.34,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-24",
+      "weekday": "Tue",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.75",
+          "value": 3.75,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.30",
+          "value": 4.3,
+          "status": "session_value"
+        }
+      }
+    },
+    {
+      "date": "2025-06-25",
+      "weekday": "Wed",
+      "session": true,
+      "observations": {
+        "RIFLGFCY02_N.B": {
+          "raw": "3.74",
+          "value": 3.74,
+          "status": "session_value"
+        },
+        "RIFLGFCY10_N.B": {
+          "raw": "4.29",
+          "value": 4.29,
+          "status": "session_value"
+        }
+      }
+    }
+  ]
+}

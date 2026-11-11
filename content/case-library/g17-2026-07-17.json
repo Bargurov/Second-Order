@@ -1,0 +1,107 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "g17-2026-07-17",
+  "title": "June 2026 industrial production +0.1%, manufacturing flat, second quarter up at a 4.0% rate",
+  "category": "Industrial production",
+  "summary": "The Federal Reserve's G.17 release reported industrial production up 0.1 percent in June 2026 and up at a 4.0 percent annual rate in the second quarter. Manufacturing was unchanged in June, mining and utilities each rose 0.4 percent, and motor vehicle assemblies rose to 10.96 million units at an annual rate. Later releases revised June up.",
+  "sectors": ["manufacturing-automotive", "energy", "mining-materials"],
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Industrial Production and Capacity Utilization - G.17",
+    "url": "https://www.federalreserve.gov/releases/g17/20260717/",
+    "document_id": "G.17",
+    "published_at": "2026-07-17",
+    "published_precision": "date",
+    "published_as_stated": "Release Date: July 17, 2026",
+    "timezone_note": "The release page states a date only. The Board's G.17 release-dates page says monthly releases are issued at 9:15 a.m. but names no time zone, so no time or offset is recorded.",
+    "reference_period": "June 2026 (preliminary), with revised estimates for January to May 2026; seasonally adjusted",
+    "page_last_updated": "2026-07-17",
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "Industrial production edged up 0.1 percent in June 2026 and grew at a 4.0 percent annual rate in the second quarter. At 102.6 percent of its 2017 average, total output was 1.1 percent above its level a year earlier. Capacity utilization was unchanged at 76.1 percent, 3.3 percentage points below its 1972–2025 average.",
+    "Manufacturing output was unchanged in June but rose at a 4.7 percent annual rate in the quarter. Durable manufacturing fell 0.1 percent, with wood products, nonmetallic mineral products, machinery, and electrical equipment, appliances and components each down more than 0.5 percent, while nondurable manufacturing rose 0.2 percent, led by a 2.1 percent increase in petroleum and coal products. Motor vehicles and parts output rose 0.7 percent, and assemblies ran at 10.96 million units at an annual rate, up from 10.70 million in May.",
+    "Energy-related output was firmer. Mining rose 0.4 percent in June after rising in April and May, and grew at a 7.5 percent annual rate in the quarter; its operating rate, 87.4 percent, was 2.2 points above its long-run average. Utilities also rose 0.4 percent, as electric utilities outweighed a drop in natural gas utilities, but utilities output fell at a 2.8 percent annual rate in the quarter."
+  ],
+  "key_facts": [
+    {"label": "Industrial production, June", "value": "+0.1%; second quarter +4.0% annual rate; +1.1% over 12 months", "basis": "Index 102.6 (2017 = 100); seasonally adjusted; preliminary"},
+    {"label": "Manufacturing, June", "value": "0.0%; second quarter +4.7% annual rate", "basis": "Durables −0.1%, nondurables +0.2%"},
+    {"label": "Motor vehicles and parts output", "value": "+0.7% in June; +1.2% over 12 months", "basis": "Table 2; NAICS 3361–3"},
+    {"label": "Motor vehicle assemblies", "value": "10.96 million in June; 10.70 million in May", "basis": "Units at a seasonally adjusted annual rate (Table 3); autos and light trucks 10.68 million"},
+    {"label": "Mining / utilities, June", "value": "+0.4% / +0.4%; second quarter +7.5% / −2.8% annual rate", "basis": "Seasonally adjusted"},
+    {"label": "Capacity utilization, June", "value": "Total 76.1%; manufacturing 75.7%; mining 87.4%", "basis": "Total 3.3 points and manufacturing 2.5 points below their 1972–2025 averages"},
+    {"label": "Revision to May", "value": "Total +0.1% (unchanged); manufacturing +0.1% (was 0.0%)", "basis": "Compared with the previous release's estimates"},
+    {"label": "Materials output, June", "value": "+0.1%; +1.3% over 12 months", "basis": "Market group index 107.8 (2017 = 100); seasonally adjusted; preliminary"}
+  ],
+  "channels": [
+    {
+      "title": "Factory activity (manufacturers)",
+      "source_fact": "Manufacturing was flat in June after rising at a 4.7% annual rate in the quarter; four durable goods industries fell more than 0.5%.",
+      "interpretation": "A flat month after a strong quarter is consistent with momentum slowing, which would matter for manufacturers' orders and hiring in the months ahead. One preliminary month is too noisy to establish a turn."
+    },
+    {
+      "title": "Vehicle production (automakers and suppliers)",
+      "source_fact": "Assemblies rose to 10.96 million units at an annual rate in June from 10.70 million in May; motor vehicles and parts output rose 0.7%.",
+      "interpretation": "A higher assembly rate points to firmer vehicle production heading into the summer, when model changeovers usually interrupt output. Whether it reflected demand or inventory building is not in the release."
+    },
+    {
+      "title": "Energy output (mining and refining)",
+      "source_fact": "Mining +0.4% in June and +7.5% at an annual rate in the quarter, with an operating rate of 87.4%; petroleum and coal products +2.1%.",
+      "interpretation": "High mining utilization alongside rising refined-product output suggests energy producers running near capacity, which would limit how quickly supply could rise further without new investment. G.17 measures volumes, not prices or profits."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "A first estimate that moved", "detail": "June's figures are preliminary. The August and September releases revised June total output to +0.3% and then +0.2%, and manufacturing to +0.3% and then +0.1%. A reading built on a flat June relied on an estimate that later changed."},
+    {"title": "Weather in the utilities figure", "detail": "Utilities output follows the weather, so the June gain and the quarter's decline may say more about temperatures than about industrial demand for power."},
+    {"title": "Mining's estimates moved too", "detail": "The August 18 release revised June's mining operating rate from 87.4% to 86.0% and May's mining output change from +1.1% to −0.1%; the September 18 release put them at 86.1% and 0.0%. The near-capacity reading rests on estimates that were later revised down."}
+  ],
+  "assumptions": [
+    "Index changes measure real output; G.17 reports no prices, so effects on revenue are not covered.",
+    "Seasonal adjustment handles the summer pattern in vehicle assemblies; if not, monthly changes around changeovers are distorted.",
+    "Mining and materials are the release's own categories: mining is all industries in NAICS sector 21, and materials is a market group that the pages read do not define further. The summary table gives each as one index, so it does not show which fuels or minerals moved within mining, or which materials moved."
+  ],
+  "missing_information": [
+    "New orders, shipments and inventories from the Census Bureau, which would separate demand from production.",
+    "Manufacturing hours worked, which would show whether flat output came with fewer hours.",
+    "Vehicle sales and dealer inventories.",
+    "Industry detail beyond the summary, Table 2 and Table 3; the other tables were not read.",
+    "Prices of fuels, metals and other materials, and mining companies' results, which G.17 does not report and which were not read for this case."
+  ],
+  "weakening_observations": [
+    "If later revisions turned June's manufacturing figure into a clear gain or loss, the flat-month reading would change; the next two releases revised it to +0.3% and then +0.1%.",
+    "If assemblies dropped back in July, the June rise would look like a one-month swing.",
+    "If mining's high operating rate came with falling drilling activity, the near-capacity reading would weaken."
+  ],
+  "critique": [
+    {"title": "The quarter and the month point different ways", "detail": "The quarter looks strong at a 4.0% annual rate while June is flat. The case reports both but cannot say which better describes momentum; leaning on either would be a choice the release does not make."},
+    {"title": "Energy membership rests on two lines", "detail": "The case is listed under Energy for mining, utilities and refined-product output, which G.17 measures as volumes. It says nothing about energy prices or energy companies, and reading it as an energy-market case would overstate it."},
+    {"title": "First prints carry revision risk", "detail": "Every figure here is the July 17 estimate. Later releases changed June noticeably, so precise month-to-month comparisons from this release alone are fragile."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The release page, which shows 'Last Update: July 17, 2026', and its Tables 2 and 3, as shown on 2026-10-11.", "url": null},
+    {"title": "Later revision: August 18, 2026", "detail": "The next release revised June to +0.3% for total output and +0.3% for manufacturing, and June assemblies to 10.99 million. Not known at publication.", "url": "https://www.federalreserve.gov/releases/g17/20260818/"},
+    {"title": "Later revision: September 18, 2026", "detail": "June was revised again, to +0.2% for total output and +0.1% for manufacturing, and June assemblies to 10.93 million. Not known at publication.", "url": "https://www.federalreserve.gov/releases/g17/20260918/"},
+    {"title": "Release time", "detail": "The Board's G.17 release-dates page lists this release and says monthly releases are issued at 9:15 a.m., without naming a time zone.", "url": "https://www.federalreserve.gov/releases/g17/default.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the July 17, 2026 release with its Tables 2 and 3, the G.17 release-dates page, and the August 18 and September 18 releases with their Table 3 only for their revisions to June, in a browser on 2026-10-11. Facts come from the release text and tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/releases/g17/20260717/",
+      "https://www.federalreserve.gov/releases/g17/20260717/table2.htm",
+      "https://www.federalreserve.gov/releases/g17/20260717/table3.htm",
+      "https://www.federalreserve.gov/releases/g17/default.htm",
+      "https://www.federalreserve.gov/releases/g17/20260818/",
+      "https://www.federalreserve.gov/releases/g17/20260818/table3.htm",
+      "https://www.federalreserve.gov/releases/g17/20260918/",
+      "https://www.federalreserve.gov/releases/g17/20260918/table3.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

@@ -1,0 +1,675 @@
+{
+  "contract": "user-api-0.5",
+  "story": {
+    "view_version": "news-story-view-0.6",
+    "story_id": "story-c656c19416cbcd7a",
+    "requested_id": "story-c656c19416cbcd7a",
+    "merged": false,
+    "title": "Synthetic Republic announces 15% tariff on imported steel",
+    "title_basis": "first_report",
+    "first_at": "2026-10-12T07:00:00+00:00",
+    "first_basis": "published",
+    "latest_at": "2026-10-12T08:00:00+00:00",
+    "latest_basis": "published",
+    "coverage": {
+      "coverage_version": "story-coverage-0.3",
+      "reports": 2,
+      "publishers": 2,
+      "origins": 1,
+      "news_origins": 1,
+      "official_origins": 0,
+      "company_origins": 0,
+      "reporting_origins": 1,
+      "confirmed_news": 1,
+      "confirmed_official": 0,
+      "possible_news": 0,
+      "possible_official": 0,
+      "uncertain": 0,
+      "company_statements": 0,
+      "official_releases": 0,
+      "repeats": 1,
+      "units": [
+        {
+          "publishers": [
+            "Synthetic Courier",
+            "Synthetic Ledger"
+          ],
+          "entries": [
+            "synthetic-ledger:d2413052a235f3c1d2f5",
+            "synthetic-courier:37c144440669e6aecf62"
+          ],
+          "counted_together_because": [
+            "the same headline"
+          ],
+          "role": "news",
+          "independence": "established",
+          "uncertain_because": []
+        }
+      ],
+      "possible_shared_origins": []
+    },
+    "interests": [
+      "trade",
+      "markets"
+    ],
+    "signals": [
+      {
+        "signal": "freshness",
+        "text": "Latest report 2 days ago (by its feed's stated time)."
+      },
+      {
+        "signal": "importance",
+        "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+      }
+    ],
+    "older": false,
+    "stale": false,
+    "synthetic": true,
+    "brief_state": "published",
+    "brief_note": null,
+    "brief": {
+      "brief_version": "story-brief-0.4",
+      "version": 1,
+      "content": {
+        "economics": {
+          "alternatives": [
+            {
+              "assumptions": [
+                "a2"
+              ],
+              "basis": [],
+              "kind": "offsetting_force",
+              "support": "bounded_inference",
+              "text": "SYNTHETIC: foreign exporters might absorb part of the duty by cutting their prices, which would reduce what buyers pay."
+            }
+          ],
+          "analysis_version": "econ-explanation-0.6",
+          "assumptions": [
+            {
+              "id": "a1",
+              "text": "SYNTHETIC: the tariff covers most imported steel; the reports do not list products."
+            },
+            {
+              "id": "a2",
+              "text": "SYNTHETIC: foreign exporters have margins they could cut."
+            }
+          ],
+          "calculations": [],
+          "change": {
+            "basis": [
+              "fact:1"
+            ],
+            "form": "announcement_or_decision",
+            "instrument": "import_tariff",
+            "respondents": null,
+            "stage": "decision",
+            "text": "SYNTHETIC: the Synthetic Republic said it would impose a tariff of {f1} on imported steel from next month."
+          },
+          "channels": [
+            {
+              "affected": [
+                {
+                  "how": "could pay the duty",
+                  "kind": "firms",
+                  "name": "steel importers"
+                },
+                {
+                  "how": "could face higher input costs",
+                  "kind": "industry",
+                  "name": "steel-using manufacturers"
+                }
+              ],
+              "assumptions": [
+                "a1"
+              ],
+              "basis": [
+                "fact:1",
+                "figure:f1"
+              ],
+              "conditions": "If the tariff takes effect as announced",
+              "horizon": "months",
+              "id": "m1",
+              "note": "tariff-pass-through",
+              "scope": "micro",
+              "steps": [
+                "A duty of {f1} is collected on imported steel",
+                "Importers' landed costs could rise",
+                "Steel-using manufacturers could pay more or switch suppliers"
+              ],
+              "support": "framework",
+              "text": "SYNTHETIC: if the duty is passed into the prices importers pay, firms that use imported steel could face higher input costs."
+            }
+          ],
+          "context": [],
+          "figures": [
+            {
+              "basis": "not_applicable",
+              "bound": "exact",
+              "decimals": 0,
+              "direction_check": "as_quoted",
+              "display": "15%",
+              "id": "f1",
+              "label": "SYNTHETIC tariff rate on imported steel",
+              "measure": "rate",
+              "period": "from next month",
+              "price": false,
+              "quote": "a 15% tariff on imported steel",
+              "seasonal": "not_applicable",
+              "sign": "as_quoted",
+              "sign_words": null,
+              "source": "report:synthetic-ledger:d2413052a235f3c1d2f5",
+              "statistic": "observed",
+              "stock_flow": "not_applicable",
+              "unit": "percent",
+              "value": 15,
+              "vintage": {
+                "label": null,
+                "published": "2026-10-12T07:00:00+00:00",
+                "source": "Synthetic Ledger"
+              }
+            }
+          ],
+          "framework": {
+            "digests": {
+              "tariff-pass-through": "7d9821f5b84a5ebb80b790ddfc25c67de460b9d7ef65d34827dc3c0797ea0015"
+            },
+            "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63",
+            "framework_version": "econ-framework-0.3",
+            "notes": {
+              "tariff-pass-through": {
+                "applies_to": [
+                  "import_tariff",
+                  "trade_remedy"
+                ],
+                "forms": [
+                  "announcement_or_decision",
+                  "reported_observation",
+                  "forecast_or_scenario"
+                ],
+                "id": "tariff-pass-through",
+                "limits": "Pass-through and the size of these effects differ by product, market and period; the studies cited concern particular tariff episodes, so their estimates are not figures for another tariff.",
+                "mechanism": "A tariff is a tax collected on covered imports. Studies of recent US tariffs found that the duty was passed through almost fully into the duty-inclusive prices paid for the imports, so the cost fell on domestic importers and buyers rather than on foreign exporters, and it raised the prices of both intermediate inputs and final goods. Firms that use covered goods as inputs can therefore face higher costs, imports of covered goods tend to fall, and supply chains may be reorganised; partners that retaliate impose similar costs on the other side's exports.",
+                "respondents": [],
+                "scope": "both",
+                "sources": [
+                  {
+                    "publisher": "American Economic Association",
+                    "title": "The Impact of the 2018 Tariffs on Prices and Welfare (Journal of Economic Perspectives 33(4), Amiti, Redding and Weinstein)",
+                    "url": "https://www.aeaweb.org/articles?id=10.1257/jep.33.4.187",
+                    "year": 2019
+                  },
+                  {
+                    "publisher": "Oxford University Press",
+                    "title": "The Return to Protectionism (Quarterly Journal of Economics 135(1), Fajgelbaum, Goldberg, Kennedy and Khandelwal)",
+                    "url": "https://academic.oup.com/qje/article/135/1/1/5626442",
+                    "year": 2020
+                  }
+                ],
+                "title": "Import tariffs: who pays and who adjusts"
+              }
+            },
+            "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names."
+          },
+          "insufficient_reason": null,
+          "main_uncertainty": "SYNTHETIC: which steel products the tariff covers.",
+          "second_order": [
+            {
+              "assumptions": [
+                "a1"
+              ],
+              "basis": [
+                "fact:1"
+              ],
+              "conditions": "If domestic producers have spare capacity and buyers can switch",
+              "from": "m1",
+              "horizon": "quarters",
+              "id": "s1",
+              "text": "SYNTHETIC: domestic steelmakers could gain sales if buyers switch away from imported steel."
+            }
+          ],
+          "significance": {
+            "basis": [
+              "fact:1",
+              "figure:f1"
+            ],
+            "text": "SYNTHETIC: steel is an input for many manufacturers, so a duty of {f1} on imported steel may raise costs beyond the steel industry if it is applied broadly."
+          },
+          "status": "explained",
+          "watch": [
+            {
+              "observable": "SYNTHETIC: the tariff's product list",
+              "text": "A list covering most steel imports would support a broad effect on buyers.",
+              "would": "support"
+            },
+            {
+              "observable": "SYNTHETIC: exemptions after talks",
+              "text": "Exemptions for major grades would narrow the effect.",
+              "would": "weaken"
+            }
+          ]
+        },
+        "facts": [
+          {
+            "reports": [
+              "synthetic-ledger:d2413052a235f3c1d2f5"
+            ],
+            "text": "The Synthetic Republic said it would impose a 15% tariff on imported steel."
+          }
+        ],
+        "headline": "Synthetic Republic announces a 15% steel tariff",
+        "implications": [
+          {
+            "text": "Steel buyers in the Synthetic Federation could face higher costs if the tariff applies as announced."
+          }
+        ],
+        "missing": [
+          "Which steel products it covers."
+        ],
+        "summary": "The Synthetic Republic said it would impose a 15% tariff on imported steel from next month.",
+        "themes": [
+          {
+            "basis": "The reports concern a tariff on steel.",
+            "kind": "sector",
+            "name": "Steel"
+          }
+        ],
+        "uncertainties": [
+          "How long the tariff applies is not stated."
+        ]
+      },
+      "method": "editorial",
+      "method_label": "Written by an editor from the material below.",
+      "authorship": "editor",
+      "review": {
+        "state": "written_by_editor",
+        "statement": "Written by an editor."
+      },
+      "current": true,
+      "update_note": null,
+      "prepared_at": "2026-10-14T09:00:00+00:00",
+      "published_at": "2026-10-14T09:00:00+00:00",
+      "material": {
+        "coverage": "headlines_and_excerpts",
+        "statement": "Prepared from the headlines and feed excerpts of 2 reports as the feeds gave them. The full publications were not read, so anything they add is not reflected here.",
+        "reports": [
+          {
+            "entry_id": "synthetic-ledger:d2413052a235f3c1d2f5",
+            "publisher": "Synthetic Ledger",
+            "title": "Synthetic Republic announces 15% tariff on imported steel"
+          },
+          {
+            "entry_id": "synthetic-courier:37c144440669e6aecf62",
+            "publisher": "Synthetic Courier",
+            "title": "Synthetic Republic announces 15% tariff on imported steel"
+          }
+        ],
+        "not_used": []
+      },
+      "reports_since": 0,
+      "synthetic": false,
+      "economics": {
+        "analysis_version": "econ-explanation-0.6",
+        "status": "explained",
+        "insufficient_reason": null,
+        "summary": {
+          "stage": "decision",
+          "stage_label": "Decided",
+          "instrument_label": "a tariff or duty on imports",
+          "form_label": "an announced or adopted decision, proposal or measure",
+          "respondents_label": null,
+          "classification_note": null,
+          "what_changed": "SYNTHETIC: the Synthetic Republic said it would impose a tariff of 15% on imported steel from next month.",
+          "what_changed_basis": [
+            {
+              "kind": "fact",
+              "label": "Reported fact 1",
+              "reports": [
+                "synthetic-ledger:d2413052a235f3c1d2f5"
+              ]
+            }
+          ],
+          "why_it_matters": "SYNTHETIC: steel is an input for many manufacturers, so a duty of 15% on imported steel may raise costs beyond the steel industry if it is applied broadly.",
+          "why_basis": [
+            {
+              "kind": "fact",
+              "label": "Reported fact 1",
+              "reports": [
+                "synthetic-ledger:d2413052a235f3c1d2f5"
+              ]
+            },
+            {
+              "kind": "figure",
+              "label": "15%: SYNTHETIC tariff rate on imported steel (from next month)",
+              "reports": [
+                "synthetic-ledger:d2413052a235f3c1d2f5"
+              ]
+            }
+          ],
+          "who": [
+            "steel importers",
+            "steel-using manufacturers"
+          ],
+          "main_uncertainty": "SYNTHETIC: which steel products the tariff covers."
+        },
+        "channels": [
+          {
+            "id": "m1",
+            "scope": "micro",
+            "scope_label": "For particular firms, markets or households",
+            "support": "framework",
+            "support_label": "General economic reasoning: a sourced framework note",
+            "text": "SYNTHETIC: if the duty is passed into the prices importers pay, firms that use imported steel could face higher input costs.",
+            "steps": [
+              "A duty of 15% is collected on imported steel",
+              "Importers' landed costs could rise",
+              "Steel-using manufacturers could pay more or switch suppliers"
+            ],
+            "affected": [
+              {
+                "how": "could pay the duty",
+                "kind": "firms",
+                "name": "steel importers"
+              },
+              {
+                "how": "could face higher input costs",
+                "kind": "industry",
+                "name": "steel-using manufacturers"
+              }
+            ],
+            "conditions": "If the tariff takes effect as announced",
+            "horizon": "months",
+            "horizon_label": "Over months",
+            "kind": "interpretation",
+            "note": {
+              "id": "tariff-pass-through",
+              "title": "Import tariffs: who pays and who adjusts"
+            },
+            "basis": [
+              {
+                "kind": "fact",
+                "label": "Reported fact 1",
+                "reports": [
+                  "synthetic-ledger:d2413052a235f3c1d2f5"
+                ]
+              },
+              {
+                "kind": "figure",
+                "label": "15%: SYNTHETIC tariff rate on imported steel (from next month)",
+                "reports": [
+                  "synthetic-ledger:d2413052a235f3c1d2f5"
+                ]
+              }
+            ],
+            "assumptions": [
+              "a1"
+            ]
+          }
+        ],
+        "second_order": [
+          {
+            "id": "s1",
+            "from": "m1",
+            "text": "SYNTHETIC: domestic steelmakers could gain sales if buyers switch away from imported steel.",
+            "conditions": "If domestic producers have spare capacity and buyers can switch",
+            "horizon": "quarters",
+            "horizon_label": "Over quarters",
+            "kind": "interpretation",
+            "basis": [
+              {
+                "kind": "fact",
+                "label": "Reported fact 1",
+                "reports": [
+                  "synthetic-ledger:d2413052a235f3c1d2f5"
+                ]
+              }
+            ],
+            "assumptions": [
+              "a1"
+            ]
+          }
+        ],
+        "alternatives": [
+          {
+            "kind": "offsetting_force",
+            "label": "An offsetting force",
+            "text": "SYNTHETIC: foreign exporters might absorb part of the duty by cutting their prices, which would reduce what buyers pay.",
+            "basis": [],
+            "support": "bounded_inference",
+            "support_label": "An inference resting on stated assumptions",
+            "assumptions": [
+              "a2"
+            ]
+          }
+        ],
+        "watch": [
+          {
+            "observable": "SYNTHETIC: the tariff's product list",
+            "text": "A list covering most steel imports would support a broad effect on buyers.",
+            "would": "support"
+          },
+          {
+            "observable": "SYNTHETIC: exemptions after talks",
+            "text": "Exemptions for major grades would narrow the effect.",
+            "would": "weaken"
+          }
+        ],
+        "figures": [
+          {
+            "id": "f1",
+            "display": "15%",
+            "label": "SYNTHETIC tariff rate on imported steel",
+            "period": "from next month",
+            "basis_label": null,
+            "seasonal_label": null,
+            "margin": null,
+            "statistic_label": null,
+            "stock_flow_label": null,
+            "bound": "exact",
+            "measure": "rate",
+            "quote": "a 15% tariff on imported steel",
+            "vintage": {
+              "label": null,
+              "published": "2026-10-12T07:00:00+00:00",
+              "source": "Synthetic Ledger"
+            },
+            "kind": "reported",
+            "sign_basis": null,
+            "direction_warning": null,
+            "reports": [
+              "synthetic-ledger:d2413052a235f3c1d2f5"
+            ],
+            "context": null
+          }
+        ],
+        "calculations": [],
+        "assumptions": [
+          {
+            "id": "a1",
+            "text": "SYNTHETIC: the tariff covers most imported steel; the reports do not list products."
+          },
+          {
+            "id": "a2",
+            "text": "SYNTHETIC: foreign exporters have margins they could cut."
+          }
+        ],
+        "notes": [
+          {
+            "id": "tariff-pass-through",
+            "title": "Import tariffs: who pays and who adjusts",
+            "mechanism": "A tariff is a tax collected on covered imports. Studies of recent US tariffs found that the duty was passed through almost fully into the duty-inclusive prices paid for the imports, so the cost fell on domestic importers and buyers rather than on foreign exporters, and it raised the prices of both intermediate inputs and final goods. Firms that use covered goods as inputs can therefore face higher costs, imports of covered goods tend to fall, and supply chains may be reorganised; partners that retaliate impose similar costs on the other side's exports.",
+            "limits": "Pass-through and the size of these effects differ by product, market and period; the studies cited concern particular tariff episodes, so their estimates are not figures for another tariff.",
+            "sources": [
+              {
+                "publisher": "American Economic Association",
+                "title": "The Impact of the 2018 Tariffs on Prices and Welfare (Journal of Economic Perspectives 33(4), Amiti, Redding and Weinstein)",
+                "url": "https://www.aeaweb.org/articles?id=10.1257/jep.33.4.187",
+                "year": 2019
+              },
+              {
+                "publisher": "Oxford University Press",
+                "title": "The Return to Protectionism (Quarterly Journal of Economics 135(1), Fajgelbaum, Goldberg, Kennedy and Khandelwal)",
+                "url": "https://academic.oup.com/qje/article/135/1/1/5626442",
+                "year": 2020
+              }
+            ],
+            "kind": "reasoning"
+          }
+        ],
+        "context": [],
+        "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names.",
+        "background": {
+          "state": "recorded",
+          "framework_version": "econ-framework-0.3",
+          "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63"
+        },
+        "kinds": {
+          "reported": "Reported",
+          "derived": "Calculated here",
+          "reasoning": "General economic reasoning",
+          "interpretation": "Interpretation, conditional"
+        }
+      },
+      "context_statement": null,
+      "revisions": {
+        "earlier": [],
+        "changes": [],
+        "updated_at": null
+      },
+      "statement": "Reported facts and possible implications are kept apart. Nothing here is advice to buy or sell, and no cause is claimed beyond what a source states."
+    },
+    "explanation": {
+      "state": "ready",
+      "statement": null,
+      "reason": null
+    },
+    "relevance": {
+      "state": "relevant",
+      "statement": "In the economic news.",
+      "basis": "synthetic",
+      "basis_label": "A SYNTHETIC assessment for tests and the demo.",
+      "explanation": "SYNTHETIC: a reported policy change affecting trade.",
+      "change": "SYNTHETIC: the sources report a change.",
+      "dimensions": [
+        {
+          "dimension": "trade",
+          "how": "SYNTHETIC: it may change what importers pay."
+        }
+      ],
+      "missing": [
+        "SYNTHETIC: how long it lasts is not stated."
+      ],
+      "current": true
+    },
+    "sources": [
+      {
+        "entry_id": "synthetic-ledger:d2413052a235f3c1d2f5",
+        "publisher": "Synthetic Ledger",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News report",
+        "title": "Synthetic Republic announces 15% tariff on imported steel",
+        "title_shortened": false,
+        "excerpt": "SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.",
+        "excerpt_shortened": false,
+        "link": "https://ledger.example.org/news/tariff",
+        "published": {
+          "as_stated": "Mon, 12 Oct 2026 07:00:00 GMT",
+          "element": "RSS pubDate",
+          "state": "stated",
+          "utc": "2026-10-12T07:00:00+00:00",
+          "date": "2026-10-12",
+          "note": null
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Synthetic Ledger",
+        "synthetic": true,
+        "unit": 1,
+        "counted_together_because": [
+          "the same headline"
+        ],
+        "use": "material",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      },
+      {
+        "entry_id": "synthetic-courier:37c144440669e6aecf62",
+        "publisher": "Synthetic Courier",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News report",
+        "title": "Synthetic Republic announces 15% tariff on imported steel",
+        "title_shortened": false,
+        "excerpt": "SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.",
+        "excerpt_shortened": false,
+        "link": "https://courier.example.org/news/tariff-copy",
+        "published": {
+          "as_stated": "Mon, 12 Oct 2026 08:00:00 GMT",
+          "element": "RSS pubDate",
+          "state": "stated",
+          "utc": "2026-10-12T08:00:00+00:00",
+          "date": "2026-10-12",
+          "note": null
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Synthetic Courier",
+        "synthetic": true,
+        "unit": 1,
+        "counted_together_because": [
+          "the same headline"
+        ],
+        "use": "material",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      }
+    ],
+    "topics": [
+      {
+        "topic_id": "topic-c0867966717f7e48",
+        "title": "Synthetic steel dispute",
+        "summary": "SYNTHETIC: a tariff, a response and a revision, invented to show how an ongoing topic is followed.",
+        "developments": 3,
+        "latest_at": "2026-10-14T07:00:00+00:00",
+        "latest_title": "Synthetic Republic narrows steel tariff after talks",
+        "synthetic": true
+      }
+    ],
+    "related": [
+      {
+        "story_id": "story-f6adc493142c934f",
+        "title": "Synthetic Republic narrows steel tariff after talks",
+        "first_at": "2026-10-14T07:00:00+00:00",
+        "first_basis": "published",
+        "label": "Tariff narrowed",
+        "topic_id": "topic-c0867966717f7e48"
+      },
+      {
+        "story_id": "story-74c8ec21df978d5b",
+        "title": "Synthetic Federation responds with duties on farm goods",
+        "first_at": "2026-10-13T07:00:00+00:00",
+        "first_basis": "published",
+        "label": "The Federation responds",
+        "topic_id": "topic-c0867966717f7e48"
+      }
+    ],
+    "deeper": {
+      "available": true,
+      "material_reports": 2,
+      "reason": null
+    },
+    "statement": "Read from this server's saved records: opening this page contacts no publisher, runs no analysis and uses no credits."
+  }
+}

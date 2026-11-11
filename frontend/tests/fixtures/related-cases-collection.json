@@ -1,0 +1,54 @@
+{
+ "cases": [
+  {
+   "announced": "2019-01-28",
+   "date_as_stated": "January 28, 2019",
+   "id": "ofac-pdvsa-2019-01-28",
+   "publisher": "U.S. Department of the Treasury",
+   "summary": "On January 28, 2019, the Treasury Department’s Office of Foreign Assets Control designated Petroleos de Venezuela, S.A. (PdVSA), Venezuela’s state-owned oil company, under Executive Order 13850. PdVSA’s property subject to U.S. jurisdiction is blocked and U.S. persons are generally prohibited from dealing with it, while general licenses issued at the same time authorize certain transactions within specified timeframes.",
+   "title": "Treasury sanctions Venezuela’s state-owned oil company, PdVSA",
+   "topic": "Sanctions"
+  },
+  {
+   "announced": "2022-10-07",
+   "date_as_stated": "FOR IMMEDIATE RELEASE | October 7, 2022",
+   "id": "bis-2022-10-07",
+   "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS), Office of Congressional and Public Affairs",
+   "summary": "On October 7, 2022, the Commerce Department’s Bureau of Industry and Security announced two rules that restrict the PRC’s ability to obtain advanced computing chips, develop and maintain supercomputers and manufacture advanced semiconductors. They add license requirements for advanced chips, for supercomputer and semiconductor end uses in the PRC, for chipmaking equipment and for PRC fabrication facilities, and take effect in phases from October 7 to October 21, 2022.",
+   "title": "Commerce restricts advanced computing and chipmaking items for the PRC",
+   "topic": "Semiconductor export controls"
+  }
+ ],
+ "collection_version": "related-cases-0.1",
+ "coverage_note": "A first version with two cases: one on semiconductor export controls and one on sanctions. Two cases cannot cover policy events broadly, so most events will have no related case.",
+ "historical_note": "These cases describe announcements as of their dates. Rules, licenses and sanctions change after they are announced; nothing here says what applies today.",
+ "introduction": "Two historical US government announcements, each written from one official press release that this project retained: the Treasury Department’s January 2019 sanctions on Venezuela’s state-owned oil company, and the Commerce Department’s October 2022 export controls on advanced computing and chipmaking items for China. Each case separates what the release states, with its words quoted from the retained copy, from labelled interpretation, and lists what remains unknown. On an event’s overview, Related cases compares the event’s own text with these two cases.",
+ "labels": [
+  "Historical announcements",
+  "Facts quoted from a retained official page",
+  "Interpretation labelled, AI-assisted",
+  "Not human-reviewed",
+  "Not current law or policy",
+  "Never scored · not research evidence"
+ ],
+ "matching_note": "A case is shown as related to an event only when the event’s own text names the case’s policy instrument and also its sector or its country. A shared topic alone, such as oil, is listed as an overlap, not as a related case. Saved headline classifications are used only as labelled hints. Matching runs on this machine with a fixed word list: no model, no network and no score.",
+ "title": "Historical policy announcements",
+ "unfinished": [
+  {
+   "outcome": "Not built yet. The one approved request was redirected to an access check, which was not followed, so no source was retained.",
+   "planned_source": "The Federal Register’s page for the Section 232 steel proclamation (document 2018-05478)",
+   "topic": "Tariffs and international trade"
+  },
+  {
+   "outcome": "Not built yet. The one approved request returned a bot-verification page without the press release, which was not accepted as a source.",
+   "planned_source": "The Justice Department’s press release on its advertising-technology suit against Google",
+   "topic": "Competition and regulatory policy"
+  },
+  {
+   "outcome": "Not built yet. The one approved request was refused (HTTP 403 Forbidden), so no source was retained.",
+   "planned_source": "SAG-AFTRA’s strike order for TV, theatrical and streaming contracts",
+   "topic": "Labor disruptions"
+  }
+ ],
+ "view_version": "related-cases-view-0.1"
+}

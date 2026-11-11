@@ -1,0 +1,12 @@
+{
+ "index_version": "event-chain-index-0.1",
+ "id": "bagdad-expansion",
+ "versions": [
+  {
+   "version": 1,
+   "file": "v1.json",
+   "sha256": "74b10c74f73f0181c364165fed5566d295e5d221ab951fad4e2e7547bbcbb19f",
+   "published_on": "2026-11-11"
+  }
+ ]
+}

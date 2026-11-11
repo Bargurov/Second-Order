@@ -1,0 +1,270 @@
+{
+  "view_version": "copper-research-view-0.1",
+  "provider_called": false,
+  "desk": {
+    "pages": [
+      {
+        "id": "thesis",
+        "title": "Copper thesis",
+        "path": "/theses/copper",
+        "what": "The physical balance, its reasons and risks, with their sources.",
+        "status": "Version 1, published 2026-11-02.",
+        "problem": null
+      },
+      {
+        "id": "tools",
+        "title": "Copper tools",
+        "path": "/theses/copper/tools",
+        "what": "The coverage calculator and the producer comparison.",
+        "status": null,
+        "problem": null
+      },
+      {
+        "id": "fcx",
+        "title": "FCX company page",
+        "path": "/companies/fcx",
+        "what": "How the copper price reaches Freeport-McMoRan's cash flow.",
+        "status": "4 documents, 4 verified on this machine; the latest is dated 2026-11-06.",
+        "problem": null
+      },
+      {
+        "id": "metals",
+        "title": "Metals comparison",
+        "path": "/metals",
+        "what": "Production, reserves and their concentration, metal by metal.",
+        "status": null,
+        "problem": null
+      },
+      {
+        "id": "events",
+        "title": "Event chains",
+        "path": "/theses/copper/events",
+        "what": "Past events, the sources' own words, and your reviews and readings.",
+        "status": "1 chain: 1 awaiting your review.",
+        "problem": null
+      }
+    ]
+  },
+  "comparisons": [
+    {
+      "id": "synthetic-annual-to-quarter",
+      "title": "Synthetic: the annual report against the quarterly report",
+      "latest_version": 1,
+      "published_on": "2026-11-10",
+      "sha256": "2d48a3981c0eb79aff349b09f8e3e81329aab4fa35a839e8f8d7453076be4add",
+      "historical": true,
+      "historical_note": "Historical: both publications were already retained when this comparison was prepared.",
+      "prepared_by": "assistant",
+      "ai_assisted": true,
+      "state": "available",
+      "reasons": [],
+      "earlier": {
+        "ref": "fcx:10k-2025",
+        "name": "the FCX 10-K",
+        "title": "Freeport-McMoRan Inc., Annual Report on Form 10-K for the fiscal year ended December 31, 2025",
+        "form": "10-K",
+        "dated": "2026-02-13",
+        "dated_as": "signature date",
+        "state": "verified",
+        "record": "same"
+      },
+      "later": {
+        "ref": "fcx:10q-2026q3",
+        "name": "the FCX 10-Q",
+        "title": "Freeport-McMoRan Inc., Quarterly Report on Form 10-Q for the quarterly period ended September 30, 2026",
+        "form": "10-Q",
+        "dated": "2026-11-06",
+        "dated_as": "signature date",
+        "state": "verified",
+        "record": "same"
+      },
+      "rows": [
+        {
+          "id": "return-to-operation",
+          "label": "The return to operation",
+          "same_measure": "not_established",
+          "sentence": "No retained source establishes that the two lines measure the same thing. No change is computed between them.",
+          "note": "The earlier line is about total production at normal rates; the later is about capacity.",
+          "note_withheld": false,
+          "earlier": {
+            "ref": "fcx:k25-mud-rush-85pct",
+            "quote": "Based on current estimates, PTFI expects approximately 85% of its total production at normal operating rates to be restored in the second half of 2026.",
+            "where": "page 25 (printed page 23), Items 1. and 2. Business and Properties > Operations > Indonesia > Grasberg Minerals District Mud Rush Incident",
+            "document": {
+              "ref": "fcx:10k-2025",
+              "name": "the FCX 10-K",
+              "state": "verified"
+            },
+            "state": "verified",
+            "problem": null
+          },
+          "later": {
+            "ref": "fcx:q3-p-gbc-capacity-targets",
+            "quote": "PTFI continues to expect to reach 80% of capacity in mid-2027 and approach full capacity by year-end 2027.",
+            "where": "page 43 (printed page 43), Part I, Item 2 > Operations > Indonesia > Grasberg Block Cave Ramp-Up",
+            "document": {
+              "ref": "fcx:10q-2026q3",
+              "name": "the FCX 10-Q",
+              "state": "verified"
+            },
+            "state": "verified",
+            "problem": null
+          }
+        },
+        {
+          "id": "licence",
+          "label": "The mining licence",
+          "same_measure": "not_applicable",
+          "sentence": "Two statements, each shown as written.",
+          "note": null,
+          "note_withheld": false,
+          "earlier": {
+            "ref": "fcx:k25-iupk-application-2026",
+            "quote": "PTFI is preparing its application for a long-term extension expected to cover the life of the resource, which is expected to be submitted during 2026.",
+            "where": "page 24 (printed page 22), Items 1. and 2. Business and Properties > Operations > Indonesia > IUPK",
+            "document": {
+              "ref": "fcx:10k-2025",
+              "name": "the FCX 10-K",
+              "state": "verified"
+            },
+            "state": "verified",
+            "problem": null
+          },
+          "later": {
+            "ref": "fcx:q3-p-iupk-extension",
+            "quote": "In June 2026, PTFI submitted its application for extension of its IUPK, and we and PTFI are working with the Indonesia government to complete the formal license process.",
+            "where": "page 43 (printed page 43), Part I, Item 2 > Operations > Indonesia > Long-Term Mining Rights",
+            "document": {
+              "ref": "fcx:10q-2026q3",
+              "name": "the FCX 10-Q",
+              "state": "verified"
+            },
+            "state": "verified",
+            "problem": null
+          }
+        }
+      ],
+      "prices": {
+        "figures": [
+          {
+            "id": "k25-copper-realized-price-fy2025",
+            "label": "Average realized price per pound (copper)",
+            "period": {
+              "label": "FY2025",
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "display": "4.75",
+            "unit": "USD per pound",
+            "source": {
+              "ref": "fcx:10k-2025",
+              "name": "the FCX 10-K"
+            },
+            "state": "available",
+            "problem": null
+          },
+          {
+            "id": "q3-cu-realized-price-q3-2026",
+            "label": "Copper average realized price per pound",
+            "period": {
+              "label": "Q3 2026",
+              "start": "2026-07-01",
+              "end": "2026-09-30"
+            },
+            "display": "6.54",
+            "unit": "USD per pound",
+            "source": {
+              "ref": "fcx:10q-2026q3",
+              "name": "the FCX 10-Q"
+            },
+            "state": "available",
+            "problem": null
+          },
+          {
+            "id": "usgs-annual-2024",
+            "label": "Price, annual average, cents per pound: U.S. producer, cathode (COMEX + premium)",
+            "unit": "US cents per pound",
+            "source": {
+              "ref": "copper:usgs-csv-2026",
+              "name": "Synthetic usgs-csv-2026"
+            },
+            "display": "431.8",
+            "period": {
+              "label": "2024",
+              "start": "2024-01-01",
+              "end": "2024-12-31"
+            },
+            "state": "available",
+            "problem": null
+          },
+          {
+            "id": "usgs-annual-2025",
+            "label": "Price, annual average, cents per pound: U.S. producer, cathode (COMEX + premium)",
+            "unit": "US cents per pound",
+            "source": {
+              "ref": "copper:usgs-csv-2026",
+              "name": "Synthetic usgs-csv-2026"
+            },
+            "display": "490",
+            "period": {
+              "label": "2025 (estimate)",
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "state": "available",
+            "problem": null
+          }
+        ],
+        "covered_to": "2026-09-30",
+        "text": "Retained prices cover up to 2026-09-30. No retained price covers a later date."
+      },
+      "documents": [
+        {
+          "ref": "fcx:10k-2025",
+          "name": "the FCX 10-K",
+          "state": "verified"
+        },
+        {
+          "ref": "fcx:10q-2026q3",
+          "name": "the FCX 10-Q",
+          "state": "verified"
+        }
+      ]
+    }
+  ],
+  "subjects": [
+    {
+      "kind": "thesis",
+      "id": "copper",
+      "title": "Synthetic copper: technology demand and the physical balance",
+      "version": 1,
+      "sha256": "a1c72166e25ed105f1f7df9233aa05e5d6bdac0fdaaca19f530eeaa639e60b6b",
+      "state": "available",
+      "reasons": []
+    },
+    {
+      "kind": "chain",
+      "id": "synthetic-world-chain",
+      "title": "Synthetic sales, a halted pit and slow mine supply",
+      "version": 1,
+      "sha256": "938efc7e01ca63206a1b3828684713b3637dabb12a84ed93f42e2fe5cbba8e01",
+      "state": "available",
+      "reasons": []
+    },
+    {
+      "kind": "comparison",
+      "id": "synthetic-annual-to-quarter",
+      "title": "Synthetic: the annual report against the quarterly report",
+      "version": 1,
+      "sha256": "2d48a3981c0eb79aff349b09f8e3e81329aab4fa35a839e8f8d7453076be4add",
+      "state": "available",
+      "reasons": []
+    }
+  ],
+  "notes": {
+    "state": "valid",
+    "problem": null,
+    "latest": null,
+    "items": []
+  }
+}

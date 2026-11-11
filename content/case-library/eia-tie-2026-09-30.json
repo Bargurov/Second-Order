@@ -1,0 +1,94 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "eia-tie-2026-09-30",
+  "title": "EV electricity use grew 8% in the first half of 2026, slower after federal credits ended",
+  "category": "Energy analysis",
+  "summary": "EIA estimates that US light-duty electric vehicles used 8 percent more electricity in the first half of 2026 than in the second half of 2025, down from 13 to 24 percent growth in recent half-years, after federal clean vehicle tax credits ended on September 30, 2025. New EV sales were 19 percent lower over the same comparison.",
+  "sectors": ["energy", "manufacturing-automotive"],
+  "source": {
+    "publisher": "U.S. Energy Information Administration (EIA)",
+    "title": "Today in Energy: U.S. electricity use for electric vehicles increasing at a slower pace in 2026",
+    "url": "https://www.eia.gov/todayinenergy/detail.php?id=68224",
+    "document_id": null,
+    "published_at": "2026-09-30",
+    "published_precision": "date",
+    "published_as_stated": "IN-BRIEF ANALYSIS · SEPTEMBER 30, 2026",
+    "timezone_note": "The article page states a date only. No time or time zone is stated, so none is recorded and the date is not converted.",
+    "reference_period": "First half of 2026, compared with the second half of 2025 and earlier half-years",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "Growth in the electricity used by electric vehicles has slowed. EIA estimates that light-duty EVs in the United States consumed 8 percent more electricity in the first half of 2026 than in the second half of 2025, compared with growth of 13 to 24 percent in six-month periods in recent years. Use has still more than doubled since the first half of 2023, to nearly 14 billion kilowatthours in the first half of 2026.",
+    "EIA ties the slowdown to sales. The New Clean Vehicle Credit and the Qualified Commercial Clean Vehicle Credit, which reduced the cost of buying and leasing new EVs, ended on September 30, 2025, and new EV sales in the first half of 2026 were 19 percent lower than in the second half of 2025. EVs remain a small part of the fleet: 2 percent of registered light-duty vehicles in 2024, the most recent year available.",
+    "The figures are modeled. EIA does not collect EV charging data in its traditional surveys; it estimates electricity use with a recently finalized model based on external data sources, covering battery electric and plug-in hybrid vehicles of 8,500 pounds or less. It will continue the series in its Monthly Energy Review and State Energy Data System."
+  ],
+  "key_facts": [
+    {"label": "Electricity used by light-duty EVs, first half of 2026", "value": "Nearly 14 billion kWh; +8% against the second half of 2025", "basis": "Modeled estimate, Monthly Energy Review; on-road vehicles of 8,500 lb or less; battery electric and plug-in hybrid"},
+    {"label": "Earlier half-year growth", "value": "13–24%", "basis": "Six-month periods in recent years, as stated"},
+    {"label": "Since the first half of 2023", "value": "More than doubled", "basis": "Modeled estimate"},
+    {"label": "New EV sales, first half of 2026", "value": "−19% against the second half of 2025", "basis": "As stated by EIA; the article does not name the sales data's source"},
+    {"label": "Federal credits", "value": "Ended September 30, 2025", "basis": "New Clean Vehicle Credit and Qualified Commercial Clean Vehicle Credit"},
+    {"label": "EV share of registered light-duty vehicles", "value": "2% (2024)", "basis": "Most recent year of available data, per EIA"}
+  ],
+  "channels": [
+    {
+      "title": "Electricity demand growth (utilities)",
+      "source_fact": "EV electricity use grew 8% half on half, down from 13–24%, to nearly 14 billion kWh in the first half of 2026.",
+      "interpretation": "Slower growth in EV charging would reduce one source of new retail electricity demand. At about 14 billion kWh per half-year it is small next to total US use, so the effect on utilities' load would be marginal unless growth picked up again."
+    },
+    {
+      "title": "Vehicle demand after the credits (automakers)",
+      "source_fact": "New EV sales in the first half of 2026 were 19% below the second half of 2025, after the credits ended on September 30, 2025.",
+      "interpretation": "If the end of the credits is the main cause, EV demand would rest more on prices and model choice without federal support, and automakers' EV production plans could shift toward other powertrains. The article reports no production figures or automaker responses."
+    },
+    {
+      "title": "Fuel mix in road transport",
+      "source_fact": "EVs were 2% of registered light-duty vehicles in 2024.",
+      "interpretation": "With EVs a small share of the fleet, slower adoption changes gasoline demand only slightly in the near term; the effect would grow only as the fleet turns over."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Purchases pulled forward before the deadline", "detail": "The second half of 2025 includes the months just before the credits ended, when buyers may have brought purchases forward. A 19% decline from that period could overstate the underlying slowdown; the article compares only with the second half of 2025."},
+    {"title": "Model estimates, not measurements", "detail": "EV electricity use is modeled from external data with a recently finalized model. Changes in the model or its inputs, not only in charging, could move the growth rate."}
+  ],
+  "assumptions": [
+    "Charging electricity tracks the number of EVs on the road and how far they are driven; the model's inputs are not described in the article.",
+    "The sales decline relates to the end of the credits as EIA's wording suggests; the article does not test other causes."
+  ],
+  "missing_information": [
+    "The source and breakdown of the EV sales figures: battery electric versus plug-in hybrid, retail versus commercial.",
+    "Monthly or quarterly sales, which would show whether the decline concentrated right after September 2025.",
+    "Total US electricity use for the same periods, to scale the EV figure.",
+    "Vehicle prices and model availability in the first half of 2026."
+  ],
+  "weakening_observations": [
+    "If EV sales in the second half of 2026 recovered to their level a year earlier without new incentives, the credit-expiry explanation would weaken.",
+    "If revised model estimates changed the 8% growth figure materially, the slowdown reading would need restating.",
+    "If sales in the second half of 2025 were not unusually high relative to the first half of 2025, the pull-forward explanation would weaken."
+  ],
+  "critique": [
+    {"title": "Half-year comparisons mix seasons", "detail": "Comparing the first half of 2026 with the second half of 2025 mixes seasons, and both charging and sales have seasonal patterns. A year-on-year comparison would separate seasonality from the policy change, but the article does not give one."},
+    {"title": "A modeled series read as a trend", "detail": "The case treats the 8% figure as a change in behavior, but it is the output of a newly finalized model. Early estimates from a new method are prone to revision."},
+    {"title": "Two sectors, thin evidence for each", "detail": "The case is listed under Energy and Manufacturing & automotive because it reports both electricity use and vehicle sales, but each rests on a single figure here. It illustrates how one policy change can reach both sectors without measuring either one's response."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The article as shown on 2026-10-11; figures come from its text. The Monthly Energy Review tables and the chart data were not read.", "url": null},
+    {"title": "Selection", "detail": "EIA's Today in Energy archive lists this article on September 30, 2026, the last article on or before the cutoff.", "url": "https://www.eia.gov/todayinenergy/archive.php"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the article and EIA's Today in Energy archive in a browser on 2026-10-11. Facts come from the article's text; the channels, competing explanations and critique are the assistant's interpretation. The Monthly Energy Review, sales data, market prices, forecasts and news coverage were not used.",
+    "sources_read": [
+      "https://www.eia.gov/todayinenergy/detail.php?id=68224",
+      "https://www.eia.gov/todayinenergy/archive.php"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

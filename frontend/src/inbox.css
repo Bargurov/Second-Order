@@ -1,0 +1,82 @@
+/* Event Inbox: official releases, energy articles and trade news, refreshed only on request, feeding the Analyze an
+   event form. */
+
+.event-inbox { margin-top: 26px; }
+.inbox-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; }
+.inbox-actions span { color: var(--ink-3); font-size: 12.5px; }
+.inbox-message, .inbox-state { margin: 0 0 12px; font-size: 13.5px; }
+.inbox-message.is-done { color: var(--accent); }
+.inbox-message.is-error, .inbox-state.is-error { color: var(--stamp); }
+.inbox-state { color: var(--ink-3); }
+
+.inbox-sources { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px;
+  padding: 0; list-style: none; }
+.inbox-source { display: grid; gap: 4px; align-content: start; min-width: 0; padding: 9px 11px;
+  border: 1px solid var(--rule); border-top-width: 3px; background: var(--paper-raised); }
+.inbox-source.is-ok { border-top-color: var(--accent); }
+.inbox-source.is-warn { border-top-color: var(--stamp); }
+.inbox-source-head { display: grid; gap: 2px; }
+.inbox-source-head a { font-weight: 600; font-size: 13.5px; }
+.inbox-source-state { font: 500 10.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.inbox-source-kind { margin: 0; font: 500 10.5px/1.4 var(--mono); letter-spacing: .04em; color: var(--ink-3); }
+.inbox-source-credit { margin: 0; font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+.inbox-source-detail, .inbox-source-error { margin: 0; font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+.inbox-source-error { color: var(--stamp); }
+.inbox-source-retrieval { margin: 0; font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+.inbox-message p { margin: 0; }
+.inbox-refresh-lines { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 12.5px; }
+
+/* Local filters: the same controls as My analyses, over entries already held. */
+.inbox-filters { display: grid; gap: 6px; margin: 0 0 12px; }
+.inbox-filter-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; }
+.inbox-filter { display: grid; gap: 5px; min-width: 200px; font-size: 13px; color: var(--ink-2); }
+.inbox-filter span { font-weight: 600; }
+.inbox-filter select { width: 100%; box-sizing: border-box; min-height: 40px; padding: 9px 28px 9px 10px;
+  border: 1px solid var(--rule-strong); border-radius: 3px; background: var(--paper-raised); color: var(--ink);
+  font: 400 14px/1.4 var(--sans); }
+.inbox-filter select:focus-visible, .inbox-filter-reset:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.inbox-filter-count { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+
+.inbox-items { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.inbox-item { display: grid; gap: 4px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+.inbox-item h3 { margin: 0; font-size: 15.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.inbox-item-meta, .inbox-item-time, .inbox-item-fresh { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.inbox-item-time code { font-size: 12px; overflow-wrap: anywhere; }
+.inbox-item-kind { font: 500 10.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.inbox-item[data-kind="Statistical release"] .inbox-item-kind { color: var(--accent); }
+.inbox-item-problem { color: var(--stamp); }
+.inbox-item-excerpt { margin: 2px 0 0; font-size: 13.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+.inbox-item-excerpt span { margin-right: 4px; font: 500 10px/1.4 var(--mono); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-3); }
+.inbox-item .inbox-analyze { justify-self: start; margin-top: 4px; }
+.inbox-item-text { margin: 0; font-size: 12px; color: var(--ink-3); }
+/* What the local records say was done with an entry; "Not processed" is a state, not a warning. */
+.inbox-item-processing { justify-self: start; margin: 2px 0 0; padding: 1px 7px; border: 1px solid var(--rule-strong);
+  font: 500 10.5px/1.5 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.inbox-item-processing.is-done { border-color: var(--accent); color: var(--accent); }
+.inbox-item-processing.is-warn { border-color: var(--stamp); color: var(--stamp); }
+/* Analyze this event, and Market context on Federal Reserve and BLS entries (a note on the others). */
+.inbox-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 4px; }
+.inbox-item-actions .inbox-analyze { margin-top: 0; }
+.inbox-context { text-decoration: none; }
+.inbox-context-outside { max-width: 60ch; font-size: 12px; color: var(--ink-3); }
+.inbox-retention { margin: 12px 0 0; color: var(--ink-3); font-size: 12.5px; }
+
+/* The entry a form was filled from, inside Analyze an event. */
+.intake-origin { grid-column: 1 / -1; display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--accent);
+  background: var(--accent-soft); font-size: 13px; }
+.intake-origin p { margin: 0; overflow-wrap: anywhere; }
+.intake-origin-head { font-weight: 600; }
+.intake-origin-kind { color: var(--ink-2); }
+.intake-origin-label { font: 500 10px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.intake-origin-excerpt { padding: 7px 9px; border-left: 3px solid var(--rule-strong); background: var(--paper-raised); }
+.intake-origin .intake-confirm { background: var(--paper-raised); }
+.intake-replace { display: grid; gap: 8px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--stamp);
+  background: var(--contradicted-soft); font-size: 13.5px; }
+.intake-replace p { margin: 0; }
+.intake-replace div { display: flex; flex-wrap: wrap; gap: 10px; }
+
+@media (max-width: 760px) {
+  .inbox-sources { grid-template-columns: minmax(0, 1fr); }
+  .inbox-filter { flex: 1 1 100%; min-width: 0; }
+}

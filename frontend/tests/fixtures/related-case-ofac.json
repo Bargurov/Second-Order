@@ -1,0 +1,450 @@
+{
+ "announced": "2019-01-28",
+ "case": {
+  "actors": [
+   {
+    "facts": [
+     "designation"
+    ],
+    "name": "Office of Foreign Assets Control (OFAC), U.S. Department of the Treasury",
+    "role": "Designated PdVSA"
+   },
+   {
+    "facts": [
+     "determination",
+     "mnuchin"
+    ],
+    "name": "Steven T. Mnuchin, Secretary of the Treasury",
+    "role": "Made the oil-sector determination under E.O. 13850 and is quoted in the release"
+   },
+   {
+    "facts": [
+     "designation",
+     "pdvsa"
+    ],
+    "name": "Petroleos de Venezuela, S.A. (PdVSA)",
+    "role": "Designated; a Venezuelan state-owned oil company"
+   },
+   {
+    "facts": [
+     "support"
+    ],
+    "name": "Juan Guaidó, Interim President, and the National Assembly",
+    "role": "Named in the release as those the United States supports"
+   }
+  ],
+  "collection_version": "related-cases-0.1",
+  "comparison_points": [
+   {
+    "case_value": "A state-owned oil company (PdVSA)",
+    "facts": [
+     "pdvsa"
+    ],
+    "label": "Target"
+   },
+   {
+    "case_value": "E.O. 13850 and the Secretary’s oil-sector determination",
+    "facts": [
+     "designation",
+     "determination"
+    ],
+    "label": "Legal basis"
+   },
+   {
+    "case_value": "Blocking of property subject to U.S. jurisdiction; U.S. persons generally prohibited from transactions",
+    "facts": [
+     "blocking"
+    ],
+    "label": "Restrictions"
+   },
+   {
+    "case_value": "General licenses for certain transactions within specified timeframes",
+    "facts": [
+     "licenses"
+    ],
+    "label": "Exceptions"
+   },
+   {
+    "case_value": "Transfer of control to the Interim President or a democratically elected government",
+    "facts": [
+     "relief"
+    ],
+    "label": "Stated conditions for relief"
+   }
+  ],
+  "dates": [
+   {
+    "as_stated": "January 28, 2019",
+    "date": "2019-01-28",
+    "facts": [
+     "release"
+    ],
+    "kind": "announcement",
+    "label": "Press release dated",
+    "note": "A date only. The page’s HTML also carries a machine-readable time attribute; that is website metadata, not a time the release states, so no time is recorded."
+   },
+   {
+    "as_stated": "January 28, 2019",
+    "date": "2019-01-28",
+    "facts": [
+     "release",
+     "designation",
+     "blocking"
+    ],
+    "kind": "action",
+    "label": "OFAC designates PdVSA, an action the release, dated that day, calls “today’s”",
+    "note": null
+   },
+   {
+    "as_stated": "within specified timeframes",
+    "date": null,
+    "facts": [
+     "licenses"
+    ],
+    "kind": "effective",
+    "label": "General licenses’ timeframes",
+    "note": "The licenses’ terms and dates are not on the page and were not acquired."
+   }
+  ],
+  "facts": [
+   {
+    "id": "release",
+    "quotes": [
+     "Treasury Sanctions Venezuela’s State-Owned Oil Company Petroleos de Venezuela, S.A.",
+     "January 28, 2019"
+    ],
+    "text": "The Treasury Department’s press release is dated January 28, 2019."
+   },
+   {
+    "id": "designation",
+    "quotes": [
+     "Today the Department of the Treasury’s Office of Foreign Assets Control (OFAC) designated Petroleos de Venezuela, S.A. (PdVSA) pursuant to Executive Order (E.O.) 13850 for operating in the oil sector of the Venezuelan economy."
+    ],
+    "text": "The Treasury Department’s Office of Foreign Assets Control (OFAC) designated Petroleos de Venezuela, S.A. (PdVSA) under Executive Order (E.O.) 13850 for operating in the oil sector of the Venezuelan economy."
+   },
+   {
+    "id": "pdvsa",
+    "quotes": [
+     "PdVSA is a Venezuelan state-owned oil company and a primary source of Venezuela’s income and foreign currency, to include U.S. dollars and Euros."
+    ],
+    "text": "The release describes PdVSA as a Venezuelan state-owned oil company and a primary source of Venezuela’s income and foreign currency, including U.S. dollars and euros."
+   },
+   {
+    "id": "determination",
+    "quotes": [
+     "Today’s action designating PdVSA follows a determination by Secretary Mnuchin pursuant to E.O. 13850 that persons operating in the oil sector of the Venezuelan economy may be subject to sanctions."
+    ],
+    "text": "The designation follows a determination by Secretary Mnuchin under E.O. 13850 that persons operating in the oil sector of the Venezuelan economy may be subject to sanctions."
+   },
+   {
+    "id": "blocking",
+    "quotes": [
+     "As a result of today’s action, all property and interests in property of PdVSA subject to U.S. jurisdiction are blocked, and U.S. persons are generally prohibited from engaging in transactions with them."
+    ],
+    "text": "As a result, all property and interests in property of PdVSA subject to U.S. jurisdiction are blocked, and U.S. persons are generally prohibited from engaging in transactions with them."
+   },
+   {
+    "id": "licenses",
+    "quotes": [
+     "Concurrent with this action, OFAC is issuing general licenses that authorize certain transactions and activities related to PdVSA and its subsidiaries within specified timeframes."
+    ],
+    "text": "At the same time, OFAC issued general licenses that authorize certain transactions and activities related to PdVSA and its subsidiaries within specified timeframes."
+   },
+   {
+    "id": "relief",
+    "quotes": [
+     "The path to sanctions relief for PdVSA is through the expeditious transfer of control to the Interim President or a subsequent, democratically elected government."
+    ],
+    "text": "Secretary Mnuchin is quoted saying that the path to sanctions relief for PdVSA is the expeditious transfer of control to the Interim President or a subsequent, democratically elected government."
+   },
+   {
+    "id": "not-permanent",
+    "quotes": [
+     "U.S. sanctions need not be permanent.",
+     "we will consider lifting sanctions for those who take concrete, meaningful, and verifiable actions to support democratic order and combat corruption in Venezuela, including PdVSA."
+    ],
+    "text": "The release says U.S. sanctions need not be permanent, and that the United States will consider lifting sanctions for those who take concrete, meaningful and verifiable actions to support democratic order and combat corruption in Venezuela, including PdVSA."
+   },
+   {
+    "id": "stated-aim",
+    "quotes": [
+     "Action Intensifies Pressure on Maduro and Regime Insiders",
+     "Today’s designation of PdVSA will help prevent further diverting of Venezuela’s assets by Maduro and preserve these assets for the people of Venezuela."
+    ],
+    "text": "The release presents the action as intensifying pressure on Maduro and regime insiders, and says the designation will help prevent further diverting of Venezuela’s assets by Maduro."
+   },
+   {
+    "id": "support",
+    "quotes": [
+     "support Interim President Juan Guaidó, the National Assembly, and the Venezuelan people’s efforts to restore their democracy"
+    ],
+    "text": "Secretary Mnuchin is quoted saying the United States will support Interim President Juan Guaidó, the National Assembly and the Venezuelan people’s efforts to restore their democracy."
+   },
+   {
+    "id": "corruption",
+    "quotes": [
+     "As Venezuela’s state owned oil company, PdVSA has long been a vehicle for corruption.",
+     "a 2014 currency exchange scheme was designed to embezzle and launder around $600 million from PdVSA"
+    ],
+    "text": "The release describes PdVSA as having long been a vehicle for corruption and gives examples, including a 2014 currency exchange scheme designed to embezzle and launder around $600 million from PdVSA."
+   },
+   {
+    "id": "mnuchin",
+    "quotes": [
+     "said Secretary of the Treasury Steven T. Mnuchin"
+    ],
+    "text": "The release quotes Secretary of the Treasury Steven T. Mnuchin."
+   }
+  ],
+  "id": "ofac-pdvsa-2019-01-28",
+  "interpretation": {
+   "channels": [
+    {
+     "facts": [
+      "blocking",
+      "pdvsa"
+     ],
+     "text": "Blocking PdVSA’s property under U.S. jurisdiction and prohibiting most dealings by U.S. persons could cut the company off from U.S. buyers, suppliers and banks, and with them from a primary source of Venezuela’s foreign currency as the release describes it. How large and how lasting that effect was cannot be read from the release.",
+     "title": "Oil trade and payments that pass through U.S. jurisdiction"
+    },
+    {
+     "facts": [
+      "licenses"
+     ],
+     "text": "General licenses issued at the same time mean some dealings could continue for a while, so the restrictions did not all bind on the announcement date. Their terms were not acquired, so which dealings, and for how long, is unknown here.",
+     "title": "General licenses as a timing detail"
+    },
+    {
+     "facts": [
+      "relief",
+      "not-permanent"
+     ],
+     "text": "The release ties relief to a transfer of control, so how long the restrictions last depends on political events rather than on a fixed date. That is a reading of the stated condition, not a prediction.",
+     "title": "A sanction tied to a political condition"
+    }
+   ],
+   "why_read": "Read this case when an event concerns sanctions on a state-owned company, especially in oil. It sets out one announced design (the legal basis, a blocking designation, concurrent general licenses and a stated condition for relief), which gives concrete points of comparison. It does not show what happened afterwards."
+  },
+  "provenance": {
+   "ai_assisted": true,
+   "currency": "historical",
+   "human_review": "not_reviewed",
+   "method": "Written only from the retained copy of the press release (approval related-cases-sources-01). Facts restate the release and quote it; every quote is checked against the retained copy whenever it is on the machine. The channels and the reading note are the assistant’s interpretation. No license text, executive order, news coverage, market data or earlier AI summary was used.",
+   "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+   "prepared_on": "2026-10-12",
+   "research_use": "excluded",
+   "sources_read": [
+    "https://home.treasury.gov/news/press-releases/sm594"
+   ]
+  },
+  "scope": [
+   {
+    "facts": [
+     "designation",
+     "pdvsa"
+    ],
+    "text": "Target: PdVSA, Venezuela’s state-owned oil company."
+   },
+   {
+    "facts": [
+     "blocking"
+    ],
+    "text": "Restrictions: PdVSA’s property and interests in property subject to U.S. jurisdiction are blocked, and U.S. persons are generally prohibited from transactions with them."
+   },
+   {
+    "facts": [
+     "licenses"
+    ],
+    "text": "Exception: general licenses authorizing certain transactions and activities related to PdVSA and its subsidiaries within specified timeframes; their terms are not on the page."
+   },
+   {
+    "facts": [
+     "designation",
+     "determination"
+    ],
+    "text": "Legal basis: E.O. 13850 and the Secretary’s determination about persons operating in the oil sector of the Venezuelan economy."
+   },
+   {
+    "facts": [
+     "relief",
+     "not-permanent"
+    ],
+    "text": "Stated conditions for relief: transfer of control to the Interim President or a subsequent, democratically elected government; sanctions described as not necessarily permanent."
+   }
+  ],
+  "source": {
+   "date_as_stated": "January 28, 2019",
+   "kind": "Press release",
+   "publisher": "U.S. Department of the Treasury",
+   "retained": {
+    "approval_id": "related-cases-sources-01",
+    "attempt": 3,
+    "bytes": 72018,
+    "file": "source.html",
+    "folder": "ofac-pdvsa-2019",
+    "media_type": "text/html; charset=utf-8",
+    "received_at": "2026-10-12T08:58:34.867732+00:00",
+    "requested_at": "2026-10-12T08:58:33.472696+00:00",
+    "sha256": "79b8ffdaacdfa156dce5d698102e0e2ca40ccb591fccf6709a5fbd423d74d459"
+   },
+   "title": "Treasury Sanctions Venezuela’s State-Owned Oil Company Petroleos de Venezuela, S.A.",
+   "url": "https://home.treasury.gov/news/press-releases/sm594"
+  },
+  "summary": {
+   "facts": [
+    "release",
+    "designation",
+    "pdvsa",
+    "blocking",
+    "licenses"
+   ],
+   "text": "On January 28, 2019, the Treasury Department’s Office of Foreign Assets Control designated Petroleos de Venezuela, S.A. (PdVSA), Venezuela’s state-owned oil company, under Executive Order 13850. PdVSA’s property subject to U.S. jurisdiction is blocked and U.S. persons are generally prohibited from dealing with it, while general licenses issued at the same time authorize certain transactions within specified timeframes."
+  },
+  "tags": {
+   "agency": [
+    {
+     "facts": [
+      "designation"
+     ],
+     "slug": "treasury"
+    }
+   ],
+   "geography": [
+    {
+     "facts": [
+      "designation"
+     ],
+     "slug": "venezuela"
+    }
+   ],
+   "instrument": [
+    {
+     "facts": [
+      "designation",
+      "determination",
+      "blocking"
+     ],
+     "slug": "sanctions"
+    }
+   ],
+   "sector": [
+    {
+     "facts": [
+      "designation",
+      "pdvsa"
+     ],
+     "slug": "oil"
+    }
+   ]
+  },
+  "title": "Treasury sanctions Venezuela’s state-owned oil company, PdVSA",
+  "topic": "Sanctions",
+  "unknowns": [
+   "The general licenses’ terms, covered transactions and expiry dates: they were issued with the action, but they are not on the page and were not acquired.",
+   "The text and date of Executive Order 13850 and of the Secretary’s determination, which the page cites but does not reproduce.",
+   "Whether, when and how these sanctions were later changed or lifted: the case describes the announcement as of its date, not current law or policy.",
+   "Market or industry consequences: the source states policy, not outcomes, and none were measured here.",
+   "The FinCEN advisories the release links, which were not acquired."
+  ]
+ },
+ "collection_version": "related-cases-0.1",
+ "count": 2,
+ "coverage_note": "A first version with two cases: one on semiconductor export controls and one on sanctions. Two cases cannot cover policy events broadly, so most events will have no related case.",
+ "date_kinds": {
+  "action": "Action taken",
+  "announcement": "Announced",
+  "deadline": "Deadline",
+  "effective": "Takes effect",
+  "publication": "Publication"
+ },
+ "dimension_labels": {
+  "agency": "issuing agency",
+  "geography": "country or area",
+  "instrument": "policy instrument",
+  "sector": "sector"
+ },
+ "facts_note": "Each fact restates what the press release says and quotes it from the retained copy. These are the government's own statements as published on that date, not findings about what followed.",
+ "historical_note": "These cases describe announcements as of their dates. Rules, licenses and sanctions change after they are announced; nothing here says what applies today.",
+ "interpretation_label": "Curated interpretation, written with an AI assistant and not reviewed by a person. It reads the quoted facts; it is not stated by the source.",
+ "introduction": "Two historical US government announcements, each written from one official press release that this project retained: the Treasury Department’s January 2019 sanctions on Venezuela’s state-owned oil company, and the Commerce Department’s October 2022 export controls on advanced computing and chipmaking items for China. Each case separates what the release states, with its words quoted from the retained copy, from labelled interpretation, and lists what remains unknown. On an event’s overview, Related cases compares the event’s own text with these two cases.",
+ "labels": [
+  "Historical announcements",
+  "Facts quoted from a retained official page",
+  "Interpretation labelled, AI-assisted",
+  "Not human-reviewed",
+  "Not current law or policy",
+  "Never scored · not research evidence"
+ ],
+ "matching_note": "A case is shown as related to an event only when the event’s own text names the case’s policy instrument and also its sector or its country. A shared topic alone, such as oil, is listed as an overlap, not as a related case. Saved headline classifications are used only as labelled hints. Matching runs on this machine with a fixed word list: no model, no network and no score.",
+ "next": {
+  "id": "bis-2022-10-07",
+  "title": "Commerce restricts advanced computing and chipmaking items for the PRC"
+ },
+ "position": 1,
+ "previous": null,
+ "provider_called": false,
+ "rules_version": "related-match-rules-0.1",
+ "source_check": {
+  "acquisition_record": "absent",
+  "bytes": 72018,
+  "detail": "The retained copy is not on this machine, so the quotes could not be checked here. The case was written from it and records its SHA-256.",
+  "quotes": 16,
+  "sha256": "79b8ffdaacdfa156dce5d698102e0e2ca40ccb591fccf6709a5fbd423d74d459",
+  "state": "absent"
+ },
+ "tag_labels": {
+  "agency": {
+   "bis": "Commerce Department, Bureau of Industry and Security (BIS)",
+   "treasury": "Treasury Department, Office of Foreign Assets Control (OFAC)"
+  },
+  "geography": {
+   "canada": "Canada",
+   "cuba": "Cuba",
+   "european-union": "European Union",
+   "hong-kong": "Hong Kong",
+   "india": "India",
+   "iran": "Iran",
+   "japan": "Japan",
+   "mexico": "Mexico",
+   "middle-east": "Middle East",
+   "netherlands": "Netherlands",
+   "north-korea": "North Korea",
+   "prc": "China (PRC)",
+   "russia": "Russia",
+   "saudi-arabia": "Saudi Arabia",
+   "south-korea": "South Korea",
+   "syria": "Syria",
+   "taiwan": "Taiwan",
+   "uae": "United Arab Emirates",
+   "ukraine": "Ukraine",
+   "venezuela": "Venezuela"
+  },
+  "instrument": {
+   "export-controls": "Export controls",
+   "sanctions": "Sanctions"
+  },
+  "sector": {
+   "oil": "Oil and petroleum",
+   "semiconductors": "Semiconductors and advanced computing"
+  }
+ },
+ "title": "Historical policy announcements",
+ "unfinished": [
+  {
+   "outcome": "Not built yet. The one approved request was redirected to an access check, which was not followed, so no source was retained.",
+   "planned_source": "The Federal Register’s page for the Section 232 steel proclamation (document 2018-05478)",
+   "topic": "Tariffs and international trade"
+  },
+  {
+   "outcome": "Not built yet. The one approved request returned a bot-verification page without the press release, which was not accepted as a source.",
+   "planned_source": "The Justice Department’s press release on its advertising-technology suit against Google",
+   "topic": "Competition and regulatory policy"
+  },
+  {
+   "outcome": "Not built yet. The one approved request was refused (HTTP 403 Forbidden), so no source was retained.",
+   "planned_source": "SAG-AFTRA’s strike order for TV, theatrical and streaming contracts",
+   "topic": "Labor disruptions"
+  }
+ ],
+ "view_version": "related-cases-view-0.1"
+}

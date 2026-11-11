@@ -1,0 +1,30 @@
+{
+ "approval_id": "fcx-sec-locate-02",
+ "approved_on": "2026-11-10",
+ "owner_approval": "The owner approved on 2026-11-10, in chat, a separate task to obtain the SEC EDGAR copies of the Form 10-Q for the third quarter of 2026 and of the two releases, if they were filed as 8-K exhibits, including the metadata needed to locate and verify them, with no paid calls.",
+ "scope": "Step 1 of 3: one GET of the SEC's public submissions index for Freeport-McMoRan Inc. (CIK 0000831259), to locate the accession numbers of the Form 10-Q for the quarter ended 2026-09-30 and of any Form 8-K filed with the third-quarter 2026 results release (27 October 2026) or the Bagdad release (4 November 2026).",
+ "access_rules": {
+  "sec": "https://www.sec.gov/os/accessing-edgar-data: automated access must declare a contact in the User-Agent and stay below ten requests per second. The contact is read at request time from the user-level SECOND_ORDER_FEED_CONTACT and is written nowhere."
+ },
+ "request_headers": {
+  "Accept": "application/json",
+  "Accept-Encoding": "gzip, deflate"
+ },
+ "limits": {
+  "connect_timeout_s": 15,
+  "read_timeout_s": 60,
+  "request_network_deadline_s": 120,
+  "pause_s": 2,
+  "error_excerpt_bytes": 400
+ },
+ "resources": [
+  {
+   "n": 1,
+   "kind": "json",
+   "url": "https://data.sec.gov/submissions/CIK0000831259.json",
+   "target": "data/company-sources/fcx/sec-edgar-meta/submissions-CIK0000831259.json",
+   "max_body_bytes": 16777216,
+   "accepted_media_types": ["application/json"]
+  }
+ ]
+}

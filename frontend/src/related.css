@@ -1,0 +1,87 @@
+/* Related Cases: the historical cases in the case library, their pages, and the event overview's section. Source facts
+   carry a solid rule and their quotes; interpretation carries a dashed rule and its label, as in the case library. */
+
+.related-label { margin-right: 6px; font: 500 10px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); }
+.related-muted, .event-context-section p.related-muted { font-size: 13px; color: var(--ink-3); }
+.related-cites { font: 400 11.5px/1.4 var(--mono); color: var(--ink-3); white-space: nowrap; }
+.related-cites a { color: var(--ink-2); }
+
+/* The case library's section. */
+.historical-cases { margin-top: 18px; border-top: 3px double var(--rule-strong); }
+.historical-list { display: grid; margin: 4px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.historical-entry { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.historical-unfinished { margin: 14px 0 10px; padding: 10px 14px; border: 1px dashed var(--rule-strong);
+  background: var(--paper-raised); font-size: 13.5px; color: var(--ink-2); }
+.historical-unfinished h3 { margin: 0 0 6px; font: 600 13.5px/1.35 var(--sans); color: var(--ink); }
+.historical-unfinished ul { margin: 0; padding-left: 18px; }
+.historical-unfinished li { margin: 3px 0; }
+
+/* A historical case's page. */
+.related-historical { margin: 10px 0 6px; padding: 8px 12px; border-left: 3px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 13.5px; color: var(--ink); }
+.related-check { margin: 6px 0 0; font-size: 13px; color: var(--ink-2); }
+.related-check-verified strong { color: var(--supported); }
+.related-check-different strong { color: var(--stamp); }
+.related-facts { margin: 0; padding-left: 22px; }
+.related-fact { margin: 0 0 14px; padding-left: 10px; border-left: 3px solid var(--ink); scroll-margin-top: 16px; }
+.library-section-block .related-fact p { margin: 0 0 6px; font-size: 15px; color: var(--ink); }
+.related-fact blockquote { margin: 0 0 6px; padding: 6px 10px; background: var(--paper-raised);
+  border: 1px solid var(--rule); font: italic 400 14px/1.5 var(--serif); color: var(--ink-2); overflow-wrap: anywhere; }
+.related-fact:target { background: var(--accent-soft); }
+.related-dates td, .related-dates th { vertical-align: top; }
+.related-date-note { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink-3); }
+.related-tags { margin-top: 10px; }
+.related-tags dd { font-family: var(--sans); }
+.related-channel { border-left: 3px dashed var(--rule-strong); }
+.library-section-block p.related-reading { padding-left: 10px; border-left: 3px dashed var(--rule-strong); }
+
+/* The event overview's section. */
+.related-section .related-note { font-size: 13.5px; color: var(--ink-2); }
+.related-inputs { margin: 0 0 12px; grid-template-columns: minmax(0, 1fr); }
+.related-inputs dd { font: 400 13.5px/1.5 var(--sans); }
+.related-hint-note { color: var(--ink-3); }
+.related-action { padding: 10px 12px; border: 1px dashed var(--rule-strong); background: var(--paper-raised); }
+.event-context-section .related-action p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-2); }
+.event-context-section p.related-problem, .related-problem { color: var(--stamp); }
+.event-context-section p.related-none { padding: 10px 12px; border: 1px solid var(--rule); background: var(--paper-raised);
+  font-size: 14px; color: var(--ink); }
+.related-list { margin: 0; padding: 0; list-style: none; }
+.related-case { padding: 12px 0 14px; border-top: 1px solid var(--rule); }
+.related-case:first-child { border-top: 0; }
+.related-case-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 4px; font: 400 11.5px/1.4 var(--mono);
+  color: var(--ink-3); }
+.related-topic { color: var(--ink); font-weight: 500; }
+.related-case-title { font: 400 20px/1.3 var(--serif); color: var(--ink); text-decoration-color: var(--rule-strong); }
+.event-context-section p.related-hint-flag { margin: 8px 0 0; padding: 6px 10px; border-left: 3px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 13px; color: var(--ink); }
+.related-explain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; margin: 10px 0 8px; }
+.related-explain h3 { margin: 0 0 4px; font: 600 13px/1.35 var(--sans); color: var(--ink); }
+.related-explain ul { margin: 0 0 6px; padding-left: 16px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.related-explain li { margin: 2px 0; overflow-wrap: anywhere; }
+.related-explain ul.related-points { font-size: 12.5px; color: var(--ink-3); }
+.event-context-section p.related-why { margin: 6px 0 0; padding-left: 10px; border-left: 3px dashed var(--rule-strong);
+  font-size: 13.5px; color: var(--ink-2); }
+.related-overlaps { margin-top: 12px; padding: 8px 12px; border: 1px dashed var(--rule-strong); font-size: 13.5px;
+  color: var(--ink-2); }
+.related-overlaps h3 { margin: 0 0 4px; font: 600 13px/1.35 var(--sans); color: var(--ink); }
+.related-overlaps ul { margin: 0; padding-left: 16px; }
+.event-context-section p.related-provenance { margin-top: 12px; font-size: 12.5px; color: var(--ink-3);
+  overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .related-explain { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The event overview's Related research section: navigation to library content, each link labelled. */
+.research-list { margin: 0; padding: 0; list-style: none; }
+.research-link { padding: 10px 0 12px; border-top: 1px solid var(--rule); }
+.research-link:first-child { border-top: 0; }
+.research-relation { padding: 1px 6px; border: 1px solid var(--rule-strong); color: var(--ink); font-weight: 500; }
+.research-link[data-relation="same_event"] .research-relation { border-color: var(--accent); color: var(--accent); }
+.event-context-section p.research-explanation { margin: 6px 0 4px; font-size: 13.5px; color: var(--ink-2); }
+.research-differences { margin: 0 0 4px; padding-left: 16px; font-size: 13px; color: var(--ink-2); }
+.event-context-section p.research-status { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.event-context-section p.research-none { padding: 8px 12px; border: 1px dashed var(--rule-strong); font-size: 13.5px;
+  color: var(--ink-2); }
+.research-notes { margin: 8px 0 0; padding-left: 16px; font-size: 12.5px; color: var(--ink-3); }

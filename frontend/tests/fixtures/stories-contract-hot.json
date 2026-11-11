@@ -1,0 +1,738 @@
+{
+  "contract": "user-api-0.5",
+  "stories": {
+    "view_version": "news-stories-view-0.5",
+    "view": "hot",
+    "as_of": "2026-10-14T09:00:00+00:00",
+    "rank": {
+      "rank_version": "news-rank-0.4",
+      "hot_hours": 72,
+      "statement": "Hot now shows stories with a report from the last 3 days, ordered by fixed points: how recent the latest report is (halving every 12 hours), whether it is a new development (first reported in the last 24 hours), the breadth of its independent coverage (reporting origins: one publisher, or several carrying the same text, count once; a newsroom's own reporting counts fully, an official statement or a source whose independence is not established counts half, a company's own statement not at all), whether it is a new, highly important development only one source has reported yet, a major mark set by the editors for at most 7 days, whether it is the latest development of an ongoing topic, and fixed points for its assessed importance (the type of development, its reach and whether its sources state its size). Only stories assessed as economic developments are listed: one assessed as outside the economic news's scope is left out, and one still awaiting an assessment or an editor is listed apart with the reason. A story covered only by a company's own statement is listed under Latest instead. Assessments are editorial judgements made with AI or by an editor from the sources, not measured market impact. It does not count readers, clicks, shares or market moves."
+    },
+    "interests": [],
+    "stories": [
+      {
+        "story_id": "story-f6adc493142c934f",
+        "title": "Synthetic Republic narrows steel tariff after talks",
+        "first_at": "2026-10-14T07:00:00+00:00",
+        "first_basis": "published",
+        "latest_at": "2026-10-14T07:00:00+00:00",
+        "latest_basis": "published",
+        "reports": 1,
+        "publishers": [
+          "Synthetic Ledger"
+        ],
+        "coverage": {
+          "publishers": 1,
+          "origins": 1,
+          "news_origins": 1,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 1,
+          "confirmed_news": 1,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 0,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade"
+        ],
+        "topics": [
+          {
+            "topic_id": "topic-c0867966717f7e48",
+            "title": "Synthetic steel dispute"
+          }
+        ],
+        "brief": {
+          "state": "none",
+          "summary": null,
+          "current": null,
+          "authorship": null,
+          "review": null,
+          "explained": false
+        },
+        "excerpt": {
+          "publisher": "Synthetic Ledger",
+          "text": "The Synthetic Republic said it would exempt three grades of steel from the tariff after talks."
+        },
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report 2 hours ago (by its feed's stated time)."
+          },
+          {
+            "signal": "new_development",
+            "text": "A new development: first reported 2 hours ago."
+          },
+          {
+            "signal": "topic",
+            "text": "The latest development in the ongoing topic “Synthetic steel dispute”."
+          },
+          {
+            "signal": "breaking",
+            "text": "A new development of high assessed importance, shown although only one source has reported it yet."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ]
+      },
+      {
+        "story_id": "story-00d36fea82bbdc11",
+        "title": "Synthetic port reports record container volumes",
+        "first_at": "2026-10-14T09:00:00+00:00",
+        "first_basis": "first_seen",
+        "latest_at": "2026-10-14T09:00:00+00:00",
+        "latest_basis": "first_seen",
+        "reports": 1,
+        "publishers": [
+          "Synthetic Gazette"
+        ],
+        "coverage": {
+          "publishers": 1,
+          "origins": 1,
+          "news_origins": 1,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 1,
+          "confirmed_news": 1,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 0,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade"
+        ],
+        "topics": [],
+        "brief": {
+          "state": "none",
+          "summary": null,
+          "current": null,
+          "authorship": null,
+          "review": null,
+          "explained": false
+        },
+        "excerpt": {
+          "publisher": "Synthetic Gazette",
+          "text": "The SYNTHETIC port said container volumes reached a record."
+        },
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report less than an hour ago (by when this server first saw it; the feed states no time, so this counts half)."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ]
+      },
+      {
+        "story_id": "story-74c8ec21df978d5b",
+        "title": "Synthetic Federation responds with duties on farm goods",
+        "first_at": "2026-10-13T07:00:00+00:00",
+        "first_basis": "published",
+        "latest_at": "2026-10-13T08:00:00+00:00",
+        "latest_basis": "published",
+        "reports": 2,
+        "publishers": [
+          "Synthetic Courier",
+          "Synthetic Gazette"
+        ],
+        "coverage": {
+          "publishers": 2,
+          "origins": 2,
+          "news_origins": 2,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 2,
+          "confirmed_news": 2,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 0,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade",
+          "markets"
+        ],
+        "topics": [
+          {
+            "topic_id": "topic-c0867966717f7e48",
+            "title": "Synthetic steel dispute"
+          }
+        ],
+        "brief": {
+          "state": "none",
+          "summary": null,
+          "current": null,
+          "authorship": null,
+          "review": null,
+          "explained": false
+        },
+        "excerpt": {
+          "publisher": "Synthetic Courier",
+          "text": "The Synthetic Federation said it would impose duties on farm goods in response to the steel tariff."
+        },
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report 25 hours ago (by its feed's stated time)."
+          },
+          {
+            "signal": "coverage",
+            "text": "From 2 publishers: 2 confirmed reporting origins (2 newsrooms)."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ]
+      },
+      {
+        "story_id": "story-c656c19416cbcd7a",
+        "title": "Synthetic Republic announces 15% tariff on imported steel",
+        "first_at": "2026-10-12T07:00:00+00:00",
+        "first_basis": "published",
+        "latest_at": "2026-10-12T08:00:00+00:00",
+        "latest_basis": "published",
+        "reports": 2,
+        "publishers": [
+          "Synthetic Courier",
+          "Synthetic Ledger"
+        ],
+        "coverage": {
+          "publishers": 2,
+          "origins": 1,
+          "news_origins": 1,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 1,
+          "confirmed_news": 1,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 1,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade",
+          "markets"
+        ],
+        "topics": [
+          {
+            "topic_id": "topic-c0867966717f7e48",
+            "title": "Synthetic steel dispute"
+          }
+        ],
+        "brief": {
+          "state": "published",
+          "summary": "The Synthetic Republic said it would impose a 15% tariff on imported steel from next month.",
+          "current": true,
+          "authorship": "editor",
+          "review": "written_by_editor",
+          "explained": true
+        },
+        "excerpt": null,
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report 2 days ago (by its feed's stated time)."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ]
+      }
+    ],
+    "awaiting": [],
+    "left_out": {
+      "outside_scope": 1,
+      "older_unassessed": 0,
+      "statement": "1 story was assessed as outside the economic news's scope and 0 older stories were never assessed; they are not listed, and each keeps its page at its address."
+    },
+    "topics": [
+      {
+        "topic_id": "topic-c0867966717f7e48",
+        "title": "Synthetic steel dispute",
+        "summary": "SYNTHETIC: a tariff, a response and a revision, invented to show how an ongoing topic is followed.",
+        "developments": 3,
+        "latest_at": "2026-10-14T07:00:00+00:00",
+        "latest_title": "Synthetic Republic narrows steel tariff after talks",
+        "synthetic": true
+      }
+    ],
+    "sources": [
+      {
+        "source": "fed-monetary",
+        "publisher": "Board of Governors of the Federal Reserve System",
+        "label": "Federal Reserve: monetary policy press releases",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: Board of Governors of the Federal Reserve System",
+        "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+        "synthetic": false,
+        "name": "Board of Governors of the Federal Reserve System"
+      },
+      {
+        "source": "bls-empsit",
+        "publisher": "U.S. Bureau of Labor Statistics",
+        "label": "BLS: The Employment Situation",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "",
+        "terms_url": "https://www.bls.gov/bls/linksite.htm",
+        "synthetic": false,
+        "name": "U.S. Bureau of Labor Statistics: The Employment Situation"
+      },
+      {
+        "source": "bls-cpi",
+        "publisher": "U.S. Bureau of Labor Statistics",
+        "label": "BLS: Consumer Price Index",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "",
+        "terms_url": "https://www.bls.gov/bls/linksite.htm",
+        "synthetic": false,
+        "name": "U.S. Bureau of Labor Statistics: Consumer Price Index"
+      },
+      {
+        "source": "eia-todayinenergy",
+        "publisher": "U.S. Energy Information Administration",
+        "label": "EIA: Today in Energy",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: U.S. Energy Information Administration",
+        "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+        "synthetic": false,
+        "name": "U.S. Energy Information Administration"
+      },
+      {
+        "source": "wto-news",
+        "publisher": "World Trade Organization",
+        "label": "WTO: Latest news",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "WTO news",
+        "terms_url": "https://www.wto.org/english/info_e/copyrights_permissions_e.htm",
+        "synthetic": false,
+        "name": "World Trade Organization"
+      },
+      {
+        "source": "rba-releases",
+        "publisher": "Reserve Bank of Australia",
+        "label": "Reserve Bank of Australia: media releases",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: Reserve Bank of Australia; summary by Second Order (CC BY 4.0)",
+        "terms_url": "https://www.rba.gov.au/copyright/",
+        "synthetic": false,
+        "name": "Reserve Bank of Australia"
+      },
+      {
+        "source": "census-indicators",
+        "publisher": "U.S. Census Bureau",
+        "label": "U.S. Census Bureau: economic indicators",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: U.S. Census Bureau; interpretation by Second Order",
+        "terms_url": "https://www.census.gov/about/policies/citation.html",
+        "synthetic": false,
+        "name": "U.S. Census Bureau"
+      },
+      {
+        "source": "techcrunch",
+        "publisher": "TechCrunch",
+        "label": "TechCrunch: latest",
+        "role": "news",
+        "role_label": "News report",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "none",
+        "attribution": "TechCrunch",
+        "terms_url": "https://techcrunch.com/rss-terms-of-use/",
+        "synthetic": false,
+        "name": "TechCrunch"
+      },
+      {
+        "source": "prnewswire-business",
+        "publisher": "PR Newswire",
+        "label": "PR Newswire: general business news releases",
+        "role": "company",
+        "role_label": "Company statement",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline",
+        "material": "none",
+        "attribution": "PR Newswire",
+        "terms_url": "https://www.prnewswire.com/terms-of-use/",
+        "synthetic": false,
+        "name": "PR Newswire"
+      },
+      {
+        "source": "voa-news",
+        "publisher": "Voice of America",
+        "label": "Voice of America: top stories",
+        "role": "news",
+        "role_label": "News report",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Voice of America (voanews.com)",
+        "terms_url": "https://www.voanews.com/p/5338.html",
+        "synthetic": false,
+        "name": "Voice of America"
+      },
+      {
+        "source": "globalvoices",
+        "publisher": "Global Voices",
+        "label": "Global Voices: latest stories",
+        "role": "news",
+        "role_label": "News report",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Global Voices (CC BY 3.0, https://creativecommons.org/licenses/by/3.0/)",
+        "terms_url": "https://globalvoices.org/about/global-voices-attribution-policy/",
+        "synthetic": false,
+        "name": "Global Voices"
+      },
+      {
+        "source": "ips-economy",
+        "publisher": "Inter Press Service",
+        "label": "Inter Press Service: economy and trade",
+        "role": "news",
+        "role_label": "News report",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline",
+        "material": "none",
+        "attribution": "IPS News Agency (ipsnews.net)",
+        "terms_url": "https://www.ipsnews.net/rss-feeds/",
+        "synthetic": false,
+        "name": "Inter Press Service"
+      },
+      {
+        "source": "whitehouse-news",
+        "publisher": "The White House",
+        "label": "The White House: news (fact sheets, presidential actions, statements)",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "The White House",
+        "terms_url": "https://www.whitehouse.gov/copyright/",
+        "synthetic": false,
+        "name": "The White House"
+      },
+      {
+        "source": "ustr-press",
+        "publisher": "Office of the U.S. Trade Representative",
+        "label": "USTR: press releases and news",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "USTR",
+        "terms_url": "https://ustr.gov/privacy-legal",
+        "synthetic": false,
+        "name": "Office of the U.S. Trade Representative"
+      },
+      {
+        "source": "ec-press",
+        "publisher": "European Commission",
+        "label": "European Commission: press corner",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "European Commission (© European Union)",
+        "terms_url": "https://commission.europa.eu/legal-notice_en",
+        "synthetic": false,
+        "name": "European Commission"
+      },
+      {
+        "source": "ecb-press",
+        "publisher": "European Central Bank",
+        "label": "ECB: press releases, speeches and interviews",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: European Central Bank",
+        "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+        "synthetic": false,
+        "name": "European Central Bank"
+      },
+      {
+        "source": "doj-antitrust",
+        "publisher": "U.S. Department of Justice (Antitrust Division)",
+        "label": "U.S. Department of Justice: Antitrust Division news",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "U.S. Department of Justice",
+        "terms_url": "https://www.justice.gov/legalpolicies",
+        "synthetic": false,
+        "name": "U.S. Department of Justice (Antitrust Division)"
+      },
+      {
+        "source": "boc-press",
+        "publisher": "Bank of Canada",
+        "label": "Bank of Canada: press releases",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: Bank of Canada",
+        "terms_url": "https://www.bankofcanada.ca/terms/",
+        "synthetic": false,
+        "name": "Bank of Canada"
+      },
+      {
+        "source": "ons-publications",
+        "publisher": "Office for National Statistics",
+        "label": "ONS: publications",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Contains public sector information licensed under the Open Government Licence v3.0",
+        "terms_url": "https://www.ons.gov.uk/help/termsandconditions",
+        "synthetic": false,
+        "name": "Office for National Statistics"
+      },
+      {
+        "source": "sec-press",
+        "publisher": "U.S. Securities and Exchange Commission",
+        "label": "SEC: press releases",
+        "role": "official",
+        "role_label": "Official release",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Source: U.S. Securities and Exchange Commission",
+        "terms_url": "https://www.sec.gov/privacy",
+        "synthetic": false,
+        "name": "U.S. Securities and Exchange Commission"
+      },
+      {
+        "source": "synthetic-ledger",
+        "publisher": "Synthetic Ledger",
+        "label": "Synthetic Ledger (SYNTHETIC)",
+        "role": "news",
+        "role_label": "News report",
+        "state": "ok",
+        "last_success_at": "2026-10-14T09:00:00+00:00",
+        "stale": false,
+        "reports": 3,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Synthetic Ledger",
+        "terms_url": "https://ledger.example.org/terms",
+        "synthetic": true,
+        "name": "Synthetic Ledger"
+      },
+      {
+        "source": "synthetic-courier",
+        "publisher": "Synthetic Courier",
+        "label": "Synthetic Courier (SYNTHETIC)",
+        "role": "news",
+        "role_label": "News report",
+        "state": "ok",
+        "last_success_at": "2026-10-14T09:00:00+00:00",
+        "stale": false,
+        "reports": 2,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Synthetic Courier",
+        "terms_url": "https://courier.example.org/terms",
+        "synthetic": true,
+        "name": "Synthetic Courier"
+      },
+      {
+        "source": "synthetic-gazette",
+        "publisher": "Synthetic Gazette",
+        "label": "Synthetic Gazette (SYNTHETIC)",
+        "role": "news",
+        "role_label": "News report",
+        "state": "ok",
+        "last_success_at": "2026-10-14T09:00:00+00:00",
+        "stale": false,
+        "reports": 2,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Synthetic Gazette",
+        "terms_url": "https://gazette.example.org/terms",
+        "synthetic": true,
+        "name": "Synthetic Gazette"
+      },
+      {
+        "source": "synthetic-maker",
+        "publisher": "Synthetic Maker Corp. via Synthetic Release Wire",
+        "label": "Synthetic Maker Corp. via Synthetic Release Wire (SYNTHETIC)",
+        "role": "company",
+        "role_label": "Company statement",
+        "state": "ok",
+        "last_success_at": "2026-10-14T09:00:00+00:00",
+        "stale": false,
+        "reports": 1,
+        "display": "headline_excerpt",
+        "material": "permitted",
+        "attribution": "Synthetic Maker Corp. via Synthetic Release Wire",
+        "terms_url": "https://releases.example.org/terms",
+        "synthetic": true,
+        "name": "Synthetic Maker Corp. via Synthetic Release Wire"
+      },
+      {
+        "source": "gdelt-index",
+        "publisher": "GDELT Project (news index)",
+        "label": "GDELT Project: news index lookups",
+        "role": "news",
+        "role_label": "News report",
+        "state": "never_refreshed",
+        "last_success_at": null,
+        "stale": false,
+        "reports": 0,
+        "display": "headline",
+        "material": "none",
+        "attribution": "Indexed by the GDELT Project (https://www.gdeltproject.org/)",
+        "terms_url": "https://www.gdeltproject.org/about.html",
+        "synthetic": false,
+        "name": "GDELT Project (news index)"
+      }
+    ],
+    "notes": [],
+    "statement": "Stories are put together from the reports this server's feeds last retrieved. Reading this page contacts no publisher, runs no analysis and uses no credits."
+  }
+}

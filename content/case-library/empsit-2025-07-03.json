@@ -1,0 +1,100 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "empsit-2025-07-03",
+  "title": "June 2025 jobs: payrolls +147,000, unemployment 4.1%, half the gain in government",
+  "category": "Employment",
+  "summary": "Payrolls rose 147,000 and the unemployment rate edged down to 4.1 percent, but government added 73,000 of the jobs, mostly in state and local education, and private payrolls rose 74,000. Hourly earnings rose 0.2 percent and the workweek shortened. Later releases revised June down sharply.",
+  "source": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "title": "The Employment Situation — June 2025",
+    "url": "https://www.bls.gov/news.release/archives/empsit_07032025.htm",
+    "document_id": "USDL-25-1089",
+    "published_at": "2025-07-03T08:30:00-04:00",
+    "published_as_stated": "Embargoed until 8:30 a.m. (ET) Thursday, July 3, 2025",
+    "timezone_note": "In July, Eastern Time is Eastern Daylight Time, UTC−04:00, so the release time is 12:30 UTC.",
+    "reference_period": "June 2025: the pay period including June 12 (establishment survey) and the week containing June 12 (household survey)",
+    "page_last_updated": "2025-07-03",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "On its face the report is steady. Payrolls rose 147,000, in line with the prior 12-month average of 146,000, and the unemployment rate edged down to 4.1 percent from 4.2 percent, inside the 4.0 to 4.2 percent range it has held since May 2024. Payroll gains for April and May were revised up by a combined 16,000.",
+    "The composition is weaker than the headline. Government added 73,000 jobs: state government 47,000, mostly education (+40,000), and local government education 23,000, while federal employment fell 7,000. Private payrolls rose 74,000, below their three-month average of 115,000 in the release's summary table, with most of the gain in health care (+39,000) and social assistance (+19,000).",
+    "Other measures point the same way. Average hourly earnings rose 0.2 percent to $36.30 (3.7 percent over 12 months), the private workweek slipped 0.1 hour to 34.2, and the index of aggregate weekly hours fell 0.3 percent. In the household survey the number of unemployed fell by 222,000 while the labor force shrank by 130,000 and participation edged down to 62.3 percent; household employment rose only 93,000."
+  ],
+  "key_facts": [
+    {"label": "Nonfarm payrolls", "value": "+147,000", "basis": "Seasonally adjusted, preliminary; establishment survey"},
+    {"label": "Private / government", "value": "+74,000 / +73,000", "basis": "State education +40,000, local education +23,000, federal −7,000; seasonally adjusted, preliminary"},
+    {"label": "Unemployment rate", "value": "4.1% (May 4.2%)", "basis": "Seasonally adjusted; household survey; the release says it 'changed little'"},
+    {"label": "Participation and labor force", "value": "62.3% (−0.1 point); labor force −130,000", "basis": "Seasonally adjusted; household survey"},
+    {"label": "Average hourly earnings", "value": "+0.2% to $36.30; +3.7% over 12 months", "basis": "All private employees; seasonally adjusted series"},
+    {"label": "Hours", "value": "Workweek 34.2 (−0.1 hour); aggregate weekly hours −0.3%", "basis": "All private employees; seasonally adjusted"},
+    {"label": "Revisions to earlier months", "value": "April +158,000 (was +147,000); May +144,000 (was +139,000)", "basis": "Combined +16,000; from late reports and recalculated seasonal factors"},
+    {"label": "Significance thresholds", "value": "About 136,000 (payrolls); about 600,000 (household employment)", "basis": "Monthly change needed to be statistically significant, per the release"}
+  ],
+  "channels": [
+    {
+      "title": "Expected policy path (shorter maturities)",
+      "source_fact": "Payrolls +147,000, near the 12-month average; the unemployment rate down to 4.1 percent; April and May revised up 16,000.",
+      "interpretation": "Read at face value, a steady gain with lower unemployment and upward revisions gives little reason to expect earlier rate cuts, which would tend to support shorter Treasury yields. Whether investors read it that way, and against what expectation, this case cannot say."
+    },
+    {
+      "title": "Labor demand momentum (shorter and intermediate maturities)",
+      "source_fact": "Private payrolls +74,000, below their three-month average of 115,000; aggregate weekly hours −0.3 percent; the average workweek at 34.2 hours.",
+      "interpretation": "A reader who discounts government hiring and focuses on private jobs and hours would see slowing demand for labor, which would point toward more expected easing and lower yields. This channel runs opposite to the first, and the release alone cannot say which reading dominated."
+    },
+    {
+      "title": "Wages and inflation compensation (longer maturities)",
+      "source_fact": "Average hourly earnings +0.2 percent on the month and +3.7 percent over 12 months.",
+      "interpretation": "Moderate wage growth limits the labor-cost route to inflation. If read as consistent with inflation settling near target, it would ease upward pressure on inflation compensation in longer yields. It is weak evidence on its own, since one month of earnings is noisy."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "End-of-school-year seasonal adjustment", "detail": "The government gain was concentrated in state and local education in June, when school years end and seasonal adjustment is large. If the adjusted gain partly reflects seasonal factors rather than hiring, the headline overstates labor demand, and readers who discount it would rely on the private figure instead. The release does not say this; it is a known measurement concern, flagged here as an interpretation."},
+    {"title": "A lower unemployment rate for a weak reason", "detail": "The unemployment rate fell as the labor force shrank and participation slipped, with household employment up only 93,000. A rate that falls because people stop looking signals less strength than the same rate falling through hiring. The release also notes that household changes need to be around 600,000 to be significant, so this is suggestive, not conclusive."},
+    {"title": "Sampling error in the headline", "detail": "The release puts the threshold for a significant monthly payroll change at about 136,000. June's +147,000 exceeds it only modestly, so the first estimate carries wide uncertainty even before revisions."}
+  ],
+  "assumptions": [
+    "Investors weigh headline payrolls, private payrolls and the unemployment rate in roughly the way these channels describe; the actual weights are not observed.",
+    "Seasonally adjusted government education gains in June may partly reflect seasonal adjustment; this assumption sits behind one competing explanation and is not a fact from the release.",
+    "The first-published estimates are what market participants could act on at 8:30 a.m. ET on July 3, 2025."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous consensus for payrolls and the unemployment rate. Without it this case cannot say whether the report was a surprise.",
+    "Not-seasonally-adjusted education employment and the seasonal factors applied in June, which would test the seasonal explanation.",
+    "Other labor-market releases from around the same time, such as job openings and unemployment claims; none is used.",
+    "The benchmark revision announced in the release (a preliminary estimate on September 9, 2025 and a final one with the January 2026 data), which was not known at publication and is not used."
+  ],
+  "weakening_observations": [
+    "Large downward revisions to June in the following releases would undermine any reading that relied on the headline; see the later revisions under Sources and limits.",
+    "If not-seasonally-adjusted data showed the June education gain in line with its usual pattern, the seasonal-adjustment explanation would weaken.",
+    "If private payrolls and hours were strong in the surrounding months, the weak-momentum reading of June would look like noise."
+  ],
+  "critique": [
+    {"title": "The first print was not the fact base it seemed", "detail": "The case describes the release correctly, as a historical case must. But the next two releases cut June from +147,000 to +14,000 and then to −13,000, and BLS called the May and June revisions 'larger than normal'. An analysis that leaned on the headline would have described the release accurately and the labor market poorly. A better analysis would carry revision risk explicitly, given the release's own explanation that revisions come from late reports and recalculated seasonal factors."},
+    {"title": "Calling private hiring weak needs a yardstick", "detail": "The private three-month average of 115,000 is the only benchmark the release offers. One month below a three-month average is thin evidence of a turning point, so the composition reading should be presented as a competing interpretation, not a finding."},
+    {"title": "Two surveys, two stories, one caveat", "detail": "The household survey (employment +93,000, labor force −130,000) and the establishment survey (+147,000) disagree, but the household survey needs a change of about 600,000 to be significant. The argument that unemployment fell for a weak reason is suggestive; leaning on it hard would over-read noise."},
+    {"title": "Opposite channels, no tie-breaker", "detail": "The channels point in opposite directions, and without expectations or market data the case cannot say which dominated. That is the honest result, and it should not be dressed up as a forecast either way."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The archived release as published, which shows 'Last Modified Date: July 03, 2025'. At publication the data reflected March 2024 benchmark levels and updated seasonal adjustment factors.", "url": null},
+    {"title": "Later revision: August 1, 2025", "detail": "The July report revised June from +147,000 to +14,000 and May from +144,000 to +19,000, together 258,000 lower, and said revisions for May and June were larger than normal. Not known at publication.", "url": "https://www.bls.gov/news.release/archives/empsit_08012025.htm"},
+    {"title": "Later revision: September 5, 2025", "detail": "The August report revised June again, from +14,000 to −13,000. Not known at publication.", "url": "https://www.bls.gov/news.release/archives/empsit_09052025.htm"},
+    {"title": "Benchmark revision not used", "detail": "The release announced a preliminary benchmark revision for September 9, 2025 and a final one with the January 2026 data in February 2026. This case uses neither.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived June 2025 release on 2026-10-05, and the archived July and August 2025 releases only for their revisions to June. Facts come from the release text and summary tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.bls.gov/news.release/archives/empsit_07032025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_08012025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_09052025.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

@@ -1,0 +1,741 @@
+{
+ "eval_version": "relevance-eval-0.1",
+ "set": "dev",
+ "created": "2026-10-25",
+ "purpose": "Development examples: prompts and decision rules may be adjusted against them.",
+ "statement": "Cases for measuring the relevance decision (news_relevance) against labels. Real cases are official reports whose publishers' terms allow their use by a model, frozen as their feeds gave them (headline and excerpt) with their attribution; SYNTHETIC cases were written for the set and are marked as such. Every label is provisional: the set author's judgement, not reviewed by an editor. Paired cases share a pair: similar words, different economic meaning.",
+ "cases": [
+  {
+   "case_id": "dev-s01",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "consumer_company",
+    "similar_vocabulary"
+   ],
+   "pair": "app-store",
+   "reports": [
+    {
+     "id": "synthetic:dev-s01",
+     "source": null,
+     "publisher": "SYNTHETIC Tech Daily",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "These clever apps show off the new foldable phone's potential",
+     "excerpt": "From retro cassette players to flight trackers, developers are finding creative ways to use the phone's two screens.",
+     "link": null,
+     "attribution": "SYNTHETIC Tech Daily",
+     "synthetic": true,
+     "feed_topic": "technology"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A roundup of consumer apps for a big company's phone; modelled on the operator-reported story story-d14bdb80c8590e31 (TechCrunch), whose own text is not used."
+   }
+  },
+  {
+   "case_id": "dev-s02",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "consumer_company",
+    "similar_vocabulary"
+   ],
+   "pair": "app-store",
+   "reports": [
+    {
+     "id": "synthetic:dev-s02",
+     "source": null,
+     "publisher": "SYNTHETIC Tech Daily",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Phone maker cuts its app store commission to 15% for small developers",
+     "excerpt": "Developers earning under $1 million a year will pay a 15% commission instead of 30% from January, the company said.",
+     "link": null,
+     "attribution": "SYNTHETIC Tech Daily",
+     "synthetic": true,
+     "feed_topic": "technology"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A change in what developers pay a dominant platform: costs, revenue, competition."
+   }
+  },
+  {
+   "case_id": "dev-s03",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "similar_vocabulary"
+   ],
+   "pair": "ai",
+   "reports": [
+    {
+     "id": "synthetic:dev-s03",
+     "source": null,
+     "publisher": "SYNTHETIC Tech Daily",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "How to use the new AI summary button in your email app",
+     "excerpt": "A step-by-step guide to turning on the feature and getting shorter summaries of long threads.",
+     "link": null,
+     "attribution": "SYNTHETIC Tech Daily",
+     "synthetic": true,
+     "feed_topic": "technology"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A tutorial."
+   }
+  },
+  {
+   "case_id": "dev-s04",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "consumer_company",
+    "similar_vocabulary"
+   ],
+   "pair": "ai",
+   "reports": [
+    {
+     "id": "synthetic:dev-s04",
+     "source": null,
+     "publisher": "SYNTHETIC Business Wire Report",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Cloud provider raises planned data-centre spending to $40 billion",
+     "excerpt": "In a filing, the company said capital expenditure on AI data centres would rise to $40 billion next year from $28 billion, citing demand from customers.",
+     "link": null,
+     "attribution": "SYNTHETIC Business Wire Report",
+     "synthetic": true,
+     "feed_topic": "markets"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A documented change in AI infrastructure investment."
+   }
+  },
+  {
+   "case_id": "dev-s05",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "similar_vocabulary"
+   ],
+   "pair": "grocery",
+   "reports": [
+    {
+     "id": "synthetic:dev-s05",
+     "source": null,
+     "publisher": "SYNTHETIC City Herald",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Five easy ways to cut your grocery bill this autumn",
+     "excerpt": "Plan meals, buy store brands and use loyalty apps, our shopping columnist suggests.",
+     "link": null,
+     "attribution": "SYNTHETIC City Herald",
+     "synthetic": true,
+     "feed_topic": null
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Consumer advice."
+   }
+  },
+  {
+   "case_id": "dev-s06",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "similar_vocabulary"
+   ],
+   "pair": "grocery",
+   "reports": [
+    {
+     "id": "synthetic:dev-s06",
+     "source": null,
+     "publisher": "SYNTHETIC City Herald",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Food prices rose 0.4% in September, statistics office says",
+     "excerpt": "The statistics office said prices of food bought in shops rose 0.4% from August and 3.1% from a year earlier.",
+     "link": null,
+     "attribution": "SYNTHETIC City Herald",
+     "synthetic": true,
+     "feed_topic": null
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Official price data."
+   }
+  },
+  {
+   "case_id": "dev-s07",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:dev-s07",
+     "source": null,
+     "publisher": "SYNTHETIC City Herald",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Dockworkers walk out at two Gulf Coast ports",
+     "excerpt": "Container handling stopped at both ports on Tuesday as union members began an open-ended strike over automation.",
+     "link": null,
+     "attribution": "SYNTHETIC City Herald",
+     "synthetic": true,
+     "feed_topic": null
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A disruption to port capacity, with no financial vocabulary."
+   }
+  },
+  {
+   "case_id": "dev-s08",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "ambiguous"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:dev-s08",
+     "source": null,
+     "publisher": "SYNTHETIC Tech Daily",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Opinion: the AI boom is a bubble, and it will burst",
+     "excerpt": "Our columnist argues that investors have lost touch with what the technology can do.",
+     "link": null,
+     "attribution": "SYNTHETIC Tech Daily",
+     "synthetic": true,
+     "feed_topic": "technology"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Opinion without a new development."
+   }
+  },
+  {
+   "case_id": "dev-s09",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:dev-s09",
+     "source": null,
+     "publisher": "SYNTHETIC City Herald",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Council approves rezoning that allows 400 homes on former rail yard",
+     "excerpt": "The city council voted 7-2 to rezone the site; construction could begin next year.",
+     "link": null,
+     "attribution": "SYNTHETIC City Herald",
+     "synthetic": true,
+     "feed_topic": null
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A small, local decision on housing capacity."
+   }
+  },
+  {
+   "case_id": "dev-s10",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "ambiguous"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:dev-s10",
+     "source": null,
+     "publisher": "SYNTHETIC Business Wire Report",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Northwind Holdings makes an announcement",
+     "excerpt": null,
+     "link": null,
+     "attribution": "SYNTHETIC Business Wire Report",
+     "synthetic": true,
+     "feed_topic": "markets"
+    }
+   ],
+   "label": {
+    "verdict": "insufficient_information",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A headline that says nothing about what happened."
+   }
+  },
+  {
+   "case_id": "dev-s11",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "consumer_company"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:dev-s11",
+     "source": null,
+     "publisher": "SYNTHETIC City Herald",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Tech billionaire hosts star-studded party on his new yacht",
+     "excerpt": "Guests included actors and musicians, according to photos posted online.",
+     "link": null,
+     "attribution": "SYNTHETIC City Herald",
+     "synthetic": true,
+     "feed_topic": null
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Celebrity coverage of a wealthy person."
+   }
+  },
+  {
+   "case_id": "dev-s12",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "consumer_company"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:dev-s12",
+     "source": null,
+     "publisher": "SYNTHETIC Business Wire Report",
+     "role": "news",
+     "published": "Mon, 19 Oct 2026 14:00:00 GMT",
+     "title": "Regulator fines social network €300 million over data transfers",
+     "excerpt": "The data-protection authority said the company had moved users' data abroad without adequate safeguards and must comply within six months.",
+     "link": null,
+     "attribution": "SYNTHETIC Business Wire Report",
+     "synthetic": true,
+     "feed_topic": "markets"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "An enforcement action against a large company."
+   }
+  },
+  {
+   "case_id": "dev-r01",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "relevant",
+    "no_financial_terms",
+    "similar_vocabulary"
+   ],
+   "pair": "seafood",
+   "reports": [
+    {
+     "id": "whitehouse-news:0b1c7a9055eaa10ae150",
+     "source": "whitehouse-news",
+     "publisher": "The White House",
+     "role": "official",
+     "published": "Fri, 23 Oct 2026 20:10:57 +0000",
+     "title": "Fact Sheet: President Donald J. Trump Announces the America First Seafood Strategy and Seafood.gov",
+     "excerpt": "SECURING AMERICAN SEAFOOD DOMINANCE: Today, President Donald J. Trump’s Administration unveiled the historic America First Seafood Strategy and launched Seafood.gov, implementing a plan of action for the future of America’s seafood industry. PUTTING AMERICA’S FISHERMEN FIRST: President Trump is committed to building the future of American seafood in the United States by ensuring that American fishermen, American […] The post Fact Sheet: President Donald J. Trump Announces the America First Seafood Strategy and Seafood.gov appeared first on The White House.",
+     "link": "https://www.whitehouse.gov/fact-sheets/2026/10/fact-sheet-president-donald-j-trump-announces-the-america-first-seafood-strategy-and-seafood-gov/",
+     "attribution": "The White House",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A federal strategy for an industry, announced as a plan of action."
+   }
+  },
+  {
+   "case_id": "dev-r02",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "irrelevant",
+    "similar_vocabulary"
+   ],
+   "pair": "seafood",
+   "reports": [
+    {
+     "id": "whitehouse-news:d7c50d354cd010951d1e",
+     "source": "whitehouse-news",
+     "publisher": "The White House",
+     "role": "official",
+     "published": "Thu, 22 Oct 2026 20:51:22 +0000",
+     "title": "National Seafood Month, 2026",
+     "excerpt": "By the President of the United States of America A Proclamation Across our Nation’s harbors and fishing communities, the unrivaled skill and resolve of American fishermen and seafood producers turn the bounty of our waters into food for our families and enduring economic strength. Food security is national security — we recognize that our fisheries […] The post National Seafood Month, 2026 appeared first on The White House.",
+     "link": "https://www.whitehouse.gov/presidential-actions/2026/10/national-seafood-month-2026/",
+     "attribution": "The White House",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A ceremonial proclamation."
+   }
+  },
+  {
+   "case_id": "dev-r03",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "whitehouse-news:9d3c78fd767d171d5e1d",
+     "source": "whitehouse-news",
+     "publisher": "The White House",
+     "role": "official",
+     "published": "Thu, 22 Oct 2026 20:48:38 +0000",
+     "title": "DECREASING HOUSING COSTS FOR THE AMERICAN PEOPLE",
+     "excerpt": "By the authority vested in me as President by the Constitution and the laws of the United States of America, it is hereby ordered: Section 1. Purpose. The American Dream of homeownership is a vital pillar of our great country. It is the policy of my Administration to reduce regulatory barriers to mortgage origination and […] The post DECREASING HOUSING COSTS FOR THE AMERICAN PEOPLE appeared first on The White House.",
+     "link": "https://www.whitehouse.gov/presidential-actions/2026/10/decreasing-housing-costs-for-the-american-people/",
+     "attribution": "The White House",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "An executive order on housing costs."
+   }
+  },
+  {
+   "case_id": "dev-r04",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "irrelevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "whitehouse-news:f268063f95fdb33fb292",
+     "source": "whitehouse-news",
+     "publisher": "The White House",
+     "role": "official",
+     "published": "Fri, 23 Oct 2026 12:22:50 +0000",
+     "title": "Presidential Message on the World Series",
+     "excerpt": "This week, Americans across our great country are coming together to celebrate the 2026 World Series, the crown jewel of our Nation’s favorite pastime. Baseball has long held a cherished place in our culture, and now, the Fall Classic once again unites us around this storied game. For nearly two centuries, baseball has shaped the […] The post Presidential Message on the World Series appeared first on The White House.",
+     "link": "https://www.whitehouse.gov/briefings-statements/2026/10/presidential-message-on-the-world-series/",
+     "attribution": "The White House",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A ceremonial message."
+   }
+  },
+  {
+   "case_id": "dev-r05",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "ec-press:9ed2a2fb9148c669a525",
+     "source": "ec-press",
+     "publisher": "European Commission",
+     "role": "official",
+     "published": "Thu, 22 Oct 2026 22:00:00 GMT",
+     "title": "Commission opens investigation into possible anticompetitive conduct by Omya in the supply of calcium carbonates to the paper industry",
+     "excerpt": "European Commission Press release Brussels, 23 Oct 2026 The European Commission has opened a formal antitrust investigation to assess whether Omya has breached EU competition rules by requiring customers in the paper industry to purchase all or most of their calcium carbonates from Omya.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2232",
+     "attribution": "European Commission (© European Union)",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "An antitrust investigation in an industrial supply market."
+   }
+  },
+  {
+   "case_id": "dev-r06",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "irrelevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "ec-press:01717fe1ac92e48acf84",
+     "source": "ec-press",
+     "publisher": "European Commission",
+     "role": "official",
+     "published": "Fri, 23 Oct 2026 09:09:38 GMT",
+     "title": "EU Civil Protection Mechanism turns 25",
+     "excerpt": "European Commission Press release Brussels, 23 Oct 2026 For 25 years, European countries have been joining forces to save lives when disasters strike under the EU Civil Protection Mechanism. This is one of the best examples of European solidarity in action.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2248",
+     "attribution": "European Commission (© European Union)",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "An anniversary of a disaster-response mechanism."
+   }
+  },
+  {
+   "case_id": "dev-r07",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "relevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "wto-news:6c31bcd0fc5b729cc29e",
+     "source": "wto-news",
+     "publisher": "World Trade Organization",
+     "role": "official",
+     "published": "Wed, 21 Oct 2026 00:00:00 GMT",
+     "title": "The Philippines launches safeguard investigation on pork",
+     "excerpt": "On 21 October 2026, the Philippines notified the WTO’s Committee on Safeguards that it had initiated on 9 October 2026 a safeguard investigation on imports of pork.",
+     "link": "https://www.wto.org/english/news_e/news26_e/safe_phl_21oct26_520_e.htm",
+     "attribution": "WTO news",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A trade-defence investigation on imports."
+   }
+  },
+  {
+   "case_id": "dev-r08",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "irrelevant"
+   ],
+   "pair": "trade-agency",
+   "reports": [
+    {
+     "id": "ustr-press:10cbd287020dbf897c63",
+     "source": "ustr-press",
+     "publisher": "Office of the U.S. Trade Representative",
+     "role": "official",
+     "published": "Wed, 21 Oct 2026 23:05:13 +0000",
+     "title": "USTR Announces 2026 Award Recipients",
+     "excerpt": "USTR Announces 2026 Award Recipients pbrouillette Wed, 10/21/2026 - 19:05 WASHINGTON — Today, the Office of the United States Trade Representative (USTR) hosted its annual awards ceremony, celebrating the achievements and notable milestones of its staff. During the program, award recipients were announced in the following categories: Ambassador’s Award, William B. Kelly Award, Linda Enoch Award, Excellence in Service Award, Erland Herfindahl Award, Superior Achievement Award, Distinguished Career Service Award, Team Award, Way to Go Award, and Length of Service Award. “Through their unwavering commitment to public service and pursuit of excellence, the USTR team has helped advance and execute President Trump’s America First Trade Policy, delivering lasting benefits for American farmers, manufacturers, workers, and businesses of all sizes,” said Ambassador Jamieson Greer. “Our team embodies the true meaning of public service, leading with integrity and professionalism. From our economists and legal counsel to our trade negotiators and overseas staff, I am very appreciative of your hard work and dedication to advance the agency’s mission.” USTR is pleased to announce the 2026 award…",
+     "link": "https://ustr.gov/about/policy-offices/press-office/press-releases/2026/october/ustr-announces-2026-award-recipients",
+     "attribution": "USTR",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Staff awards at a trade agency."
+   }
+  },
+  {
+   "case_id": "dev-r09",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "relevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "eia-todayinenergy:11274263ec4ec7aa15ad",
+     "source": "eia-todayinenergy",
+     "publisher": "U.S. Energy Information Administration",
+     "role": "official",
+     "published": "Thu, 22 Oct 2026  09:00:00 EST",
+     "title": "U.S. refineries have been running at very high rates in 2026",
+     "excerpt": "The U.S. refinery fleet has run at higher-than-normal rates this year, with refinery utilization averaging more than 95% of capacity between May and September, the highest for those months since 1998. Tight global product supplies this year have boosted margins for petroleum products, particularly for diesel, incentivizing the increased run rates.",
+     "link": "https://www.eia.gov/todayinenergy/detail.php?id=68344",
+     "attribution": "Source: U.S. Energy Information Administration",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Data on refinery utilisation and capacity."
+   }
+  },
+  {
+   "case_id": "dev-r10",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "irrelevant",
+    "ambiguous",
+    "similar_vocabulary"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "whitehouse-news:e460ec44d22e12868669",
+     "source": "whitehouse-news",
+     "publisher": "The White House",
+     "role": "official",
+     "published": "Thu, 22 Oct 2026 18:25:32 +0000",
+     "title": "Iowa Wins Big Under President Trump: Lower Taxes, New Investment, and Stronger Rural Communities",
+     "excerpt": "President Donald J. Trump returns to Iowa today to highlight a clear record of results for workers, families, seniors, farmers, and rural communities. Under President Trump and Republican leadership, Iowans are seeing historic tax relief, major private investment, stronger rural healthcare, and direct support for the producers who feed the country. Delivering Historic Tax Relief […] The post Iowa Wins Big Under President Trump: Lower Taxes, New Investment, and Stronger Rural Communities appeared first on The White House.",
+     "link": "https://www.whitehouse.gov/releases/2026/10/iowa-wins-big-under-president-trump-lower-taxes-new-investment-and-stronger-rural-communities/",
+     "attribution": "The White House",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A promotional recap of earlier claims, using economic words, without a new development."
+   }
+  },
+  {
+   "case_id": "dev-r11",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "relevant",
+    "similar_vocabulary"
+   ],
+   "pair": "eu-money",
+   "reports": [
+    {
+     "id": "ec-press:984b5ef2d554ea3008ac",
+     "source": "ec-press",
+     "publisher": "European Commission",
+     "role": "official",
+     "published": "Wed, 21 Oct 2026 08:09:14 GMT",
+     "title": "Commission greenlights Germany's final payment request for €6 billion under NextGenerationEU",
+     "excerpt": "European Commission Press release Brussels, 21 Oct 2026 Today, the European Commission positively assessed Germany's fourth and final payment request worth €6 billion under the Recovery and Resilience Facility (RRF), the centrepiece of NextGenerationEU.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2224",
+     "attribution": "European Commission (© European Union)",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A financing decision under an EU recovery facility."
+   }
+  },
+  {
+   "case_id": "dev-r12",
+   "synthetic": false,
+   "categories": [
+    "official",
+    "irrelevant",
+    "ambiguous",
+    "similar_vocabulary"
+   ],
+   "pair": "eu-money",
+   "reports": [
+    {
+     "id": "ec-press:e2a33284440e4474162c",
+     "source": "ec-press",
+     "publisher": "European Commission",
+     "role": "official",
+     "published": "Fri, 23 Oct 2026 08:38:09 GMT",
+     "title": "EU announces an additional €22.5 million to reinforce humanitarian assistance in Yemen",
+     "excerpt": "European Commission Press release Brussels, 23 Oct 2026 The European Commission is releasing €22.5 million in humanitarian aid to Yemen, in addition to the €87.5 million previously allocated for 2026, to address the consequences of the renewed conflict escalation and the critical needs of millions of people.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2247",
+     "attribution": "European Commission (© European Union)",
+     "synthetic": false
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Humanitarian aid: a sum of money, not an economic development of the news's scope (provisional; an editor may judge otherwise)."
+   }
+  }
+ ]
+}

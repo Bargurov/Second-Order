@@ -1,0 +1,36 @@
+{
+  "contract": "user-api-0.2",
+  "analysis": {
+    "analysis_id": "20261014T091500000000Z-5e1a7c0d9b42.research-prompt-1.high",
+    "effort": "high",
+    "prepared_at": "2026-10-14T09:31:00+00:00",
+    "source": {
+      "source_id": "20261014T091500000000Z-5e1a7c0d9b42",
+      "headline": "Simulated statistics office publishes its quarterly survey",
+      "source_url": "https://example.org/synthetic/quarterly-survey",
+      "published_at": "2026-10-13T07:00:00+00:00",
+      "published_at_as_supplied": "2026-10-13T10:00:00+03:00",
+      "captured_at": "2026-10-14T09:15:00+00:00",
+      "characters": 438,
+      "text": "October 13, 2026\n\nSimulated statistics office publishes its quarterly survey\n\nThe Simulated Statistics Office reported that output in the surveyed sector rose 1.2 percent in the third quarter, after a 0.4 percent decline in the second quarter.\n\nThe office said it expects to revise the estimate when late responses arrive. The office’s next survey is scheduled for January.\n\nSYNTHETIC TEST SOURCE: invented for the user-contract fixtures."
+    },
+    "state": "running",
+    "state_detail": "Running. Your credits are reserved; the result appears here when it is recorded.",
+    "quote": null,
+    "charge": {
+      "credits_reserved": 6,
+      "credits_charged": null,
+      "credits_returned": null,
+      "state": "held",
+      "quota_day": "2026-10-14"
+    },
+    "result": null,
+    "result_sha256": null,
+    "reviews": [],
+    "retrospective": "Retrospective: the analysis is made after the publication, from its captured text. It is not a forecast and not an out-of-sample test.",
+    "baseline": {
+      "state": "not_supplied",
+      "note": "No earlier baseline publication was supplied with this request, so the analysis makes no comparison with earlier statements or data."
+    }
+  }
+}

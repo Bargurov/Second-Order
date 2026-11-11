@@ -1,0 +1,96 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "h8-2026-09-25",
+  "title": "H.8, September 25: deposits fell $89 billion in the week to September 16 as borrowings rose",
+  "category": "Bank balance sheets",
+  "summary": "The Federal Reserve's H.8 release of September 25, 2026 showed seasonally adjusted deposits at all commercial banks in the United States falling $89.1 billion in the week ending September 16, nearly offsetting the previous week's rise, while borrowings rose $27.5 billion and cash assets fell $21.1 billion. Loans and leases rose $16.6 billion, and C&I loans slipped $2.4 billion.",
+  "sectors": ["banking-credit"],
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Assets and Liabilities of Commercial Banks in the United States - H.8",
+    "url": "https://www.federalreserve.gov/releases/h8/20260925/",
+    "document_id": "H.8",
+    "published_at": "2026-09-25",
+    "published_precision": "date",
+    "published_as_stated": "Release Date: September 25, 2026",
+    "timezone_note": "The release page states a date only. The H.8 release-dates page says the data are released each Friday, generally at 4:15 p.m., and names no time zone, so no time or offset is recorded.",
+    "reference_period": "Wednesday levels for the weeks ending August 26 to September 16, 2026, and monthly averages through August 2026; seasonally adjusted unless noted",
+    "page_last_updated": "2026-09-25",
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "In the week ending Wednesday, September 16, 2026, seasonally adjusted deposits at all commercial banks fell $89.1 billion to $19,568.4 billion, after rising $91.4 billion, as revised, the week before. Other deposits fell $95.6 billion while large time deposits rose $6.5 billion. Borrowings rose $27.5 billion to $2,308.1 billion, and cash assets fell $21.1 billion to $3,045.4 billion.",
+    "Lending kept growing modestly: loans and leases rose $16.6 billion to $14,079.0 billion. Loans to nondepository financial institutions rose $7.8 billion to $2,047.0 billion and automobile loans $1.0 billion to $527.8 billion, while commercial and industrial loans fell $2.4 billion to $2,965.3 billion. Total assets fell $32.4 billion, and the residual of assets less liabilities fell $19.5 billion.",
+    "August growth rates were revised slightly from the previous week's release: bank credit 4.9 percent at an annual rate (was 4.8), deposits 8.1 percent (was 8.0) and consumer loans 3.9 percent (was 3.8). Without seasonal adjustment, deposits fell more, by $151.3 billion, from $19,701.7 billion to $19,550.4 billion."
+  ],
+  "key_facts": [
+    {"label": "Deposits, week ending September 16", "value": "$19,568.4 billion; −$89.1 billion on the week", "basis": "Seasonally adjusted (Table 2); not seasonally adjusted −$151.3 billion (Table 3)"},
+    {"label": "Other deposits / large time deposits", "value": "−$95.6 billion / +$6.5 billion", "basis": "Seasonally adjusted"},
+    {"label": "Borrowings", "value": "$2,308.1 billion; +$27.5 billion", "basis": "Seasonally adjusted"},
+    {"label": "Cash assets", "value": "$3,045.4 billion; −$21.1 billion", "basis": "Includes balances due from Federal Reserve Banks"},
+    {"label": "Loans and leases / C&I loans", "value": "+$16.6 billion / −$2.4 billion", "basis": "Levels $14,079.0 billion and $2,965.3 billion"},
+    {"label": "Week ending September 9, revised", "value": "Deposits $19,657.5 billion (was $19,657.2 billion)", "basis": "Compared with the September 18 release"}
+  ],
+  "channels": [
+    {
+      "title": "Deposit outflows and funding costs",
+      "source_fact": "Deposits fell $89.1 billion and borrowings rose $27.5 billion in the week.",
+      "interpretation": "Banks replacing part of a deposit outflow with borrowings would raise funding costs at the margin, since borrowed funds usually cost more than deposits. Over one week, and right after an inflow of similar size, the move looks more like timing than a change in funding conditions."
+    },
+    {
+      "title": "Liquidity buffers",
+      "source_fact": "Cash assets fell $21.1 billion to $3,045.4 billion, much less than deposits.",
+      "interpretation": "Cash falling far less than deposits suggests banks met the outflow partly with borrowings rather than reserves this week. The release reports no liquidity ratios, so the adequacy of buffers cannot be judged."
+    },
+    {
+      "title": "Credit to nonbanks, households and businesses",
+      "source_fact": "Loans to nondepository financial institutions +$7.8 billion; automobile loans +$1.0 billion; C&I loans −$2.4 billion.",
+      "interpretation": "This week's lending growth came from nonbank financial borrowers and consumers rather than businesses; a single week is not enough to read a shift in the mix."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Tax-date and Treasury flows", "detail": "Mid-September brings quarterly tax payments, which move money out of bank deposits and into the Treasury's account. If that drove the outflow, it reflects the payment calendar rather than depositors leaving banks. The release does not identify causes; this explanation draws on general knowledge, not on the release."},
+    {"title": "Seasonal adjustment already expects an outflow", "detail": "Without seasonal adjustment deposits fell $151.3 billion, more than the adjusted $89.1 billion, so the seasonal factors already anticipate an outflow this week; the adjusted figure is the part beyond the usual pattern."}
+  ],
+  "assumptions": [
+    "Weekly changes compare two Wednesdays; they do not show flows within the week.",
+    "Revisions to earlier weeks stay small, as in this release, so week-to-week comparisons are reasonably stable."
+  ],
+  "missing_information": [
+    "Treasury account and reserve balance data for the same week.",
+    "Which banks (large, small or foreign-related) saw the outflow; only the all-bank tables were read.",
+    "Rates paid on deposits and on borrowings."
+  ],
+  "weakening_observations": [
+    "If deposits stayed lower in the following weeks, the timing explanation would weaken.",
+    "If borrowings kept rising while deposits fell, the funding-cost channel would strengthen; if borrowings fell back, it would fade."
+  ],
+  "critique": [
+    {"title": "A reversal is arithmetic, not a finding", "detail": "Calling this outflow a reversal of the previous week's inflow is arithmetic on two weeks. Whether the two moves are connected is not shown in the release."},
+    {"title": "Outside knowledge is marked as such", "detail": "The tax-date explanation draws on general knowledge of US payment calendars, not on the release. It is offered as a competing explanation, not as a finding."},
+    {"title": "Aggregates hide composition", "detail": "All-bank totals combine domestic and foreign-related institutions; a move concentrated in one group would read differently, and the case cannot tell which."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "Tables 1, 2 and 3 (all commercial banks) and the footnotes of the release page, which shows 'Last Update: September 25, 2026', as shown on 2026-10-11.", "url": null},
+    {"title": "Earlier release compared", "detail": "The September 18 release first published deposits for the week ending September 9 at $19,657.2 billion.", "url": "https://www.federalreserve.gov/releases/h8/20260918/"},
+    {"title": "Later note in the Notes on the Data", "detail": "A note dated September 30, 2026 records domestically chartered banks divesting $5.2 billion of automobile loans to nonbank institutions in the week ending September 30, outside this release's data. Not known at publication.", "url": "https://www.federalreserve.gov/releases/h8/h8notes.htm"},
+    {"title": "Release time", "detail": "The H.8 release-dates page says the data are released each Friday, generally at 4:15 p.m., without naming a time zone.", "url": "https://www.federalreserve.gov/releases/h8/default.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read Tables 1, 2 and 3 and the footnotes of the September 25, 2026 release, the September 18 release for comparison, the H.8 release-dates page and the H.8 Notes on the Data in a browser on 2026-10-11. Facts come from the release tables and notes; weekly dollar changes are the assistant's arithmetic on Tables 2 and 3; the channels, competing explanations and critique are the assistant's interpretation. No market prices, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/releases/h8/20260925/",
+      "https://www.federalreserve.gov/releases/h8/20260918/",
+      "https://www.federalreserve.gov/releases/h8/default.htm",
+      "https://www.federalreserve.gov/releases/h8/h8notes.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

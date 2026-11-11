@@ -1,0 +1,23 @@
+{
+ "n": 1,
+ "approval_id": "fcx-sec-images-02",
+ "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104001.jpg",
+ "kind": "jpeg",
+ "outcome": "complete",
+ "http_status": 200,
+ "sha256": "7049c62cccb062051773641464a18fd3d4e5bece8b1be78a134e9e52ae32ae73",
+ "bytes": 256120,
+ "hash_kind": "complete_response",
+ "retained": "data/company-sources/fcx/sec-8k-2026-11-04/fcx_261104001.jpg",
+ "dispatched_at": "2026-11-11T01:46:45.621237+02:00",
+ "body_completed_at": "2026-11-11T01:46:48.195852+02:00",
+ "media_type": "image/jpeg",
+ "named_headers": {
+  "content-type": "image/jpeg",
+  "last-modified": "Wed, 04 Nov 2026 21:13:58 GMT"
+ },
+ "contact_declared": true,
+ "network_error": null,
+ "truncated": false,
+ "max_body_bytes": 8388608
+}

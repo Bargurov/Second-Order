@@ -1,0 +1,98 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "cpi-2025-05-13",
+  "title": "April 2025 CPI: 0.2% on the month, 2.3% over the year, the smallest 12-month rise since February 2021",
+  "category": "Inflation",
+  "summary": "Consumer prices rose 0.2 percent in April after falling 0.1 percent in March. Shelter accounted for more than half the rise; energy rose 0.7 percent on natural gas and electricity; food fell 0.1 percent as grocery prices dropped 0.4 percent. Core rose 0.2 percent (2.8 percent over the year), and the 2.3 percent 12-month headline was the smallest since February 2021.",
+  "source": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "title": "Consumer Price Index — April 2025",
+    "url": "https://www.bls.gov/news.release/archives/cpi_05132025.htm",
+    "document_id": "USDL-25-0786",
+    "published_at": "2025-05-13T08:30:00-04:00",
+    "published_as_stated": "Embargoed until 8:30 a.m. (ET) Tuesday, May 13, 2025",
+    "timezone_note": "In May, Eastern Time is Eastern Daylight Time, UTC−04:00, so the release time is 12:30 UTC.",
+    "reference_period": "April 2025",
+    "page_last_updated": "2025-05-13",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "Headline prices rose 0.2 percent seasonally adjusted, and shelter's 0.3 percent rise accounted for more than half of the increase. Energy rose 0.7 percent as natural gas (+3.7 percent) and electricity (+0.8 percent) more than offset a 0.1 percent fall in seasonally adjusted gasoline; before seasonal adjustment gasoline rose 2.9 percent. Food fell 0.1 percent: food at home dropped 0.4 percent, its largest decline since September 2020, as eggs fell 12.7 percent.",
+    "Core prices rose 0.2 percent. Household furnishings and operations rose 1.0 percent after no change in March, motor vehicle insurance 0.6 percent and medical care 0.5 percent. Airline fares fell 2.8 percent, used cars and trucks 0.5 percent, and communication and apparel also declined. Core goods rose 0.1 percent after a 0.1 percent fall.",
+    "Over 12 months the headline rose 2.3 percent, down from 2.4 percent and the smallest increase since February 2021; core rose 2.8 percent, as in March. The release also put into effect a methodology change: the leased cars and trucks index now uses vendor transaction data instead of survey data."
+  ],
+  "key_facts": [
+    {"label": "All items, monthly", "value": "+0.2% (March −0.1%)", "basis": "Seasonally adjusted; +0.3% before seasonal adjustment"},
+    {"label": "All items, 12 months", "value": "+2.3% (12 months to March +2.4%)", "basis": "Not seasonally adjusted; the smallest 12-month increase since February 2021, per the release"},
+    {"label": "Core (less food and energy), monthly", "value": "+0.2% (March +0.1%)", "basis": "Seasonally adjusted"},
+    {"label": "Core, 12 months", "value": "+2.8%", "basis": "Not seasonally adjusted; same as for the 12 months to March"},
+    {"label": "Shelter", "value": "+0.3% monthly; +4.0% over 12 months", "basis": "More than half of the all items monthly increase, per the release"},
+    {"label": "Household furnishings and operations", "value": "+1.0% (March 0.0%)", "basis": "Seasonally adjusted"},
+    {"label": "Food at home", "value": "−0.4%; eggs −12.7%", "basis": "Seasonally adjusted; the largest decline since September 2020"},
+    {"label": "Gasoline", "value": "−0.1% adjusted; +2.9% unadjusted; −11.8% over 12 months", "basis": "Monthly seasonally adjusted and unadjusted changes, as reported"}
+  ],
+  "channels": [
+    {
+      "title": "The policy path after a soft March (shorter maturities)",
+      "source_fact": "Headline +0.2 percent and core +0.2 percent on the month after soft March readings; 12-month headline 2.3 percent, the lowest since February 2021.",
+      "interpretation": "The 12-month figures continue the disinflation story, while the monthly core reading returns to 0.2 percent after March's 0.1. A reader focused on the 12-month rate would see further progress; one focused on the monthly core would see the end of a soft patch. Their net effect on the expected path cannot be judged without expectations."
+    },
+    {
+      "title": "Goods prices (all maturities)",
+      "source_fact": "Household furnishings and operations +1.0 percent after no change; core goods +0.1 percent after −0.1 percent; used cars and apparel fell.",
+      "interpretation": "If investors read the furnishings jump as an early sign of higher import costs passing through, they could expect firmer goods inflation ahead, which would support yields across maturities. The release says nothing about tariffs or imports, and other goods fell, so this is an interpretation with thin support."
+    },
+    {
+      "title": "Food and energy noise (longer maturities)",
+      "source_fact": "Food at home −0.4 percent with eggs −12.7 percent; energy +0.7 percent on natural gas and electricity.",
+      "interpretation": "Large moves in groceries and utilities are mostly noise for the inflation trend. A reader who discounts them puts more weight on core and shelter, so this channel mainly moderates the others."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "What households paid at the pump", "detail": "Gasoline rose 2.9 percent before seasonal adjustment but fell 0.1 percent after it, so the adjusted energy figure understates what households saw in April. Readers who focus on unadjusted prices would read the month as firmer."},
+    {"title": "Shelter still doing the work", "detail": "Shelter accounted for more than half of the monthly increase. If shelter is cooling only slowly, a 0.2 percent core reading says more about housing than about any pass-through in goods."},
+    {"title": "Base effects in the 12-month rate", "detail": "The 12-month headline fell to 2.3 percent partly because of the April 2024 change that left the window, a base effect the release does not quantify. Part of the 'lowest since 2021' framing is arithmetic, not new disinflation."}
+  ],
+  "assumptions": [
+    "Investors read household goods as an early indicator of import-cost pass-through, and shelter and services as the measure of persistence.",
+    "Monthly core readings of 0.1 and 0.2 percent are distinguishable in investors' eyes despite rounding.",
+    "The leased-vehicle methodology change had little effect on the aggregates."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous consensus for headline and core CPI. Without it this case cannot say whether the release was a surprise.",
+    "Import shares by category, or import price data, to test the pass-through reading of household furnishings.",
+    "The effect of the leased cars and trucks methodology change on the indexes, which the release does not quantify.",
+    "The April 2024 change that left the 12-month window, needed to size the base effect."
+  ],
+  "weakening_observations": [
+    "If household goods prices fell back the next month, reading April as the start of pass-through would weaken.",
+    "If the methodology change for leased vehicles had a material effect, some component moves would need re-reading.",
+    "If the seasonal factors updated in February 2026 materially changed April's adjusted figures, readings of the monthly changes would weaken; this case does not check revised values."
+  ],
+  "critique": [
+    {"title": "Too early to call pass-through", "detail": "April prices are the first in this run that could reflect trade-cost changes after March, but one category's jump is thin evidence. The case labels the reading as interpretation, and it should not be repeated as a finding."},
+    {"title": "A methodology change in the same month", "detail": "The leased cars and trucks index switched data sources in this release. Its effect on the headline is likely small, but the case cannot rule out that it contributed to component moves, and it does not try."},
+    {"title": "Rank comparisons are not significance", "detail": "'Smallest since February 2021' and 'largest decline since September 2020' are the release's own rankings. They place a figure in recent history; they say nothing about whether the change is economically or statistically meaningful."},
+    {"title": "Second of four, read later", "detail": "The second of four consecutive CPI releases in the library, included by that rule. Written in October 2026 by an AI assistant that may know later inflation data; the case keeps to the release, but its sense of what mattered may still be shaped by hindsight."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The archived release as published, which shows 'Last Modified Date: May 13, 2025'. Figures come from the release text and Table A.", "url": null},
+    {"title": "Methodology change", "detail": "Effective with this release, BLS replaced survey data for the leased cars and trucks index with vendor transaction data, per the notice in the release.", "url": null},
+    {"title": "Seasonal-factor revisions", "detail": "BLS updates CPI seasonal factors each February and revises the previous five years of seasonally adjusted data, as its June 2025 release states. The monthly changes here are as first published; later revised values are not checked.", "url": "https://www.bls.gov/news.release/archives/cpi_07152025.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived April 2025 CPI release on 2026-10-05, and the archived June 2025 CPI release for its statement of the seasonal-revision schedule. Facts come from the release text and Table A; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.bls.gov/news.release/archives/cpi_05132025.htm",
+      "https://www.bls.gov/news.release/archives/cpi_07152025.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

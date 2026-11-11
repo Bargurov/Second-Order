@@ -1,0 +1,99 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "empsit-2025-04-04",
+  "title": "March 2025 jobs: payrolls +228,000, unemployment 4.2%, January and February revised down",
+  "category": "Employment",
+  "summary": "Payrolls rose 228,000, above the prior 12-month average of 158,000, with gains in health care, social assistance, transportation and retail, where workers returning from a strike lifted the count. Unemployment edged up to 4.2 percent, hourly earnings rose 0.3 percent, and January and February were revised down a combined 48,000. Later releases cut March substantially.",
+  "source": {
+    "publisher": "U.S. Bureau of Labor Statistics",
+    "title": "The Employment Situation — March 2025",
+    "url": "https://www.bls.gov/news.release/archives/empsit_04042025.htm",
+    "document_id": "USDL-25-0452",
+    "published_at": "2025-04-04T08:30:00-04:00",
+    "published_as_stated": "Embargoed until 8:30 a.m. (ET) Friday, April 4, 2025",
+    "timezone_note": "In April, Eastern Time is Eastern Daylight Time, UTC−04:00, so the release time is 12:30 UTC.",
+    "reference_period": "March 2025: the pay period including March 12 (establishment survey) and the week containing March 12 (household survey)",
+    "page_last_updated": "2025-04-04",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "Payrolls rose 228,000, well above the average monthly gain of 158,000 over the prior 12 months. Private payrolls rose 209,000 and government 19,000. Gains came in health care (+54,000), social assistance (+24,000), transportation and warehousing (+23,000) and retail trade (+24,000), where the release says part of the gain reflected workers returning from a strike: food and beverage retailers added 21,000. Federal employment fell 4,000 after an 11,000 drop in February.",
+    "The strong month came with weaker earlier months. January was revised from +125,000 to +111,000 and February from +151,000 to +117,000, together 48,000 lower than previously reported. The release's three-month average of payroll gains was 152,000, much closer to the 12-month pace than March alone.",
+    "In the household survey the unemployment rate edged up to 4.2 percent from 4.1 percent, still within the 4.0 to 4.2 percent range it has held since May 2024. The labor force grew by 232,000 and participation rose 0.1 point to 62.5 percent. Average hourly earnings rose 0.3 percent to $36.00, 3.8 percent over 12 months, and the private workweek held at 34.2 hours."
+  ],
+  "key_facts": [
+    {"label": "Nonfarm payrolls", "value": "+228,000", "basis": "Seasonally adjusted, preliminary; prior 12-month average 158,000"},
+    {"label": "Private / government", "value": "+209,000 / +19,000", "basis": "Federal government −4,000 (February −11,000)"},
+    {"label": "Strike returns", "value": "Retail trade +24,000; food and beverage retailers +21,000", "basis": "The release attributes part of the retail gain to workers returning from a strike"},
+    {"label": "Revisions to earlier months", "value": "January +111,000 (was +125,000); February +117,000 (was +151,000)", "basis": "Combined −48,000; from late reports and recalculated seasonal factors"},
+    {"label": "Three-month average", "value": "+152,000", "basis": "Total nonfarm, Summary table B"},
+    {"label": "Unemployment rate", "value": "4.2% (February 4.1%)", "basis": "Seasonally adjusted; household survey; the release says it 'changed little'"},
+    {"label": "Labor force and participation", "value": "+232,000; 62.5% (+0.1 point)", "basis": "Seasonally adjusted; household survey"},
+    {"label": "Average hourly earnings", "value": "+0.3% to $36.00; +3.8% over 12 months", "basis": "All private employees; seasonally adjusted series"}
+  ],
+  "channels": [
+    {
+      "title": "Labor demand and the policy path (shorter maturities)",
+      "source_fact": "Payrolls +228,000 against a 12-month average of 158,000; unemployment 4.2 percent.",
+      "interpretation": "A strong headline gives little reason to expect earlier rate cuts, which would tend to support shorter yields. Part of the strength is one-off, from strike returns, and the same release trimmed earlier months, so a reader netting those out would see a smaller signal than the headline."
+    },
+    {
+      "title": "Revisions as information (shorter maturities)",
+      "source_fact": "January and February revised down by a combined 48,000; three-month average 152,000.",
+      "interpretation": "A reader who weights the revised trend rather than the March print would see steady, not accelerating, hiring. That would weaken the first channel and point to a policy path closer to what was expected before the release, whatever that was."
+    },
+    {
+      "title": "Wages and inflation compensation (longer maturities)",
+      "source_fact": "Average hourly earnings +0.3 percent on the month and +3.8 percent over 12 months.",
+      "interpretation": "A firmer monthly wage gain is a modest upside risk to services inflation; if read that way it would support inflation compensation in longer yields. One month of earnings is noisy, and the 12-month rate did not rise."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "One-offs in the headline", "detail": "Strike returns lifted retail, and by the release's own account part of March's gain will not repeat. Discounting them brings March closer to the revised trend, and closer to the 12-month average."},
+    {"title": "Higher unemployment from more job seekers", "detail": "The unemployment rate rose while the labor force grew faster than household employment (+232,000 against +201,000), a pattern consistent with people entering the labor force rather than losing jobs. BLS calls the change little changed, so it is weak evidence either way."},
+    {"title": "Federal reductions not yet visible", "detail": "Federal employment fell by only 4,000, but the release notes that employees on paid leave or receiving ongoing severance pay are counted as employed. If reductions were pending in that form, the payroll data understate them for now."}
+  ],
+  "assumptions": [
+    "Investors net out one-off effects such as strike returns when reading the headline.",
+    "Revisions to earlier months are read as information about the trend, not as noise.",
+    "Wage growth feeds services inflation with a lag."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous consensus for payrolls and the unemployment rate. Without it this case cannot say whether the report was a surprise.",
+    "The full size of the strike effect; the release quantifies only food and beverage retailers.",
+    "Not-seasonally-adjusted data and the seasonal factors applied in March.",
+    "How many federal workers on paid leave or severance were still counted as employed."
+  ],
+  "weakening_observations": [
+    "Large downward revisions to March in the following releases would undermine a reading built on the headline; see the later revisions under Sources and limits.",
+    "If the strike effect was larger than the food and beverage gain suggests, the underlying gain was smaller than it appears.",
+    "If participation fell back the next month, the benign reading of the unemployment rate rise would weaken."
+  ],
+  "critique": [
+    {"title": "A headline that did not survive", "detail": "The case describes the release accurately, but the next two releases cut March from +228,000 to +185,000 and then to +120,000. A reading that leaned on the headline overstated labor demand, and the release's own downward revisions to January and February were an early warning the analysis should have weighed more."},
+    {"title": "Named but not sized", "detail": "The release flags the strike returns but quantifies only one component. The case cannot tell how much of the 228,000 was temporary, so its adjusted view of the month is an informed guess."},
+    {"title": "Headline against revisions", "detail": "The headline points to strength and the revisions to a steadier trend. Without expectations or market data the case cannot say which reading dominated, and it should not pretend to."},
+    {"title": "First of a run of four", "detail": "The first of four consecutive Employment Situation releases in the library, included by that rule and analysed in October 2026 by an AI assistant. Later revisions are disclosed separately; other later knowledge may still shape what the case treats as important."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The archived release as published, which shows 'Last Modified Date: April 04, 2025'. Figures come from the release text and Summary tables A and B.", "url": null},
+    {"title": "Later revision: May 2, 2025", "detail": "The April report revised March from +228,000 to +185,000 and February from +117,000 to +102,000. Not known at publication; that release is also a case in this library.", "url": "https://www.bls.gov/news.release/archives/empsit_05022025.htm"},
+    {"title": "Later revision: June 6, 2025", "detail": "The May report revised March again, from +185,000 to +120,000. Not known at publication.", "url": "https://www.bls.gov/news.release/archives/empsit_06062025.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived March 2025 release on 2026-10-05, and the archived April and May 2025 releases only for their revisions to March. Facts come from the release text and summary tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.bls.gov/news.release/archives/empsit_04042025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_05022025.htm",
+      "https://www.bls.gov/news.release/archives/empsit_06062025.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

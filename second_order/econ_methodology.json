@@ -1,0 +1,136 @@
+{
+ "methodology_version": "econ-methodology-0.1",
+ "statement": "How a series is measured, quoted from the explanatory notes of one of its releases. A passage is dated by the release it was read from; a later release may change its notes, so a passage read from an earlier release is shown as such. Compiled with an AI assistant (Claude Code) from the documents named; not reviewed by an economist or an editor.",
+ "series": [
+  {
+   "series_id": "census-nrc",
+   "source": "census-indicators",
+   "titles": [
+    "New Residential Construction"
+   ],
+   "publisher": "U.S. Census Bureau",
+   "document": "New Residential Construction, September 2026 release, explanatory notes",
+   "url": "https://www.census.gov/construction/nrc/pdf/newresconst.pdf",
+   "published": "2026-10-20",
+   "retrieved": "2026-10-26",
+   "terms": "A U.S. Government work, not subject to copyright (17 U.S.C. 105); its explanatory notes are quoted for how the series is measured.",
+   "checked_against": {
+    "text_sha256": "3ec8a6f1aa9800a323de9320a27d7ad22d98f86abbd2c79ffbc97d905c2b0a27",
+    "statement": "Each passage was checked word for word against the text of this document as retrieved on 2026-10-26."
+   },
+   "passages": [
+    {
+     "text": "All ranges given for percentage changes are 90 percent confidence intervals and account only for sampling variability. If a range does not contain zero, the change is statistically significant. If it does contain zero, the change is not statistically significant; that is, it is uncertain whether there was an increase or decrease.",
+     "defines": [
+      "90 percent confidence interval",
+      "statistical significance"
+     ],
+     "relevance": "Says how to read the range given with each change in starts and completions."
+    },
+    {
+     "text": "* The 90 percent confidence interval includes zero. In such cases, there is insufficient statistical evidence to conclude that the actual change is different from zero.",
+     "defines": [
+      "asterisk"
+     ],
+     "relevance": "Explains the asterisk the release puts beside a change."
+    },
+    {
+     "text": "In interpreting changes in the statistics in this release, note that month-to-month changes in seasonally adjusted statistics often show movements which may be irregular. It may take three months to establish an underlying trend for building permit authorizations, six months for total starts, and six months for total completions.",
+     "defines": [
+      "seasonally adjusted monthly change",
+      "underlying trend"
+     ],
+     "relevance": "Says how many months the Census Bureau considers needed before a trend in permits, starts or completions is established."
+    },
+    {
+     "text": "The statistics in Table 1 in this release are based on a non-probability sample and not subject to sampling error. They are, however, still subject to nonsampling error.",
+     "defines": [
+      "building permits (Table 1)",
+      "nonsampling error"
+     ],
+     "relevance": "Table 1 holds the building permits (units authorized in permit-issuing places), so their changes carry no confidence interval, though they can still be in error."
+    }
+   ]
+  },
+  {
+   "series_id": "census-marts",
+   "source": "census-indicators",
+   "titles": [
+    "Advance Monthly Sales for Retail and Food Services"
+   ],
+   "publisher": "U.S. Census Bureau",
+   "document": "Advance Monthly Sales for Retail and Food Services, September 2026 release, explanatory notes",
+   "url": "https://www.census.gov/retail/marts/www/marts_current.pdf",
+   "published": "2026-10-15",
+   "retrieved": "2026-10-26",
+   "terms": "A U.S. Government work, not subject to copyright (17 U.S.C. 105); its explanatory notes are quoted for how the series is measured.",
+   "checked_against": {
+    "text_sha256": "20ffa072e8d5f0e0b1e450e35be756bbe2870a46e2dcf8aef5ad7e5e62f8b940",
+    "statement": "Each passage was checked word for word against the text of this document as retrieved on 2026-10-26."
+   },
+   "passages": [
+    {
+     "text": "The margin of sampling error, as used on page 1, gives a range about the estimate which is a 90 percent confidence interval.",
+     "defines": [
+      "margin of sampling error"
+     ],
+     "relevance": "Says what the range given with each change on the release's first page is."
+    },
+    {
+     "text": "If the interval contains 0, then one does not have sufficient evidence to conclude at the 90 percent confidence level that the change is different from zero and therefore the change is not statistically significant. Estimated changes shown in the text are statistically significant unless otherwise noted.",
+     "defines": [
+      "statistical significance"
+     ],
+     "relevance": "Says when a reported change is statistically significant."
+    },
+    {
+     "text": "The advance estimates are based on a subsample of the Census Bureau's full retail and food services sample.",
+     "defines": [
+      "advance estimate"
+     ],
+     "relevance": "The advance estimate rests on a subsample; later releases revise it."
+    }
+   ]
+  },
+  {
+   "series_id": "census-mtis",
+   "source": "census-indicators",
+   "titles": [
+    "Manufacturing and Trade Inventories and Sales"
+   ],
+   "publisher": "U.S. Census Bureau",
+   "document": "Manufacturing and Trade Inventories and Sales, August 2026 release, explanatory notes",
+   "url": "https://www.census.gov/mtis/www/data/pdf/mtis_current.pdf",
+   "published": "2026-10-15",
+   "retrieved": "2026-10-26",
+   "terms": "A U.S. Government work, not subject to copyright (17 U.S.C. 105); its explanatory notes are quoted for how the series is measured.",
+   "checked_against": {
+    "text_sha256": "d66da4b0b3b124c132aa524bd10f97c88024cf21ffa9b16c68a56b1275aba699",
+    "statement": "Each passage was checked word for word against the text of this document as retrieved on 2026-10-26."
+   },
+   "passages": [
+    {
+     "text": "The sampling variability for retailers and merchant wholesalers can be used to construct a 90 percent confidence interval for the estimates. Over all possible samples, 90 percent of such intervals will cover the true estimate. These intervals are given in parentheses for the estimates on the front page.",
+     "defines": [
+      "90 percent confidence interval"
+     ],
+     "relevance": "Says what the ranges in parentheses beside the front-page changes are."
+    },
+    {
+     "text": "If the range contains 0, it is uncertain whether there was an increase or decrease.",
+     "defines": [
+      "statistical significance"
+     ],
+     "relevance": "Says how to read a range that includes zero."
+    },
+    {
+     "text": "Manufacturers do not contribute to estimates of sampling variability because the manufacturer's mail panel is not a probability sample from a known frame and standard errors of the industry estimates cannot be calculated.",
+     "defines": [
+      "sampling variability (manufacturers)"
+     ],
+     "relevance": "The ranges cover the retail and wholesale parts of the totals, not manufacturers'."
+    }
+   ]
+  }
+ ]
+}

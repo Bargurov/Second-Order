@@ -1,0 +1,19 @@
+{
+  "contract": "onboarding-api-0.1",
+  "state": "no_credit_policy",
+  "detail": "No credit terms are set on this server yet, so no analysis can be quoted.",
+  "policy_version": null,
+  "efforts": [],
+  "effort_note": "Higher Effort lets the analysis spend more of its output allowance on reasoning. It does not promise a better result or a fixed running time, and it can need more credits.",
+  "size_note": null,
+  "quote_valid_seconds": null,
+  "examples": [],
+  "rules": [
+    "A credit is one point of application usage on this server. It has no fixed money value and cannot be bought, sold or exchanged here.",
+    "Before an analysis runs you get a quote: the exact number of points for that prepared analysis, its Effort and its source, under one credit-policy version, valid until the time it states. Nothing runs until you approve it.",
+    "Approving reserves the quoted points and one run of today's daily allowance. When a result is recorded the quoted points are charged; if nothing was sent they are returned. If the server cannot tell whether a run was sent, the points stay held until an administrator settles them. You are never charged more than the quote you approved.",
+    "The daily allowance counts new analysis runs per calendar day and is separate from points: a run uses one slot whatever its points, and a run that is returned gives its slot back.",
+    "Points do not buy a running time or a better result. Higher Effort lets the analysis spend more of its output allowance on reasoning and can need more points.",
+    "Reading, reviewing and exporting saved results, adding a source, preparing an analysis and asking for a quote use no points and no allowance."
+  ]
+}

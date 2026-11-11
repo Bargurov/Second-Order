@@ -1,0 +1,78 @@
+/* Evidence-first research analysis: the publisher's quoted words, the model's interpretation and the open questions
+   are three visibly different surfaces, so a reader never mistakes one for another. Approval controls reuse the
+   intake styles (intake.css); the page frame reuses the event pages (eventContext.css, eventOverview.css). */
+
+.research { display: grid; gap: 18px; }
+.research-back { margin: 6px 0 0; font-size: 13px; }
+.research-card h3 { margin: 14px 0 6px; font: 600 12px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2); }
+.research-card h3:first-of-type { margin-top: 4px; }
+.research-card > p.research-status { max-width: none; font-size: 13.5px; }
+.research-status { margin: 0 0 12px; padding: 8px 12px; border: 1px dashed var(--rule-strong); background: var(--paper-raised);
+  font-size: 13.5px; color: var(--ink-2); }
+.research-status strong { color: var(--ink); }
+.research-status:not(.is-none) { border-style: solid; }
+.research-facts { margin-top: 12px; }
+.research-sha { font-size: 12px; }
+
+.research-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.research-outcome, .research-mode { padding: 3px 8px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  font: 500 11px/1.4 var(--mono); letter-spacing: .04em; color: var(--ink-2); background: var(--paper-raised); }
+.research-outcome.is-analysis, .research-outcome.is-no_additional_finding { border-color: var(--supported);
+  color: var(--supported); background: var(--supported-soft); }
+.research-outcome.is-declined, .research-outcome.is-incomplete { border-color: var(--inconclusive);
+  color: var(--inconclusive); background: var(--inconclusive-soft); }
+.research-outcome.is-invalid, .research-outcome.is-technical_failure { border-color: var(--stamp); color: var(--stamp);
+  background: var(--contradicted-soft); }
+.research-mode.is-mock { border-style: dashed; }
+.research-synthetic { margin: 0 0 10px; padding: 8px 12px; border: 1px dashed var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 13px; color: var(--ink-2); }
+.research-model-text { margin: 10px 0; padding: 10px 12px; border-left: 3px solid var(--rule-strong);
+  background: var(--paper-sunk); font-size: 13.5px; white-space: pre-wrap; }
+.research-model-text .overview-label { display: block; }
+.research-provenance { margin-top: 10px; }
+
+/* What the source establishes: the publisher's words, on a raised page with an accent rule. */
+.research-evidence { border-top: 3px solid var(--accent); }
+.research-established { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.research-statement { padding: 0 0 12px; border-bottom: 1px solid var(--rule); }
+.research-statement:last-child { border-bottom: 0; padding-bottom: 0; }
+.research-basis { margin: 0 0 6px; font: 500 11px/1.4 var(--mono); letter-spacing: .05em; text-transform: uppercase;
+  color: var(--accent); }
+.research-basis span { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-right: 4px;
+  border: 1px solid var(--accent); border-radius: 50%; font-size: 10.5px; }
+.research-statement.is-assessment .research-basis, .research-statement.is-forecast .research-basis { color: var(--inconclusive); }
+.research-statement.is-assessment .research-basis span,
+.research-statement.is-forecast .research-basis span { border-color: var(--inconclusive); }
+.research-quote { margin: 0 0 8px; }
+.research-quote blockquote { margin: 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--paper-raised);
+  font: 400 16px/1.5 var(--serif); color: var(--ink); }
+.research-quote figcaption { margin: 3px 0 0 15px; font: 400 11.5px/1.45 var(--mono); color: var(--ink-3); overflow-wrap: anywhere; }
+.research-restated { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.research-restated .overview-label { display: inline; margin: 0 8px 0 0; }
+
+/* The interpretation: the model's reading, set apart by a sunk ground and a dashed frame. */
+.research-reading { background: var(--paper-sunk); border: 1px dashed var(--ink-3); }
+.research-card > p.research-reading-text { max-width: 78ch; margin: 0 0 8px; font: 400 16.5px/1.55 var(--serif);
+  color: var(--ink); }
+
+/* Assumptions, competing explanations, missing information and tests. */
+.research-unknowns { border-left: 3px solid var(--inconclusive); }
+.research-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--ink); }
+.research-list li + li { margin-top: 6px; }
+.research-aside { display: block; color: var(--ink-3); font-size: 12.5px; }
+.research-retrospective { margin: 0; }
+
+.research-source pre { max-height: 420px; }
+.research-source mark { padding: 0 1px; background: var(--accent-soft); color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--accent); }
+.research-source sup { margin-left: 2px; font: 500 9.5px/1 var(--mono); color: var(--accent); }
+
+.research-versions { display: grid; gap: 8px; margin: 0 0 12px; padding-left: 20px; font-size: 13.5px; }
+.research-versions li[data-current="false"] { color: var(--ink-3); }
+.research-versions span { color: var(--ink-3); font-size: 12.5px; }
+.research-status-choice { margin-bottom: 10px; }
+.research-notes { display: grid; gap: 5px; margin: 0 0 10px; font-size: 13px; color: var(--ink-2); }
+.research-notes span { font-weight: 600; }
+.research-notes textarea { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--rule-strong);
+  border-radius: 3px; background: var(--paper-raised); color: var(--ink); font: 400 14px/1.5 var(--sans); resize: vertical; }

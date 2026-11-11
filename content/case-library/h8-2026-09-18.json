@@ -1,0 +1,97 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "h8-2026-09-18",
+  "title": "H.8, September 18: deposits up $91 billion and cash up $67 billion in the week to September 9",
+  "category": "Bank balance sheets",
+  "summary": "In the Federal Reserve's H.8 release of September 18, 2026, seasonally adjusted deposits at all commercial banks in the United States rose $91.4 billion in the week ending September 9 to $19,657.2 billion, while cash assets rose $67.1 billion and loans and leases $33.8 billion. Loans to nondepository financial institutions rose $11.1 billion to $2,039.1 billion.",
+  "sectors": ["banking-credit"],
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Assets and Liabilities of Commercial Banks in the United States - H.8",
+    "url": "https://www.federalreserve.gov/releases/h8/20260918/",
+    "document_id": "H.8",
+    "published_at": "2026-09-18",
+    "published_precision": "date",
+    "published_as_stated": "Release Date: September 18, 2026",
+    "timezone_note": "The release page states a date only. The H.8 release-dates page says the data are released each Friday, generally at 4:15 p.m., and names no time zone, so no time or offset is recorded.",
+    "reference_period": "Wednesday levels for the weeks ending August 19 to September 9, 2026, and monthly averages through August 2026; seasonally adjusted unless noted",
+    "page_last_updated": "2026-09-18",
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "The week ending Wednesday, September 9, 2026 brought a sizable inflow to bank balance sheets. Seasonally adjusted deposits at all commercial banks rose $91.4 billion to $19,657.2 billion, almost all in other deposits (up $89.4 billion), and total assets rose $94.7 billion to $25,804.4 billion. Cash assets, which include balances due from Federal Reserve Banks, rose $67.1 billion to $3,066.8 billion.",
+    "Lending rose too: loans and leases increased $33.8 billion to $14,062.4 billion. Within them, loans to nondepository financial institutions (NDFIs), a category that includes loans to mortgage, business and consumer credit intermediaries, private equity and private capital funds, hedge funds and securitization vehicles, rose $11.1 billion to $2,039.1 billion, and credit card balances rose $8.3 billion to $1,091.4 billion after falling the week before.",
+    "August growth rates were nearly unchanged from the previous week's release: C&I loans 18.9 percent at an annual rate (was 18.8), deposits 8.0 percent and credit cards 0.3 percent (was 0.2). NDFI loans have grown fast: their August 2026 average of $2,026.3 billion compares with $1,699.9 billion a year earlier, a comparison that includes reclassifications into the category."
+  ],
+  "key_facts": [
+    {"label": "Deposits, week ending September 9", "value": "$19,657.2 billion; +$91.4 billion on the week", "basis": "All commercial banks; seasonally adjusted Wednesday levels (Table 2)"},
+    {"label": "Cash assets", "value": "$3,066.8 billion; +$67.1 billion", "basis": "Includes balances due from Federal Reserve Banks"},
+    {"label": "Loans and leases", "value": "$14,062.4 billion; +$33.8 billion", "basis": "Seasonally adjusted"},
+    {"label": "Loans to nondepository financial institutions", "value": "$2,039.1 billion; +$11.1 billion", "basis": "August 2026 average $2,026.3 billion versus $1,699.9 billion in August 2025; levels are not adjusted for reclassifications"},
+    {"label": "Credit cards", "value": "$1,091.4 billion; +$8.3 billion", "basis": "After a decline of $6.8 billion in the week ending September 2, as revised in this release"},
+    {"label": "August growth rates, revised", "value": "C&I 18.9% (was 18.8%); credit cards 0.3% (was 0.2%)", "basis": "Annual rates; compared with the September 11 release"}
+  ],
+  "channels": [
+    {
+      "title": "Deposit funding and bank liquidity",
+      "source_fact": "Deposits rose $91.4 billion and cash assets $67.1 billion in one week.",
+      "interpretation": "A deposit inflow matched largely by higher cash would raise banks' liquid buffers, giving them room to lend or buy securities. Weekly deposit swings often reflect the timing of payments, so one week does not establish a trend."
+    },
+    {
+      "title": "Bank lending to nonbank financial firms",
+      "source_fact": "Loans to NDFIs reached $2,039.1 billion, up $11.1 billion in the week; their August average compares with $1,699.9 billion a year earlier.",
+      "interpretation": "Rising bank loans to nonbank lenders and funds would mean banks increasingly provide credit indirectly, through intermediaries, which changes where credit risk sits. H.8 shows balances, not the quality of these loans or who ultimately borrows."
+    },
+    {
+      "title": "Consumer credit",
+      "source_fact": "Credit card balances rose $8.3 billion after falling the week before.",
+      "interpretation": "The rebound suggests the previous week's drop was timing rather than a change in household borrowing; weekly card balances are noisy, and one pair of weeks says little about spending."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Reclassification inflates the NDFI comparison", "detail": "The H.8 notes record $7.3 billion moved into NDFI loans on December 31, 2025 and $6.1 billion on July 1, 2026. The year-on-year level change of about $326 billion includes those moves, so underlying growth is somewhat lower than the levels suggest, though still large."},
+    {"title": "Payment timing", "detail": "Deposit and cash swings in single weeks can reflect payment timing, such as tax dates and Treasury flows, rather than lasting changes in funding; the release gives no breakdown of causes. This explanation draws on general knowledge, not on the release."}
+  ],
+  "assumptions": [
+    "Weekly levels are Wednesday values; a single Wednesday may not represent the whole week.",
+    "Seasonal adjustment of weekly deposits is adequate, although seasonal factors for weekly data are uncertain."
+  ],
+  "missing_information": [
+    "Reserve balances and Treasury account data for the same week.",
+    "The composition of NDFI loans by type of borrower; the H.8 reports them as one line.",
+    "Detail for large, small and foreign-related banks; those tables were not read."
+  ],
+  "weakening_observations": [
+    "If the deposit inflow reversed the following week, the liquidity reading would be about timing, not about funding conditions.",
+    "If NDFI loan growth excluding reclassifications were modest, the reading of a shift toward lending through nonbanks would weaken."
+  ],
+  "critique": [
+    {"title": "Weekly data invite over-reading", "detail": "A $91 billion deposit increase is about 0.5% of deposits. The case leads with it because it is the release's largest move, but weekly H.8 changes of this size are not unusual, and the case does not treat it as a signal."},
+    {"title": "A category shaped by reclassification", "detail": "NDFI loans have been redefined through several reporting clarifications; comparing levels across those dates mixes real growth with relabeling, which the case flags rather than corrects."},
+    {"title": "Small revisions support the figures, for now", "detail": "The previous week's numbers were revised only slightly (August C&I growth from 18.8% to 18.9%), which supports using them, but weekly levels can still change in later releases."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "Tables 1 and 2 (all commercial banks) and the footnotes of the release page, which shows 'Last Update: September 18, 2026', as shown on 2026-10-11.", "url": null},
+    {"title": "Notes on the Data", "detail": "The H.8 notes record the reclassifications of December 31, 2025 and July 1, 2026 that moved loans into the NDFI category, and an April 1, 2026 reclassification into all other loans not elsewhere classified.", "url": "https://www.federalreserve.gov/releases/h8/h8notes.htm"},
+    {"title": "Earlier release compared", "detail": "The September 11 release first published August's growth rates and the levels for the week ending September 2.", "url": "https://www.federalreserve.gov/releases/h8/20260911/"},
+    {"title": "Later release", "detail": "The September 25 release revised the week-ending September 9 deposits to $19,657.5 billion and showed them falling to $19,568.4 billion a week later. Not known at publication.", "url": "https://www.federalreserve.gov/releases/h8/20260925/"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read Tables 1 and 2 and the footnotes of the September 18, 2026 release, the September 11 and September 25 releases for comparison, the H.8 release-dates page and the H.8 Notes on the Data in a browser on 2026-10-11. Facts come from the release tables and notes; weekly and yearly dollar changes are the assistant's arithmetic on Table 2; the channels, competing explanations and critique are the assistant's interpretation. No market prices, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/releases/h8/20260918/",
+      "https://www.federalreserve.gov/releases/h8/20260911/",
+      "https://www.federalreserve.gov/releases/h8/20260925/",
+      "https://www.federalreserve.gov/releases/h8/default.htm",
+      "https://www.federalreserve.gov/releases/h8/h8notes.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

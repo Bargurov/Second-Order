@@ -1,0 +1,32 @@
+{
+ "draft": null,
+ "explanation": null,
+ "id": "f16223f63084d57360db75cda0e91e7e7d8da08841fd2c7d26a49bb0bedcf6e9",
+ "outcome": "invalid",
+ "problem": "Unexpected text content block; only thinking blocks may accompany the draft tool call, and no draft is read from prose",
+ "provenance": {
+  "case": "invalid",
+  "effort": "medium",
+  "http_status": 200,
+  "max_tokens": 16000,
+  "model": "claude-sonnet-5-5",
+  "pilot": "pilot-synthetic",
+  "prompt_hash": "9b230d7a5e2437a3d8764ef3b33463a5bcf54292cc5a49b8f328b8388c7faf8a",
+  "prompt_version": "draft-prompt-synthetic",
+  "received_at": "2026-09-30T12:00:05.100000+00:00",
+  "recorded_outcome": "refused",
+  "request_id": "req_011SyntheticReview01",
+  "reserved_at": "2026-09-30T12:00:00.000000+00:00",
+  "response_sha256": "fab3d4bddbc7a67c2c349fd035b58795ad72a16650b436d495453c5e38846f51",
+  "sent_at": "2026-09-30T12:00:00.100000+00:00",
+  "synthetic_case": true
+ },
+ "review_status": "Not frozen · Requires human review",
+ "source": {
+  "headline": "Synthetic committee signals a slower tightening pace",
+  "published_at": "2026-09-15T18:00:00Z",
+  "source_url": "https://example.com/synthetic-statement",
+  "text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nThe synthetic committee said further tightening is less likely after softer labor data.\n  An indented line, <b>markup-like text</b> & an ampersand stay plain text."
+ },
+ "view_version": "draft-review-view-0.1"
+}

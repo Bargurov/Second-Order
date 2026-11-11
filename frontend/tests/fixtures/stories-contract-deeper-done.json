@@ -1,0 +1,45 @@
+{
+  "contract": "user-api-0.5",
+  "deeper": {
+    "deeper_version": "story-deeper-0.2",
+    "story_id": "story-c656c19416cbcd7a",
+    "source": {
+      "source_id": "20261014T090000000000Z-21d211db9fb7",
+      "headline": "Synthetic Republic announces 15% tariff on imported steel",
+      "source_url": "https://ledger.example.org/news/tariff",
+      "published_at": "2026-10-12T07:00:00Z",
+      "captured_at": "2026-10-14T09:00:00+00:00",
+      "characters": 1651
+    },
+    "analysis": {
+      "analysis_id": "20261014T090000000000Z-21d211db9fb7.research-prompt-2.low",
+      "effort": "low",
+      "prepared_at": "2026-10-14T09:00:00+00:00",
+      "source": {
+        "source_id": "20261014T090000000000Z-21d211db9fb7",
+        "headline": "Synthetic Republic announces 15% tariff on imported steel",
+        "source_url": "https://ledger.example.org/news/tariff",
+        "published_at": "2026-10-12T07:00:00Z",
+        "published_at_as_supplied": "2026-10-12T07:00:00+00:00",
+        "captured_at": "2026-10-14T09:00:00+00:00",
+        "characters": 1651,
+        "text": "Material for a deeper analysis of a news story, assembled by Second Order (story-deeper-0.2; reference deeper-abf342a71315).\nStory: Synthetic Republic announces 15% tariff on imported steel\nWhat this is: the headlines and feed excerpts of 2 reports, as the publishers' feeds gave them. A headline or excerpt is discovery metadata, not the publication: the full publications were not read.\nThe shared brief of this story is not included: an analysis reads the reports themselves.\nOnly the reports' own words can be quoted as evidence: each headline, feed excerpt and publication text below. These opening lines, the labels of each report (such as \"Publisher:\" or \"Headline:\") and any note in square brackets are Second Order's, not a publisher's, and a quote from them is not accepted.\n\nReport 1 of 2\nPublisher: Synthetic Ledger\nPublished (as the feed states it): Mon, 12 Oct 2026 07:00:00 GMT\nAddress: https://ledger.example.org/news/tariff\nHeadline: Synthetic Republic announces 15% tariff on imported steel\nExcerpt: SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.\nCredit: Synthetic Ledger\n\nReport 2 of 2\nPublisher: Synthetic Courier\nPublished (as the feed states it): Mon, 12 Oct 2026 08:00:00 GMT\nAddress: https://courier.example.org/news/tariff-copy\nHeadline: Synthetic Republic announces 15% tariff on imported steel\nExcerpt: SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.\nCredit: Synthetic Courier\n"
+      },
+      "state": "prepared",
+      "state_detail": "Prepared. Nothing has been run; ask for a credit quote to run it.",
+      "quote": null,
+      "charge": null,
+      "result": null,
+      "result_sha256": null,
+      "reviews": [],
+      "retrospective": "Retrospective: the analysis is made after the publication, from its captured text. It is not a forecast and not an out-of-sample test.",
+      "baseline": {
+        "state": "not_supplied",
+        "note": "No earlier baseline publication was supplied with this request, so the analysis makes no comparison with earlier statements or data."
+      }
+    },
+    "created_source": true,
+    "created_analysis": true
+  },
+  "created": true
+}

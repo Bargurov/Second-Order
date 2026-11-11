@@ -1,0 +1,601 @@
+{
+ "case_id": "empsit-2025-07-03",
+ "days": [
+  {
+   "date": "2025-06-19",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "ND",
+     "status": "calendar_holiday",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "ND",
+     "status": "calendar_holiday",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Thu"
+  },
+  {
+   "date": "2025-06-20",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.90",
+     "status": "session_value",
+     "value": 3.9
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.38",
+     "status": "session_value",
+     "value": 4.38
+    }
+   },
+   "session": true,
+   "weekday": "Fri"
+  },
+  {
+   "date": "2025-06-21",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sat"
+  },
+  {
+   "date": "2025-06-22",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sun"
+  },
+  {
+   "date": "2025-06-23",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.84",
+     "status": "session_value",
+     "value": 3.84
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.34",
+     "status": "session_value",
+     "value": 4.34
+    }
+   },
+   "session": true,
+   "weekday": "Mon"
+  },
+  {
+   "date": "2025-06-24",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.75",
+     "status": "session_value",
+     "value": 3.75
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.30",
+     "status": "session_value",
+     "value": 4.3
+    }
+   },
+   "session": true,
+   "weekday": "Tue"
+  },
+  {
+   "date": "2025-06-25",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.74",
+     "status": "session_value",
+     "value": 3.74
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.29",
+     "status": "session_value",
+     "value": 4.29
+    }
+   },
+   "session": true,
+   "weekday": "Wed"
+  },
+  {
+   "date": "2025-06-26",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.70",
+     "status": "session_value",
+     "value": 3.7
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.26",
+     "status": "session_value",
+     "value": 4.26
+    }
+   },
+   "session": true,
+   "weekday": "Thu"
+  },
+  {
+   "date": "2025-06-27",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.73",
+     "status": "session_value",
+     "value": 3.73
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.29",
+     "status": "session_value",
+     "value": 4.29
+    }
+   },
+   "session": true,
+   "weekday": "Fri"
+  },
+  {
+   "date": "2025-06-28",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sat"
+  },
+  {
+   "date": "2025-06-29",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sun"
+  },
+  {
+   "date": "2025-06-30",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.72",
+     "status": "session_value",
+     "value": 3.72
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.24",
+     "status": "session_value",
+     "value": 4.24
+    }
+   },
+   "session": true,
+   "weekday": "Mon"
+  },
+  {
+   "date": "2025-07-01",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.78",
+     "status": "session_value",
+     "value": 3.78
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.26",
+     "status": "session_value",
+     "value": 4.26
+    }
+   },
+   "session": true,
+   "weekday": "Tue"
+  },
+  {
+   "date": "2025-07-02",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.78",
+     "status": "session_value",
+     "value": 3.78
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.30",
+     "status": "session_value",
+     "value": 4.3
+    }
+   },
+   "session": true,
+   "weekday": "Wed"
+  },
+  {
+   "date": "2025-07-03",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.88",
+     "status": "session_value",
+     "value": 3.88
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.35",
+     "status": "session_value",
+     "value": 4.35
+    }
+   },
+   "session": true,
+   "weekday": "Thu"
+  },
+  {
+   "date": "2025-07-04",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "ND",
+     "status": "calendar_holiday",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "ND",
+     "status": "calendar_holiday",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Fri"
+  },
+  {
+   "date": "2025-07-05",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sat"
+  },
+  {
+   "date": "2025-07-06",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sun"
+  },
+  {
+   "date": "2025-07-07",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.90",
+     "status": "session_value",
+     "value": 3.9
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.40",
+     "status": "session_value",
+     "value": 4.4
+    }
+   },
+   "session": true,
+   "weekday": "Mon"
+  },
+  {
+   "date": "2025-07-08",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.90",
+     "status": "session_value",
+     "value": 3.9
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.42",
+     "status": "session_value",
+     "value": 4.42
+    }
+   },
+   "session": true,
+   "weekday": "Tue"
+  },
+  {
+   "date": "2025-07-09",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.86",
+     "status": "session_value",
+     "value": 3.86
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.34",
+     "status": "session_value",
+     "value": 4.34
+    }
+   },
+   "session": true,
+   "weekday": "Wed"
+  },
+  {
+   "date": "2025-07-10",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.86",
+     "status": "session_value",
+     "value": 3.86
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.35",
+     "status": "session_value",
+     "value": 4.35
+    }
+   },
+   "session": true,
+   "weekday": "Thu"
+  },
+  {
+   "date": "2025-07-11",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.90",
+     "status": "session_value",
+     "value": 3.9
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.43",
+     "status": "session_value",
+     "value": 4.43
+    }
+   },
+   "session": true,
+   "weekday": "Fri"
+  },
+  {
+   "date": "2025-07-12",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sat"
+  },
+  {
+   "date": "2025-07-13",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": null,
+     "status": "not_a_session",
+     "value": null
+    }
+   },
+   "session": false,
+   "weekday": "Sun"
+  },
+  {
+   "date": "2025-07-14",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.90",
+     "status": "session_value",
+     "value": 3.9
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.43",
+     "status": "session_value",
+     "value": 4.43
+    }
+   },
+   "session": true,
+   "weekday": "Mon"
+  },
+  {
+   "date": "2025-07-15",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.95",
+     "status": "session_value",
+     "value": 3.95
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.50",
+     "status": "session_value",
+     "value": 4.5
+    }
+   },
+   "session": true,
+   "weekday": "Tue"
+  },
+  {
+   "date": "2025-07-16",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.88",
+     "status": "session_value",
+     "value": 3.88
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.46",
+     "status": "session_value",
+     "value": 4.46
+    }
+   },
+   "session": true,
+   "weekday": "Wed"
+  },
+  {
+   "date": "2025-07-17",
+   "observations": {
+    "RIFLGFCY02_N.B": {
+     "raw": "3.91",
+     "status": "session_value",
+     "value": 3.91
+    },
+    "RIFLGFCY10_N.B": {
+     "raw": "4.47",
+     "status": "session_value",
+     "value": 4.47
+    }
+   },
+   "session": true,
+   "weekday": "Thu"
+  }
+ ],
+ "provenance": {
+  "acquisition_record": "sources/acquisition.json",
+  "acquisition_sha256": "0885e87d3c2cf0ea88dc5bc4dfc58c52df6f3b89f0772520b537e3ae01af9b99",
+  "bundle_version": "market-context-0.1",
+  "calendar": {
+   "calendar": "SIFMAUS",
+   "exceptions_version": "1",
+   "library": "pandas_market_calendars",
+   "library_version": "5.4.0"
+  },
+  "crosswalk_url": "https://www.federalreserve.gov/data/documents/DDP-FRED%20Data%20Series%20Crosswalk.csv",
+  "data_download_url": "https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H15",
+  "discarded": [],
+  "help_url": "https://www.federalreserve.gov/datadownload/help/default.htm",
+  "index_sha256": "0438698e2c7b467678e04bf6bcfbf6f3cebe3c7a1529e2ccb20c018a85086782",
+  "index_version": "market-context-index-0.1",
+  "manifest": "manifest.json",
+  "manifest_sha256": "96de3ec7bfba68a696f67b5c458dc2c98c9bec653c2583a4e48a690c18fb2359",
+  "method": "Downloaded with curl on 2026-10-07 (UTC): one keyless HTTPS GET per case window, five seconds apart, from the Federal Reserve Board's Data Download Program direct-download address for a package of exactly the two H.15 series, built once in the Program's Build-your-package pages. No API key, cookies or FRED request were used. A reply was kept only if it was a non-empty text/csv with HTTP status 200; earlier trial and aborted requests, including two that received an empty text/html reply, were discarded, and the files kept come from one complete run.",
+  "preparation_version": "market-context-prep-0.1",
+  "publisher": "Board of Governors of the Federal Reserve System",
+  "release": "H.15 Selected Interest Rates",
+  "release_url": "https://www.federalreserve.gov/releases/h15/",
+  "run": 1,
+  "run_cases": [
+   "fomc-2025-03-19",
+   "empsit-2025-07-03",
+   "cpi-2025-07-15"
+  ],
+  "runs": 2,
+  "terms": {
+   "statement": "Unless otherwise indicated, information on Board's website is in the public domain and may be copied and distributed without permission. Please cite to the Board as the source of the information.",
+   "url": "https://www.federalreserve.gov/disclaimer.htm"
+  },
+  "tool": "curl 8.21.0 (Windows) libcurl/8.21.0 Schannel zlib/1.3.2 WinIDN WinLDAP",
+  "underlying_source": "U.S. Treasury",
+  "view_sha256": "87f6f6630930b9bdcd990a46dd56bd2a490de34c5f878267f20126ca26f64d7f",
+  "vintage": null,
+  "vintage_note": "No vintage was requested, and the Data Download Program offers none: its help page says data are only available as currently published and that pre-revision or real-time data are not available. These are the Board's values when retrieved, which may differ from those available on the publication date; whether any of them was revised is not known from this download."
+ },
+ "publication": {
+  "new_york_date": "2025-07-03",
+  "published_at": "2025-07-03T08:30:00-04:00"
+ },
+ "series": [
+  {
+   "citation": "Board of Governors of the Federal Reserve System, H.15 Selected Interest Rates: Market yield on U.S. Treasury securities at 2-year constant maturity, quoted on investment basis [H15/H15/RIFLGFCY02_N.B], source U.S. Treasury; Data Download Program, https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H15, retrieved October 7, 2026 (UTC).",
+   "currency": "NA",
+   "description": "Market yield on U.S. Treasury securities at 2-year   constant maturity, quoted on investment basis",
+   "fred_equivalent": "DGS2",
+   "fred_page": "https://fred.stlouisfed.org/series/DGS2",
+   "frequency": "Business day",
+   "id": "RIFLGFCY02_N.B",
+   "label": "2-year Treasury yield",
+   "multiplier": "1",
+   "no_value_rows": 2,
+   "short_label": "2-year",
+   "unique_identifier": "H15/H15/RIFLGFCY02_N.B",
+   "unit": "Percent:_Per_Year",
+   "units_label": "Percent per year",
+   "values": 19
+  },
+  {
+   "citation": "Board of Governors of the Federal Reserve System, H.15 Selected Interest Rates: Market yield on U.S. Treasury securities at 10-year constant maturity, quoted on investment basis [H15/H15/RIFLGFCY10_N.B], source U.S. Treasury; Data Download Program, https://www.federalreserve.gov/datadownload/Choose.aspx?rel=H15, retrieved October 7, 2026 (UTC).",
+   "currency": "NA",
+   "description": "Market yield on U.S. Treasury securities at 10-year   constant maturity, quoted on investment basis",
+   "fred_equivalent": "DGS10",
+   "fred_page": "https://fred.stlouisfed.org/series/DGS10",
+   "frequency": "Business day",
+   "id": "RIFLGFCY10_N.B",
+   "label": "10-year Treasury yield",
+   "multiplier": "1",
+   "no_value_rows": 2,
+   "short_label": "10-year",
+   "unique_identifier": "H15/H15/RIFLGFCY10_N.B",
+   "unit": "Percent:_Per_Year",
+   "units_label": "Percent per year",
+   "values": 19
+  }
+ ],
+ "source": {
+  "bytes": 894,
+  "content_type": "text/csv",
+  "file": "sources/empsit-2025-07-03.csv",
+  "http_status": 200,
+  "received_at": "2026-10-07T22:07:10+00:00",
+  "requested_at": "2026-10-07T22:07:09+00:00",
+  "requested_end": "2025-07-17",
+  "requested_start": "2025-06-19",
+  "response_date": "Wed, 07 Oct 2026 22:07:09 GMT",
+  "returned_first": "2025-06-19",
+  "returned_last": "2025-07-17",
+  "rows": 21,
+  "sha256": "19992ed33f85e972ffa16107fee459393ef2824e552f6364b7f5640d32b1c677",
+  "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=06/19/2025&to=07/17/2025&filetype=csv&label=include&layout=seriescolumn"
+ },
+ "view_version": "market-context-view-0.2",
+ "window": {
+  "days_after": 14,
+  "days_before": 14,
+  "end": "2025-07-17",
+  "start": "2025-06-19"
+ }
+}

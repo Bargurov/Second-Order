@@ -1,0 +1,69 @@
+{
+  "note_version": "fuels-note-0.2",
+  "number": 2,
+  "written_on": "2026-11-07",
+  "covers_through": "2026-11-04",
+  "snapshot_id": "9c94687fbae2da835c47fb123a1240120b08be7469d89b586610b9de7147abf7",
+  "observation_date": "2026-11-03",
+  "author": "Claude (AI-drafted)",
+  "review": {"state": "unreviewed", "reviewed_on": null},
+  "headline": "Brent {week_brent_move} over the week while the crack {week_crack_move}",
+  "lede": "From {week_from} to {week_to}, Brent {week_brent_move} {week_brent_change} ({week_brent_pct}) while the crack {week_crack_move} {week_crack_change}, and the product basket {week_basket_move} {week_basket_change}. As an accounting split, {week_split}. As background, EIA's weekly report, published after the window, shows U.S. distillate inventories falling, below their five-year average; it does not identify the move's cause.",
+  "analysis": {
+    "what_happened": [
+      {"kind": "computed", "sources": [], "mechanism": null,
+       "text": "From {week_from} to {week_to}, Brent {week_brent_move} {week_brent_change} ({week_brent_pct}), New York Harbor gasoline {week_gasoline_move} {week_gasoline_change} ({week_gasoline_pct}) and New York Harbor diesel {week_diesel_move} {week_diesel_change} ({week_diesel_pct})."},
+      {"kind": "computed", "sources": [], "mechanism": null,
+       "text": "Over the month from {month_from} to {month_to}, Brent {month_brent_move} {month_brent_change} ({month_brent_pct}), the crack {month_crack_move} {month_crack_change} and the basket {month_basket_move} {month_basket_change}."},
+      {"kind": "observation", "sources": [], "mechanism": null,
+       "text": "On {week_to}, the latest day on which Brent, gasoline and diesel all have a price in this refresh, Brent spot was {brent} a barrel as EIA published it."}
+    ],
+    "meaning": [
+      {"kind": "computed", "sources": [], "mechanism": null,
+       "text": "The basket's change equals Brent's change plus the crack's change. Over the week the basket {week_basket_move} {week_basket_change}, and {week_split}."},
+      {"kind": "computed", "sources": [], "mechanism": null,
+       "text": "Split by product, gasoline's part of the basket's change was {week_gasoline_part} and diesel's part {week_diesel_part}, in dollars per barrel of crude. Each figure is rounded, so the two parts can differ from the basket's change by a cent."},
+      {"kind": "hypothesis", "sources": [], "mechanism": "drivers:inventories",
+       "text": "One possible reading: when distillate supply is short, diesel can hold its price while crude falls, and the crack widens. That is a general mechanism, not a finding about this week."},
+      {"kind": "sourced", "sources": [0], "mechanism": null,
+       "text": "EIA's Weekly Petroleum Status Report for the week ending in late October, published after this window, says U.S. distillate inventories fell that week and stood below their five-year average, and that distillate product supplied over four weeks was higher than a year earlier. It does not say why prices moved."},
+      {"kind": "hypothesis", "sources": [], "mechanism": "drivers:geopolitics",
+       "text": "On the crude side, a smaller risk premium or more oil reaching buyers could lower Brent without easing diesel supply; nothing here shows whether either happened in this window."},
+      {"kind": "sourced", "sources": [1], "mechanism": null,
+       "text": "EIA's October Short-Term Energy Outlook, published before this window, said the risk of tanker transits around the Middle East had added to shipping costs and to the risk premium in oil prices."}
+    ],
+    "relevance": [
+      {"kind": "hypothesis", "sources": [], "mechanism": "transmission:refiners_energy",
+       "text": "Refiners: a wider crack is a wider benchmark gross margin, not a net margin; a refiner's own result also depends on the crude it buys, the products it makes and its running costs. The effect shrinks if its own crude did not fall as far as Brent, or if refinery fuel costs tied to natural gas rose."},
+      {"kind": "hypothesis", "sources": [], "mechanism": "transmission:shipping_logistics",
+       "text": "Trucking and freight: diesel {week_diesel_move} while Brent {week_brent_move}, so fuel surcharges indexed to diesel can follow diesel rather than crude. Where a contract fixes rates without a fuel clause, the carrier bears a change in its fuel cost; where a fuel surcharge passes it on, the shipper does."}
+    ],
+    "watch": [
+      {"kind": "hypothesis", "sources": [0], "mechanism": "drivers:inventories",
+       "text": "EIA's next weekly reports: if distillate inventories keep falling while refinery runs stay high, the reading that tight diesel supply holds up the crack gains weight; if inventories rebuild while the crack stays wide, it loses weight."},
+      {"kind": "source_projection", "sources": [2], "mechanism": null,
+       "text": "EIA's next Short-Term Energy Outlook, due in November after this observation: its October edition projected that crack spreads would come down but stay high relative to historical averages, with U.S. distillate inventories below their 2021–2025 average. A revision either way would test this reading."}
+    ],
+    "caveats": [
+      "The crack is a benchmark gross margin before every refining cost, not any refinery's profit.",
+      "A general mechanism is not proof of what moved prices in this window.",
+      "Prices alone do not show that inventories, demand or supply changed: the inventory statements here are EIA's own reports, not inferences from price.",
+      "Missing: for this window, data on refinery outages, product exports and Middle East supply, and any EIA statement dated inside the window on why prices moved.",
+      "Every value comes from one refresh: earlier dates show EIA's figures as its file held them when retrieved."
+    ]
+  },
+  "sources": [
+    {"title": "Weekly Petroleum Status Report, summary for the week ending October 30, 2026",
+     "publisher": "U.S. Energy Information Administration", "date": "2026-11-04",
+     "url": "https://www.eia.gov/petroleum/supply/weekly/archive/2026/2026_11_04/download/summary.txt",
+     "locator": "Third paragraph (distillate inventories against the five-year average) and fourth paragraph (four-week distillate product supplied)"},
+    {"title": "Short-Term Energy Outlook, October 2026",
+     "publisher": "U.S. Energy Information Administration", "date": "2026-10-06",
+     "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
+     "locator": "PDF page 7, Global oil markets: Global oil prices (tanker risk, shipping costs and the risk premium)"},
+    {"title": "Short-Term Energy Outlook, October 2026",
+     "publisher": "U.S. Energy Information Administration", "date": "2026-10-06",
+     "url": "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
+     "locator": "PDF page 8, U.S. Petroleum products: U.S. retail gasoline and diesel prices (crack spreads and U.S. distillate inventories)"}
+  ]
+}

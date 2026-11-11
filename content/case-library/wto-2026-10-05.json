@@ -1,0 +1,87 @@
+{
+  "library_version": "case-library-0.3",
+  "id": "wto-2026-10-05",
+  "title": "WTO General Council hears support and concerns over interim arrangements for the Agreement on Electronic Commerce",
+  "category": "International trade",
+  "entry_kind": "proceedings",
+  "summary": "The WTO Secretariat's note on the General Council meeting of 5-6 October 2026 reports that many participants in the Agreement on Electronic Commerce supported interim arrangements for bringing it into force and for its eventual incorporation into the WTO framework, while several members raised concerns about the arrangements' legal and institutional basis, including the use of WTO resources and the Director-General's depositary role. The meeting also covered WTO reform, follow-up to the 14th Ministerial Conference and the negotiations. No decision on the agreement is reported.",
+  "sectors": [],
+  "source": {
+    "publisher": "World Trade Organization (WTO news item, a Secretariat note on the meeting)",
+    "title": "General Council addresses WTO reform, ministerial follow-ups, ongoing negotiations",
+    "url": "https://www.wto.org/english/news_e/news26_e/gc_05oct26_508_e.htm",
+    "document_id": null,
+    "published_at": "2026-10-05",
+    "published_precision": "date",
+    "published_as_stated": "Listed in WTO's news feed under Mon, 05 Oct 2026 00:00:00 GMT (date only)",
+    "timezone_note": "A date only. The article itself states no publication date; WTO's news feed lists it under 5 October 2026 with a 00:00:00 GMT placeholder time, which is not a publication time. The listing date is the first day of the meeting; the note also reports the second day, so it was not necessarily posted on the listing date.",
+    "reference_period": "General Council meeting of 5-6 October (days as the note states them)",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-12",
+    "date_basis": "WTO's own news-feed listing date, as kept in the Event Inbox archive; the note states the meeting days but no year and no publication date, and the feed's time is a placeholder.",
+    "retained": {
+      "approval_id": "wto-trade-sources-01",
+      "sha256": "953ae012c0317a36a5359274a7118cf2e23318131a023696180ee3fa8ec7c861",
+      "bytes": 30568,
+      "retrieved_at": "2026-10-12T12:25:51.618127+00:00",
+      "charset": "iso-8859-1, declared in the page (the HTTP header names none)"
+    }
+  },
+  "overview": [
+    "This is the WTO Secretariat's note on a General Council meeting, chaired by Ambassador Clare Kelly of New Zealand. The note says it is not a complete account of the issues raised; the formal minutes are. Its section on the Agreement on Electronic Commerce, headed interim arrangements, is the part that goes beyond the agenda line in the news feed.",
+    "Under that item, Singapore, speaking for the agreement's co-conveners, responded to questions raised in a communication from India. A large number of the agreement's participants supported the interim arrangements for bringing it into force and its eventual incorporation into the WTO framework, citing predictability, transparency and legal certainty in digital trade and lower costs for businesses, including small firms. Several members raised concerns about the legal and institutional basis of the interim arrangements, including the use of WTO resources, the role of the WTO Secretariat and the Director-General's acceptance of depositary functions. The Director-General set out her views on the Secretariat's role and the depositary function. The note reports no decision on the matter.",
+    "The agreement is separate from the WTO's electronic commerce work programme and the moratorium, which the note treats as remaining issues from the 14th Ministerial Conference: the Chair reported no significant change since the July meeting, and several members called for renewed engagement. The meeting also discussed WTO reform, with nearly 60 speakers, the location and timing of the next Ministerial Conference, the negotiations as reported by the Director-General, a dialogue on emerging agricultural trade issues and the Investment Facilitation for Development Agreement, whose co-coordinator reported 131 participating members. The next regular meeting is tentatively set for 11 and 14 December."
+  ],
+  "key_facts": [
+    {"label": "Meeting", "value": "General Council, 5-6 October 2026", "basis": "Days as the note states them; the year from WTO's news-feed listing"},
+    {"label": "Chair", "value": "Ambassador Clare Kelly (New Zealand)", "basis": "As the note states"},
+    {"label": "Agreement on Electronic Commerce", "value": "Interim arrangements for bringing it into force and its eventual incorporation into the WTO framework: supported by many participants, questioned by several members", "basis": "As the note reports; no decision is reported"},
+    {"label": "Concerns reported", "value": "Legal and institutional basis; use of WTO resources; the Secretariat's role; the Director-General's acceptance of depositary functions", "basis": "Raised by several members, not named in the note"},
+    {"label": "Separate issue", "value": "E-commerce work programme and moratorium: no significant change since July", "basis": "The Chair, on issues remaining from the 14th Ministerial Conference"},
+    {"label": "Investment Facilitation for Development Agreement", "value": "131 participating members; 32 needs assessments launched", "basis": "As reported by Chile, the co-coordinator"},
+    {"label": "Next meeting", "value": "Tentatively 11 and 14 December", "basis": "As the note states"}
+  ],
+  "channels": [],
+  "competing_explanations": [
+    {"title": "Momentum or contested legitimacy", "detail": "Broad support from participants can be read as momentum toward bringing the agreement into force. The concerns about its legal and institutional basis can be read as a challenge to how an agreement among some members is handled within the WTO. The note reports both and no resolution."},
+    {"title": "One agreement, two e-commerce tracks", "detail": "The agreement among its participants and the WTO-wide e-commerce work programme and moratorium are different tracks. Progress or stalemate on one says nothing, from this note alone, about the other."}
+  ],
+  "assumptions": [
+    "The Secretariat's note fairly represents the meeting, though it says it is not a complete account.",
+    "The interim arrangements are described only as the note describes them; their terms, the agreement's text and its legal status were not read.",
+    "India's communication and the co-conveners' response are known only through the note's mention of them."
+  ],
+  "missing_information": [
+    "The formal minutes of the meeting.",
+    "India's communication on the agreement and the co-conveners' written response; linked documents were not read.",
+    "The terms of the interim arrangements, the agreement's text, its list of participants and its legal status.",
+    "Which members raised the concerns, and whether any objection was formally recorded."
+  ],
+  "weakening_observations": [
+    "If the formal minutes record a decision on the interim arrangements, the account here of a discussion without a decision would be incomplete.",
+    "If the concerns were resolved or withdrawn at a later meeting, the picture of a contested path into the WTO would no longer hold.",
+    "If the Director-General's views changed how the depositary function is exercised, the concerns reported here would apply to a different arrangement."
+  ],
+  "critique": [
+    {"title": "A Secretariat summary", "detail": "The entry reads a note written for the public, not the minutes or the documents discussed. Support and concern are as the note characterises them, without names or numbers for most statements."},
+    {"title": "No legal status inferred", "detail": "Interim arrangements for bringing the agreement into force do not show that it is in force, and eventual incorporation does not show that it will be incorporated. Nothing here infers either."},
+    {"title": "Agenda breadth", "detail": "The meeting covered much more than the agreement. The entry focuses on the agreement because it is the item the feed names specifically, and summarises the rest briefly."},
+    {"title": "Chosen from the inbox", "detail": "This entry exists because the General Council note appeared in the Event Inbox and names the agreement, not because of any later outcome. It is an editorial reading, not research evidence."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The WTO news item as retained on 12 October 2026 under approval wto-trade-sources-01 (SHA-256 recorded above). The documents it links, including the reform submission and India's communication, were not read.", "url": null},
+    {"title": "Date", "detail": "The page states no publication date. The entry uses the date under which WTO's own news feed lists the item, with its placeholder time ignored; meeting days are recorded separately.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-12",
+    "method": "Written only from the retained copy of the WTO news item, read offline without running its scripts or opening its links. Facts come from the note; the competing explanations and critique are the assistant's interpretation. Each key fact was checked against the retained page in a private acceptance record. No agreement text, meeting documents, minutes, news coverage or earlier AI summary was used.",
+    "sources_read": ["https://www.wto.org/english/news_e/news26_e/gc_05oct26_508_e.htm"],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

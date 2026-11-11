@@ -1,0 +1,74 @@
+{
+ "event": {
+  "address": "https://www.eia.gov/todayinenergy/detail.php?id=98001",
+  "date": "2026-10-07",
+  "date_as_stated": "Wed, 07 Oct 2026 09:00:00 EST",
+  "date_label": "feed timestamp",
+  "title": "Mixed outlook for energy expenditures this winter",
+  "title_only": false
+ },
+ "hints_used": false,
+ "id": "eia-todayinenergy:fde00f29225f468f84ac",
+ "kind": "inbox",
+ "links": [
+  {
+   "differences": [
+    "The case's article is 12 days earlier than this event, and it is a different document."
+   ],
+   "explanation": "Related research topic (US natural gas prices, production and storage): this event's own text names “natural gas” and “prices” in the feed excerpt; the case reads EIA's report of the summer Henry Hub average price, record natural gas production and storage going into winter. A shared subject, not the same mechanism and not a comparison of outcomes.",
+   "relation": "topic",
+   "relation_label": "Related research topic",
+   "status": {
+    "kind": "editorial",
+    "labels": [
+     "Editorial case",
+     "AI-assisted",
+     "Not human-reviewed",
+     "Not research evidence"
+    ],
+    "prepared_on": "2026-10-11",
+    "source": "Source read online on 2026-10-11; no copy retained.",
+    "source_check": null,
+    "timing": "Written on 11 October 2026, after this event; it was not available when the event happened.",
+    "written_after_event": true
+   },
+   "target": {
+    "category": "Energy analysis",
+    "collection": "library",
+    "date": "2026-09-25",
+    "date_as_stated": "IN-BRIEF ANALYSIS · SEPTEMBER 25, 2026",
+    "href": "/library/eia-tie-2026-09-25",
+    "id": "eia-tie-2026-09-25",
+    "title": "Henry Hub averaged $2.93 this summer, 6% below 2025, despite the warmest July on record"
+   },
+   "topic": {
+    "found": [
+     {
+      "field": "excerpt",
+      "term": "natural gas"
+     },
+     {
+      "field": "excerpt",
+      "term": "prices"
+     }
+    ],
+    "label": "US natural gas prices, production and storage",
+    "slug": "natural-gas-market"
+   },
+   "unknown": [
+    "Whether the two say the same thing about this topic is not compared."
+   ]
+  }
+ ],
+ "navigation_version": "related-research-0.2",
+ "notes": [],
+ "provider_called": false,
+ "relations": {
+  "release_family": "Same release family",
+  "same_event": "Coverage of this event",
+  "topic": "Related research topic"
+ },
+ "shown_in_historical": [],
+ "view_version": "related-research-view-0.1",
+ "written": false
+}

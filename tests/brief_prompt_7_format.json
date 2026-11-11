@@ -1,0 +1,682 @@
+{
+  "description": "Exact provider-facing schema from the live brief-prompt-7 grammar-size rejection; no source text, credentials or response body.",
+  "prompt_version": "brief-prompt-7",
+  "request_sha256": "097ddf64f3bc0faaededed225ab5bbcca7b0c15436069e1d3b9a562f4f3dba6e",
+  "format_sha256": "c22c0fc1a53d04bf672d308ae665c48f9fab98527673c51a52fc68cd7d548900",
+  "schema": {
+    "additionalProperties": false,
+    "properties": {
+      "economics": {
+        "additionalProperties": false,
+        "properties": {
+          "alternatives": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "basis": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "kind": {
+                  "enum": [
+                    "competing_explanation",
+                    "offsetting_force"
+                  ],
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "text",
+                "basis"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "assumptions": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "text"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "calculations": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "inputs": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "op": {
+                  "enum": [
+                    "difference",
+                    "percent_change",
+                    "share",
+                    "stock_to_flow",
+                    "deflate"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "op",
+                "inputs",
+                "label"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "basis": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "instrument": {
+                    "enum": [
+                      "import_tariff",
+                      "trade_remedy",
+                      "trade_flow",
+                      "domestic_price",
+                      "tax_or_subsidy",
+                      "monetary_policy",
+                      "financial_conditions",
+                      "competition_enforcement",
+                      "consumer_regulation",
+                      "labor_enforcement",
+                      "fiscal_spending",
+                      "official_statistic",
+                      "energy_supply",
+                      "industrial_policy",
+                      "other"
+                    ],
+                    "type": "string"
+                  },
+                  "stage": {
+                    "enum": [
+                      "proposal",
+                      "decision",
+                      "implementation",
+                      "observation",
+                      "forecast"
+                    ],
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "stage",
+                  "instrument",
+                  "text",
+                  "basis"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "channels": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "affected": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "how": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "enum": [
+                          "households",
+                          "workers",
+                          "firms",
+                          "industry",
+                          "institutions",
+                          "government",
+                          "region"
+                        ],
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "name",
+                      "how"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "assumptions": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "basis": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "conditions": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "horizon": {
+                  "enum": [
+                    "immediate",
+                    "weeks",
+                    "months",
+                    "quarters",
+                    "years",
+                    "unclear"
+                  ],
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "note": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "competition-enforcement",
+                        "consumer-price-weights",
+                        "credit-conditions",
+                        "electricity-shortages",
+                        "facility-labour-enforcement",
+                        "inflation-expectations",
+                        "inventory-ratio",
+                        "monetary-transmission",
+                        "official-statistics",
+                        "public-spending",
+                        "tariff-pass-through",
+                        "trade-costs",
+                        "trade-safeguards"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "scope": {
+                  "enum": [
+                    "macro",
+                    "micro"
+                  ],
+                  "type": "string"
+                },
+                "steps": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "support": {
+                  "enum": [
+                    "framework",
+                    "event_evidence",
+                    "bounded_inference"
+                  ],
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "scope",
+                "support",
+                "note",
+                "text",
+                "steps",
+                "affected",
+                "conditions",
+                "horizon",
+                "basis",
+                "assumptions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "figures": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "basis": {
+                  "enum": [
+                    "nominal",
+                    "real",
+                    "not_applicable",
+                    "not_stated"
+                  ],
+                  "type": "string"
+                },
+                "bound": {
+                  "enum": [
+                    "exact",
+                    "lower_bound",
+                    "upper_bound",
+                    "approximate"
+                  ],
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "measure": {
+                  "enum": [
+                    "level",
+                    "change",
+                    "growth_rate",
+                    "rate",
+                    "share"
+                  ],
+                  "type": "string"
+                },
+                "period": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "boolean"
+                },
+                "quote": {
+                  "type": "string"
+                },
+                "seasonal": {
+                  "enum": [
+                    "seasonally_adjusted",
+                    "not_seasonally_adjusted",
+                    "not_applicable",
+                    "not_stated"
+                  ],
+                  "type": "string"
+                },
+                "sign": {
+                  "enum": [
+                    "as_quoted",
+                    "from_words"
+                  ],
+                  "type": "string"
+                },
+                "sign_words": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "statistic": {
+                  "enum": [
+                    "observed",
+                    "mean",
+                    "median",
+                    "other_summary",
+                    "not_stated"
+                  ],
+                  "type": "string"
+                },
+                "stock_flow": {
+                  "enum": [
+                    "stock",
+                    "flow_per_month",
+                    "flow_per_quarter",
+                    "flow_per_year",
+                    "flow_annual_rate",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "number"
+                },
+                "vintage_label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "value",
+                "unit",
+                "measure",
+                "period",
+                "basis",
+                "seasonal",
+                "price",
+                "source",
+                "quote",
+                "vintage_label",
+                "sign",
+                "sign_words",
+                "bound",
+                "statistic",
+                "stock_flow"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "insufficient_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "main_uncertainty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "second_order": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "assumptions": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "basis": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "conditions": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "horizon": {
+                  "enum": [
+                    "immediate",
+                    "weeks",
+                    "months",
+                    "quarters",
+                    "years",
+                    "unclear"
+                  ],
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "from",
+                "text",
+                "conditions",
+                "horizon",
+                "basis",
+                "assumptions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "significance": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "basis": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text",
+                  "basis"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "explained",
+              "insufficient_evidence"
+            ],
+            "type": "string"
+          },
+          "watch": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "observable": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "would": {
+                  "enum": [
+                    "support",
+                    "weaken"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "observable",
+                "would",
+                "text"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "insufficient_reason",
+          "change",
+          "significance",
+          "main_uncertainty",
+          "figures",
+          "calculations",
+          "assumptions",
+          "channels",
+          "second_order",
+          "alternatives",
+          "watch"
+        ],
+        "type": "object"
+      },
+      "facts": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "reports": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text",
+            "reports"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "headline": {
+        "type": "string"
+      },
+      "implications": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "insufficient_material": {
+        "type": "string"
+      },
+      "missing": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "summary": {
+        "type": "string"
+      },
+      "themes": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "basis": {
+              "type": "string"
+            },
+            "kind": {
+              "enum": [
+                "sector",
+                "company",
+                "theme"
+              ],
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name",
+            "basis"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "uncertainties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "headline",
+      "summary",
+      "facts",
+      "insufficient_material",
+      "implications",
+      "themes",
+      "uncertainties",
+      "missing",
+      "economics"
+    ],
+    "type": "object"
+  }
+}

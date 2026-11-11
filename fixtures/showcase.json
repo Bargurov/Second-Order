@@ -1,0 +1,186 @@
+[
+  {
+    "event": {
+      "headline": "Demonstration: the fictional Central Bank of Demoland lowers its policy rate by 50 basis points",
+      "published_at": "2024-06-12T18:00:00Z",
+      "source_url": "https://example.org/demoland/central-bank/2024-06-12-policy-rate"
+    },
+    "frozen_at": "2026-11-10T00:00:00Z",
+    "replay_as_of": "2024-06-12T18:00:00Z",
+    "evidence_class": "replay",
+    "usage": "showcase",
+    "story_id": "demo-2024-06",
+    "engine": {
+      "provider": "manual",
+      "model": "fictional-demonstration",
+      "prompt_hash": "a8021ac30cbc561c0d785b4835b7833deb890a21902c723dfb7f5a57df889bea",
+      "schema_version": "0.2"
+    },
+    "summary": "FICTIONAL demonstration hypothesis: an easier policy stance by the fictional Central Bank of Demoland may lower the fictional demonstration rate and weaken the fictional currency index. Written after the invented data, for the offline demo only; the event, the institution and every number are invented.",
+    "nodes": [
+      {
+        "id": "event",
+        "kind": "event",
+        "label": "Demonstration: the fictional Central Bank of Demoland lowers its policy rate by 50 basis points"
+      },
+      {
+        "id": "rates",
+        "kind": "channel",
+        "label": "Expected policy path (fictional)"
+      },
+      {
+        "id": "demo-rate",
+        "kind": "observable",
+        "label": "Fictional Demoland interest rate"
+      },
+      {
+        "id": "demo-fx",
+        "kind": "observable",
+        "label": "Fictional Demoland currency index"
+      },
+      {
+        "id": "alternatives",
+        "kind": "explanatory",
+        "label": "Anticipation and other fictional news"
+      }
+    ],
+    "edges": [
+      {
+        "source": "event",
+        "target": "rates"
+      },
+      {
+        "source": "rates",
+        "target": "demo-rate"
+      },
+      {
+        "source": "rates",
+        "target": "demo-fx"
+      },
+      {
+        "source": "alternatives",
+        "target": "demo-rate"
+      }
+    ],
+    "legs": [
+      {
+        "id": "primary",
+        "node_id": "demo-rate",
+        "primary": true,
+        "channel": "rates_path",
+        "observable_id": "demo:rate",
+        "link": "direct",
+        "expected": "down",
+        "horizon": 5,
+        "falsifier": "The fictional demonstration rate rises unusually over the scored window.",
+        "rationale": "In this fictional demonstration the rate stands for the expected policy path.",
+        "headline_reports_move": false
+      },
+      {
+        "id": "secondary",
+        "node_id": "demo-fx",
+        "primary": false,
+        "channel": "rate_differential",
+        "observable_id": "demo:fx-index",
+        "link": "proxy",
+        "expected": "down",
+        "horizon": 1,
+        "falsifier": "The fictional currency index rises unusually over the scored window.",
+        "rationale": "In this fictional demonstration the currency index stands for relative expected rates.",
+        "headline_reports_move": false
+      }
+    ]
+  },
+  {
+    "event": {
+      "headline": "Demonstration: the fictional Central Bank of Demoland lowers its policy rate by 25 basis points",
+      "published_at": "2024-10-30T18:00:00Z",
+      "source_url": "https://example.org/demoland/central-bank/2024-10-30-policy-rate"
+    },
+    "frozen_at": "2026-11-10T00:00:00Z",
+    "replay_as_of": "2024-10-30T18:00:00Z",
+    "evidence_class": "replay",
+    "usage": "showcase",
+    "story_id": "demo-2024-10",
+    "engine": {
+      "provider": "manual",
+      "model": "fictional-demonstration",
+      "prompt_hash": "a8021ac30cbc561c0d785b4835b7833deb890a21902c723dfb7f5a57df889bea",
+      "schema_version": "0.2"
+    },
+    "summary": "FICTIONAL demonstration hypothesis: an easier policy stance by the fictional Central Bank of Demoland may lower the fictional demonstration rate and weaken the fictional currency index. Written after the invented data, for the offline demo only; the event, the institution and every number are invented.",
+    "nodes": [
+      {
+        "id": "event",
+        "kind": "event",
+        "label": "Demonstration: the fictional Central Bank of Demoland lowers its policy rate by 25 basis points"
+      },
+      {
+        "id": "rates",
+        "kind": "channel",
+        "label": "Expected policy path (fictional)"
+      },
+      {
+        "id": "demo-rate",
+        "kind": "observable",
+        "label": "Fictional Demoland interest rate"
+      },
+      {
+        "id": "demo-fx",
+        "kind": "observable",
+        "label": "Fictional Demoland currency index"
+      },
+      {
+        "id": "alternatives",
+        "kind": "explanatory",
+        "label": "Anticipation and other fictional news"
+      }
+    ],
+    "edges": [
+      {
+        "source": "event",
+        "target": "rates"
+      },
+      {
+        "source": "rates",
+        "target": "demo-rate"
+      },
+      {
+        "source": "rates",
+        "target": "demo-fx"
+      },
+      {
+        "source": "alternatives",
+        "target": "demo-rate"
+      }
+    ],
+    "legs": [
+      {
+        "id": "primary",
+        "node_id": "demo-rate",
+        "primary": true,
+        "channel": "rates_path",
+        "observable_id": "demo:rate",
+        "link": "direct",
+        "expected": "down",
+        "horizon": 5,
+        "falsifier": "The fictional demonstration rate rises unusually over the scored window.",
+        "rationale": "In this fictional demonstration the rate stands for the expected policy path.",
+        "headline_reports_move": false
+      },
+      {
+        "id": "secondary",
+        "node_id": "demo-fx",
+        "primary": false,
+        "channel": "rate_differential",
+        "observable_id": "demo:fx-index",
+        "link": "proxy",
+        "expected": "down",
+        "horizon": 1,
+        "falsifier": "The fictional currency index rises unusually over the scored window.",
+        "rationale": "In this fictional demonstration the currency index stands for relative expected rates.",
+        "headline_reports_move": false
+      }
+    ]
+  }
+]

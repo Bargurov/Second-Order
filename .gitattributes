@@ -1,0 +1,6 @@
+/fixtures/manual_recipe.txt text eol=lf
+/fixtures/demo-market.json text eol=lf
+/content/market-context/** -text
+/content/case-library/*.json text eol=lf
+/content/news-relevance/*.json text eol=crlf
+/content/news-relevance/private/*.json text eol=crlf

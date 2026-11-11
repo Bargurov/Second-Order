@@ -1,0 +1,15 @@
+{
+  "index_version": "market-context-index-0.1",
+  "runs": [
+    {
+      "run": 1,
+      "manifest": "manifest.json",
+      "manifest_sha256": "96de3ec7bfba68a696f67b5c458dc2c98c9bec653c2583a4e48a690c18fb2359"
+    },
+    {
+      "run": 2,
+      "manifest": "manifest-2.json",
+      "manifest_sha256": "716a2eed5d69af2dd16f742ac7472454d248c22d5f43a7b63cc3b77e362bcbc4"
+    }
+  ]
+}

@@ -1,0 +1,541 @@
+{
+  "contract": "user-api-0.5",
+  "story": {
+    "view_version": "news-story-view-0.6",
+    "story_id": "story-d52afa9eb1cde0f1",
+    "requested_id": "story-d52afa9eb1cde0f1",
+    "merged": false,
+    "title": "Synthetic Republic opens safeguard investigation into imported steel wire",
+    "title_basis": "first_report",
+    "first_at": "2026-10-14T07:00:00+00:00",
+    "first_basis": "published",
+    "latest_at": "2026-10-14T07:00:00+00:00",
+    "latest_basis": "published",
+    "coverage": {
+      "coverage_version": "story-coverage-0.3",
+      "reports": 1,
+      "publishers": 1,
+      "origins": 1,
+      "news_origins": 1,
+      "official_origins": 0,
+      "company_origins": 0,
+      "reporting_origins": 1,
+      "confirmed_news": 1,
+      "confirmed_official": 0,
+      "possible_news": 0,
+      "possible_official": 0,
+      "uncertain": 0,
+      "company_statements": 0,
+      "official_releases": 0,
+      "repeats": 0,
+      "units": [
+        {
+          "publishers": [
+            "Synthetic Courier"
+          ],
+          "entries": [
+            "synthetic-courier:855f86f3fd88307ca506"
+          ],
+          "counted_together_because": [],
+          "role": "news",
+          "independence": "established",
+          "uncertain_because": []
+        }
+      ],
+      "possible_shared_origins": []
+    },
+    "interests": [
+      "trade",
+      "markets"
+    ],
+    "signals": [
+      {
+        "signal": "freshness",
+        "text": "Latest report 2 hours ago (by its feed's stated time)."
+      },
+      {
+        "signal": "new_development",
+        "text": "A new development: first reported 2 hours ago."
+      },
+      {
+        "signal": "breaking",
+        "text": "A new development of high assessed importance, shown although only one source has reported it yet."
+      },
+      {
+        "signal": "importance",
+        "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+      }
+    ],
+    "older": false,
+    "stale": false,
+    "synthetic": true,
+    "brief_state": "published",
+    "brief_note": null,
+    "brief": {
+      "brief_version": "story-brief-0.4",
+      "version": 1,
+      "content": {
+        "claims": [
+          {
+            "condition": null,
+            "holder": "issuer",
+            "holder_name": "Synthetic Republic",
+            "id": "k1",
+            "modality": "asserted",
+            "quote": "The Synthetic Republic said it had opened a safeguard investigation into imports of steel wire",
+            "source": "report:synthetic-courier:855f86f3fd88307ca506"
+          },
+          {
+            "condition": "only if increased imports are found to cause serious injury",
+            "holder": "issuer",
+            "holder_name": "Synthetic Republic",
+            "id": "k2",
+            "modality": "conditional",
+            "quote": "A safeguard duty of up to 25% may be imposed only if increased imports are found to cause serious injury",
+            "source": "report:synthetic-courier:855f86f3fd88307ca506"
+          }
+        ],
+        "economics": {
+          "alternatives": [
+            {
+              "assumptions": [],
+              "basis": [
+                "fact:1"
+              ],
+              "kind": "competing_explanation",
+              "support": "event_evidence",
+              "text": "SYNTHETIC: the investigation may end without any measure."
+            }
+          ],
+          "analysis_version": "econ-explanation-0.6",
+          "assumptions": [],
+          "calculations": [],
+          "change": {
+            "basis": [
+              "fact:1"
+            ],
+            "form": "announcement_or_decision",
+            "instrument": "trade_remedy",
+            "respondents": null,
+            "stage": "procedure",
+            "text": "SYNTHETIC: the Synthetic Republic opened a safeguard investigation into steel wire imports; no measure is decided."
+          },
+          "channels": [
+            {
+              "affected": [
+                {
+                  "how": "could pay more",
+                  "kind": "firms",
+                  "name": "SYNTHETIC wire users"
+                }
+              ],
+              "assumptions": [],
+              "basis": [
+                "fact:2",
+                "figure:f1"
+              ],
+              "conditions": "If serious injury is found and a duty is imposed",
+              "horizon": "months",
+              "id": "m1",
+              "note": null,
+              "scope": "micro",
+              "steps": [
+                "A duty of up to {f1} is imposed",
+                "Importers' costs could rise"
+              ],
+              "support": "event_evidence",
+              "text": "SYNTHETIC: if a duty is imposed, firms that use imported wire could pay more."
+            }
+          ],
+          "context": [],
+          "figures": [
+            {
+              "basis": "not_applicable",
+              "bound": "upper_bound",
+              "decimals": 0,
+              "direction_check": "as_quoted",
+              "display": "at most 25%",
+              "id": "f1",
+              "label": "SYNTHETIC safeguard duty that may be imposed",
+              "measure": "rate",
+              "period": "if imposed",
+              "price": false,
+              "quote": "A safeguard duty of up to 25%",
+              "seasonal": "not_applicable",
+              "sign": "as_quoted",
+              "sign_words": null,
+              "source": "report:synthetic-courier:855f86f3fd88307ca506",
+              "statistic": "observed",
+              "stock_flow": "not_applicable",
+              "unit": "percent",
+              "value": 25,
+              "vintage": {
+                "label": null,
+                "published": "2026-10-14T07:00:00+00:00",
+                "source": "Synthetic Courier"
+              }
+            }
+          ],
+          "framework": {
+            "digests": {},
+            "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63",
+            "framework_version": "econ-framework-0.3",
+            "notes": {},
+            "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names."
+          },
+          "insufficient_reason": null,
+          "main_uncertainty": "SYNTHETIC: whether the investigation finds serious injury.",
+          "second_order": [],
+          "significance": {
+            "basis": [
+              "fact:2",
+              "figure:f1"
+            ],
+            "text": "SYNTHETIC: a duty of {f1} on imported wire could raise costs for wire users."
+          },
+          "status": "explained",
+          "watch": [
+            {
+              "observable": "SYNTHETIC: the injury finding",
+              "text": "A finding of serious injury would make a duty more likely.",
+              "would": "support"
+            }
+          ]
+        },
+        "facts": [
+          {
+            "claims": [
+              "k1"
+            ],
+            "reports": [
+              "synthetic-courier:855f86f3fd88307ca506"
+            ],
+            "text": "SYNTHETIC: the Republic opened a safeguard investigation into steel wire imports."
+          },
+          {
+            "claims": [
+              "k2"
+            ],
+            "reports": [
+              "synthetic-courier:855f86f3fd88307ca506"
+            ],
+            "text": "SYNTHETIC: a duty of up to 25% may be imposed only if serious injury is found."
+          }
+        ],
+        "headline": "SYNTHETIC: Synthetic Republic opens a safeguard investigation into steel wire imports",
+        "implications": [
+          {
+            "text": "SYNTHETIC: wire buyers could pay more if a duty is imposed."
+          }
+        ],
+        "missing": [],
+        "summary": "SYNTHETIC: the Synthetic Republic said it had opened a safeguard investigation into steel wire imports; a duty may follow only if serious injury is found.",
+        "themes": [],
+        "uncertainties": [
+          "SYNTHETIC: whether serious injury will be found is not known."
+        ]
+      },
+      "method": "synthetic",
+      "method_label": "SYNTHETIC example written for this demonstration; it is not about real events.",
+      "authorship": "synthetic",
+      "review": {
+        "state": "not_reviewed",
+        "statement": "No editor has read this version: it was published as prepared."
+      },
+      "current": true,
+      "update_note": null,
+      "prepared_at": "2026-10-14T09:00:00+00:00",
+      "published_at": "2026-10-14T09:00:00+00:00",
+      "material": {
+        "coverage": "headlines_and_excerpts",
+        "statement": "Prepared from the headlines and feed excerpts of 1 report as the feeds gave them. The full publications were not read, so anything they add is not reflected here.",
+        "reports": [
+          {
+            "entry_id": "synthetic-courier:855f86f3fd88307ca506",
+            "publisher": "Synthetic Courier",
+            "title": "Synthetic Republic opens safeguard investigation into imported steel wire"
+          }
+        ],
+        "not_used": []
+      },
+      "reports_since": 0,
+      "synthetic": true,
+      "economics": {
+        "analysis_version": "econ-explanation-0.6",
+        "status": "explained",
+        "insufficient_reason": null,
+        "summary": {
+          "stage": "procedure",
+          "stage_label": "Procedure opened, no decision on a measure",
+          "instrument_label": "a trade-remedy or safeguard step",
+          "form_label": "an announced or adopted decision, proposal or measure",
+          "respondents_label": null,
+          "classification_note": null,
+          "what_changed": "SYNTHETIC: the Synthetic Republic opened a safeguard investigation into steel wire imports; no measure is decided.",
+          "what_changed_basis": [
+            {
+              "kind": "fact",
+              "label": "Reported fact 1",
+              "reports": [
+                "synthetic-courier:855f86f3fd88307ca506"
+              ]
+            }
+          ],
+          "why_it_matters": "SYNTHETIC: a duty of at most 25% (conditional: only if increased imports are found to cause serious injury) on imported wire could raise costs for wire users.",
+          "why_basis": [
+            {
+              "kind": "fact",
+              "label": "Reported fact 2",
+              "reports": [
+                "synthetic-courier:855f86f3fd88307ca506"
+              ]
+            },
+            {
+              "kind": "figure",
+              "label": "at most 25% (conditional: only if increased imports are found to cause serious injury): SYNTHETIC safeguard duty that may be imposed (if imposed)",
+              "reports": [
+                "synthetic-courier:855f86f3fd88307ca506"
+              ]
+            }
+          ],
+          "who": [
+            "SYNTHETIC wire users"
+          ],
+          "main_uncertainty": "SYNTHETIC: whether the investigation finds serious injury."
+        },
+        "channels": [
+          {
+            "id": "m1",
+            "scope": "micro",
+            "scope_label": "For particular firms, markets or households",
+            "support": "event_evidence",
+            "support_label": "Stated in this story's sources",
+            "text": "SYNTHETIC: if a duty is imposed, firms that use imported wire could pay more.",
+            "steps": [
+              "A duty of up to 25% (conditional: only if increased imports are found to cause serious injury) is imposed",
+              "Importers' costs could rise"
+            ],
+            "affected": [
+              {
+                "how": "could pay more",
+                "kind": "firms",
+                "name": "SYNTHETIC wire users"
+              }
+            ],
+            "conditions": "If serious injury is found and a duty is imposed",
+            "horizon": "months",
+            "horizon_label": "Over months",
+            "kind": "interpretation",
+            "note": null,
+            "basis": [
+              {
+                "kind": "fact",
+                "label": "Reported fact 2",
+                "reports": [
+                  "synthetic-courier:855f86f3fd88307ca506"
+                ]
+              },
+              {
+                "kind": "figure",
+                "label": "at most 25% (conditional: only if increased imports are found to cause serious injury): SYNTHETIC safeguard duty that may be imposed (if imposed)",
+                "reports": [
+                  "synthetic-courier:855f86f3fd88307ca506"
+                ]
+              }
+            ],
+            "assumptions": []
+          }
+        ],
+        "second_order": [],
+        "alternatives": [
+          {
+            "kind": "competing_explanation",
+            "label": "Another explanation",
+            "text": "SYNTHETIC: the investigation may end without any measure.",
+            "basis": [
+              {
+                "kind": "fact",
+                "label": "Reported fact 1",
+                "reports": [
+                  "synthetic-courier:855f86f3fd88307ca506"
+                ]
+              }
+            ],
+            "support": "event_evidence",
+            "support_label": "Stated in this story's sources",
+            "assumptions": []
+          }
+        ],
+        "watch": [
+          {
+            "observable": "SYNTHETIC: the injury finding",
+            "text": "A finding of serious injury would make a duty more likely.",
+            "would": "support"
+          }
+        ],
+        "figures": [
+          {
+            "id": "f1",
+            "display": "at most 25%",
+            "label": "SYNTHETIC safeguard duty that may be imposed",
+            "period": "if imposed",
+            "basis_label": null,
+            "seasonal_label": null,
+            "margin": null,
+            "statistic_label": null,
+            "stock_flow_label": null,
+            "bound": "upper_bound",
+            "measure": "rate",
+            "quote": "A safeguard duty of up to 25%",
+            "vintage": {
+              "label": null,
+              "published": "2026-10-14T07:00:00+00:00",
+              "source": "Synthetic Courier"
+            },
+            "kind": "reported",
+            "sign_basis": null,
+            "direction_warning": null,
+            "reports": [
+              "synthetic-courier:855f86f3fd88307ca506"
+            ],
+            "context": null,
+            "claim_label": "conditional: only if increased imports are found to cause serious injury"
+          }
+        ],
+        "calculations": [],
+        "assumptions": [],
+        "notes": [],
+        "context": [],
+        "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names.",
+        "background": {
+          "state": "recorded",
+          "framework_version": "econ-framework-0.3",
+          "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63"
+        },
+        "kinds": {
+          "reported": "Reported",
+          "derived": "Calculated here",
+          "reasoning": "General economic reasoning",
+          "interpretation": "Interpretation, conditional"
+        }
+      },
+      "claims": {
+        "claims_version": "brief-claims-0.1",
+        "claims": [
+          {
+            "condition": null,
+            "holder": "issuer",
+            "holder_name": "Synthetic Republic",
+            "id": "k1",
+            "modality": "asserted",
+            "quote": "The Synthetic Republic said it had opened a safeguard investigation into imports of steel wire",
+            "source": "report:synthetic-courier:855f86f3fd88307ca506",
+            "holder_label": "The publisher's own statement",
+            "modality_label": "Stated as so",
+            "reports": [
+              "synthetic-courier:855f86f3fd88307ca506"
+            ],
+            "link": "https://courier.example.org/news/wire-safeguard",
+            "facts": [
+              1
+            ]
+          },
+          {
+            "condition": "only if increased imports are found to cause serious injury",
+            "holder": "issuer",
+            "holder_name": "Synthetic Republic",
+            "id": "k2",
+            "modality": "conditional",
+            "quote": "A safeguard duty of up to 25% may be imposed only if increased imports are found to cause serious injury",
+            "source": "report:synthetic-courier:855f86f3fd88307ca506",
+            "holder_label": "The publisher's own statement",
+            "modality_label": "Only if its condition is met",
+            "reports": [
+              "synthetic-courier:855f86f3fd88307ca506"
+            ],
+            "link": "https://courier.example.org/news/wire-safeguard",
+            "facts": [
+              2
+            ]
+          }
+        ],
+        "statement": "Who says what, as recorded with this brief: each claim's exact words in its source, whose they are and how they were put. A quote found in its source shows that the words are there, not that the claim is true."
+      },
+      "context_statement": null,
+      "revisions": {
+        "earlier": [],
+        "changes": [],
+        "updated_at": null
+      },
+      "statement": "Reported facts and possible implications are kept apart. Nothing here is advice to buy or sell, and no cause is claimed beyond what a source states."
+    },
+    "explanation": {
+      "state": "ready",
+      "statement": null,
+      "reason": null
+    },
+    "relevance": {
+      "state": "relevant",
+      "statement": "In the economic news.",
+      "basis": "synthetic",
+      "basis_label": "A SYNTHETIC assessment for tests and the demo.",
+      "explanation": "SYNTHETIC: a reported policy change affecting trade.",
+      "change": "SYNTHETIC: the sources report a change.",
+      "dimensions": [
+        {
+          "dimension": "trade",
+          "how": "SYNTHETIC: it may change what importers pay."
+        }
+      ],
+      "missing": [
+        "SYNTHETIC: how long it lasts is not stated."
+      ],
+      "current": true
+    },
+    "sources": [
+      {
+        "entry_id": "synthetic-courier:855f86f3fd88307ca506",
+        "publisher": "Synthetic Courier",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News report",
+        "title": "Synthetic Republic opens safeguard investigation into imported steel wire",
+        "title_shortened": false,
+        "excerpt": "SYNTHETIC: The Synthetic Republic said it had opened a safeguard investigation into imports of steel wire. A safeguard duty of up to 25% may be imposed only if increased imports are found to cause serious injury.",
+        "excerpt_shortened": false,
+        "link": "https://courier.example.org/news/wire-safeguard",
+        "published": {
+          "as_stated": "Wed, 14 Oct 2026 07:00:00 GMT",
+          "element": "RSS pubDate",
+          "state": "stated",
+          "utc": "2026-10-14T07:00:00+00:00",
+          "date": "2026-10-14",
+          "note": null
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Synthetic Courier",
+        "synthetic": true,
+        "unit": 1,
+        "counted_together_because": [],
+        "use": "material",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      }
+    ],
+    "topics": [],
+    "related": [],
+    "deeper": {
+      "available": true,
+      "material_reports": 1,
+      "reason": null
+    },
+    "statement": "Read from this server's saved records: opening this page contacts no publisher, runs no analysis and uses no credits."
+  }
+}

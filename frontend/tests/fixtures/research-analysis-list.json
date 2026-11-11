@@ -1,0 +1,68 @@
+{
+ "capture_id": "20261013T090000000000Z-ab80a8b47079",
+ "flow_version": "research-analysis-flow-0.1",
+ "provider_called": false,
+ "requests": [
+  {
+   "attempt": {
+    "detail": "A response or failure is recorded.",
+    "files": [
+     "attempt.json",
+     "manifest.json",
+     "request.json",
+     "reservation.json",
+     "response.json"
+    ],
+    "mode": "mock",
+    "provider_called": false,
+    "request_id": "20261013T090000000000Z-ab80a8b47079.research-prompt-2",
+    "sent": true,
+    "sent_at": "2026-10-13T09:00:00+00:00",
+    "state": "recorded"
+   },
+   "planning_estimate_usd": 0.1703,
+   "prepared_at": "2026-10-13T09:00:00+00:00",
+   "prompt_version": "research-prompt-2",
+   "request_id": "20261013T090000000000Z-ab80a8b47079.research-prompt-2",
+   "request_sha256": "de84d99c58ab55afd9b246d3976dda9ffffcc2c807607d9e9da7c349799579a5",
+   "result": {
+    "mode": "mock",
+    "outcome": "analysis",
+    "planning_estimate_usd": null,
+    "problem": null,
+    "provider_request_id": null,
+    "received_at": "2026-10-13T09:00:00+00:00",
+    "recorded_outcome": "analysis",
+    "result_view_sha256": "17b9323596ff56b9a39afc4114e23aff301344e3e2bf48549beb3466071f5363",
+    "sent_at": "2026-10-13T09:00:00+00:00",
+    "usage_cost_usd": 0
+   },
+   "reviews": {
+    "problem": null,
+    "records": [
+     {
+      "attributed_to": "local human reviewer",
+      "binding": {
+       "mode": "mock",
+       "outcome": "analysis",
+       "request_sha256": "de84d99c58ab55afd9b246d3976dda9ffffcc2c807607d9e9da7c349799579a5",
+       "response_sha256": "4e78b109506ed92614ccc3175be8eb574a215e5aa07a1aaca404cb40b85d62e5",
+       "result_view_sha256": "17b9323596ff56b9a39afc4114e23aff301344e3e2bf48549beb3466071f5363",
+       "result_view_version": "research-result-view-0.1"
+      },
+      "notes": "Synthetic review: the labels are mock.",
+      "parent_review_id": null,
+      "record_version": "research-review-0.1",
+      "request_id": "20261013T090000000000Z-ab80a8b47079.research-prompt-2",
+      "review_id": "4140ee5250ffda00e459fda213b0ebb6c726d38a8a8ca2333251ec20e17cd717",
+      "saved_at": "2026-10-13T09:00:00+00:00",
+      "sequence": 1,
+      "status": "needs_revision"
+     }
+    ],
+    "state": "verified"
+   },
+   "state": "verified"
+  }
+ ]
+}

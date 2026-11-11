@@ -1,0 +1,301 @@
+{
+ "framework_version": "econ-framework-0.2",
+ "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor.",
+ "notes": [
+  {
+   "id": "tariff-pass-through",
+   "title": "Import tariffs: who pays and who adjusts",
+   "scope": "both",
+   "applies_to": [
+    "import_tariff",
+    "trade_remedy"
+   ],
+   "mechanism": "A tariff is a tax collected on covered imports. Studies of recent US tariffs found that the duty was passed through almost fully into the duty-inclusive prices paid for the imports, so the cost fell on domestic importers and buyers rather than on foreign exporters, and it raised the prices of both intermediate inputs and final goods. Firms that use covered goods as inputs can therefore face higher costs, imports of covered goods tend to fall, and supply chains may be reorganised; partners that retaliate impose similar costs on the other side's exports.",
+   "limits": "Pass-through and the size of these effects differ by product, market and period; the studies cited concern particular tariff episodes, so their estimates are not figures for another tariff.",
+   "sources": [
+    {
+     "title": "The Impact of the 2018 Tariffs on Prices and Welfare (Journal of Economic Perspectives 33(4), Amiti, Redding and Weinstein)",
+     "publisher": "American Economic Association",
+     "year": 2019,
+     "url": "https://www.aeaweb.org/articles?id=10.1257/jep.33.4.187"
+    },
+    {
+     "title": "The Return to Protectionism (Quarterly Journal of Economics 135(1), Fajgelbaum, Goldberg, Kennedy and Khandelwal)",
+     "publisher": "Oxford University Press",
+     "year": 2020,
+     "url": "https://academic.oup.com/qje/article/135/1/1/5626442"
+    }
+   ]
+  },
+  {
+   "id": "trade-costs",
+   "title": "Trade costs and disrupted routes",
+   "scope": "both",
+   "applies_to": [
+    "trade_flow",
+    "import_tariff",
+    "trade_remedy"
+   ],
+   "mechanism": "Trade costs, meaning everything that adds to the cost of getting a good from its producer to a buyer across a border, are large, vary widely across countries and goods, and shape how much is traded. A development that raises them, such as a closed border crossing, may reduce the trade that relies on the route, raise costs for the traders and buyers involved, and lead to substitution towards other routes or suppliers where those exist.",
+   "limits": "The survey cited documents how large trade costs are and how they are measured; it does not study closures or rerouting, which this note infers from that general relation.",
+   "sources": [
+    {
+     "title": "Trade Costs (Journal of Economic Literature 42(3), Anderson and van Wincoop)",
+     "publisher": "American Economic Association",
+     "year": 2004,
+     "url": "https://www.aeaweb.org/articles?id=10.1257/0022051042177649"
+    }
+   ]
+  },
+  {
+   "id": "consumer-price-weights",
+   "title": "One price and the overall price level",
+   "scope": "both",
+   "applies_to": [
+    "domestic_price",
+    "tax_or_subsidy"
+   ],
+   "mechanism": "A consumer price index averages the price changes of many items, weighting each by its share of consumer spending in a reference period. A rise in the price of one service raises households' costs for that service directly, but it moves the overall index only according to the service's weight; whether it adds to broader inflation depends on that weight and on whether other prices follow.",
+   "limits": "The handbook cited describes the US index; other countries' indexes use their own weights. How buyers respond to a price rise, and what it means for providers' revenue, are not established by this source.",
+   "sources": [
+    {
+     "title": "Handbook of Methods: Consumer Price Index, Calculation",
+     "publisher": "U.S. Bureau of Labor Statistics",
+     "year": null,
+     "url": "https://www.bls.gov/opub/hom/cpi/calculation.htm"
+    }
+   ]
+  },
+  {
+   "id": "monetary-transmission",
+   "title": "How monetary policy reaches the economy",
+   "scope": "macro",
+   "applies_to": [
+    "monetary_policy",
+    "financial_conditions"
+   ],
+   "mechanism": "A change in a central bank's policy rate passes quickly to money-market rates and more gradually to banks' lending and deposit rates, while expectations of future policy shape longer-term rates. Rates also move asset prices, wealth and the exchange rate. Through borrowing costs, the supply of bank lending and spending and saving decisions, these shifts change demand relative to supply, and so wages and prices, with long, variable and uncertain lags. A credible central bank can anchor inflation expectations.",
+   "limits": "It describes the usual chain, not the size or timing of any one decision's effects; communication about future policy can move rates before any decision is taken.",
+   "sources": [
+    {
+     "title": "Transmission mechanism of monetary policy",
+     "publisher": "European Central Bank",
+     "year": null,
+     "url": "https://www.ecb.europa.eu/mopo/intro/transmission/html/index.en.html"
+    },
+    {
+     "title": "Monetary Policy: What Are Its Goals? How Does It Work?",
+     "publisher": "Board of Governors of the Federal Reserve System",
+     "year": 2021,
+     "url": "https://www.federalreserve.gov/monetarypolicy/monetary-policy-what-are-its-goals-how-does-it-work.htm"
+    }
+   ]
+  },
+  {
+   "id": "credit-conditions",
+   "title": "Firms' access to finance",
+   "scope": "micro",
+   "applies_to": [
+    "financial_conditions",
+    "monetary_policy"
+   ],
+   "mechanism": "The cost and availability of external finance, such as bank loans and credit lines, matter for firms' ability to invest, hold inventories and hire. Surveys of firms, such as the ECB's survey on the access to finance of enterprises, ask firms about their need for external financing, its availability and its terms, by firm size, sector and country. Tighter reported conditions may mean that some firms postpone spending, especially those that rely on bank credit.",
+   "limits": "Survey answers are firms' own reports, not measured lending volumes or rates; a change in reported conditions may reflect firms' demand for finance as well as its supply.",
+   "sources": [
+    {
+     "title": "Survey on the Access to Finance of Enterprises (SAFE)",
+     "publisher": "European Central Bank",
+     "year": null,
+     "url": "https://www.ecb.europa.eu/stats/ecb_surveys/safe/html/index.en.html"
+    }
+   ]
+  },
+  {
+   "id": "competition-enforcement",
+   "title": "Competition investigations and their outcomes",
+   "scope": "micro",
+   "applies_to": [
+    "competition_enforcement"
+   ],
+   "mechanism": "Under EU rules a dominant position is not illegal; abusing it is, for example by requiring customers to buy all or most of what they need from the dominant supplier. An investigation gathers evidence and may end in a decision ordering the conduct to stop, with remedies or fines, or in binding commitments without a finding of infringement, and decisions can be appealed. Until then, effects on rivals' access to customers and on customers' prices or choice are possibilities, not outcomes.",
+   "limits": "Opening an investigation does not establish an infringement; how long a case takes and which remedies follow vary and are not given by the sources cited.",
+   "sources": [
+    {
+     "title": "Article 102 investigations",
+     "publisher": "European Commission, Directorate-General for Competition",
+     "year": null,
+     "url": "https://competition-policy.ec.europa.eu/antitrust-and-cartels/procedures/article-102-investigations_en"
+    }
+   ]
+  },
+  {
+   "id": "electricity-shortages",
+   "title": "Electricity shortages and firms",
+   "scope": "both",
+   "applies_to": [
+    "energy_supply"
+   ],
+   "mechanism": "Research on electricity shortages in India found that shortages reduce plants' revenue and producer surplus, while productivity losses were smaller because many inputs can be stored during outages; plants without their own generators, often smaller ones, were hit harder, since generation has large economies of scale. Prolonged blackouts may therefore reduce electricity-dependent activity and fall most heavily on firms and households without backup power.",
+   "limits": "The evidence is from Indian manufacturing; effects elsewhere depend on how long and how widespread outages are and on access to backup power.",
+   "sources": [
+    {
+     "title": "How Do Electricity Shortages Affect Industry? Evidence from India (American Economic Review 106(3), Allcott, Collard-Wexler and O'Connell)",
+     "publisher": "American Economic Association",
+     "year": 2016,
+     "url": "https://www.aeaweb.org/articles?id=10.1257/aer.20140389"
+    }
+   ]
+  },
+  {
+   "id": "official-statistics",
+   "title": "Reading an official statistic",
+   "scope": "macro",
+   "applies_to": [
+    "official_statistic"
+   ],
+   "mechanism": "Official estimates come in vintages: an early estimate built on incomplete data is revised as more data arrive, sometimes years later. Many come from samples and carry sampling error: a reported change whose confidence interval includes zero is not statistically different from no change. A change measured in current prices can reflect prices, quantities or both, so real, inflation-adjusted measures are kept apart from nominal ones. Seasonal adjustment removes recurring patterns within the year so that consecutive months or quarters can be compared, and monthly or quarterly figures are often shown at annual rates. Levels and growth rates answer different questions and are compared only like with like.",
+   "limits": "The sources describe US practice; other statistical offices publish their own vintages, adjustments and measures of sampling error.",
+   "sources": [
+    {
+     "title": "Measuring the Economy: A Primer on GDP and the National Income and Product Accounts",
+     "publisher": "U.S. Bureau of Economic Analysis",
+     "year": 2015,
+     "url": "https://www.bea.gov/resources/methodologies/measuring-the-economy"
+    },
+    {
+     "title": "Time Series and Seasonal Adjustment",
+     "publisher": "U.S. Census Bureau",
+     "year": null,
+     "url": "https://www.census.gov/topics/research/seasonal-adjustment.html"
+    },
+    {
+     "title": "New Residential Construction, explanatory notes (September 2026 release)",
+     "publisher": "U.S. Census Bureau",
+     "year": 2026,
+     "url": "https://www.census.gov/construction/nrc/pdf/newresconst.pdf"
+    }
+   ]
+  },
+  {
+   "id": "public-spending",
+   "title": "Public spending and transfers",
+   "scope": "macro",
+   "applies_to": [
+    "fiscal_spending"
+   ],
+   "mechanism": "The economic effect of public spending depends on what is financed, when it is spent and the state of the economy: estimates of spending multipliers vary and differ in some circumstances. Under the EU's Recovery and Resilience Facility, payments are made after agreed milestones and targets are met, so a payment reflects reforms and investments already assessed rather than new spending decided that day. A positive preliminary assessment is a step before payment: the Economic and Financial Committee gives its opinion and the Commission then adopts a decision authorising the disbursement.",
+   "limits": "The sources give no effect of any particular payment, and they do not say which circumstances change multipliers.",
+   "sources": [
+    {
+     "title": "Ten Years after the Financial Crisis: What Have We Learned from the Renaissance in Fiscal Research? (Journal of Economic Perspectives 33(2), Ramey)",
+     "publisher": "American Economic Association",
+     "year": 2019,
+     "url": "https://www.aeaweb.org/articles?id=10.1257/jep.33.2.89"
+    },
+    {
+     "title": "Recovery and Resilience Facility",
+     "publisher": "European Commission",
+     "year": null,
+     "url": "https://reforms-investments.ec.europa.eu/recovery-and-resilience-facility-1_en"
+    },
+    {
+     "title": "Commission greenlights Luxembourg's third payment request under NextGenerationEU",
+     "publisher": "European Commission, Representation in Luxembourg",
+     "year": 2026,
+     "url": "https://luxembourg.representation.ec.europa.eu/actualites-et-evenements/actualites/commission-greenlights-luxembourgs-third-payment-request-eur922-million-under-nextgenerationeu-2026-09-25_en"
+    }
+   ]
+  },
+  {
+   "id": "inflation-expectations",
+   "title": "Households' inflation expectations",
+   "scope": "macro",
+   "applies_to": [
+    "official_statistic",
+    "monetary_policy"
+   ],
+   "mechanism": "Central banks follow what households and firms expect inflation to be: when a credible central bank anchors expectations, firms and workers have less reason to raise prices and wages pre-emptively. Surveys such as the ECB's Consumer Expectations Survey ask consumers about perceived and expected inflation, income, spending and access to credit, and the ECB uses them in its analysis of price stability.",
+   "limits": "Survey expectations are answers, not commitments to set prices or wages; how much they feed into actual inflation is not established by these sources.",
+   "sources": [
+    {
+     "title": "Transmission mechanism of monetary policy",
+     "publisher": "European Central Bank",
+     "year": null,
+     "url": "https://www.ecb.europa.eu/mopo/intro/transmission/html/index.en.html"
+    },
+    {
+     "title": "Consumer Expectations Survey",
+     "publisher": "European Central Bank",
+     "year": null,
+     "url": "https://www.ecb.europa.eu/stats/ecb_surveys/consumer_exp_survey/html/index.en.html"
+    }
+   ]
+  },
+  {
+   "id": "trade-safeguards",
+   "title": "Safeguard investigations and measures",
+   "scope": "micro",
+   "applies_to": [
+    "trade_remedy"
+   ],
+   "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+   "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+   "sources": [
+    {
+     "title": "Safeguard measures",
+     "publisher": "World Trade Organization",
+     "year": null,
+     "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm"
+    },
+    {
+     "title": "The Agreement on Safeguards",
+     "publisher": "World Trade Organization",
+     "year": null,
+     "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm"
+    }
+   ]
+  },
+  {
+   "id": "facility-labour-enforcement",
+   "title": "Facility-level labour enforcement in a trade agreement",
+   "scope": "micro",
+   "applies_to": [
+    "labor_enforcement"
+   ],
+   "mechanism": "The USMCA's Rapid Response Labor Mechanism enforces workers' rights of free association and collective bargaining at individual facilities. When a denial of rights is found, the governments work towards an agreed course of remediation; remedies can include suspending the agreement's tariff benefits for the facility's goods or other penalties. A resolved matter can therefore restore normal trade treatment for the facility's exports, while an unresolved one can raise their costs.",
+   "limits": "The effects concern the facility and its trade; wider effects on wages or industries are not established by the source.",
+   "sources": [
+    {
+     "title": "Chapter 31 Annex A: Facility-Specific Rapid-Response Labor Mechanism",
+     "publisher": "Office of the United States Trade Representative",
+     "year": null,
+     "url": "https://ustr.gov/issue-areas/enforcement/dispute-settlement-proceedings/fta-dispute-settlement/usmca/chapter-31-annex-facility-specific-rapid-response-labor-mechanism"
+    }
+   ]
+  },
+  {
+   "id": "inventory-ratio",
+   "title": "Inventories against sales",
+   "scope": "macro",
+   "applies_to": [
+    "official_statistic"
+   ],
+   "mechanism": "Inventories are a stock, the value of goods held at the end of a month; sales are a flow over the month. Their ratio is therefore read as the months of sales the stock would cover, not as a percentage of sales. A lower ratio means stocks are thinner relative to sales; whether firms then rebuild them depends on their plans and on whether the sales hold up, which the ratio does not show.",
+   "limits": "The definitions cited are the Census Bureau's for US manufacturing and trade; they do not say what firms will do next.",
+   "sources": [
+    {
+     "title": "Manufacturing and Trade Inventories and Sales: definitions",
+     "publisher": "U.S. Census Bureau",
+     "year": null,
+     "url": "https://www.census.gov/mtis/definitions.html"
+    },
+    {
+     "title": "Manufacturing and Trade Inventories and Sales, August 2026 release",
+     "publisher": "U.S. Census Bureau",
+     "year": 2026,
+     "url": "https://www.census.gov/mtis/www/data/pdf/mtis_current.pdf"
+    }
+   ]
+  }
+ ]
+}

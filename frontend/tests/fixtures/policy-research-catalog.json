@@ -1,0 +1,15 @@
+{
+ "provider_called": false,
+ "view_version": "policy-research-catalog-0.1",
+ "views": [
+  {
+   "comparisons": 2,
+   "href": "/library/research/synthetic-policy",
+   "id": "synthetic-policy",
+   "publications": 4,
+   "question": "Synthetic: how do these invented releases relate?",
+   "scope_note": "A synthetic comparison for tests; not BIS's text.",
+   "title": "Synthetic policy comparison"
+  }
+ ]
+}

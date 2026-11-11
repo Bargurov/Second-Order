@@ -1,0 +1,135 @@
+{
+  "contract": "user-api-0.5",
+  "story": {
+    "view_version": "news-story-view-0.6",
+    "story_id": "story-00d36fea82bbdc11",
+    "requested_id": "story-00d36fea82bbdc11",
+    "merged": false,
+    "title": "Synthetic port reports record container volumes",
+    "title_basis": "first_report",
+    "first_at": "2026-10-14T09:00:00+00:00",
+    "first_basis": "first_seen",
+    "latest_at": "2026-10-14T09:00:00+00:00",
+    "latest_basis": "first_seen",
+    "coverage": {
+      "coverage_version": "story-coverage-0.3",
+      "reports": 1,
+      "publishers": 1,
+      "origins": 1,
+      "news_origins": 1,
+      "official_origins": 0,
+      "company_origins": 0,
+      "reporting_origins": 1,
+      "confirmed_news": 1,
+      "confirmed_official": 0,
+      "possible_news": 0,
+      "possible_official": 0,
+      "uncertain": 0,
+      "company_statements": 0,
+      "official_releases": 0,
+      "repeats": 0,
+      "units": [
+        {
+          "publishers": [
+            "Synthetic Gazette"
+          ],
+          "entries": [
+            "synthetic-gazette:0419b627e7659398f99e"
+          ],
+          "counted_together_because": [],
+          "role": "news",
+          "independence": "established",
+          "uncertain_because": []
+        }
+      ],
+      "possible_shared_origins": []
+    },
+    "interests": [
+      "trade"
+    ],
+    "signals": [
+      {
+        "signal": "freshness",
+        "text": "Latest report less than an hour ago (by when this server first saw it; the feed states no time, so this counts half)."
+      },
+      {
+        "signal": "importance",
+        "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+      }
+    ],
+    "older": false,
+    "stale": false,
+    "synthetic": true,
+    "brief_state": "none",
+    "brief_note": "No brief has been prepared for this story yet. The reports are listed below.",
+    "brief": null,
+    "explanation": {
+      "state": "pending",
+      "statement": "No economic explanation has been prepared for this story yet.",
+      "reason": null
+    },
+    "relevance": {
+      "state": "relevant",
+      "statement": "In the economic news.",
+      "basis": "synthetic",
+      "basis_label": "A SYNTHETIC assessment for tests and the demo.",
+      "explanation": "SYNTHETIC: a reported policy change affecting trade.",
+      "change": "SYNTHETIC: the sources report a change.",
+      "dimensions": [
+        {
+          "dimension": "trade",
+          "how": "SYNTHETIC: it may change what importers pay."
+        }
+      ],
+      "missing": [
+        "SYNTHETIC: how long it lasts is not stated."
+      ],
+      "current": true
+    },
+    "sources": [
+      {
+        "entry_id": "synthetic-gazette:0419b627e7659398f99e",
+        "publisher": "Synthetic Gazette",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News report",
+        "title": "Synthetic port reports record container volumes",
+        "title_shortened": false,
+        "excerpt": "The SYNTHETIC port said container volumes reached a record.",
+        "excerpt_shortened": false,
+        "link": "https://gazette.example.org/news/no-time",
+        "published": {
+          "as_stated": null,
+          "element": "RSS pubDate",
+          "state": "unstated",
+          "utc": null,
+          "date": null,
+          "note": "The feed gives no timestamp for this entry."
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Synthetic Gazette",
+        "synthetic": true,
+        "unit": 1,
+        "counted_together_because": [],
+        "use": "permitted",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      }
+    ],
+    "topics": [],
+    "related": [],
+    "deeper": {
+      "available": false,
+      "material_reports": 1,
+      "reason": "None of the reports it may use states a publication time, which an analysis needs. You can paste the publication as a source of your own with its time."
+    },
+    "statement": "Read from this server's saved records: opening this page contacts no publisher, runs no analysis and uses no credits."
+  }
+}

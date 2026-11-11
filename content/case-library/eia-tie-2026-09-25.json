@@ -1,0 +1,94 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "eia-tie-2026-09-25",
+  "title": "Henry Hub averaged $2.93 this summer, 6% below 2025, despite the warmest July on record",
+  "category": "Energy analysis",
+  "summary": "EIA reports that the Henry Hub natural gas spot price averaged $2.93 per million British thermal units from June through August 2026, 6 percent less than a year earlier, even though July was the warmest July on record for the Lower 48. It points to more solar and wind generation, record production, ample storage and maintenance at LNG terminals.",
+  "sectors": ["energy"],
+  "source": {
+    "publisher": "U.S. Energy Information Administration (EIA)",
+    "title": "Today in Energy: Henry Hub natural gas prices this summer were 6% lower than last summer",
+    "url": "https://www.eia.gov/todayinenergy/detail.php?id=68204",
+    "document_id": null,
+    "published_at": "2026-09-25",
+    "published_precision": "date",
+    "published_as_stated": "IN-BRIEF ANALYSIS · SEPTEMBER 25, 2026",
+    "timezone_note": "The article page states a date only. No time or time zone is stated, so none is recorded and the date is not converted.",
+    "reference_period": "June through August 2026, compared with the same months of 2025",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "Natural gas prices fell year on year through a very hot summer. The Henry Hub spot price averaged $2.93 per million British thermal units (MMBtu) from June through August 2026, 6 percent less than in the same months of 2025. EIA notes that July's average Lower 48 temperature of 77°F was the warmest on record for the month, according to NOAA data.",
+    "EIA attributes the lower prices to supply, and to less gas being burned for power than the heat alone would imply. Solar generation rose an estimated 19.4 billion kilowatthours and wind 9.3 billion compared with the same months of 2025, while gas-fired generation rose 7.5 billion. Production was an estimated 2 percent (2.7 billion cubic feet per day) higher than a year earlier, and EIA's September Short-Term Energy Outlook (STEO) expects a record 111.2 Bcf/d of dry gas production in 2026. Maintenance at liquefied natural gas terminals also moderated demand growth.",
+    "Storage provided a cushion. Working gas entered the April injection season at 1,906 billion cubic feet, 4 percent above the previous five-year average, and monthly injections exceeded their five-year averages in every month through August except May. EIA's August STEO forecast Lower 48 inventories of 3,985 Bcf at the end of October, 5 percent above the five-year average."
+  ],
+  "key_facts": [
+    {"label": "Henry Hub spot price, June–August 2026", "value": "$2.93/MMBtu; −6% year on year", "basis": "Average for June through August, against the same period of 2025; EIA and Refinitiv Eikon data"},
+    {"label": "July temperature", "value": "77°F, the warmest July on record (Lower 48)", "basis": "NOAA data, as cited by EIA"},
+    {"label": "Generation change against summer 2025", "value": "Solar +19.4 BkWh; wind +9.3 BkWh; natural gas +7.5 BkWh", "basis": "Estimates from EIA's latest STEO, as stated in the article"},
+    {"label": "Natural gas production", "value": "+2% (+2.7 Bcf/d) year on year; 2026 forecast 111.2 Bcf/d, a record", "basis": "June–August estimate; dry gas forecast from the September 2026 STEO"},
+    {"label": "Working gas in storage", "value": "1,906 Bcf at the start of April (+4% against the five-year average); end-October forecast 3,985 Bcf (+5%)", "basis": "Weekly Natural Gas Storage Report; the end-October figure is from the August 2026 STEO, a month older than the production forecast"}
+  ],
+  "channels": [
+    {
+      "title": "Gas burned for power, and gas prices",
+      "source_fact": "Solar (+19.4 BkWh) and wind (+9.3 BkWh) rose more than gas-fired generation (+7.5 BkWh) in a record-hot summer.",
+      "interpretation": "If renewable additions keep absorbing part of peak summer demand, hot weather would raise gas burn less than in past summers, damping one way heat lifts gas prices. One summer is not enough to judge how stable that offset is."
+    },
+    {
+      "title": "Storage cushion for the winter (gas buyers and utilities)",
+      "source_fact": "Record production and end-October inventories forecast 5% above the five-year average.",
+      "interpretation": "Ample storage going into winter would, other things equal, limit upward price pressure in the heating season; a colder-than-normal winter or higher LNG feedgas demand could still tighten supply. The article does not forecast winter prices."
+    },
+    {
+      "title": "Producer revenue (natural gas producers)",
+      "source_fact": "Prices 6% lower year on year while production was 2% higher.",
+      "interpretation": "Lower prices with somewhat higher volumes imply flat to lower gas sales revenue for producers in aggregate, depending on hedging and regional prices. This is arithmetic on the stated figures, not a reported revenue number."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "LNG maintenance as a temporary factor", "detail": "EIA notes that maintenance at LNG terminals moderated demand growth. If export demand returned once maintenance ended, part of the summer's price weakness would reflect a temporary pause rather than lasting abundance."},
+    {"title": "Heat across the whole summer", "detail": "The article reports the warmest July but not cooling degree days or weather-adjusted demand for June through August. If June and August were less extreme, 'despite exceptionally hot weather' may overstate the demand shock over the three months."}
+  ],
+  "assumptions": [
+    "Henry Hub spot prices stand for US natural gas prices generally; regional prices can diverge from Henry Hub.",
+    "The generation and production figures are EIA estimates and forecasts from different STEO editions, and they may be revised."
+  ],
+  "missing_information": [
+    "Futures prices or a sourced expectation for summer prices; without them the case cannot say whether lower prices were a surprise.",
+    "Cooling degree days or weather-adjusted demand for June through August.",
+    "LNG feedgas volumes and how long the terminal maintenance lasted.",
+    "The September STEO's storage forecast; the article cites the August STEO for end-October inventories."
+  ],
+  "weakening_observations": [
+    "If end-October inventories came in well below 3,985 Bcf, the storage-cushion reading would weaken.",
+    "If later STEO revisions cut the 19.4 BkWh solar estimate substantially, the renewables explanation would carry less weight.",
+    "If LNG feedgas demand rebounded sharply after maintenance and prices rose, the temporary-factor explanation would gain over the abundance reading."
+  ],
+  "critique": [
+    {"title": "Two outlook editions in one argument", "detail": "The production forecast comes from the September STEO and the storage forecast from the August STEO. Mixing editions is common in a short article, but it means the supply picture combines estimates of different vintages."},
+    {"title": "Attribution without a breakdown", "detail": "EIA lists renewables, production, storage and LNG maintenance as reasons but gives no breakdown of how much each lowered prices. The channels therefore stay qualitative; ranking them would go beyond the source."},
+    {"title": "A year-on-year frame", "detail": "A 6% decline compares two summers. It does not say whether prices were low relative to costs or to expectations, so the case avoids calling them weak or surprising."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The article as shown on 2026-10-11. Figures come from its text; the charts' data were not read.", "url": null},
+    {"title": "EIA products cited but not read", "detail": "The article cites the Short-Term Energy Outlook (August and September editions) and the Weekly Natural Gas Storage Report; neither was read for this case.", "url": null},
+    {"title": "Selection", "detail": "EIA's Today in Energy archive lists this article on September 25, 2026, between the September 22 and September 30 articles.", "url": "https://www.eia.gov/todayinenergy/archive.php"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the article and EIA's Today in Energy archive in a browser on 2026-10-11. Facts come from the article's text; the channels, competing explanations and critique are the assistant's interpretation. The STEO, the storage report, the charts' data, market prices, forecasts and news coverage were not used.",
+    "sources_read": [
+      "https://www.eia.gov/todayinenergy/detail.php?id=68204",
+      "https://www.eia.gov/todayinenergy/archive.php"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

@@ -1,0 +1,451 @@
+{
+ "imported": [
+  {
+   "attribution": "",
+   "category": "Export controls",
+   "content_sha256": "bae14444e90579d50c29f14f1d9c5190d8dafbe6ec15eb8f1059d666fa1d1171",
+   "excerpt": "WASHINGTON, D.C. — Synthetic: BIS adds export controls on advanced computing chips and semiconductor manufacturing equipment. Synthetic second paragraph. ###",
+   "excerpt_repeats_title": false,
+   "excerpt_truncated": false,
+   "feed_timestamp": {
+    "instant_utc": "2026-09-30T16:00:00+00:00",
+    "origin": "BIS News & Updates listing data (publishedOn, UTC) in the retained snapshot",
+    "problem": "Listing metadata from a retained snapshot, not the release's dateline: no publication date or time is suggested from it.",
+    "raw": "2026-09-30T16:00:00+00:00",
+    "suggestion": null
+   },
+   "first_seen_at": "2026-10-12T16:00:00+00:00",
+   "id": "bis-snapshot:d259551bc352c3fd7117",
+   "imported": {
+    "completeness": "The listing's text matches the separately retained release page, paragraph by paragraph (checked).",
+    "import_id": "20261012T160000Z-e4524278",
+    "imported_at": "2026-10-12T16:00:00+00:00",
+    "label": "Imported from a retained BIS snapshot, not a live feed",
+    "record": {
+     "check": {
+      "attempt": 2,
+      "dateline": "September 30, 2026",
+      "note": "Paragraph for paragraph identical to the release page's text; the listing omits the page's dateline header (FOR IMMEDIATE RELEASE | date | media contact).",
+      "page_sha256": "d8caa26ea14df440f3756ab97aff07a39dd2cc64c074c72e40aacd1cc932fe0e",
+      "page_url": "https://www.bis.gov/press-release/synthetic-tightens-controls-advanced-computing-chips",
+      "result": "identical"
+     },
+     "completeness": "checked",
+     "document": {
+      "node_id": "9001",
+      "path": "/press-release/synthetic-tightens-controls-advanced-computing-chips",
+      "uuid": "00000000-0000-4000-8000-000000000001"
+     },
+     "filters": {
+      "export_controls": {
+       "in": [
+        "text"
+       ],
+       "matched": true,
+       "terms": [
+        "export controls"
+       ]
+      },
+      "semiconductors": {
+       "in": [
+        "text",
+        "title"
+       ],
+       "matched": true,
+       "terms": [
+        "advanced computing",
+        "chips",
+        "semiconductor"
+       ]
+      }
+     },
+     "id": "bis-snapshot:d259551bc352c3fd7117",
+     "identity": "https://www.bis.gov/press-release/synthetic-tightens-controls-advanced-computing-chips",
+     "key": "d259551bc352c3fd7117",
+     "listing": {
+      "changed": {
+       "date": "2026-09-04",
+       "field": "CMS update time",
+       "problem": null,
+       "state": "listed",
+       "time": "2026-09-04T21:00:00+00:00"
+      },
+      "created": {
+       "date": "2026-03-02",
+       "field": "CMS creation time",
+       "problem": null,
+       "state": "listed",
+       "time": "2026-03-02T14:00:00+00:00"
+      },
+      "published": {
+       "date": "2026-09-30",
+       "field": "publication time",
+       "problem": null,
+       "state": "listed",
+       "time": "2026-09-30T16:00:00+00:00"
+      },
+      "sticky": false
+     },
+     "notes": [],
+     "position": 1,
+     "publisher": {
+      "countries": [
+       "China"
+      ],
+      "external_link": null,
+      "summary": null,
+      "summary_truncated": false,
+      "title": "Synthetic Commerce Tightens Controls on Advanced Computing Chips",
+      "title_truncated": false,
+      "topics": [
+       "Regulations"
+      ]
+     },
+     "record_sha256": "5e0ec9dec2d3744018ce7333b37d2e8269e574d1871a4c56d5946c81c2168f91",
+     "same_title": [],
+     "text": {
+      "chars": 155,
+      "paragraphs": [
+       "WASHINGTON, D.C. — Synthetic: BIS adds export controls on advanced computing chips and semiconductor manufacturing equipment.",
+       "Synthetic second paragraph.",
+       "###"
+      ],
+      "problem": null,
+      "state": "listing_text",
+      "truncated": false
+     }
+    },
+    "record_sha256": "5e0ec9dec2d3744018ce7333b37d2e8269e574d1871a4c56d5946c81c2168f91",
+    "snapshot": {
+     "extractor_version": "bis-snapshot-extract-0.1",
+     "index_sha256": "64ed50f516c25cfc425a4f52cec5e909b883cbcbebebc506606096395ba58d8b",
+     "index_version": "bis-snapshot-index-0.1",
+     "package": {
+      "approval_id": "bis-semis-sources-01",
+      "attempt": 1,
+      "bytes": 16237,
+      "content_type": "text/html; charset=utf-8",
+      "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+      "sha256": "835d15b57168c8b4d1ddc50d446fbdfce13b8f22c6251e28e5fc06e0250fb21b",
+      "url": "https://www.bis.gov/news-updates"
+     }
+    },
+    "version": 1,
+    "versions": 1
+   },
+   "kind": "Press release",
+   "link": "https://www.bis.gov/press-release/synthetic-tightens-controls-advanced-computing-chips",
+   "position": null,
+   "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS)",
+   "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+   "source": "bis-snapshot",
+   "stale": false,
+   "title": "Synthetic Commerce Tightens Controls on Advanced Computing Chips",
+   "title_truncated": false
+  },
+  {
+   "attribution": "",
+   "category": "Export controls",
+   "content_sha256": "6b589470562125733e561f627b3fa8c61e4aeedddac7ff52e8f0e20738c72e85",
+   "excerpt": "Synthetic: a company agreed to pay a penalty for shipping semiconductor manufacturing equipment to a party on the Entity List. ###",
+   "excerpt_repeats_title": false,
+   "excerpt_truncated": false,
+   "feed_timestamp": {
+    "instant_utc": "2026-08-14T16:00:00+00:00",
+    "origin": "BIS News & Updates listing data (publishedOn, UTC) in the retained snapshot",
+    "problem": "Listing metadata from a retained snapshot, not the release's dateline: no publication date or time is suggested from it.",
+    "raw": "2026-08-14T16:00:00+00:00",
+    "suggestion": null
+   },
+   "first_seen_at": "2026-10-12T16:00:00+00:00",
+   "id": "bis-snapshot:d6b71201b2132e92ab14",
+   "imported": {
+    "completeness": "The listing's text differs from the separately retained release page (checked).",
+    "import_id": "20261012T160000Z-e4524278",
+    "imported_at": "2026-10-12T16:00:00+00:00",
+    "label": "Imported from a retained BIS snapshot, not a live feed",
+    "record": {
+     "check": {
+      "attempt": 3,
+      "dateline": "August 14, 2026",
+      "note": "The listing has 2 paragraphs and the release page 3; they are not identical.",
+      "page_sha256": "51f298d9587d82419b0feb92f83ed8eac2a673aa213b9ad25ea271c77f4112f6",
+      "page_url": "https://www.bis.gov/press-release/synthetic-settlement-ion-implanters",
+      "result": "differs"
+     },
+     "completeness": "checked_differs",
+     "document": {
+      "node_id": "9002",
+      "path": "/press-release/synthetic-settlement-ion-implanters",
+      "uuid": "00000000-0000-4000-8000-000000000002"
+     },
+     "filters": {
+      "export_controls": {
+       "in": [
+        "text"
+       ],
+       "matched": true,
+       "terms": [
+        "entity list"
+       ]
+      },
+      "semiconductors": {
+       "in": [
+        "text"
+       ],
+       "matched": true,
+       "terms": [
+        "semiconductor"
+       ]
+      }
+     },
+     "id": "bis-snapshot:d6b71201b2132e92ab14",
+     "identity": "https://www.bis.gov/press-release/synthetic-settlement-ion-implanters",
+     "key": "d6b71201b2132e92ab14",
+     "listing": {
+      "changed": {
+       "date": "2026-09-04",
+       "field": "CMS update time",
+       "problem": null,
+       "state": "listed",
+       "time": "2026-09-04T21:00:00+00:00"
+      },
+      "created": {
+       "date": "2026-03-02",
+       "field": "CMS creation time",
+       "problem": null,
+       "state": "listed",
+       "time": "2026-03-02T14:00:00+00:00"
+      },
+      "published": {
+       "date": "2026-08-14",
+       "field": "publication time",
+       "problem": null,
+       "state": "listed",
+       "time": "2026-08-14T16:00:00+00:00"
+      },
+      "sticky": false
+     },
+     "notes": [],
+     "position": 2,
+     "publisher": {
+      "countries": [],
+      "external_link": null,
+      "summary": null,
+      "summary_truncated": false,
+      "title": "Synthetic Settlement over Ion Implanters",
+      "title_truncated": false,
+      "topics": [
+       "Enforcement"
+      ]
+     },
+     "record_sha256": "85f1aa9b3010838430fa1dd82a300799cbe0bc2261841cb3d1ded731ff430b41",
+     "same_title": [],
+     "text": {
+      "chars": 129,
+      "paragraphs": [
+       "Synthetic: a company agreed to pay a penalty for shipping semiconductor manufacturing equipment to a party on the Entity List.",
+       "###"
+      ],
+      "problem": null,
+      "state": "listing_text",
+      "truncated": false
+     }
+    },
+    "record_sha256": "85f1aa9b3010838430fa1dd82a300799cbe0bc2261841cb3d1ded731ff430b41",
+    "snapshot": {
+     "extractor_version": "bis-snapshot-extract-0.1",
+     "index_sha256": "64ed50f516c25cfc425a4f52cec5e909b883cbcbebebc506606096395ba58d8b",
+     "index_version": "bis-snapshot-index-0.1",
+     "package": {
+      "approval_id": "bis-semis-sources-01",
+      "attempt": 1,
+      "bytes": 16237,
+      "content_type": "text/html; charset=utf-8",
+      "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+      "sha256": "835d15b57168c8b4d1ddc50d446fbdfce13b8f22c6251e28e5fc06e0250fb21b",
+      "url": "https://www.bis.gov/news-updates"
+     }
+    },
+    "version": 1,
+    "versions": 1
+   },
+   "kind": "Press release",
+   "link": "https://www.bis.gov/press-release/synthetic-settlement-ion-implanters",
+   "position": null,
+   "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS)",
+   "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+   "source": "bis-snapshot",
+   "stale": false,
+   "title": "Synthetic Settlement over Ion Implanters",
+   "title_truncated": false
+  }
+ ],
+ "imports": {
+  "entries": 2,
+  "label": "BIS News & Updates (retained snapshot)",
+  "source": "bis-snapshot",
+  "statement": "Records explicitly imported from the retained BIS News & Updates snapshot (one page retained on approval, not a live feed). They are listed apart from the feeds' entries and are not offered for headline triage.",
+  "unreadable": [],
+  "versions": 2
+ },
+ "items": [],
+ "retained": [],
+ "retention": {
+  "per_source": 50,
+  "statement": "Each source keeps at most 50 entries from its latest successful refresh, in the order its feed lists them. Entries that leave a feed leave this list but stay in the local archive as retained history; nothing there expires or is deleted."
+ },
+ "sources": [
+  {
+   "acquisitions": {
+    "count": 0,
+    "latest": null,
+    "unreadable_newer": []
+   },
+   "archive": {
+    "entries": 0,
+    "problem": null,
+    "retained": 0,
+    "state": "missing",
+    "versions": 0
+   },
+   "attribution": "",
+   "catalogue_url": "https://www.federalreserve.gov/feeds/feeds.htm",
+   "category": "Monetary policy",
+   "contact_required": false,
+   "feed_url": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+   "full_text_element": false,
+   "key": "fed-monetary",
+   "kind": "Policy announcement",
+   "label": "Federal Reserve: monetary policy press releases",
+   "last_attempt": null,
+   "last_success": null,
+   "policy_url": null,
+   "problem": null,
+   "publisher": "Board of Governors of the Federal Reserve System",
+   "state": "never_refreshed",
+   "terms_url": "https://www.federalreserve.gov/disclaimer.htm"
+  },
+  {
+   "acquisitions": {
+    "count": 0,
+    "latest": null,
+    "unreadable_newer": []
+   },
+   "archive": {
+    "entries": 0,
+    "problem": null,
+    "retained": 0,
+    "state": "missing",
+    "versions": 0
+   },
+   "attribution": "",
+   "catalogue_url": "https://www.bls.gov/feed/",
+   "category": "Employment",
+   "contact_required": true,
+   "feed_url": "https://www.bls.gov/feed/empsit.rss",
+   "full_text_element": false,
+   "key": "bls-empsit",
+   "kind": "Statistical release",
+   "label": "BLS: The Employment Situation",
+   "last_attempt": null,
+   "last_success": null,
+   "policy_url": "https://www.bls.gov/bls/pss.htm",
+   "problem": null,
+   "publisher": "U.S. Bureau of Labor Statistics",
+   "state": "never_refreshed",
+   "terms_url": "https://www.bls.gov/bls/linksite.htm"
+  },
+  {
+   "acquisitions": {
+    "count": 0,
+    "latest": null,
+    "unreadable_newer": []
+   },
+   "archive": {
+    "entries": 0,
+    "problem": null,
+    "retained": 0,
+    "state": "missing",
+    "versions": 0
+   },
+   "attribution": "",
+   "catalogue_url": "https://www.bls.gov/feed/",
+   "category": "Inflation",
+   "contact_required": true,
+   "feed_url": "https://www.bls.gov/feed/cpi.rss",
+   "full_text_element": false,
+   "key": "bls-cpi",
+   "kind": "Statistical release",
+   "label": "BLS: Consumer Price Index",
+   "last_attempt": null,
+   "last_success": null,
+   "policy_url": "https://www.bls.gov/bls/pss.htm",
+   "problem": null,
+   "publisher": "U.S. Bureau of Labor Statistics",
+   "state": "never_refreshed",
+   "terms_url": "https://www.bls.gov/bls/linksite.htm"
+  },
+  {
+   "acquisitions": {
+    "count": 0,
+    "latest": null,
+    "unreadable_newer": []
+   },
+   "archive": {
+    "entries": 0,
+    "problem": null,
+    "retained": 0,
+    "state": "missing",
+    "versions": 0
+   },
+   "attribution": "Source: U.S. Energy Information Administration",
+   "catalogue_url": "https://www.eia.gov/tools/rssfeeds/",
+   "category": "Energy",
+   "contact_required": false,
+   "feed_url": "https://www.eia.gov/rss/todayinenergy.xml",
+   "full_text_element": false,
+   "key": "eia-todayinenergy",
+   "kind": "Analysis article",
+   "label": "EIA: Today in Energy",
+   "last_attempt": null,
+   "last_success": null,
+   "policy_url": null,
+   "problem": null,
+   "publisher": "U.S. Energy Information Administration",
+   "state": "never_refreshed",
+   "terms_url": "https://www.eia.gov/about/copyrights_reuse.php"
+  },
+  {
+   "acquisitions": {
+    "count": 0,
+    "latest": null,
+    "unreadable_newer": []
+   },
+   "archive": {
+    "entries": 0,
+    "problem": null,
+    "retained": 0,
+    "state": "missing",
+    "versions": 0
+   },
+   "attribution": "WTO news",
+   "catalogue_url": "https://www.wto.org/english/res_e/webcas_e/rss_e.htm",
+   "category": "International trade",
+   "contact_required": false,
+   "feed_url": "https://www.wto.org/library/rss/latest_news_e.xml",
+   "full_text_element": true,
+   "key": "wto-news",
+   "kind": "News announcement",
+   "label": "WTO: Latest news",
+   "last_attempt": null,
+   "last_success": null,
+   "policy_url": null,
+   "problem": null,
+   "publisher": "World Trade Organization",
+   "state": "never_refreshed",
+   "terms_url": "https://www.wto.org/english/info_e/copyrights_permissions_e.htm"
+  }
+ ],
+ "view_version": "event-inbox-view-0.1"
+}

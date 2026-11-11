@@ -1,0 +1,176 @@
+{
+ "cases_available": 2,
+ "coverage_note": "A first version with two cases: one on semiconductor export controls and one on sanctions. Two cases cannot cover policy events broadly, so most events will have no related case.",
+ "detail": null,
+ "event": {
+  "date_label": "Feed timestamp (feed metadata, not a verified publication time)",
+  "date_short": "feed timestamp",
+  "date_value": "Thu, 08 Oct 2026 00:00:00 GMT",
+  "held": "current",
+  "hint": null,
+  "identity": {
+   "content_sha256": "2ce1d018bfaa94320f695af5cc1e2404007bae3ce1c828aea79792bd2c7aa7bb",
+   "id": "wto-news:32de5add4d0365be3615",
+   "kind": "inbox"
+  },
+  "inputs": [
+   {
+    "field": "title",
+    "label": "the entry's title",
+    "present": true
+   },
+   {
+    "field": "excerpt",
+    "label": "the feed excerpt",
+    "present": true
+   }
+  ],
+  "link": "https://www.wto.org/english/news_e/news26_e/synth_01oct26_e.htm",
+  "publisher": "World Trade Organization",
+  "source": "wto-news",
+  "title": "Members discuss new export controls on advanced semiconductors"
+ },
+ "historical_note": "These cases describe announcements as of their dates. Rules, licenses and sanctions change after they are announced; nothing here says what applies today.",
+ "id": "wto-news:32de5add4d0365be3615",
+ "kept_records": 1,
+ "kind": "inbox",
+ "match": {
+  "collection_version": "related-cases-0.1",
+  "computed_at": "2026-10-12T10:00:00+00:00",
+  "match_id": "25878f37ea9f27775f2a55d92e6a3edb86930607f6da7197cc02ab411727735d",
+  "overlaps": [],
+  "related": [
+   {
+    "announced": "2022-10-07",
+    "case_id": "bis-2022-10-07",
+    "date_as_stated": "FOR IMMEDIATE RELEASE | October 7, 2022",
+    "differs": [],
+    "hint_note": null,
+    "not_compared": [
+     {
+      "case_value": "Advanced computing chips and products containing them; semiconductor manufacturing equipment and related items",
+      "label": "Items covered"
+     },
+     {
+      "case_value": "Supercomputer or semiconductor development or production end uses in the PRC; PRC fabrication facilities at the listed thresholds",
+      "label": "End uses and destinations"
+     },
+     {
+      "case_value": "Presumption of denial for PRC-owned facilities; case by case for multinational-owned facilities",
+      "label": "Licensing policy"
+     },
+     {
+      "case_value": "Certain foreign-produced items, and support by U.S. persons",
+      "label": "Reach beyond U.S.-made items and firms"
+     },
+     {
+      "case_value": "A Temporary General License for limited activities related to items destined for use outside the PRC",
+      "label": "Exceptions"
+     },
+     {
+      "case_value": "Phased: October 7, October 12 and October 21, 2022",
+      "label": "Timing"
+     }
+    ],
+    "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS), Office of Congressional and Public Affairs",
+    "rests_on_hint": false,
+    "shared": [
+     {
+      "dimension": "instrument",
+      "found": [
+       {
+        "field": "title",
+        "hint": false,
+        "term": "export controls"
+       }
+      ],
+      "label": "Export controls",
+      "text": "Policy instrument: Export controls (“export controls” in the entry's title).",
+      "value": "export-controls"
+     },
+     {
+      "dimension": "sector",
+      "found": [
+       {
+        "field": "title",
+        "hint": false,
+        "term": "semiconductors"
+       },
+       {
+        "field": "excerpt",
+        "hint": false,
+        "term": "chips"
+       }
+      ],
+      "label": "Semiconductors and advanced computing",
+      "text": "Sector: Semiconductors and advanced computing (“semiconductors” in the entry's title; “chips” in the feed excerpt).",
+      "value": "semiconductors"
+     }
+    ],
+    "shared_dimensions": 2,
+    "timing": "The case was announced on October 7, 2022. This event's feed timestamp is Thu, 08 Oct 2026 00:00:00 GMT.",
+    "title": "Commerce restricts advanced computing and chipmaking items for the PRC",
+    "topic": "Semiconductor export controls",
+    "unknown": [
+     {
+      "case": [
+       "China (PRC)"
+      ],
+      "dimension": "geography",
+      "text": "This event's text names no country or area; whether it concerns China (PRC), as the case does, is unknown."
+     },
+     {
+      "case": [
+       "Commerce Department, Bureau of Industry and Security (BIS)"
+      ],
+      "dimension": "agency",
+      "text": "This event's text names no issuing agency; whether Commerce Department, Bureau of Industry and Security (BIS) is involved, as in the case, is unknown."
+     }
+    ],
+    "why_read": "Read this case when an event concerns export controls on chips or chipmaking equipment, especially toward China. It sets out one announced design in detail (items, end uses, reach beyond U.S.-made items, licensing policy, a temporary exception and phased timing), which gives concrete points of comparison. It does not show what happened afterwards."
+   }
+  ],
+  "rules_version": "related-match-rules-0.1",
+  "tags": {
+   "agency": {},
+   "geography": {},
+   "instrument": {
+    "export-controls": {
+     "found": [
+      {
+       "field": "title",
+       "hint": false,
+       "term": "export controls"
+      }
+     ],
+     "label": "Export controls"
+    }
+   },
+   "sector": {
+    "semiconductors": {
+     "found": [
+      {
+       "field": "title",
+       "hint": false,
+       "term": "semiconductors"
+      },
+      {
+       "field": "excerpt",
+       "hint": false,
+       "term": "chips"
+      }
+     ],
+     "label": "Semiconductors and advanced computing"
+    }
+   }
+  }
+ },
+ "matching_note": "A case is shown as related to an event only when the event’s own text names the case’s policy instrument and also its sector or its country. A shared topic alone, such as oil, is listed as an overlap, not as a related case. Saved headline classifications are used only as labelled hints. Matching runs on this machine with a fixed word list: no model, no network and no score.",
+ "not_compared_note": "Not compared by this check. The event's text is scanned only for the instrument, sector, country and agency; read the case to compare these yourself.",
+ "provider_called": false,
+ "rules_version": "related-match-rules-0.1",
+ "state": "checked",
+ "unreadable_records": 0,
+ "view_version": "related-match-view-0.1",
+ "written": false
+}

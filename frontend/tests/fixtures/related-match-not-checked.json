@@ -1,0 +1,46 @@
+{
+ "cases_available": 2,
+ "coverage_note": "A first version with two cases: one on semiconductor export controls and one on sanctions. Two cases cannot cover policy events broadly, so most events will have no related case.",
+ "detail": "Not checked yet. Finding related cases is an explicit local action: it compares this event's own text with the historical cases using a fixed word list. No model, network or score is involved, and the result is saved once for this version of the event.",
+ "event": {
+  "date_label": "Feed timestamp (feed metadata, not a verified publication time)",
+  "date_short": "feed timestamp",
+  "date_value": "Thu, 08 Oct 2026 00:00:00 GMT",
+  "held": "current",
+  "hint": null,
+  "identity": {
+   "content_sha256": "2ce1d018bfaa94320f695af5cc1e2404007bae3ce1c828aea79792bd2c7aa7bb",
+   "id": "wto-news:32de5add4d0365be3615",
+   "kind": "inbox"
+  },
+  "inputs": [
+   {
+    "field": "title",
+    "label": "the entry's title",
+    "present": true
+   },
+   {
+    "field": "excerpt",
+    "label": "the feed excerpt",
+    "present": true
+   }
+  ],
+  "link": "https://www.wto.org/english/news_e/news26_e/synth_01oct26_e.htm",
+  "publisher": "World Trade Organization",
+  "source": "wto-news",
+  "title": "Members discuss new export controls on advanced semiconductors"
+ },
+ "historical_note": "These cases describe announcements as of their dates. Rules, licenses and sanctions change after they are announced; nothing here says what applies today.",
+ "id": "wto-news:32de5add4d0365be3615",
+ "kept_records": 0,
+ "kind": "inbox",
+ "match": null,
+ "matching_note": "A case is shown as related to an event only when the event’s own text names the case’s policy instrument and also its sector or its country. A shared topic alone, such as oil, is listed as an overlap, not as a related case. Saved headline classifications are used only as labelled hints. Matching runs on this machine with a fixed word list: no model, no network and no score.",
+ "not_compared_note": "Not compared by this check. The event's text is scanned only for the instrument, sector, country and agency; read the case to compare these yourself.",
+ "provider_called": false,
+ "rules_version": "related-match-rules-0.1",
+ "state": "not_checked",
+ "unreadable_records": 0,
+ "view_version": "related-match-view-0.1",
+ "written": false
+}

@@ -1,0 +1,9 @@
+{
+ "approval_id": "copper-sec-01",
+ "n": 1,
+ "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+ "kind": "html",
+ "state": "about_to_send",
+ "recorded_at": "2026-11-02T19:25:16.184809+02:00",
+ "user_agent": "SecondOrder/0.1 (local research tool; contact from SECOND_ORDER_FEED_CONTACT)"
+}

@@ -1,0 +1,89 @@
+{
+  "library_version": "case-library-0.3",
+  "title": "Case library",
+  "introduction": "Twenty-seven official releases and news items, each read closely. Twelve are US macro releases from the first half of 2025: four FOMC statements, four Employment Situation reports and four CPI reports. Twelve more, from 2026, cover five sectors: energy (EIA Today in Energy articles), technology and semiconductors (BIS export-control press releases), manufacturing and automotive (Federal Reserve G.17 industrial production releases), banking and credit (Federal Reserve H.8 bank balance sheet releases) and mining and materials (the same three G.17 releases, listed again rather than added). Each case sets out what the source says, how it could plausibly matter, what competes with that reading, and where the analysis is weak. These are retrospective editorial illustrations written after publication with an AI assistant. They are not hypotheses: nothing here was frozen, scored or evaluated, and none of it is research evidence. The macro cases add a descriptive Market context section with the Federal Reserve Board's daily 2-year and 10-year Treasury yields around their release dates; the sector cases show no market series, because Treasury yields do not measure those sectors. No case measures or attributes a market reaction. Three more entries, from 2026, read World Trade Organization news items retained privately from WTO's website: the October trade forecast update, a Committee on Trade and Environment meeting and a General Council meeting. Two report meeting proceedings, so they list no market channels, and they belong to no sector.",
+  "labels": [
+    "Retrospective",
+    "AI-assisted editorial illustration",
+    "Prepared after publication",
+    "Not human-reviewed",
+    "Never scored · not research evidence"
+  ],
+  "selection": "Macro cases: four consecutive releases in each category, namely the first four scheduled FOMC statements of 2025 (January, March, May and June), and the Employment Situation and CPI reports for the reference months March to June 2025. Sector cases: in each sector's source family, the last three consecutive releases or announcements published on or before 30 September 2026, as each sector states. Releases were included by these rules, not for how interesting their interpretation is and not for any later market outcome. International trade entries: three WTO news items from the Event Inbox (28 September, 5 October and 8 October 2026), chosen because they concern a trade forecast, a named agreement and trade-related climate measures, the items with the most to explain; the other seven WTO items in the inbox have no entry. This is an editorial collection, not a preregistered research cohort.",
+  "sectors": [
+    {
+      "slug": "energy",
+      "label": "Energy",
+      "coverage": "US energy as three EIA Today in Energy articles describe it (natural gas prices, supply and storage; who produces US oil and gas; electricity used by electric vehicles), plus the mining, utilities and energy-output figures of two G.17 releases. A few short analyses and two output reports: not world oil markets, energy companies' finances or the prices of energy securities.",
+      "selection": "EIA Today in Energy: the last three articles in EIA's own Today in Energy archive published on or before 30 September 2026 (22, 25 and 30 September 2026), whatever their subject. The two G.17 cases listed here are selected under Manufacturing & automotive."
+    },
+    {
+      "slug": "technology-semiconductors",
+      "label": "Technology & semiconductors",
+      "coverage": "US export controls on semiconductor manufacturing equipment, sensors and AI chips as three BIS press releases announce them, and US semiconductor output in one G.17 release. Not chip demand, company results, prices or other countries' rules.",
+      "selection": "BIS: the last three press releases with their own text on bis.gov published on or before 30 September 2026 whose text names semiconductors, semiconductor manufacturing equipment, chips or advanced computing items (12 February, 17 June and 10 July 2026). Listings that only link an enforcement order, or another agency's release, have no such text and are not included. The G.17 case listed here is selected under Manufacturing & automotive."
+    },
+    {
+      "slug": "manufacturing-automotive",
+      "label": "Manufacturing & automotive",
+      "coverage": "US industrial output, capacity utilization and motor vehicle assemblies in three Federal Reserve G.17 releases, plus electric vehicle sales and electricity use (EIA) and an export-control penalty covering automotive software and sensors (BIS). Production volumes, not prices, profits or stock returns.",
+      "selection": "Federal Reserve G.17: the last three monthly releases published on or before 30 September 2026 (17 July, 18 August and 18 September 2026; reference months June, July and August 2026). The EIA and BIS cases listed here are selected under Energy and Technology & semiconductors."
+    },
+    {
+      "slug": "banking-credit",
+      "label": "Banking & credit",
+      "coverage": "Aggregate balance sheets of all commercial banks in the United States in three weekly Federal Reserve H.8 releases: loans by type, deposits, cash and borrowings. Not individual banks, loan quality, loan pricing or lending by nonbanks.",
+      "selection": "Federal Reserve H.8: the last three weekly releases published on or before 30 September 2026 (11, 18 and 25 September 2026)."
+    },
+    {
+      "slug": "mining-materials",
+      "label": "Mining & materials",
+      "coverage": "US mining and materials output as three Federal Reserve G.17 releases report it, in the release's own categories: mining, which the release defines as all industries in NAICS sector 21, with its operating rate, and the materials market group, which the pages read do not define further. Reported production volumes and operating rates only: this slice holds no commodity or metal prices, mining companies' results, security returns or market reactions.",
+      "selection": "Federal Reserve G.17: the same three monthly releases selected under Manufacturing & automotive, the last three published on or before 30 September 2026 (17 July, 18 August and 18 September 2026; reference months June, July and August 2026). They are listed here as well, not added as new cases, and were not chosen for their mining or materials figures or for any later outcome. Their mining and materials facts and interpretations were appended on 14 October 2026 from the same release pages; nothing written earlier in them changed."
+    }
+  ],
+  "sector_membership": "A case is listed under a sector when at least one of its key facts and one of its channels concern that sector. Membership is additive: a case that covers two sectors is listed under both and stored once. Sectors are separate from a case's topic and from the Event Inbox's topics, and adding a sector to a case changes no other record.",
+  "cases": [
+    "fomc-2025-01-29",
+    "fomc-2025-03-19",
+    "empsit-2025-04-04",
+    "cpi-2025-04-10",
+    "empsit-2025-05-02",
+    "fomc-2025-05-07",
+    "cpi-2025-05-13",
+    "empsit-2025-06-06",
+    "cpi-2025-06-11",
+    "fomc-2025-06-18",
+    "empsit-2025-07-03",
+    "cpi-2025-07-15",
+    "bis-2026-02-12",
+    "bis-2026-06-17",
+    "bis-2026-07-10",
+    "g17-2026-07-17",
+    "g17-2026-08-18",
+    "h8-2026-09-11",
+    "g17-2026-09-18",
+    "h8-2026-09-18",
+    "eia-tie-2026-09-22",
+    "eia-tie-2026-09-25",
+    "h8-2026-09-25",
+    "wto-2026-09-28",
+    "eia-tie-2026-09-30",
+    "wto-2026-10-05",
+    "wto-2026-10-08"
+  ],
+  "market_context": [
+    "fomc-2025-01-29",
+    "fomc-2025-03-19",
+    "empsit-2025-04-04",
+    "cpi-2025-04-10",
+    "empsit-2025-05-02",
+    "fomc-2025-05-07",
+    "cpi-2025-05-13",
+    "empsit-2025-06-06",
+    "cpi-2025-06-11",
+    "fomc-2025-06-18",
+    "empsit-2025-07-03",
+    "cpi-2025-07-15"
+  ]
+}

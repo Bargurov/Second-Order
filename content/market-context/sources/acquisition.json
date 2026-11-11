@@ -1,0 +1,41 @@
+{
+  "tool": "curl 8.21.0 (Windows) libcurl/8.21.0 Schannel zlib/1.3.2 WinIDN WinLDAP",
+  "downloads": [
+    {
+      "case": "fomc-2025-03-19",
+      "file": "fomc-2025-03-19.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=03/05/2025&to=04/02/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:07:04+00:00",
+      "received_at": "2026-10-07T22:07:04+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:07:04 GMT",
+      "bytes": 902,
+      "sha256": "4241e742f93cfaeb14e3e49357b8f9af151b4ea2f07de47e161d57b03bc5eabe"
+    },
+    {
+      "case": "empsit-2025-07-03",
+      "file": "empsit-2025-07-03.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=06/19/2025&to=07/17/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:07:09+00:00",
+      "received_at": "2026-10-07T22:07:10+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:07:09 GMT",
+      "bytes": 894,
+      "sha256": "19992ed33f85e972ffa16107fee459393ef2824e552f6364b7f5640d32b1c677"
+    },
+    {
+      "case": "cpi-2025-07-15",
+      "file": "cpi-2025-07-15.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=07/01/2025&to=07/29/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:07:15+00:00",
+      "received_at": "2026-10-07T22:07:15+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:07:14 GMT",
+      "bytes": 898,
+      "sha256": "6747d3f8211269fa558a9bb7aa3597c2bf98f33319f9e8bb50a800e25d2847c0"
+    }
+  ]
+}

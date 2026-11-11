@@ -1,0 +1,12 @@
+{
+ "index_version": "event-chain-index-0.1",
+ "id": "grasberg-mud-rush",
+ "versions": [
+  {
+   "version": 1,
+   "file": "v1.json",
+   "sha256": "7fe0d786d02cc06a8a1e950b5441c9579b4f8a6418699d47785bdb1b4aeb2f4e",
+   "published_on": "2026-11-11"
+  }
+ ]
+}

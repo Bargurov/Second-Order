@@ -1,0 +1,122 @@
+{
+  "contract": "onboarding-api-0.1",
+  "state": "configured",
+  "detail": null,
+  "policy_version": "credit-policy-2",
+  "efforts": [
+    {
+      "effort": "low",
+      "label": "Low"
+    },
+    {
+      "effort": "medium",
+      "label": "Medium"
+    },
+    {
+      "effort": "high",
+      "label": "High"
+    },
+    {
+      "effort": "xhigh",
+      "label": "Extra high"
+    },
+    {
+      "effort": "max",
+      "label": "Maximum"
+    }
+  ],
+  "effort_note": "Higher Effort lets the analysis spend more of its output allowance on reasoning. It does not promise a better result or a fixed running time, and it can need more credits.",
+  "size_note": "Under the current terms the amount of source text does not change the quote.",
+  "quote_valid_seconds": 900,
+  "examples": [
+    {
+      "example": "short",
+      "label": "Short synthetic source",
+      "characters": 2000,
+      "quotes": [
+        {
+          "effort": "low",
+          "credits": 10
+        },
+        {
+          "effort": "medium",
+          "credits": 15
+        },
+        {
+          "effort": "high",
+          "credits": 20
+        },
+        {
+          "effort": "xhigh",
+          "credits": 25
+        },
+        {
+          "effort": "max",
+          "credits": 30
+        }
+      ]
+    },
+    {
+      "example": "medium",
+      "label": "Medium synthetic source",
+      "characters": 12000,
+      "quotes": [
+        {
+          "effort": "low",
+          "credits": 10
+        },
+        {
+          "effort": "medium",
+          "credits": 15
+        },
+        {
+          "effort": "high",
+          "credits": 20
+        },
+        {
+          "effort": "xhigh",
+          "credits": 25
+        },
+        {
+          "effort": "max",
+          "credits": 30
+        }
+      ]
+    },
+    {
+      "example": "long",
+      "label": "Long synthetic source",
+      "characters": 48000,
+      "quotes": [
+        {
+          "effort": "low",
+          "credits": 10
+        },
+        {
+          "effort": "medium",
+          "credits": 15
+        },
+        {
+          "effort": "high",
+          "credits": 20
+        },
+        {
+          "effort": "xhigh",
+          "credits": 25
+        },
+        {
+          "effort": "max",
+          "credits": 30
+        }
+      ]
+    }
+  ],
+  "rules": [
+    "A credit is one point of application usage on this server. It has no fixed money value and cannot be bought, sold or exchanged here.",
+    "Before an analysis runs you get a quote: the exact number of points for that prepared analysis, its Effort and its source, under one credit-policy version, valid until the time it states. Nothing runs until you approve it.",
+    "Approving reserves the quoted points and one run of today's daily allowance. When a result is recorded the quoted points are charged; if nothing was sent they are returned. If the server cannot tell whether a run was sent, the points stay held until an administrator settles them. You are never charged more than the quote you approved.",
+    "The daily allowance counts new analysis runs per calendar day and is separate from points: a run uses one slot whatever its points, and a run that is returned gives its slot back.",
+    "Points do not buy a running time or a better result. Higher Effort lets the analysis spend more of its output allowance on reasoning and can need more points.",
+    "Reading, reviewing and exporting saved results, adding a source, preparing an analysis and asking for a quote use no points and no allowance."
+  ]
+}

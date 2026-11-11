@@ -1,0 +1,388 @@
+{
+  "mechanisms_version": "fuels-mechanisms-0.1",
+  "kind": "transmission",
+  "prepared_on": "2026-11-06",
+  "author": "Claude (AI-drafted)",
+  "review": {
+    "state": "unreviewed",
+    "reviewed_on": null
+  },
+  "items": [
+    {
+      "id": "aviation",
+      "sector": "Airlines",
+      "trigger": "Jet fuel price: a middle distillate, so crude plus the distillate crack",
+      "chain": [
+        "Jet fuel cost",
+        "Airline operating costs",
+        "Fares and capacity",
+        "Airline margins"
+      ],
+      "effect": "negative",
+      "effect_text": "Airline margins tend to narrow when jet fuel costs rise faster than fares can follow. Fuel is one of the largest airline costs. Jet fuel is a middle distillate, priced alongside diesel, so it can become dearer through a wider distillate crack even when crude is steady, and carriers that manage fuel risk mainly through crude stay exposed to that crack. The size, and even the sign, depends on why fuel moved: if it rises with strong travel demand, carriers can often lift fares; if a supply shock raises it while demand is weak, the squeeze tends to be sharper.",
+      "second_order": [
+        "Carriers can trim capacity on weaker routes, which can lift fares and seat occupancy on the routes that remain.",
+        "Air fares are part of consumer prices, so a jet fuel shock can reach measured inflation through transport services.",
+        "Tourism, air cargo, airports and aircraft makers can feel slower traffic growth if fares stay high for long."
+      ],
+      "flips_when": [
+        "Hedges lock in earlier fuel prices for a time, which delays or cushions the effect; hedging practice differs widely across airlines and regions.",
+        "Fuel rises with strong global growth while capacity is tight, so carriers can pass fuel costs on to fares and margins can hold up.",
+        "The distillate crack narrows while crude rises, so jet fuel rises by less than crude.",
+        "The dollar moves: fuel is priced in dollars, so a carrier earning other currencies gains when the dollar weakens and loses when it strengthens.",
+        "Fuel changes gradually rather than in a sudden jump, which gives carriers time to adjust fares and schedules."
+      ],
+      "lag": "Large fuel moves can hit margins in the short term, and costs tend to pass through to fares as and when capacity can adjust; hedges can delay the effect for some carriers.",
+      "lag_sourced": true,
+      "sources": [
+        {
+          "title": "Structural Shifts Increase Jet Fuel Crack Risks",
+          "publisher": "IATA Sustainability and Economics (International Air Transport Association, Chart of the Week)",
+          "date": "2026-09-11",
+          "url": "https://www.iata.org/en/iata-repository/publications/economic-reports/structural-shifts-increase-jet-fuel-crack-risks/",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "No simple link between oil prices and industry profitability",
+          "publisher": "International Air Transport Association (IATA Economics, Chart of the Week)",
+          "date": "2018-11-09",
+          "url": "https://www.iata.org/en/iata-repository/publications/economic-reports/no-simple-link-between-oil-prices-and-industry-profitability/",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "International air passenger fares shrug off the recession",
+          "publisher": "U.S. Bureau of Labor Statistics (Beyond the Numbers)",
+          "date": "2012-05-01",
+          "url": "https://www.bls.gov/opub/btn/volume-1/international-air-passenger-fares-shrug-off-the-recession.htm",
+          "checked_on": "2026-11-06",
+          "locator": "Price decline, 2008 through mid-2009; Price recovery, late 2009 through 2010; Summary"
+        }
+      ]
+    },
+    {
+      "id": "shipping_logistics",
+      "sector": "Shipping, trucking and logistics",
+      "trigger": "Bunker fuel for ships and diesel for trucks: product prices, not crude",
+      "chain": [
+        "Bunker fuel and diesel costs",
+        "Fuel surcharges",
+        "Freight rates",
+        "Delivered cost of goods"
+      ],
+      "effect": "mixed",
+      "effect_text": "Carriers that index fuel surcharges to published fuel prices can pass much of a fuel rise on to shippers, so the cost tends to fall on cargo owners; carriers on fixed rates, or facing spare ships and trucks, absorb more of it. Bunker fuel is its own set of products, from heavy fuel oil to low-sulfur fuel oil and marine gasoil, priced partly by sulfur content, so it need not move one for one with crude. Diesel is a middle distillate and can move with the distillate crack as well as crude. Freight rates also depend on demand and fleet capacity, often more than on fuel.",
+      "second_order": [
+        "Freight costs feed into import and producer prices and can reach consumer goods prices, more so where imports are a large share of consumption.",
+        "Retailers and manufacturers can absorb part of the cost for a while, which delays and dilutes its pass-through to shelf prices.",
+        "Shippers can switch routes or modes, for example from road to rail, when fuel changes relative transport costs."
+      ],
+      "flips_when": [
+        "Freight demand is weak and capacity ample, so carriers compete and absorb fuel costs rather than pass them on.",
+        "Contracts fix rates without a fuel clause, which leaves the cost with the carrier until renewal.",
+        "The premium of low-sulfur over high-sulfur marine fuel moves, which changes the cost advantage of scrubber-fitted ships.",
+        "Freight demand surges or ships are scarce, so rates move far more than fuel costs alone would imply.",
+        "Ships slow down to save fuel, which cuts fuel use per voyage but ties up more vessels and can tighten capacity."
+      ],
+      "lag": "Fuel surcharges indexed to published diesel prices can adjust as those prices are updated; freight costs tend to reach import and producer prices within months, and consumer prices more slowly, over many months.",
+      "lag_sourced": true,
+      "sources": [
+        {
+          "title": "Diesel fuel explained: Diesel fuel surcharges",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/energyexplained/diesel-fuel/diesel-fuel-surcharges.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Low-sulfur bunker fuel sales have decreased since 2020",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2025-11-03",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=66544",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Shipping Costs and Inflation",
+          "publisher": "International Monetary Fund (IMF Working Paper WP/22/61)",
+          "date": "2022-03-25",
+          "url": "https://www.imf.org/-/media/files/publications/wp/2022/english/wpiea2022061-print-pdf.pdf",
+          "checked_on": "2026-11-06",
+          "locator": "Abstract; III.2. Effect on inflation measures; III.7. Factors affecting the pass-through of shipping costs to inflation"
+        }
+      ]
+    },
+    {
+      "id": "refiners_energy",
+      "sector": "Refiners and oil producers",
+      "trigger": "The crack (product prices less crude) and the crude price itself",
+      "chain": [
+        "Crude and product prices",
+        "The crack: a benchmark gross margin",
+        "Net margin after running costs",
+        "Refinery runs and product supply"
+      ],
+      "effect": "mixed",
+      "effect_text": "Upstream producers tend to gain from a rise in crude, while refiners gain when the crack widens and lose when crude rises faster than products. Strong product demand, or refinery outages elsewhere, can widen the crack even with crude flat; a supply-led rise in crude that products do not match narrows it. The crack is a benchmark for the gross margin; a refiner's own margin also depends on the crude it buys and the products it yields, and the crack leaves out energy, labour, maintenance and compliance costs. Integrated companies are partly offset across the two businesses.",
+      "second_order": [
+        "Sustained wide cracks can lift refinery runs and product supply; narrow cracks can lead refiners to cut runs and weaker plants to close.",
+        "Stronger upstream cash flow can fund more drilling, which can add crude supply after a delay.",
+        "Oil-exporting economies and their governments gain revenue while importing economies lose income: a shift in the terms of trade."
+      ],
+      "flips_when": [
+        "Crude rises on a supply cut while product demand is soft, so products lag and refiners' margins narrow.",
+        "Products firm on refinery outages or strong demand, so the crack widens even if crude is flat.",
+        "The refiner's crude trades at a widening discount to the benchmark crude, so its margin can hold up even when the benchmark crack narrows.",
+        "Producers have hedged future output, so for a time they gain less from a crude rise and lose less from a fall.",
+        "Refinery fuel and hydrogen costs, often tied to natural gas, climb and erode net margins even when the gross crack is wide.",
+        "Costs for drilling services rise with activity, or the tax take increases, so less of a crude rise reaches producers."
+      ],
+      "lag": "The crack moves with daily product and crude prices, while reported margins can lag through crude purchase timing and inventory accounting; new supply tends to follow after months for shale and years for conventional projects.",
+      "lag_sourced": false,
+      "sources": [
+        {
+          "title": "An introduction to crack spreads",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2011-06-02",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=1630",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Refiner margins unable to fully offset low upstream earnings for integrated oil companies",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2015-06-17",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=21692",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Global refinery margins fall to multiyear seasonal lows in September",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2024-10-15",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=63447",
+          "checked_on": "2026-11-06",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "id": "chemicals",
+      "sector": "Chemicals and plastics",
+      "trigger": "Naphtha (priced off crude) against ethane (anchored by natural gas)",
+      "chain": [
+        "Feedstock: naphtha or ethane",
+        "Ethylene production cost",
+        "Polyethylene and other derivatives",
+        "Plastics and packaging prices"
+      ],
+      "effect": "mixed",
+      "effect_text": "Producers using gas-based ethane can gain when oil rises relative to gas, while those using oil-based naphtha can face a cost squeeze when product prices do not keep up. Naphtha is the main cracker feedstock in Europe and much of Asia; ethane, whose price has natural gas as its floor, is the main one in the United States and much of the Middle East. If naphtha-based plants set the marginal cost of ethylene, product prices can follow oil while ethane costs do not. Naphtha crackers also yield valuable coproducts, such as propylene, which offset part of the squeeze.",
+      "second_order": [
+        "Plastics and packaging costs can pass to makers of consumer goods, though slowly and only in part.",
+        "Regions with cheap ethane can gain export share in ethylene derivatives, while naphtha-based plants elsewhere run less.",
+        "Weak margins can lead naphtha-based producers to cut runs or close older plants."
+      ],
+      "flips_when": [
+        "Natural gas rises relative to oil, which narrows or reverses the ethane advantage.",
+        "Cracker or export demand for ethane is tight, so its price can pull away from gas toward propane and the advantage narrows.",
+        "Plastics demand is weak, so neither route can pass feedstock costs on and margins narrow for both.",
+        "Coproduct values are high, which supports naphtha crackers' returns.",
+        "Crackers that can switch feedstocks move toward the cheaper one, which narrows the gap."
+      ],
+      "lag": "Feedstock costs can reach ethylene and polymer prices within weeks to months, often through monthly contract prices; the effect on finished goods tends to be slower and partial.",
+      "lag_sourced": false,
+      "sources": [
+        {
+          "title": "U.S. ethane exports set a monthly record in March 2023",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2023-06-12",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=56780",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Hydrocarbon gas liquids explained: Prices for hydrocarbon gas liquids",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2023-08-01",
+          "url": "https://www.eia.gov/energyexplained/hydrocarbon-gas-liquids/prices-for-hydrocarbon-gas-liquids.php",
+          "checked_on": "2026-11-06",
+          "locator": "Hydrocarbon gas liquids prices are related to oil and natural gas prices and to supply and demand"
+        },
+        {
+          "title": "The Future of Petrochemicals",
+          "publisher": "International Energy Agency",
+          "date": "2018-10-04",
+          "url": "https://www.iea.org/reports/the-future-of-petrochemicals",
+          "checked_on": "2026-11-06",
+          "locator": "And new dynamics in oil and gas are driving global competition"
+        }
+      ]
+    },
+    {
+      "id": "agriculture",
+      "sector": "Agriculture and food",
+      "trigger": "Farm diesel, and natural gas (not Brent) for nitrogen fertilizer",
+      "chain": [
+        "Diesel and nitrogen fertilizer costs",
+        "Farm operating costs",
+        "Planting and input choices",
+        "Farm margins"
+      ],
+      "effect": "negative",
+      "effect_text": "Farm margins tend to narrow when diesel and fertilizer costs rise faster than crop prices. Nitrogen fertilizer follows natural gas, not Brent: gas is the main input to ammonia, the base of nitrogen fertilizers, so an oil move reaches fertilizer only insofar as gas moves with it. Diesel, a product price, is the main fuel used directly on farms. Exposure differs by crop: corn and rice carry higher energy-related costs per acre than soybeans. Dearer energy can reduce output and lift crop prices, which offsets part of the squeeze.",
+      "second_order": [
+        "Energy costs can add to food prices, though more through processing, transport and retail than through farm inputs.",
+        "Livestock producers can face dearer feed when energy lifts crop costs.",
+        "Nitrogen producers in regions with cheap gas can gain, since fertilizer prices tend to be set by the marginal, higher-cost producer.",
+        "Where fertilizer is costly, farmers can apply less or shift acreage toward less nitrogen-intensive crops such as soybeans."
+      ],
+      "flips_when": [
+        "Grain markets are strong at the same time, so crop revenue offsets the cost.",
+        "Crops that feed biofuels, such as corn for ethanol, can firm with oil, which can offset or outweigh the cost rise for growers.",
+        "Natural gas stays cheap while oil rises, so fertilizer costs hold steady and only diesel bites.",
+        "Farmers bought fertilizer or fuel ahead, which delays the effect until the next purchase.",
+        "Fertilizer made where gas is cheap can be imported, which caps costs in regions where gas is dear, subject to shipping costs.",
+        "Over time farmers adjust crops and practices, so the longer-run effect tends to be smaller than the initial one."
+      ],
+      "lag": "The squeeze on farm income tends to be largest in the short run and to shrink as farmers adjust crops and practices.",
+      "lag_sourced": true,
+      "sources": [
+        {
+          "title": "Impact of Rising Natural Gas Prices on U.S. Ammonia Supply",
+          "publisher": "U.S. Department of Agriculture, Economic Research Service (WRS-0702, August 2007)",
+          "date": null,
+          "url": "https://www.ers.usda.gov/media/9339/wrs-0702.pdf?v=17664",
+          "checked_on": "2026-11-06",
+          "locator": "Abstract; Introduction; Summary and Implications"
+        },
+        {
+          "title": "Impacts of Higher Energy Prices on Agriculture and Rural Economies",
+          "publisher": "U.S. Department of Agriculture, Economic Research Service (Economic Research Report Number 123, report summary, August 2011)",
+          "date": null,
+          "url": "https://www.ers.usda.gov/sites/default/files/_laserfiche/publications/44894/6806_err123_reportsummary.pdf?v=13426",
+          "checked_on": "2026-11-06",
+          "locator": "What is the Issue?; What Did the Study Find?"
+        },
+        {
+          "title": "Energy consumption in agriculture increased in 2016, driven mainly by diesel and fertilizer use",
+          "publisher": "U.S. Department of Agriculture, Economic Research Service (Charts of Note)",
+          "date": "2018-03-13",
+          "url": "https://www.ers.usda.gov/data-products/charts-of-note/87964",
+          "checked_on": "2026-11-06",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "id": "consumer_retail",
+      "sector": "Households and retail",
+      "trigger": "Pump prices of gasoline and diesel: retail prices, not crude",
+      "chain": [
+        "Pump prices",
+        "Household fuel spending",
+        "Real disposable income",
+        "Discretionary spending"
+      ],
+      "effect": "negative",
+      "effect_text": "Dearer fuel tends to weaken discretionary spending. Gasoline demand responds little in the short run, so a rise at the pump mainly leaves households less to spend on other things, like a tax on real income; when fuel gets cheaper, households tend to spend the saving on other things rather than hold it. Lower-income households, for whom fuel takes a larger share of income, tend to feel it most. For fuel retailers the effect is mixed: pump prices adjust with a delay, so their margins tend to narrow while wholesale costs climb and widen when those costs fall.",
+      "second_order": [
+        "Weaker spending at restaurants, on travel and in other discretionary outlets can slow growth in consumer-facing sectors.",
+        "Households can drive less and, over years, choose more efficient vehicles, which trims fuel demand.",
+        "Spending can shift toward essentials and cheaper brands, which can favour discount retailers over discretionary ones."
+      ],
+      "flips_when": [
+        "Crude moves pass only partly to the pump, since crude is one cost among refining, distribution and taxes.",
+        "Wages and employment are strong at the same time, as in a demand-led boom, so real incomes hold up.",
+        "Households see the rise as temporary and draw on savings rather than cut other spending.",
+        "The economy is a net oil producer, so producer income and investment offset part of the drag.",
+        "When fuel gets cheaper, the same channel supports discretionary spending, and fuel retailers' margins tend to widen for a time."
+      ],
+      "lag": "Pump prices tend to follow crude within weeks, though not fully or at once, and the spending response tends to build over weeks and months.",
+      "lag_sourced": true,
+      "sources": [
+        {
+          "title": "Crude oil price changes quicker to register at gasoline pump",
+          "publisher": "Federal Reserve Bank of Dallas (Dallas Fed Economics)",
+          "date": "2019-10-01",
+          "url": "https://www.dallasfed.org/research/economics/2019/1001",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "The Response of Consumer Spending to Changes in Gasoline Prices",
+          "publisher": "National Bureau of Economic Research (Working Paper 22969, December 2016, revised November 2017)",
+          "date": null,
+          "url": "https://www.nber.org/system/files/working_papers/w22969/w22969.pdf",
+          "checked_on": "2026-11-06",
+          "locator": "Abstract; I. Introduction"
+        },
+        {
+          "title": "As crude oil plunges, retail gasoline margins spike, then retreat",
+          "publisher": "U.S. Bureau of Labor Statistics (Beyond the Numbers, vol. 4, no. 13, December 2015)",
+          "date": null,
+          "url": "https://www.bls.gov/opub/btn/volume-4/pdf/as-crude-oil-plunges-retail-gasoline-margins-spike-then-retreat.pdf",
+          "checked_on": "2026-11-06",
+          "locator": "Differing price trends"
+        }
+      ]
+    },
+    {
+      "id": "inflation_policy",
+      "sector": "Inflation and monetary policy",
+      "trigger": "Retail fuel prices (energy in the consumer price index), which follow crude",
+      "chain": [
+        "Crude and fuel prices",
+        "Direct: energy in headline inflation",
+        "Indirect: energy costs in other prices",
+        "Possible second round: wages, expectations",
+        "Central bank: look through, or tighten"
+      ],
+      "effect": "mixed",
+      "effect_text": "The direct effect is mechanical: fuels are part of the consumer price index, so headline inflation moves with them. Indirect effects come as energy costs pass into transport and other goods and services; this is how oil can reach core inflation, an effect that tends to be small but can last. Second-round effects are distinct and only possible: they arise if wages and inflation expectations start to respond. A central bank may look through a temporary energy shock when expectations are anchored and wage growth restrained, or tighten if second-round effects appear or inflation is already high.",
+      "second_order": [
+        "Dearer energy also weighs on real incomes and spending in importing economies, which can damp demand and, in time, inflation itself.",
+        "Exporters' terms of trade improve and importers' worsen, which can move exchange rates and spread the shock across countries.",
+        "Bond yields and the pricing of policy rates can shift as markets judge how the central bank may respond."
+      ],
+      "flips_when": [
+        "Inflation expectations are well anchored and wages are not indexed to prices, which makes second-round effects less likely.",
+        "Inflation is already above target or the labour market is tight at the start, which raises second-round risk and the case for tightening.",
+        "The energy rise is persistent rather than a one-off jump, giving indirect effects longer to build.",
+        "A one-off jump in the energy price level leaves the annual inflation rate after a year; a quick reversal unwinds it sooner.",
+        "Fuel taxes, subsidies or price caps differ, changing how much of a crude move reaches consumer prices.",
+        "A demand-led rise, with strong activity, strengthens the case to tighten; a supply cut that hurts growth poses a trade-off between inflation and growth."
+      ],
+      "lag": "The direct effect on headline inflation tends to appear quickly, as pump prices adjust; indirect effects build more slowly and can linger in core inflation for a long time.",
+      "lag_sourced": true,
+      "sources": [
+        {
+          "title": "Indirect effects of oil price developments on euro area inflation",
+          "publisher": "European Central Bank (Monthly Bulletin, December 2014, Box 3)",
+          "date": null,
+          "url": "https://www.ecb.europa.eu/pub/pdf/other/mb201412_focus03.en.pdf",
+          "checked_on": "2026-11-06",
+          "locator": "The notion of indirect effects; Gauging the quantitative role of indirect effects"
+        },
+        {
+          "title": "Oil Price Pass-Through into Core Inflation",
+          "publisher": "Board of Governors of the Federal Reserve System (FEDS Notes)",
+          "date": "2017-10-19",
+          "url": "https://www.federalreserve.gov/econres/notes/feds-notes/oil-price-pass-through-into-core-inflation-20171019.htm",
+          "checked_on": "2026-11-06",
+          "locator": "Conclusions"
+        },
+        {
+          "title": "Commodity Prices, the Economic Outlook, and Monetary Policy",
+          "publisher": "Board of Governors of the Federal Reserve System (speech by Vice Chair Janet L. Yellen)",
+          "date": "2011-04-11",
+          "url": "https://www.federalreserve.gov/newsevents/speech/yellen20110411a.htm",
+          "checked_on": "2026-11-06",
+          "locator": "Risks to the Inflation Outlook; Monetary Policy Considerations"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,474 @@
+{
+  "not_signed_in": {
+    "contract": "user-api-0.2",
+    "code": "not_signed_in",
+    "detail": "Sign in to continue."
+  },
+  "session_expired": {
+    "contract": "user-api-0.2",
+    "code": "session_expired",
+    "detail": "Your session has ended. Sign in again to continue."
+  },
+  "invalid_credentials": {
+    "contract": "user-api-0.2",
+    "code": "invalid_credentials",
+    "detail": "The username or password is not correct, or the account is not active."
+  },
+  "registration_pending": {
+    "contract": "user-api-0.2",
+    "code": "registration_pending",
+    "detail": "Your registration is waiting for an administrator's approval. Nothing can be used until it is approved; sign in later to see its status.",
+    "registration": {
+      "username": "reader-c",
+      "display_name": "Reader C (synthetic)",
+      "status": "pending",
+      "submitted_at": "2026-10-14T09:00:00+00:00",
+      "decided_at": null,
+      "detail": "Your registration is waiting for an administrator's approval. Nothing can be used until it is approved; sign in later to see its status."
+    }
+  },
+  "registration_rejected": {
+    "contract": "user-api-0.2",
+    "code": "registration_rejected",
+    "detail": "Your registration was not approved, so this account cannot be used.",
+    "registration": {
+      "username": "reader-d",
+      "display_name": "Reader D (synthetic)",
+      "status": "rejected",
+      "submitted_at": "2026-10-14T09:00:00+00:00",
+      "decided_at": "2026-10-14T09:00:00+00:00",
+      "detail": "Your registration was not approved, so this account cannot be used."
+    }
+  },
+  "forbidden": {
+    "contract": "user-api-0.2",
+    "code": "forbidden",
+    "detail": "This page or action is not available to your account."
+  },
+  "not_found": {
+    "contract": "user-api-0.2",
+    "code": "not_found",
+    "detail": "Nothing is available at this address."
+  },
+  "unsupported_effort": {
+    "contract": "user-api-0.2",
+    "code": "unsupported_effort",
+    "detail": "This Effort is not offered. Choose one of the listed options.",
+    "efforts": [
+      {
+        "effort": "low",
+        "label": "Low"
+      },
+      {
+        "effort": "medium",
+        "label": "Medium"
+      },
+      {
+        "effort": "high",
+        "label": "High"
+      }
+    ]
+  },
+  "no_credit_policy": {
+    "contract": "user-api-0.2",
+    "code": "no_credit_policy",
+    "detail": "Analyses cannot be quoted yet: no credit policy is set. Ask the administrator."
+  },
+  "request_over_budget": {
+    "contract": "user-api-0.2",
+    "code": "request_over_budget",
+    "detail": "This source is too long to analyse under the current limits. Ask the administrator."
+  },
+  "already_attempted": {
+    "contract": "user-api-0.2",
+    "code": "already_attempted",
+    "detail": "This analysis has already been run. It is never run twice."
+  },
+  "quote_expired": {
+    "contract": "user-api-0.2",
+    "code": "quote_expired",
+    "detail": "This quote has expired. Ask for a new quote; nothing was reserved."
+  },
+  "quote_superseded": {
+    "contract": "user-api-0.2",
+    "code": "quote_superseded",
+    "detail": "The credit terms changed since this quote. Ask for a new quote; nothing was reserved."
+  },
+  "quote_mismatch": {
+    "contract": "user-api-0.2",
+    "code": "quote_mismatch",
+    "detail": "The approval does not match the quote. Reload and approve the quote shown."
+  },
+  "insufficient_credits": {
+    "contract": "user-api-0.2",
+    "code": "insufficient_credits",
+    "detail": "You do not have enough credits for this quote. Nothing was reserved.",
+    "credits": {
+      "available": 3,
+      "held": 6
+    }
+  },
+  "no_daily_limit": {
+    "contract": "user-api-0.2",
+    "code": "no_daily_limit",
+    "detail": "No daily analysis limit is set for your account yet. Ask the administrator."
+  },
+  "daily_limit_reached": {
+    "contract": "user-api-0.2",
+    "code": "daily_limit_reached",
+    "detail": "You have used today's analysis allowance. It resets at the time shown.",
+    "daily": {
+      "timezone": "Asia/Jerusalem",
+      "day": "2026-10-14",
+      "limit": 3,
+      "used": 3,
+      "remaining": 0,
+      "resets_at": "2026-10-14T21:00:00+00:00"
+    },
+    "resets_at": "2026-10-14T21:00:00+00:00"
+  },
+  "result_changed": {
+    "contract": "user-api-0.2",
+    "code": "result_changed",
+    "detail": "The result changed since you loaded it. Reload before saving."
+  },
+  "review_conflict": {
+    "contract": "user-api-0.2",
+    "code": "review_conflict",
+    "detail": "Another review version was saved since you loaded this one. Reload to see it."
+  },
+  "no_result": {
+    "contract": "user-api-0.2",
+    "code": "no_result",
+    "detail": "There is no recorded result to review."
+  },
+  "payload_too_large": {
+    "contract": "user-api-0.2",
+    "code": "payload_too_large",
+    "detail": "The request is too large."
+  },
+  "invalid_request": {
+    "contract": "user-api-0.2",
+    "code": "invalid_request",
+    "detail": "The request is not in the expected form."
+  },
+  "invalid_source": {
+    "contract": "user-api-0.2",
+    "code": "invalid_source",
+    "detail": "published_at must include a time zone offset, such as 2026-10-13T10:00:00+03:00."
+  },
+  "invalid_review": {
+    "contract": "user-api-0.2",
+    "code": "invalid_review",
+    "detail": "A review needs notes or a status."
+  },
+  "sending_disabled": {
+    "contract": "user-api-0.2",
+    "code": "sending_disabled",
+    "detail": "Analyses cannot run on this server right now. Nothing was reserved."
+  },
+  "accounts_unavailable": {
+    "contract": "user-api-0.2",
+    "code": "accounts_unavailable",
+    "detail": "This server runs without accounts."
+  },
+  "internal_error": {
+    "contract": "user-api-0.2",
+    "code": "internal_error",
+    "detail": "Something went wrong on the server. Read the page again before trying anything."
+  },
+  "account_changed": {
+    "contract": "user-api-0.3",
+    "code": "account_changed",
+    "detail": "This page was opened for another account than the one now signed in on this browser. Nothing was read or changed. Reload the page to continue as the account now signed in."
+  },
+  "account_binding_required": {
+    "contract": "user-api-0.3",
+    "code": "account_binding_required",
+    "detail": "This request did not say which account it was made for, so nothing was changed. Reload the page and try again."
+  },
+  "no_usage_policy": {
+    "contract": "user-api-0.5",
+    "code": "no_usage_policy",
+    "detail": "Searches, imports and new sources are not available yet: no usage limits are set on this server. Ask the administrator."
+  },
+  "usage_limit_reached": {
+    "contract": "user-api-0.5",
+    "code": "usage_limit_reached",
+    "detail": "You have used today's searches. They reset at midnight in Asia/Jerusalem.",
+    "quota": {
+      "operation": "search",
+      "limit": 20,
+      "used": 20,
+      "day": "2026-10-14",
+      "timezone": "Asia/Jerusalem",
+      "resets_at": "2026-10-14T21:00:00+00:00"
+    }
+  },
+  "storage_limit_reached": {
+    "contract": "user-api-0.5",
+    "code": "storage_limit_reached",
+    "detail": "This source would exceed what your account may hold. Nothing was saved.",
+    "storage": {
+      "measure": "source_bytes",
+      "limit": 5000000,
+      "used": 4999000,
+      "adding": 2461
+    }
+  },
+  "fetch_budget_reached": {
+    "contract": "user-api-0.5",
+    "code": "fetch_budget_reached",
+    "detail": "This server has made today's publication requests. Nothing was requested; you can paste the publication's text instead.",
+    "resets_at": "2026-10-14T21:00:00+00:00"
+  },
+  "request_key_reused": {
+    "contract": "user-api-0.5",
+    "code": "request_key_reused",
+    "detail": "This search key was already used for another search. Nothing was counted."
+  },
+  "interests_changed": {
+    "contract": "user-api-0.5",
+    "code": "interests_changed",
+    "detail": "Your interests were changed in another tab since this page loaded. Nothing was saved.",
+    "interests": {
+      "vocabulary_version": "news-interests-0.2",
+      "rule": "An entry concerns an interest when its source's topic is that interest, or when one of the interest's terms appears in its title or excerpt as whole words, ignoring case.",
+      "vocabulary": [
+        {
+          "interest": "monetary-policy",
+          "label": "Monetary policy",
+          "sources": [
+            "fed-monetary"
+          ],
+          "terms": [
+            "monetary policy",
+            "federal funds",
+            "interest rate",
+            "interest rates",
+            "FOMC",
+            "Federal Open Market Committee",
+            "discount rate"
+          ]
+        },
+        {
+          "interest": "employment",
+          "label": "Employment",
+          "sources": [
+            "bls-empsit"
+          ],
+          "terms": [
+            "employment",
+            "unemployment",
+            "payroll",
+            "payrolls",
+            "jobs",
+            "labor market",
+            "labor force",
+            "wages"
+          ]
+        },
+        {
+          "interest": "inflation",
+          "label": "Inflation",
+          "sources": [
+            "bls-cpi"
+          ],
+          "terms": [
+            "inflation",
+            "consumer price index",
+            "consumer prices",
+            "CPI",
+            "price index"
+          ]
+        },
+        {
+          "interest": "energy",
+          "label": "Energy",
+          "sources": [
+            "eia-todayinenergy"
+          ],
+          "terms": [
+            "energy",
+            "oil",
+            "crude oil",
+            "natural gas",
+            "electricity",
+            "gasoline",
+            "diesel",
+            "coal",
+            "LNG",
+            "renewable",
+            "power generation"
+          ]
+        },
+        {
+          "interest": "trade",
+          "label": "Trade",
+          "sources": [
+            "wto-news"
+          ],
+          "terms": [
+            "trade",
+            "tariff",
+            "tariffs",
+            "exports",
+            "imports",
+            "WTO",
+            "World Trade Organization"
+          ]
+        },
+        {
+          "interest": "markets",
+          "label": "Markets",
+          "sources": [],
+          "terms": [
+            "stock market",
+            "stocks",
+            "shares",
+            "equities",
+            "bond market",
+            "bonds",
+            "Treasury yields",
+            "Wall Street",
+            "S&P 500",
+            "Nasdaq",
+            "Dow Jones",
+            "recession",
+            "GDP"
+          ]
+        },
+        {
+          "interest": "technology",
+          "label": "Technology",
+          "sources": [],
+          "terms": [
+            "technology",
+            "AI",
+            "artificial intelligence",
+            "software",
+            "semiconductor",
+            "semiconductors",
+            "chips",
+            "chipmaker",
+            "cloud computing",
+            "cybersecurity",
+            "startup",
+            "startups"
+          ]
+        },
+        {
+          "interest": "companies",
+          "label": "Companies",
+          "sources": [],
+          "terms": [
+            "acquisition",
+            "acquires",
+            "merger",
+            "earnings",
+            "quarterly results",
+            "IPO",
+            "CEO",
+            "layoffs",
+            "dividend",
+            "revenue"
+          ]
+        }
+      ],
+      "selected": [
+        "monetary-policy",
+        "energy"
+      ],
+      "version": 1,
+      "saved_at": "2026-10-14T08:55:00+00:00"
+    }
+  },
+  "rate_limited": {
+    "contract": "user-api-0.5",
+    "code": "rate_limited",
+    "detail": "Too many requests in a short time. Wait a moment, then read the page again.",
+    "retry_after_seconds": 20
+  },
+  "too_many_requests": {
+    "contract": "user-api-0.5",
+    "code": "too_many_requests",
+    "detail": "Too many requests are in progress for your account. Wait for them to finish.",
+    "retry_after_seconds": 1
+  },
+  "entry_changed": {
+    "contract": "user-api-0.5",
+    "code": "entry_changed",
+    "detail": "The news entry changed since this page loaded. Reload the news.",
+    "requested": false
+  },
+  "import_unsupported": {
+    "contract": "user-api-0.5",
+    "code": "import_unsupported",
+    "detail": "Importing the full publication is not available for this publisher yet. You can open the official page and paste its text into a new source instead.",
+    "paste_instead": true,
+    "requested": false
+  },
+  "publication_unavailable": {
+    "contract": "user-api-0.5",
+    "code": "publication_unavailable",
+    "detail": "The publisher's page could not be read (HTTP 503 from the publisher). You can open the official page and paste its text into a new source instead.",
+    "paste_instead": true,
+    "requested": true
+  },
+  "publication_time_conflict": {
+    "contract": "user-api-0.5",
+    "code": "publication_time_conflict",
+    "detail": "The page's printed date disagrees with the feed's publication time, so neither is taken.",
+    "requested": true
+  },
+  "import_in_progress": {
+    "contract": "user-api-0.5",
+    "code": "import_in_progress",
+    "detail": "This publication is being read now. Reload in a moment.",
+    "requested": false
+  },
+  "publication_changed": {
+    "contract": "user-api-0.5",
+    "code": "publication_changed",
+    "detail": "The confirmation names another text than this import showed. Reload the import."
+  },
+  "import_interrupted": {
+    "contract": "user-api-0.5",
+    "code": "import_interrupted",
+    "detail": "An earlier confirmation of this import stopped before it finished; nothing is created again. An administrator can check it."
+  },
+  "publication_unreadable": {
+    "contract": "user-api-0.5",
+    "code": "publication_unreadable",
+    "detail": "The page could not be read as the release's text. You can open the official page and paste its text into a new source instead.",
+    "paste_instead": true,
+    "requested": true
+  },
+  "publication_too_long": {
+    "contract": "user-api-0.5",
+    "code": "publication_too_long",
+    "detail": "The release has more than 50,000 characters and is never shortened. You can paste the part you need into a new source instead.",
+    "paste_instead": true,
+    "requested": true
+  },
+  "story_changed": {
+    "contract": "user-api-0.5",
+    "code": "story_changed",
+    "detail": "This story's material changed since the page was read. Nothing was saved; read it again to see what would be used now."
+  },
+  "deeper_unavailable": {
+    "contract": "user-api-0.5",
+    "code": "deeper_unavailable",
+    "detail": "A deeper analysis needs material its publishers allow to be analysed; this story's reports grant no such use."
+  },
+  "newsroom_unreadable": {
+    "contract": "user-api-0.5",
+    "code": "newsroom_unreadable",
+    "detail": "The news could not be read on this server. An administrator can check it."
+  },
+  "source_unmarked": {
+    "contract": "user-api-0.5",
+    "code": "source_unmarked",
+    "detail": "Go deeper made this source before it recorded which of its passages are the publishers' own words, so it is not analysed again. Its earlier results stay as they are. Go deeper from the story again to make a new source of the same reports. Nothing was reserved or counted."
+  }
+}

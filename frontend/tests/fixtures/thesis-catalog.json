@@ -1,0 +1,14 @@
+{
+  "view_version": "thesis-catalog-0.1",
+  "theses": [
+    {
+      "id": "synthetic-copper",
+      "title": "Synthetic copper: technology demand and the physical balance",
+      "topic": "Synthetic copper",
+      "latest_version": 2,
+      "published_on": "2026-11-16",
+      "href": "/theses/synthetic-copper"
+    }
+  ],
+  "provider_called": false
+}

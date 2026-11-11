@@ -1,0 +1,84 @@
+/* The Admin screens: tables, forms and states, in the existing visual language. Scoped under .admin-*. */
+
+.admin-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 18px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px var(--gutter);
+  border-bottom: 1px solid var(--rule);
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.admin-bar nav { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.admin-bar a { color: var(--ink-2); text-decoration: none; border-bottom: 2px solid transparent; }
+.admin-bar a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--stamp); }
+.admin-bar .admin-account { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.admin-bar .admin-role { color: var(--stamp); }
+.admin-bar button {
+  padding: 0; border: 0; background: none; color: var(--accent); font: inherit; letter-spacing: inherit;
+  text-transform: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+
+.admin-section { padding: 30px 0 20px; }
+.admin-section h1 { margin: 4px 0 12px; font: 400 clamp(26px, 3.4vw, 38px)/1.12 var(--serif); }
+.admin-section h2 { margin: 30px 0 10px; font: 500 19px/1.3 var(--serif); }
+.admin-section h3 { margin: 16px 0 6px; font: 600 13px/1.3 var(--sans); }
+
+.admin-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); background: var(--paper-raised); }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th, .admin-table td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: left;
+                                   vertical-align: top; }
+.admin-table th { font: 500 10.5px/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+                  color: var(--ink-3); white-space: nowrap; }
+.admin-table small { color: var(--ink-3); }
+.admin-number { font-family: var(--mono); text-align: right; }
+.admin-actions td { min-width: 96px; }
+.admin-timing { white-space: nowrap; font-size: 12px; }
+
+.admin-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin: 6px 0 14px; }
+.admin-form label, .admin-filter { display: grid; gap: 4px; min-width: 0; color: var(--ink-2); font-size: 12.5px; }
+.admin-form input, .admin-form select, .admin-filter select {
+  min-width: 0; max-width: 100%; padding: 6px 8px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  background: var(--paper-raised); font: 14px var(--sans);
+}
+.admin-form fieldset { flex-basis: 100%; min-width: 0; border: 1px solid var(--rule); padding: 8px 12px; }
+.admin-form legend { font-size: 12.5px; color: var(--ink-2); }
+.admin-effort { display: inline-flex !important; grid-auto-flow: column; align-items: center; gap: 6px; margin-right: 18px; }
+.admin-effort input[type="text"], .admin-effort input:not([type]) { width: 4.5em; }
+.admin-panel { margin: 14px 0; padding: 12px 16px; border: 1px solid var(--rule-strong); background: var(--paper-raised); }
+.admin-panel h2 { margin-top: 0; }
+.admin-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.admin-columns h4 { margin: 0 0 4px; }
+.admin-link { padding: 0; border: 0; background: none; color: var(--accent); font: 500 13px var(--sans);
+              text-decoration: underline; cursor: pointer; }
+
+.admin-ok { color: var(--supported); margin: 0; }
+.admin-problem { color: var(--contradicted); margin: 0; }
+.admin-holds, .admin-totals { padding-left: 18px; }
+.admin-holds li { margin-bottom: 14px; }
+.admin-state { color: var(--stamp); }
+.admin-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; }
+.admin-facts dt { color: var(--ink-3); }
+.admin-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.admin-attention { margin: 0 0 16px; padding: 8px 14px; border-left: 3px solid var(--stamp); background: var(--paper-raised);
+                   overflow-wrap: anywhere; }
+.admin-attention p { margin: 4px 0; }
+.admin-attention.muted { border-left-color: var(--rule-strong); }
+.admin-attention .admin-link { font: inherit; }
+
+/* The News desk's brief editor: one column of labelled fields. */
+.admin-brief-editor { flex-direction: column; align-items: stretch; max-width: 860px; }
+.admin-brief-editor textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--rule-strong); border-radius: 2px;
+                               background: var(--paper-raised); font: 14px/1.45 var(--sans); resize: vertical; }
+.admin-brief-editor .button { align-self: flex-start; }
+
+@media (max-width: 640px) {
+  .admin-facts { grid-template-columns: minmax(0, 1fr); }
+  .admin-form { flex-direction: column; align-items: stretch; }
+}

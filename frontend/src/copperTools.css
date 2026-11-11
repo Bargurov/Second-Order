@@ -1,0 +1,95 @@
+/* The copper tools page (/theses/copper/tools): dense, calm tables on the library's paper and ink, every number
+   marked by its kind. Wide tables scroll inside their own frame so the page never scrolls sideways. */
+.ct-page { max-width: 1120px; }
+.ct-header .thesis-check { margin-top: 8px; }
+.ct-legend { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); max-width: 90ch; }
+.ct-section { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--rule-strong); }
+.ct-section-head h2 { margin: 2px 0 6px; font-family: var(--serif); font-weight: 500; }
+.ct-section h3 { margin: 22px 0 8px; font-size: 15px; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+.ct-plain { margin: 6px 0 12px; max-width: 82ch; color: var(--ink-2); font-size: 14px; }
+.ct-note { margin: 6px 0; font-size: 13px; color: var(--ink-3); max-width: 90ch; }
+/* Bagdad's two statements: each stamp, the documents' terms and a withheld reason sit on their own line under the
+   project name. */
+.ct-statement, .ct-terms, .ct-table th [data-linked-problem] {
+  display: block; margin-top: 3px; font: 400 12px/1.4 var(--sans);
+}
+.ct-statement { color: var(--ink-2); }
+.ct-terms { color: var(--ink-3); }
+.ct-error { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--stamp); color: var(--ink); font-size: 14px; }
+.ct-saved { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--ink); font-size: 14px; }
+
+.ct-kind {
+  display: inline-block; min-width: 1.4em; margin-left: 4px; padding: 0 3px; border: 1px solid var(--rule-strong);
+  border-radius: 2px; font: 600 10px/1.5 var(--mono); text-align: center; color: var(--ink-2); vertical-align: 1px;
+}
+.ct-kind[data-kind="published"] { background: var(--paper-raised); }
+.ct-kind[data-kind="assumption"] { border-color: var(--ink); color: var(--ink); }
+.ct-kind[data-kind="computed"] { background: var(--paper-sunk); }
+.ct-kind[data-kind="missing"] { border-style: dashed; color: var(--ink-3); }
+.ct-value { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.ct-unit { color: var(--ink-3); }
+.ct-withheld, .ct-missing { font-size: 13px; color: var(--ink-3); }
+
+.ct-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); background: var(--paper-raised); }
+.ct-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ct-table th, .ct-table td { padding: 6px 10px; border-bottom: 1px solid var(--rule); text-align: left;
+  vertical-align: top; }
+.ct-table thead th { font: 600 11px/1.4 var(--sans); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-2); background: var(--paper-sunk); }
+.ct-table tbody th { font-weight: 500; color: var(--ink); }
+.ct-table tr.ct-total th, .ct-table tr.ct-total td, .ct-table td.ct-total { font-weight: 600; }
+.ct-table tr[data-state="withheld"] td, .ct-table td.ct-withheld { color: var(--ink-3); }
+.ct-block { margin-top: 16px; }
+
+.ct-selectors { display: flex; flex-wrap: wrap; gap: 14px 28px; margin: 10px 0 4px; }
+.ct-selectors fieldset, .ct-control { margin: 0; padding: 10px 14px; border: 1px solid var(--rule); }
+.ct-selectors legend, .ct-control legend { padding: 0 4px; font: 600 12px/1.4 var(--sans); color: var(--ink-2); }
+.ct-selectors label, .ct-control > label { display: inline-flex; align-items: center; gap: 6px; margin: 4px 14px 4px 0;
+  font-size: 14px; }
+.ct-control { margin-top: 12px; }
+.ct-inline { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 12px 6px 0;
+  font-size: 14px; }
+.ct-inline input, .ct-label input { width: 9em; padding: 4px 6px; border: 1px solid var(--rule-strong);
+  font: 13px var(--mono); background: var(--paper); color: var(--ink); }
+.ct-label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; }
+.ct-label input { width: min(28em, 70vw); font-family: var(--sans); }
+.ct-inline select { padding: 3px 4px; font-size: 13px; }
+.ct-inline-block { margin-top: 6px; }
+.ct-factors { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0 12px; }
+.ct-references { margin: 4px 0; padding-left: 18px; font-size: 13px; }
+.ct-references .button { margin: 2px 4px 2px 0; padding: 2px 8px; font-size: 12px; }
+.ct-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 14px 0 6px; }
+
+.ct-refining { margin-top: 18px; padding: 12px 16px; border: 1px solid var(--rule-strong); border-left: 3px solid var(--ink);
+  background: var(--paper-raised); font-size: 14px; }
+.ct-refining h3 { margin-top: 0; }
+.ct-refining ul { margin: 4px 0 10px; padding-left: 18px; }
+
+.ct-flags { margin: 10px 0; padding: 8px 12px 8px 28px; border-left: 3px solid var(--stamp); background: var(--paper-raised);
+  font-size: 13px; }
+.ct-not-computed, .ct-not-claimed, .ct-cannot { padding-left: 18px; font-size: 14px; max-width: 90ch; }
+.ct-cites { margin: 4px 0 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); }
+.ct-charge, .ct-stated { display: block; margin: 1px 0; }
+
+.ct-chain { margin: 8px 0; padding-left: 0; list-style: none; font-size: 14px; }
+.ct-chain li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 0;
+  border-bottom: 1px solid var(--rule); }
+.ct-chain-id { font: 600 12px var(--mono); color: var(--ink-2); }
+.ct-chain-status { padding: 0 6px; border: 1px solid var(--rule-strong); font-size: 12px; color: var(--ink-2); }
+.ct-chain li[data-status="missing"] .ct-chain-status { border-style: dashed; color: var(--ink-3); }
+.ct-diagram { margin: 8px 0; padding: 12px; overflow-x: auto; border: 1px solid var(--rule); background: var(--paper-raised);
+  font: 12px/1.6 var(--mono); color: var(--ink-2); }
+.ct-records { padding-left: 0; list-style: none; font-size: 14px; }
+.ct-records > li { padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.ct-record-state { display: block; font-size: 13px; color: var(--ink-2); }
+.ct-records li[data-state="needs_revalidation"] .ct-record-state,
+.ct-records li[data-state="unavailable"] .ct-record-state,
+.ct-records li[data-state="invalid"] .ct-record-state { color: var(--stamp); }
+.ct-panel { margin-top: 18px; padding: 12px 16px; border: 1px solid var(--rule-strong); }
+.ct-panel h3 { margin-top: 0; }
+
+@media (max-width: 640px) {
+  .ct-section { margin-top: 26px; }
+  .ct-selectors { gap: 10px; }
+  .ct-selectors fieldset { width: 100%; }
+}

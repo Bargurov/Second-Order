@@ -1,0 +1,3123 @@
+{
+  "research_version": "policy-research-0.1",
+  "id": "semiconductor-policy",
+  "title": "Semiconductor policy evolution",
+  "question": "How do selected BIS releases on advanced chips and chip-making equipment, from October 2022 to February 2026, relate to one another: which are new rules, revisions, clarifications, announced reversals or enforcement, and what does each one explicitly cover?",
+  "scope_note": "A retrospective comparison of ten selected BIS press releases as retained on October 12, 2026. It is not a complete or current semiconductor-policy monitor, and not legal or compliance guidance.",
+  "corpus_notes": [
+    "All ten are press releases by BIS: one publisher's account of its own actions. Several BIS releases are not independent corroboration of one another.",
+    "Each text is the one BIS's News & Updates listing embedded on the retrieval date. Two were also checked against separately retained release pages; the others are labelled as listing text.",
+    "BIS's site records later changes to most of these pages, so the wording at first release is not established.",
+    "The rule texts, Federal Register documents and other linked documents were not retained. “Not stated in this source” describes the retained text only: the matter may be settled in a document not read here."
+  ],
+  "method_note": "The releases were chosen by reading the records that the snapshot's semiconductor keyword filter matched; the filter is a word list, not a classification, and it also matches unrelated releases. Every statement below is tied to quoted text; supply-chain stages are the curator's reading of the items each release names.",
+  "snapshot": {
+    "approval_id": "bis-semis-sources-01",
+    "attempt": 1,
+    "url": "https://www.bis.gov/news-updates",
+    "sha256": "6209b876f4484c0614d363ff77a66de0c99b285fdf00f26ff49e7b6f8c910c4f",
+    "bytes": 3585240,
+    "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+    "extractor_version": "bis-snapshot-extract-0.1"
+  },
+  "release_pages": [
+    {
+      "id": "bis-2022-10-07-page",
+      "approval_id": "related-cases-sources-01",
+      "attempt": 1,
+      "folder": "bis-2022-10-07",
+      "url": "https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples",
+      "sha256": "c25ea1239348b29549e7bf1965a9940db92fefda7c5f1c7d3db08a20bf4227bb",
+      "bytes": 76841,
+      "retrieved_at": "2026-10-12T08:58:22.032699+00:00",
+      "dateline": "October 7, 2022"
+    },
+    {
+      "id": "bis-2026-02-12-page",
+      "approval_id": "bis-semis-sources-01",
+      "attempt": 3,
+      "folder": "bis-2026-02-12",
+      "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+      "sha256": "feec7e46ffa0d9f2214d7a7f21fc5a69c04bf59e72415705af338eb788b77227",
+      "bytes": 64517,
+      "retrieved_at": "2026-10-12T14:47:55.282763+00:00",
+      "dateline": "February 12, 2026"
+    }
+  ],
+  "publications": [
+    {
+      "id": "ac-sme-rules-2022",
+      "short_title": "Advanced computing and chip-making equipment rules",
+      "title": "Commerce Implements New Export Controls on Advanced Computing and Semiconductor Manufacturing Items to the People’s Republic of China (PRC)",
+      "url": "https://www.bis.gov/press-release/commerce-implements-new-export-controls-advanced-computing-semiconductor-manufacturing-items-peoples",
+      "record": {
+        "key": "f95f0f00241e434cdfd5",
+        "record_sha256": "0d391db7d0e8566119517f9555d2fb51de3042858446508e70d7024858981115",
+        "paragraphs": 38
+      },
+      "listing": {
+        "published": "2022-10-07T10:28:31+00:00",
+        "created": "2022-10-07T00:00:00+00:00",
+        "changed": "2026-08-28T20:35:39+00:00"
+      },
+      "release_page": "bis-2022-10-07-page",
+      "why_included": "The earliest selected rules: controls on advanced computing chips, supercomputer and chip-making end uses and chip-making equipment for the PRC, which the 2023 and 2024 releases in this selection name as their starting point.",
+      "cases": [
+        {
+          "kind": "historical",
+          "id": "bis-2022-10-07",
+          "note": "The case library's historical case was written from the same release page."
+        }
+      ],
+      "dimensions": {
+        "instrument": {
+          "label": "Two rules: export controls, and an Unverified List and Entity List change",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS announced two rules: one on advanced computing and semiconductor manufacturing, and one revising how parties on the Unverified List can move to the Entity List.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "The export controls announced in the two rules today restrict the PRC’s ability to obtain advanced computing chips, develop and maintain supercomputers, and manufacture advanced semiconductors."
+                },
+                {
+                  "paragraph": 24,
+                  "quote": "Revisions to BIS’s Unverified List:"
+                },
+                {
+                  "paragraph": 25,
+                  "quote": "a sustained lack of cooperation by the host government that effectively prevents BIS from determining compliance with the EAR may lead to the addition of an entity to the Entity List"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Builds on earlier BIS actions, named in general terms",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release says the updates build on prior policies and actions, and lists earlier actions only in general terms.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "build on prior policies, company-specific actions, and less public regulatory, legal, and enforcement actions taken by BIS"
+                },
+                {
+                  "paragraph": 33,
+                  "quote": "Implementation of new multilateral controls on advanced semiconductor and gas turbine engine technologies."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "Which earlier rules, by citation, these rules amend.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Advanced computing chips; supercomputer and chip-making end uses; chip-making equipment",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Advanced computing chips and products containing them, items for supercomputer or semiconductor end uses in the PRC, and chip-making equipment are brought under control.",
+              "excerpts": [
+                {
+                  "paragraph": 11,
+                  "quote": "Adds certain advanced and high-performance computing chips and computer commodities that contain such chips to the Commerce Control List (CCL);"
+                },
+                {
+                  "paragraph": 12,
+                  "quote": "Adds new license requirements for items destined for a supercomputer or semiconductor development or production end use in the PRC;"
+                },
+                {
+                  "paragraph": 15,
+                  "quote": "Adds certain semiconductor manufacturing equipment and related items to the CCL;"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "PRC end uses and fabs; PRC entities on the Entity List; U.S. persons",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The rules address end uses and fabrication facilities in the PRC, PRC-located entities already on the Entity List, and support by U.S. persons.",
+              "excerpts": [
+                {
+                  "paragraph": 14,
+                  "quote": "Expands the scope of foreign-produced items subject to license requirements to twenty-eight existing entities on the Entity List that are located in the PRC;"
+                },
+                {
+                  "paragraph": 20,
+                  "quote": "Restricts the ability of U.S. persons to support the development, or production, of ICs at certain PRC-located semiconductor fabrication “facilities” without a license;"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chips; supercomputers; chip-making equipment; fabs",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Advanced computing chips.",
+              "excerpts": [
+                {
+                  "paragraph": 11,
+                  "quote": "Adds certain advanced and high-performance computing chips"
+                }
+              ],
+              "reference": null,
+              "stage": "chips",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Supercomputers, as an end use.",
+              "excerpts": [
+                {
+                  "paragraph": 12,
+                  "quote": "items destined for a supercomputer or semiconductor development or production end use"
+                }
+              ],
+              "reference": null,
+              "stage": "computing_systems",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Chip-making equipment.",
+              "excerpts": [
+                {
+                  "paragraph": 15,
+                  "quote": "Adds certain semiconductor manufacturing equipment and related items to the CCL;"
+                }
+              ],
+              "reference": null,
+              "stage": "equipment",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Chip fabrication facilities.",
+              "excerpts": [
+                {
+                  "paragraph": 16,
+                  "quote": "Adds new license requirements for items destined to a semiconductor fabrication “facility” in the PRC"
+                }
+              ],
+              "reference": null,
+              "stage": "fabrication",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Effective in phases: October 7, 12 and 21, 2022",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The main rule's chip-making equipment restrictions take effect on filing for public inspection.",
+              "excerpts": [
+                {
+                  "paragraph": 23,
+                  "quote": "The semiconductor manufacturing items restrictions are effective upon filing for Public Inspection (October 7, 2022)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": "2022-10-07",
+                  "precision": "day",
+                  "as_stated": "October 7, 2022"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "Its restrictions on U.S. persons' support for certain PRC fabs take effect five days later.",
+              "excerpts": [
+                {
+                  "paragraph": 23,
+                  "quote": "the restrictions on U.S. persons’ ability to support the development, production, or use of ICs at certain PRC-located semiconductor fabrication “facilities” is effective five days later (October 12, 2022)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": "2022-10-12",
+                  "precision": "day",
+                  "as_stated": "October 12, 2022"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "Its advanced computing and supercomputer controls, and its other changes, take effect 14 days later.",
+              "excerpts": [
+                {
+                  "paragraph": 23,
+                  "quote": "the advanced computing and supercomputer controls, as well as the other changes in the rule, are effective 14 days later (October 21, 2022)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": "2022-10-21",
+                  "precision": "day",
+                  "as_stated": "October 21, 2022"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "The Unverified List rule takes effect on October 7, 2022.",
+              "excerpts": [
+                {
+                  "paragraph": 29,
+                  "quote": "The rule takes effect on October 7, 2022."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": "2022-10-07",
+                  "precision": "day",
+                  "as_stated": "October 7, 2022"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "Public comments are due 60 days after Federal Register publication.",
+              "excerpts": [
+                {
+                  "paragraph": 23,
+                  "quote": "public comments on all of these changes are due to BIS no later than 60 days from the date of Federal Register publication"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "comment_deadline",
+                  "value": null,
+                  "precision": "relative",
+                  "as_stated": "no later than 60 days from the date of Federal Register publication"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "The Federal Register publication date.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Fab thresholds; presumption of denial for PRC-owned fabs; temporary general license",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Licenses for PRC fabs making chips at stated thresholds face a presumption of denial for PRC-owned facilities and case-by-case review for multinationals' facilities.",
+              "excerpts": [
+                {
+                  "paragraph": 16,
+                  "quote": "Licenses for facilities owned by PRC entities will face a “presumption of denial,” and facilities owned by multinationals will be decided on a case-by-case basis."
+                },
+                {
+                  "paragraph": 17,
+                  "quote": "Logic chips with non-planar transistor architectures (I.e., FinFET or GAAFET) of 16nm or 14nm, or below;"
+                },
+                {
+                  "paragraph": 18,
+                  "quote": "DRAM memory chips of 18nm half-pitch or less;"
+                },
+                {
+                  "paragraph": 19,
+                  "quote": "NAND flash memory chips with 128 layers or more."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "stated",
+              "text": "A temporary general license allows limited manufacturing activities for items destined for use outside the PRC.",
+              "excerpts": [
+                {
+                  "paragraph": 22,
+                  "quote": "Establishes a Temporary General License (TGL) to minimize the short-term impact on the semiconductor supply chain by allowing specific, limited manufacturing activities related to items destined for use outside the PRC."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "One sentence ends “meeting specified.” and reads as incomplete in the retained text; the thresholds listed after it appear to be what it introduces.",
+              "excerpts": [
+                {
+                  "paragraph": 16,
+                  "quote": "that fabricates ICs meeting specified."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "The performance parameters that make a computing chip subject to the new controls.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "ac-sme-rule-text",
+          "description": "Federal Register text of the advanced computing and semiconductor manufacturing rule",
+          "excerpts": [
+            {
+              "paragraph": 23,
+              "quote": "The text of the rule is available on the Federal Register’s website here."
+            }
+          ]
+        },
+        {
+          "id": "uvl-rule-text",
+          "description": "Federal Register text of the Unverified List rule, with the parties added and removed",
+          "excerpts": [
+            {
+              "paragraph": 29,
+              "quote": "Text of the rule, which includes the list of parties added and removed, is available on the Federal Register’s website here."
+            }
+          ]
+        },
+        {
+          "id": "end-use-check-memo",
+          "description": "Export Enforcement policy memorandum on foreign government prevention of end-use checks",
+          "excerpts": [
+            {
+              "paragraph": 28,
+              "quote": "The memo is available online here."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ac-sme-updates-2023",
+      "short_title": "Updates to the October 2022 rules",
+      "title": "Commerce Strengthens Restrictions on Advanced Computing Semiconductors, Semiconductor Manufacturing Equipment, and Supercomputing Items to Countries of Concern",
+      "url": "https://www.bis.gov/press-release/commerce-strengthens-restrictions-advanced-computing-semiconductors-semiconductor-manufacturing-equipment",
+      "record": {
+        "key": "373e30c48af16d57f534",
+        "record_sha256": "0ec9a91de68bdce7d6e111c3c6cfe4d55e2c0ef42f6adbeefb6ba196b97aad82",
+        "paragraphs": 48
+      },
+      "listing": {
+        "published": "2023-10-17T16:00:00+00:00",
+        "created": "2023-10-17T00:00:00+00:00",
+        "changed": "2026-08-31T21:11:32+00:00"
+      },
+      "release_page": null,
+      "why_included": "BIS describes this package as updates that modify and reinforce the October 2022 rules and lists key changes: the clearest change the selection's own texts state.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Three rules: two interim final rules and Entity List additions",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS released three rules: an advanced computing chips rule, a semiconductor manufacturing items rule and Entity List additions.",
+              "excerpts": [
+                {
+                  "paragraph": 9,
+                  "quote": "The three rules released today are summarized briefly below."
+                },
+                {
+                  "paragraph": 10,
+                  "quote": "Advanced Computing Chips Rule (AC/S IFR):"
+                },
+                {
+                  "paragraph": 29,
+                  "quote": "Expansion of Export Controls on Semiconductor Manufacturing Items Interim Final Rule (SME IFR):"
+                },
+                {
+                  "paragraph": 35,
+                  "quote": "Additions to the Entity List:"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Modifies and reinforces the October 2022 rules",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release presents the rules as updates to the October 7, 2022 restrictions, states what the advanced computing rule retains from that rule and lists key changes from it.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "Updates to Modify and Reinforce Restrictions Initially Released on October 7, 2022"
+                },
+                {
+                  "paragraph": 12,
+                  "quote": "The AC/S IFR retains the stringent PRC-wide licensing requirements imposed in the October 7, 2022, rule"
+                },
+                {
+                  "paragraph": 31,
+                  "quote": "Key changes made from the October 7, 2022, rule include:"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Advanced computing chips; chip-making equipment; supercomputing items; some gaming chips",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The rules cover advanced computing chips, chip-making equipment and supercomputing items, with additional types of equipment and a notification requirement for some high-end gaming chips.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "update export controls on advanced computing semiconductors and semiconductor manufacturing equipment, as well as items that support supercomputing applications and end-uses"
+                },
+                {
+                  "paragraph": 32,
+                  "quote": "Imposes controls on additional types of semiconductor manufacturing equipment."
+                },
+                {
+                  "paragraph": 27,
+                  "quote": "Creates a notification requirement for a small number of high-end gaming chips"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "Arms-embargoed destinations including the PRC, and Macau; companies headquartered there; PRC entities",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "License requirements extend to the arms-embargoed destinations including the PRC and to Macau, worldwide to companies headquartered there, and to listed PRC entities.",
+              "excerpts": [
+                {
+                  "paragraph": 25,
+                  "quote": "Expands licensing requirements for export of advanced chips, with a presumption of denial, to all 22 countries to which the United States maintains an arms embargo (including the PRC) and Macau."
+                },
+                {
+                  "paragraph": 23,
+                  "quote": "Establishes a worldwide licensing requirement for export of controlled chips to any company that is headquartered in any destination subject to a U.S. arms embargo (including the PRC) or Macau"
+                },
+                {
+                  "paragraph": 34,
+                  "quote": "Expanding license requirements for semiconductor manufacturing equipment to apply to additional countries beyond the PRC and Macau, to 21 other countries for which the U.S. maintains an arms embargo."
+                },
+                {
+                  "paragraph": 37,
+                  "quote": "BIS is adding to the Entity List two PRC entities and their subsidiaries (a total of 13 entities)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chips; chip-making equipment; foundries; supercomputing",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Advanced computing chips.",
+              "excerpts": [
+                {
+                  "paragraph": 13,
+                  "quote": "adjusting the parameters that determine whether an advanced computing chip is restricted"
+                }
+              ],
+              "reference": null,
+              "stage": "chips",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Chip-making equipment.",
+              "excerpts": [
+                {
+                  "paragraph": 32,
+                  "quote": "Imposes controls on additional types of semiconductor manufacturing equipment."
+                }
+              ],
+              "reference": null,
+              "stage": "equipment",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Foundries, through due-diligence requirements.",
+              "excerpts": [
+                {
+                  "paragraph": 24,
+                  "quote": "additional due diligence requirements to help foundries identify restricted chip designs"
+                }
+              ],
+              "reference": null,
+              "stage": "fabrication",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Supercomputing items and end uses.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "items that support supercomputing applications and end-uses"
+                }
+              ],
+              "reference": null,
+              "stage": "computing_systems",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Chips rule effective November 16, 2023; equipment rule 30 days after public inspection; Entity List October 17, 2023",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The advanced computing chips rule takes effect on November 16, 2023.",
+              "excerpts": [
+                {
+                  "paragraph": 11,
+                  "quote": "Effective date for this rule will be November 16, 2023"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": "2023-11-16",
+                  "precision": "day",
+                  "as_stated": "November 16, 2023"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "The chip-making equipment rule takes effect 30 days after public inspection, except its temporary general license.",
+              "excerpts": [
+                {
+                  "paragraph": 30,
+                  "quote": "Effective dates for this rule are 30 days after public inspection on the Federal Register web site (except the Temporary General License)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": null,
+                  "precision": "relative",
+                  "as_stated": "30 days after public inspection on the Federal Register web site"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "The Entity List additions take effect on October 17, 2023.",
+              "excerpts": [
+                {
+                  "paragraph": 36,
+                  "quote": "Effective date for this rule is October 17, 2023."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": "2023-10-17",
+                  "precision": "day",
+                  "as_stated": "October 17, 2023"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "Comments on the chips rule are due 60 days after it is put on public display.",
+              "excerpts": [
+                {
+                  "paragraph": 11,
+                  "quote": "the deadline for public comments is 60 days from the date the rule is put on public display"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "comment_deadline",
+                  "value": null,
+                  "precision": "relative",
+                  "as_stated": "60 days from the date the rule is put on public display"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "The date the rules were put on public inspection, on which the equipment rule's effective date depends.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Presumption of denial; performance and density thresholds; notification exception; consumer exemption",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The chips rule removes interconnect bandwidth as a parameter, adds a performance density threshold, creates a notified license exception decided within 25 days and exempts chips for consumer applications.",
+              "excerpts": [
+                {
+                  "paragraph": 16,
+                  "quote": "removes “interconnect bandwidth” as a parameter for identifying restricted chips"
+                },
+                {
+                  "paragraph": 19,
+                  "quote": "A new “performance density threshold,” which is designed to preempt future workarounds."
+                },
+                {
+                  "paragraph": 20,
+                  "quote": "the U.S. government will determine within 25 days whether the transaction may proceed under the license exception or instead require a license."
+                },
+                {
+                  "paragraph": 21,
+                  "quote": "we are also introducing an exemption that will permit the export of chips for consumer applications."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "The release also states a presumption of approval “to these same additional countries” without naming them; read literally the phrase points back to the arms-embargoed destinations of the previous item, so which countries it means is not established here.",
+              "excerpts": [
+                {
+                  "paragraph": 26,
+                  "quote": "Imposes license requirements for export of advanced chips, with a presumption of approval, to these same additional countries"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "The values of the performance and performance-density thresholds.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "acs-ifr-text",
+          "description": "Text of the advanced computing chips rule (AC/S IFR)",
+          "excerpts": [
+            {
+              "paragraph": 11,
+              "quote": "Text of the rule is available on BIS’s website here."
+            }
+          ]
+        },
+        {
+          "id": "sme-ifr-text",
+          "description": "Text of the semiconductor manufacturing items rule (SME IFR)",
+          "excerpts": [
+            {
+              "paragraph": 30,
+              "quote": "The text of the rule is available on BIS’s website here."
+            }
+          ]
+        },
+        {
+          "id": "entity-list-rule-text",
+          "description": "Federal Register text of the Entity List additions",
+          "excerpts": [
+            {
+              "paragraph": 36,
+              "quote": "Text of the rule is available on the Federal Register’s website here."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clarifications-2024",
+      "short_title": "Clarifications of the October 2023 rules",
+      "title": "Commerce Releases Clarifications of Export Control Rules to Restrict the PRC’s Access to Advanced Computing and Supercomputing Items and Semiconductor Manufacturing Equipment",
+      "url": "https://www.bis.gov/press-release/commerce-releases-clarifications-export-control-rules-restrict-prcs-access-advanced-computing",
+      "record": {
+        "key": "d60cfa73066249a411be",
+        "record_sha256": "7d8e8398cc1a3188895506f52a5cf0211577aa1d82a815362998da56e17c50a4",
+        "paragraphs": 9
+      },
+      "listing": {
+        "published": "2024-04-04T12:00:00+00:00",
+        "created": "2024-04-04T00:00:00+00:00",
+        "changed": "2025-01-13T16:26:50+00:00"
+      },
+      "release_page": null,
+      "why_included": "A rule BIS presents as revising and clarifying the October 2023 rules in answer to stakeholders' questions: an implementation step, set beside the rules it clarifies.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Interim final rule revising and clarifying two October 2023 rules",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS published an interim final rule revising and clarifying the two October 2023 interim final rules.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "has published an interim final rule (IFR) revising and clarifying two interim final rules released on October 17, 2023"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Clarifies the October 2023 rules after stakeholders' questions",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The clarifications answer questions from industry and other stakeholders about the October 2023 rules.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "The clarifications in this Interim Final Rule answer questions posed from industry and other stakeholders after the rules were released on October 17, 2023."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Notification for products with notified chips; parts for PRC chip-making equipment",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The two highlighted clarifications concern pre-export notification for products incorporating notified chips, and a license for parts and components for indigenous PRC chip-making equipment.",
+              "excerpts": [
+                {
+                  "paragraph": 4,
+                  "quote": "Computers and other products incorporating integrated circuits that require preexport notification to BIS also require preexport notification"
+                },
+                {
+                  "paragraph": 5,
+                  "quote": "Parts and components exported for ultimate incorporation into indigenous PRC Semiconductor Manufacturing Equipment (SME) require a BIS license for the initial export."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "Indigenous PRC chip-making equipment",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The parts-and-components clarification concerns equipment made in the PRC.",
+              "excerpts": [
+                {
+                  "paragraph": 5,
+                  "quote": "ultimate incorporation into indigenous PRC Semiconductor Manufacturing Equipment (SME)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "Which destinations the notification clarification applies to.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chips and products containing them; chip-making equipment",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Products incorporating notified chips.",
+              "excerpts": [
+                {
+                  "paragraph": 4,
+                  "quote": "Computers and other products incorporating integrated circuits"
+                }
+              ],
+              "reference": null,
+              "stage": "chips",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Parts and components for chip-making equipment.",
+              "excerpts": [
+                {
+                  "paragraph": 5,
+                  "quote": "Parts and components exported for ultimate incorporation into indigenous PRC Semiconductor Manufacturing Equipment (SME)"
+                }
+              ],
+              "reference": null,
+              "stage": "equipment",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Comments due April 29, 2024; effective date not stated",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Comments are due by April 29, 2024.",
+              "excerpts": [
+                {
+                  "paragraph": 9,
+                  "quote": "must be received by BIS no later than April 29, 2024"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "comment_deadline",
+                  "value": "2024-04-29",
+                  "precision": "day",
+                  "as_stated": "April 29, 2024"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "The rule's publication date or effective date.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Two highlights given; the full list is in the rule text",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release gives highlights of the clarifications, not the full list.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "Highlights of this new IFR include clarifying that:"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "referenced_unread",
+              "text": "The full set of revisions, corrections and clarifications is in the rule, which was not retained.",
+              "excerpts": [
+                {
+                  "paragraph": 9,
+                  "quote": "Comments on revisions, corrections, and clarifications in this rule, which can be found here"
+                }
+              ],
+              "reference": "clarification-rule-text",
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "clarification-rule-text",
+          "description": "Text of the April 2024 interim final rule",
+          "excerpts": [
+            {
+              "paragraph": 9,
+              "quote": "Comments on revisions, corrections, and clarifications in this rule, which can be found here"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-center-veu-2024",
+      "short_title": "Validated End User program extended to data centers",
+      "title": "Commerce Updates Validated End User (VEU) Program for Eligible Data Centers to Bolster U.S. National Security, Promote Export Control Compliance",
+      "url": "https://www.bis.gov/press-release/commerce-updates-validated-end-user-veu-program-eligible-data-centers-bolster-u.s.-national-security",
+      "record": {
+        "key": "855e83996ebe730c75b8",
+        "record_sha256": "ba4ac33361373c1ce26fe758c62551bdddd8e43fa4f957740478c9c872efe248",
+        "paragraphs": 13
+      },
+      "listing": {
+        "published": "2024-09-30T08:45:00+00:00",
+        "created": "2024-09-30T00:00:00+00:00",
+        "changed": "2025-01-10T21:39:34+00:00"
+      },
+      "release_page": null,
+      "why_included": "Extends the Validated End User (VEU) program to data centers; selected because the August 2025 release also concerns the VEU program, for a different subject.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Program expansion: a general authorization for approved data centers",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release announces an expansion of the VEU program to data centers, letting exporters ship designated items to pre-approved entities under a general authorization.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "announced the expansion of the Validated End User (VEU) program to include data centers"
+                },
+                {
+                  "paragraph": 2,
+                  "quote": "enabling U.S. exporters to ship designated items to pre-approved entities under a general authorization, instead of under multiple individual export licenses"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Updates the existing VEU program; builds on chip controls expanded in October 2023",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The data-center VEU updates the existing program and builds on earlier controls on advanced computing chips, expanded in October 2023.",
+              "excerpts": [
+                {
+                  "paragraph": 5,
+                  "quote": "The Data Center VEU updates the existing VEU program and builds on the Biden-Harris Administration’s imposition of controls on advanced computing semiconductor chips (87 FR 62186), which were expanded in October 2023"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Items required to operate a data center",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Approved data centers get facilitated access to items required to operate a data center.",
+              "excerpts": [
+                {
+                  "paragraph": 7,
+                  "quote": "facilitated access to predictable exports and reexports of items required to operate a data center"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "Which items, or which chips, the authorization lists.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "Data-center operators admitted after interagency review",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Operators are admitted only after review by the Departments of Commerce, Defense, Energy and State.",
+              "excerpts": [
+                {
+                  "paragraph": 6,
+                  "quote": "Data center operators will only be admitted into the program after a thorough interagency review and approvals process whereby the Departments of Commerce, Defense, Energy and State determine that the applicant meets the strict standards established for Validated End Users."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "In which countries authorized data centers may be located.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Data centers",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Data centers housing advanced AI systems.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "data centers that house advanced AI systems"
+                }
+              ],
+              "reference": null,
+              "stage": "computing_systems",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Applications open at announcement; further regulation forthcoming",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Eligible companies can apply now; further regulation and guidance are being developed.",
+              "excerpts": [
+                {
+                  "paragraph": 9,
+                  "quote": "eligible companies are now able to begin applying"
+                },
+                {
+                  "paragraph": 9,
+                  "quote": "the Department is currently developing additional, forthcoming regulation and guidance related to the data center VEU program"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "An effective date, or a date for the forthcoming regulation.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Assurances, compliance reviews, security commitments, reporting",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Authorization may require host-government assurances, on-site compliance reviews, security commitments and new reporting.",
+              "excerpts": [
+                {
+                  "paragraph": 8,
+                  "quote": "it may include assurances by the government of the country in which the data center operates, agreement to facilitate on-site data center compliance reviews, commitments to extensive physical and logical security, and new reporting requirements specific to data center operations"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "veu-application-information",
+          "description": "BIS eligibility and application information for the data-center VEU",
+          "excerpts": [
+            {
+              "paragraph": 9,
+              "quote": "See here for eligibility and application information."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sme-hbm-2024",
+      "short_title": "Equipment, design software and memory controls",
+      "title": "Commerce Strengthens Export Controls to Restrict China’s Capability to Produce Advanced Semiconductors for Military Applications",
+      "url": "https://www.bis.gov/press-release/commerce-strengthens-export-controls-restrict-chinas-capability-produce-advanced-semiconductors-military",
+      "record": {
+        "key": "58bf458c4de920d068c2",
+        "record_sha256": "8dbc03684827f8a9727c9b2875575435f01aba227fd02a63c3d204dbe91956d3",
+        "paragraphs": 35
+      },
+      "listing": {
+        "published": "2024-12-02T13:45:00+00:00",
+        "created": "2024-12-02T13:45:00+00:00",
+        "changed": "2025-01-13T20:04:08+00:00"
+      },
+      "release_page": null,
+      "why_included": "A package of rules adding controls on chip-making equipment (including ion implantation tools), chip-design software and high-bandwidth memory, which names the October 2022, October 2023 and April 2024 rules as the efforts it builds on.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Package of rules, with Entity List changes and red-flag guidance",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The package combines new controls, red-flag guidance, Entity List additions and modifications, and other regulatory changes.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "The rules include new controls on 24 types of semiconductor manufacturing equipment and 3 types of software tools for developing or producing semiconductors; new controls on high-bandwidth memory (HBM); new red flag guidance to address compliance and diversion concerns"
+                },
+                {
+                  "paragraph": 2,
+                  "quote": "140 Entity List additions and 14 modifications spanning PRC tool manufacturers, semiconductor fabs, and investment companies"
+                },
+                {
+                  "paragraph": 2,
+                  "quote": "several critical regulatory changes to enhance the effectiveness of our previous controls"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Builds on the October 2022, October 2023 and April 2024 rules",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release names the October 2022 rule and the October 2023 and April 2024 updates as the efforts these rules build on.",
+              "excerpts": [
+                {
+                  "paragraph": 27,
+                  "quote": "In October 2022, BIS published an interim final rule (IFR) to restrict the PRC’s ability to both purchase and manufacture certain high-end semiconductors critical for military applications."
+                },
+                {
+                  "paragraph": 27,
+                  "quote": "it released updated rules in October 2023 and April 2024. Today’s rules build on those efforts."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Chip-making equipment; chip-design software; high-bandwidth memory",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "New controls cover chip-making equipment, software tools for advanced-node chips including design software, and high-bandwidth memory.",
+              "excerpts": [
+                {
+                  "paragraph": 17,
+                  "quote": "New controls on semiconductor manufacturing equipment needed to produce advanced-node integrated circuits, including certain etch, deposition, lithography, ion implantation, annealing, metrology and inspection, and cleaning tools."
+                },
+                {
+                  "paragraph": 25,
+                  "quote": "restrictions on Electronic Computer Aided Design (ECAD) and Technology Computer Aided Design (TCAD) software and technology"
+                },
+                {
+                  "paragraph": 19,
+                  "quote": "New controls on high-bandwidth memory (HBM)."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "Macau and Country Group D:5 including the PRC; 140 Entity List additions",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Foreign-produced equipment rules reach items destined to Macau or Country Group D:5, including the PRC; 140 entities are added to the Entity List.",
+              "excerpts": [
+                {
+                  "paragraph": 22,
+                  "quote": "destined to Macau or a destination in Country Group D:5, including the PRC"
+                },
+                {
+                  "paragraph": 20,
+                  "quote": "Addition of 140 entities to the Entity List, in addition to 14 modifications, including semiconductor fabs, tool companies, and investment companies"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Equipment; design software; memory; fabs (as listed entities)",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Chip-making equipment.",
+              "excerpts": [
+                {
+                  "paragraph": 17,
+                  "quote": "New controls on semiconductor manufacturing equipment needed to produce advanced-node integrated circuits"
+                }
+              ],
+              "reference": null,
+              "stage": "equipment",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Chip-design software.",
+              "excerpts": [
+                {
+                  "paragraph": 25,
+                  "quote": "Electronic Computer Aided Design (ECAD) and Technology Computer Aided Design (TCAD) software"
+                }
+              ],
+              "reference": null,
+              "stage": "design_software",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "High-bandwidth memory.",
+              "excerpts": [
+                {
+                  "paragraph": 19,
+                  "quote": "New controls on high-bandwidth memory (HBM)."
+                }
+              ],
+              "reference": null,
+              "stage": "memory",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Chip fabs, as entities added to the Entity List.",
+              "excerpts": [
+                {
+                  "paragraph": 20,
+                  "quote": "including semiconductor fabs, tool companies, and investment companies"
+                }
+              ],
+              "reference": null,
+              "stage": "fabrication",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Effective at announcement; compliance date December 31, 2024 for certain controls",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The rules are effective on the day of the release, with a delayed compliance date for certain controls.",
+              "excerpts": [
+                {
+                  "paragraph": 33,
+                  "quote": "The rules are effective today with a delayed compliance date of December 31, 2024 for certain controls."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": null,
+                  "precision": "relative",
+                  "as_stated": "effective today"
+                },
+                {
+                  "kind": "compliance",
+                  "value": "2024-12-31",
+                  "precision": "day",
+                  "as_stated": "December 31, 2024"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "Which controls the delayed compliance date applies to.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "New foreign direct product and de minimis rules; License Exception HBM",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Two new foreign direct product rules and a de minimis provision extend jurisdiction over foreign-produced equipment; certain memory may use a new license exception.",
+              "excerpts": [
+                {
+                  "paragraph": 22,
+                  "quote": "Semiconductor Manufacturing Equipment (SME) FDP: Extends jurisdiction over specified foreign-produced SME and related items"
+                },
+                {
+                  "paragraph": 24,
+                  "quote": "De minimis: Extends jurisdiction over specified foreign-produced SME and related items described in the above FDP rules that contain any amount of U.S.-origin integrated circuits."
+                },
+                {
+                  "paragraph": 19,
+                  "quote": "Certain HBM will be eligible for authorization under new License Exception HBM."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "The technical parameters of the controlled equipment, software and memory.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "sme-hbm-rule-texts",
+          "description": "Federal Register texts of the December 2024 rules",
+          "excerpts": [
+            {
+              "paragraph": 33,
+              "quote": "Today’s rules are available on the Federal Register’s website here and here."
+            }
+          ]
+        },
+        {
+          "id": "entity-list-companion-rule",
+          "description": "The Entity List companion rule",
+          "excerpts": [
+            {
+              "paragraph": 23,
+              "quote": "described in the Entity List companion rule"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-diffusion-2025",
+      "short_title": "Framework for advanced chips and AI model weights",
+      "title": "Biden-Harris Administration Announces Regulatory Framework for the Responsible Diffusion of Advanced Artificial Intelligence Technology",
+      "url": "https://www.bis.gov/press-release/biden-harris-administration-announces-regulatory-framework-responsible-diffusion-advanced-artificial",
+      "record": {
+        "key": "14063dbaf9be80450cb2",
+        "record_sha256": "b70cc37bec17b1cb84fa37f6419c37ab325040b0d19ddc7fa1ab27063271c9f5",
+        "paragraphs": 28
+      },
+      "listing": {
+        "published": "2025-01-13T13:45:00+00:00",
+        "created": "2025-01-13T13:45:00+00:00",
+        "changed": "2026-09-04T20:48:06+00:00"
+      },
+      "release_page": null,
+      "why_included": "A rule controlling advanced computing chips and certain AI model weights across a broad set of countries, with license exceptions, country allocations and changes to data-center VEUs; a later selected release announces its rescission.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Rule with new license exceptions and data-center VEU changes",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS announced controls on advanced computing chips and certain closed AI model weights, with new license exceptions and updates to the data-center VEU.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "announced controls on advanced computing chips and certain closed artificial intelligence (AI) model weights, alongside new license exceptions and updates to the Data Center Validated End User (VEU) authorization"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "One exception builds on an October 2023 temporary license; the presumption of denial is kept",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release ties one exception to the temporary general license of an October 2023 rule and keeps the presumption of denial for arms-embargoed countries as previously established policy.",
+              "excerpts": [
+                {
+                  "paragraph": 13,
+                  "quote": "This license exception builds on the Temporary General License from October 2023 rule to prevent disruption of supply chains."
+                },
+                {
+                  "paragraph": 18,
+                  "quote": "Consistent with previously established policy, a presumption of denial remains in place for arms-embargoed countries, regardless of quantity."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Advanced computing chips; closed AI model weights from 10^26 operations",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Chips need authorizations for a broad set of additional countries; weights of the most advanced closed models trained with 10^26 operations or more are controlled; open-weight models are not.",
+              "excerpts": [
+                {
+                  "paragraph": 11,
+                  "quote": "the rule updates controls for advanced computing chips by requiring authorizations for exports, reexports, and transfers (in-country) involving a broad set of additional countries"
+                },
+                {
+                  "paragraph": 20,
+                  "quote": "These controls will initially apply to the weights of models trained with 10^26 computational operations or more"
+                },
+                {
+                  "paragraph": 22,
+                  "quote": "Models with widely available model weights (i.e., open-weight models) are not subject to controls."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "A broad set of countries; exceptions for allies and partners; arms-embargoed countries excluded",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "An exception covers a set of allies and partners; supply-chain and low-volume exceptions exclude arms-embargoed countries.",
+              "excerpts": [
+                {
+                  "paragraph": 12,
+                  "quote": "of advanced computing chips, without an authorization, to a set of allies and partners."
+                },
+                {
+                  "paragraph": 13,
+                  "quote": "for the purposes of development, production, and storage of these chips, except to arms-embargoed countries."
+                },
+                {
+                  "paragraph": 14,
+                  "quote": "allows limited amounts of compute to flow globally, except to arms-embargoed countries."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "Which countries belong to each group.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chips; data centers; AI model weights",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Advanced computing chips.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "announced controls on advanced computing chips"
+                }
+              ],
+              "reference": null,
+              "stage": "chips",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Data centers, through the VEU changes.",
+              "excerpts": [
+                {
+                  "paragraph": 16,
+                  "quote": "allow the company to build data centers around the world without additional authorizations"
+                }
+              ],
+              "reference": null,
+              "stage": "computing_systems",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "AI model weights.",
+              "excerpts": [
+                {
+                  "paragraph": 20,
+                  "quote": "the rule institutes new controls on the model weights of the most advanced closed-weight AI models"
+                }
+              ],
+              "reference": null,
+              "stage": "ai_models",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "No effective or compliance date in the text",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release announces the rule as made “today”.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "Today, the Department of Commerce’s Bureau of Industry and Security (BIS) announced controls"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "An effective date, a compliance date or a Federal Register publication date.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Country allocations; presumption of denial for arms-embargoed countries; holding limits for UVEUs",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Licenses are reviewed under a presumption of approval up to a country allocation; arms-embargoed countries keep a presumption of denial regardless of quantity; universal VEUs face holding limits.",
+              "excerpts": [
+                {
+                  "paragraph": 18,
+                  "quote": "license applications will be reviewed under a presumption of approval until the total quantity of controlled chips exported or reexported to that country exceeds a specified allocation"
+                },
+                {
+                  "paragraph": 18,
+                  "quote": "a presumption of denial remains in place for arms-embargoed countries, regardless of quantity."
+                },
+                {
+                  "paragraph": 19,
+                  "quote": "Authorized UVEUs will be required to keep at least 75% of their controlled advanced chips within the United States and certain allied and partner countries"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "The size of the country allocations.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": []
+    },
+    {
+      "id": "ai-diffusion-rescission-2025",
+      "short_title": "Announced rescission of the January 2025 framework",
+      "title": "Department of Commerce Announces Rescission of Biden-Era Artificial Intelligence Diffusion Rule, Strengthens Chip-Related Export Controls",
+      "url": "https://www.bis.gov/press-release/department-commerce-announces-rescission-biden-era-artificial-intelligence-diffusion-rule-strengthens",
+      "record": {
+        "key": "b6939175cd95cd384e25",
+        "record_sha256": "5a1d47521e3c3a1d3f6de4bd24517e4d998c54f92d71fd234b02ad010f8ed38e",
+        "paragraphs": 10
+      },
+      "listing": {
+        "published": "2025-05-13T13:00:00+00:00",
+        "created": "2025-05-13T13:12:29+00:00",
+        "changed": "2026-09-04T21:12:50+00:00"
+      },
+      "release_page": null,
+      "why_included": "Announces a rescission of the January 2025 framework, instructs non-enforcement and issues guidance; selected as an announced reversal whose formal regulation, by the release's own account, was still to come.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Announced rescission; non-enforcement instruction; guidance",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The Department announced a rescission, BIS enforcement officials were instructed not to enforce the rule, and BIS announced guidance.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "announced a rescission of the Biden Administration’s AI Diffusion Rule"
+                },
+                {
+                  "paragraph": 4,
+                  "quote": "has instructed BIS enforcement officials not to enforce the Biden Administration’s AI Diffusion Rule"
+                },
+                {
+                  "paragraph": 6,
+                  "quote": "In addition, BIS today announced actions to strengthen export controls for overseas AI chips, including:"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Rescission of the January 2025 rule announced; regulation and replacement still to come",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release names the rule it rescinds and says a formalizing regulation and a replacement rule will follow.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "The AI Diffusion Rule was issued on January 15, 2025, with compliance requirements that were set to come into effect on May 15, 2025."
+                },
+                {
+                  "paragraph": 3,
+                  "quote": "BIS plans to publish a regulation formalizing the rescission and will issue a replacement rule in the future."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "The January 2025 rule; guidance on PRC chips, model training and diversion",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Besides the rescission, guidance addresses PRC advanced computing chips, use of U.S. chips for Chinese AI models and diversion.",
+              "excerpts": [
+                {
+                  "paragraph": 7,
+                  "quote": "Issuing guidance alerting industry to the risks of using PRC advanced computing ICs, including specific Huawei Ascend chips."
+                },
+                {
+                  "paragraph": 8,
+                  "quote": "Issuing guidance warning the public about the potential consequences of allowing U.S. AI chips to be used for training and inference of Chinese AI models."
+                },
+                {
+                  "paragraph": 9,
+                  "quote": "Issuing guidance to U.S. companies on how to protect supply chains against diversion tactics."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "Worldwide; Huawei Ascend chips named",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release frames its steps as worldwide and names Huawei Ascend chips.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "while rolling out additional steps to strengthen export controls on semiconductors worldwide"
+                },
+                {
+                  "paragraph": 7,
+                  "quote": "including specific Huawei Ascend chips"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chips; AI model training",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Advanced computing chips.",
+              "excerpts": [
+                {
+                  "paragraph": 7,
+                  "quote": "the risks of using PRC advanced computing ICs"
+                }
+              ],
+              "reference": null,
+              "stage": "chips",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "AI model training and inference.",
+              "excerpts": [
+                {
+                  "paragraph": 8,
+                  "quote": "to be used for training and inference of Chinese AI models"
+                }
+              ],
+              "reference": null,
+              "stage": "ai_models",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Compliance for the rescinded rule had been due May 15, 2025; the regulation is not dated",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release says the rescinded rule was issued on January 15, 2025.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "The AI Diffusion Rule was issued on January 15, 2025"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "issued",
+                  "value": "2025-01-15",
+                  "precision": "day",
+                  "as_stated": "January 15, 2025"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "Its compliance requirements had been set for May 15, 2025.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "with compliance requirements that were set to come into effect on May 15, 2025"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "compliance",
+                  "value": "2025-05-15",
+                  "precision": "day",
+                  "as_stated": "May 15, 2025"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "When the formalizing regulation or the replacement rule would be published.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Not stated for the rescission itself",
+          "statements": [
+            {
+              "status": "not_stated",
+              "text": "The legal form and effective date of the rescission.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "referenced_unread",
+              "text": "The guidance documents are announced, not reproduced.",
+              "excerpts": [
+                {
+                  "paragraph": 6,
+                  "quote": "In addition, BIS today announced actions to strengthen export controls for overseas AI chips, including:"
+                }
+              ],
+              "reference": "rescission-guidance",
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "rescission-guidance",
+          "description": "The three guidance documents announced with the rescission",
+          "excerpts": [
+            {
+              "paragraph": 6,
+              "quote": "In addition, BIS today announced actions to strengthen export controls for overseas AI chips, including:"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fab-veu-2025",
+      "short_title": "VEU authorizations ended for foreign-owned fabs in China",
+      "title": "Department of Commerce Closes Export Controls Loophole for Foreign-Owned Semiconductor Fabs in China",
+      "url": "https://www.bis.gov/press-release/department-commerce-closes-export-controls-loophole-foreign-owned-semiconductor-fabs-china",
+      "record": {
+        "key": "d57a2bd5d49a443ed90d",
+        "record_sha256": "b171649c6d5eb4dd7056c0d1a6cf797497fd4facde43ab58fb1153221994832f",
+        "paragraphs": 6
+      },
+      "listing": {
+        "published": "2025-08-29T14:20:00+00:00",
+        "created": "2025-08-29T14:21:49+00:00",
+        "changed": "2026-09-04T21:36:07+00:00"
+      },
+      "release_page": null,
+      "why_included": "Ends license-free VEU authorizations for certain foreign-owned chip fabs in China and describes itself as reversing a 2023 expansion; selected because it shares a program name with the September 2024 data-center release.",
+      "cases": [],
+      "dimensions": {
+        "instrument": {
+          "label": "Removal of VEU authorizations, by a rule to be published",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release says BIS closed the license-free treatment; former participants have 120 days from the rule's Federal Register publication to obtain licenses.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "closed a Biden-era loophole that allowed a handful of foreign companies to export semiconductor manufacturing equipment and technology to China license-free"
+                },
+                {
+                  "paragraph": 3,
+                  "quote": "Former VEU participants will have 120 days following publication of the rule in the Federal Register to apply for and obtain export licenses."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Reverses a 2023 expansion of the VEU program",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The release says the program was expanded in 2023 to let a select group of foreign manufacturers export license-free to their fabs in China.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "In 2023, the Biden Administration expanded the VEU program to allow a select group of foreign semiconductor manufacturers to export most U.S.-origin goods, software, and technology license-free to manufacture semiconductors in China."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "Which 2023 action, or which companies, it refers to.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Chip-making equipment, software and technology for fabs in China",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The authorizations concerned U.S.-origin goods, software and technology for making chips in China.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "to export most U.S.-origin goods, software, and technology license-free to manufacture semiconductors in China"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "“A handful” of foreign companies with fabs in China",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The change concerns foreign-owned fabs; the release notes that no U.S.-owned fab had this treatment.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "a handful of foreign companies"
+                },
+                {
+                  "paragraph": 2,
+                  "quote": "No U.S.-owned fab has this privilege — and now, following today’s decision, no foreign-owned fab will have it either."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "The names of the companies concerned.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chip-making equipment; fabs",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Chip-making equipment and technology.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "export semiconductor manufacturing equipment and technology to China"
+                }
+              ],
+              "reference": null,
+              "stage": "equipment",
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "Chip fabs in China.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "to operate their existing fabs in China"
+                }
+              ],
+              "reference": null,
+              "stage": "fabrication",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Licenses needed within 120 days of Federal Register publication, a date not stated",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The deadline runs from the rule's Federal Register publication.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "Former VEU participants will have 120 days following publication of the rule in the Federal Register to apply for and obtain export licenses."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "license_deadline",
+                  "value": null,
+                  "precision": "relative",
+                  "as_stated": "120 days following publication of the rule in the Federal Register"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "The Federal Register publication date.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Licenses intended for operating existing fabs, not for expansion or upgrades",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS states how it intends to review the license applications.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "BIS intends to grant export license applications to allow former VEU participants to operate their existing fabs in China. However, BIS does not intend to grant licenses to expand capacity or upgrade technology at fabs in China."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "interpretation",
+              "text": "These are stated intentions for reviewing applications; the release does not quote them as rule text.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "BIS intends to grant export license applications"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": []
+    },
+    {
+      "id": "license-review-2026",
+      "short_title": "Case-by-case review for certain advanced chips to China",
+      "title": "Department of Commerce Revises License Review Policy for Semiconductors Exported to China",
+      "url": "https://www.bis.gov/press-release/department-commerce-revises-license-review-policy-semiconductors-exported-china",
+      "record": {
+        "key": "dbeede91a9b5b09ad8e7",
+        "record_sha256": "bc8e65074bc8fbd56bfeb4251a2b17aaf488141eb82afeec20dfa6b9bd4bf104",
+        "paragraphs": 6
+      },
+      "listing": {
+        "published": "2026-01-13T23:00:00+00:00",
+        "created": "2026-01-14T13:27:12+00:00",
+        "changed": "2026-09-04T21:41:02+00:00"
+      },
+      "release_page": null,
+      "why_included": "A rule moving license review for certain advanced chips to China to case-by-case review under conditions; selected because its review policy sits beside the presumption of denial stated in the 2023 and 2025 releases, and because its date is unsettled.",
+      "cases": [
+        {
+          "kind": "library",
+          "id": "bis-2026-02-12",
+          "note": "The Applied Materials case cites this release as context and dates it January 14, 2026."
+        }
+      ],
+      "dimensions": {
+        "instrument": {
+          "label": "Rule revising license review policy",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS issued a rule revising its licensing policy for semiconductor exports to China.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "issued a rule revising its licensing policy for semiconductor exports to China"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Follows a December 8, 2025 presidential announcement; earlier policy not stated",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The rule follows a presidential announcement of December 8, 2025.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "Today’s rule follows President Trump’s December 8, 2025 announcement that the United States will allow the H200 and similar products to be shipped to approved customers in China"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "What the review policy for these chips was before this rule.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Nvidia H200, AMD MI325X and similar chips",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Case-by-case review applies to applications for the Nvidia H200, AMD MI325X and similar chips.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "BIS will now review export license applications for the Nvidia H200, AMD MI325X, and similar chips on a case-by-case basis provided certain security requirements are met."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "Which chips count as “similar”.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "China; approved customers",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The products may go to approved customers in China.",
+              "excerpts": [
+                {
+                  "paragraph": 2,
+                  "quote": "to be shipped to approved customers in China"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chips",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Advanced computing chips.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "the Nvidia H200, AMD MI325X, and similar chips"
+                }
+              ],
+              "reference": null,
+              "stage": "chips",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Effective on Federal Register publication, a date not stated",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The rule takes effect on Federal Register publication.",
+              "excerpts": [
+                {
+                  "paragraph": 5,
+                  "quote": "The rule is effective immediately upon publication in the Federal Register."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "effective",
+                  "value": null,
+                  "precision": "relative",
+                  "as_stated": "effective immediately upon publication in the Federal Register"
+                }
+              ]
+            },
+            {
+              "status": "not_stated",
+              "text": "The Federal Register publication date, or the release's own dateline.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Three conditions: production capacity, purchaser compliance, U.S. third-party testing",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "Applicants must show three things about capacity, the purchaser's compliance procedures and independent testing in the United States.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "license applicants must demonstrate that exporting these products to China will not reduce global semiconductor production capacity currently available to U.S. customers"
+                },
+                {
+                  "paragraph": 3,
+                  "quote": "that the Chinese purchaser has adopted export compliance procedures, including customer screening"
+                },
+                {
+                  "paragraph": 3,
+                  "quote": "that the product has undergone independent, third-party testing in the United States to verify its performance and security"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "license-review-rule-text",
+          "description": "Federal Register text of the final rule",
+          "excerpts": [
+            {
+              "paragraph": 5,
+              "quote": "The text of the final rule is available on the Federal Register’s website here."
+            }
+          ]
+        },
+        {
+          "id": "december-2025-announcement",
+          "description": "The President's December 8, 2025 announcement",
+          "excerpts": [
+            {
+              "paragraph": 2,
+              "quote": "Today’s rule follows President Trump’s December 8, 2025 announcement"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "applied-penalty-2026",
+      "short_title": "Applied Materials penalty over ion implanters",
+      "title": "Applied Materials to Pay $252 Million Penalty to BIS for Illegally Exporting Semiconductor Manufacturing Equipment",
+      "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+      "record": {
+        "key": "711b622937e517995600",
+        "record_sha256": "a938f0bebcee709dd6fb11402976fa53ca193af32c9440982cd68aede3208aa1",
+        "paragraphs": 6
+      },
+      "listing": {
+        "published": "2026-02-12T00:45:00+00:00",
+        "created": "2026-02-11T23:53:50+00:00",
+        "changed": "2026-09-04T21:41:31+00:00"
+      },
+      "release_page": "bis-2026-02-12-page",
+      "why_included": "An enforcement settlement over ion implanters shipped in 2021 and 2022 to a company on the Entity List; selected to separate enforcement of an earlier requirement from the equipment controls announced in December 2024.",
+      "cases": [
+        {
+          "kind": "library",
+          "id": "bis-2026-02-12",
+          "note": "The case library's case on this release."
+        }
+      ],
+      "dimensions": {
+        "instrument": {
+          "label": "Settlement agreement and civil penalty",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "BIS announced a settlement covering illegal exports of chip-making equipment to China, with a penalty of about $252 million.",
+              "excerpts": [
+                {
+                  "paragraph": 1,
+                  "quote": "announced a settlement agreement with Applied Materials Inc. of Santa Clara, California (AMAT) and Applied Materials Korea, Ltd. (AMK), covering illegal exports of U.S. semiconductor manufacturing equipment to China"
+                },
+                {
+                  "paragraph": 4,
+                  "quote": "Today’s penalty of $252 million – twice the transaction value – is the maximum allowed by statute."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "relation": {
+          "label": "Enforces the license requirement for a company placed on the Entity List in 2020",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The violation was shipping without the license required for a company on the Entity List, which the buyer had been since 2020.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "In 2020, the company to which AMAT had been exporting certain semiconductor manufacturing equipment (known as ion implanters) was placed on the Entity List."
+                },
+                {
+                  "paragraph": 3,
+                  "quote": "In 2021 and 2022, AMAT violated BIS’s requirement to obtain a license before shipping to a company on the Entity List"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "scope": {
+          "label": "Ion implanters (chip-making equipment)",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The equipment was ion implanters.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "certain semiconductor manufacturing equipment (known as ion implanters)"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "parties": {
+          "label": "AMAT (United States) and AMK (Korea); an Entity List company in China",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The implanters went first to AMK in Korea for assembly, then onward to China.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "by shipping ion implanters first to AMK in Korea for assembly, and then onward to China, without applying for and receiving an export license"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            },
+            {
+              "status": "not_stated",
+              "text": "The name of the company on the Entity List.",
+              "excerpts": [],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        },
+        "supply_chain": {
+          "label": "Chip-making equipment",
+          "statements": [
+            {
+              "status": "interpretation",
+              "text": "Chip-making equipment.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "known as ion implanters"
+                }
+              ],
+              "reference": null,
+              "stage": "equipment",
+              "dates": []
+            }
+          ]
+        },
+        "timing": {
+          "label": "Shipments in 2021 and 2022; buyer listed in 2020",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The shipments took place in 2021 and 2022.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "In 2021 and 2022, AMAT violated BIS’s requirement"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "conduct",
+                  "value": "2021",
+                  "precision": "year",
+                  "as_stated": "In 2021 and 2022"
+                },
+                {
+                  "kind": "conduct",
+                  "value": "2022",
+                  "precision": "year",
+                  "as_stated": "In 2021 and 2022"
+                }
+              ]
+            },
+            {
+              "status": "stated",
+              "text": "The buyer had been placed on the Entity List in 2020.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "In 2020, the company to which AMAT had been exporting"
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": [
+                {
+                  "kind": "designation",
+                  "value": "2020",
+                  "precision": "year",
+                  "as_stated": "In 2020"
+                }
+              ]
+            }
+          ]
+        },
+        "conditions": {
+          "label": "Penalty twice the transaction value; audits and annual certifications",
+          "statements": [
+            {
+              "status": "stated",
+              "text": "The merchandise was worth about $126 million; the company agreed to audits and annual certifications.",
+              "excerpts": [
+                {
+                  "paragraph": 3,
+                  "quote": "The value of merchandise illegally shipped was approximately $126 million."
+                },
+                {
+                  "paragraph": 4,
+                  "quote": "AMAT also agreed to conduct multiple audits of its export compliance program and make annual certifications to BIS in connection with those audits."
+                }
+              ],
+              "reference": null,
+              "stage": null,
+              "dates": []
+            }
+          ]
+        }
+      },
+      "references": [
+        {
+          "id": "applied-settlement-documents",
+          "description": "The order, settlement agreement and proposed charging letter",
+          "excerpts": [
+            {
+              "paragraph": 5,
+              "quote": "The full order, settlement agreement, and Proposed Charging Letter are available online here."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "october-2023-revision",
+      "kind": "stated_change",
+      "question": "Does the October 2023 package present itself as a change from the October 2022 rules?",
+      "publications": [
+        "ac-sme-rules-2022",
+        "ac-sme-updates-2023"
+      ],
+      "observation": "Yes, in its own words. The October 2023 release calls its rules updates that modify and reinforce the restrictions released on October 7, 2022. It says the chips rule keeps the PRC-wide licensing requirements of the 2022 rule and removes “interconnect bandwidth” as a parameter. For the equipment rule it lists key changes from the 2022 rule, among them more types of chip-making equipment and license requirements reaching 21 further arms-embargoed countries.",
+      "evidence": [
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 1,
+          "quote": "Updates to Modify and Reinforce Restrictions Initially Released on October 7, 2022",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 12,
+          "quote": "The AC/S IFR retains the stringent PRC-wide licensing requirements imposed in the October 7, 2022, rule",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 16,
+          "quote": "removes “interconnect bandwidth” as a parameter for identifying restricted chips",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 31,
+          "quote": "Key changes made from the October 7, 2022, rule include:",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 32,
+          "quote": "Imposes controls on additional types of semiconductor manufacturing equipment.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 34,
+          "quote": "to 21 other countries for which the U.S. maintains an arms embargo",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-rules-2022",
+          "paragraph": 2,
+          "quote": "The export controls announced in the two rules today restrict the PRC’s ability to obtain advanced computing chips, develop and maintain supercomputers, and manufacture advanced semiconductors.",
+          "field": null,
+          "value": null,
+          "absent": null
+        }
+      ],
+      "why": "The relationship does not have to be inferred: the later release states it, naming both what continues and what changes. That makes the later package readable as a revision of the earlier rules rather than as a separate regime.",
+      "unknown": "The releases summarize the rules. The rule texts were not retained, so the full set of differences, and anything the summaries leave out, is not established here; neither release states the threshold values before or after.",
+      "would_establish": "The Federal Register texts of both rules, compared provision by provision."
+    },
+    {
+      "id": "april-2024-clarification",
+      "kind": "instrument",
+      "question": "Is the April 2024 rule a new set of controls or a clarification of existing ones?",
+      "publications": [
+        "ac-sme-updates-2023",
+        "clarifications-2024",
+        "sme-hbm-2024"
+      ],
+      "observation": "BIS presents it as revising and clarifying the two October 2023 interim final rules, in answer to questions from industry and other stakeholders. Its two highlighted clarifications concern pre-export notification for products incorporating notified chips and a license for parts and components of indigenous PRC chip-making equipment. In December 2024 BIS listed it among the “updated rules” its new package builds on.",
+      "evidence": [
+        {
+          "publication": "clarifications-2024",
+          "paragraph": 1,
+          "quote": "has published an interim final rule (IFR) revising and clarifying two interim final rules released on October 17, 2023",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "clarifications-2024",
+          "paragraph": 2,
+          "quote": "The clarifications in this Interim Final Rule answer questions posed from industry and other stakeholders after the rules were released on October 17, 2023.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "clarifications-2024",
+          "paragraph": 4,
+          "quote": "Computers and other products incorporating integrated circuits that require preexport notification to BIS also require preexport notification",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "clarifications-2024",
+          "paragraph": 5,
+          "quote": "Parts and components exported for ultimate incorporation into indigenous PRC Semiconductor Manufacturing Equipment (SME) require a BIS license for the initial export.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 10,
+          "quote": "Advanced Computing Chips Rule (AC/S IFR):",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 29,
+          "quote": "Semiconductor Manufacturing Items Interim Final Rule (SME IFR):",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "sme-hbm-2024",
+          "paragraph": 27,
+          "quote": "it released updated rules in October 2023 and April 2024. Today’s rules build on those efforts.",
+          "field": null,
+          "value": null,
+          "absent": null
+        }
+      ],
+      "why": "“Clarifying” is the publisher's own label. Keeping it apart from announcements of new controls avoids counting this rule as a further tightening on the strength of its headline, while the stated license requirement for parts and components shows that a clarification can still say what is required.",
+      "unknown": "Whether any clarification changed what a party had to do compared with the October 2023 texts: the April 2024 rule and the rules it revises were not retained, and the release gives only highlights.",
+      "would_establish": "The April 2024 interim final rule read against the October 2023 rules it revises."
+    },
+    {
+      "id": "announced-rescission",
+      "kind": "stated_change",
+      "question": "Did the May 2025 release end the January 2025 framework, and when?",
+      "publications": [
+        "ai-diffusion-2025",
+        "ai-diffusion-rescission-2025"
+      ],
+      "observation": "It announced a rescission and gave no date for a published one. The May 2025 release announces a rescission of the AI Diffusion Rule and says enforcement officials were instructed not to enforce it. The same release says BIS plans to publish a regulation formalizing the rescission and will issue a replacement rule in the future. It dates the rule's compliance requirements to May 15, 2025.",
+      "evidence": [
+        {
+          "publication": "ai-diffusion-rescission-2025",
+          "paragraph": 1,
+          "quote": "announced a rescission of the Biden Administration’s AI Diffusion Rule",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-rescission-2025",
+          "paragraph": 4,
+          "quote": "has instructed BIS enforcement officials not to enforce the Biden Administration’s AI Diffusion Rule",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-rescission-2025",
+          "paragraph": 3,
+          "quote": "BIS plans to publish a regulation formalizing the rescission and will issue a replacement rule in the future.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-rescission-2025",
+          "paragraph": 2,
+          "quote": "with compliance requirements that were set to come into effect on May 15, 2025",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-2025",
+          "paragraph": 2,
+          "quote": "announced controls on advanced computing chips and certain closed artificial intelligence (AI) model weights",
+          "field": null,
+          "value": null,
+          "absent": null
+        }
+      ],
+      "why": "An announced rescission with an instruction not to enforce is a different instrument from a published rescission regulation. Keeping them apart records what the publisher stated on that day without placing the framework's withdrawal at a date the selection does not give.",
+      "unknown": "Whether and when a formalizing regulation and a replacement rule were published, and what they contain; no later publication in this selection addresses them. Also unknown here: the status in the meantime of the framework's parts, such as its data-center VEU changes.",
+      "would_establish": "The Federal Register documents formalizing the rescission and any replacement rule; none was retained."
+    },
+    {
+      "id": "case-by-case-and-denial",
+      "kind": "non_equivalent",
+      "question": "Does the January 2026 case-by-case policy reverse the earlier presumption of denial?",
+      "publications": [
+        "ac-sme-updates-2023",
+        "ai-diffusion-2025",
+        "license-review-2026"
+      ],
+      "observation": "The selection does not establish a reversal. The January 2026 release says license applications for the Nvidia H200, AMD MI325X and similar chips to China will be reviewed case by case if three conditions are met. The October 2023 release states a presumption of denial for advanced chips to arms-embargoed destinations including the PRC, and the January 2025 release says that presumption remains for arms-embargoed countries regardless of quantity. The January 2026 release does not say which policy applied to these chips before, or whether they fell within the earlier releases' advanced-chip category.",
+      "evidence": [
+        {
+          "publication": "license-review-2026",
+          "paragraph": 1,
+          "quote": "BIS will now review export license applications for the Nvidia H200, AMD MI325X, and similar chips on a case-by-case basis provided certain security requirements are met.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-updates-2023",
+          "paragraph": 25,
+          "quote": "Expands licensing requirements for export of advanced chips, with a presumption of denial, to all 22 countries to which the United States maintains an arms embargo (including the PRC) and Macau.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-2025",
+          "paragraph": 18,
+          "quote": "Consistent with previously established policy, a presumption of denial remains in place for arms-embargoed countries, regardless of quantity.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "license-review-2026",
+          "paragraph": 2,
+          "quote": "Today’s rule follows President Trump’s December 8, 2025 announcement",
+          "field": null,
+          "value": null,
+          "absent": null
+        }
+      ],
+      "why": "The two policies are stated for item sets that sound alike but are not shown to be the same. Setting them side by side shows what would have to be established before calling the later policy a reversal: where these chips stood under the earlier parameters, and which policy applied to them.",
+      "unknown": "Whether the H200 and MI325X exceeded the parameters of the 2023 rule, which review policy applied to them before January 2026, what the announced rescission of the January 2025 framework left in place, and what the December 8, 2025 announcement said. The rule texts and that announcement were not retained.",
+      "would_establish": "The January 2026 rule text and the earlier rules' parameters, read against the chips' published specifications."
+    },
+    {
+      "id": "veu-two-subjects",
+      "kind": "different_subjects",
+      "question": "Do the 2024 and 2025 Validated End User releases concern the same authorizations?",
+      "publications": [
+        "data-center-veu-2024",
+        "ai-diffusion-2025",
+        "fab-veu-2025"
+      ],
+      "observation": "They share a program name but describe different subjects. The September 2024 release extends the VEU program to data centers, and the January 2025 release divides data-center VEUs into universal and national ones. The August 2025 release says BIS closed the VEU treatment that let a select group of foreign semiconductor manufacturers export U.S.-origin items license-free to make chips in China; its retained text does not mention data centers.",
+      "evidence": [
+        {
+          "publication": "data-center-veu-2024",
+          "paragraph": 1,
+          "quote": "announced the expansion of the Validated End User (VEU) program to include data centers",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-2025",
+          "paragraph": 15,
+          "quote": "Update to Data Center Validated End User (VEU) Program: The rule further bifurcates Data Center VEUs into:",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "fab-veu-2025",
+          "paragraph": 2,
+          "quote": "In 2023, the Biden Administration expanded the VEU program to allow a select group of foreign semiconductor manufacturers to export most U.S.-origin goods, software, and technology license-free to manufacture semiconductors in China.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "fab-veu-2025",
+          "paragraph": null,
+          "quote": null,
+          "field": null,
+          "value": null,
+          "absent": "data center"
+        }
+      ],
+      "why": "A headline about closing the VEU “loophole” could be read as ending every VEU authorization, including the data-center ones announced earlier. The texts point to different subjects: authorizations for foreign chip manufacturers' fabs, and authorizations for data centers.",
+      "unknown": "Whether data-center VEU authorizations were affected by the August 2025 rule, or by the announced rescission of the January 2025 framework; and which 2023 action the August 2025 release means. None of this is stated in the selected texts.",
+      "would_establish": "The August 2025 rule text, and the regulations' list of VEU authorizations before and after it."
+    },
+    {
+      "id": "ion-implanters",
+      "kind": "instrument",
+      "question": "Does the Applied Materials penalty enforce the December 2024 equipment controls?",
+      "publications": [
+        "sme-hbm-2024",
+        "applied-penalty-2026"
+      ],
+      "observation": "The releases point to a different requirement and an earlier period. The penalty concerns ion implanters shipped in 2021 and 2022 without the license required for a company placed on the Entity List in 2020. The December 2024 package announced new controls on chip-making equipment, including certain ion implantation tools; the shipments came before that package.",
+      "evidence": [
+        {
+          "publication": "applied-penalty-2026",
+          "paragraph": 3,
+          "quote": "In 2020, the company to which AMAT had been exporting certain semiconductor manufacturing equipment (known as ion implanters) was placed on the Entity List.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "applied-penalty-2026",
+          "paragraph": 3,
+          "quote": "In 2021 and 2022, AMAT violated BIS’s requirement to obtain a license before shipping to a company on the Entity List",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "sme-hbm-2024",
+          "paragraph": 17,
+          "quote": "New controls on semiconductor manufacturing equipment needed to produce advanced-node integrated circuits, including certain etch, deposition, lithography, ion implantation, annealing, metrology and inspection, and cleaning tools.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "sme-hbm-2024",
+          "paragraph": null,
+          "quote": null,
+          "field": "published",
+          "value": "2024-12-02T13:45:00+00:00",
+          "absent": null
+        }
+      ],
+      "why": "Both releases concern ion implantation equipment, which invites reading the penalty as the newer controls at work. Keeping the instrument (a license requirement tied to a listed company) and the period of the shipments apart from the later equipment controls stops an enforcement outcome from being read as evidence about a later rule.",
+      "unknown": "Whether the implanters shipped would fall within the tool categories controlled in December 2024. The settlement documents and the December 2024 rule texts were not retained.",
+      "would_establish": "The order, settlement agreement and charging letter, and the December 2024 rule's equipment definitions."
+    },
+    {
+      "id": "which-date",
+      "kind": "dates",
+      "question": "Which date belongs to each publication, and how precise is it?",
+      "publications": [
+        "ac-sme-rules-2022",
+        "sme-hbm-2024",
+        "ai-diffusion-2025",
+        "ai-diffusion-rescission-2025",
+        "license-review-2026"
+      ],
+      "observation": "Several different dates attach to these releases. The October 2022 rules took effect in three phases, on October 7, 12 and 21, 2022. The December 2024 rules were effective on the day of the release, with a compliance date of December 31, 2024 for certain controls. The January 2026 rule takes effect on Federal Register publication, which the release does not date. The May 2025 release says the AI Diffusion Rule was issued on January 15, 2025; BIS's listing dates the framework's own release January 13, 2025, and that release speaks of announcing the rule “today”.",
+      "evidence": [
+        {
+          "publication": "ac-sme-rules-2022",
+          "paragraph": 23,
+          "quote": "The semiconductor manufacturing items restrictions are effective upon filing for Public Inspection (October 7, 2022)",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-rules-2022",
+          "paragraph": 23,
+          "quote": "is effective five days later (October 12, 2022)",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ac-sme-rules-2022",
+          "paragraph": 23,
+          "quote": "are effective 14 days later (October 21, 2022)",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "sme-hbm-2024",
+          "paragraph": 33,
+          "quote": "The rules are effective today with a delayed compliance date of December 31, 2024 for certain controls.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "license-review-2026",
+          "paragraph": 5,
+          "quote": "The rule is effective immediately upon publication in the Federal Register.",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-rescission-2025",
+          "paragraph": 2,
+          "quote": "The AI Diffusion Rule was issued on January 15, 2025",
+          "field": null,
+          "value": null,
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-2025",
+          "paragraph": null,
+          "quote": null,
+          "field": "published",
+          "value": "2025-01-13T13:45:00+00:00",
+          "absent": null
+        },
+        {
+          "publication": "ai-diffusion-2025",
+          "paragraph": 4,
+          "quote": "Today, we are announcing a rule",
+          "field": null,
+          "value": null,
+          "absent": null
+        }
+      ],
+      "why": "One date per publication would place several of these releases at a point their texts do not give, or conflate an announcement with an effective or compliance date. Showing the field and its precision keeps them apart.",
+      "unknown": "Most Federal Register publication dates; whether “issued on January 15, 2025” refers to Federal Register publication, which the selection does not say; and the January 2026 release's own dateline, which was not retained. The case library's Applied Materials case dates that release January 14, 2026, while BIS's listing time is 2026-01-13 23:00 UTC and its CMS creation time 2026-01-14 13:27 UTC; the discrepancy remains unresolved.",
+      "would_establish": "The Federal Register documents, and the release pages with their own datelines."
+    }
+  ],
+  "not_included": [
+    {
+      "title": "Commerce Implements New Multilateral Controls on Advanced Semiconductor and Gas Turbine Engine Technologies",
+      "url": "https://www.bis.gov/press-release/commerce-implements-new-multilateral-controls-advanced-semiconductor-gas-turbine-engine-technologies",
+      "key": "2dc269d67ce6b5d914cb",
+      "record_sha256": "98038dc0d384431847b5d8cd16899408c301bcffc08d05ac900fab989101afb6",
+      "listed": "2022-08-12T10:59:27+00:00",
+      "reason": "Multilateral controls on materials and chip-design software. Relevant, but the October 2022 release mentions it only as background, and no comparison here rests on it.",
+      "case": null
+    },
+    {
+      "title": "Commerce Issues Rule to Strengthen National Security Partnership to Secure Semiconductor Supply Chains with Republic of Korea",
+      "url": "https://www.bis.gov/press-release/commerce-issues-rule-strengthen-national-security-partnership-secure-semiconductor-supply-chains-republic",
+      "key": "26335b04e78b0e032898",
+      "record_sha256": "1f16d5eb0b320841f42c485a07a527a263925b3570debbf3f53c14d7ba586e41",
+      "listed": "2023-10-13T16:00:00+00:00",
+      "reason": "VEU authorizations for two Korean companies' fabs in the PRC. The August 2025 release refers to a 2023 VEU expansion without naming it; linking the two would be an inference the texts do not make.",
+      "case": null
+    },
+    {
+      "title": "BIS updated public information page on export controls imposed on advanced computing and semiconductor manufacturing items to the People’s Republic of China (PRC)",
+      "url": "https://www.bis.gov/press-release/bis-updated-public-information-page-export-controls-imposed-advanced-computing-semiconductor",
+      "key": "d7d67e3308c95d07d688",
+      "record_sha256": "258e8cd15e95d58be88164e560c85256e8d460b903aad3f480c74618262d4f9d",
+      "listed": "2022-10-28T09:48:31+00:00",
+      "reason": "A public information page listed in October 2022 whose text describes rules of October 2023: its listing date does not date its content, so it would mislead in a chronology.",
+      "case": null
+    },
+    {
+      "title": "Commerce Strengthens Restrictions on Advanced Computing Semiconductors to Enhance Foundry Due Diligence and Prevent Diversion to PRC",
+      "url": "https://www.bis.gov/press-release/commerce-strengthens-restrictions-advanced-computing-semiconductors-enhance-foundry-due-diligence-prevent",
+      "key": "4887d943608bb48637bb",
+      "record_sha256": "b6519267102b8a18daea391a9956d00c03f8c761360a08a206339752eb4d5a9f",
+      "listed": "2025-01-15T13:45:00+00:00",
+      "reason": "Foundry and packaging due-diligence rules. Relevant; left out to keep the selection near ten, since the releases it builds on are selected.",
+      "case": null
+    },
+    {
+      "title": "Commerce Further Restricts China’s Artificial Intelligence and Advanced Computing Capabilities",
+      "url": "https://www.bis.gov/press-release/commerce-further-restricts-chinas-artificial-intelligence-advanced-computing-capabilities",
+      "key": "178d2edbadda7d889e80",
+      "record_sha256": "4f3cb909db383909de8cd03af5036c55f5ff53401dc2b5cace5d42c00f691354",
+      "listed": "2025-03-25T21:00:00+00:00",
+      "reason": "Entity List additions, including entities in the UAE. No comparison here needs them.",
+      "case": null
+    },
+    {
+      "title": "Cadence Design Systems to Pay $95 Million Penalty to BIS for Unauthorized Exports to Chinese Entities Tied to Development of Military Supercomputers",
+      "url": "https://www.bis.gov/press-release/cadence-design-systems-pay-95-million-penalty-bis-unauthorized-exports-chinese-entities-tied-development",
+      "key": "1372d88b2d2c4ef2bf74",
+      "record_sha256": "818776037baf31f15012c882f3384138c5b4be30d033ddb08ae5e43f394f46c9",
+      "listed": "2025-07-28T20:00:00+00:00",
+      "reason": "A second enforcement case, over chip-design tools. One enforcement case is enough to separate enforcement from rulemaking here.",
+      "case": null
+    },
+    {
+      "title": "Department of Commerce Eases Export Controls for UAE",
+      "url": "https://www.bis.gov/press-release/department-commerce-eases-export-controls-uae",
+      "key": "a90a3c410ab3147e877e",
+      "record_sha256": "c73678a98218c400414daa705099d6174f7c916f1965fb3d45756143f9cc3fc3",
+      "listed": "2026-07-10T15:15:00+00:00",
+      "reason": "A country-group change for the UAE with license-free approvals for advanced computing items. The selection holds no release stating the UAE's earlier treatment for these items, so no comparison could be supported.",
+      "case": {
+        "kind": "library",
+        "id": "bis-2026-07-10",
+        "note": "The case library's case on this release."
+      }
+    },
+    {
+      "title": "BIS Updates Boycott Requester List",
+      "url": "https://www.bis.gov/press-release/bis-updates-boycott-requester-list",
+      "key": "c79b9164de19a13e22cd",
+      "record_sha256": "d2e62e5793f94e9b3621b7b9631099f2270f4513f19590607cd15cd230043f13",
+      "listed": "2024-06-27T10:00:00+00:00",
+      "reason": "A Boycott Requester List update: matched by the keyword filter, not a semiconductor-policy publication.",
+      "case": null
+    },
+    {
+      "title": "Department of Commerce Launches Section 232 Steel and Aluminum Inclusions Process",
+      "url": "https://www.bis.gov/press-release/department-commerce-launches-section-232-steel-aluminum-inclusions-process",
+      "key": "57ac4fd1b5b30499d93a",
+      "record_sha256": "c91c7813d5c3f5365c93dd67d92fcefc0b4cd46475578da974e1fe98683bbb04",
+      "listed": "2025-05-01T21:00:00+00:00",
+      "reason": "A Section 232 steel and aluminum inclusions process: matched by the keyword filter, not a semiconductor-policy publication.",
+      "case": null
+    }
+  ],
+  "not_claimed": [
+    "That any release caused a change in trade, prices, production or company results.",
+    "That the January 2026 policy repealed or reversed an earlier rule.",
+    "That the AI Diffusion Rule was formally rescinded on any particular date.",
+    "That policy stayed the same between two selected releases.",
+    "That the selection describes the complete or current set of rules.",
+    "That several BIS releases corroborate one another.",
+    "Any legal, compliance, investment or trading conclusion."
+  ],
+  "provenance": {
+    "prepared_by": "Claude (AI assistant), for the operator",
+    "prepared_on": "2026-10-12",
+    "method": "Read the retained text of the 65 records the semiconductor keyword filter matched, chose ten, and wrote each statement and comparison from quoted passages; every quote was checked against the retained text while writing.",
+    "ai_assisted": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

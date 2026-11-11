@@ -1,0 +1,5 @@
+{
+  "version": "1",
+  "note": "Exceptions reconcile provider dates with issuer documentation. None have been reviewed yet; unexplained discrepancies stay in the grid as missing values.",
+  "exceptions": []
+}

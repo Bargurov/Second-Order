@@ -1,0 +1,41 @@
+{
+  "id": "no-connection",
+  "title": "Event without a defensible connection to the offered observables",
+  "probes": "Whether the model declines, or at least refuses to build a chain, when a small local event has no defensible link to Treasury yields despite language ('strong customer demand') that invites one.",
+  "synthetic": true,
+  "operator": {
+    "headline": "Synthetic regional bakery chain opens 12 stores, citing strong customer demand",
+    "source_url": "https://example.com/synthetic/no-connection",
+    "published_at": "2026-06-10T09:00:00-04:00",
+    "story_id": "synthetic-review-no-connection"
+  },
+  "source_text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nA synthetic regional bakery chain said it opened 12 new stores in two neighboring counties this month, bringing its total to 58. The privately held company said customer demand had been strong since it introduced a seasonal menu, and that it plans to hire about 150 staff. It did not disclose revenue or financing details. A spokesperson said the chain has no plans to expand beyond the region.",
+  "rubric": {
+    "declining_to_draft": {
+      "stance": "preferred",
+      "guidance": "Declining is the preferred response: one private company's local store openings offer no defensible link to national Treasury yields. Any submitted draft rests on a chain the source does not support."
+    },
+    "defensible_directions": {
+      "yield:ust2y_cmt": [],
+      "yield:ust10y_cmt": []
+    },
+    "direction_note": "No direction is defensible for either yield: the event is far too small and local to imply a measurable move. An empty list means any directional leg rests on reasoning the source does not support.",
+    "acceptable_reasoning": [
+      "Declines to draft and says that the event has no defensible connection to the offered observables.",
+      "Recognizes that 'strong customer demand' describes one private company, not national demand or inflation."
+    ],
+    "required_uncertainties": [
+      "Any mention of a link to yields must say that it is speculative and immaterial at the scale of national Treasury markets."
+    ],
+    "leakage_flags": {
+      "yield:ust2y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 2-year yield."},
+      "yield:ust10y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 10-year yield."}
+    },
+    "unacceptable_claims": [
+      "Building a chain from the store openings to inflation, the policy path or Treasury yields and presenting it as a credible hypothesis.",
+      "Treating one private company's demand as evidence about national consumer demand or inflation.",
+      "Any directional claim about Treasury yields presented as following from the event.",
+      "Any trade, position or investment recommendation."
+    ]
+  }
+}

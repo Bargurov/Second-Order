@@ -1,0 +1,55 @@
+{
+ "approval_id": "fcx-sec-images-02",
+ "approved_on": "2026-11-10",
+ "owner_approval": "The owner approved on 2026-11-10, in chat, a separate task to obtain the SEC EDGAR copies of the Form 10-Q for the third quarter of 2026 and of the two releases, if they were filed as 8-K exhibits, including the metadata needed to locate and verify them, with no paid calls.",
+ "scope": "Verification step: one GET of each of the three page images of exhibit 99.1 to the Form 8-K of 4 November 2026 (accession 0000831259-26-000048), which the exhibit document fcx_261104.htm (fcx-sec-docs-02 n=5) displays; its text layer was matched in fcx-sec-docs-02, and the images let the visible pages be compared with it.",
+ "access_rules": {
+  "sec": "https://www.sec.gov/os/accessing-edgar-data: automated access must declare a contact in the User-Agent and stay below ten requests per second. The contact is read at request time from the user-level SECOND_ORDER_FEED_CONTACT and is written nowhere."
+ },
+ "request_headers": {
+  "Accept": "image/jpeg",
+  "Accept-Encoding": "identity"
+ },
+ "limits": {
+  "connect_timeout_s": 15,
+  "read_timeout_s": 60,
+  "request_network_deadline_s": 120,
+  "pause_s": 2,
+  "error_excerpt_bytes": 400
+ },
+ "resources": [
+  {
+   "n": 1,
+   "kind": "jpeg",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104001.jpg",
+   "target": "data/company-sources/fcx/sec-8k-2026-11-04/fcx_261104001.jpg",
+   "max_body_bytes": 8388608,
+   "accepted_media_types": [
+    "image/jpeg"
+   ],
+   "listed_as": "exhibit 99.1 page image 1 of 3"
+  },
+  {
+   "n": 2,
+   "kind": "jpeg",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104002.jpg",
+   "target": "data/company-sources/fcx/sec-8k-2026-11-04/fcx_261104002.jpg",
+   "max_body_bytes": 8388608,
+   "accepted_media_types": [
+    "image/jpeg"
+   ],
+   "listed_as": "exhibit 99.1 page image 2 of 3"
+  },
+  {
+   "n": 3,
+   "kind": "jpeg",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104003.jpg",
+   "target": "data/company-sources/fcx/sec-8k-2026-11-04/fcx_261104003.jpg",
+   "max_body_bytes": 8388608,
+   "accepted_media_types": [
+    "image/jpeg"
+   ],
+   "listed_as": "exhibit 99.1 page image 3 of 3"
+  }
+ ]
+}

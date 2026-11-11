@@ -1,0 +1,31 @@
+{
+ "view_version": "company-scenario-0.1",
+ "mode": "price_volume",
+ "inputs": {
+  "price": "6.60",
+  "volume": "900"
+ },
+ "uses": {
+  "price": {
+   "record": "r3-out-cu-price-q4-2026",
+   "value": "6.5"
+  },
+  "volume": {
+   "record": "r3-out-cu-sales-q4-2026",
+   "value": "875"
+  }
+ },
+ "result": {
+  "value": "5940",
+  "base": "5687.5",
+  "change": "252.5",
+  "price_effect": "90",
+  "volume_effect": "162.5"
+ },
+ "unit": "USD millions",
+ "rests_on": [
+  "release-2026q3"
+ ],
+ "stored": false,
+ "provider_called": false
+}

@@ -1,0 +1,432 @@
+{
+  "mechanisms_version": "fuels-mechanisms-0.1",
+  "kind": "drivers",
+  "prepared_on": "2026-11-06",
+  "author": "Claude (AI-drafted)",
+  "review": {
+    "state": "unreviewed",
+    "reviewed_on": null
+  },
+  "items": [
+    {
+      "id": "opec_supply",
+      "title": "OPEC+ supply policy and spare capacity",
+      "mechanism": "OPEC+ sets production targets for its members, and OPEC members hold almost all of the world's spare production capacity. A change in targets can move crude prices when it changes the market's view of future supply, but what matters in the end is the output actually delivered, and members do not always produce at their targets. Spare capacity is a buffer: when it is ample, lost supply elsewhere can be replaced; when it is thin, crude tends to carry a larger risk premium. Producers outside the group tend to run near capacity and respond to price, which can erode the effect of a cut over time.",
+      "acts_on": "crude",
+      "direction": [
+        "Cuts to targets that are delivered as announced tend to support crude prices, other things equal; increases tend to weigh on them.",
+        "Output above targets, or doubts about compliance, tends to weaken the support that announced cuts provide.",
+        "Thin spare capacity tends to make crude more sensitive to any disruption; ample spare capacity tends to damp that sensitivity.",
+        "The effect tends to fall first on crude. Product prices tend to move with crude, so the 3-2-1 crack need not change much, unless the change alters the mix of crude grades refiners can buy."
+      ],
+      "changes_when": [
+        "Members produce well above their targets, or the group's cohesion weakens, so announcements carry less weight.",
+        "Demand is weakening at the same time, so a cut may slow a fall in prices rather than lift them.",
+        "Supply from producers outside the group responds to the price and grows, which can offset a cut over time.",
+        "A decision is already anticipated by the market, so the announcement itself moves prices little.",
+        "The group shifts from defending prices to defending market share and adds barrels even into a weak market."
+      ],
+      "watch": [
+        "OPEC Monthly Oil Market Report: production estimates from secondary sources",
+        "Statements from OPEC and OPEC+ ministerial meetings",
+        "IEA Oil Market Report (public highlights): supply and spare capacity",
+        "EIA Short-Term Energy Outlook: OPEC production and surplus capacity",
+        "Baker Hughes rig count, as an early sign of the US supply response"
+      ],
+      "sources": [
+        {
+          "title": "What drives crude oil prices: Supply OPEC",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/supply-opec.php",
+          "checked_on": "2026-11-06",
+          "locator": "OPEC's spare crude oil production capacity; Factors limiting the impact of OPEC supply on prices"
+        },
+        {
+          "title": "What drives crude oil prices: Supply Non-OPEC",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/supply-nonopec.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Oil and petroleum products explained: Oil prices and outlook",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/energyexplained/oil-and-petroleum-products/prices-and-outlook.php",
+          "checked_on": "2026-11-06",
+          "locator": "OPEC can influence world oil supplies and prices"
+        }
+      ]
+    },
+    {
+      "id": "global_demand",
+      "title": "Global demand: growth, industry and the fuel mix",
+      "mechanism": "Oil demand tends to rise with economic activity. In emerging economies such as China and India, where industry and transport are growing, growth tends to add more oil use than in the United States and Europe, where services weigh more and efficiency rules slow consumption. Demand is not one number: diesel tends to follow freight, manufacturing and farming; gasoline follows driving, income and employment; jet fuel follows air travel. Broad growth tends to lift crude. A shift in which fuel is wanted can move one product's price, and so the crack, more than crude.",
+      "acts_on": "both",
+      "direction": [
+        "Stronger global growth tends to lift oil demand and crude prices; a slowdown tends to weigh on them.",
+        "Strong freight and industrial activity tends to support diesel prices and the diesel part of the crack.",
+        "Strong driving demand tends to support gasoline prices and the gasoline part of the crack.",
+        "Rising air travel tends to support jet fuel, which draws on the same middle-distillate part of the barrel as diesel, and so can tighten diesel too.",
+        "A better growth outlook can lift futures prices and encourage holding stocks, which can raise prompt prices as well."
+      ],
+      "changes_when": [
+        "Supply adjusts at the same time, so stronger demand is met by more output or by stock draws rather than by a rise in price.",
+        "Efficiency standards, electric vehicles or biofuels reduce the fuel needed for a given level of activity.",
+        "Growth is concentrated in services rather than manufacturing and freight, which use less oil per unit of output.",
+        "Demand responds to price as well as to income: when fuel becomes dearer, households and firms use less of it, a little in the short run and more over years.",
+        "Apparent demand reflects restocking rather than end use, so it fades once stocks are rebuilt."
+      ],
+      "watch": [
+        "IEA Oil Market Report (public highlights): demand by region",
+        "OPEC Monthly Oil Market Report: world oil demand",
+        "EIA Short-Term Energy Outlook: global liquids consumption",
+        "Manufacturing purchasing managers' indexes for the United States, China and the euro area",
+        "Product supplied of gasoline, distillate and jet fuel in the EIA Weekly Petroleum Status Report",
+        "IMF World Economic Outlook"
+      ],
+      "sources": [
+        {
+          "title": "What drives crude oil prices: Demand Non-OECD",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/demand-nonoecd.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "What drives crude oil prices: Demand OECD",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/demand-oecd.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "What drives petroleum product prices: Consumption",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/products/consumption.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "id": "inventories",
+      "title": "Inventories: crude stocks and product stocks",
+      "mechanism": "Inventories balance supply and demand and cushion shocks. Crude and product stocks tell different stories: crude stocks reflect the balance between producers and refiners, product stocks that between refiners and end users. When stocks are low, prices tend to react more to a disruption. Low gasoline or distillate stocks tend to lift product prices relative to crude, widening the crack; low crude stocks tend to lift crude itself. Stocks and the futures curve move together: stocks tend to build when later prices cover storage costs, and prompt barrels tend to gain a premium when stocks run low.",
+      "acts_on": "both",
+      "direction": [
+        "Crude draws larger than usual for the season tend to support crude prices; builds larger than usual tend to weigh on them.",
+        "Gasoline or distillate stocks that are low for the time of year tend to support product prices and widen the crack.",
+        "Product stocks that are high for the time of year tend to compress the crack, even when crude is firm.",
+        "Near-dated futures priced above later ones tend to go with stock draws; the reverse tends to go with stock builds."
+      ],
+      "changes_when": [
+        "Stock changes reflect timing, such as delayed import cargoes or a swing in exports, rather than a change in the underlying balance.",
+        "A level is read without its season: product stocks normally fall in some months and rise in others.",
+        "Barrels move to places outside the headline figure, such as other regions or storage at sea.",
+        "Governments release emergency stocks or refill them, adding or removing barrels outside the commercial market.",
+        "A single weekly figure is noisy and later revised, so one week can mislead.",
+        "A draw or build the market had anticipated tends to move prices less than one that surprises it."
+      ],
+      "watch": [
+        "EIA Weekly Petroleum Status Report: crude, gasoline and distillate stocks",
+        "EIA This Week in Petroleum",
+        "IEA Oil Market Report (public highlights): OECD industry stocks",
+        "EIA Short-Term Energy Outlook: inventory outlook",
+        "The Brent and WTI futures curves: the gap between near and later contracts"
+      ],
+      "sources": [
+        {
+          "title": "What drives crude oil prices: Balance",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/balance.php",
+          "checked_on": "2026-11-06",
+          "locator": "Relationship between inventories and prices"
+        },
+        {
+          "title": "Gasoline explained: Gasoline price fluctuations",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2024-09-06",
+          "url": "https://www.eia.gov/energyexplained/gasoline/price-fluctuations.php",
+          "checked_on": "2026-11-06",
+          "locator": "Gasoline inventories can help to moderate price increases"
+        },
+        {
+          "title": "Diesel fuel explained: Factors affecting diesel prices",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/energyexplained/diesel-fuel/factors-affecting-diesel-prices.php",
+          "checked_on": "2026-11-06",
+          "locator": "U.S. diesel fuel supply and demand imbalances can cause price fluctuations"
+        }
+      ]
+    },
+    {
+      "id": "refining",
+      "title": "Refining capacity, utilization and outages",
+      "mechanism": "This is the main channel for the crack, the gap between product prices and crude. Anything that changes how much refined product reaches a market, without changing crude by as much, acts mainly on it. Planned maintenance and unplanned outages, such as fires or hurricanes, cut product supply; whether they widen the crack depends on stocks and on how quickly other supply can arrive. Closures can tighten a region's product balance over time, and new capacity elsewhere can loosen it. Refiners can shift output between gasoline and distillates only within limits, so product cracks can diverge.",
+      "acts_on": "crack",
+      "direction": [
+        "An outage tends to widen the crack in the affected region when stocks are already low and alternative supply is not readily available.",
+        "When utilization is high there is little room to raise output, so extra demand tends to show up in wider cracks rather than more product.",
+        "Closures tend to support a region's product prices relative to crude and to raise its reliance on imported product.",
+        "New capacity, especially export-oriented plants abroad, tends to weigh on cracks in the markets those plants supply.",
+        "Because yields are only partly flexible, a shortage of one product can lift its crack while another product's crack stays weak.",
+        "A large outage also cuts the refinery's crude purchases, which can soften local crude prices while product prices firm.",
+        "Low margins can lead refiners to cut runs, which trims product supply and can pull cracks back toward refiners' running costs."
+      ],
+      "changes_when": [
+        "Product stocks are ample, so an outage passes with little price effect.",
+        "The link can be weak on average: outages large enough to move monthly prices have been uncommon.",
+        "Imports can arrive quickly, which limits how far a regional crack can rise above the cost of bringing product in.",
+        "Product demand is weak at the same time, so lower output meets lower use.",
+        "Repairs finish or supply chains adjust; the price effects of outages have tended to be short-lived."
+      ],
+      "watch": [
+        "Refinery utilization in the EIA Weekly Petroleum Status Report",
+        "EIA Refinery Capacity Report",
+        "EIA This Week in Petroleum",
+        "EIA Short-Term Energy Outlook: refinery margins and utilization",
+        "IEA Oil Market Report (public highlights): refinery throughput and margins"
+      ],
+      "sources": [
+        {
+          "title": "What drives petroleum product prices: Production",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/products/production.php",
+          "checked_on": "2026-11-06",
+          "locator": "Disruptions to refinery production can increase petroleum product prices; The limited ability of refineries to shift product yields allows prices between products to diverge"
+        },
+        {
+          "title": "Refinery Outages: Description and Potential Impact on Petroleum Product Prices",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2007-03-27",
+          "url": "https://www.eia.gov/petroleum/articles/refoutagesindex.php",
+          "checked_on": "2026-11-06",
+          "locator": "What are planned versus unplanned outages?; How have outages affected prices?"
+        },
+        {
+          "title": "Global refinery margins fall to multiyear seasonal lows in September",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2024-10-15",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=63447",
+          "checked_on": "2026-11-06",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "id": "geopolitics",
+      "title": "Geopolitics: conflict, sanctions and the risk premium",
+      "mechanism": "Wars, sanctions and attacks on export infrastructure can remove barrels or threaten to. Prices can move before any barrel is lost: when disruption is feared and spare capacity or stocks look thin, prices can sit above what current supply and demand alone would support, a risk premium. Sanctions often reroute trade rather than remove it, lengthening voyages and raising costs. A measure that hits refined products, such as diesel, acts more on product prices and the crack; one that hits crude acts more on crude. Effects have tended to fade as trade adjusts to new routes.",
+      "acts_on": "both",
+      "direction": [
+        "A credible threat to a major producer or route tends to add a risk premium to crude, even before supply changes.",
+        "Measures that cut a large product exporter out of a market tend to raise product prices and cracks in the importing region, as buyers turn to more distant suppliers.",
+        "Supply disruptions tend to steepen backwardation, as prompt barrels become more valuable than later ones.",
+        "The easing of a threat, or sanctions that prove porous, tend to remove the premium."
+      ],
+      "changes_when": [
+        "Spare capacity or emergency stocks are ample, so lost barrels can be replaced.",
+        "Sanctioned barrels keep flowing through other buyers and routes, so global supply changes less than the measure suggests.",
+        "The event is already priced in, so its occurrence moves prices little or even lowers them.",
+        "During a conflict that constrains supply, futures prices can sit above where investors think spot prices are heading, as buyers pay to hedge against further rises, so the curve overstates the prices investors anticipate.",
+        "Weak demand offsets the supply risk."
+      ],
+      "watch": [
+        "IEA Oil Market Report (public highlights): supply disruptions",
+        "OPEC Monthly Oil Market Report: production by country",
+        "Sanctions notices from the US Treasury's Office of Foreign Assets Control and from the European Union",
+        "The Brent futures curve: the gap between near and later contracts",
+        "Geopolitical Risk Index (Caldara and Iacoviello)"
+      ],
+      "sources": [
+        {
+          "title": "What drives crude oil prices: Spot Prices",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/spot_prices.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "What drives petroleum product prices: Trade",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/products/trade.php",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Convenience Yields, Risk Premiums, and the Interpretation of Oil Futures Prices During Times of Geopolitical Conflict",
+          "publisher": "Board of Governors of the Federal Reserve System (FEDS Notes)",
+          "date": "2026-10-09",
+          "url": "https://www.federalreserve.gov/econres/notes/feds-notes/convenience-yields-risk-premiums-and-the-interpretation-of-oil-futures-prices-during-geo-conflict-20261009.html",
+          "checked_on": "2026-11-06",
+          "locator": "The Effects of Geopolitical Conflict on Oil Risk Premiums; Conclusion"
+        }
+      ]
+    },
+    {
+      "id": "shipping",
+      "title": "Shipping: chokepoints, freight and insurance",
+      "mechanism": "Most traded oil moves by sea, much of it through a few narrow passages. A blockage or threat at a chokepoint can delay supply and raise freight and war-risk insurance costs, and rerouting onto longer voyages ties up ships, which can lift freight on other lanes too. Freight separates regional prices: a price gap between two markets must cover the cost of shipping before cargoes move. When freight rises, regional prices can drift apart and product arbitrage between regions can close, which can firm cracks in importing regions and soften them in exporting ones.",
+      "acts_on": "both",
+      "direction": [
+        "Higher freight and insurance costs tend to raise delivered prices in importing regions and lower what exporters receive.",
+        "When freight is expensive, a wider regional price gap is needed before trade flows; cheap freight tends to narrow regional spreads.",
+        "Regions that import products tend to see firmer product prices and cracks when product tanker rates rise; exporting regions may see the reverse.",
+        "A disruption at a major crude chokepoint tends to act on crude first; one on a product route acts more on product prices."
+      ],
+      "changes_when": [
+        "Pipelines or other routes can bypass the chokepoint, though often for only part of the volume.",
+        "The tanker fleet has spare capacity, so rerouting lifts freight only a little.",
+        "Stocks near consuming regions cover the delay while cargoes take longer routes.",
+        "Exporters with few other outlets absorb the higher freight, so importers pay little more."
+      ],
+      "watch": [
+        "EIA World Oil Transit Chokepoints analysis",
+        "UNCTAD Review of Maritime Transport",
+        "Baltic Exchange tanker rate assessments for crude and clean product routes",
+        "Imports and exports in the EIA Weekly Petroleum Status Report",
+        "IEA Oil Market Report (public highlights): trade flows"
+      ],
+      "sources": [
+        {
+          "title": "World Oil Transit Chokepoints",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2026-03-03",
+          "url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/",
+          "checked_on": "2026-11-06",
+          "locator": "Overview; Cape of Good Hope"
+        },
+        {
+          "title": "Low tanker rates are enabling more long-distance crude oil and petroleum product trade",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2016-10-27",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=28532",
+          "checked_on": "2026-11-06",
+          "locator": null
+        },
+        {
+          "title": "Red Sea attacks increase shipping times and freight rates",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2024-02-01",
+          "url": "https://www.eia.gov/todayinenergy/detail.php?id=61363",
+          "checked_on": "2026-11-06",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "id": "dollar_rates_growth",
+      "title": "The dollar, interest rates and growth expectations",
+      "mechanism": "Oil is priced in dollars, so a weaker dollar can make it cheaper for buyers outside the United States, supporting demand and prices; a stronger dollar can do the reverse. The link is not stable: the dollar and oil have often moved in opposite directions but can move together, as when the United States is a net energy exporter and dearer oil raises its export earnings. Higher real interest rates raise the cost of holding stocks and tend to slow activity, which can weigh on crude, more through activity than storage. Growth outlooks and risk appetite can move oil alongside equities.",
+      "acts_on": "crude",
+      "direction": [
+        "A broad dollar depreciation can support crude prices through demand from buyers outside the United States; an appreciation can weigh on them.",
+        "A rise in real interest rates can lower crude prices at short horizons, mainly by slowing activity rather than by raising the cost of holding stocks; the effect tends to be modest.",
+        "An improving growth outlook tends to lift crude together with equities; a deteriorating one tends to weigh on both.",
+        "Strong investor inflows into oil futures can add to price moves, but flows can follow prices as well as lead them, so heavy buying need not mean that the flows set prices."
+      ],
+      "changes_when": [
+        "The dollar and oil respond to a common shock, such as news about US growth, so they move together rather than apart.",
+        "Oil shocks can themselves move the dollar, so a correlation alone does not show which way an effect runs.",
+        "A supply shock dominates, raising oil while hurting growth, so oil can move against equities rather than with them.",
+        "Beyond the first quarter or so, the sign and size of interest-rate effects on oil are uncertain."
+      ],
+      "watch": [
+        "The Federal Reserve's broad trade-weighted dollar index",
+        "FOMC statements and US Treasury yields, including real yields on inflation-protected securities",
+        "IMF World Economic Outlook",
+        "Global manufacturing purchasing managers' indexes",
+        "CFTC Commitments of Traders report for crude oil futures"
+      ],
+      "sources": [
+        {
+          "title": "What drives crude oil prices: Financial Markets",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/crudeoil/financial_markets.php",
+          "checked_on": "2026-11-06",
+          "locator": "Is there a connection between crude oil prices, other commodity prices, or other financial assets?"
+        },
+        {
+          "title": "The changing nexus between commodity prices and the dollar: causes and implications",
+          "publisher": "Bank for International Settlements (BIS Bulletin No 74)",
+          "date": "2023-04-13",
+          "url": "https://www.bis.org/publ/bisbull74.htm",
+          "checked_on": "2026-11-06",
+          "locator": "Key takeaways"
+        },
+        {
+          "title": "Oil Prices, Exchange Rates and Interest Rates",
+          "publisher": "Federal Reserve Bank of Dallas (Working Paper 1914)",
+          "date": "2019-11-08",
+          "url": "https://www.dallasfed.org/-/media/documents/research/papers/2019/wp1914.pdf",
+          "checked_on": "2026-11-06",
+          "locator": "3. Understanding the Transmission of Shocks; 7. Conclusion"
+        }
+      ]
+    },
+    {
+      "id": "seasonality",
+      "title": "Seasonality in the Northern Hemisphere",
+      "mechanism": "Fuel demand and refinery maintenance follow the seasons, so product prices and the crack tend to move in a yearly pattern. These patterns are for the Northern Hemisphere, where most refining and fuel demand sit. Gasoline demand tends to rise into the summer driving season, and summer-grade gasoline costs more to make, so its price tends to rise through spring. Distillate use tends to rise in autumn and winter with heating and harvests, so its stocks are usually built in summer. Planned maintenance tends to cluster in late winter, early spring and autumn, when product demand is lowest.",
+      "acts_on": "crack",
+      "direction": [
+        "Gasoline prices and the gasoline part of the crack tend to strengthen in spring, ahead of the summer driving season, and to ease after it.",
+        "Distillate prices and the diesel part of the crack tend to find support in autumn and winter, when heating and harvest demand add to freight use.",
+        "A heavy maintenance season tends to lower refinery output and product stocks, which can firm cracks while refiners buy less crude.",
+        "Gasoline stocks tend to fall through the summer driving season, and distillate stocks tend to peak in summer, when distillate use is lowest."
+      ],
+      "changes_when": [
+        "Weather departs from normal: a mild winter can weaken distillate demand, and a severe cold spell can strain heating oil supply.",
+        "A hurricane or an unplanned outage during the season outweighs the usual pattern.",
+        "Stocks enter a season well above or below their usual range, which can mute or amplify the seasonal move.",
+        "Maintenance is lighter or heavier than usual, or moves earlier or later.",
+        "Regional fuel rules differ, so the timing of the grade change and its price effect varies by region."
+      ],
+      "watch": [
+        "EIA Summer Fuels Outlook, published each spring",
+        "EIA Winter Fuels Outlook, published each autumn",
+        "Refinery utilization in the EIA Weekly Petroleum Status Report",
+        "Gasoline and distillate stocks in the EIA weekly data, read against their seasonal range",
+        "Heating degree days from the NOAA Climate Prediction Center"
+      ],
+      "sources": [
+        {
+          "title": "Gasoline explained: Gasoline price fluctuations",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2024-09-06",
+          "url": "https://www.eia.gov/energyexplained/gasoline/price-fluctuations.php",
+          "checked_on": "2026-11-06",
+          "locator": "Seasonal demand and specifications for gasoline also affect prices"
+        },
+        {
+          "title": "What drives petroleum product prices: Balance",
+          "publisher": "U.S. Energy Information Administration",
+          "date": null,
+          "url": "https://www.eia.gov/finance/markets/products/balance.php",
+          "checked_on": "2026-11-06",
+          "locator": "Relationship between inventories and prices"
+        },
+        {
+          "title": "Refinery Outages: Description and Potential Impact on Petroleum Product Prices",
+          "publisher": "U.S. Energy Information Administration",
+          "date": "2007-03-27",
+          "url": "https://www.eia.gov/petroleum/articles/refoutagesindex.php",
+          "checked_on": "2026-11-06",
+          "locator": "When do outages occur and how are they planned, including information available on such plans?"
+        }
+      ]
+    }
+  ]
+}

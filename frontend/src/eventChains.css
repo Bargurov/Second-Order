@@ -1,0 +1,45 @@
+/* The copper event chains page (/theses/copper/events). The source voice (quotes, rules in ink) and the owner voice
+   (set apart, indented, in the stamp colour) differ in heading and wording, not only in colour. */
+.ec-page { max-width: 960px; }
+.ec-card { margin: 28px 0; padding: 18px 16px; border: 1px solid var(--rule-strong); background: var(--paper-raised); }
+.ec-card h2 { margin: 0 0 4px; font-family: var(--serif); font-weight: 500; }
+.ec-card h3 { margin: 0 0 8px; font: 600 15px/1.3 var(--sans); }
+.ec-card h4 { margin: 14px 0 6px; font: 600 13px/1.3 var(--sans); color: var(--ink-2); }
+.ec-meta, .ec-note, .ec-count, .ec-own-note { font-size: 13px; color: var(--ink-3); max-width: 90ch; }
+.ec-part { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--rule-strong); }
+.ec-reasons { margin: 6px 0; padding-left: 18px; font-size: 13px; }
+.ec-step { margin: 0; }
+.ec-step-no { font: 600 11px/1 var(--mono); color: var(--ink-3); text-transform: uppercase; }
+.ec-join { margin: 8px 0 8px 12px; font-style: italic; color: var(--ink-3); }
+.ec-quote { margin: 6px 0; padding: 4px 12px; border-left: 3px solid var(--ink); background: var(--paper-sunk); }
+.ec-quote p { margin: 0; overflow-wrap: anywhere; }
+.ec-quote footer { margin-top: 4px; font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+.ec-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .ec-sides { grid-template-columns: 1fr; } }
+.ec-source-line { margin: 4px 0; font-size: 12px; color: var(--ink-3); }
+.ec-withheld { margin: 4px 0; padding: 4px 8px; border-left: 3px dashed var(--stamp); font-size: 13px; color: var(--ink-2); }
+.ec-none { color: var(--ink-3); font-size: 14px; }
+.ec-mechanism { margin: 6px 0; }
+.ec-mark { font-size: 12px; color: var(--ink-3); }
+.ec-owner { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--stamp); }
+.ec-voice { margin: 0 0 4px; font-weight: 600; font-size: 13px; }
+.ec-own-text { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ec-judgments { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 4px 0; font-size: 14px; }
+@media (max-width: 640px) { .ec-judgments { grid-template-columns: 1fr; } }
+.ec-judgments dd { margin: 0; font-weight: 600; }
+.ec-form { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--rule-strong); }
+.ec-choices { margin: 8px 0; padding: 0; border: 0; min-width: 0; }
+.ec-choices legend { padding: 0; font-size: 13px; font-weight: 600; }
+.ec-choices label { display: block; padding: 4px 0; min-height: 32px; }
+.ec-field { display: block; margin: 8px 0 0; font-size: 13px; }
+.ec-field textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; font: inherit; font-size: 15px; }
+.ec-message { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--ink); font-size: 14px; }
+.ec-message.is-unconfirmed { border-left-color: var(--stamp); }
+.ec-invalid { padding: 6px 10px; border-left: 3px solid var(--stamp); }
+.ec-versions, .ec-records { padding-left: 20px; }
+.ec-basis summary { cursor: pointer; font-size: 12px; color: var(--ink-3); }
+.ec-error-banner { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--stamp); }
+.ec-event { margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid var(--rule-strong); }
+.ec-event p { margin: 2px 0; font-size: 14px; }
+.ec-blocked { margin-left: 8px; font-size: 13px; color: var(--ink-2); }
+.ec-change-line { display: block; }

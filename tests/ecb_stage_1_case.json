@@ -1,0 +1,395 @@
+{
+ "about": "The ECB bank lending survey stage-1 reply of 29 October 2026 (brief-s1-bb6e90d11da0c717, HTTP 200, validated under brief-evidence-3) as a regression fixture, copied from the saved records by data/local-checks/net-balance-prose/make_fixture.py. Real, not SYNTHETIC: the reply exactly as the application decoded it and the foundations it saved; of the ECB press release only the sentences its figures quote and the two stating the housing-loan reason. It never enters research scores.",
+ "story_id": "story-e87eb471b880be69",
+ "request_id": "brief-s1-bb6e90d11da0c717",
+ "request_sha256": "bb6e90d11da0c7174e1b8e7e15055a89ba08cc341630f726d2d21f014811b51a",
+ "stage_version": "brief-evidence-3",
+ "stages_version": "brief-stages-0.3",
+ "response_id": "msg_011CgVYWNpXc4b6g6ttET2g2",
+ "outcome": "validated",
+ "foundations_sha256": "5ff65353cde16f9cc68f8b14d77fe6bfefba766861a0d52de4bdc87e2a4a1abe",
+ "format_sha256": {
+  "1": "c2889e3ea36543b9d7679c9c0ce08499ddc56552664055caedab0ff996d2105f",
+  "2": "52d2545da3b272a36145c235ed747d15253e1bb25f8ad82e948990ca38bce580"
+ },
+ "stage_2": {
+  "request_id": "brief-s2-35611c462edd0d80",
+  "request_sha256": "35611c462edd0d8029eb797f448d1f1547c2da0fd6e674558bba30e249e30e5c",
+  "stage_version": "brief-explanation-3",
+  "stages_version": "brief-stages-0.3"
+ },
+ "reply": {
+  "calculations": [],
+  "change_basis": [
+   "fact:1",
+   "fact:2",
+   "fact:3",
+   "figure:f1",
+   "figure:f2",
+   "figure:f3"
+  ],
+  "change_form": "survey_answers",
+  "change_instrument": "financial_conditions",
+  "change_respondents": "banks",
+  "change_stage": "observation",
+  "change_text": "In the ECB's October 2026 bank lending survey, euro area banks reported a further net tightening of credit standards for loans to firms ({f1}) and a net decrease in demand for loans to firms ({f2}) and for housing loans ({f3}) in the third quarter of 2026.",
+  "facts": [
+   {
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ],
+    "text": "The ECB's October 2026 BLS says euro area banks reported a further net tightening of credit standards for loans to firms in Q3 2026 (net percentage 9%, above the 5% expected), unchanged for housing loans (0%) and tighter for consumer credit (14%)."
+   },
+   {
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ],
+    "text": "Banks reported a net decrease in loan demand from firms (-6%), housing loans (-27%) and consumer credit (-2%) in Q3 2026; the ECB says higher interest rates were the main driver of the declines."
+   },
+   {
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ],
+    "text": "Several banks expect a gradual but sustained increase in loan demand to finance AI digital infrastructure, particularly data centres. Most have no specific quantitative criteria for AI-related lending."
+   },
+   {
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ],
+    "text": "Banks' access to retail funding deteriorated, the largest fall since the series began in 2011. The survey ran 21 September to 6 October 2026 with 159 banks and a 100% response rate."
+   }
+  ],
+  "figures": [
+   {
+    "basis": "not_applicable",
+    "bound": "exact",
+    "label": "Net tightening of credit standards, loans to firms, Q3 2026",
+    "measure": "net_percentage",
+    "period": "Q3 2026",
+    "price": false,
+    "quote": "for loans or credit lines to enterprises in the third quarter of 2026 (net percentage of 9% of banks; Chart 1)",
+    "seasonal": "not_stated",
+    "sign_words": "",
+    "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+    "statistic": "other_summary",
+    "stock_flow": "not_applicable",
+    "unit": "percent",
+    "value": 9,
+    "vintage_label": ""
+   },
+   {
+    "basis": "not_applicable",
+    "bound": "exact",
+    "label": "Net demand for loans to firms, Q3 2026",
+    "measure": "net_percentage",
+    "period": "Q3 2026",
+    "price": false,
+    "quote": "net decrease in demand for loans or credit lines to firms (net percentage of -6%; Chart 2)",
+    "seasonal": "not_stated",
+    "sign_words": "",
+    "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+    "statistic": "other_summary",
+    "stock_flow": "not_applicable",
+    "unit": "percent",
+    "value": -6,
+    "vintage_label": ""
+   },
+   {
+    "basis": "not_applicable",
+    "bound": "exact",
+    "label": "Net demand for housing loans, Q3 2026",
+    "measure": "net_percentage",
+    "period": "Q3 2026",
+    "price": false,
+    "quote": "strong net decrease in demand for housing loans (net percentage of -27%)",
+    "seasonal": "not_stated",
+    "sign_words": "",
+    "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+    "statistic": "other_summary",
+    "stock_flow": "not_applicable",
+    "unit": "percent",
+    "value": -27,
+    "vintage_label": ""
+   }
+  ],
+  "insufficient_evidence": "",
+  "insufficient_material": "",
+  "missing": [
+   "Country-level results beyond the euro area aggregate",
+   "Chart data and the full ECB report on the survey round",
+   "Size of lending volumes or actual loan growth",
+   "Quantified AI-related lending demand"
+  ],
+  "themes": [
+   {
+    "basis": "Banks report tighter credit standards and lower loan demand.",
+    "kind": "sector",
+    "name": "Euro area bank lending"
+   },
+   {
+    "basis": "Banks expect demand to finance data centres and digital infrastructure to increase.",
+    "kind": "theme",
+    "name": "AI infrastructure financing"
+   },
+   {
+    "basis": "Net demand for housing loans fell by 27% net, driven by interest rates.",
+    "kind": "sector",
+    "name": "Housing loans"
+   },
+   {
+    "basis": "Tightening of credit standards exceeded expectations, owing to risk perceptions.",
+    "kind": "sector",
+    "name": "Consumer credit"
+   }
+  ]
+ },
+ "foundations": {
+  "stages_version": "brief-stages-0.3",
+  "facts": [
+   {
+    "text": "The ECB's October 2026 BLS says euro area banks reported a further net tightening of credit standards for loans to firms in Q3 2026 (net percentage 9%, above the 5% expected), unchanged for housing loans (0%) and tighter for consumer credit (14%).",
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ]
+   },
+   {
+    "text": "Banks reported a net decrease in loan demand from firms (-6%), housing loans (-27%) and consumer credit (-2%) in Q3 2026; the ECB says higher interest rates were the main driver of the declines.",
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ]
+   },
+   {
+    "text": "Several banks expect a gradual but sustained increase in loan demand to finance AI digital infrastructure, particularly data centres. Most have no specific quantitative criteria for AI-related lending.",
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ]
+   },
+   {
+    "text": "Banks' access to retail funding deteriorated, the largest fall since the series began in 2011. The survey ran 21 September to 6 October 2026 with 159 banks and a 100% response rate.",
+    "reports": [
+     "ecb-press:d1af0e9e9c8b89b7bcd7"
+    ]
+   }
+  ],
+  "themes": [
+   {
+    "kind": "sector",
+    "name": "Euro area bank lending",
+    "basis": "Banks report tighter credit standards and lower loan demand."
+   },
+   {
+    "kind": "theme",
+    "name": "AI infrastructure financing",
+    "basis": "Banks expect demand to finance data centres and digital infrastructure to increase."
+   },
+   {
+    "kind": "sector",
+    "name": "Housing loans",
+    "basis": "Net demand for housing loans fell by 27% net, driven by interest rates."
+   },
+   {
+    "kind": "sector",
+    "name": "Consumer credit",
+    "basis": "Tightening of credit standards exceeded expectations, owing to risk perceptions."
+   }
+  ],
+  "missing": [
+   "Country-level results beyond the euro area aggregate",
+   "Chart data and the full ECB report on the survey round",
+   "Size of lending volumes or actual loan growth",
+   "Quantified AI-related lending demand"
+  ],
+  "status": "explained",
+  "reason": null,
+  "change": {
+   "stage": "observation",
+   "instrument": "financial_conditions",
+   "form": "survey_answers",
+   "respondents": "banks",
+   "text": "In the ECB's October 2026 bank lending survey, euro area banks reported a further net tightening of credit standards for loans to firms ({f1}) and a net decrease in demand for loans to firms ({f2}) and for housing loans ({f3}) in the third quarter of 2026.",
+   "basis": [
+    "fact:1",
+    "fact:2",
+    "fact:3",
+    "figure:f1",
+    "figure:f2",
+    "figure:f3"
+   ]
+  },
+  "figures": [
+   {
+    "id": "f1",
+    "label": "Net tightening of credit standards, loans to firms, Q3 2026",
+    "value": 9,
+    "unit": "percent",
+    "measure": "net_percentage",
+    "period": "Q3 2026",
+    "basis": "not_applicable",
+    "seasonal": "not_stated",
+    "price": false,
+    "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+    "quote": "for loans or credit lines to enterprises in the third quarter of 2026 (net percentage of 9% of banks; Chart 1)",
+    "vintage_label": null,
+    "sign": "as_quoted",
+    "sign_words": null,
+    "bound": "exact",
+    "statistic": "other_summary",
+    "stock_flow": "not_applicable"
+   },
+   {
+    "id": "f2",
+    "label": "Net demand for loans to firms, Q3 2026",
+    "value": -6,
+    "unit": "percent",
+    "measure": "net_percentage",
+    "period": "Q3 2026",
+    "basis": "not_applicable",
+    "seasonal": "not_stated",
+    "price": false,
+    "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+    "quote": "net decrease in demand for loans or credit lines to firms (net percentage of -6%; Chart 2)",
+    "vintage_label": null,
+    "sign": "as_quoted",
+    "sign_words": null,
+    "bound": "exact",
+    "statistic": "other_summary",
+    "stock_flow": "not_applicable"
+   },
+   {
+    "id": "f3",
+    "label": "Net demand for housing loans, Q3 2026",
+    "value": -27,
+    "unit": "percent",
+    "measure": "net_percentage",
+    "period": "Q3 2026",
+    "basis": "not_applicable",
+    "seasonal": "not_stated",
+    "price": false,
+    "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+    "quote": "strong net decrease in demand for housing loans (net percentage of -27%)",
+    "vintage_label": null,
+    "sign": "as_quoted",
+    "sign_words": null,
+    "bound": "exact",
+    "statistic": "other_summary",
+    "stock_flow": "not_applicable"
+   }
+  ],
+  "calculations": [],
+  "checked": {
+   "change": {
+    "stage": "observation",
+    "instrument": "financial_conditions",
+    "form": "survey_answers",
+    "respondents": "banks",
+    "text": "In the ECB's October 2026 bank lending survey, euro area banks reported a further net tightening of credit standards for loans to firms ({f1}) and a net decrease in demand for loans to firms ({f2}) and for housing loans ({f3}) in the third quarter of 2026.",
+    "basis": [
+     "fact:1",
+     "fact:2",
+     "fact:3",
+     "figure:f1",
+     "figure:f2",
+     "figure:f3"
+    ]
+   },
+   "figures": [
+    {
+     "id": "f1",
+     "label": "Net tightening of credit standards, loans to firms, Q3 2026",
+     "value": 9,
+     "decimals": 0,
+     "unit": "percent",
+     "measure": "net_percentage",
+     "period": "Q3 2026",
+     "basis": "not_applicable",
+     "seasonal": "not_stated",
+     "price": false,
+     "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+     "quote": "for loans or credit lines to enterprises in the third quarter of 2026 (net percentage of 9% of banks; Chart 1)",
+     "sign": "as_quoted",
+     "sign_words": null,
+     "direction_check": "as_quoted",
+     "bound": "exact",
+     "statistic": "other_summary",
+     "stock_flow": "not_applicable",
+     "vintage": {
+      "source": "European Central Bank",
+      "published": "2026-10-27T00:00:00+00:00",
+      "label": null
+     },
+     "display": "9%"
+    },
+    {
+     "id": "f2",
+     "label": "Net demand for loans to firms, Q3 2026",
+     "value": -6,
+     "decimals": 0,
+     "unit": "percent",
+     "measure": "net_percentage",
+     "period": "Q3 2026",
+     "basis": "not_applicable",
+     "seasonal": "not_stated",
+     "price": false,
+     "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+     "quote": "net decrease in demand for loans or credit lines to firms (net percentage of -6%; Chart 2)",
+     "sign": "as_quoted",
+     "sign_words": null,
+     "direction_check": "as_quoted",
+     "bound": "exact",
+     "statistic": "other_summary",
+     "stock_flow": "not_applicable",
+     "vintage": {
+      "source": "European Central Bank",
+      "published": "2026-10-27T00:00:00+00:00",
+      "label": null
+     },
+     "display": "−6%"
+    },
+    {
+     "id": "f3",
+     "label": "Net demand for housing loans, Q3 2026",
+     "value": -27,
+     "decimals": 0,
+     "unit": "percent",
+     "measure": "net_percentage",
+     "period": "Q3 2026",
+     "basis": "not_applicable",
+     "seasonal": "not_stated",
+     "price": false,
+     "source": "report:ecb-press:d1af0e9e9c8b89b7bcd7",
+     "quote": "strong net decrease in demand for housing loans (net percentage of -27%)",
+     "sign": "as_quoted",
+     "sign_words": null,
+     "direction_check": "as_quoted",
+     "bound": "exact",
+     "statistic": "other_summary",
+     "stock_flow": "not_applicable",
+     "vintage": {
+      "source": "European Central Bank",
+      "published": "2026-10-27T00:00:00+00:00",
+      "label": null
+     },
+     "display": "−27%"
+    }
+   ],
+   "calculations": []
+  },
+  "draft_id": "brief-s1-bb6e90d11da0c717",
+  "request_sha256": "bb6e90d11da0c7174e1b8e7e15055a89ba08cc341630f726d2d21f014811b51a",
+  "stage_version": "brief-evidence-3"
+ },
+ "reports": [
+  {
+   "entry_id": "ecb-press:d1af0e9e9c8b89b7bcd7",
+   "publisher": "European Central Bank",
+   "title": "October 2026 euro area bank lending survey",
+   "excerpt": "According to the October 2026 bank lending survey (BLS), euro area banks reported a further net tightening of credit standards – banks’ internal guidelines or loan approval criteria – for loans or credit lines to enterprises in the third quarter of 2026 (net percentage of 9% of banks; Chart 1).\nIn the third quarter of 2026, euro area banks reported a net decrease in demand for loans or credit lines to firms (net percentage of -6%; Chart 2).\nBanks reported a strong net decrease in demand for housing loans (net percentage of -27%), which was a more pronounced decline than in the second quarter (-15%) and exceeded the expectations reported by banks in the previous survey round (-12%).\n- Decline in loan demand across all segments, driven mainly by higher interest rates\nIncreases in interest rates were the main driver of the decline, followed by falling consumer confidence and worsening housing market prospects.",
+   "link": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.pr261027~506ef03145.en.html",
+   "published": "Tue, 27 Oct 2026 01:00:00 +0100",
+   "published_utc": "2026-10-27T00:00:00+00:00",
+   "text": null,
+   "reduced": "Only the sentences the saved figures quote and the two stating the housing-loan reason are kept here."
+  }
+ ],
+ "released_at": "2026-10-27T00:00:00+00:00"
+}

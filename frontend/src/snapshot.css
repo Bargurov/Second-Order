@@ -1,0 +1,58 @@
+/* The retained BIS snapshot page and imported Inbox entries: quiet, dense, the Inbox's own visual language. */
+.snapshot-page { max-width: 1040px; margin: 0 auto; }
+.snapshot-head h1 { margin: 4px 0 8px; }
+.snapshot-head .lede { max-width: 78ch; }
+.snapshot-labels { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; padding: 0; list-style: none; }
+.snapshot-labels li { padding: 2px 8px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  font: 500 10.5px/1.6 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.snapshot-source { margin: 0 0 16px; }
+.snapshot-source code, .snapshot-facts code { overflow-wrap: anywhere; }
+.snapshot-open { margin: 0 0 18px; padding: 14px 16px; }
+.snapshot-open p { margin: 0 0 10px; max-width: 78ch; color: var(--ink-2); }
+.snapshot-problem { margin: 0 0 14px; }
+.snapshot-summary { max-width: 86ch; margin: 0 0 12px; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+.snapshot-search input { width: 100%; min-width: 240px; box-sizing: border-box; min-height: 40px; padding: 9px 10px;
+  border: 1px solid var(--rule-strong); border-radius: 3px; background: var(--paper-raised); color: var(--ink);
+  font: 400 14px/1.4 var(--sans); }
+.snapshot-search input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.snapshot-rows { margin-top: 12px; }
+.snapshot-entry h3 { margin: 4px 0 2px; }
+.snapshot-tags, .snapshot-note { margin: 4px 0; font-size: 14px; color: var(--ink-3); }
+.snapshot-text.is-checked { color: var(--ink); font-weight: 600; }
+.snapshot-text.is-checked_differs, .snapshot-text.is-unreadable { color: var(--inconclusive); }
+.snapshot-state.is-imported { color: var(--ink); font-weight: 600; }
+.snapshot-state.is-changed, .snapshot-state.is-unreadable { color: var(--inconclusive); }
+.snapshot-more { margin: 10px 0 0; }
+.snapshot-selection-bar { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 12px;
+  align-items: center; justify-content: space-between; margin: 10px 0 0; padding: 8px 12px;
+  border: 1px solid var(--rule-strong); background: var(--paper-raised); font-size: 14px; color: var(--ink-2); }
+.snapshot-detail { margin: 10px 0 4px; padding: 10px 12px; border-left: 3px solid var(--ink); background: var(--paper-raised); }
+.snapshot-facts { margin: 0 0 10px; }
+.snapshot-paragraphs { max-height: 420px; overflow: auto; padding: 8px 12px; border: 1px solid var(--rule);
+  background: var(--paper); font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+.snapshot-paragraphs p { margin: 0 0 8px; overflow-wrap: anywhere; }
+.snapshot-import { margin: 22px 0 0; padding: 14px 16px; }
+.snapshot-import h2 { margin: 0 0 6px; }
+.snapshot-selection { font-size: 14px; color: var(--ink-2); }
+.snapshot-group { margin: 12px 0; padding: 8px 12px; border-left: 3px solid var(--rule-strong); }
+.snapshot-group.is-new { border-left-color: var(--ink); }
+.snapshot-group.is-changed, .snapshot-group.is-unusable { border-left-color: var(--inconclusive); }
+.snapshot-group h3 { margin: 0 0 6px; font-size: 15px; }
+.snapshot-group ul { margin: 0; padding-left: 18px; font-size: 14.5px; line-height: 1.55; }
+.snapshot-decision { margin: 6px 0; padding: 6px 10px; border: 1px solid var(--rule); }
+.snapshot-decision label { display: block; margin: 4px 0; font-size: 14px; }
+.snapshot-result ul { padding-left: 18px; }
+.inbox-snapshot-link { margin: 8px 0 0; font-size: 14px; color: var(--ink-2); }
+.inbox-imported { margin: 18px 0 0; padding-top: 10px; border-top: 1px solid var(--rule); }
+.inbox-imported h3 { margin: 0 0 4px; font-size: 16px; }
+.inbox-imported-note { margin: 0 0 8px; font-size: 14px; color: var(--ink-3); }
+.inbox-imported-items .inbox-item-excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden; }
+.inbox-imported-label { margin: 0 0 2px; font: 500 10.5px/1.5 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); }
+.overview-imported-text p { margin: 0 0 8px; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .snapshot-search input { min-width: 0; width: 100%; }
+  .snapshot-paragraphs { max-height: 320px; font-size: 14px; }
+  .snapshot-import button, .snapshot-entry .button { min-height: 44px; }
+}

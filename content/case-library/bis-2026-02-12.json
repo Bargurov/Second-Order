@@ -1,0 +1,94 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "bis-2026-02-12",
+  "title": "Applied Materials agrees to a $252 million penalty over ion implanters shipped to China through Korea",
+  "category": "Export controls",
+  "summary": "BIS announced a settlement under which Applied Materials and its Korean affiliate pay about $252 million, twice the value of roughly $126 million of ion implanters shipped in 2021 and 2022 to a China-based company on the Entity List without a license. BIS calls it the second-highest penalty it has imposed and the maximum allowed by statute.",
+  "sectors": ["technology-semiconductors"],
+  "source": {
+    "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS)",
+    "title": "Applied Materials to Pay $252 Million Penalty to BIS for Illegally Exporting Semiconductor Manufacturing Equipment",
+    "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+    "document_id": null,
+    "published_at": "2026-02-12",
+    "published_precision": "date",
+    "published_as_stated": "FOR IMMEDIATE RELEASE | February 12, 2026",
+    "timezone_note": "The press release states a date only. No time is stated, so none is recorded and the date is not converted to another time zone.",
+    "reference_period": "Shipments made in 2021 and 2022; settlement announced February 12, 2026",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "BIS announced a settlement with Applied Materials Inc. of Santa Clara, California, and Applied Materials Korea, Ltd. covering exports of US semiconductor manufacturing equipment to China. The two companies agreed to pay a penalty of approximately $252 million, which BIS describes as the second-highest penalty it has ever imposed.",
+    "According to the release, the customer, a company it does not name, was placed on the Entity List in 2020. In 2021 and 2022 the equipment, ion implanters, was shipped first to the Korean affiliate for assembly and then onward to China, without an application for or receipt of an export license. The merchandise was worth approximately $126 million; the penalty is twice that value, which BIS says is the maximum allowed by statute.",
+    "The settlement also requires multiple audits of the company's export compliance program, with annual certifications to BIS. BIS states that the compliance employees and senior global trade and production executives responsible for the shipments are no longer employed by the two companies. The case was investigated by BIS's Office of Export Enforcement, Boston Field Office, and Homeland Security Investigations."
+  ],
+  "key_facts": [
+    {"label": "Penalty", "value": "About $252 million", "basis": "Settlement announced by BIS, which calls it the second-highest penalty it has ever imposed"},
+    {"label": "Value of the shipments", "value": "About $126 million", "basis": "Ion implanters shipped in 2021 and 2022"},
+    {"label": "Penalty relative to value", "value": "Twice the transaction value; the statutory maximum", "basis": "As stated in the release"},
+    {"label": "Route", "value": "United States → Korea (assembly) → China", "basis": "Through Applied Materials Korea, Ltd., without an export license"},
+    {"label": "Customer", "value": "On the Entity List since 2020", "basis": "Not named in the release"},
+    {"label": "Other terms", "value": "Multiple export-compliance audits; annual certifications to BIS", "basis": "BIS also states that the responsible employees and executives are no longer employed"}
+  ],
+  "channels": [
+    {
+      "title": "Compliance costs for equipment exporters",
+      "source_fact": "A penalty at the statutory maximum, twice the value of the shipments, plus required audits and annual certifications.",
+      "interpretation": "Penalties of this size raise the expected cost of licensing errors for makers of semiconductor equipment, which could lead them to screen customers and shipments through foreign affiliates more tightly. Whether other exporters change their practices cannot be observed from the release."
+    },
+    {
+      "title": "Equipment supply to listed customers in China",
+      "source_fact": "The ion implanters reached a China-based company on the Entity List by way of an affiliate in Korea.",
+      "interpretation": "If enforcement against shipments routed through third countries deters similar sales, it narrows one way listed Chinese firms obtain equipment. The release does not say how common such routing is, so the size of this effect is unknown."
+    },
+    {
+      "title": "The company's finances",
+      "source_fact": "About $252 million is payable by Applied Materials and its Korean affiliate.",
+      "interpretation": "A one-time payment of this size is large in dollars, but the release gives no figures for the company's revenue, cash or earlier reserves, so its financial weight cannot be judged from this source."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Enforcement of past conduct, not a new rule", "detail": "The settlement concerns shipments in 2021 and 2022 under the rules then in force. Reading it as a tightening of current controls would confuse the timing of enforcement with policy. A month earlier, on January 14, 2026, BIS had moved licensing policy for certain advanced chips to China in the other direction."},
+    {"title": "Deterrence or disclosure", "detail": "Whether large penalties mainly deter violations or mainly encourage firms to disclose them cannot be told from one case, and this release does not say whether the company disclosed the shipments itself."}
+  ],
+  "assumptions": [
+    "The amounts are as BIS states them, as approximations; the settlement documents that would give exact figures were not read.",
+    "Ion implanters are semiconductor manufacturing equipment, as the release says; their role in particular chipmaking steps is not described in the source and is not assumed here."
+  ],
+  "missing_information": [
+    "The order, settlement agreement and proposed charging letter, which BIS links as separate documents and which were not opened for this case.",
+    "The customer's identity and what it produced with the equipment.",
+    "Whether the company disclosed the matter or set money aside for it earlier; its own filings were not read.",
+    "The licensing requirements in force in 2021 and 2022, in their regulatory text."
+  ],
+  "weakening_observations": [
+    "If similar shipments by other exporters continued after the settlement, the deterrence reading would weaken.",
+    "If the company had disclosed and reserved for the penalty long before February 2026, the announcement would carry little new financial information."
+  ],
+  "critique": [
+    {"title": "Large numbers without a denominator", "detail": "The case reports a record-scale penalty, but without the company's revenue or the overall flow of equipment to China it cannot say how much the penalty matters for the firm or for the industry. It should be read as a description of an enforcement action, not as a measure of its effect."},
+    {"title": "One enforcement action is not a policy stance", "detail": "A single settlement says little about the direction of export controls. Setting it beside the January 2026 change for certain chips shows that enforcement of past cases and current licensing policy can move separately; the case avoids reading a trend from either."},
+    {"title": "What the release leaves out", "detail": "BIS names neither the customer nor what the equipment was used to make. Any reading about China's chipmaking capacity would go beyond the source, so the channels stay with exporters' costs and the routing of shipments."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The press release as shown on bis.gov on 2026-10-11. The linked order, settlement agreement and proposed charging letter were not opened.", "url": null},
+    {"title": "Selection", "detail": "The BIS news page, filtered to all types, lists this release. Between it and 30 September 2026 the listings with their own text naming semiconductors, chips or advanced computing are those of 17 June and 10 July 2026; the other listings in that period only link an enforcement order or another agency's release.", "url": "https://www.bis.gov/news-updates"},
+    {"title": "Context: January 14, 2026", "detail": "BIS revised its licensing policy for chips exported to China, reviewing applications for the Nvidia H200, AMD MI325X and similar chips case by case if security requirements are met. Read from the release's text on the BIS news page.", "url": "https://www.bis.gov/news-updates"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the press release and the BIS news page in a browser on 2026-10-11. Facts come from the release text; the channels, competing explanations and critique are the assistant's interpretation. The linked enforcement documents, company filings, market prices, forecasts and news coverage were not used.",
+    "sources_read": [
+      "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+      "https://www.bis.gov/news-updates"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "contract": "user-api-0.2",
+  "sources": [
+    {
+      "source_id": "20261014T091500000000Z-5e1a7c0d9b42",
+      "headline": "Simulated statistics office publishes its quarterly survey",
+      "source_url": "https://example.org/synthetic/quarterly-survey",
+      "published_at": "2026-10-13T07:00:00+00:00",
+      "published_at_as_supplied": "2026-10-13T10:00:00+03:00",
+      "captured_at": "2026-10-14T09:15:00+00:00",
+      "characters": 438
+    },
+    {
+      "source_id": "20261014T092000000000Z-a0b1c2d3e4f5",
+      "headline": "Simulated port authority notice",
+      "source_url": "https://example.org/synthetic/port-notice",
+      "published_at": "2026-10-12T12:00:00+00:00",
+      "published_at_as_supplied": "2026-10-12T12:00:00+00:00",
+      "captured_at": "2026-10-14T09:20:00+00:00",
+      "characters": 250
+    },
+    {
+      "source_id": "20261014T092500000000Z-0f1e2d3c4b5a",
+      "headline": "Simulated ministry statement",
+      "source_url": "https://example.org/synthetic/ministry-statement",
+      "published_at": "2026-10-11T08:30:00+00:00",
+      "published_at_as_supplied": "2026-10-11T11:30:00+03:00",
+      "captured_at": "2026-10-14T09:25:00+00:00",
+      "characters": 212
+    }
+  ]
+}

@@ -1,0 +1,903 @@
+{
+  "view_version": "thesis-view-0.1",
+  "thesis_version": "thesis-0.1",
+  "id": "synthetic-copper",
+  "version": 2,
+  "versions": [
+    {
+      "version": 1,
+      "published_on": "2026-11-02"
+    },
+    {
+      "version": 2,
+      "published_on": "2026-11-16"
+    }
+  ],
+  "draft": false,
+  "title": "Synthetic copper: technology demand and the physical balance",
+  "topic": "Synthetic copper",
+  "opened_on": "2026-11-02",
+  "prepared_on": "2026-11-16",
+  "published_on": "2026-11-16",
+  "confidence": {
+    "level": "high",
+    "basis": "Synthetic: the reasons were read again against their latest figures and hold."
+  },
+  "provider_called": false,
+  "labels": {
+    "statuses": {
+      "stated": "Source statement",
+      "interpretation": "Author's reading",
+      "not_stated": "Not stated in the sources"
+    },
+    "source_states": {
+      "verified": "Checked against the retained source on this machine",
+      "changed": "The retained source differs from the version this was written against",
+      "missing": "The retained source is not on this machine"
+    },
+    "element_states": {
+      "available": "Checked: every figure and passage it cites was found where cited in retained sources that match their acquisition records; a figure or passage transcribed from a PDF is bound to the PDF by its SHA-256 only.",
+      "needs_revalidation": "Needs revalidation: a source differs from its acquisition record, or a figure or passage is not found where it is cited (or its file cannot be read)",
+      "unavailable": "Unavailable: a source is not on this machine"
+    },
+    "reason_states": {
+      "strengthening": "Strengthening: the latest figure differs from the previous one by at least the material change, in the direction this reason needs",
+      "weakening": "Weakening: the latest figure differs from the previous one by at least the material change, in the other direction",
+      "unchanged": "Unchanged: the latest figure differs from the previous one by less than the material change"
+    },
+    "risk_states": {
+      "materialising": "Materialising: the latest figure differs from the previous one by at least the material change, in the direction in which this risk grows",
+      "receding": "Receding: the latest figure differs from the previous one by at least the material change, in the other direction",
+      "unchanged": "Unchanged: the latest figure differs from the previous one by less than the material change",
+      "not_tracked": "Not tracked: no retained figure measures this risk"
+    },
+    "condition_states": {
+      "happened": "Happened: the figure it names is past the threshold in the stated direction (a figure equal to the threshold is not past it)",
+      "not_happened": "Not happened: the figure it names is not past the threshold in the stated direction (a figure equal to the threshold is not past it)"
+    },
+    "sides": {
+      "producer": "Producer: supplies the metal",
+      "consumer": "Consumer: uses the metal in what it makes"
+    },
+    "units": {
+      "kt": "thousand tonnes",
+      "million_t": "million tonnes",
+      "t": "tonnes",
+      "kg": "kilograms",
+      "kg_per_unit": "kilograms per unit",
+      "usd_per_tonne": "US dollars per tonne",
+      "usd_per_lb": "US dollars per pound",
+      "usd_cents_per_lb": "US cents per pound",
+      "usd": "US dollars",
+      "usd_million": "million US dollars",
+      "percent": "percent",
+      "count": "count"
+    }
+  },
+  "sources": [
+    {
+      "id": "usgs-2026",
+      "publisher": "Synthetic USGS",
+      "title": "Synthetic Mineral Commodity Summaries 2026: copper data release",
+      "edition": "2026",
+      "edition_date": "2026-01-30",
+      "url": "https://example.org/synthetic/usgs-2026/copper.csv",
+      "kind": "csv",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:01:00+00:00",
+      "sha256": "517a6bb6a42aa559e03146cf51953abcc3d4cfb3834067a4f63c3a9e371eaca6",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 1) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "usgs-2025",
+      "publisher": "Synthetic USGS",
+      "title": "Synthetic Mineral Commodity Summaries 2025: copper data release",
+      "edition": "2025",
+      "edition_date": "2025-01-31",
+      "url": "https://example.org/synthetic/usgs-2025/copper.csv",
+      "kind": "csv",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:02:00+00:00",
+      "sha256": "a96429890cf248ecf8fb90aaeeaea92e45ef7f6939c4dc9474e460cdc7843f7f",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 2) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "iea-2026",
+      "publisher": "Synthetic IEA",
+      "title": "Synthetic Critical Minerals Dataset 2026",
+      "edition": "2026",
+      "edition_date": "2026-07-15",
+      "url": "https://example.org/synthetic/iea-critical-minerals-dataset",
+      "kind": "xlsx",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T08:01:00+00:00",
+      "sha256": "44762ccbb64de2574febfc1b20f51652551f12cdcf39193aaf5f1cc1fe04ffe9",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "iea-2025",
+      "publisher": "Synthetic IEA",
+      "title": "Synthetic Critical Minerals Dataset 2025",
+      "edition": "2025",
+      "edition_date": "2025-05-21",
+      "url": "https://example.org/synthetic/iea-critical-minerals-dataset",
+      "kind": "xlsx",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T08:02:00+00:00",
+      "sha256": "670be8d065c496770089e351f90601bae6f0e6989cc8a1dcd02122b3d6fa266c",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-owner-01, attempt 2) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "worldbank",
+      "publisher": "Synthetic World Bank",
+      "title": "Synthetic Commodity Price Data (The Pink Sheet)",
+      "edition": "November 2026",
+      "edition_date": "2026-11-02",
+      "url": "https://example.org/synthetic/worldbank/pink.xlsx",
+      "kind": "xlsx",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:03:00+00:00",
+      "sha256": "192472e4a01cbbf649a73558a6f190e40b3378bd52fb8b1af694cd4470d3285c",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 3) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "iea-2021",
+      "publisher": "Synthetic IEA",
+      "title": "Synthetic report on minerals in clean energy transitions",
+      "edition": "2021",
+      "edition_date": "2021-05-05",
+      "url": "https://example.org/synthetic/iea-2021/report.pdf",
+      "kind": "pdf",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": {
+        "pages": [
+          1,
+          2
+        ],
+        "method": "transcribed from the page image"
+      },
+      "retrieved_at": "2026-11-02T09:04:00+00:00",
+      "sha256": "977d1222343ac0a1cbe9674d7f484ba574352f7267bec7f490f4924b6e8e7b14",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 4) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "sec-producer-2025",
+      "publisher": "Synthetic Producer Corp.",
+      "title": "Synthetic annual report on Form 10-K, fiscal 2025",
+      "edition": "Fiscal 2025",
+      "edition_date": "2026-02-13",
+      "url": "https://example.org/synthetic/sec-producer-2025/10k.htm",
+      "kind": "html",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:05:00+00:00",
+      "sha256": "75651deb31708a2aaccf5a8ab6c3c24c7ef95628921cb0ef4ca4e0d87a5f58dd",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 5) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "sec-producer-2024",
+      "publisher": "Synthetic Producer Corp.",
+      "title": "Synthetic annual report on Form 10-K, fiscal 2024",
+      "edition": "Fiscal 2024",
+      "edition_date": "2025-02-14",
+      "url": "https://example.org/synthetic/sec-producer-2024/10k.htm",
+      "kind": "html",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:06:00+00:00",
+      "sha256": "a3418a22b357019bd7217c380cda913d908c4f803fa9658041345e8bc296dea4",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 6) is not on this machine; the retained file is not read."
+    },
+    {
+      "id": "sec-maker-2025",
+      "publisher": "Synthetic Maker Inc.",
+      "title": "Synthetic annual report on Form 10-K, fiscal 2025",
+      "edition": "Fiscal 2025",
+      "edition_date": "2026-01-29",
+      "url": "https://example.org/synthetic/sec-maker-2025/10k.htm",
+      "kind": "html",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:07:00+00:00",
+      "sha256": "87336f31430ccdbfc9e291f3607e85c84056d2889dfe97057bc7bff8bd48e4c6",
+      "state": "missing",
+      "detail": "The acquisition record (approval synthetic-copper-01, attempt 7) is not on this machine; the retained file is not read."
+    }
+  ],
+  "view": {
+    "id": "view",
+    "items": [
+      {
+        "id": "iea26-demand-2030",
+        "source": "iea-2026"
+      },
+      {
+        "id": "iea26-supply-2030",
+        "source": "iea-2026"
+      }
+    ],
+    "sources": [
+      "iea-2026"
+    ],
+    "state": "unavailable",
+    "problems": [
+      "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+    ],
+    "not_found": [],
+    "statement": null
+  },
+  "balance": {
+    "tables": [
+      {
+        "id": "balance-steps",
+        "title": "Synthetic balance in the Synthetic STEPS projection",
+        "gap": "computed",
+        "items": [
+          {
+            "id": "iea26-demand-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-supply-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-clean-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-other-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-primary-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-secondary-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-demand-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-supply-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-clean-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-other-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-primary-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-secondary-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-demand-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-supply-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-clean-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-other-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-primary-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-secondary-2035",
+            "source": "iea-2026"
+          }
+        ],
+        "sources": [
+          "iea-2026"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "why_not": null,
+        "rows": null
+      },
+      {
+        "id": "balance-side-by-side",
+        "title": "Synthetic dataset demand beside data-release output",
+        "gap": "not_computed",
+        "items": [
+          {
+            "id": "iea25-demand-2024",
+            "source": "iea-2025"
+          },
+          {
+            "id": "usgs26-refinery-2024",
+            "source": "usgs-2026"
+          },
+          {
+            "id": "usgs26-mine-2024",
+            "source": "usgs-2026"
+          },
+          {
+            "id": "iea26-demand-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "usgs26-refinery-2025",
+            "source": "usgs-2026"
+          },
+          {
+            "id": "usgs26-mine-2025",
+            "source": "usgs-2026"
+          }
+        ],
+        "sources": [
+          "iea-2025",
+          "iea-2026",
+          "usgs-2026"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "iea-2025: The acquisition record (approval synthetic-copper-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+          "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read.",
+          "usgs-2026: The acquisition record (approval synthetic-copper-01, attempt 1) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "why_not": null,
+        "rows": null
+      }
+    ]
+  },
+  "differs": [
+    {
+      "id": "differs-earlier-edition",
+      "items": [
+        {
+          "id": "iea25-supply-2030",
+          "source": "iea-2025"
+        },
+        {
+          "id": "iea25-demand-2030",
+          "source": "iea-2025"
+        },
+        {
+          "id": "iea26-demand-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea26-supply-2030",
+          "source": "iea-2026"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2025: The acquisition record (approval synthetic-copper-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+        "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "about": null,
+      "others": null,
+      "differs": null
+    }
+  ],
+  "reasons": [
+    {
+      "id": "clean-tech-demand",
+      "title": "Synthetic clean-technology demand keeps growing",
+      "plain": "Synthetic: more demand from clean technologies would widen the gap the view describes.",
+      "items": [
+        {
+          "id": "iea26-clean-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea25-clean-2030",
+          "source": "iea-2025"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2025: The acquisition record (approval synthetic-copper-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+        "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    },
+    {
+      "id": "mine-supply-slow",
+      "title": "Synthetic mine supply responds slowly",
+      "plain": "Synthetic: if mines add output slowly, supply stays behind demand for longer.",
+      "items": [
+        {
+          "id": "usgs26-mine-2024",
+          "source": "usgs-2026"
+        },
+        {
+          "id": "usgs25-mine-2024",
+          "source": "usgs-2025"
+        }
+      ],
+      "sources": [
+        "usgs-2025",
+        "usgs-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "usgs-2025: The acquisition record (approval synthetic-copper-01, attempt 2) is not on this machine; the retained file is not read.",
+        "usgs-2026: The acquisition record (approval synthetic-copper-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    },
+    {
+      "id": "recycling-limited",
+      "title": "Synthetic recycling adds little supply",
+      "plain": "Synthetic: recycled metal is supply too, and more of it narrows the gap.",
+      "items": [
+        {
+          "id": "iea26-secondary-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea25-secondary-2030",
+          "source": "iea-2025"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2025: The acquisition record (approval synthetic-copper-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+        "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    },
+    {
+      "id": "total-demand-rising",
+      "title": "Synthetic total demand keeps rising through the projection",
+      "plain": "Synthetic: demand that keeps rising within one edition's projection widens the gap the view describes.",
+      "items": [
+        {
+          "id": "iea26-demand-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea26-demand-2035",
+          "source": "iea-2026"
+        }
+      ],
+      "sources": [
+        "iea-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    }
+  ],
+  "risks": [
+    {
+      "id": "mine-output-rising",
+      "title": "Synthetic mine output grows faster",
+      "plain": "Synthetic: faster mine growth would close the gap sooner.",
+      "items": [
+        {
+          "id": "usgs26-mine-2025",
+          "source": "usgs-2026"
+        },
+        {
+          "id": "usgs25-mine-2024",
+          "source": "usgs-2025"
+        }
+      ],
+      "sources": [
+        "usgs-2025",
+        "usgs-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "usgs-2025: The acquisition record (approval synthetic-copper-01, attempt 2) is not on this machine; the retained file is not read.",
+        "usgs-2026: The acquisition record (approval synthetic-copper-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    },
+    {
+      "id": "primary-supply-projections",
+      "title": "Synthetic primary supply projections move up",
+      "plain": "Synthetic: more projected primary supply would weaken the view.",
+      "items": [
+        {
+          "id": "iea26-primary-2035",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea25-primary-2035",
+          "source": "iea-2025"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2025: The acquisition record (approval synthetic-copper-owner-01, attempt 2) is not on this machine; the retained file is not read.",
+        "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    },
+    {
+      "id": "construction-slowdown",
+      "title": "Synthetic construction slows",
+      "plain": "Synthetic: slower building would mean less demand, and no retained measure tracks it.",
+      "items": [
+        {
+          "id": "iea21-construction",
+          "source": "iea-2021"
+        }
+      ],
+      "sources": [
+        "iea-2021"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2021: The acquisition record (approval synthetic-copper-01, attempt 4) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "statement": null,
+      "measure": null,
+      "status": null,
+      "change_pct": null,
+      "moved_by": null
+    }
+  ],
+  "conditions": [
+    {
+      "id": "supply-above",
+      "items": [
+        {
+          "id": "iea26-supply-2030",
+          "source": "iea-2026"
+        }
+      ],
+      "sources": [
+        "iea-2026"
+      ],
+      "state": "unavailable",
+      "problems": [
+        "iea-2026: The acquisition record (approval synthetic-copper-owner-01, attempt 1) is not on this machine; the retained file is not read."
+      ],
+      "not_found": [],
+      "threshold_value": null,
+      "comparator": null,
+      "text": null,
+      "figure": null,
+      "threshold": null,
+      "status": null
+    }
+  ],
+  "exposure": {
+    "movers": [
+      {
+        "id": "mover-1",
+        "company": "Synthetic Producer Corp.",
+        "moves": "mine-supply-slow",
+        "items": [
+          {
+            "id": "producer-sales-2025",
+            "source": "sec-producer-2025"
+          },
+          {
+            "id": "producer-sales-2024",
+            "source": "sec-producer-2024"
+          }
+        ],
+        "sources": [
+          "sec-producer-2024",
+          "sec-producer-2025"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "sec-producer-2024: The acquisition record (approval synthetic-copper-01, attempt 6) is not on this machine; the retained file is not read.",
+          "sec-producer-2025: The acquisition record (approval synthetic-copper-01, attempt 5) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "through": null,
+        "cites": null,
+        "figures": null,
+        "passages": null
+      },
+      {
+        "id": "mover-2",
+        "company": "Synthetic Maker Inc.",
+        "moves": "clean-tech-demand",
+        "items": [
+          {
+            "id": "maker-deliveries-2025",
+            "source": "sec-maker-2025"
+          }
+        ],
+        "sources": [
+          "sec-maker-2025"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "sec-maker-2025: The acquisition record (approval synthetic-copper-01, attempt 7) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "through": null,
+        "cites": null,
+        "figures": null,
+        "passages": null
+      }
+    ],
+    "moved": [
+      {
+        "id": "moved-1",
+        "company": "Synthetic Producer Corp.",
+        "side": "producer",
+        "items": [
+          {
+            "id": "producer-sensitivity-2025",
+            "source": "sec-producer-2025"
+          }
+        ],
+        "sources": [
+          "sec-producer-2025"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "sec-producer-2025: The acquisition record (approval synthetic-copper-01, attempt 5) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "how": null,
+        "amount": null,
+        "usd_per_unit": null,
+        "share_pct": null
+      },
+      {
+        "id": "moved-2",
+        "company": "Synthetic Maker Inc.",
+        "side": "consumer",
+        "items": [
+          {
+            "id": "maker-purchases-2025",
+            "source": "sec-maker-2025"
+          }
+        ],
+        "sources": [
+          "sec-maker-2025"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "sec-maker-2025: The acquisition record (approval synthetic-copper-01, attempt 7) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "how": null,
+        "amount": null,
+        "usd_per_unit": null,
+        "share_pct": null
+      },
+      {
+        "id": "moved-3",
+        "company": "Synthetic Maker Inc.",
+        "side": "consumer",
+        "items": [
+          {
+            "id": "iea21-ev-copper",
+            "source": "iea-2021"
+          },
+          {
+            "id": "wb-copper-2026m10",
+            "source": "worldbank"
+          },
+          {
+            "id": "maker-price-2025",
+            "source": "sec-maker-2025"
+          }
+        ],
+        "sources": [
+          "iea-2021",
+          "sec-maker-2025",
+          "worldbank"
+        ],
+        "state": "unavailable",
+        "problems": [
+          "iea-2021: The acquisition record (approval synthetic-copper-01, attempt 4) is not on this machine; the retained file is not read.",
+          "sec-maker-2025: The acquisition record (approval synthetic-copper-01, attempt 7) is not on this machine; the retained file is not read.",
+          "worldbank: The acquisition record (approval synthetic-copper-01, attempt 3) is not on this machine; the retained file is not read."
+        ],
+        "not_found": [],
+        "how": null,
+        "amount": null,
+        "usd_per_unit": null,
+        "share_pct": null
+      }
+    ]
+  },
+  "price_record": {
+    "id": "price-record",
+    "series": "Synthetic monthly copper price, nominal US dollars per tonne",
+    "items": [
+      {
+        "id": "wb-copper-2026m08",
+        "source": "worldbank"
+      },
+      {
+        "id": "wb-copper-2026m10",
+        "source": "worldbank"
+      }
+    ],
+    "sources": [
+      "worldbank"
+    ],
+    "state": "unavailable",
+    "problems": [
+      "worldbank: The acquisition record (approval synthetic-copper-01, attempt 3) is not on this machine; the retained file is not read."
+    ],
+    "not_found": [],
+    "opening": null,
+    "latest": null
+  },
+  "log": [
+    {
+      "date": "2026-11-02",
+      "kind": "opened",
+      "text": "Synthetic: the thesis opened with four reasons, three risks and one condition.",
+      "refs": []
+    },
+    {
+      "date": "2026-11-16",
+      "kind": "status",
+      "refs": [
+        "clean-tech-demand"
+      ],
+      "text": "Synthetic: the clean-technology reason was read again against its newer edition."
+    },
+    {
+      "date": "2026-11-16",
+      "kind": "confidence",
+      "refs": [],
+      "text": "Synthetic: confidence moved from medium to high after the review."
+    }
+  ],
+  "plain": {
+    "view": "Synthetic: the view reads stated projections of the physical balance.",
+    "balance": "Synthetic: a gap is computed only when both sides come from one publication, basis and scenario.",
+    "differs": "Synthetic: this compares the reading with what an earlier edition expected.",
+    "reasons": "Synthetic: each reason compares its latest figure with a previous one, from an earlier edition or from an earlier year of the same edition.",
+    "risks": "Synthetic: risks use the same comparison, and one risk has no retained measure.",
+    "conditions": "Synthetic: a condition states what would change the view.",
+    "exposure": "Synthetic: exposure is read from company filings, not assumed.",
+    "log": "Synthetic: the log only grows, and earlier entries are never rewritten.",
+    "price": "Synthetic: the monthly price is shown as a record beside the view, not as evidence that the view is right."
+  },
+  "not_claimed": [
+    "Synthetic: no price target, price forecast or trade is stated or implied.",
+    "Synthetic: nothing here is proof that prices will rise or fall.",
+    "Synthetic: the balance is a reading of stated projections, not a cause of any price change."
+  ],
+  "provenance": {
+    "prepared_by": "Synthetic test author",
+    "method": "Synthetic: written by hand from the synthetic retained sources for the thesis tests.",
+    "ai_assisted": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  },
+  "counts": {
+    "sources": {
+      "verified": 0,
+      "changed": 0,
+      "missing": 9
+    },
+    "elements": {
+      "available": 0,
+      "needs_revalidation": 0,
+      "unavailable": 18
+    }
+  }
+}

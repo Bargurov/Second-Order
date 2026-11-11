@@ -1,0 +1,140 @@
+{
+ "data_provenance": {
+  "attribution": "This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.",
+  "baseline": {
+   "adapter_version": "fred-3",
+   "retrieved_at": "2025-06-02T22:00:00+00:00",
+   "snapshot_id": "48199dbd0b3abaaf5411d868b422e65e98cf63834490adcf5d738077b4d66f7a",
+   "vintage_date": "2025-06-02"
+  },
+  "measurement_convention": "Daily measurement convention: observations are compared by America/New_York calendar date; no intraday observation time is verified.",
+  "outcome": null,
+  "provider": "FRED"
+ },
+ "evaluation": null,
+ "evaluation_id": null,
+ "hypothesis": {
+  "edges": [
+   {
+    "source": "event",
+    "target": "ten"
+   },
+   {
+    "source": "event",
+    "target": "two"
+   }
+  ],
+  "engine": {
+   "model": "test",
+   "prompt_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "provider": "manual",
+   "schema_version": "0.2"
+  },
+  "event": {
+   "headline": "Synthetic Treasury announcement",
+   "published_at": "2025-06-03T13:00:00Z",
+   "source_url": "https://example.com/event"
+  },
+  "evidence_class": "prospective",
+  "frozen_at": "2025-06-03T13:30:00Z",
+  "legs": [
+   {
+    "channel": "term_premium",
+    "expected": "up",
+    "falsifier": "An unusually large opposite move.",
+    "headline_reports_move": false,
+    "horizon": 5,
+    "id": "primary",
+    "link": "direct",
+    "node_id": "ten",
+    "observable_id": "yield:ust10y_cmt",
+    "primary": true,
+    "rationale": "Long-end repricing."
+   },
+   {
+    "channel": "policy_path",
+    "expected": "up",
+    "falsifier": "An unusually large opposite move.",
+    "headline_reports_move": false,
+    "horizon": 1,
+    "id": "secondary",
+    "link": "direct",
+    "node_id": "two",
+    "observable_id": "yield:ust2y_cmt",
+    "primary": false,
+    "rationale": "Front-end repricing."
+   }
+  ],
+  "nodes": [
+   {
+    "id": "event",
+    "kind": "event",
+    "label": "Event"
+   },
+   {
+    "id": "ten",
+    "kind": "observable",
+    "label": "10-year CMT"
+   },
+   {
+    "id": "two",
+    "kind": "observable",
+    "label": "2-year CMT"
+   }
+  ],
+  "replay_as_of": null,
+  "story_id": "cmt-test",
+  "summary": "A synthetic hypothesis on two Treasury maturities for lifecycle tests.",
+  "supersedes": null,
+  "usage": "showcase"
+ },
+ "id": "f9f29e75c73f29a7e6491b9cfe95ace762c358b688279d66be6c8125d7a7c27e",
+ "label": "Manual prospective hypothesis · showcase illustration",
+ "legs": [
+  {
+   "anchor_dates": null,
+   "leg_id": "primary",
+   "measurement": "yield_bp",
+   "reference": null,
+   "series": null,
+   "unit": "bp"
+  },
+  {
+   "anchor_dates": null,
+   "leg_id": "secondary",
+   "measurement": "yield_bp",
+   "reference": null,
+   "series": null,
+   "unit": "bp"
+  }
+ ],
+ "limitations": [
+  {
+   "text": "Submitted manually and frozen before its outcome, outside the project's model adapter, which does not rule out AI assistance; the engine record states how it was authored.",
+   "title": "Manual submission"
+  },
+  {
+   "text": "FRED observations are compared by America/New_York date. Treasury quotes are taken at or near 3:30 PM with no documented bound, so no intraday observation time is claimed.",
+   "title": "Daily measurement convention"
+  },
+  {
+   "text": "Reference history comes only from the baseline snapshot bound at freeze; scored dates come from the named outcome snapshot. A vintage date is FRED's real-time period, and a retrieval time shows possession, not first publication.",
+   "title": "Pinned snapshots"
+  },
+  {
+   "text": "Two maturities of one yield curve demonstrate the lifecycle; they are not independent observations, and showcase cases never enter research scores.",
+   "title": "Not independent evidence"
+  },
+  {
+   "text": "Labels describe whether later observations were consistent with the frozen hypothesis. They do not show that the event caused the move and are not significance tests.",
+   "title": "No causal proof"
+  }
+ ],
+ "published_date": "2025-06-03",
+ "research": {
+  "enters_research_scores": false,
+  "reason": "Showcase cases never enter research scores."
+ },
+ "state": "not_evaluated",
+ "view_version": "dossier-view-0.3"
+}

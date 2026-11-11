@@ -1,0 +1,27 @@
+{
+ "event": {
+  "address": "https://www.eia.gov/todayinenergy/detail.php?id=98002",
+  "date": "2026-09-09",
+  "date_as_stated": "Wed, 09 Sep 2026 09:00:00 EST",
+  "date_label": "feed timestamp",
+  "title": "New England natural gas prices have been trading near record discounts",
+  "title_only": false
+ },
+ "hints_used": false,
+ "id": "eia-todayinenergy:9340d99584eea16560d8",
+ "kind": "inbox",
+ "links": [],
+ "navigation_version": "related-research-0.2",
+ "notes": [
+  "1 later case is not suggested: this version links only to cases published on or before the event's date."
+ ],
+ "provider_called": false,
+ "relations": {
+  "release_family": "Same release family",
+  "same_event": "Coverage of this event",
+  "topic": "Related research topic"
+ },
+ "shown_in_historical": [],
+ "view_version": "related-research-view-0.1",
+ "written": false
+}

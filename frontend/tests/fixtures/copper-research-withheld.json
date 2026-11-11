@@ -1,0 +1,540 @@
+{
+  "view_version": "copper-research-view-0.1",
+  "provider_called": false,
+  "desk": {
+    "pages": [
+      {
+        "id": "thesis",
+        "title": "Copper thesis",
+        "path": "/theses/copper",
+        "what": "The physical balance, its reasons and risks, with their sources.",
+        "status": "Version 1, published 2026-11-02.",
+        "problem": null
+      },
+      {
+        "id": "tools",
+        "title": "Copper tools",
+        "path": "/theses/copper/tools",
+        "what": "The coverage calculator and the producer comparison.",
+        "status": null,
+        "problem": null
+      },
+      {
+        "id": "fcx",
+        "title": "FCX company page",
+        "path": "/companies/fcx",
+        "what": "How the copper price reaches Freeport-McMoRan's cash flow.",
+        "status": "4 documents, 3 verified on this machine; the latest is dated 2026-11-06.",
+        "problem": null
+      },
+      {
+        "id": "metals",
+        "title": "Metals comparison",
+        "path": "/metals",
+        "what": "Production, reserves and their concentration, metal by metal.",
+        "status": null,
+        "problem": null
+      },
+      {
+        "id": "events",
+        "title": "Event chains",
+        "path": "/theses/copper/events",
+        "what": "Past events, the sources' own words, and your reviews and readings.",
+        "status": "1 chain: 1 awaiting your review. 1 not available now.",
+        "problem": null
+      }
+    ]
+  },
+  "comparisons": [
+    {
+      "id": "synthetic-annual-to-quarter",
+      "title": "Synthetic: the annual report against the quarterly report",
+      "latest_version": 1,
+      "published_on": "2026-11-10",
+      "sha256": "2d48a3981c0eb79aff349b09f8e3e81329aab4fa35a839e8f8d7453076be4add",
+      "historical": true,
+      "historical_note": "Historical: both publications were already retained when this comparison was prepared.",
+      "prepared_by": "assistant",
+      "ai_assisted": true,
+      "state": "needs_revalidation",
+      "reasons": [
+        "The document fcx:10q-2026q3 differs from its acquisition record"
+      ],
+      "earlier": {
+        "ref": "fcx:10k-2025",
+        "name": "the FCX 10-K",
+        "title": "Freeport-McMoRan Inc., Annual Report on Form 10-K for the fiscal year ended December 31, 2025",
+        "form": "10-K",
+        "dated": "2026-02-13",
+        "dated_as": "signature date",
+        "state": "verified",
+        "record": "same"
+      },
+      "later": {
+        "ref": "fcx:10q-2026q3",
+        "name": "the FCX 10-Q",
+        "title": "Freeport-McMoRan Inc., Quarterly Report on Form 10-Q for the quarterly period ended September 30, 2026",
+        "form": "10-Q",
+        "dated": "2026-11-06",
+        "dated_as": "signature date",
+        "state": "changed",
+        "record": "same"
+      },
+      "rows": [
+        {
+          "id": "return-to-operation",
+          "label": "The return to operation",
+          "same_measure": "not_established",
+          "sentence": "No retained source establishes that the two lines measure the same thing. No change is computed between them.",
+          "note": null,
+          "note_withheld": true,
+          "earlier": {
+            "ref": "fcx:k25-mud-rush-85pct",
+            "quote": "Based on current estimates, PTFI expects approximately 85% of its total production at normal operating rates to be restored in the second half of 2026.",
+            "where": "page 25 (printed page 23), Items 1. and 2. Business and Properties > Operations > Indonesia > Grasberg Minerals District Mud Rush Incident",
+            "document": {
+              "ref": "fcx:10k-2025",
+              "name": "the FCX 10-K",
+              "state": "verified"
+            },
+            "state": "verified",
+            "problem": null
+          },
+          "later": {
+            "ref": "fcx:q3-p-gbc-capacity-targets",
+            "quote": null,
+            "where": "page 43 (printed page 43), Part I, Item 2 > Operations > Indonesia > Grasberg Block Cave Ramp-Up",
+            "document": {
+              "ref": "fcx:10q-2026q3",
+              "name": "the FCX 10-Q",
+              "state": "changed"
+            },
+            "state": "changed",
+            "problem": "Withheld: the FCX 10-Q no longer matches its acquisition record"
+          }
+        },
+        {
+          "id": "licence",
+          "label": "The mining licence",
+          "same_measure": "not_applicable",
+          "sentence": "Two statements, each shown as written.",
+          "note": null,
+          "note_withheld": false,
+          "earlier": {
+            "ref": "fcx:k25-iupk-application-2026",
+            "quote": "PTFI is preparing its application for a long-term extension expected to cover the life of the resource, which is expected to be submitted during 2026.",
+            "where": "page 24 (printed page 22), Items 1. and 2. Business and Properties > Operations > Indonesia > IUPK",
+            "document": {
+              "ref": "fcx:10k-2025",
+              "name": "the FCX 10-K",
+              "state": "verified"
+            },
+            "state": "verified",
+            "problem": null
+          },
+          "later": {
+            "ref": "fcx:q3-p-iupk-extension",
+            "quote": null,
+            "where": "page 43 (printed page 43), Part I, Item 2 > Operations > Indonesia > Long-Term Mining Rights",
+            "document": {
+              "ref": "fcx:10q-2026q3",
+              "name": "the FCX 10-Q",
+              "state": "changed"
+            },
+            "state": "changed",
+            "problem": "Withheld: the FCX 10-Q no longer matches its acquisition record"
+          }
+        }
+      ],
+      "prices": {
+        "figures": [
+          {
+            "id": "k25-copper-realized-price-fy2025",
+            "label": "Average realized price per pound (copper)",
+            "period": {
+              "label": "FY2025",
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "display": "4.75",
+            "unit": "USD per pound",
+            "source": {
+              "ref": "fcx:10k-2025",
+              "name": "the FCX 10-K"
+            },
+            "state": "available",
+            "problem": null
+          },
+          {
+            "id": "q3-cu-realized-price-q3-2026",
+            "label": "Copper average realized price per pound",
+            "period": null,
+            "display": null,
+            "unit": "USD per pound",
+            "source": {
+              "ref": "fcx:10q-2026q3",
+              "name": "the FCX 10-Q"
+            },
+            "state": "withheld",
+            "problem": "Not shown: it rests on the third-quarter 2026 Form 10-Q, which is changed on this machine."
+          },
+          {
+            "id": "usgs-annual-2024",
+            "label": "Price, annual average, cents per pound: U.S. producer, cathode (COMEX + premium)",
+            "unit": "US cents per pound",
+            "source": {
+              "ref": "copper:usgs-csv-2026",
+              "name": "Synthetic usgs-csv-2026"
+            },
+            "display": "431.8",
+            "period": {
+              "label": "2024",
+              "start": "2024-01-01",
+              "end": "2024-12-31"
+            },
+            "state": "available",
+            "problem": null
+          },
+          {
+            "id": "usgs-annual-2025",
+            "label": "Price, annual average, cents per pound: U.S. producer, cathode (COMEX + premium)",
+            "unit": "US cents per pound",
+            "source": {
+              "ref": "copper:usgs-csv-2026",
+              "name": "Synthetic usgs-csv-2026"
+            },
+            "display": "490",
+            "period": {
+              "label": "2025 (estimate)",
+              "start": "2025-01-01",
+              "end": "2025-12-31"
+            },
+            "state": "available",
+            "problem": null
+          }
+        ],
+        "covered_to": "2025-12-31",
+        "text": "Retained prices cover up to 2025-12-31. No retained price covers a later date."
+      },
+      "documents": [
+        {
+          "ref": "fcx:10k-2025",
+          "name": "the FCX 10-K",
+          "state": "verified"
+        },
+        {
+          "ref": "fcx:10q-2026q3",
+          "name": "the FCX 10-Q",
+          "state": "changed"
+        }
+      ]
+    }
+  ],
+  "subjects": [
+    {
+      "kind": "thesis",
+      "id": "copper",
+      "title": "Synthetic copper: technology demand and the physical balance",
+      "version": 1,
+      "sha256": "a1c72166e25ed105f1f7df9233aa05e5d6bdac0fdaaca19f530eeaa639e60b6b",
+      "state": "available",
+      "reasons": []
+    },
+    {
+      "kind": "chain",
+      "id": "synthetic-world-chain",
+      "title": "Synthetic sales, a halted pit and slow mine supply",
+      "version": 1,
+      "sha256": "938efc7e01ca63206a1b3828684713b3637dabb12a84ed93f42e2fe5cbba8e01",
+      "state": "needs_revalidation",
+      "reasons": [
+        "The document fcx:10q-2026q3 differs from its acquisition record"
+      ]
+    },
+    {
+      "kind": "comparison",
+      "id": "synthetic-annual-to-quarter",
+      "title": "Synthetic: the annual report against the quarterly report",
+      "version": 1,
+      "sha256": "2d48a3981c0eb79aff349b09f8e3e81329aab4fa35a839e8f8d7453076be4add",
+      "state": "needs_revalidation",
+      "reasons": [
+        "The document fcx:10q-2026q3 differs from its acquisition record"
+      ]
+    }
+  ],
+  "notes": {
+    "state": "valid",
+    "problem": null,
+    "latest": "4025f30d7470252655a63ee5c3bb24935fe6338bedd4cfa88bf87dade9f333f8",
+    "items": [
+      {
+        "note_id": "19b159fd5a4d741e12e7234338e188842021017f52f723cd2a2096fc9756b417",
+        "parent_note_id": null,
+        "sequence": 1,
+        "about": {
+          "id": "synthetic-annual-to-quarter",
+          "kind": "comparison"
+        },
+        "subject_title": "Synthetic: the annual report against the quarterly report",
+        "follows": null,
+        "followed_by": "fed48ecfc77a43b9f91b83a43db37a8ed77d1cea695988d88ac6cfdbc44e07cc",
+        "text": "TEST VALUE, not the owner's view: the two lines may not be one measure; [figure withheld] against [figure withheld].",
+        "expectation": {
+          "text": "TEST VALUE, not the owner's view: prices will rise by [figure withheld] before the next report.",
+          "check_by": "2027-02-28",
+          "state": "not_yet_checked",
+          "status": "Not yet checked: nothing retained after this note was saved has been compared with it."
+        },
+        "question": "TEST VALUE: does the next annual report keep the [figure withheld] line?",
+        "account": {
+          "user_id": "local-operator",
+          "username": "operator"
+        },
+        "saved_at": "2026-11-10T09:00:00+00:00",
+        "basis": {
+          "comparison": {
+            "id": "synthetic-annual-to-quarter",
+            "sha256": "2d48a3981c0eb79aff349b09f8e3e81329aab4fa35a839e8f8d7453076be4add",
+            "version": 1
+          },
+          "evidence_sha256": "efd6cb95042e5043236776e1f80b9c67b81c40b6c0f64d3e0c0d6184d89249ad"
+        },
+        "basis_documents": [
+          {
+            "ref": "fcx:10k-2025",
+            "name": "the FCX 10-K",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "fcx:10q-2026q3",
+            "name": "the FCX 10-Q",
+            "state": "changed",
+            "detail": "The retained file's size or SHA-256 differs from its acquisition record; it is not used."
+          }
+        ],
+        "masked": true,
+        "steps": 0,
+        "mask_reason": "Figures are withheld while a document it rested on does not match its pinned acquisition: fcx:10q-2026q3",
+        "state": "earlier_basis",
+        "differs": [
+          "The document fcx:10q-2026q3 differs from its acquisition record"
+        ],
+        "hindsight": "Written after both publications were known: saved on 2026-11-10, the later publication is dated 2026-11-06."
+      },
+      {
+        "note_id": "fed48ecfc77a43b9f91b83a43db37a8ed77d1cea695988d88ac6cfdbc44e07cc",
+        "parent_note_id": "19b159fd5a4d741e12e7234338e188842021017f52f723cd2a2096fc9756b417",
+        "sequence": 2,
+        "about": {
+          "id": "synthetic-annual-to-quarter",
+          "kind": "comparison"
+        },
+        "subject_title": "Synthetic: the annual report against the quarterly report",
+        "follows": "19b159fd5a4d741e12e7234338e188842021017f52f723cd2a2096fc9756b417",
+        "followed_by": null,
+        "text": "TEST VALUE: a later note on the same comparison.",
+        "expectation": null,
+        "question": null,
+        "account": {
+          "user_id": "local-operator",
+          "username": "operator"
+        },
+        "saved_at": "2026-11-10T09:00:00+00:00",
+        "basis": {
+          "comparison": {
+            "id": "synthetic-annual-to-quarter",
+            "sha256": "2d48a3981c0eb79aff349b09f8e3e81329aab4fa35a839e8f8d7453076be4add",
+            "version": 1
+          },
+          "evidence_sha256": "efd6cb95042e5043236776e1f80b9c67b81c40b6c0f64d3e0c0d6184d89249ad"
+        },
+        "basis_documents": [
+          {
+            "ref": "fcx:10k-2025",
+            "name": "the FCX 10-K",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "fcx:10q-2026q3",
+            "name": "the FCX 10-Q",
+            "state": "changed",
+            "detail": "The retained file's size or SHA-256 differs from its acquisition record; it is not used."
+          }
+        ],
+        "masked": true,
+        "steps": 0,
+        "mask_reason": "Figures are withheld while a document it rested on does not match its pinned acquisition: fcx:10q-2026q3",
+        "state": "earlier_basis",
+        "differs": [
+          "The document fcx:10q-2026q3 differs from its acquisition record"
+        ],
+        "hindsight": "Written after both publications were known: saved on 2026-11-10, the later publication is dated 2026-11-06."
+      },
+      {
+        "note_id": "2a13ca80eccc970c9526365ccd921e9ac6f21a1c8deac433466846c4091a425c",
+        "parent_note_id": "fed48ecfc77a43b9f91b83a43db37a8ed77d1cea695988d88ac6cfdbc44e07cc",
+        "sequence": 3,
+        "about": {
+          "id": "synthetic-world-chain",
+          "kind": "chain"
+        },
+        "subject_title": "Synthetic sales, a halted pit and slow mine supply",
+        "follows": null,
+        "followed_by": null,
+        "text": "TEST VALUE: see step 3 and the [figure withheld].",
+        "expectation": null,
+        "question": null,
+        "account": {
+          "user_id": "local-operator",
+          "username": "operator"
+        },
+        "saved_at": "2026-11-10T09:00:00+00:00",
+        "basis": {
+          "chain": {
+            "id": "synthetic-world-chain",
+            "sha256": "938efc7e01ca63206a1b3828684713b3637dabb12a84ed93f42e2fe5cbba8e01",
+            "version": 1
+          },
+          "evidence_sha256": "477cb77c6ce2b2dd713c63f23ad30dcbcfb7f665d02d844e2bc09b6bf37cf28e",
+          "thesis": {
+            "id": "copper",
+            "sha256": "a1c72166e25ed105f1f7df9233aa05e5d6bdac0fdaaca19f530eeaa639e60b6b",
+            "version": 1
+          }
+        },
+        "basis_documents": [
+          {
+            "ref": "copper:sec-producer-2025",
+            "name": "Synthetic annual report on Form 10-K, fiscal 2025",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:usgs-2025",
+            "name": "Synthetic Mineral Commodity Summaries 2025: copper data release",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:usgs-2026",
+            "name": "Synthetic Mineral Commodity Summaries 2026: copper data release",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "fcx:10k-2025",
+            "name": "the FCX 10-K",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "fcx:10q-2026q3",
+            "name": "the FCX 10-Q",
+            "state": "changed",
+            "detail": "The retained file's size or SHA-256 differs from its acquisition record; it is not used."
+          }
+        ],
+        "masked": true,
+        "steps": 5,
+        "mask_reason": "Figures are withheld while a document it rested on does not match its pinned acquisition: fcx:10q-2026q3",
+        "state": "earlier_basis",
+        "differs": [
+          "The document fcx:10q-2026q3 differs from its acquisition record"
+        ],
+        "hindsight": null
+      },
+      {
+        "note_id": "4025f30d7470252655a63ee5c3bb24935fe6338bedd4cfa88bf87dade9f333f8",
+        "parent_note_id": "2a13ca80eccc970c9526365ccd921e9ac6f21a1c8deac433466846c4091a425c",
+        "sequence": 4,
+        "about": {
+          "id": "copper",
+          "kind": "thesis"
+        },
+        "subject_title": "Synthetic copper: technology demand and the physical balance",
+        "follows": null,
+        "followed_by": null,
+        "text": "TEST VALUE: a note on the whole thesis.",
+        "expectation": null,
+        "question": null,
+        "account": {
+          "user_id": "local-operator",
+          "username": "operator"
+        },
+        "saved_at": "2026-11-10T09:00:00+00:00",
+        "basis": {
+          "thesis": {
+            "id": "copper",
+            "sha256": "a1c72166e25ed105f1f7df9233aa05e5d6bdac0fdaaca19f530eeaa639e60b6b",
+            "version": 1
+          }
+        },
+        "basis_documents": [
+          {
+            "ref": "copper:usgs-2026",
+            "name": "Synthetic Mineral Commodity Summaries 2026: copper data release",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:usgs-2025",
+            "name": "Synthetic Mineral Commodity Summaries 2025: copper data release",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:iea-2026",
+            "name": "Synthetic Critical Minerals Dataset 2026",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:iea-2025",
+            "name": "Synthetic Critical Minerals Dataset 2025",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:worldbank",
+            "name": "Synthetic Commodity Price Data (The Pink Sheet)",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:iea-2021",
+            "name": "Synthetic report on minerals in clean energy transitions",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:sec-producer-2025",
+            "name": "Synthetic annual report on Form 10-K, fiscal 2025",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:sec-producer-2024",
+            "name": "Synthetic annual report on Form 10-K, fiscal 2024",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          },
+          {
+            "ref": "copper:sec-maker-2025",
+            "name": "Synthetic annual report on Form 10-K, fiscal 2025",
+            "state": "verified",
+            "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+          }
+        ],
+        "masked": false,
+        "steps": 0,
+        "mask_reason": null,
+        "state": "current",
+        "differs": [],
+        "hindsight": null
+      }
+    ]
+  }
+}

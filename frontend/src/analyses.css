@@ -1,0 +1,111 @@
+/* My analyses: the Tracker's saved analyses and their human reviews. Private and local; read-only; never scored. */
+
+.analyses { padding: 40px 0 8px; }
+.analyses-header { max-width: 780px; }
+.analyses-header h1 {
+  margin: 4px 0 12px;
+  font: 400 clamp(28px, 4vw, 44px)/1.1 var(--serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.analyses-meaning { margin: 0; max-width: 72ch; font-size: 13px; line-height: 1.5; color: var(--ink-3); }
+.analyses-index { margin-top: 18px; }
+.analyses-state { margin: 8px 0; font-size: 14px; color: var(--ink-2); }
+.analyses-state p { margin: 0 0 10px; }
+
+/* Search and filters. */
+.analyses-controls { display: grid; gap: 12px; margin-bottom: 14px; }
+.analyses-search, .analyses-filter { display: grid; gap: 5px; font-size: 13px; color: var(--ink-2); }
+.analyses-search span, .analyses-filter span { font-weight: 600; }
+.analyses-search input, .analyses-filter select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: 400 15px/1.4 var(--sans);
+}
+.analyses-filter select { min-height: 40px; padding-right: 28px; font-size: 14px; }
+.analyses-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; }
+.analyses-search input:focus-visible, .analyses-filter select:focus-visible, .analyses-reset:focus-visible,
+.analysis-title a:focus-visible, .analysis-source:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.analyses-results-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 4px 0 10px;
+}
+.analyses-result-count { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.analyses-unreadable-note { margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid var(--stamp); font-size: 13.5px;
+  color: var(--ink-2); background: var(--contradicted-soft); }
+.analyses-empty { padding: 16px 0 4px; font-size: 14.5px; color: var(--ink-2); }
+.analyses-empty p { margin: 0 0 10px; }
+.analyses-empty-title { font: 400 19px/1.3 var(--serif); color: var(--ink); }
+
+/* One analysis. */
+.analysis-list { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.analysis-card { padding: 16px 0 14px; border-bottom: 1px solid var(--rule); }
+.analysis-card:last-child { border-bottom: 0; }
+.analysis-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.analysis-badge {
+  display: inline-block;
+  padding: 3px 8px 2px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  background: var(--paper-raised);
+}
+.mode-mock { border-style: dashed; color: var(--ink-3); }
+.mode-paid { border-color: var(--accent); color: var(--accent); }
+.review-none { color: var(--ink-3); }
+.review-revision { border-color: var(--inconclusive); color: var(--inconclusive); background: var(--inconclusive-soft); }
+.review-done { border-color: var(--supported); color: var(--supported); background: var(--supported-soft); }
+.review-notes { color: var(--ink-2); }
+.review-stale { border-style: dashed; color: var(--ink-3); }
+.review-invalid { border-color: var(--stamp); color: var(--stamp); }
+.analysis-title { margin: 0 0 8px; font: 400 21px/1.25 var(--serif); }
+.analysis-title a { color: var(--ink); text-decoration-color: var(--rule-strong); }
+.analysis-title a:hover { text-decoration-color: var(--ink); }
+.analysis-facts { display: grid; gap: 3px; margin: 0 0 12px; font-size: 13.5px; color: var(--ink-2); }
+.analysis-facts div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
+.analysis-facts dt { font: 500 11px/1.7 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.analysis-facts dd { margin: 0; overflow-wrap: anywhere; }
+.analysis-utc { color: var(--ink-3); }
+.analysis-source { font-family: var(--mono); font-size: 12.5px; }
+
+/* The model's words and the person's review stay visibly apart. */
+.analysis-layers { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.analysis-layer { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 3px; font-size: 13.5px; line-height: 1.5; }
+.analysis-layer h3 {
+  margin: 0 0 4px;
+  font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.analysis-layer p { margin: 0 0 6px; color: var(--ink-2); }
+.analysis-layer-model { background: var(--paper-sunk); }
+.analysis-layer-review { background: var(--paper-raised); border-left: 3px solid var(--accent); }
+.analysis-note { margin: 4px 0 6px; padding: 0 0 0 10px; border-left: 2px solid var(--rule-strong); color: var(--ink); }
+.analysis-corrections { font-size: 12.5px; }
+.analysis-actions { margin: 12px 0 0; }
+
+/* What is reported but not listed as an analysis. */
+.analyses-unreadable { margin-top: 18px; padding: 12px 14px; border: 1px solid var(--stamp); border-radius: 3px; }
+.analyses-unreadable h2, .analyses-not-listed h2 { margin: 0 0 6px; font: 500 15px/1.3 var(--sans); }
+.analyses-unreadable p { margin: 0 0 8px; font-size: 13.5px; color: var(--ink-2); }
+.analyses-unreadable ul, .analyses-not-listed ul { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); }
+.analyses-unreadable li { margin-bottom: 8px; }
+.analysis-ids { font: 400 12px/1.4 var(--mono); color: var(--ink-3); overflow-wrap: anywhere; }
+.analyses-not-listed { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--rule); }
+
+@media (max-width: 720px) {
+  .analyses-filters, .analysis-layers { grid-template-columns: minmax(0, 1fr); }
+  .analysis-facts div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}

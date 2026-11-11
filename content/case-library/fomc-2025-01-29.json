@@ -1,0 +1,95 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "fomc-2025-01-29",
+  "title": "The Fed holds at 4-1/4 to 4-1/2 percent after December's cut and drops its inflation-progress line",
+  "category": "Monetary policy",
+  "summary": "In its first decision of 2025 the FOMC kept the target range set in December. The statement dropped December's line that inflation had made progress toward 2 percent and described the labor market as stabilized rather than easing. Risk language was unchanged, and the vote was unanimous.",
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Federal Reserve issues FOMC statement",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250129a.htm",
+    "document_id": null,
+    "published_at": "2025-01-29T14:00:00-05:00",
+    "published_as_stated": "January 29, 2025 · For release at 2:00 p.m. EST",
+    "timezone_note": "EST is Eastern Standard Time, UTC−05:00, so the release time is 19:00 UTC.",
+    "reference_period": "Not a data release: the statement announces the Committee's decision of January 29, 2025.",
+    "page_last_updated": "2025-01-29",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "The decision is a hold. The target range stays at 4-1/4 to 4-1/2 percent, the level set on December 18, 2024, when the Committee lowered it by 1/4 percentage point. Forward guidance is word for word the same as in December: further adjustments depend on 'incoming data, the evolving outlook, and the balance of risks', and the balance sheet keeps shrinking with no new terms.",
+    "The economic assessment changed in two places. December said labor market conditions 'have generally eased' and the unemployment rate 'has moved up but remains low'; January says the unemployment rate 'has stabilized at a low level in recent months' and labor market conditions 'remain solid'. December said inflation 'has made progress toward the Committee's 2 percent objective but remains somewhat elevated'; January keeps only 'remains somewhat elevated'.",
+    "The risk language did not change: the risks to the goals are still 'roughly in balance' and the outlook 'uncertain'. The vote was 12 to 0, after an 11 to 1 vote in December in which Beth Hammack preferred not to cut. The roster also changed with the year: four Reserve Bank presidents who voted in December, the dissenter among them, are not on January's list, and four others are."
+  ],
+  "key_facts": [
+    {"label": "Federal funds target range", "value": "4-1/4 to 4-1/2 percent", "basis": "Maintained; set by a 1/4-point cut on December 18, 2024"},
+    {"label": "Inflation wording", "value": "'Inflation remains somewhat elevated.'", "basis": "December's 'has made progress toward the Committee's 2 percent objective' was removed"},
+    {"label": "Labor market wording", "value": "Unemployment rate 'has stabilized at a low level in recent months'; conditions 'remain solid'", "basis": "Replaces December's 'generally eased' and 'moved up but remains low'"},
+    {"label": "Balance of risks", "value": "'Roughly in balance'; outlook 'uncertain'", "basis": "Unchanged from December"},
+    {"label": "Balance sheet", "value": "Holdings continue to decline", "basis": "No change to the terms; the statement gives no redemption caps"},
+    {"label": "Vote", "value": "12 for, 0 against", "basis": "December: 11 for, 1 against; four voting Reserve Bank presidents differ between the two lists"}
+  ],
+  "channels": [
+    {
+      "title": "Expected policy path (shorter maturities)",
+      "source_fact": "A hold at December's level, with unchanged guidance and no signal about the timing of further moves.",
+      "interpretation": "If investors expected a pause after December's cut, the hold itself adds little to the expected path; the information is in the wording. A statement that drops 'progress' on inflation and calls the labor market 'solid' offers fewer reasons for near-term cuts than December's text, which would tend to support two-year yields relative to a statement that kept the old language. How much depends on expectations this case does not have."
+    },
+    {
+      "title": "Inflation outlook and term premium (longer maturities)",
+      "source_fact": "'Inflation remains somewhat elevated', with the reference to progress toward 2 percent removed.",
+      "interpretation": "Removing the progress clause can be read as less confidence that inflation is converging to target. If investors read it that way, they might ask for more compensation for inflation risk in longer maturities. The statement gives no inflation figures, so this reading rests on wording alone."
+    },
+    {
+      "title": "Unchanged risk balance (limits the signal)",
+      "source_fact": "The risks are still judged 'roughly in balance', and the outlook is still 'uncertain'.",
+      "interpretation": "Keeping the balance-of-risks sentence limits how far the other edits can be read as hawkish: the Committee did not say the risks had shifted toward inflation. This channel tempers the first two rather than pointing anywhere itself."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Description, not intention", "detail": "The edits may simply bring the description up to date with recent data, unemployment having stopped rising and inflation having stopped falling, without implying a different path for rates. Read that way, the wording carries little news about future policy."},
+    {"title": "A unanimous vote with a new roster", "detail": "Unanimity after December's dissent looks like consensus for holding, but the voting presidents changed with the year, so the two votes do not measure the same group's agreement."},
+    {"title": "Other communications", "detail": "Other Federal Reserve communications around the decision, which this case does not use, could have put a different emphasis on the same text."}
+  ],
+  "assumptions": [
+    "Investors compare each statement with the previous one, so a deleted clause carries information even when the decision is unchanged.",
+    "The wording changes reflect the Committee's assessment rather than editorial tidying.",
+    "Shorter yields respond mainly to the expected policy path, and longer yields also to inflation risk."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous measure of what investors expected from the decision and the statement. Without it this case cannot say whether anything in it was a surprise.",
+    "The data behind the wording: the statement cites no unemployment or inflation figures.",
+    "The Implementation Note linked from the release and the minutes published later, which may explain the edits; neither is used."
+  ],
+  "weakening_observations": [
+    "If later Federal Reserve communications described the January edits as tidying rather than a change of view, the inflation-outlook reading would weaken.",
+    "If dropping the 'progress' clause had been widely anticipated as the data moved, the release would carry little information through that channel.",
+    "If the Committee's other communications at the time stressed continued progress on inflation, the term-premium reading would lose support."
+  ],
+  "critique": [
+    {"title": "Reading deletions is fragile", "detail": "The case rests on two changed phrases. Statement edits can reflect drafting habits as much as judgment, and without the minutes the analysis cannot tell which applies here. The interpretation should be held loosely."},
+    {"title": "No numbers behind the words", "detail": "'Stabilized' and 'remains somewhat elevated' summarize data the statement does not show. Treating the wording as new data, rather than as the Committee's summary of data investors already had, risks counting the same information twice."},
+    {"title": "Votes across a rotation are not comparable", "detail": "It is tempting to contrast December's dissent with January's unanimity. Because the voting presidents rotated, that contrast says little about agreement within the Committee, and the case does not lean on it."},
+    {"title": "First of a run, read in hindsight", "detail": "This is the first of four consecutive 2025 FOMC statements in the library, included by that rule. It was analysed in October 2026 by an AI assistant that may know what followed; the text avoids later events, but hindsight may still shape emphasis, and nothing here was frozen beforehand."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The statement as published on the release page, which shows 'Last Update: January 29, 2025'. A PDF version and an Implementation Note are linked from the page and are not used.", "url": null},
+    {"title": "Comparison text", "detail": "Wording changes are measured against the December 18, 2024 FOMC statement, released at 2:00 p.m. EST, which lowered the target range to 4-1/4 to 4-1/2 percent with one dissent.", "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20241218a.htm"},
+    {"title": "No revisions apply", "detail": "A policy statement is not a statistical estimate and is not revised. Later Federal Reserve communications may explain or reinterpret it; none is used here.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived January 29, 2025 statement and the December 18, 2024 statement on 2026-10-05. Facts and quotations come from those texts; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250129a.htm",
+      "https://www.federalreserve.gov/newsevents/pressreleases/monetary20241218a.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

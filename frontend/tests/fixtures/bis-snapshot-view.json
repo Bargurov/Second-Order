@@ -1,0 +1,431 @@
+{
+ "completeness_labels": {
+  "checked": "The listing's text matches the separately retained release page, paragraph by paragraph (checked).",
+  "checked_differs": "The listing's text differs from the separately retained release page (checked).",
+  "listing_text": "Text as embedded in BIS's listing data. Not checked against the release page; where two releases were checked, the listing held their full text, without the release's dateline header.",
+  "title_only": "No text in the listing data: title and metadata only.",
+  "unreadable": "The listing's text could not be read as plain text; title and metadata only."
+ },
+ "counts": {
+  "completeness": {
+   "checked": 1,
+   "checked_differs": 1,
+   "listing_text": 8,
+   "title_only": 1,
+   "unreadable": 0
+  },
+  "date_range": [
+   "2026-01-05",
+   "2026-09-30"
+  ],
+  "dates": {
+   "ambiguous": 1,
+   "listed": 9,
+   "missing": 1
+  },
+  "duplicate_copies": 1,
+  "external_hosts": {
+   "www.justice.gov": 1
+  },
+  "external_links": 1,
+  "filters": {
+   "export_controls": 3,
+   "semiconductors": 2
+  },
+  "listed": 17,
+  "same_title_records": 2,
+  "topics": {
+   "Enforcement": 2,
+   "Regulations": 9
+  },
+  "unusable": 6,
+  "usable": 11
+ },
+ "filters": {
+  "export_controls": "Export-control terms",
+  "semiconductors": "Semiconductors and advanced computing"
+ },
+ "filters_note": "Keyword filters are fixed word lists this application applies (the same lists as Related Cases); topics and country tags are BIS's own. Neither is a model classification.",
+ "index": {
+  "built_at": "2026-10-12T16:00:00+00:00",
+  "content_sha256": "64ed50f516c25cfc425a4f52cec5e909b883cbcbebebc506606096395ba58d8b",
+  "extractor_version": "bis-snapshot-extract-0.1",
+  "name": "835d15b57168c8b4-bis-snapshot-extract-0.1.json",
+  "release_pages": [
+   {
+    "attempt": 3,
+    "sha256": "51f298d9587d82419b0feb92f83ed8eac2a673aa213b9ad25ea271c77f4112f6",
+    "url": "https://www.bis.gov/press-release/synthetic-settlement-ion-implanters",
+    "verified": true
+   },
+   {
+    "attempt": 2,
+    "sha256": "d8caa26ea14df440f3756ab97aff07a39dd2cc64c074c72e40aacd1cc932fe0e",
+    "url": "https://www.bis.gov/press-release/synthetic-tightens-controls-advanced-computing-chips",
+    "verified": true
+   }
+  ],
+  "version": "bis-snapshot-index-0.1"
+ },
+ "label": "BIS News & Updates (retained snapshot)",
+ "package": {
+  "approval_id": "bis-semis-sources-01",
+  "attempt": 1,
+  "bytes": 16237,
+  "content_type": "text/html; charset=utf-8",
+  "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+  "sha256": "835d15b57168c8b4d1ddc50d446fbdfce13b8f22c6251e28e5fc06e0250fb21b",
+  "url": "https://www.bis.gov/news-updates"
+ },
+ "page_url": "https://www.bis.gov/news-updates",
+ "problem": null,
+ "provider_called": false,
+ "rows": [
+  {
+   "completeness": "checked",
+   "date": "2026-09-30",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": true,
+    "semiconductors": true
+   },
+   "id": "bis-snapshot:d259551bc352c3fd7117",
+   "import": {
+    "state": "imported",
+    "versions": 1
+   },
+   "key": "d259551bc352c3fd7117",
+   "link": "https://www.bis.gov/press-release/synthetic-tightens-controls-advanced-computing-chips",
+   "opening": "WASHINGTON, D.C. — Synthetic: BIS adds export controls on advanced computing chips and semiconductor manufacturing equipment. Synthetic second paragraph. ###",
+   "position": 1,
+   "published": "2026-09-30T16:00:00+00:00",
+   "same_title": 0,
+   "text_chars": 155,
+   "title": "Synthetic Commerce Tightens Controls on Advanced Computing Chips",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "checked_differs",
+   "date": "2026-08-14",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": true,
+    "semiconductors": true
+   },
+   "id": "bis-snapshot:d6b71201b2132e92ab14",
+   "import": {
+    "state": "imported",
+    "versions": 1
+   },
+   "key": "d6b71201b2132e92ab14",
+   "link": "https://www.bis.gov/press-release/synthetic-settlement-ion-implanters",
+   "opening": "Synthetic: a company agreed to pay a penalty for shipping semiconductor manufacturing equipment to a party on the Entity List. ###",
+   "position": 2,
+   "published": "2026-08-14T16:00:00+00:00",
+   "same_title": 0,
+   "text_chars": 129,
+   "title": "Synthetic Settlement over Ion Implanters",
+   "topics": [
+    "Enforcement"
+   ]
+  },
+  {
+   "completeness": "title_only",
+   "date": "2026-07-01",
+   "date_state": "listed",
+   "external_host": "www.justice.gov",
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:af0443feca25dd88f6fc",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "af0443feca25dd88f6fc",
+   "link": "https://www.bis.gov/press-release/synthetic-firearms-exporter-sentenced",
+   "opening": "",
+   "position": 3,
+   "published": "2026-07-01T16:00:00+00:00",
+   "same_title": 0,
+   "text_chars": 0,
+   "title": "Synthetic Firearms Exporter Sentenced",
+   "topics": [
+    "Enforcement"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": null,
+   "date_state": "missing",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:8d0105dd75c78308eab5",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "8d0105dd75c78308eab5",
+   "link": "https://www.bis.gov/press-release/synthetic-record-without-listing-date",
+   "opening": "Synthetic release text. ###",
+   "position": 4,
+   "published": null,
+   "same_title": 0,
+   "text_chars": 26,
+   "title": "Synthetic Record without a Listing Date",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": "2026-05-01",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:172a0f231ed5a15d6090",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "172a0f231ed5a15d6090",
+   "link": "https://www.bis.gov/press-release/synthetic-repeated-title",
+   "opening": "Synthetic first document.",
+   "position": 5,
+   "published": "2026-05-01T16:00:00+00:00",
+   "same_title": 1,
+   "text_chars": 25,
+   "title": "Synthetic Repeated Title",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": "2026-06-01",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:580add18420d1b10f7f9",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "580add18420d1b10f7f9",
+   "link": "https://www.bis.gov/press-release/synthetic-repeated-title-0",
+   "opening": "Synthetic second, different document.",
+   "position": 6,
+   "published": "2026-06-01T16:00:00+00:00",
+   "same_title": 1,
+   "text_chars": 37,
+   "title": "Synthetic Repeated Title",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": "2026-04-01",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:d45497635ebc5992c07b",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "d45497635ebc5992c07b",
+   "link": "https://www.bis.gov/press-release/synthetic-markup-test",
+   "opening": "Plain & safe <b> text a link's words stay as words",
+   "position": 7,
+   "published": "2026-04-01T16:00:00+00:00",
+   "same_title": 0,
+   "text_chars": 49,
+   "title": "Synthetic Markup Test",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": "2026-07-10",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": true,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:a90a3c410ab3147e877e",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "a90a3c410ab3147e877e",
+   "link": "https://www.bis.gov/press-release/department-commerce-eases-export-controls-uae",
+   "opening": "Synthetic stand-in text for the UAE release address. ###",
+   "position": 8,
+   "published": "2026-07-10T15:15:00+00:00",
+   "same_title": 0,
+   "text_chars": 55,
+   "title": "Department of Commerce Eases Export Controls for UAE",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": "2026-01-05",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:5fe849b5f4d9bbdedb45",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "5fe849b5f4d9bbdedb45",
+   "link": "https://www.bis.gov/press-release/synthetic-duplicate-copy",
+   "opening": "Same text.",
+   "position": 9,
+   "published": "2026-01-05T16:00:00+00:00",
+   "same_title": 0,
+   "text_chars": 10,
+   "title": "Synthetic Duplicate Copy",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": "2026-03-02",
+   "date_state": "listed",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:817db5599461405cd40f",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "817db5599461405cd40f",
+   "link": "https://www.bis.gov/press-release/synthetic-plain-http-link",
+   "opening": "Synthetic release text. ###",
+   "position": 16,
+   "published": "2026-03-02T15:00:00+00:00",
+   "same_title": 0,
+   "text_chars": 26,
+   "title": "Synthetic Plain HTTP Link",
+   "topics": [
+    "Regulations"
+   ]
+  },
+  {
+   "completeness": "listing_text",
+   "date": null,
+   "date_state": "ambiguous",
+   "external_host": null,
+   "filters": {
+    "export_controls": false,
+    "semiconductors": false
+   },
+   "id": "bis-snapshot:86527e1ecb32ab48cc5d",
+   "import": {
+    "state": "new",
+    "versions": 0
+   },
+   "key": "86527e1ecb32ab48cc5d",
+   "link": "https://www.bis.gov/press-release/synthetic-ambiguous-date",
+   "opening": "Synthetic release text. ###",
+   "position": 17,
+   "published": null,
+   "same_title": 0,
+   "text_chars": 26,
+   "title": "Synthetic Ambiguous Date",
+   "topics": [
+    "Regulations"
+   ]
+  }
+ ],
+ "selection_limit": 25,
+ "state": "open",
+ "statement": "A copy of BIS's News & Updates page, retained once on approval: a snapshot of what the page listed then, not a live feed. Nothing here requests anything. Importing a record adds it to the Event Inbox locally and costs nothing; it does not verify the record's claims, and nothing is classified, summarized or analyzed.",
+ "unusable": [
+  {
+   "key": "5fe849b5f4d9bbdedb45",
+   "path": "/press-release/synthetic-duplicate-copy",
+   "position": 10,
+   "reasons": [
+    "A duplicate copy of the record at position 9 (same address, identical content)"
+   ],
+   "title": "Synthetic Duplicate Copy"
+  },
+  {
+   "key": "89a227910ba2e9fadc1e",
+   "path": "/press-release/synthetic-conflicting-copy",
+   "position": 11,
+   "reasons": [
+    "The same address is listed 2 times with different content; none is offered, since the snapshot does not say which is current"
+   ],
+   "title": "Synthetic Conflicting Copy"
+  },
+  {
+   "key": "89a227910ba2e9fadc1e",
+   "path": "/press-release/synthetic-conflicting-copy",
+   "position": 12,
+   "reasons": [
+    "The same address is listed 2 times with different content; none is offered, since the snapshot does not say which is current"
+   ],
+   "title": "Synthetic Conflicting Copy"
+  },
+  {
+   "key": "4ae595dc326d54f5a115",
+   "path": "/press-release/synthetic-no-title",
+   "position": 13,
+   "reasons": [
+    "It has no title"
+   ],
+   "title": null
+  },
+  {
+   "key": null,
+   "path": "/news/synthetic-outside-address",
+   "position": 14,
+   "reasons": [
+    "It has no usable press-release address on www.bis.gov"
+   ],
+   "title": "Synthetic Outside Address"
+  },
+  {
+   "key": "5bf1545710beb8ff7a96",
+   "path": "/press-release/synthetic-unpublished",
+   "position": 15,
+   "reasons": [
+    "The listing data does not mark it as published"
+   ],
+   "title": "Synthetic Unpublished"
+  }
+ ],
+ "view_version": "bis-snapshot-view-0.1"
+}

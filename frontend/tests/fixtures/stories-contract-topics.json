@@ -1,0 +1,20 @@
+{
+  "contract": "user-api-0.5",
+  "topics": {
+    "view_version": "news-topics-view-0.1",
+    "as_of": "2026-10-14T09:00:00+00:00",
+    "topics": [
+      {
+        "topic_id": "topic-c0867966717f7e48",
+        "title": "Synthetic steel dispute",
+        "summary": "SYNTHETIC: a tariff, a response and a revision, invented to show how an ongoing topic is followed.",
+        "developments": 3,
+        "latest_at": "2026-10-14T07:00:00+00:00",
+        "latest_title": "Synthetic Republic narrows steel tariff after talks",
+        "synthetic": true
+      }
+    ],
+    "notes": [],
+    "statement": "Ongoing subjects the editors follow, each with its developments in the order they happened."
+  }
+}

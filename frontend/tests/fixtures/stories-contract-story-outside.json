@@ -1,0 +1,132 @@
+{
+  "contract": "user-api-0.5",
+  "story": {
+    "view_version": "news-story-view-0.6",
+    "story_id": "story-f922af7b98423aed",
+    "requested_id": "story-f922af7b98423aed",
+    "merged": false,
+    "title": "Synthetic Republic steel museum opens new wing",
+    "title_basis": "first_report",
+    "first_at": "2026-10-14T04:00:00+00:00",
+    "first_basis": "published",
+    "latest_at": "2026-10-14T04:00:00+00:00",
+    "latest_basis": "published",
+    "coverage": {
+      "coverage_version": "story-coverage-0.3",
+      "reports": 1,
+      "publishers": 1,
+      "origins": 1,
+      "news_origins": 1,
+      "official_origins": 0,
+      "company_origins": 0,
+      "reporting_origins": 1,
+      "confirmed_news": 1,
+      "confirmed_official": 0,
+      "possible_news": 0,
+      "possible_official": 0,
+      "uncertain": 0,
+      "company_statements": 0,
+      "official_releases": 0,
+      "repeats": 0,
+      "units": [
+        {
+          "publishers": [
+            "Synthetic Ledger"
+          ],
+          "entries": [
+            "synthetic-ledger:78c6b22b59c49949d42d"
+          ],
+          "counted_together_because": [],
+          "role": "news",
+          "independence": "established",
+          "uncertain_because": []
+        }
+      ],
+      "possible_shared_origins": []
+    },
+    "interests": [
+      "trade"
+    ],
+    "signals": [
+      {
+        "signal": "freshness",
+        "text": "Latest report 5 hours ago (by its feed's stated time)."
+      },
+      {
+        "signal": "new_development",
+        "text": "A new development: first reported 5 hours ago."
+      },
+      {
+        "signal": "relevance",
+        "text": "Assessed as outside the economic news's scope, so it is not listed."
+      }
+    ],
+    "older": false,
+    "stale": false,
+    "synthetic": true,
+    "brief_state": "none",
+    "brief_note": "No brief has been prepared for this story yet. The reports are listed below.",
+    "brief": null,
+    "explanation": {
+      "state": "not_listed",
+      "statement": "Economic explanations are prepared for stories in the economic news; this story is not listed there.",
+      "reason": null
+    },
+    "relevance": {
+      "state": "outside_scope",
+      "statement": "Not in the economic news: assessed as outside its scope.",
+      "basis": "synthetic",
+      "basis_label": "A SYNTHETIC assessment for tests and the demo.",
+      "explanation": "SYNTHETIC: the item reports no economic development.",
+      "change": null,
+      "dimensions": [],
+      "missing": [],
+      "current": true
+    },
+    "sources": [
+      {
+        "entry_id": "synthetic-ledger:78c6b22b59c49949d42d",
+        "publisher": "Synthetic Ledger",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News report",
+        "title": "Synthetic Republic steel museum opens new wing",
+        "title_shortened": false,
+        "excerpt": "A SYNTHETIC museum about steel opened a wing.",
+        "excerpt_shortened": false,
+        "link": "https://ledger.example.org/news/museum",
+        "published": {
+          "as_stated": "Wed, 14 Oct 2026 04:00:00 GMT",
+          "element": "RSS pubDate",
+          "state": "stated",
+          "utc": "2026-10-14T04:00:00+00:00",
+          "date": "2026-10-14",
+          "note": null
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Synthetic Ledger",
+        "synthetic": true,
+        "unit": 1,
+        "counted_together_because": [],
+        "use": "permitted",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      }
+    ],
+    "topics": [],
+    "related": [],
+    "deeper": {
+      "available": false,
+      "material_reports": 1,
+      "reason": "It was judged outside the economic news's scope by an AI-assisted assessment of its sources: SYNTHETIC: the item reports no economic development. A deeper analysis here is for economic developments."
+    },
+    "statement": "Read from this server's saved records: opening this page contacts no publisher, runs no analysis and uses no credits."
+  }
+}

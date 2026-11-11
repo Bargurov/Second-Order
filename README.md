@@ -1,946 +1,166 @@
 # Second Order
 
-**Event-driven research on how geopolitical, macro and policy news moves markets.**
-
-Second Order takes a real-world event (a tariff, a defense contract, a Fed decision, an OPEC cut),
-writes down the economic mechanism behind it, identifies the exposed stocks and sectors, and then
-measures how those assets actually moved over the next 1, 5 and 20 trading days.
-It is a research tool, not a trading product: every result is published with its limits.
-
-*Independent research project by Bar Gurov, Economics & Management student (2026).*
-
-| | |
-|---|---|
-| **Question** | When an event happens, did the market react the way the economic mechanism says it should? |
-| **Method** | Market-model event studies (OLS): abnormal and cumulative abnormal returns, standardized abnormal returns, sector and market benchmarks, Benjamini-Hochberg FDR across pre-registered tests |
-| **Pre-registered cases** | Events where the expected direction was written down before testing, e.g. the 2018 washer tariffs (Whirlpool), the 2019 Vale dam collapse (Rio Tinto), the 2022 IRA deal (First Solar) and the 2022 Army FLRAA award (Textron). [Evidence](evidence_artifacts/section_c_v2/) |
-| **Historical study** | 65 Fed decisions (2018-2025) and 32 OPEC+ decisions, using only market data available at the time (Fed path, VIX, yield curve). Main finding: no broad "market regime" effect, with one narrow OPEC association. The null result is reported, not hidden. [Overview](RESEARCH_OVERVIEW.md) |
-| **Stack** | Python · pandas · FastAPI · React · SQLite · Claude API · Telegram bot |
-
-**Where to start:** [Research overview](RESEARCH_OVERVIEW.md) · [Pre-registered event evidence](evidence_artifacts/section_c_v2/) · [Run locally](#run-locally)
-
----
-
-Second Order is an honest research dashboard for geopolitical, macro, and policy
-events. It traces an event's plausible second-order transmission to assets and
-reads the market's event-window reaction descriptively - as evidence, never as a
-forecast or a recommendation. It is a quant-finance research-craftsmanship piece,
-not a trading product.
-
-**Current research state.** The tracked Phase 1-4 evidence track is frozen and
-complete; the wider-app archive is descriptive, read-only, and reproducible from
-the read-only reports below. Two distinct null-like results exist over different
-denominators and different questions - do not conflate them. The accepted-lane
-baseline verdict is `not_above_baseline` - no robust above-baseline directional
-skill in the 86-row accepted archive. Separately, the completed Mission G
-historical program (97 events; see
-[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)) asked whether pre-event market
-state conditioned historical event reactions and found a predominantly flat,
-fragile, or contradictory surface. Cohort-level inference remains blocked (see
-the Compute-Readiness Contract).
-
-**Best starting point for a finance reviewer.** Start with
-[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md): it explains the completed
-research chain, evidence lanes, Mission G design, main null result, bounded OPEC
-association, Missions I and J, representative cases, and claim boundaries. Then
-follow the [reviewer reading path](#reviewer-reading-path), the denominator
-funnel, and the read-only commands in
-[Verify it yourself](#verify-it-yourself-read-only-research-reports); the
-[in-app walkthrough](#in-app-walkthrough) is optional and needs a populated
-local archive.
-
-Second Order runs as a FastAPI backend with a React app and a Telegram bot; local
-setup is in [Run Locally](#run-locally). Detailed operator history and dated
-repair logs are intentionally kept out of this reviewer-facing README; the repo
-preserves that evolution through git history and the durable research reports
-linked below.
-
-## Current results at a glance
-
-Already-published conclusions only. Each row keeps its own denominator and
-evidence lane; lanes are never pooled, summed, or compared as one sample.
-
-| Lane | Denominator | Evidence class / basis | Principal finding | Main fragility / unavailable measure | Non-claim | Durable artifact |
-|---|---|---|---|---|---|---|
-| Accepted archive | 86 accepted rows (of 180 saved) | descriptive live-archive ledger | Baseline verdict `not_above_baseline`; two outcome lenses (restated 2026-07-11): Any-support OR-rule 59 / 14 / 13; directional-majority (`validation_status_v2`) 29 / 44 / 13 | ~7 market-story clusters, largest 79 - not 86 independent stories | no directional recommendation; no single-event significance | [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md) + the read-only reports below |
-| Mission G | 97 promoted (65 FOMC / 32 OPEC) | outcome-blind frozen historical chain | Broad state-conditioning surface predominantly flat, fragile, or contradictory; one bounded OPEC fed-path × sector-relative association with unresolved calendar-time confounding | 44/120 LOEO and 76/120 LOYO sign reversals; HY OAS 36/97 era-bounded | descriptive association only - no causal claim, no prediction | [`stats/G6_FROZEN_MANIFEST_READOUT.md`](stats/G6_FROZEN_MANIFEST_READOUT.md), [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md) |
-| Mission I | 65 FOMC / 32 OPEC vs eligible ordinary periods; 20 primary cells; 904 event-level rows | frozen MEMP percentile family; no p-values, no FDR | Event exceptionalism is family-, horizon-, and metric-specific; FOMC 1d shows a broad perturbation-stable elevation; the blanket "event windows are generally more extreme" narrative is rejected (a statement about the narrative, not a hypothesis test); each published cell aggregate reconciles internally against its event-level rows (published == recomputed, exact strings - internal reconciliation, not independent replication) | the FOMC 5d raw cell is a near-0.5 knife-edge; FOMC 20d is structurally unavailable | descriptive; no significance test, no tradeability | [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) + in-app event-level drilldown via `GET /evidence/mission-i` |
-| Mission J | 65 FOMC decisions (2018-2025) | same-sample Class B: prospectively frozen post-outcome challenges | 12/12 robustness cells ELEVATED (correlated views, not independent replications); all three transmission edges PROPAGATED at the tier-5 descriptive ceiling; pre-event timing is lens-dependent (sector-relative and SAR ELEVATED; raw and SPY-relative ORDINARY / UNRESOLVED) | ideal M1 rates measure unavailable (2Y CMT is measurement-limited); C1 CPI/Employment collisions unadjudicable; C2 OPEC tags 0/65 | no causality, prediction, tradeability, or independent replication | [`stats/J1B_FOMC_ROBUSTNESS_RESULTS.md`](stats/J1B_FOMC_ROBUSTNESS_RESULTS.md), [`stats/J2_TIMING_COLLISION_RESULTS.md`](stats/J2_TIMING_COLLISION_RESULTS.md), [`stats/J3_MECHANISM_TRANSMISSION_READOUT.md`](stats/J3_MECHANISM_TRANSMISSION_READOUT.md) |
-| Validation-status calibration | 86 accepted rows; 73 decisive labels post-recovery | read-only rule audit against the real archive | `KEEP_CURRENT_RULE` - no production-rule change; the tracked publication is a dated pre-recovery snapshot (65 decisive labels at its as-of date) | no independent target for accuracy calibration was available; 4 decisive labels rest on a single directional ticker | evidence-sufficiency calibration, not accuracy calibration | [`stats/VALIDATION_STATUS_CALIBRATION.md`](stats/VALIDATION_STATUS_CALIBRATION.md) |
-
-## What this is - for a finance reader
-
-Second Order is a research dashboard for geopolitical, macro, and policy events:
-it traces an event's plausible second-order transmission to assets and reads the
-market's event-window reaction honestly - as descriptive evidence, never as a
-forecast or a recommendation.
-
-It is a research-craftsmanship piece, not a trading product. It works one event
-at a time: what changed, the mechanism (who benefits, who is exposed, and the
-transmission chain), the affected assets, and how those assets actually moved in
-the days after the event.
-
-## What it does / what it does not do
-
-**It does:**
-
-- ingest live headlines and events and cluster overlapping coverage
-- articulate a mechanism and the affected assets for each event
-- read the raw 1-day / 5-day / 20-day event-window reaction of the named assets
-- show a benchmark-adjusted event-study readout (abnormal return, standardized
-  AR, cumulative AR vs SPY) wherever the price data allows
-- score tape-direction agreement on the scored names, descriptively
-- package each event as a single research note (an *EventDossier*)
-
-**It does not:**
-
-- issue directional recommendations of any kind
-- claim statistical significance at a single event (`n = 1`: no confidence
-  interval, p-value, or false-discovery control on a single-event readout)
-- claim a permanent asset forecast
-- merge the descriptive archive with the closed Phase 1 / Phase 2 FDR pools -
-  those denominators stay separate
-
-## Reviewer reading path
-
-One primary path, durable record first - every step below reads from tracked
-files and works from a clean clone:
-
-1. **[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)** - the research question,
-   the evidence-lane map, and the claim boundaries.
-2. **Accepted archive outcome ledgers** - the
-   [funnel below](#the-funnel---denominators-honestly): the accepted denominator
-   and the two named outcome lenses (the Any-support OR-rule and the
-   directional-majority `validation_status_v2` rule), plus
-   [`stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md`](stats/EFFECTIVE_INDEPENDENT_EVIDENCE.md)
-   before treating the 86 rows as 86 separate market stories (they group into 7
-   descriptive market-story clusters; the largest holds 79 rows).
-3. **Mission G - historical state conditioning** - protocol
-   [`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md) and spec
-   [`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md), readout
-   [`stats/G6_FROZEN_MANIFEST_READOUT.md`](stats/G6_FROZEN_MANIFEST_READOUT.md),
-   stability and falsifiers
-   [`stats/G6B_STABILITY_AND_FALSIFIERS.md`](stats/G6B_STABILITY_AND_FALSIFIERS.md).
-4. **Mission I - ordinary-period baseline** - are completed event windows
-   unusual against eligible *ordinary* periods on the same frozen assets and
-   metrics? [`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md). The
-   published record (20 primary cells and all 904 per-event observations) is
-   also served in-app by the tracked-only `GET /evidence/mission-i` contract
-   (`mission-i-evidence-v2`), where each available cell opens an event-level
-   drilldown in publication order.
-5. **Mission J - hindsight-controlled FOMC robustness** -
-   [`stats/J1B_FOMC_ROBUSTNESS_RESULTS.md`](stats/J1B_FOMC_ROBUSTNESS_RESULTS.md),
-   [`stats/J2_TIMING_COLLISION_RESULTS.md`](stats/J2_TIMING_COLLISION_RESULTS.md),
-   [`stats/J3_MECHANISM_TRANSMISSION_READOUT.md`](stats/J3_MECHANISM_TRANSMISSION_READOUT.md).
-6. **Representative cases** - Mission G's outcome-blind cases
-   [`stats/G6C_REPRESENTATIVE_CASES.md`](stats/G6C_REPRESENTATIVE_CASES.md); the
-   F1/F2 research set
-   [`stats/REPRESENTATIVE_CASE_EXPANSION.md`](stats/REPRESENTATIVE_CASE_EXPANSION.md)
-   with [`stats/EXPANDED_CASE_NOTES.md`](stats/EXPANDED_CASE_NOTES.md) and the
-   numeric matrix
-   [`stats/CASE_LIBRARY_REACTION_MATRIX.md`](stats/CASE_LIBRARY_REACTION_MATRIX.md).
-   Illustrations for inspection - never lane-level counts, and the readout lens
-   stays separate from the thesis-outcome lens (the two can disagree).
-7. **Methodology, limits, and read-only reproduction** -
-   [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md) (SPY-relative, beta fixed at
-   1), the family-mass and missingness inventory
-   [`stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md`](stats/MECHANISM_FAMILY_EVIDENCE_INVENTORY.md),
-   and the read-only commands in
-   [Verify it yourself](#verify-it-yourself-read-only-research-reports).
-
-### In-app evidence path
-
-For the published evidence record itself (works against the tracked
-publications, no populated archive needed):
-
-```text
-Evidence Overview
-→ Mission I aggregate cells (20, frozen order, separate FOMC / OPEC ledgers)
-→ per-cell event-level drilldown (904 rows, publication order)
-→ published vs recomputed reconciliation, denominators, evidence class
-→ reviewer guide and the canonical research-record export
-```
-
-The same screen carries the Mission G card and the Mission J robustness /
-timing / transmission card (`GET /evidence/mission-j`,
-`mission-j-evidence-v1`) - three separate ledgers, never pooled. Every
-`/evidence/*` route is read-only and tracked-publication-backed: no database
-row, no provider call, no billing.
-
-## In-app walkthrough
-
-A brief tour of the running dashboard - **optional**, and it requires a
-populated local `events.db`. The archive intentionally does not ship, so a
-clean clone starts with an empty archive and these screens render empty (see
-[Reproducibility & data](#reproducibility--data)). App surfaces are a reading
-aid, not the sole durable research record - that record is the tracked
-`stats/` publications on the reviewer path above.
-
-1. **Market Overview** (the landing page) - read the market backdrop, recent
-   event activity, and the *Track record & evidence* framing.
-2. **Case Library** (Research nav) - fifteen representative cases selected to
-   span supportive, contradictory, unresolved and data-limited reads (outcomes
-   restated 2026-07-11 post-recovery), with the denominator anchor, both named
-   outcome ledgers, and the standing non-claims on the page.
-3. **Open #105 - OPEC output cuts** (strong support): the in-app Archive / Event
-   Detail dossier, where the tape agreed with the thesis direction across several
-   legs.
-4. **Open #29 - Strait of Hormuz** (contradiction): the canonical oil-shock
-   thesis the tape rejected - the honest counterweight to a winners-only read.
-5. **Read one EventDossier** end to end: mechanism, affected assets and their
-   realized move, the event-study readout (at `n = 1`), the scored outcome where
-   available, and the standing claim boundary.
-6. **Evidence Coverage / denominators** - the *Track record & evidence* card and
-   the funnel below: which gates apply and how many events clear each.
-7. **Backtest** *(optional)* - the descriptive directional-agreement review
-   across saved events; a track record, not a strategy result.
-8. **End on the boundary** - every read is descriptive event-window evidence at
-   `n = 1`, not a recommendation and not a claim of predictive power.
-
-Technical and finance reviewers: the self-verifiable evidence lives in
-[**Verify it yourself**](#verify-it-yourself-read-only-research-reports), whose
-read-only reports recompute the family overlay, transmission cases, sector
-backdrop, and case-selection stress.
-
-## How the surfaces fit
-
-- **EventDossier** - the shared research note for one event; it leads both the
-  Share page and the Archive / Event Detail view.
-- **Case Library** - a guided, editorial entry point: fifteen real cases
-  selected to span supportive, contradictory, unresolved and data-limited
-  reads (outcomes restated 2026-07-11 post-recovery; selection roles frozen).
-- **Archive / Event Detail** - the full in-app dossier, including the scored
-  outcome (`validation_status_v2`) when the archive row carries it.
-- **Share page (`/share/:id`)** - the same dossier, shell-free for linking; it
-  may omit the scored outcome because the export payload does not carry it.
-- **Market Overview - Evidence Coverage** - the denominators and the evidence
-  gates, kept phase-separated from the closed FDR pools.
-- **Evidence Overview** - the research ledger: canonical denominators, the
-  effective-independence caution, and the fetched Mission G / Mission I /
-  Mission J cards (three separate ledgers, in that order). The Mission I card
-  carries the per-cell event-level drilldown, the collapsed reviewer guide,
-  and the deterministic research-record export.
-- **Backtest** - a descriptive directional-agreement review, not strategy
-  validation.
-
-## The funnel - denominators, honestly
-
-The canonical live denominators (re-run the read-only reports in
-[Verify it yourself](#verify-it-yourself-read-only-research-reports) for current
-figures - a clean clone starts empty):
-
-- **180** archive rows - every saved event.
-- **94** accepted coverage / analysis rows.
-- **86** accepted track-record rows, read through two named outcome lenses
-  (restated 2026-07-11 after the directional-evidence recovery; both lenses
-  cover the same 86 rows and are never merged):
-  - **Any-support OR-rule** (`db.compute_track_record`): 59 any-supporting,
-    14 contradicted, 13 unresolved. Any supporting directional ticker is
-    sufficient for the any-supporting bucket - a descriptive ledger, not a
-    majority vote.
-  - **Directional-majority rule (`validation_status_v2`)**: 29 validated,
-    44 contradicted, 13 unresolved. Supporting vs contradicting tickers;
-    ties count as contradicted under the frozen current rule. The labels are
-    the production scorer's vocabulary - evidence sufficiency, not a success
-    verdict and not a claim about future events.
-  - One supporting name is enough under the OR-rule, while the majority rule
-    weighs supporting against contradicting names - that is why the two
-    distributions differ.
-- **78 of 94** event-study compute-ready - rows with per-horizon (1d / 5d / 20d)
-  point estimates computable against SPY.
-- **13** staged candidates - review staging, excluded from every accepted
-  denominator.
-
-These gates are **not pooled**, and they differ by data availability. SPY is the
-one canonical abnormal-return benchmark; sector baselines are descriptive context
-only, never a sector-relative abnormal return. The headline baseline conclusion
-is `not_above_baseline` (no robust above-baseline directional skill), and
-cohort-level inference is currently blocked - see the
-[Compute-Readiness Contract](#event-study-compute-readiness-contract). That
-accepted-lane verdict answers a directional-skill question; it is distinct from
-the Mission G historical state-conditioning null summarized in
-[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md). The closed
-Phase 1 and Phase 2 FDR pools (five rows each) are a **separate** evidence track
-with their own frozen q-values, never derived from this saved-event archive.
-
-Re-run the read-only reports above for the live figures; the dated
-pre-restatement funnel snapshots and the full AP3b restatement detail are kept
-out of this reviewer-facing README.
-
-## Verify it yourself: read-only research reports
-
-Every figure above recomputes from the live archive. The Phase-1 methods
-spine is [`stats/METHODOLOGY.md`](stats/METHODOLOGY.md) - the
-abnormal-return / SAR / p-value / FDR conventions plus the
-statistical-honesty layer (small-sample robust diagnostics, event-window
-overlap disclosure, and track-record scoring-rule sensitivity). Current
-methodology is distributed across the canonical documents: the close-basis
-policy in [`stats/BASIS_RESTATEMENT.md`](stats/BASIS_RESTATEMENT.md), the
-event-study lens spec in
-[`stats/G_STANDARDIZATION_SPEC.md`](stats/G_STANDARDIZATION_SPEC.md), and
-the locked Mission G protocol in
-[`stats/G_RESEARCH_PROTOCOL.md`](stats/G_RESEARCH_PROTOCOL.md).
-
-The separate **Mission I** ordinary-period baseline - whether completed FOMC and
-OPEC event windows are unusual relative to eligible ordinary periods on the same
-frozen assets - is closed out in
-[`stats/MISSION_I_CLOSEOUT.md`](stats/MISSION_I_CLOSEOUT.md) (structure and
-evidence chain summarized in [`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md)). Its
-finding is family-, horizon-, and metric-specific and carries no significance,
-causal, or predictive claim. The published record is also consumable without
-running any script: the tracked-only `GET /evidence/mission-i` contract
-(`mission-i-evidence-v2`) parses the seven tracked Mission I publications at
-request time and serves the 20 primary cells together with all 904 published
-per-event observations, internally reconciled (published == recomputed as
-exact decimal strings) before anything is served. The frontend consumer
-enforces the same contract exactly and fails closed on any inconsistent
-payload rather than displaying a partial record.
-
-These reports are **read-only**: they open `events.db` with `mode=ro`, never
-mutate it, never call a paid provider, and never run `/analyze`. They never
-reopen or recompute the **frozen** Phase 1 / Phase 2 FDR pools. Every payload
-carries a `non_claims` block - the numbers are descriptive coverage and
-sensitivity diagnostics, not significance results. (These surfaces live in the
-reports and `stats/METHODOLOGY.md`; the app does not expose this layer yet.)
-
-Run from the repo root:
-
-- **Accepted denominators + event-study reach** -
-  `python scripts/event_study_coverage_report.py --json`
-  Verifies the accepted coverage denominator. Expect **94** accepted events,
-  **78** event-study compute-ready.
-
-- **Archive data-hygiene & denominator provenance** -
-  `python scripts/data_hygiene_report.py --json`
-  The read-only source of truth behind the funnel: it classifies every
-  analysis-stage row (by exact headline + `model` fingerprint) as
-  synthetic-seed / synthetic-test / real-duplicate / real-unique, so the **71**
-  synthetic-seed rows excluded from the accepted denominators are auditable by
-  id. Denominator hygiene, not statistical inference; it mutates nothing and
-  never touches the closed Phase 1 / Phase 2 FDR pools.
-
-- **Compute-readiness + window-overlap caveat** -
-  `python scripts/stat_validation_readiness_report.py --json --lens accepted --limit 0`
-  Verifies per-event compute-readiness and the event-window overlap caveat,
-  scoped to the compute-ready set. Expect compute-ready **78**, `window_overlap`
-  n **78**, lens `accepted`.
-
-- **Small-sample robust diagnostics** -
-  `python scripts/baseline_characterization_report.py --db events.db --sims 60 --json`
-  Verifies the `robust_diagnostics` block: an exact sign test, a Wilcoxon
-  signed-rank summary, the overlap caveat co-located with each p-value as its
-  independence qualifier, and the SAR-convention audit.
-
-- **Event-date placebo / negative control** *(text mode - no `--json`)* -
-  `python scripts/archive_placebo_report.py --db events.db --draws 1000 --seed 20260608`
-  A null / negative-control readout. Expect the observed event-window overlap
-  caveat over the placebo-feasible role-observations.
-
-- **Track-record scoring-rule sensitivity** -
-  `python scripts/track_record_sensitivity_report.py --db-path events.db --json --limit 5`
-  Verifies how the accepted track-record split moves under stricter scoring
-  rules over one shared denominator. Expect denominator **86**; the canonical
-  `validated` count moves **46 → 19 → 11** across any-support → majority →
-  strict. No rule is claimed correct; the canonical headline rule is unchanged.
-
-- **Mechanism-family coverage map** -
-  `python scripts/mechanism_family_overview_report.py --db-path events.db --json`
-  Shows which mechanism families carry accepted evidence vs staged no-paid
-  candidates, with the untagged bucket disclosed as a limitation. Narrative
-  context: [`stats/MECHANISM_FAMILY_OVERVIEW.md`](stats/MECHANISM_FAMILY_OVERVIEW.md);
-  candidate-review decisions:
-  [`stats/STAGED_CANDIDATE_SHORTLIST.md`](stats/STAGED_CANDIDATE_SHORTLIST.md).
-  Staged candidates never enter accepted denominators.
-
-- **Accepted-corpus family overlay** -
-  `python scripts/accepted_family_overlay_report.py --db-path events.db --json`
-  Classifies the **86** untagged accepted thesis rows with deterministic
-  whole-token headline rules, entirely in memory (no DB write). Expect
-  single + multi + unclassified to sum to **86**; ambiguous rows are
-  surfaced, never forced. Coverage decomposition only - see
-  [`stats/ACCEPTED_FAMILY_OVERLAY.md`](stats/ACCEPTED_FAMILY_OVERLAY.md).
-
-### Accepted-family overlay arc - reviewer walkthrough
-
-The accepted track-record corpus has **86 thesis rows**, and all 86 remain
-family-untagged in `events.db`. The completed overlay arc measures that
-limitation without changing the database or any accepted denominator:
-
-1. **J1 - headline overlay:** deterministic whole-token rules classify the
-   headlines in memory as **52 single-match / 16 multi-match / 18
-   unclassified**. This is a coverage map, not a family comparison.
-2. **K1 - weak-bucket review:** **15 of 16** multi-match rows are legitimate
-   overlaps; one `trade war` row is a token overfit. The 18 unclassified rows
-   divide into archive noise, taxonomy gaps, and **2** bounded rule misses.
-3. **L1 - mechanism-text second lens:** applying the same rules to richer
-   mechanism text recovers only **3** rows and increases ambiguity to **30
-   single / 32 multi / 24 unclassified**, so it is not used as a replacement.
-
-Final stance: the headline lens remains primary; mechanism text is diagnostic
-only. Neither lens writes DB labels, changes the **86-row** denominator, or
-supports family-level inference. Read the arc in
-[`ACCEPTED_FAMILY_OVERLAY.md`](stats/ACCEPTED_FAMILY_OVERLAY.md),
-[`ACCEPTED_FAMILY_OVERLAY_REVIEW.md`](stats/ACCEPTED_FAMILY_OVERLAY_REVIEW.md),
-and
-[`ACCEPTED_FAMILY_SECOND_LENS.md`](stats/ACCEPTED_FAMILY_SECOND_LENS.md).
-
-- **Event-date quality / anticipation risk** -
-  `python scripts/event_date_quality_report.py --db-path events.db --json`
-  Classifies each row's event-date anchor (clean filing vs partial
-  anticipation vs scheduled signing vs thread sibling vs duplicate) with
-  explainable rules, before any window is interpreted. Caution layer, not
-  proof; see [`stats/EVENT_DATE_QUALITY.md`](stats/EVENT_DATE_QUALITY.md).
-
-- **Staged-family coverage board** -
-  `python scripts/staged_family_coverage_report.py --db-path events.db --json`
-  One cross-family view of the 13 staged/no-paid candidates: anchor quality,
-  family-packet coverage, local computability (cached rows are not the same
-  as computable-at-date), and ranked no-paid next moves. Staged candidates
-  never enter accepted denominators; see
-  [`stats/STAGED_FAMILY_COVERAGE.md`](stats/STAGED_FAMILY_COVERAGE.md).
-
-- **Representative transmission-case walkthrough** -
-  `python scripts/transmission_case_walkthrough_report.py --db-path events.db --json`
-  Renders a small, deterministic, outcome-diverse set of accepted cases
-  (forced to include a support, a contradiction, and an unresolved/data-limited
-  case) as full event → mechanism → named-assets → 1d/5d/20d reaction
-  walkthroughs, reusing the J1 overlay, event-date-quality, track-record
-  scoring, and event-study layers. Representative, not proof (n=1 per case);
-  see
-  [`stats/TRANSMISSION_CASE_WALKTHROUGH.md`](stats/TRANSMISSION_CASE_WALKTHROUGH.md).
-
-- **Case-selection stress** -
-  `python scripts/transmission_case_selection_stress_report.py --db-path events.db --json`
-  Stress-tests the six walkthrough cases under alternative deterministic
-  selection policies (family-first, outcome-first, anchor-quality-first,
-  missingness-aware, reverse tie-break) **without changing the selector or the
-  six cases**. Discloses tie-break sensitivity and an anchor-score doc/impl
-  mismatch; no returns- or sector-based selection. See
-  [`stats/TRANSMISSION_CASE_SELECTION_STRESS.md`](stats/TRANSMISSION_CASE_SELECTION_STRESS.md).
-
-- **Sector-baseline availability** -
-  `python scripts/sector_baseline_availability_report.py --db-path events.db --json`
-  For each accepted row, reports whether a *suggested* sector ETF baseline is
-  locally cached and **computable at the 1d/5d/20d event windows** (cached is
-  not computable-at-date), plus the sector ETF's own raw window move as
-  descriptive context. SPY stays the canonical abnormal-return benchmark; the
-  sector is a hint, never a sector-relative abnormal return. See
-  [`stats/SECTOR_BASELINE_AVAILABILITY.md`](stats/SECTOR_BASELINE_AVAILABILITY.md).
-
-- **Research queue - staged candidates, no paid call** -
-  `python scripts/research_queue_report.py --json`
-  Read-only triage over the 13 staged `z1a_candidate_pack` candidates (excluded
-  from every accepted denominator): per-candidate event-study readiness, the
-  per-horizon point estimates already computable from the cache, source
-  provenance, and near-duplicate collisions, with one deterministic review
-  classification. It orders human review only - `ready_for_no_paid_review` is not
-  approval for a paid run, and paid `/analyze` stays blocked. Staged candidates
-  never enter accepted denominators.
-
-- **Price-provider coverage** *(operational provenance)* -
-  `python scripts/price_provider_coverage_report.py --json`
-  Read-only: groups every cached bar by resolved market-data provider
-  (`legacy_unknown` = provider not recorded at write time, not bad data). It
-  never fetches, mutates, or calls a provider; this is data-provenance plumbing,
-  separate from the research denominators above.
-
-## Current Status
-
-The tracked evidence track is complete through Phase 4. Beyond that track,
-the Mission G historical research program (97 events across two separate
-ledgers) is complete, and Mission H surfaces the completed record - the
-[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md) front door, the read-only
-`GET /evidence/mission-g` contract, and the Evidence Overview card - without
-adding any new research claim. The cohort-wide
-methodology and the Phase 1-4 arc are documented at
-[`evidence_artifacts/section_c_v2/phase_evidence_methodology.md`](evidence_artifacts/section_c_v2/phase_evidence_methodology.md)
-and
-[`evidence_artifacts/section_c_v2/phase_history.md`](evidence_artifacts/section_c_v2/phase_history.md).
-
-The separate **Mission I** ordinary-period baseline is published end to end:
-the tracked-only `GET /evidence/mission-i` contract (`mission-i-evidence-v2`)
-serves the 20 primary cells plus the additive event-level layer (904 published
-per-event rows: FOMC 520 across 8 available cells at 65 rows each, with 20d
-structurally unavailable; OPEC 384 across 12 cells at 32 rows each), each cell
-internally reconciled before service. On the **Evidence Overview** screen every
-available cell opens a publication-ordered event-level drilldown with the
-published and recomputed aggregates separately labeled, the denominators
-visible, the source-section field honestly reported as not exposed by the
-contract, and computation dates / execution commits stated as not recorded in
-any Mission I publication (never inferred). The same payload feeds the
-collapsed reviewer guide and the deterministic research-record export.
-
-The separate **Mission J** hindsight-controlled FOMC robustness program - the
-asset/benchmark, timing/collision, and transmission-graph challenge to Mission
-I's inherited one-day reading - is published and complete. Its record is
-surfaced in the app on the **Evidence Overview** screen and through the
-read-only, tracked-only `GET /evidence/mission-j` contract
-(`mission-j-evidence-v1`), which parses the frozen `stats/J*` publications at
-request time and adds no new research claim. The frozen source chain is
-J0 → J1A → J1B → J2 → J3, summarized in
-[`RESEARCH_OVERVIEW.md`](RESEARCH_OVERVIEW.md).
-
-- **Phase 1** - a five-row freeze-candidate cohort
-  (WHR / TXT / FSLR / RIO / LITE) is tracked at
-  `evidence_artifacts/section_c_v2/freeze_candidate_evidence.json`. Each row
-  carries a pre-registered canonical test at the claimed horizon h = 1
-  with a BH-adjusted q-value frozen at the original five-row Phase 1
-  denominator. Phase 1 q-values are never recomputed against any later
-  scope.
-- **Phase 2** - a closed five-row BH/FDR pool
-  (BA / ALB / NVDA / AMAT / CF) is tracked at
-  `evidence_artifacts/section_c_v2/phase2_pool_v1.json`. BA, ALB, and NVDA
-  are BH/FDR discoveries at the q ≤ 0.05 threshold. AMAT and CF did not
-  pass the screen but remain denominator members per the closed-pool
-  policy. Phase 2 is a separate FDR scope from Phase 1.
-- **Phase 3** - three schema validators
-  (`scripts/validate_freeze_candidate_artifact.py`,
-  `scripts/validate_phase2_pool.py`,
-  `scripts/validate_rejection_log_summary.py`), the `cohort_evidence`
-  loader, the `evidence_layer` section of
-  `scripts/project_health_check.py`, and a CI gate in
-  `.github/workflows/ci.yml` protect the tracked artifacts from silent
-  regression. Deferred methodology lessons (CENX, NUE, NOC) are
-  recorded in
-  `evidence_artifacts/section_c_v2/rejection_log_summary_v1.json`.
-- **Phase 4** - `GET /evidence/summary` exposes the tracked evidence
-  layer as a read-only JSON view. The route reads only from
-  `evidence_artifacts/section_c_v2/`; it does not read local operator
-  artifact paths, the events database, the price cache, any provider,
-  or the network. It preserves Phase 1 and Phase 2 as separate FDR
-  scopes.
-
-Phase 0 process hardening (CI hygiene checks, key rotation guidance,
-archive backup command, paid-server guard, structured logging, config
-health diagnostics, data-quality diagnostics) and the wider app's
-existing Phase 1 read surfaces (archive/detail `validation_status_v2`,
-`reaction_profile_v1` hydration, zero-cost diagnostics for
-`/diagnostics/track-record`, `/diagnostics/major-skipped-headlines`,
-and `/diagnostics/reaction-profile-stats`) remain in place and are
-not affected by the tracked-evidence track.
-
-## Reproducibility & data
-
-This repository is local-first, and its two kinds of numbers reproduce
-differently from a clean clone:
-
-- **The closed Phase 1-4 evidence track is clean-clone reproducible.** Its
-  artifacts (`evidence_artifacts/section_c_v2/`) and the three schema validators
-  are tracked, and `.github/workflows/ci.yml` re-runs them on every push
-  against a fixture database it builds on the CI runner - it never needs a
-  local archive. A fresh clone reproduces the Phase 1 / Phase 2 pool counts
-  exactly.
-- **The wider-app archive coverage and data-hygiene counts do not ship.** They
-  are computed against the maintainer's local `events.db`, which is
-  intentionally **not** committed - it is gitignored, large, and carries
-  seed/test rows. A clean clone therefore starts with an **empty** archive, so
-  the coverage / hygiene / price-provider figures quoted below reflect the
-  maintainer's local archive as of the dates noted, not a fresh checkout.
-
-The read-only report commands above recompute every archive
-figure from whatever `events.db` is present, so they - not the numbers frozen
-in this file - are the source of truth. On a clean clone with no archive they
-return an empty (zero-count) report.
-
-## Event-Study Compute-Readiness Contract
-
-The backend route `GET /events/{event_id}/event-study` is a wider-app
-archive route, separate from the closed tracked-evidence Phase 1 and
-Phase 2 FDR pools.
-
-`archive-ready` is the broad coverage gate from
-`scripts/stat_validation_readiness_report.py`: the event has an
-`event_date`, a primary ticker, enough cached primary-ticker history,
-forward cache coverage at the 1d / 5d / 20d horizons, and SPY benchmark
-proxy coverage. It is a data-coverage denominator, not a promise that
-the event-study engine can score the row.
-
-`event-study compute-ready` is stricter. It reuses
-`event_study_validation.build_event_study_validation`, the same gate
-behind `GET /events/{event_id}/event-study`. The gate requires a
-contiguous intersected asset-plus-SPY window, enough SPY pre-event
-history for the estimation window, and an engine-usable volatility
-estimate. A compute-ready row can return per-horizon abnormal return,
-SAR, and CAR point estimates.
-
-`matched basis` means the asset and SPY benchmark use the **same**
-`auto_adjust` flag for the full window the event-study engine consumes
-(no adjusted/raw splice within a series). All compute-ready events sit on
-matched basis (`cross_flag` = 0). Note that since the Batch-1 coverage
-repair the 18 repaired events resolved on matched **raw** basis,
-so the earlier "every compute-ready event is on matched *adjusted* basis"
-no longer holds - but no row mixes flags, so no splice caveat applies.
-
-The readiness report (`scripts/stat_validation_readiness_report.py`) runs
-under an explicit **denominator lens** (`--lens accepted` | `--lens raw`,
-AT1 2026-06-10):
-
-- `--lens accepted` (the **default**) is the canonical hygiene-aware
-  accepted-corpus analysis/coverage denominator: it excludes the
-  non-analysis stages (`curated_intake`, `z1a_candidate_pack` staged
-  candidates, `analysis_pending_review` quarantine) and the 71 AP3b
-  `event_hygiene` synthetic-seed rows. This is the **same lens** as
-  `scripts/event_study_coverage_report.py`, so the two reports share one
-  denominator.
-- `--lens raw` is an all-stage **diagnostic** data-coverage scan over every
-  archive row, including the flagged seed rows, staged candidates, and the
-  pending-review row. Diagnostic only - its counts must never be quoted as
-  accepted-corpus numbers.
-- Every payload carries a `denominator` metadata block (active lens,
-  included/excluded stages, excluded override classes, per-class excluded
-  and population counts) plus a `non_claims` block, so exclusions are
-  disclosed rather than silent.
-- Counts drift with every coverage repair, so re-run the commands for live
-  figures rather than trusting any number frozen here:
-  `python scripts/stat_validation_readiness_report.py --json --lens accepted --limit 0`
-  (and `--lens raw`).
-
-The dated per-run snapshots ("Current run" / "Earlier runs reported") and the
-Batch-1 data-frontier note are kept out of this reviewer-facing README; re-run
-the readiness command above for live figures.
-
-Compute-ready means SAR/CAR point estimates are computable. It does not
-mean cohort-level statistical inference is available for a single
-event. Single-event output has `n=1`, so CI, p-value, and FDR are not
-available on the event-detail route; those remain cohort-level
-statistics.
-
-Compute-ready rows are also not automatically valid cohort
-observations. Across the matched compute-ready set, cohort-level
-inference is currently on hold, and the block is independence and
-labeling rather than the event-study engine: the legacy/organic
-compute-ready rows are concentrated in a few primary tickers and one
-clustered macro window with overlapping forward windows and carry no
-`mechanism_family` label, so they are not independent observations. The
-8 Phase-K `curated_observation` rows *are* labeled (tariff / sanction),
-but a pooled read across them is still blocked by a family/sign confound
-and per-family n < 8 - see `stats/PHASE_K_EVIDENCE.md`. Running
-cross-sectional CI, p-value, or FDR over the set would overstate
-precision. The criteria a future cohort phase must meet are recorded in
-`stats/METHODOLOGY.md` ("Cohort inference - currently blocked"). This
-decision does not change the closed Phase 1 or Phase 2 FDR denominators.
-
-## Current boundaries and open items
-
-The tracked evidence track is closed at Phase 4; no new candidates, pools,
-or validators are scheduled for it. The Mission G, Mission I, and Mission J
-research programs are complete and published; surfacing them added no new
-research claim. Deferred methodology lessons (CENX, NUE, NOC) are recorded
-separately in
-`evidence_artifacts/section_c_v2/rejection_log_summary_v1.json` and are not
-denominator members of any open pool. The public consumption surfaces for
-completed evidence are the four read-only, tracked-only routes:
-`GET /evidence/summary`, `GET /evidence/mission-g`,
-`GET /evidence/mission-i`, and `GET /evidence/mission-j`.
-
-No further research phase is currently open or scheduled. Opening one is a
-deliberate decision with its own eligibility gate - the most recent
-adjacency review found no data-compatible adjacent event family ready
-without a new event, timing, exposure, and identification layer, and none
-was opened. Remaining wider-app engineering items (calibration coverage,
-schema-migration discipline, delivery surfaces) stay deliberately
-unscheduled rather than promised.
-
-Dependency-resolution alignment remains a monitored engineering item.
-Current verification runs on FastAPI 0.135.3, inside the tested
-`>=0.135,<0.137` range; no production failure is currently established.
-
-Second Order is a local-first research and analyst-support tool. It is
-not a live trading product. The tracked evidence layer is descriptive
-of past, dated events and makes no claim about future returns.
-
-## Current Capabilities
-
-- Live inbox from `news_inbox.json` plus curated RSS sources
-- Source-preserving clustering with a cache-only read boundary: `GET /news`
-  never fetches a provider or mutates the news store - cold and stale cache
-  states are disclosed explicitly (any-age shape-valid cache is served as
-  stale, never hidden), and refresh happens only through the explicit
-  `POST /news/refresh`
-- Progressive analysis through `/analyze/stream` with mechanism, watchlists,
-  transmission chain, and macro overlays; a streamed analysis counts as
-  complete only after a structurally valid terminal event is received and
-  applied - EOF, malformed completion, or a consumer failure settles the run
-  as failed exactly once, with no automatic paid retry
-- Recent events archive with search/filter, related-event linking, event cascade, and dated backtests
-- Archive/detail validation readouts through `validation_status_v2`, including the `validation_status_v2` archive filter
-- Event-detail reaction profiles through `reaction_profile_v1` when cached forward close windows exist
-- Portfolio view over saved events, revisit snapshots, and share-page export
-- Regime playbook, macro calendar, and policy-tracker surfaces
-- Movers (today / weekly / yearly / persistent) and stress / rates-context / market-context endpoints
-- Zero-cost diagnostics for `/diagnostics/track-record`, `/diagnostics/major-skipped-headlines`, and `/diagnostics/reaction-profile-stats`
-- Ticker detail endpoints (chart, info, headlines) for inline inspection
-- Bulk export of saved events: JSON / CSV / Markdown / ZIP / presentation deck / portfolio memo
-- Telegram delivery for headline analysis and live-inbox briefing
-- Layered caching:
-  - news cache: in-memory hot cache + SQLite persistence
-  - price/ticker cache for market data
-  - optional snapshot warmer for liquid market benchmarks
-
-Current limitations:
-
-- Recent events can remain `pending` or `unresolved` until enough market evidence exists.
-- `reaction_profile_v1` is read-only and cache-backed; it does not fetch live prices during detail reads.
-- Reaction profiles may be unscorable until enough forward close bars are cached.
-- Paid analysis does not run unless `ENABLE_PAID_ANALYSIS=true` and the paid request is explicitly confirmed.
-
-## Run Locally
-
-### 1. Backend
-
-Requires **Python 3.12** (the version pinned in `.github/workflows/ci.yml`).
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-Copy-Item .env.example .env
-python scripts/repo_hygiene_check.py --json
-python scripts/project_health_check.py --json
-python scripts/no_paid_smoke.py --json
-uvicorn api:app --reload --host 127.0.0.1 --port 8000
-```
-
-The health commands above are lightweight safety and readiness checks. They do
-not certify that every backend or frontend test is green.
-
-API base URL: `http://127.0.0.1:8000`. Health check: `/health`.
-
-A bare `uvicorn api:app` binds the live `events.db`; for dev servers and
-verification runs, point `EVENTS_DB_FILE` at a copy first - see **Dev /
-verification DB safety** below.
-
-For a fresh local run, keep `.env` minimal:
-
-- leave provider API keys unset to use the built-in mock analysis fallback
-- set `ANALYSIS_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`, or
-  `ANALYSIS_PROVIDER=openai` with `OPENAI_API_KEY`, to use live analysis
-- set `BACKFILL_PROVIDER=openai` and `BACKFILL_MODEL` for cheaper mover backfills
-- keep `BACKFILL_DRY_RUN_DEFAULT=true` unless you are intentionally spending API calls
-
-LLM cost guard: never run repeated `/movers/backfill-recent` calls with
-`dry_run=false` without checking provider usage first. Backfill requests must
-include `max_llm_calls`, and the requested value must be less than or equal to
-`MAX_BACKFILL_LLM_CALLS`. Paid backfills with `dry_run=false` and
-`max_llm_calls > 1` also require `confirm_paid=true`.
-
-Use `GET /movers/backfill-preview` to inspect which recent headlines would be
-eligible before spending. It is a zero-cost preview: it does not call Claude,
-OpenAI, market checks, or persistence. Use `GET /registry/diagnostics` for
-zero-cost headline-registry state counts, skip reasons, recent expiry counts,
-and eligible unanalyzed candidates.
-
-### Dev / verification DB safety (`EVENTS_DB_FILE`)
-
-A bare `uvicorn api:app` and most scripts bind to the live `events.db` by
-default, so a leaked dev server or an ad-hoc script can silently mutate the real
-archive. For dev servers, visual passes, and Phase-H coverage / ticker repair
-work, run against a **copy** instead of the live archive:
-
-```powershell
-Copy-Item events.db events.dev.db
-$env:EVENTS_DB_FILE = "events.dev.db"
-uvicorn api:app --reload --host 127.0.0.1 --port 8000
-```
-
-`EVENTS_DB_FILE` is resolved once, at import time. When it is unset the backend
-falls back to the live `events.db` and logs a startup warning so the live
-binding is never silent. Phase-H repair scripts must point at a copy via
-`EVENTS_DB_FILE` (or an explicit `--db` flag) and must not run against the bare
-live default.
-
-### 2. React Frontend
-
-Market Overview, Event Detail, shell, portfolio, and archive polish use a
-modern dark market-forensics interface: institutional, readable, and restrained
-without terminal-style density. Current frontend type/build verification:
-
-```powershell
-cd frontend
-npm run typecheck
-npm run build
-```
-
-The Vite chunk-size warning is currently non-blocking.
-
-These commands verify types and that the bundle builds. They do not
-exercise the UI in a browser. UI-visible behavior - for example, how the
-global error-boundary fallback renders when a page crashes - is verified
-manually under `npm run dev` and is intentionally separate from the
-automated type/build gate above.
-
-```powershell
-cd frontend
-npm install
-npm run dev -- --host 0.0.0.0 --port 3000
-```
-
-Vite runs at `http://localhost:3000` and proxies `/api/*` to the backend on
-`http://127.0.0.1:8000`.
-Optional frontend runtime config lives in `frontend/.env.example`:
-leave `VITE_API_BASE_URL` unset for same-origin `/api`, or set it to a full
-API origin for split deploys. `VITE_DEV_API_PROXY_TARGET` is local-dev only.
-
-### 3. Telegram Bot
-
-From the repo root, after the backend is running and `.env` includes
-`TELEGRAM_BOT_TOKEN` plus `SECOND_ORDER_API_URL=http://127.0.0.1:8000`:
-
-```powershell
-python telegram_bot.py
-```
-
-The bot uses `SECOND_ORDER_API_URL` to call the local FastAPI service.
-
-## Deploy
-
-For a minimal public API deploy on Render, use `render.yaml`. Render injects
-`PORT` automatically. With no provider key the API boots with the
-mock-analysis fallback (no billing, nothing persisted), which is the safe
-default for a public demo.
-
-**Do not expose a real provider key on a public deploy without the paid-route
-guard.** The `/analyze` (and `/analyze/stream`) routes can make billed provider
-calls, and they fail **closed** across both providers: guard, dispatch, and
-the active-model readout resolve from one shared provider-configuration seam,
-so when a real (billable) key is configured for the selected provider -
-`ANTHROPIC_API_KEY` or `OPENAI_API_KEY` - a request is rejected with `403`
-unless **both**
-
-- `ENABLE_PAID_ANALYSIS=true`, **and**
-- `SECOND_ORDER_ADMIN_TOKEN` is set and the request sends a matching
-  `X-Second-Order-Admin-Token` header
-
-are present. A real key with no admin token therefore leaves the paid routes
-locked, not open. Only set `ANALYSIS_PROVIDER` + the provider key on a public
-deploy if you have also set `SECOND_ORDER_ADMIN_TOKEN` (and want paid analysis
-enabled); otherwise leave the key unset and run the mock fallback.
-
-For a split frontend/backend deploy, set `VITE_API_BASE_URL` on the frontend and
-set `CORS_ALLOWED_ORIGINS` on the backend to the frontend origin.
-
-## Configuration
-
-Copy `.env.example` to `.env` for local use and keep `.env` untracked. Real current keys are:
-
-Security and paid-action guardrails are documented in [SECURITY.md](SECURITY.md).
-Local verification commands are in the [Test](#test) section below.
-
-- `ANTHROPIC_API_KEY`
-- `OPENAI_API_KEY`
-- `ANALYSIS_PROVIDER`
-- `ANTHROPIC_MODEL`
-- `OPENAI_MODEL`
-- `BACKFILL_PROVIDER`
-- `BACKFILL_MODEL`
-- `MAX_BACKFILL_LLM_CALLS`
-- `BACKFILL_DRY_RUN_DEFAULT`
-- `HEADLINE_REGISTRY_LOW_IMPACT_TTL_DAYS`
-- `CORS_ALLOWED_ORIGINS`
-- `TELEGRAM_BOT_TOKEN`
-- `SECOND_ORDER_API_URL`
-- `DAILY_BRIEF_ENABLED`
-- `DAILY_BRIEF_CHAT_ID`
-- `DAILY_BRIEF_TIME`
-- `WATCHLIST_ENABLED`
-- `WATCHLIST_CHAT_ID`
-- `WATCHLIST_INTERVAL_MIN`
-- `WATCHLIST_THRESHOLD_PCT`
-- `MARKET_DATA_PROVIDER`
-- `POLYGON_API_KEY`
-- `MARKET_SNAPSHOTS_ENABLED`
-- `MARKET_SNAPSHOTS_INTERVAL`
-- `FEED_CONFIG_PATH` (override path for `feed_config.json`; defaults to repo root)
-
-If the selected provider key is missing, analysis falls back to mock output for
-local UI and testing flows. Mock analyses are not saved. `ANALYSIS_PROVIDER`
-accepts `anthropic` or `openai`; `/movers/backfill-recent` uses
-`BACKFILL_PROVIDER` and `BACKFILL_MODEL`, defaults to `dry_run=true`, and
-rejects requests that omit `max_llm_calls`. Paid multi-call backfills
-(`dry_run=false` and `max_llm_calls > 1`) require `confirm_paid=true`. Keep
-`MAX_BACKFILL_LLM_CALLS` low (`1` in `.env.example`).
-`HEADLINE_REGISTRY_LOW_IMPACT_TTL_DAYS` controls how long analyzed low-impact
-headlines remain visible on active archive/mover listing surfaces before they
-are filtered as expired low-impact rows.
-
-## Telegram Commands
-
-- `/start`: intro and usage hint
-- `/help`: command summary
-- `/brief`: top clustered headlines with current market-context block
-- plain text or forwarded headline: run the analysis pipeline and return a compact summary
-
-## Typical Flow
-
-1. Start FastAPI.
-2. Start the React app and/or Telegram bot.
-3. Review the inbox, refresh feeds when needed, and open a candidate event.
-4. Run progressive analysis and inspect mechanism, watchlists, market validation, and macro overlays.
-5. Save the event, review related follow-ups, and revisit it in Backtest later.
-6. Export saved events from the archive when needed.
-
-## Key Files
-
-- `frontend/`: React + TypeScript app
-- `api.py`: FastAPI surface and orchestration
-- `routes/`: per-domain route modules (`analyze`, `events`, `news`, `movers`, `market`, `portfolio`, `playbook`)
-- `telegram_bot.py`: Telegram client surface and scheduled jobs
-- `classify.py`: deterministic stage / persistence classification
-- `analyze_event.py`, `prompts.py`: LLM analysis, sanitization, field registry, prompt templates
-- `news_sources.py`, `news_clustering.py`, `news_relevance.py`, `news_cluster_store.py`: ingestion, RSS normalization, clustering, persisted news cache
-- `db.py`: SQLite persistence and cache storage
-- `market_check.py`, `market_context.py`, `market_data.py`, `price_cache.py`, `market_snapshots.py`, `movers_cache.py`: market validation, overlays, provider access, warm caches
-- `shock_decomposition.py`, `reaction_function_divergence.py`, `real_yield_context.py`: macro overlays (pure composers)
-- `eval.py`, `calibration_report.py`, `calibrate_thresholds.py`, `calibrate_thresholds_pass2.py`: evaluation and threshold-drift reporting
-
-## Evaluation
-
-Quick canary run:
-
-```powershell
-python eval.py --preset canary
-```
-
-Model comparison example:
-
-```powershell
-python eval.py --preset canary --model claude-haiku-4-5-20251001
-python eval.py --preset canary --model claude-sonnet-4-6
-```
-
-For a combined calibration + behavior report (clustering, sector keywords,
-confidence-bucket depth, relevance filter, plausible-range guards) run:
-
-```powershell
-python calibration_report.py
-```
-
-The eval presets above are canary / targeted smoke runs that exercise the
-analysis pipeline and threshold reporting; they are not a full benchmark or a
-statistical-coverage claim.
-
-## Test
-
-The current conservative verification set is targeted. It checks DB isolation,
-paid-action guardrails, and health/smoke summaries without claiming full-suite
-coverage. From the repo root:
-
-```powershell
-python scripts/repo_hygiene_check.py --json
-python scripts/project_health_check.py --json
-python scripts/no_paid_smoke.py --json
-python -m unittest tests.test_test_db_isolation -v
-python -m unittest tests.test_backfill_paid_guard -v
-python -m unittest tests.test_project_health_check -v
-python -m unittest tests.test_no_paid_smoke -v
-```
-
-A full discovery run is useful before larger backend changes, but this README
-does not present it as a green release gate unless it has been separately
-verified.
-
-## Scope
-
-- Local-first research support, not automated trading
-- Heuristic classification and market validation remain analyst-support tools
-- FastAPI, the React app, and the Telegram bot are the maintained product paths
+**Economic research across macroeconomics, commodities, and company fundamentals.**
+
+Second Order connects economic events, sector dynamics, and company fundamentals in a structured research workflow. It brings together primary sources, commodity data, company financials, and hypothesis evaluation—making the evidence and assumptions behind each analysis accessible.
+
+![Exposure map from the copper thesis: a change in the copper price leads to Freeport-McMoRan's revenue, margin and operating cash flow, beside the company's 10-K statement that 2026 operating cash flow would change by about $330 million for each 10-cent change in the copper price](docs/images/copper-exposure-map.png)
+
+*Company exposure, from the copper thesis: how a change in the copper price can reach a producer's revenue, margin and
+operating cash flow, beside the sensitivity the company states in its annual report and the passage it is taken from.*
+
+With Second Order, an analyst can read an official release and see what changed, follow a commodity from its demand
+drivers to its supply, trace how a price move reaches a company's accounts, and set two of a company's reports side by
+side. The analyst can also follow a company event to the reasons behind a commodity view, and record a hypothesis or a
+personal expectation before the outcome is known.
+
+## Core capabilities
+
+**Economic event research.** Structured readings of official releases: Federal Reserve decisions, employment and
+inflation reports, energy analysis, export controls, industrial production, bank balance sheets and trade news. Each
+reading sets out what the release says, its key facts, competing explanations and what would weaken the
+interpretation. Macroeconomic releases add possible channels to Treasury yields and the daily 2-year and 10-year yields
+around publication. An event inbox collects new releases from official feeds, and Claude can sort selected headlines on
+request.
+
+**Sector and commodity research.** A versioned copper thesis lays out the physical balance from IEA and USGS data, the
+reasons and risks behind the view, and the current status of each. Copper tools calculate how much projected demand
+the counted mine pipeline leaves uncovered, using a published IEA scenario or the analyst's own inputs. A metals view
+compares where 45 metals are produced, where their reserves sit, and how concentrated both are.
+
+**Company analysis.** An exposure map follows a change in the copper price into the accounts of producers and users,
+based on what their filings state. A producer comparison checks whether two companies' reported unit costs are measured
+the same way before setting them side by side. A company page for Freeport-McMoRan traces volumes, realised prices,
+unit costs and by-product credits to operating cash flow, using the company's own revenue bridge and sensitivities.
+These views do not produce valuations or price targets.
+
+**Copper desk and publication comparisons.** The copper desk brings the copper work together. It links the thesis, the
+copper tools, the company page, the metals view and the event chains. For the thesis, the company's documents and the
+chains it adds a status line taken from that page: the published version, the documents verified on this machine, and
+each chain's review state. It also lists the publication comparisons, the analyst's notes and the questions those
+notes leave open. A
+publication comparison sets what two retained reports say on the same matters side by side, each line in the source's
+own words with its page and date. Every row states whether the two lines are the same measure, with a short note on
+what each one measures and when. No change is computed between two lines: comparing figures needs matching units and a
+matching basis. The first comparison sets Freeport-McMoRan's 2025 annual report against its third-quarter 2026 report.
+
+**Event chains.** An event chain follows one possible path from a past event in a retained source to a reason or risk
+of the copper thesis. It keeps three voices apart:
+- the source's quoted words;
+- a general conditional mechanism, drafted by the assistant and marked as such;
+- the analyst's own reading for the short and the long term, recorded after the analyst has reviewed and approved the
+  chain.
+
+Each chain version pins the passages it cites. When a cited record or document changes, the chain says so, and an
+earlier approval or reading no longer counts as current. A chain is not evidence that the event caused anything, and
+it is not a forecast. The measured block, which sits beside the chain and outside it, shows only what retained series
+cover.
+
+**Personal research notes.** Notes are the analyst's dated, append-only records about a comparison, a chain or the
+thesis. A note can carry an expectation, a check-by date and a question for the next check. Notes are labelled as
+personal views and kept apart from sources, AI drafts and research scores. A change of mind is a new note; nothing is
+edited. A note written after both compared publications were known says so, and an expectation is recorded, never
+scored.
+
+**Hypothesis evaluation.** A hypothesis names the event, the channel, the market measure, the expected direction and
+the horizon. Once its window has passed, the measured move is ranked against the measure's past moves, placebo dates
+provide a baseline, and the result is labelled supported, contradicted or inconclusive. Market measurement is
+currently connected for Treasury yields: the 2-year and 10-year yields, from the Federal Reserve's H.15 data. The rules
+also describe how equities and ETFs would be measured, but no equity or ETF price source is connected, so a hypothesis
+leg on them is recorded as unavailable.
+
+## Example: from electricity demand to company financials
+
+1. **Electricity demand.** Electrification, grid build-out and data centres raise a practical question: how much more
+   copper does the power system need? The copper tools set out each link in that chain and whether the sources measure
+   it, project it or only describe it.
+2. **Copper.** IEA data split copper demand by technology, including electricity networks, alongside counted mine
+   supply. Replacing the network component with the IEA's High Demand value adds 289 thousand tonnes to 2030 demand in
+   the Stated Policies case, and widens the gap that counted mines leave to recycling, new mines and stocks.
+3. **Company exposure.** The exposure map traces the copper price into producers' and users' accounts. Freeport-McMoRan,
+   for example, estimates in its 10-K that each 10-cent change per pound moves its 2026 operating cash flow by about
+   $330 million.
+4. **Financial data and assumptions.** That estimate rests on the company's stated assumptions, including an average
+   copper price of $5.00 per pound for 2026. The producer comparison then shows which reported unit costs can be
+   compared and where the definitions differ.
+5. **What the company said next.** A publication comparison sets the annual report beside the third-quarter report,
+   row by row, and marks whether two figures measure the same thing. An event chain links a disruption at one of the
+   company's mines to the thesis's reason on mine supply. There the analyst can record a dated reading, and a note
+   with a question for the next report.
+
+## Screenshots
+
+Images marked DEMONSTRATION DATA use fictional or synthetic data. The others show retained public sources.
+
+![Market context for the June 2025 FOMC statement: daily 2-year and 10-year Treasury yields from 4 June to 2 July 2025, with the publication date marked](docs/images/event-market-context.png)
+
+*Event research. The June 2025 FOMC statement with daily 2-year and 10-year Treasury yields for two weeks on either
+side, from the Federal Reserve Board's H.15 release. The chart gives context; it does not attribute a market reaction to
+the statement.*
+
+![Copper tools results for 2030: demand, counted mine supply and the uncovered remainder under the published IEA baseline and with one input changed, each figure marked published or computed](docs/images/copper-coverage-inputs.png)
+
+*Commodity research. Copper demand not covered by the counted mine pipeline in 2030, under the IEA's published
+baseline and with the electricity-network component changed. P marks a published figure and C a computed one; the page
+flags the mixed case as a hybrid, not an IEA scenario. Data: IEA Critical Minerals Dataset 2026 (CC BY 4.0).*
+
+![Producer unit-cost comparison: Freeport-McMoRan and Southern Copper compared on period, currency, denominator and geography, with quotations from their filings](docs/images/producer-cost-comparability.png)
+
+*Company analysis. Before Freeport-McMoRan's and Southern Copper's unit costs are compared, each definition is checked
+against the companies' 10-K wording. Here the denominator and the geographic scope differ, so the reported figures are
+not directly comparable.*
+
+![Copper desk on demonstration data: the five copper pages with a status line each, one comparison of two reports of the fictional Demo Copper Co., and two open questions from the analyst's notes](docs/images/copper-desk.png)
+
+*The copper desk, shown with demonstration data: Demo Copper Co., its reports and the notes are fictional, and the
+thesis is synthetic. Each copper page has its status line, followed by the comparison of two reports and the open
+questions from the analyst's notes.*
+
+![Publication comparison on demonstration data: two rows, each with a line from the fictional company's annual report and one from its quarterly report, the sentence on whether they are the same measure, and the assistant's note](docs/images/publication-comparison.png)
+
+*A publication comparison, shown with demonstration data (a fictional company and fictional reports). The first row's
+lines are not the same measure: ore milled against design capacity, and copper produced against an earlier year. For
+the second, no source establishes that the two lines share a basis. No change is computed between them.*
+
+![Event chain on demonstration data: three quoted steps from the fictional company's reports, a step no retained source states, and two conditional mechanisms marked as general economics drafted by the assistant](docs/images/event-chain.png)
+
+![The analyst's reading of the same chain on demonstration data: short term supports the thesis, long term not sure, a one-line reading, and the review that approved the chain](docs/images/event-chain-reading.png)
+
+*An event chain, shown with demonstration data (a fictional company, event, review and reading). Above: the source's
+quoted words, a step that no retained source states, and two conditional mechanisms, each marked as general economics
+drafted by the assistant. Below: the analyst's reading for the short and the long term, marked as the analyst's own
+view, and the review that approved the chain. On the page, the thesis reason the chain bears on and the measured block
+sit between the two.*
+
+![Hypothesis Dossier on demonstration data: the claimed path from an event to the 2-year and 10-year Treasury yields, the expected direction, the measured move, its percentile rank and a chart of the observations](docs/images/hypothesis-dossier-demo.png)
+
+*Hypothesis evaluation, shown with demonstration data. The hypothesis expected the 2-year Treasury yield to fall over
+five sessions; the Dossier shows the claimed transmission path, the measured move against that expectation, and its
+percentile rank among past windows.*
+
+## Methodology
+
+- **Linked sources.** Figures link to the document, page or table cell they come from. Retained source files are
+  checked against their download records whenever a page is read; figures that rest on a missing or altered file are
+  withheld.
+- **Facts, calculations, assumptions and views kept apart.** Numbers are marked as published in a source, computed by
+  fixed code with the formula and inputs available, or set by the analyst. Company estimates are labelled separately
+  from reported results. AI-drafted text is labelled as such and kept apart from sourced figures. The analyst's notes
+  and readings are marked as personal views and are not part of any research score.
+- **Definitions checked before figures are compared.** The producer comparison checks each company's unit-cost
+  definition before setting two figures side by side. A publication comparison says whether two lines are the same
+  measure and computes no change between them.
+- **Hypotheses recorded before evaluation.** On the prospective path, a hypothesis is frozen with a timestamp before
+  its outcome is known and cannot be edited; it is evaluated only in a separate, explicit step under rules set in
+  advance. Retrospective reconstructions, built after the outcome was known, are demonstrations. Results describe the
+  evidence; they do not establish causation. The prospective pilot on eight FOMC statements, starting on 1 December
+  2026, is a showcase: its results stay out of research scores, and its start does not create a verified forecasting
+  record.
+
+## Technology
+
+Python (FastAPI, Pydantic, SQLite) · React and TypeScript · Claude API for drafting, headline triage and briefs, each
+request sent only after explicit approval.
+
+Installation, local operation and source terms are covered in the [development guide](docs/DEVELOPMENT.md). The full
+specification is in [SPEC.md](SPEC.md).

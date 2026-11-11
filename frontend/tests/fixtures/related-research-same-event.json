@@ -1,0 +1,57 @@
+{
+ "event": {
+  "address": "https://www.eia.gov/todayinenergy/detail.php?id=68224",
+  "date": "2026-09-30",
+  "date_as_stated": "Wed, 30 Sep 2026 09:00:00 EST",
+  "date_label": "feed timestamp",
+  "title": "U.S. electricity use for electric vehicles increasing at a slower pace in 2026",
+  "title_only": false
+ },
+ "hints_used": false,
+ "id": "eia-todayinenergy:a148fadf946c26c24b75",
+ "kind": "inbox",
+ "links": [
+  {
+   "address": "https://www.eia.gov/todayinenergy/detail.php?id=68224",
+   "differences": [],
+   "explanation": "Library coverage of this event: the case reads the release at the same address (https://www.eia.gov/todayinenergy/detail.php?id=68224), published on 30 September 2026, the date this event states (feed timestamp). It is the library's retrospective reading of the same release, not a separate source and not a corroboration.",
+   "relation": "same_event",
+   "relation_label": "Coverage of this event",
+   "status": {
+    "kind": "editorial",
+    "labels": [
+     "Editorial case",
+     "AI-assisted",
+     "Not human-reviewed",
+     "Not research evidence"
+    ],
+    "prepared_on": "2026-10-11",
+    "source": "Source read online on 2026-10-11; no copy retained.",
+    "source_check": null,
+    "timing": "Written on 11 October 2026, after this event; it was not available when the event happened.",
+    "written_after_event": true
+   },
+   "target": {
+    "category": "Energy analysis",
+    "collection": "library",
+    "date": "2026-09-30",
+    "date_as_stated": "IN-BRIEF ANALYSIS · SEPTEMBER 30, 2026",
+    "href": "/library/eia-tie-2026-09-30",
+    "id": "eia-tie-2026-09-30",
+    "title": "EV electricity use grew 8% in the first half of 2026, slower after federal credits ended"
+   },
+   "unknown": []
+  }
+ ],
+ "navigation_version": "related-research-0.2",
+ "notes": [],
+ "provider_called": false,
+ "relations": {
+  "release_family": "Same release family",
+  "same_event": "Coverage of this event",
+  "topic": "Related research topic"
+ },
+ "shown_in_historical": [],
+ "view_version": "related-research-view-0.1",
+ "written": false
+}

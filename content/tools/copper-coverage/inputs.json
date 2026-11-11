@@ -1,0 +1,6178 @@
+{
+ "catalog_version": "copper-inputs-0.1",
+ "id": "copper-coverage",
+ "prepared_on": "2026-11-05",
+ "sources": [
+  {
+   "id": "iea-dataset-2026",
+   "kind": "xlsx",
+   "origin": "owner_download",
+   "publisher": "International Energy Agency",
+   "title": "Critical Minerals Dataset 2026",
+   "series": "iea-critical-minerals-dataset",
+   "edition": "2026",
+   "edition_date": "2026-01-01",
+   "url": "https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset",
+   "approval_id": "copper-iea-dataset-01",
+   "attempt": 1,
+   "folder": "iea-dataset-2026",
+   "name": "IEA-Critical-Minerals-Dataset-2026.xlsx",
+   "sha256": "43bd9338a08ac8399c65471115f30ffc10dca7117e62f03cca86d49224717935",
+   "bytes": 1140286,
+   "retrieved_at": "2026-11-03T01:19:00.126297+02:00",
+   "terms": {
+    "licence": "CC BY 4.0",
+    "note": "Notice: CC BY 4.0; cite as “IEA (2024), Critical Minerals Data Explorer, IEA, Paris”. No sheet flags a third-party series. Sheet 2, A72: “Supply projections for the key energy transition minerals are built using the data for the pipeline of operating and announced mining and refining projects by country.” A73: ““Base case” is assessed through their probability of coming online based on various factors such as the status of financing, permitting and feasibility studies.” Changes and comparisons here are this project's. Edition date: the year in the file name."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-fcx-2025",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Freeport-McMoRan Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2025",
+   "series": "sec-fcx-10k",
+   "edition": "Fiscal 2025",
+   "edition_date": "2026-02-13",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 1,
+   "folder": "sec-fcx-2025",
+   "name": "fcx-20251231.htm",
+   "sha256": "7ba50efcd0e758e47fca51dc9a88f8c2bb0d8308c881314288b49ae5efd6f167",
+   "bytes": 6347587,
+   "retrieved_at": "2026-11-02T19:25:20.379798+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-fcx-2024",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Freeport-McMoRan Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2024",
+   "series": "sec-fcx-10k",
+   "edition": "Fiscal 2024",
+   "edition_date": "2025-02-14",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125925000006/fcx-20241231.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 2,
+   "folder": "sec-fcx-2024",
+   "name": "fcx-20241231.htm",
+   "sha256": "220349384034370c7676fc03683e7ccd2ec431f0b6728ddd7b3948f976d354f8",
+   "bytes": 6548029,
+   "retrieved_at": "2026-11-02T19:25:28.376537+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-scco-2025",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Southern Copper Corporation",
+   "title": "Annual report on Form 10-K for fiscal 2025",
+   "series": "sec-scco-10k",
+   "edition": "Fiscal 2025",
+   "edition_date": "2026-02-27",
+   "url": "https://www.sec.gov/Archives/edgar/data/1001838/000110465926021492/scco-20251231x10k.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 3,
+   "folder": "sec-scco-2025",
+   "name": "scco-20251231x10k.htm",
+   "sha256": "6340956e768c24533bd98627c1e4fbff651dd55e543f79ed56bd2f13691923f9",
+   "bytes": 10718275,
+   "retrieved_at": "2026-11-02T19:25:38.082423+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-scco-2024",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Southern Copper Corporation",
+   "title": "Annual report on Form 10-K for fiscal 2024",
+   "series": "sec-scco-10k",
+   "edition": "Fiscal 2024",
+   "edition_date": "2025-03-03",
+   "url": "https://www.sec.gov/Archives/edgar/data/1001838/000155837025002017/scco-20241231x10k.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 4,
+   "folder": "sec-scco-2024",
+   "name": "scco-20241231x10k.htm",
+   "sha256": "d365418aeb44fd0bd27878294b14163cfe49733d3bc11335b5f04653484e42cd",
+   "bytes": 10316965,
+   "retrieved_at": "2026-11-02T19:25:49.725725+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  }
+ ],
+ "figures": [
+  {
+   "id": "iea-demand-solar-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "1970",
+   "as_shown": "1,970",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2044",
+   "as_shown": "2,044",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "1731",
+   "as_shown": "1,731",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "1755",
+   "as_shown": "1,755",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2222",
+   "as_shown": "2,222",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2164",
+   "as_shown": "2,164",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2219",
+   "as_shown": "2,219",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2803",
+   "as_shown": "2,803",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2726",
+   "as_shown": "2,726",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-solar-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Solar PV",
+   "unit": "kt",
+   "value": "2626",
+   "as_shown": "2,626",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "542",
+   "as_shown": "542",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "673",
+   "as_shown": "673",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "636",
+   "as_shown": "636",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "523",
+   "as_shown": "523",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "791",
+   "as_shown": "791",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "734",
+   "as_shown": "734",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "571",
+   "as_shown": "571",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "1172",
+   "as_shown": "1,172",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "1038",
+   "as_shown": "1,038",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-wind-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Wind",
+   "unit": "kt",
+   "value": "919",
+   "as_shown": "919",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R9",
+    "label_cell": "A9",
+    "label": "Wind"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "57.8",
+   "as_shown": "57.8",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "123",
+   "as_shown": "123",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "100",
+   "as_shown": "100",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "99.7",
+   "as_shown": "99.7",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "128",
+   "as_shown": "128",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "108",
+   "as_shown": "108",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "110",
+   "as_shown": "110",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "166",
+   "as_shown": "166",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "155",
+   "as_shown": "155",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-low-emission-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other low emissions power generation",
+   "unit": "kt",
+   "value": "135",
+   "as_shown": "135",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R10",
+    "label_cell": "A10",
+    "label": "Other low emissions power generation"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "794",
+   "as_shown": "794",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "1623",
+   "as_shown": "1,623",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "2146",
+   "as_shown": "2,146",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "2359",
+   "as_shown": "2,359",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "1763",
+   "as_shown": "1,763",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "2561",
+   "as_shown": "2,561",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "3046",
+   "as_shown": "3,046",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "2017",
+   "as_shown": "2,017",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "3258",
+   "as_shown": "3,258",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-ev-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electric vehicles",
+   "unit": "kt",
+   "value": "4143",
+   "as_shown": "4,143",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "137",
+   "as_shown": "137",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "180",
+   "as_shown": "180",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "292",
+   "as_shown": "292",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "369",
+   "as_shown": "369",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "218",
+   "as_shown": "218",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "350",
+   "as_shown": "350",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "460",
+   "as_shown": "460",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "281",
+   "as_shown": "281",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "441",
+   "as_shown": "441",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-grid-storage-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Grid battery storage",
+   "unit": "kt",
+   "value": "610",
+   "as_shown": "610",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R12",
+    "label_cell": "A12",
+    "label": "Grid battery storage"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "4544",
+   "as_shown": "4,544",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "5637",
+   "as_shown": "5,637",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "6398",
+   "as_shown": "6,398",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "6693",
+   "as_shown": "6,693",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "5713",
+   "as_shown": "5,713",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "6449",
+   "as_shown": "6,449",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "6631",
+   "as_shown": "6,631",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "6002",
+   "as_shown": "6,002",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "6924",
+   "as_shown": "6,924",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-networks-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Electricity networks",
+   "unit": "kt",
+   "value": "7181",
+   "as_shown": "7,181",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.00585",
+   "as_shown": "0.00585",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0119",
+   "as_shown": "0.0119",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0132",
+   "as_shown": "0.0132",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0104",
+   "as_shown": "0.0104",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0119",
+   "as_shown": "0.0119",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0132",
+   "as_shown": "0.0132",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0104",
+   "as_shown": "0.0104",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.083",
+   "as_shown": "0.083",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.082",
+   "as_shown": "0.082",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-hydrogen-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Hydrogen technologies",
+   "unit": "kt",
+   "value": "0.0824",
+   "as_shown": "0.0824",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R14",
+    "label_cell": "A14",
+    "label": "Hydrogen technologies"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "8003",
+   "as_shown": "8,003",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "10232",
+   "as_shown": "10,232",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "11296",
+   "as_shown": "11,296",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "11822",
+   "as_shown": "11,822",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "10765",
+   "as_shown": "10,765",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "12364",
+   "as_shown": "12,364",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "13073",
+   "as_shown": "13,073",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "12302",
+   "as_shown": "12,302",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "14552",
+   "as_shown": "14,552",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-energy-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total energy technologies",
+   "unit": "kt",
+   "value": "15668",
+   "as_shown": "15,668",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "19772",
+   "as_shown": "19,772",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "20560",
+   "as_shown": "20,560",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "21063",
+   "as_shown": "21,063",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "21757",
+   "as_shown": "21,757",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "20605",
+   "as_shown": "20,605",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "21158",
+   "as_shown": "21,158",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "21911",
+   "as_shown": "21,911",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "19665",
+   "as_shown": "19,665",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "19742",
+   "as_shown": "19,742",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-other-uses-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Other uses",
+   "unit": "kt",
+   "value": "20051",
+   "as_shown": "20,051",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "27775",
+   "as_shown": "27,775",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-cps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "30792",
+   "as_shown": "30,792",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "D17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "D5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "32359",
+   "as_shown": "32,359",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "E5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-cps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "33580",
+   "as_shown": "33,580",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "F17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "F5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "D4",
+     "text": "Current Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "31370",
+   "as_shown": "31,370",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "33522",
+   "as_shown": "33,522",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "34984",
+   "as_shown": "34,984",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "31967",
+   "as_shown": "31,967",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "P17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "34294",
+   "as_shown": "34,294",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-demand-total-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand: Total demand",
+   "unit": "kt",
+   "value": "35719",
+   "as_shown": "35,719",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "R17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A7",
+     "text": "Copper"
+    },
+    {
+     "cell": "A2",
+     "text": "Demand for key energy transition minerals (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-chile-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Chile",
+   "unit": "kt",
+   "value": "5485",
+   "as_shown": "5,485",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B7",
+    "label_cell": "A7",
+    "label": "Chile"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-chile-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Chile",
+   "unit": "kt",
+   "value": "5369",
+   "as_shown": "5,369",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C7",
+    "label_cell": "A7",
+    "label": "Chile"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-chile-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Chile",
+   "unit": "kt",
+   "value": "4841",
+   "as_shown": "4,841",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D7",
+    "label_cell": "A7",
+    "label": "Chile"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-chile-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Chile",
+   "unit": "kt",
+   "value": "4165",
+   "as_shown": "4,165",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E7",
+    "label_cell": "A7",
+    "label": "Chile"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-drc-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Democratic Republic of Congo",
+   "unit": "kt",
+   "value": "3338",
+   "as_shown": "3,338",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B8",
+    "label_cell": "A8",
+    "label": "Democratic Republic of Congo"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-drc-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Democratic Republic of Congo",
+   "unit": "kt",
+   "value": "4212",
+   "as_shown": "4,212",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C8",
+    "label_cell": "A8",
+    "label": "Democratic Republic of Congo"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-drc-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Democratic Republic of Congo",
+   "unit": "kt",
+   "value": "3041",
+   "as_shown": "3,041",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D8",
+    "label_cell": "A8",
+    "label": "Democratic Republic of Congo"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-drc-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Democratic Republic of Congo",
+   "unit": "kt",
+   "value": "2696",
+   "as_shown": "2,696",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E8",
+    "label_cell": "A8",
+    "label": "Democratic Republic of Congo"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-peru-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Peru",
+   "unit": "kt",
+   "value": "2726",
+   "as_shown": "2,726",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B9",
+    "label_cell": "A9",
+    "label": "Peru"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-peru-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Peru",
+   "unit": "kt",
+   "value": "2712",
+   "as_shown": "2,712",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C9",
+    "label_cell": "A9",
+    "label": "Peru"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-peru-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Peru",
+   "unit": "kt",
+   "value": "2384",
+   "as_shown": "2,384",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D9",
+    "label_cell": "A9",
+    "label": "Peru"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-peru-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Peru",
+   "unit": "kt",
+   "value": "1859",
+   "as_shown": "1,859",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E9",
+    "label_cell": "A9",
+    "label": "Peru"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-china-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: China",
+   "unit": "kt",
+   "value": "1838",
+   "as_shown": "1,838",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B10",
+    "label_cell": "A10",
+    "label": "China"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-china-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: China",
+   "unit": "kt",
+   "value": "2040",
+   "as_shown": "2,040",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C10",
+    "label_cell": "A10",
+    "label": "China"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-china-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: China",
+   "unit": "kt",
+   "value": "1965",
+   "as_shown": "1,965",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D10",
+    "label_cell": "A10",
+    "label": "China"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-china-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: China",
+   "unit": "kt",
+   "value": "1852",
+   "as_shown": "1,852",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E10",
+    "label_cell": "A10",
+    "label": "China"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-russia-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Russia",
+   "unit": "kt",
+   "value": "1145",
+   "as_shown": "1,145",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B11",
+    "label_cell": "A11",
+    "label": "Russia"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-russia-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Russia",
+   "unit": "kt",
+   "value": "1244",
+   "as_shown": "1,244",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C11",
+    "label_cell": "A11",
+    "label": "Russia"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-russia-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Russia",
+   "unit": "kt",
+   "value": "1424",
+   "as_shown": "1,424",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D11",
+    "label_cell": "A11",
+    "label": "Russia"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-russia-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Russia",
+   "unit": "kt",
+   "value": "1343",
+   "as_shown": "1,343",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E11",
+    "label_cell": "A11",
+    "label": "Russia"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-us-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: United States",
+   "unit": "kt",
+   "value": "1101",
+   "as_shown": "1,101",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B12",
+    "label_cell": "A12",
+    "label": "United States"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-us-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: United States",
+   "unit": "kt",
+   "value": "1196",
+   "as_shown": "1,196",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C12",
+    "label_cell": "A12",
+    "label": "United States"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-us-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: United States",
+   "unit": "kt",
+   "value": "823",
+   "as_shown": "823",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D12",
+    "label_cell": "A12",
+    "label": "United States"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-us-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: United States",
+   "unit": "kt",
+   "value": "632",
+   "as_shown": "632",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E12",
+    "label_cell": "A12",
+    "label": "United States"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-rest-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Rest of world",
+   "unit": "kt",
+   "value": "7594",
+   "as_shown": "7,594",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B13",
+    "label_cell": "A13",
+    "label": "Rest of world"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-rest-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Rest of world",
+   "unit": "kt",
+   "value": "7798",
+   "as_shown": "7,798",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C13",
+    "label_cell": "A13",
+    "label": "Rest of world"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-rest-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Rest of world",
+   "unit": "kt",
+   "value": "6255",
+   "as_shown": "6,255",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D13",
+    "label_cell": "A13",
+    "label": "Rest of world"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-rest-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Rest of world",
+   "unit": "kt",
+   "value": "4636",
+   "as_shown": "4,636",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E13",
+    "label_cell": "A13",
+    "label": "Rest of world"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-total-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Total",
+   "unit": "kt",
+   "value": "23227",
+   "as_shown": "23,227",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B14",
+    "label_cell": "A14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "B4",
+     "text": "2025"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-total-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Total",
+   "unit": "kt",
+   "value": "24571",
+   "as_shown": "24,571",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C14",
+    "label_cell": "A14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "C4",
+     "text": "2030"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-total-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Total",
+   "unit": "kt",
+   "value": "20733",
+   "as_shown": "20,733",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D14",
+    "label_cell": "A14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "D4",
+     "text": "2035"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-mine-total-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mining supply: Total",
+   "unit": "kt",
+   "value": "17183",
+   "as_shown": "17,183",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E14",
+    "label_cell": "A14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "E4",
+     "text": "2040"
+    },
+    {
+     "cell": "A6",
+     "text": "Copper - Mining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-refining-total-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper refining supply (Copper - Refining): Total",
+   "unit": "kt",
+   "value": "27955",
+   "as_shown": "27,955",
+   "year": "2025",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "H14",
+    "label_cell": "G14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "H4",
+     "text": "2025"
+    },
+    {
+     "cell": "G6",
+     "text": "Copper - Refining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-refining-total-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper refining supply (Copper - Refining): Total",
+   "unit": "kt",
+   "value": "36383",
+   "as_shown": "36,383",
+   "year": "2030",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "I14",
+    "label_cell": "G14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "I4",
+     "text": "2030"
+    },
+    {
+     "cell": "G6",
+     "text": "Copper - Refining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-refining-total-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper refining supply (Copper - Refining): Total",
+   "unit": "kt",
+   "value": "34501",
+   "as_shown": "34,501",
+   "year": "2035",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "J14",
+    "label_cell": "G14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "J4",
+     "text": "2035"
+    },
+    {
+     "cell": "G6",
+     "text": "Copper - Refining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-refining-total-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper refining supply (Copper - Refining): Total",
+   "unit": "kt",
+   "value": "33710",
+   "as_shown": "33,710",
+   "year": "2040",
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "K14",
+    "label_cell": "G14",
+    "label": "Total"
+   },
+   "checks": [
+    {
+     "cell": "K4",
+     "text": "2040"
+    },
+    {
+     "cell": "G6",
+     "text": "Copper - Refining"
+    },
+    {
+     "cell": "A2",
+     "text": "Total supply for key energy transition minerals, base case (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "4192",
+   "as_shown": "4,192",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "B12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "B5",
+     "text": "2025"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-steps-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "5724",
+   "as_shown": "5,724",
+   "year": "2030",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "J12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "J5",
+     "text": "2030"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-steps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "6403",
+   "as_shown": "6,403",
+   "year": "2035",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "K12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "K5",
+     "text": "2035"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-steps-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "6097",
+   "as_shown": "6,097",
+   "year": "2040",
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "L12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "L5",
+     "text": "2040"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    },
+    {
+     "cell": "J4",
+     "text": "Stated Policies scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-hd-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "5993",
+   "as_shown": "5,993",
+   "year": "2030",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "P12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "P5",
+     "text": "2030"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "6850",
+   "as_shown": "6,850",
+   "year": "2035",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "Q12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "Q5",
+     "text": "2035"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "iea-networks-dc-hd-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand for electricity networks, wider direct current (DC) technology development case",
+   "unit": "kt",
+   "value": "6645",
+   "as_shown": "6,645",
+   "year": "2040",
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "4.5 Electricity networks",
+    "cell": "R12",
+    "label_cell": "A12",
+    "label": "Copper"
+   },
+   "checks": [
+    {
+     "cell": "R5",
+     "text": "2040"
+    },
+    {
+     "cell": "A11",
+     "text": "Wider direct current (DC) technology development"
+    },
+    {
+     "cell": "A2",
+     "text": "Mineral demand for electricity networks (kt)"
+    },
+    {
+     "cell": "P4",
+     "text": "High Demand Scenario"
+    }
+   ]
+  },
+  {
+   "id": "fcx-us-revenue-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: revenue per pound of copper",
+   "unit": "usd_per_lb",
+   "value": "4.91",
+   "as_shown": "4.91",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5148,
+    "label_paragraph": 5146,
+    "label": "Revenues",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-site-costs-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: site production and delivery cost per pound, before net noncash and other costs",
+   "unit": "usd_per_lb",
+   "value": "3.51",
+   "as_shown": "3.51",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5161,
+    "label_paragraph": 5159,
+    "label": "Site production and delivery, before net noncash",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-credits-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: by-product credits per pound",
+   "unit": "usd_per_lb",
+   "value": "-0.59",
+   "as_shown": "(0.59)",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5168,
+    "label_paragraph": 5167,
+    "label": "By-product credits",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-treatment-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: treatment charges per pound",
+   "unit": "usd_per_lb",
+   "value": "0.13",
+   "as_shown": "0.13",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5175,
+    "label_paragraph": 5174,
+    "label": "Treatment charges",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-unit-net-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: unit net cash cost per pound, by-product method",
+   "unit": "usd_per_lb",
+   "value": "3.05",
+   "as_shown": "3.05",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5182,
+    "label_paragraph": 5181,
+    "label": "Unit net cash costs",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-co-product-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: unit net cash cost per pound of copper, co-product method",
+   "unit": "usd_per_lb",
+   "value": "3.22",
+   "as_shown": "3.22",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5183,
+    "label_paragraph": 5181,
+    "label": "Unit net cash costs",
+    "column": 2,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-gross-profit-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: gross profit per pound, by-product method",
+   "unit": "usd_per_lb",
+   "value": "1.30",
+   "as_shown": "1.30",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5213,
+    "label_paragraph": 5211,
+    "label": "Gross profit per pound",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-us-sales-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan U.S. copper mines: copper sales, million recoverable pounds",
+   "unit": "mlb",
+   "value": "1301",
+   "as_shown": "1,301",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5225,
+    "label_paragraph": 5224,
+    "label": "Copper sales (millions of recoverable pounds)",
+    "column": 1,
+    "header_paragraph": 5130,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-revenue-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: revenue per pound of copper, excluding adjustments",
+   "unit": "usd_per_lb",
+   "value": "4.79",
+   "as_shown": "4.79",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5310,
+    "label_paragraph": 5308,
+    "label": "Revenues, excluding adjustments",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-site-costs-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: site production and delivery cost per pound, before net noncash and other costs",
+   "unit": "usd_per_lb",
+   "value": "2.82",
+   "as_shown": "2.82",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5319,
+    "label_paragraph": 5317,
+    "label": "Site production and delivery, before net noncash",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-credits-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: by-product credits per pound",
+   "unit": "usd_per_lb",
+   "value": "-0.47",
+   "as_shown": "(0.47)",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5325,
+    "label_paragraph": 5324,
+    "label": "By-product credits",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-treatment-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: treatment charges per pound",
+   "unit": "usd_per_lb",
+   "value": "0.07",
+   "as_shown": "0.07",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5330,
+    "label_paragraph": 5329,
+    "label": "Treatment charges",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-royalty-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: royalty on metals per pound",
+   "unit": "usd_per_lb",
+   "value": "0.01",
+   "as_shown": "0.01",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5335,
+    "label_paragraph": 5334,
+    "label": "Royalty on metals",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-unit-net-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: unit net cash cost per pound, by-product method",
+   "unit": "usd_per_lb",
+   "value": "2.43",
+   "as_shown": "2.43",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5340,
+    "label_paragraph": 5339,
+    "label": "Unit net cash costs",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-co-product-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: unit net cash cost per pound of copper, co-product method",
+   "unit": "usd_per_lb",
+   "value": "2.64",
+   "as_shown": "2.64",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5341,
+    "label_paragraph": 5339,
+    "label": "Unit net cash costs",
+    "column": 2,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-gross-profit-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: gross profit per pound, by-product method",
+   "unit": "usd_per_lb",
+   "value": "1.89",
+   "as_shown": "1.89",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5369,
+    "label_paragraph": 5367,
+    "label": "Gross profit per pound",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sa-sales-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan South America operations: copper sales, million recoverable pounds",
+   "unit": "mlb",
+   "value": "1073",
+   "as_shown": "1,073",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5377,
+    "label_paragraph": 5376,
+    "label": "Copper sales (millions of recoverable pounds)",
+    "column": 1,
+    "header_paragraph": 5298,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-revenue-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): revenue per pound of copper, excluding adjustments",
+   "unit": "usd_per_lb",
+   "value": "4.53",
+   "as_shown": "4.53",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5495,
+    "label_paragraph": 5493,
+    "label": "Revenues, excluding adjustments",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-site-costs-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): site production and delivery cost per pound, before net noncash and other costs",
+   "unit": "usd_per_lb",
+   "value": "1.86",
+   "as_shown": "1.86",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5508,
+    "label_paragraph": 5506,
+    "label": "Site production and delivery, before net noncash",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-credits-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): gold, silver and other by-product credits per pound",
+   "unit": "usd_per_lb",
+   "value": "-3.17",
+   "as_shown": "(3.17)",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5515,
+    "label_paragraph": 5514,
+    "label": "Gold, silver and other by-product credits",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-treatment-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): treatment charges per pound",
+   "unit": "usd_per_lb",
+   "value": "0.19",
+   "as_shown": "0.19",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5522,
+    "label_paragraph": 5521,
+    "label": "Treatment charges",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-export-duties-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): export duties per pound",
+   "unit": "usd_per_lb",
+   "value": "0.28",
+   "as_shown": "0.28",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5529,
+    "label_paragraph": 5528,
+    "label": "Export duties",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-royalty-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): royalty on metals per pound",
+   "unit": "usd_per_lb",
+   "value": "0.29",
+   "as_shown": "0.29",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5536,
+    "label_paragraph": 5535,
+    "label": "Royalty on metals",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-unit-net-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): unit net cash (credits) cost per pound, by-product method",
+   "unit": "usd_per_lb",
+   "value": "-0.55",
+   "as_shown": "(0.55)",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5543,
+    "label_paragraph": 5542,
+    "label": "Unit net cash (credits) costs",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-co-product-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): unit net cash cost per pound of copper, co-product method",
+   "unit": "usd_per_lb",
+   "value": "1.54",
+   "as_shown": "1.54",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5544,
+    "label_paragraph": 5542,
+    "label": "Unit net cash (credits) costs",
+    "column": 2,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-gross-profit-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): gross profit per pound, by-product method",
+   "unit": "usd_per_lb",
+   "value": "3.30",
+   "as_shown": "3.30",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5583,
+    "label_paragraph": 5581,
+    "label": "Gross profit per pound/ounce",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-id-sales-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Indonesia (PTFI): copper sales, million recoverable pounds",
+   "unit": "mlb",
+   "value": "1205",
+   "as_shown": "1,205",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5595,
+    "label_paragraph": 5594,
+    "label": "Copper sales (millions of recoverable pounds)",
+    "column": 1,
+    "header_paragraph": 5479,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-realized-price-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan consolidated: average realized price per pound of copper",
+   "unit": "usd_per_lb",
+   "value": "4.75",
+   "as_shown": "4.75",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4387,
+    "label_paragraph": 4385,
+    "label": "Average realized price per pound",
+    "column": 1,
+    "header_paragraph": 4375,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-site-costs-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan consolidated: site production and delivery cost per pound",
+   "unit": "usd_per_lb",
+   "value": "2.75",
+   "as_shown": "2.75",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4392,
+    "label_paragraph": 4390,
+    "label": "Site production and delivery costs per pounda",
+    "column": 1,
+    "header_paragraph": 4375,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-unit-net-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan consolidated: unit net cash cost per pound",
+   "unit": "usd_per_lb",
+   "value": "1.65",
+   "as_shown": "1.65",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4398,
+    "label_paragraph": 4396,
+    "label": "Unit net cash costs per pounda",
+    "column": 1,
+    "header_paragraph": 4375,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-sales-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan consolidated: copper sales excluding purchases, million recoverable pounds",
+   "unit": "mlb",
+   "value": "3574",
+   "as_shown": "3,574",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4383,
+    "label_paragraph": 4382,
+    "label": "Sales, excluding purchases",
+    "column": 1,
+    "header_paragraph": 4375,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-mud-rush-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan idle facility and recovery costs per pound excluded from consolidated unit costs",
+   "unit": "usd_per_lb",
+   "value": "0.17",
+   "as_shown": "$0.17",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4427,
+    "quote": "Excludes $0.17 per pound of idle facility costs and direct recovery expenses associated with the September 2025 mud rush incident at PTFI."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-cost-before-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper: operating cash cost per pound before by-product revenues",
+   "unit": "usd_per_lb",
+   "value": "2.17",
+   "as_shown": "2.17",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8115,
+    "label_paragraph": 8113,
+    "label": "Operating cash cost per pound before by‑product revenues",
+    "column": 1,
+    "header_paragraph": 8052,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-by-products-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper: by-product revenues per pound",
+   "unit": "usd_per_lb",
+   "value": "-1.59",
+   "as_shown": "(1.59)",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8130,
+    "label_paragraph": 8128,
+    "label": "By‑products per pound revenues",
+    "column": 1,
+    "header_paragraph": 8052,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-cost-net-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper: operating cash cost per pound net of by-product revenues",
+   "unit": "usd_per_lb",
+   "value": "0.58",
+   "as_shown": "0.58",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8145,
+    "label_paragraph": 8143,
+    "label": "Operating cash cost per pound net of by‑product revenues",
+    "column": 1,
+    "header_paragraph": 8052,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-produced-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper: pounds of copper produced, millions",
+   "unit": "mlb",
+   "value": "2035.6",
+   "as_shown": "2,035.6",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8104,
+    "label_paragraph": 8103,
+    "label": "Total pounds of copper produced(2)",
+    "column": 1,
+    "header_paragraph": 8052,
+    "header": "2025"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-bagdad-low-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Bagdad expansion: stated added copper production, lower end",
+   "unit": "mlb_per_year",
+   "value": "200",
+   "as_shown": "200",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 326,
+    "quote": "increase copper production by 200 to 250 million pounds per year"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-bagdad-high-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Bagdad expansion: stated added copper production, upper end",
+   "unit": "mlb_per_year",
+   "value": "250",
+   "as_shown": "250",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 326,
+    "quote": "increase copper production by 200 to 250 million pounds per year"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-bagdad-capital-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Bagdad expansion: estimated incremental project capital costs (approximate)",
+   "unit": "usd_billion",
+   "value": "3.5",
+   "as_shown": "$3.5",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 326,
+    "quote": "Estimated incremental project capital costs, which continue to be reviewed, approximate $3.5 billion"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-bagdad-incentive-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan Bagdad expansion: stated incentive copper price (approximately, preliminary economics)",
+   "unit": "usd_per_lb",
+   "value": "4.00",
+   "as_shown": "$4.00",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 326,
+    "quote": "Preliminary economics indicate that the expansion would require an incentive copper price of approximately $4.00 per pound"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-bagdad-incentive-low-2024",
+   "source": "sec-fcx-2024",
+   "measure": "Freeport-McMoRan Bagdad expansion: stated incentive copper price, the first value of its stated range (fiscal 2024 filing)",
+   "unit": "usd_per_lb",
+   "value": "3.50",
+   "as_shown": "$3.50",
+   "year": "2024",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 325,
+    "quote": "Project economics indicate that the expansion would require an incentive copper price in the range of $3.50 to $4.00 per pound"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-bagdad-incentive-high-2024",
+   "source": "sec-fcx-2024",
+   "measure": "Freeport-McMoRan Bagdad expansion: stated incentive copper price, the second value of its stated range (fiscal 2024 filing)",
+   "unit": "usd_per_lb",
+   "value": "4.00",
+   "as_shown": "$4.00",
+   "year": "2024",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 325,
+    "quote": "Project economics indicate that the expansion would require an incentive copper price in the range of $3.50 to $4.00 per pound"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-el-abra-incentive-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan El Abra mill project: stated incentive copper price (less than, preliminary estimates)",
+   "unit": "usd_per_lb",
+   "value": "4.00",
+   "as_shown": "$4.00",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 415,
+    "quote": "Preliminary estimates, which remain under review, indicate that the project economics would be supported using an incentive copper price of less than $4.00 per pound"
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-el-abra-addition-2025",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan El Abra mill project: stated possible added copper production (more than)",
+   "unit": "mlb_per_year",
+   "value": "700",
+   "as_shown": "700",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5241,
+    "quote": "The project could result in the addition of over 700 million pounds of copper production per year."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-tia-maria-capacity-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Tia Maria: stated capacity of copper cathodes",
+   "unit": "t_per_year",
+   "value": "120000",
+   "as_shown": "120,000",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8363,
+    "quote": "with a capacity of 120,000 tonnes of SX- EW copper cathodes per year"
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-tia-maria-budget-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Tia Maria: project budget",
+   "unit": "usd_million",
+   "value": "1805",
+   "as_shown": "$1,805",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8364,
+    "quote": "The project budget has been set at $1,805 million."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-tia-maria-budget-2024",
+   "source": "sec-scco-2024",
+   "measure": "Southern Copper Tia Maria: project budget (fiscal 2024 filing)",
+   "unit": "usd_million",
+   "value": "1802",
+   "as_shown": "$1,802",
+   "year": "2024",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8226,
+    "quote": "the new project budget has been set at $1,802 million."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-los-chancas-copper-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Los Chancas: expected annual copper production",
+   "unit": "t_per_year",
+   "value": "130000",
+   "as_shown": "130,000",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8376,
+    "quote": "expected to produce 130,000 tonnes of copper and 7,500 tonnes of molybdenum annually."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-los-chancas-molybdenum-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Los Chancas: expected annual molybdenum production",
+   "unit": "t_per_year",
+   "value": "7500",
+   "as_shown": "7,500",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8376,
+    "quote": "expected to produce 130,000 tonnes of copper and 7,500 tonnes of molybdenum annually."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-los-chancas-capital-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Los Chancas: estimated capital investment",
+   "unit": "usd_million",
+   "value": "2600",
+   "as_shown": "$2,600",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8376,
+    "quote": "The estimated capital investment is $2,600 million and the project is expected to begin operating in 2031."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-michiquillay-capacity-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Michiquillay: expected copper production per year",
+   "unit": "t_per_year",
+   "value": "225000",
+   "as_shown": "225,000",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8378,
+    "quote": "we expect Michiquillay to produce 225,000 tonnes of copper per year"
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-michiquillay-capital-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper Michiquillay: estimated investment (approximately)",
+   "unit": "usd_billion",
+   "value": "2.5",
+   "as_shown": "$2.5",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 8379,
+    "quote": "We estimate an investment of approximately $2.5 billion will be required and expect production start-up by 2032."
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-ptfi-sales-guidance-2025",
+   "source": "sec-fcx-2024",
+   "measure": "Freeport-McMoRan expected PTFI copper sales for the year ahead (fiscal 2024 filing)",
+   "unit": "blb",
+   "value": "1.55",
+   "as_shown": "1.55",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4967,
+    "quote": "Consolidated sales volumes from PT-FI are expected to approximate 1.55 billion pounds of copper and 1.6 million ounces of gold in 2025."
+   },
+   "checks": []
+  },
+  {
+   "id": "fcx-ptfi-sales-guidance-2026",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan expected PTFI copper sales for the year ahead",
+   "unit": "blb",
+   "value": "0.9",
+   "as_shown": "0.9",
+   "year": "2026",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 5473,
+    "quote": "Consolidated sales volumes from PTFI are expected to approximate 0.9 billion pounds of copper and 0.8 million ounces of gold for the year 2026."
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-production-guidance-2025",
+   "source": "sec-scco-2024",
+   "measure": "Southern Copper expected copper production for the year ahead (fiscal 2024 filing)",
+   "unit": "t",
+   "value": "965800",
+   "as_shown": "965,800",
+   "year": "2025",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 7674,
+    "quote": "In 2025, we expect our copper production to reach 965,800 tonnes"
+   },
+   "checks": []
+  },
+  {
+   "id": "scco-production-guidance-2026",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper expected copper production for the year ahead",
+   "unit": "t",
+   "value": "911400",
+   "as_shown": "911,400",
+   "year": "2026",
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 7784,
+    "quote": "In 2026, we expect our copper production to stand at 911,400 tonnes"
+   },
+   "checks": []
+  }
+ ],
+ "passages": [
+  {
+   "id": "iea-supply-note-pipeline",
+   "source": "iea-dataset-2026",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "A72",
+    "text": "Notes: Supply projections for the key energy transition minerals are built using the data for the pipeline of operating and announced mining and refining projects by country."
+   }
+  },
+  {
+   "id": "iea-supply-note-base-case",
+   "source": "iea-dataset-2026",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "A73",
+    "text": "“Base case” is assessed through their probability of coming online based on various factors such as the status of financing, permitting and feasibility studies."
+   }
+  },
+  {
+   "id": "fcx-sales-label",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 5224,
+    "quote": "Copper sales (millions of recoverable pounds)"
+   }
+  },
+  {
+   "id": "fcx-by-product-method",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 5876,
+    "quote": "gold, molybdenum and other metal revenues at copper mines are reflected as credits against site production and delivery costs in the by-product method."
+   }
+  },
+  {
+   "id": "fcx-co-product-method",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 5875,
+    "quote": "In the co-product method presentations, shared costs are allocated to the different products based on their relative revenue values, which will vary to the extent our metals sales volumes and realized prices change."
+   }
+  },
+  {
+   "id": "scco-denominator",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8040,
+    "quote": "divided by total pounds of copper produced by our own mines."
+   }
+  },
+  {
+   "id": "scco-scope",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8040,
+    "quote": "We define operating cash cost per pound of copper produced before by-product revenues as cost of sales (exclusive of depreciation, amortization and depletion), plus selling, general and administrative charges, treatment and refining charges net of sales premiums"
+   }
+  },
+  {
+   "id": "scco-credits",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8043,
+    "quote": "we credit against our costs the revenues from the sale of all our by-products, including, molybdenum, zinc, silver, gold, etc. and the net revenue (loss) on sale of metals purchased from third parties."
+   }
+  },
+  {
+   "id": "scco-exclusions",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8041,
+    "quote": "Workers’ participation provisions are determined on the basis of pre-tax earnings and are also excluded."
+   }
+  },
+  {
+   "id": "fcx-bagdad-since",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 322,
+    "quote": "Our wholly owned Bagdad mine is an open-pit copper and molybdenum mining complex that has been in continuous operation since 1945"
+   }
+  },
+  {
+   "id": "fcx-bagdad-reserve-life",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 326,
+    "quote": "Bagdad operation. Bagdad’s reserve life currently exceeds 80 years"
+   }
+  },
+  {
+   "id": "fcx-bagdad-decision",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 326,
+    "quote": "We completed technical and economic studies in late 2023 and are updating these studies in advance of a potential investment decision during 2026."
+   }
+  },
+  {
+   "id": "fcx-bagdad-timing",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 326,
+    "quote": "Preliminary economics indicate that the expansion would require an incentive copper price of approximately $4.00 per pound and three to four years to complete."
+   }
+  },
+  {
+   "id": "fcx-el-abra-permitting",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 415,
+    "quote": "We have advanced preparation of our permitting application and plan to submit an environmental impact statement to Chile regulatory authorities in the first half of 2026."
+   }
+  },
+  {
+   "id": "scco-tia-maria-greenfield",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8363,
+    "quote": "This greenfield project, located in Arequipa, Peru"
+   }
+  },
+  {
+   "id": "scco-tia-maria-history",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 4223,
+    "quote": "We acquired the project in 2003, and we were granted the construction permit on July 2019."
+   }
+  },
+  {
+   "id": "scco-tia-maria-progress",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8367,
+    "quote": "At the end of 2025, progress at Tia Maria stood at 24%"
+   }
+  },
+  {
+   "id": "scco-tia-maria-start",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8367,
+    "quote": "In 2027, when we start operations, the project will generate 764 direct jobs and 5,900 indirect jobs."
+   }
+  },
+  {
+   "id": "scco-los-chancas-greenfield",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8376,
+    "quote": "This greenfield project, located in Apurimac, Peru"
+   }
+  },
+  {
+   "id": "scco-los-chancas-start",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8376,
+    "quote": "the project is expected to begin operating in 2031."
+   }
+  },
+  {
+   "id": "scco-los-chancas-blocked",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8377,
+    "quote": "the presence of illegal miners within the project area has prevented the project from advancing."
+   }
+  },
+  {
+   "id": "scco-michiquillay-acquired",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8378,
+    "quote": "In June 2018, Southern Copper signed a contract for the acquisition of the Michiquillay project in Cajamarca, Peru."
+   }
+  },
+  {
+   "id": "scco-michiquillay-resources",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8378,
+    "quote": "Michiquillay is a world class mining project with inferred mineral resources of 2,288 million tonnes and an estimated copper grade of 0.43%."
+   }
+  },
+  {
+   "id": "scco-michiquillay-start",
+   "source": "sec-scco-2025",
+   "locator": {
+    "paragraph": 8379,
+    "quote": "expect production start-up by 2032."
+   }
+  }
+ ]
+}

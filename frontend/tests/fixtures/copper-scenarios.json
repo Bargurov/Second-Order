@@ -1,0 +1,428 @@
+{
+  "record_version": "copper-scenario-0.1",
+  "records": [
+    {
+      "id": "5e6766fe5b588c1e229366e5351c80f6f99f2422edfb5e6cdf3d95a98d54b801",
+      "created_at": "2026-11-05T12:00:00+00:00",
+      "label": "Set A: CPS EV copper",
+      "baseline": {
+        "scenario": "steps",
+        "year": "2035"
+      },
+      "assumptions": {
+        "ev": {
+          "scenario": "cps",
+          "source": "scenario"
+        },
+        "mine": {
+          "kt": "-294.8350405",
+          "reference": "ptfi-sales-change",
+          "source": "total"
+        },
+        "networks": {
+          "scenario": "steps",
+          "source": "technology_case"
+        }
+      },
+      "state": "verified",
+      "problems": [],
+      "result": {
+        "demand": {
+          "equation": "E4",
+          "rounded": false,
+          "shown": "33,061",
+          "uses": [
+            "iea-demand-total-steps-2035",
+            "iea-mine-total-2035",
+            "iea-demand-ev-cps-2035",
+            "iea-demand-ev-steps-2035",
+            "iea-networks-dc-steps-2035",
+            "iea-demand-networks-steps-2035",
+            "fcx-ptfi-sales-guidance-2025",
+            "fcx-ptfi-sales-guidance-2026"
+          ],
+          "value": "33061",
+          "withheld": []
+        },
+        "flags": [
+          {
+            "id": "hybrid",
+            "text": "Hybrid: a component comes from another published scenario than the total it is applied to. This is not an IEA scenario; the IEA scenarios move together, and their published totals are shown beside it."
+          },
+          {
+            "id": "technology_case",
+            "text": "Published technology case: the networks value is the IEA's wider direct current (DC) technology case for the same scenario, applied to the base-case total."
+          },
+          {
+            "id": "reference_magnitude",
+            "text": "Reference magnitude used as an assumption: a company disclosure, converted to copper tonnes, entered as a change in counted mine supply. It is not a projection."
+          }
+        ],
+        "mine": {
+          "equation": "E5",
+          "rounded": true,
+          "shown": "20,438.165",
+          "uses": [
+            "iea-demand-total-steps-2035",
+            "iea-mine-total-2035",
+            "iea-demand-ev-cps-2035",
+            "iea-demand-ev-steps-2035",
+            "iea-networks-dc-steps-2035",
+            "iea-demand-networks-steps-2035",
+            "fcx-ptfi-sales-guidance-2025",
+            "fcx-ptfi-sales-guidance-2026"
+          ],
+          "value": "20438.1649595",
+          "withheld": []
+        },
+        "mine_change": {
+          "equation": "E5",
+          "rounded": true,
+          "shown": "-294.835",
+          "uses": [
+            "iea-demand-total-steps-2035",
+            "iea-mine-total-2035",
+            "iea-demand-ev-cps-2035",
+            "iea-demand-ev-steps-2035",
+            "iea-networks-dc-steps-2035",
+            "iea-demand-networks-steps-2035",
+            "fcx-ptfi-sales-guidance-2025",
+            "fcx-ptfi-sales-guidance-2026"
+          ],
+          "value": "-294.8350405",
+          "withheld": []
+        },
+        "perturbations": [
+          {
+            "cases": [
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "-415",
+                  "uses": [
+                    "iea-demand-ev-cps-2035",
+                    "iea-demand-ev-steps-2035"
+                  ],
+                  "value": "-415",
+                  "withheld": []
+                },
+                "label": "Current Policies scenario",
+                "scenario": "cps",
+                "value": {
+                  "figure": "iea-demand-ev-cps-2035",
+                  "value": "2146",
+                  "withheld": []
+                }
+              },
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "697",
+                  "uses": [
+                    "iea-demand-ev-hd-2035",
+                    "iea-demand-ev-steps-2035"
+                  ],
+                  "value": "697",
+                  "withheld": []
+                },
+                "label": "High Demand Scenario",
+                "scenario": "hd",
+                "value": {
+                  "figure": "iea-demand-ev-hd-2035",
+                  "value": "3258",
+                  "withheld": []
+                }
+              }
+            ],
+            "control": "ev",
+            "kind": "published_scenario_value"
+          },
+          {
+            "cases": [
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "-51",
+                  "uses": [
+                    "iea-demand-networks-cps-2035",
+                    "iea-demand-networks-steps-2035"
+                  ],
+                  "value": "-51",
+                  "withheld": []
+                },
+                "label": "Current Policies scenario",
+                "scenario": "cps",
+                "value": {
+                  "figure": "iea-demand-networks-cps-2035",
+                  "value": "6398",
+                  "withheld": []
+                }
+              },
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "475",
+                  "uses": [
+                    "iea-demand-networks-hd-2035",
+                    "iea-demand-networks-steps-2035"
+                  ],
+                  "value": "475",
+                  "withheld": []
+                },
+                "label": "High Demand Scenario",
+                "scenario": "hd",
+                "value": {
+                  "figure": "iea-demand-networks-hd-2035",
+                  "value": "6924",
+                  "withheld": []
+                }
+              }
+            ],
+            "control": "networks",
+            "kind": "published_scenario_value"
+          },
+          {
+            "cases": [
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "-46",
+                  "uses": [
+                    "iea-networks-dc-steps-2035",
+                    "iea-demand-networks-steps-2035"
+                  ],
+                  "value": "-46",
+                  "withheld": []
+                },
+                "label": "Wider direct current (DC) technology development",
+                "scenario": "steps",
+                "value": {
+                  "figure": "iea-networks-dc-steps-2035",
+                  "value": "6403",
+                  "withheld": []
+                }
+              }
+            ],
+            "control": "networks",
+            "kind": "published_technology_case"
+          },
+          {
+            "cases": [
+              {
+                "effect_if_higher": {
+                  "equation": "E6",
+                  "rounded": true,
+                  "shown": "-294.835",
+                  "uses": [
+                    "fcx-ptfi-sales-guidance-2025",
+                    "fcx-ptfi-sales-guidance-2026"
+                  ],
+                  "value": "-294.8350405",
+                  "withheld": []
+                },
+                "effect_if_lower": {
+                  "equation": "E6",
+                  "rounded": true,
+                  "shown": "294.835",
+                  "uses": [
+                    "fcx-ptfi-sales-guidance-2025",
+                    "fcx-ptfi-sales-guidance-2026"
+                  ],
+                  "value": "294.8350405",
+                  "withheld": []
+                },
+                "label": "Freeport-McMoRan's change in PTFI expected copper sales (stated for 2025 a year earlier, against the expectation for 2026), converted from pounds",
+                "magnitude": {
+                  "equation": "E10",
+                  "rounded": true,
+                  "shown": "294.835",
+                  "uses": [
+                    "fcx-ptfi-sales-guidance-2025",
+                    "fcx-ptfi-sales-guidance-2026"
+                  ],
+                  "value": "294.8350405",
+                  "withheld": []
+                },
+                "reference": "ptfi-sales-change"
+              },
+              {
+                "effect_if_higher": {
+                  "equation": "E6",
+                  "rounded": false,
+                  "shown": "-54.4",
+                  "uses": [
+                    "scco-production-guidance-2025",
+                    "scco-production-guidance-2026"
+                  ],
+                  "value": "-54.4",
+                  "withheld": []
+                },
+                "effect_if_lower": {
+                  "equation": "E6",
+                  "rounded": false,
+                  "shown": "54.4",
+                  "uses": [
+                    "scco-production-guidance-2025",
+                    "scco-production-guidance-2026"
+                  ],
+                  "value": "54.4",
+                  "withheld": []
+                },
+                "label": "Southern Copper's change in expected copper production (stated for 2025, against the expectation for 2026)",
+                "magnitude": {
+                  "equation": "E5",
+                  "rounded": false,
+                  "shown": "54.4",
+                  "uses": [
+                    "scco-production-guidance-2025",
+                    "scco-production-guidance-2026"
+                  ],
+                  "value": "54.4",
+                  "withheld": []
+                },
+                "reference": "scco-guidance-change"
+              }
+            ],
+            "control": "mine",
+            "kind": "reference_magnitude"
+          },
+          {
+            "cases": [
+              {
+                "effect": {
+                  "equation": "E6",
+                  "rounded": true,
+                  "shown": "294.835",
+                  "uses": [
+                    "iea-mine-total-2035"
+                  ],
+                  "value": "294.8350405",
+                  "withheld": []
+                },
+                "label": "The entered change in counted mine supply"
+              }
+            ],
+            "control": "mine",
+            "kind": "user_declared"
+          },
+          {
+            "cases": [
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "-1,163",
+                  "uses": [
+                    "iea-demand-total-cps-2035",
+                    "iea-demand-total-steps-2035"
+                  ],
+                  "value": "-1163",
+                  "withheld": []
+                },
+                "label": "Current Policies scenario",
+                "scenario": "cps",
+                "value": {
+                  "figure": "iea-demand-total-cps-2035",
+                  "value": "32359",
+                  "withheld": []
+                }
+              },
+              {
+                "effect": {
+                  "equation": "E4",
+                  "rounded": false,
+                  "shown": "772",
+                  "uses": [
+                    "iea-demand-total-hd-2035",
+                    "iea-demand-total-steps-2035"
+                  ],
+                  "value": "772",
+                  "withheld": []
+                },
+                "label": "High Demand Scenario",
+                "scenario": "hd",
+                "value": {
+                  "figure": "iea-demand-total-hd-2035",
+                  "value": "34294",
+                  "withheld": []
+                }
+              }
+            ],
+            "control": "joint",
+            "kind": "published_totals"
+          }
+        ],
+        "residual": {
+          "equation": "E6",
+          "rounded": true,
+          "shown": "12,622.835",
+          "uses": [
+            "iea-demand-total-steps-2035",
+            "iea-mine-total-2035",
+            "iea-demand-ev-cps-2035",
+            "iea-demand-ev-steps-2035",
+            "iea-networks-dc-steps-2035",
+            "iea-demand-networks-steps-2035",
+            "fcx-ptfi-sales-guidance-2025",
+            "fcx-ptfi-sales-guidance-2026"
+          ],
+          "value": "12622.8350405",
+          "withheld": []
+        },
+        "residual_change": {
+          "equation": "E3",
+          "rounded": true,
+          "shown": "8,074.835",
+          "uses": [
+            "iea-demand-total-steps-2035",
+            "iea-mine-total-2035",
+            "iea-demand-ev-cps-2035",
+            "iea-demand-ev-steps-2035",
+            "iea-networks-dc-steps-2035",
+            "iea-demand-networks-steps-2035",
+            "fcx-ptfi-sales-guidance-2025",
+            "fcx-ptfi-sales-guidance-2026",
+            "iea-demand-total-2025",
+            "iea-mine-total-2025"
+          ],
+          "value": "8074.8350405",
+          "withheld": []
+        },
+        "scenario": "steps",
+        "share_pct": {
+          "equation": "E2",
+          "rounded": true,
+          "shown": "38.2",
+          "uses": [
+            "iea-demand-total-steps-2035",
+            "iea-mine-total-2035",
+            "iea-demand-ev-cps-2035",
+            "iea-demand-ev-steps-2035",
+            "iea-networks-dc-steps-2035",
+            "iea-demand-networks-steps-2035",
+            "fcx-ptfi-sales-guidance-2025",
+            "fcx-ptfi-sales-guidance-2026"
+          ],
+          "value": null,
+          "withheld": []
+        },
+        "year": "2035"
+      },
+      "catalog_current": true
+    }
+  ],
+  "other_versions": 0,
+  "labels": {
+    "verified": "Verified: its figures still match the retained sources and the engine reproduces its result",
+    "needs_revalidation": "Needs revalidation: a figure it used changed, is no longer verified, or the engine no longer reproduces its result",
+    "unavailable": "Unavailable: a source it used is not on this machine",
+    "invalid": "Invalid: the file does not match its id or cannot be read; it is kept and never used"
+  },
+  "view_version": "copper-scenarios-0.1",
+  "provider_called": false
+}

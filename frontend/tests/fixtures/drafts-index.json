@@ -1,0 +1,49 @@
+{
+ "drafts": [
+  {
+   "case": "draft",
+   "headline": "Synthetic committee signals a slower tightening pace",
+   "id": "660a198157416e55ca0bf43942b9e562e5cffb26c5895e13d650357be13fcdd7",
+   "model": "claude-sonnet-5-5",
+   "outcome": "draft",
+   "pilot": "pilot-synthetic",
+   "prompt_version": "draft-prompt-synthetic",
+   "published_at": "2026-09-15T18:00:00Z",
+   "sent_at": "2026-09-30T12:00:00.100000+00:00"
+  },
+  {
+   "case": "no-draft",
+   "headline": "Synthetic committee signals a slower tightening pace",
+   "id": "be6e0b022dd216127e487e68a4b3be58c3297074864761c86a7e3da6b2ef852e",
+   "model": "claude-sonnet-5-5",
+   "outcome": "no_draft",
+   "pilot": "pilot-synthetic",
+   "prompt_version": "draft-prompt-synthetic",
+   "published_at": "2026-09-15T18:00:00Z",
+   "sent_at": "2026-09-30T12:00:00.100000+00:00"
+  },
+  {
+   "case": "technical-failure",
+   "headline": "Synthetic committee signals a slower tightening pace",
+   "id": "ce5de610efce0890e316812969ef79dcb2ccc6aa4b2d33445443f8ea090d16f6",
+   "model": "claude-sonnet-5-5",
+   "outcome": "technical_failure",
+   "pilot": "pilot-synthetic",
+   "prompt_version": "draft-prompt-synthetic",
+   "published_at": "2026-09-15T18:00:00Z",
+   "sent_at": "2026-09-30T12:00:00.100000+00:00"
+  },
+  {
+   "case": "invalid",
+   "headline": "Synthetic committee signals a slower tightening pace",
+   "id": "f16223f63084d57360db75cda0e91e7e7d8da08841fd2c7d26a49bb0bedcf6e9",
+   "model": "claude-sonnet-5-5",
+   "outcome": "invalid",
+   "pilot": "pilot-synthetic",
+   "prompt_version": "draft-prompt-synthetic",
+   "published_at": "2026-09-15T18:00:00Z",
+   "sent_at": "2026-09-30T12:00:00.100000+00:00"
+  }
+ ],
+ "view_version": "draft-review-view-0.1"
+}

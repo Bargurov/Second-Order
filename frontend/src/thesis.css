@@ -1,0 +1,298 @@
+/* The thesis page: a research note read top to bottom. Quiet and dense; sections separated by rules, each reason, risk,
+   condition and table set on its own raised card so the parts are plainly apart; withheld parts drawn dashed. Status
+   tags never rely on colour alone and use no arrows, which could read as a price direction. */
+
+.thesis .library-body.thesis-body { max-width: none; }
+.thesis-body .library-section-block > p:not(.kicker), .thesis-body .library-section-block > h3 { max-width: 78ch; }
+
+/* 1. The header. */
+.thesis-header { max-width: 980px; }
+.thesis-draft { display: inline-block; margin: 0 0 14px; padding: 5px 10px; border: 1px dashed var(--stamp);
+  background: var(--paper-raised); font: 600 12px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--stamp); }
+.thesis-disclaimer { margin: 0 0 16px; padding: 6px 12px; border-left: 3px solid var(--ink); max-width: 78ch;
+  font-size: 14px; color: var(--ink); background: var(--paper-raised); }
+.thesis-facts, .thesis-provenance { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); background: var(--paper-raised); }
+.thesis-facts { margin: 0 0 12px; }
+.thesis-facts dd, .thesis-provenance dd { font: 500 13.5px/1.4 var(--sans); }
+.thesis-confidence { margin: 0 0 12px; max-width: 78ch; font-size: 14px; color: var(--ink-2); }
+.thesis-versions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 10px; }
+.thesis-versions ol { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.thesis-versions a { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 9px; border: 1px solid var(--rule-strong);
+  font: 500 12.5px/1.5 var(--sans); color: var(--ink-2); text-decoration: none; background: var(--paper-raised); }
+.thesis-versions a:hover { border-color: var(--ink); color: var(--ink); }
+.thesis-versions a[aria-current="page"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.thesis-version-day { font: 400 11px var(--mono); opacity: 0.85; }
+.thesis-check { margin: 0; font-size: 13px; color: var(--ink-2); }
+.thesis-tools { margin: 0 0 10px; font-size: 14px; }
+.thesis-check[data-check="withheld"] strong { color: var(--stamp); }
+
+/* Contents: the footer is not a numbered section. */
+.thesis-toc .thesis-toc-footer a::before { content: "·"; }
+
+/* Plain notes, under each heading. */
+.library-section-block p.thesis-plain { margin: -2px 0 14px; padding: 6px 12px; border-left: 2px dashed var(--rule-strong);
+  font-size: 14px; color: var(--ink-2); }
+.thesis-plain-label, .thesis-part, .library-section-block p.thesis-part { font: 500 10px/1.5 var(--mono); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3); }
+.thesis-plain-label { margin-right: 6px; }
+.library-section-block p.thesis-part { margin: 0 0 6px; }
+
+/* Statements, figures and passages. */
+.thesis-statement { margin: 0 0 10px; }
+.library-section-block p.thesis-statement-text { margin: 0 0 8px; font-size: 15px; line-height: 1.6; color: var(--ink); }
+.library-section-block .thesis-statement.is-lead p.thesis-statement-text { font: 400 21px/1.45 var(--serif); max-width: 62ch; }
+.thesis-statement.is-lead .policy-status { vertical-align: 4px; }
+.thesis-rests { margin: 6px 0 0; }
+.thesis-rests summary, .thesis-where summary, .thesis-legend summary { cursor: pointer; font: 600 12.5px/1.6 var(--sans);
+  color: var(--ink-2); }
+.thesis-cited { margin: 4px 0 0; padding: 0; list-style: none; }
+.thesis-cited > li { padding: 7px 0; border-top: 1px solid var(--rule); }
+.thesis-cited > li:first-child { border-top: 0; }
+.thesis-figure { display: grid; gap: 2px; min-width: 0; }
+.thesis-figure-value { font: 500 13.5px/1.45 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+.thesis-figure-meta { font-size: 12.5px; line-height: 1.45; color: var(--ink-3); overflow-wrap: anywhere; }
+.thesis-figure-quote, .thesis-passage blockquote { margin: 4px 0 0; padding: 5px 10px; border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink); background: var(--paper); font: italic 400 14px/1.5 var(--serif); color: var(--ink);
+  overflow-wrap: anywhere; }
+.thesis-passage { margin: 0; }
+.thesis-placeholder { font-style: italic; font-weight: 400; color: var(--ink-3); }
+
+/* Cards: each reason, risk, condition, differs entry and the price record. */
+.thesis-claims { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.thesis-card { min-width: 0; padding: 14px 16px 12px; border: 1px solid var(--rule-strong); background: var(--paper-raised);
+  box-shadow: 0 1px 0 var(--rule); scroll-margin-top: 16px; }
+.thesis-card[data-state="needs_revalidation"], .thesis-card[data-state="unavailable"] { border-style: dashed;
+  background: var(--paper); box-shadow: none; }
+.thesis-card + .thesis-card { margin-top: 12px; }
+.thesis-claims > .thesis-card + .thesis-card { margin-top: 0; }
+.thesis-claim-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.library-section-block .thesis-card h3 { margin: 0 0 6px; font: 400 19px/1.3 var(--serif); color: var(--ink); }
+.library-section-block p.thesis-claim-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 6px; }
+.library-section-block p.thesis-claim-plain { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-3); }
+.library-section-block p.thesis-untracked, .library-section-block p.thesis-condition-text { margin: 0 0 8px; font-size: 14.5px; color: var(--ink); }
+.library-section-block p.thesis-untracked { color: var(--ink-3); font-size: 13.5px; }
+
+/* Status tags: solid for a move toward, dashed for a move away, light for unchanged, dotted for not tracked. */
+.thesis-tag { display: inline-block; padding: 1px 7px 0; border: 1px solid var(--ink); font: 600 10.5px/1.6 var(--mono);
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--paper-sunk); white-space: nowrap; }
+.thesis-tag-weakening, .thesis-tag-receding { border-style: dashed; background: var(--paper-raised); }
+.thesis-tag-unchanged, .thesis-tag-not_happened { border-color: var(--rule-strong); background: var(--paper-raised);
+  color: var(--ink-2); font-weight: 500; }
+.thesis-tag-not_tracked { border-style: dotted; border-color: var(--ink-3); background: transparent; color: var(--ink-3);
+  font-weight: 500; }
+.thesis-tag-happened { border-width: 2px; padding: 0 6px; }
+.thesis-change { font: 500 12.5px/1.5 var(--mono); color: var(--ink); }
+.thesis-change-label { margin-right: 2px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.thesis-legend { margin: 0 0 12px; }
+.thesis-legend dl { display: grid; gap: 6px; margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--rule);
+  background: var(--paper-raised); }
+.thesis-legend dl div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.thesis-legend dd { margin: 0; font-size: 13px; color: var(--ink-2); }
+
+/* A labelled list: a measure, a condition, the price record. */
+.thesis-measure { display: grid; gap: 0; margin: 8px 0 0; border-top: 1px solid var(--rule); }
+.thesis-measure > div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 4px 14px; padding: 7px 0;
+  border-bottom: 1px solid var(--rule); }
+.thesis-measure dt, .thesis-source-facts dt { font: 500 10px/1.8 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); }
+.thesis-measure dd { margin: 0; min-width: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+
+/* Withheld parts: the problems in place of the content. */
+.thesis-withheld { margin: 6px 0 0; padding: 8px 12px; border: 1px dashed var(--stamp); background: var(--paper);
+  font-size: 13.5px; color: var(--ink); }
+.library-section-block .thesis-withheld p { margin: 0 0 4px; font-size: 13.5px; color: var(--ink); }
+.library-section-block .thesis-withheld p.thesis-withheld-kicker { font: 600 10px/1.5 var(--mono); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--stamp); }
+.thesis-withheld ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* 3. The balance: years across, lines down; numbers right-aligned in tabular figures. */
+.thesis-table { padding: 14px 16px 12px; border: 1px solid var(--rule-strong); background: var(--paper-raised); }
+.thesis-table + .thesis-table { margin-top: 14px; }
+.thesis-table[data-state="needs_revalidation"], .thesis-table[data-state="unavailable"] { border-style: dashed; background: var(--paper); }
+.library-section-block .thesis-table h3 { margin: 0 0 10px; font: 400 19px/1.3 var(--serif); }
+.library-section-block p.thesis-why-not { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); }
+.thesis-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); background: var(--paper); }
+.thesis-balance { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.thesis-balance th, .thesis-balance td { padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+.thesis-balance thead th { font: 500 12px/1.3 var(--mono); color: var(--ink); text-align: right; background: var(--paper-sunk);
+  white-space: nowrap; }
+.thesis-kind { display: block; font: 400 9.5px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.thesis-balance tbody th { min-width: 150px; text-align: left; font-weight: 500; color: var(--ink-2); }
+.thesis-balance tbody th span { display: block; font: 400 11.5px/1.4 var(--sans); color: var(--ink-3); }
+.thesis-balance td { text-align: right; font: 400 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; color: var(--ink);
+  white-space: nowrap; }
+.thesis-balance tr.is-total th, .thesis-balance tr.is-total td { border-top: 1px solid var(--rule-strong); font-weight: 600; color: var(--ink); }
+.thesis-balance tr.is-gap th, .thesis-balance tr.is-gap td { background: var(--paper-sunk); }
+.thesis-balance tr.is-gap:first-of-type th, .thesis-balance tr.is-total + tr.is-gap th,
+.thesis-balance tr.is-total + tr.is-gap td { border-top: 2px solid var(--ink); }
+.thesis-gap-label { display: block; font: 500 9.5px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.thesis-balance td.thesis-none { font: italic 400 12px var(--sans); color: var(--ink-3); }
+.thesis-mark { margin-left: 2px; font: 500 9.5px var(--mono); color: var(--ink-3); }
+.thesis-bases { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.55; color: var(--ink-3); }
+.thesis-bases .thesis-mark { margin: 0 6px 0 0; }
+.thesis-where { margin: 8px 0 0; }
+
+/* 4. Differs. */
+.thesis-others { margin: 10px 0 0; padding: 8px 0 0; border-top: 1px dashed var(--rule-strong); }
+.thesis-other-label { display: block; margin-bottom: 2px; font: 600 12.5px/1.4 var(--sans); color: var(--ink-2); }
+
+/* 8. Exposure: two tables; on phones each row becomes a stacked block. */
+.thesis-exposure { width: 100%; margin: 4px 0 18px; border-collapse: collapse; border: 1px solid var(--rule-strong);
+  background: var(--paper-raised); font-size: 13.5px; }
+.thesis-exposure th, .thesis-exposure td { padding: 9px 10px; border-bottom: 1px solid var(--rule); text-align: left;
+  vertical-align: top; min-width: 0; }
+.thesis-exposure thead th { font: 500 10px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); background: var(--paper-sunk); }
+.thesis-exposure tbody th { width: 150px; font-weight: 600; color: var(--ink); }
+.thesis-exposure td[data-label="Side"] { width: 110px; }
+.thesis-exposure td[data-label="How much"] { width: 38%; }
+.thesis-exposure tr[data-state="needs_revalidation"], .thesis-exposure tr[data-state="unavailable"] { background: var(--paper); }
+.library-section-block .thesis-exposure p.thesis-cell-text { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+.thesis-side { display: block; font-weight: 600; color: var(--ink); }
+.thesis-side-note { display: block; font-size: 12.5px; color: var(--ink-3); }
+.thesis-amount.is-computed { padding: 8px 10px; border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+  background: var(--paper); }
+.library-section-block p.thesis-amount-result { margin: 0 0 4px; font: 600 15px/1.45 var(--sans); color: var(--ink); }
+.library-section-block p.thesis-formula { margin: 0 0 6px; font: 400 12px/1.5 var(--mono); color: var(--ink-2); }
+
+/* 8. The exposure map, ahead of the tables: lanes of stages joined by lines without arrowheads (solid: stated in a
+   source; dashed: a conditional mechanism; dotted: not measured), a legend naming each kind in words, and plain notes.
+   Stage numbers come from a CSS counter. On phones each lane's stages stack, joined by vertical lines. */
+.thesis-map { margin: 4px 0 8px; }
+.library-section-block p.thesis-map-lead { margin: 0 0 14px; max-width: 72ch; font: 400 18px/1.5 var(--serif); color: var(--ink); }
+.thesis-map-lead strong { font-weight: 600; }
+.thesis-map-concepts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin: 0 0 14px; }
+.thesis-map-concepts > div { min-width: 0; padding: 10px 12px; border: 1px solid var(--rule); border-top: 3px solid var(--accent);
+  background: var(--paper-raised); }
+.thesis-map-concepts dt { margin: 0 0 4px; font: 600 10.5px/1.5 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent); }
+.thesis-map-concepts dd { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+.thesis-map-legend { margin: 0 0 18px; padding: 10px 12px; border: 1px solid var(--rule); background: var(--paper); }
+.thesis-map-legend ul { display: grid; gap: 6px; margin: 4px 0 8px; padding: 0; list-style: none; }
+.thesis-map-legend li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: baseline;
+  font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.thesis-map-legend li strong { color: var(--ink); }
+.thesis-map-swatch { display: block; height: 0; margin-top: 9px; border-top: 2px solid var(--ink); }
+[data-link="conditional"] > .thesis-map-swatch { border-top-style: dashed; }
+[data-link="unmeasured"] > .thesis-map-swatch { border-top: 3px dotted var(--ink-3); }
+.library-section-block p.thesis-map-legend-note { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.library-section-block .thesis-map > h3 { margin: 20px 0 8px; font: 400 19px/1.3 var(--serif); color: var(--ink); }
+.thesis-map-lanes { display: grid; gap: 14px; margin: 0 0 8px; padding: 0; list-style: none; }
+.thesis-map-lane { min-width: 0; padding: 14px 16px 12px; border: 1px solid var(--rule-strong); background: var(--paper-raised);
+  box-shadow: 0 1px 0 var(--rule); }
+.thesis-map-lane[data-state="needs_revalidation"], .thesis-map-lane[data-state="unavailable"] { border-style: dashed;
+  background: var(--paper); box-shadow: none; }
+.thesis-map-lane-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px;
+  margin: 0 0 8px; }
+.library-section-block .thesis-map-lane-head h4 { margin: 0; font: 400 19px/1.3 var(--serif); color: var(--ink); }
+.library-section-block .thesis-map-lane-head p { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; margin: 0; }
+.thesis-map-lane-head .thesis-side, .thesis-map-lane-head .thesis-side-note { display: inline; }
+.thesis-map-chain { display: flex; gap: 22px; margin: 4px 0 8px; padding: 0; list-style: none; counter-reset: stage; }
+.thesis-map-node { position: relative; display: grid; flex: 1 1 0; align-content: start; gap: 3px; min-width: 0; padding: 8px 10px;
+  border: 1px solid var(--rule-strong); background: var(--paper); }
+.thesis-map-node strong { font: 600 13.5px/1.35 var(--sans); color: var(--ink); }
+.thesis-map-node:not(.is-start) strong::before { counter-increment: stage; content: counter(stage) " \00B7  ";
+  font: 500 11px var(--mono); color: var(--ink-3); }
+.thesis-map-node span { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
+.thesis-map-node.is-start { border-style: dashed; background: var(--paper-sunk); }
+.thesis-map-node + .thesis-map-node::before { content: ""; position: absolute; top: 50%; left: -23px; width: 22px;
+  border-top: 2px dashed var(--ink-2); }
+.thesis-map-notes { margin: 0 0 6px; }
+.thesis-map-notes summary, .thesis-map-inspect summary { cursor: pointer; font: 600 12.5px/1.6 var(--sans); color: var(--ink-2); }
+.thesis-map-notes dl { display: grid; gap: 4px; margin: 6px 0 0; }
+.thesis-map-notes dl div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 10px; }
+.thesis-map-notes dt { font: 600 12.5px/1.5 var(--sans); color: var(--ink); }
+.thesis-map-notes dd { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.thesis-map-stated { margin: 8px 0 6px; padding: 8px 12px; border: 1px solid var(--rule); border-left: 3px solid var(--ink);
+  background: var(--paper); }
+.thesis-map-stated.is-reading { border-left: 4px double var(--ink-2); }
+.thesis-map-figure { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--rule); }
+.library-section-block p.thesis-map-metric { margin: 0 0 4px; font-size: 14px; color: var(--ink); }
+.thesis-map-metric [data-map-metric] { font-weight: 600; }
+.library-section-block p.thesis-map-computed { margin: 8px 0 0; font: 600 14px/1.45 var(--sans); color: var(--ink); }
+.library-section-block p.thesis-map-unmeasured { margin: 8px 0 0; padding: 3px 10px; border-left: 3px dotted var(--ink-3);
+  font-size: 12.5px; color: var(--ink-3); }
+.thesis-map-movers { margin: 0 0 6px; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.thesis-map-mover { display: grid; grid-template-columns: minmax(130px, 190px) minmax(150px, 220px) minmax(0, 1fr);
+  gap: 4px 14px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.thesis-map-company { font-weight: 600; color: var(--ink); }
+.thesis-map-link { position: relative; padding-left: 40px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+.thesis-map-link::before { content: ""; position: absolute; top: 0.7em; left: 0; width: 32px; border-top: 2px solid var(--ink); }
+.thesis-map-link[data-link="unmeasured"]::before { border-top: 3px dotted var(--ink-3); }
+.thesis-map-link:not([data-link])::before { border-top: 1px dashed var(--stamp); }
+.thesis-map-reason { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.thesis-map-inspect { grid-column: 1 / -1; }
+.thesis-map-measure { margin-top: 6px; }
+.thesis-body .library-section-block > p.thesis-map-tables { max-width: none; margin: 22px 0 8px; padding-top: 12px;
+  border-top: 1px solid var(--rule-strong); }
+@media (max-width: 720px) {
+  .thesis-map-chain { flex-direction: column; gap: 16px; }
+  .thesis-map-node + .thesis-map-node::before { top: -17px; left: 22px; width: 0; height: 14px; border-top: 0;
+    border-left: 2px dashed var(--ink-2); }
+  .thesis-map-mover, .thesis-map-notes dl div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .thesis-map-lane { padding: 12px 12px 10px; }
+}
+
+/* 9. The log. */
+.thesis-log { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.thesis-log > li { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 18px; padding: 10px 0;
+  border-bottom: 1px solid var(--rule); }
+.library-section-block p.thesis-log-day { margin: 1px 0 0; font: 500 13px/1.5 var(--mono); color: var(--ink); }
+.library-section-block p.thesis-log-kind { margin: 0 0 2px; font: 500 10px/1.5 var(--mono); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3); }
+.library-section-block p.thesis-log-text { margin: 0; font-size: 14.5px; color: var(--ink); }
+.library-section-block p.thesis-log-refs { margin: 4px 0 0; font-size: 13px; color: var(--ink-3); }
+
+/* 10. The price record: labelled as a record before anything else. */
+.library-section-block p.thesis-record-note { margin: 0 0 10px; padding: 6px 12px; border-left: 3px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 14px; color: var(--ink); }
+
+/* 11. The plain notes gathered. */
+.thesis-glossary { display: grid; margin: 0; border-top: 1px solid var(--rule); }
+.thesis-glossary > div { display: grid; grid-template-columns: minmax(160px, 260px) minmax(0, 1fr); gap: 4px 18px;
+  padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.thesis-glossary dt { font: 600 13px/1.5 var(--sans); color: var(--ink); }
+.thesis-glossary dd { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+
+/* The Sources footer. */
+.thesis-sources { margin-top: 8px; border-top: 3px double var(--rule-strong); }
+.library-section-block.thesis-sources + .library-section-block, .thesis-section + .thesis-sources { padding-top: 22px; }
+.thesis-source-list { margin: 0 0 14px; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.thesis-source-list > li { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.thesis-source-list > li[data-state="changed"], .thesis-source-list > li[data-state="missing"] {
+  box-shadow: inset 3px 0 0 var(--stamp); padding-left: 10px; }
+.library-section-block p.thesis-source-name { margin: 0 0 4px; font-size: 14.5px; color: var(--ink); }
+.thesis-source-facts { display: grid; gap: 1px; margin: 0; }
+.thesis-source-facts > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 2px 12px; }
+.thesis-source-facts dd { margin: 0; min-width: 0; font-size: 13px; line-height: 1.55; color: var(--ink-2); overflow-wrap: anywhere; }
+.thesis-source-list > li[data-state="changed"] .thesis-source-state strong,
+.thesis-source-list > li[data-state="missing"] .thesis-source-state strong { color: var(--stamp); }
+.thesis-hash { margin-left: 6px; font: 400 12px var(--mono); color: var(--ink-3); word-break: break-all; }
+.thesis-amount details { margin-top: 4px; }
+.thesis-amount summary { cursor: pointer; font: 600 12.5px/1.6 var(--sans); color: var(--ink-2); }
+.thesis-provenance { margin: 0 0 8px; }
+
+@media (max-width: 640px) {
+  .thesis-card, .thesis-table { padding: 12px 12px 10px; }
+  .library-section-block .thesis-statement.is-lead p.thesis-statement-text { font-size: 18.5px; }
+  .thesis-measure > div, .thesis-legend dl div, .thesis-log > li, .thesis-glossary > div, .thesis-source-facts > div {
+    grid-template-columns: minmax(0, 1fr); gap: 1px; }
+  .thesis-table { padding: 10px 10px 8px; }
+  .thesis-balance { font-size: 12.5px; }
+  .thesis-balance th, .thesis-balance td { padding: 5px 5px; }
+  .thesis-balance td { font-size: 12px; }
+  .thesis-balance tbody th { min-width: 90px; font-size: 12.5px; }
+  .thesis-balance tbody th span { font-size: 11px; }
+  .thesis-kind { font-size: 8.5px; letter-spacing: 0.02em; }
+  .thesis-figure-meta, .thesis-bases, .thesis-source-facts dd { font-size: 13px; }
+  /* Phone layout: each exposure row becomes a stacked block, each cell labelled by its column. */
+  .thesis-exposure thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .thesis-exposure, .thesis-exposure tbody, .thesis-exposure tr, .thesis-exposure th, .thesis-exposure td {
+    display: block; width: auto; }
+  .thesis-exposure tr { padding: 10px 12px; border-bottom: 1px solid var(--rule-strong); }
+  .thesis-exposure tbody th { width: auto; }
+  .thesis-exposure th, .thesis-exposure td { padding: 3px 0; border: 0; }
+  .thesis-exposure td::before { content: attr(data-label); display: block; font: 500 10px/1.5 var(--mono);
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+}

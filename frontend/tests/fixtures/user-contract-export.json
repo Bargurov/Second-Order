@@ -1,0 +1,151 @@
+{
+  "contract": "user-api-0.2",
+  "exported_at": "2026-10-14T10:00:00+00:00",
+  "analysis": {
+    "analysis_id": "20261014T091500000000Z-5e1a7c0d9b42.research-prompt-1.high",
+    "effort": "high",
+    "prepared_at": "2026-10-14T09:31:00+00:00",
+    "source": {
+      "source_id": "20261014T091500000000Z-5e1a7c0d9b42",
+      "headline": "Simulated statistics office publishes its quarterly survey",
+      "source_url": "https://example.org/synthetic/quarterly-survey",
+      "published_at": "2026-10-13T07:00:00+00:00",
+      "published_at_as_supplied": "2026-10-13T10:00:00+03:00",
+      "captured_at": "2026-10-14T09:15:00+00:00",
+      "characters": 438,
+      "text": "October 13, 2026\n\nSimulated statistics office publishes its quarterly survey\n\nThe Simulated Statistics Office reported that output in the surveyed sector rose 1.2 percent in the third quarter, after a 0.4 percent decline in the second quarter.\n\nThe office said it expects to revise the estimate when late responses arrive. The office’s next survey is scheduled for January.\n\nSYNTHETIC TEST SOURCE: invented for the user-contract fixtures."
+    },
+    "state": "recorded",
+    "state_detail": "Recorded. Reading, reviewing or exporting this result uses no credits or allowance.",
+    "quote": null,
+    "charge": {
+      "credits_reserved": 6,
+      "credits_charged": 6,
+      "credits_returned": 0,
+      "state": "charged",
+      "quota_day": "2026-10-14"
+    },
+    "result": {
+      "outcome": "analysis",
+      "note": "Every quoted passage was found in your source text. Whether the reading is sound is for you to judge.",
+      "recorded_at": "2026-10-14T09:41:12+00:00",
+      "analysis": {
+        "established": [
+          {
+            "number": 1,
+            "statement": "The office reports a 1.2 percent rise in surveyed-sector output in the third quarter, after a 0.4 percent decline in the second.",
+            "basis": "data",
+            "quotes": [
+              {
+                "text": "output in the surveyed sector rose 1.2 percent in the third quarter",
+                "match": "exact",
+                "start": 124,
+                "end": 191,
+                "paragraphs": [
+                  3
+                ],
+                "source_passage": "output in the surveyed sector rose 1.2 percent in the third quarter",
+                "occurrences": 1
+              },
+              {
+                "text": "after a 0.4 percent decline in the second quarter",
+                "match": "exact",
+                "start": 193,
+                "end": 242,
+                "paragraphs": [
+                  3
+                ],
+                "source_passage": "after a 0.4 percent decline in the second quarter",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "statement": "The office expects to revise the estimate.",
+            "basis": "forecast",
+            "quotes": [
+              {
+                "text": "expects to revise the estimate when late responses arrive",
+                "match": "exact",
+                "start": 264,
+                "end": 321,
+                "paragraphs": [
+                  4
+                ],
+                "source_passage": "expects to revise the estimate when late responses arrive",
+                "occurrences": 1
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "statement": "The office has scheduled its next survey for January.",
+            "basis": "action",
+            "quotes": [
+              {
+                "text": "The office's next survey is scheduled for January.",
+                "match": "normalized",
+                "start": 323,
+                "end": 373,
+                "paragraphs": [
+                  4
+                ],
+                "source_passage": "The office’s next survey is scheduled for January.",
+                "occurrences": 1
+              }
+            ]
+          }
+        ],
+        "interpretation": {
+          "kind": "finding",
+          "based_on": [
+            1,
+            2
+          ],
+          "text": "The third-quarter rise follows a decline, so it describes a rebound from a lower level; the office's own expectation of revisions limits how much the figure can carry. SYNTHETIC fixture text."
+        },
+        "assumptions": [
+          "The survey's coverage did not change between the two quarters."
+        ],
+        "competing_explanations": [
+          {
+            "explanation": "The rise reflects responses that arrived late.",
+            "would_distinguish": "The office's revision notes for the third quarter."
+          }
+        ],
+        "missing_information": [
+          "How many late responses the office expects."
+        ],
+        "tests": [
+          {
+            "check": "Compare the revised third-quarter figure in the next release.",
+            "counts_against_if": "The revised figure falls below the second-quarter level."
+          }
+        ]
+      },
+      "explanation": null
+    },
+    "result_sha256": "f74dc720479792ff054190856f751c59acdad387495ce504b0d8c9fbe7885a47",
+    "reviews": [
+      {
+        "review_id": "3b5f0e6c1a7d4e2f9b8c0d1e2f3a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c",
+        "sequence": 1,
+        "parent_review_id": null,
+        "saved_at": "2026-10-14T09:55:30+00:00",
+        "status": "human_reviewed",
+        "notes": "SYNTHETIC review: the quotes match the source; the rebound reading is fair.",
+        "result_sha256": "f74dc720479792ff054190856f751c59acdad387495ce504b0d8c9fbe7885a47",
+        "reviewer": {
+          "user_id": "u-5ca1ab1e0000a001",
+          "display_name": "Reader A (synthetic)"
+        }
+      }
+    ],
+    "retrospective": "Retrospective: the analysis is made after the publication, from its captured text. It is not a forecast and not an out-of-sample test.",
+    "baseline": {
+      "state": "not_supplied",
+      "note": "No earlier baseline publication was supplied with this request, so the analysis makes no comparison with earlier statements or data."
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "library_version": "case-library-0.3",
+  "id": "wto-2026-10-08",
+  "title": "WTO raises its 2026 merchandise trade forecast to 3.9% and lowers services to 3.3%",
+  "category": "International trade",
+  "entry_kind": "forecast",
+  "summary": "WTO economists' October Global Trade Outlook and Statistics, as WTO's news item summarises it, now projects world merchandise trade volume growth of 3.9% in 2026, up from 1.9% in the March forecast, and 4.1% in 2027. Commercial services trade volume is projected to grow 3.3% in 2026, down from 4.8%, and 6.4% in 2027. The WTO attributes the merchandise upgrade to supply chains adapting to the Middle East conflict and to demand for AI-enabling goods.",
+  "sectors": [],
+  "source": {
+    "publisher": "World Trade Organization (WTO news item)",
+    "title": "AI boom and trade resilience to Middle East crisis lift outlook, but gains to be uneven",
+    "url": "https://www.wto.org/english/news_e/news26_e/stat_08oct26_510_e.htm",
+    "document_id": null,
+    "published_at": "2026-10-08",
+    "published_precision": "date",
+    "published_as_stated": "Listed in WTO's news feed under Thu, 08 Oct 2026 00:00:00 GMT (date only)",
+    "timezone_note": "A date only. The article itself states no publication date; WTO's news feed lists it under 8 October 2026 with a 00:00:00 GMT placeholder time, which is not a publication time. The article says the report was released on 8 October.",
+    "reference_period": "Projections for 2026 and 2027 of world merchandise and commercial services trade volume; observed trade in the first half of 2026",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-12",
+    "date_basis": "WTO's own news-feed listing date, as kept in the Event Inbox archive; the article states the day and month of the report's release but no year, and the feed's time is a placeholder.",
+    "retained": {
+      "approval_id": "wto-trade-sources-01",
+      "sha256": "1e527398df2b4015c0fb801dc936af8350cee7915baa738fb07450ae2f233527",
+      "bytes": 26795,
+      "retrieved_at": "2026-10-12T12:25:39.065210+00:00",
+      "charset": "iso-8859-1, declared in the page (the HTTP header names none)"
+    }
+  },
+  "overview": [
+    "This is a forecast, summarised in a WTO news item. WTO economists now expect world merchandise trade volume to grow by 3.9% in 2026, against 1.9% in their March forecast, and by 4.1% in 2027. They expect commercial services trade volume to grow by 3.3% in 2026, against 4.8% in March, and by 6.4% in 2027. The same item puts world GDP growth at 2.6% in 2026 and 2.9% in 2027. The full report, its charts and its tables are linked from the item and were not read.",
+    "The upgrade rests on observed first-half data, as the WTO reports them. Merchandise trade volume grew 3.5% in the first half of 2026. Crude oil exports from the Middle East fell by roughly 24% and its LNG exports by 47%, but other suppliers limited the fall in global exports to around 6% for crude oil and 1% for LNG. Goods that enable AI, such as semiconductors and servers, accounted for 47% of merchandise trade growth, and trade in them rose 67% year on year. Commercial services trade grew 14% in the first quarter and 10% in the second, measured in value rather than volume, as transport and travel were disrupted.",
+    "The WTO's explanations and risks are its own assessments. It expects AI-related investment to keep driving merchandise trade through 2027 and the conflict to weigh on 2026 trade through higher energy prices and disrupted transport routes. The outlook is uneven by region: Asia's merchandise exports are projected to grow fastest (9.9%), Europe's to stall (-0.1%) and the Middle East's to fall 17.2%; the Middle East's services exports are projected to contract by 10.3%."
+  ],
+  "key_facts": [
+    {"label": "World merchandise trade volume, 2026", "value": "+3.9% (March forecast: +1.9%)", "basis": "WTO projection in the October Global Trade Outlook and Statistics, as summarised"},
+    {"label": "World merchandise trade volume, 2027", "value": "+4.1%", "basis": "WTO projection"},
+    {"label": "Commercial services trade volume, 2026 / 2027", "value": "+3.3% (March forecast: +4.8%) / +6.4%", "basis": "WTO projection"},
+    {"label": "World GDP growth, 2026 / 2027", "value": "2.6% / 2.9%", "basis": "WTO forecast, as stated in the item"},
+    {"label": "Merchandise trade volume, first half of 2026", "value": "+3.5%", "basis": "Observed, as reported by the WTO"},
+    {"label": "AI-enabling goods, first half of 2026", "value": "47% of merchandise trade growth; trade in them +67% year on year", "basis": "As reported by the WTO; semiconductors, servers and similar goods"},
+    {"label": "Commercial services trade, first and second quarters of 2026", "value": "+14% and +10% year on year", "basis": "Value terms, not volume, as the item states"},
+    {"label": "Middle East exports, 2026", "value": "Merchandise -17.2%; services -10.3%", "basis": "WTO regional projections"}
+  ],
+  "channels": [
+    {
+      "title": "Demand for AI hardware and its exporters",
+      "source_fact": "The WTO reports that AI-enabling goods accounted for 47% of merchandise trade growth in the first half of 2026 and expects AI-related investment to remain a major driver through 2027.",
+      "interpretation": "If AI investment continues as the WTO expects, exporters of semiconductors and servers would keep carrying a large share of trade growth, which fits the WTO's projection that Asia's exports grow fastest. The item names no companies, and a slowdown in AI spending would remove this support; the size of any effect on particular firms is unknown."
+    },
+    {
+      "title": "Energy and transport disruption from the Middle East conflict",
+      "source_fact": "The WTO expects the conflict to weigh on 2026 trade through higher energy prices and disrupted transport routes, and projects sharp falls in Middle East exports.",
+      "interpretation": "Higher energy and freight costs would raise the cost of trade for importers and shift shipments toward other suppliers and routes, as the first-half data already suggest for oil and LNG. How long the disruption lasts is not stated, so the scale and duration of this channel are unknown."
+    },
+    {
+      "title": "Services trade: travel and transport against digital services",
+      "source_fact": "The WTO lowered its 2026 services forecast because transport and travel were disrupted, while computer and other digitally delivered services stayed comparatively resilient.",
+      "interpretation": "Exporters of travel and transport services would feel the slowdown more than exporters of digitally delivered services. The item gives the direction by service type, not a forecast for each, so the split between them is not quantified here."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "A low March base", "detail": "Part of the move from 1.9% to 3.9% may reflect how cautious the March forecast was rather than unusual strength. The item reports the revision, not a breakdown of what changed between the two forecasts."},
+    {"title": "Value against volume", "detail": "The first-half services figures are value growth rates, while the forecasts are volumes. Price changes, such as the higher freight costs the item mentions, can move the two apart, so the quarterly services figures and the services forecast do not measure the same thing."}
+  ],
+  "assumptions": [
+    "The news item summarises the report accurately; the report itself, its charts and its tables were not read.",
+    "The projections rest on the assumptions WTO economists made in the report, which the item does not set out.",
+    "The drivers the item names are the WTO's assessments, read here as such and not as measured causes."
+  ],
+  "missing_information": [
+    "The report's assumptions, uncertainty ranges and any downside or upside scenarios.",
+    "Chart 1 and Tables 1 and 2, which the item cites, and the analytical chapter on AI-enabling goods.",
+    "How the March forecast was built, so that the revision can be broken down.",
+    "The year of the March forecast and of the release is stated by the feed and the forecast periods, not by a dateline on the page."
+  ],
+  "weakening_observations": [
+    "If later WTO data revised first-half merchandise growth well below 3.5%, the basis for the upgrade would weaken.",
+    "If AI infrastructure spending fell short of what the item reports as projected, the main stated driver of the upgrade would weaken.",
+    "If the disruption to energy and transport ended quickly, the downgrade to services and the projected Middle East declines would matter less."
+  ],
+  "critique": [
+    {"title": "A summary of a forecast", "detail": "The entry reads a news item about the report, not the report. Every figure is as the item gives it, and the item may simplify what the report qualifies."},
+    {"title": "Attribution belongs to the WTO", "detail": "That supply chains adapted and that AI demand drove growth are the WTO economists' explanations. Nothing here measures either effect, and other influences on trade are not ruled out."},
+    {"title": "Forecasts are revised", "detail": "The March forecast was raised by two percentage points within the year; this projection can be revised as well and is not an outcome."},
+    {"title": "Chosen from the inbox", "detail": "This entry was written because the item appeared in the Event Inbox, not for any later market outcome. It is an editorial reading, not research evidence."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The WTO news item as retained on 12 October 2026 under approval wto-trade-sources-01 (SHA-256 recorded above). Its linked full report, chart and tables were not read.", "url": null},
+    {"title": "Date", "detail": "The page states no publication date. The entry uses the date under which WTO's own news feed lists the item, with its placeholder time ignored; the article's own wording (released on 8 October) agrees.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-12",
+    "method": "Written only from the retained copy of the WTO news item, read offline without running its scripts or opening its links. Facts and figures come from the item; the channels, competing explanations and critique are the assistant's interpretation. Each figure was checked against the retained page in a private acceptance record. No report, market data, news coverage or earlier AI summary was used.",
+    "sources_read": ["https://www.wto.org/english/news_e/news26_e/stat_08oct26_510_e.htm"],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

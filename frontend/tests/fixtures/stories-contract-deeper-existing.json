@@ -1,0 +1,62 @@
+{
+  "contract": "user-api-0.5",
+  "deeper": {
+    "deeper_version": "story-deeper-0.2",
+    "story_id": "story-c656c19416cbcd7a",
+    "title": "Synthetic Republic announces 15% tariff on imported steel",
+    "available": true,
+    "material_reports": 2,
+    "reason": null,
+    "material": {
+      "coverage": "headlines_and_excerpts",
+      "statement": "Prepared from the headlines and feed excerpts of 2 reports as the feeds gave them. The full publications were not read, so anything they add is not reflected here.",
+      "reports": [
+        {
+          "entry_id": "synthetic-ledger:d2413052a235f3c1d2f5",
+          "version_sha256": "8b552f4e1ab9e4d4075cd423ef7b65d3cc54887c8cd32734d2afddb151806685",
+          "publisher": "Synthetic Ledger",
+          "role": "news",
+          "title": "Synthetic Republic announces 15% tariff on imported steel",
+          "excerpt": "SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.",
+          "link": "https://ledger.example.org/news/tariff",
+          "published": "Mon, 12 Oct 2026 07:00:00 GMT",
+          "published_utc": "2026-10-12T07:00:00+00:00",
+          "attribution": "Synthetic Ledger",
+          "synthetic": true
+        },
+        {
+          "entry_id": "synthetic-courier:37c144440669e6aecf62",
+          "version_sha256": "b7211ca3e5dfa1b40bde792f4e8a2aa2b17db0e26e0583c1c20ae46aacb646f2",
+          "publisher": "Synthetic Courier",
+          "role": "news",
+          "title": "Synthetic Republic announces 15% tariff on imported steel",
+          "excerpt": "SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.",
+          "link": "https://courier.example.org/news/tariff-copy",
+          "published": "Mon, 12 Oct 2026 08:00:00 GMT",
+          "published_utc": "2026-10-12T08:00:00+00:00",
+          "attribution": "Synthetic Courier",
+          "synthetic": true
+        }
+      ],
+      "not_used": []
+    },
+    "material_sha256": "c1d45663fd5b4771f463f916ab5a0c6ab3e7597d1bb6c6f6e92f9aa233b61fc8",
+    "source": {
+      "headline": "Synthetic Republic announces 15% tariff on imported steel",
+      "source_url": "https://ledger.example.org/news/tariff",
+      "published_at": "2026-10-12T07:00:00+00:00",
+      "characters": 1651,
+      "text": "Material for a deeper analysis of a news story, assembled by Second Order (story-deeper-0.2; reference deeper-abf342a71315).\nStory: Synthetic Republic announces 15% tariff on imported steel\nWhat this is: the headlines and feed excerpts of 2 reports, as the publishers' feeds gave them. A headline or excerpt is discovery metadata, not the publication: the full publications were not read.\nThe shared brief of this story is not included: an analysis reads the reports themselves.\nOnly the reports' own words can be quoted as evidence: each headline, feed excerpt and publication text below. These opening lines, the labels of each report (such as \"Publisher:\" or \"Headline:\") and any note in square brackets are Second Order's, not a publisher's, and a quote from them is not accepted.\n\nReport 1 of 2\nPublisher: Synthetic Ledger\nPublished (as the feed states it): Mon, 12 Oct 2026 07:00:00 GMT\nAddress: https://ledger.example.org/news/tariff\nHeadline: Synthetic Republic announces 15% tariff on imported steel\nExcerpt: SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.\nCredit: Synthetic Ledger\n\nReport 2 of 2\nPublisher: Synthetic Courier\nPublished (as the feed states it): Mon, 12 Oct 2026 08:00:00 GMT\nAddress: https://courier.example.org/news/tariff-copy\nHeadline: Synthetic Republic announces 15% tariff on imported steel\nExcerpt: SYNTHETIC CAPITAL (Reuters) - The Synthetic Republic said on Monday it would impose a 15% tariff on imported steel from next month, citing a review of its steel industry.\nCredit: Synthetic Courier\n"
+    },
+    "existing": {
+      "source_id": "20261014T090000000000Z-21d211db9fb7",
+      "analyses": [
+        {
+          "analysis_id": "20261014T090000000000Z-21d211db9fb7.research-prompt-2.low",
+          "effort": "low"
+        }
+      ]
+    },
+    "statement": "Going deeper saves this material as your own source and prepares an analysis of it: one new source and one prepared analysis of today's allowance, and no credits. The analysis runs only after you approve its credit quote. The shared brief is not changed."
+  }
+}

@@ -1,0 +1,274 @@
+{
+ "comparison_version": "publication-comparison-0.1",
+ "id": "fcx-annual-2025-to-q3-2026",
+ "version": 1,
+ "previous_version": null,
+ "title": "FCX: the annual report for fiscal 2025 against the quarterly report for the third quarter of 2026",
+ "earlier": {
+  "document": "fcx:10k-2025"
+ },
+ "later": {
+  "document": "fcx:10q-2026q3"
+ },
+ "historical": true,
+ "rows": [
+  {
+   "id": "grasberg-return",
+   "label": "The return of Grasberg to operation",
+   "earlier": "fcx:k25-mud-rush-85pct",
+   "later": "fcx:q3-p-gbc-capacity-targets",
+   "same_measure": "not_established",
+   "note": "The earlier line is about PTFI's production restored, measured against normal operating rates, for the second half of 2026. The later line is about capacity, for mid-2027 and for year-end 2027. No retained source says that the two percentages are one measure."
+  },
+  {
+   "id": "production-blocks",
+   "label": "The restart of the production blocks",
+   "earlier": "fcx:k25-mud-rush-production-blocks",
+   "later": "fcx:q3-p-gbc-blocks-2-3",
+   "same_measure": "not_applicable",
+   "note": null
+  },
+  {
+   "id": "smelters",
+   "label": "The smelters' return to operation",
+   "earlier": "fcx:k25-mud-rush-smelter-restart",
+   "later": "fcx:q3-p-smelter-restart",
+   "same_measure": "not_applicable",
+   "note": null
+  },
+  {
+   "id": "insurance",
+   "label": "The insurance claim",
+   "earlier": "fcx:k25-mud-rush-insurance",
+   "later": "fcx:q3-p-insurance-proceeds",
+   "same_measure": "no",
+   "note": "The earlier line states how much the policies cover. The later line states proceeds collected when the claim was settled."
+  },
+  {
+   "id": "bagdad",
+   "label": "The Bagdad expansion decision",
+   "earlier": "fcx:k25-p-bagdad-decision-2026",
+   "later": "fcx:q3-p-bagdad-approval",
+   "same_measure": "not_applicable",
+   "note": null
+  },
+  {
+   "id": "mining-licence",
+   "label": "The extension of the mining licence",
+   "earlier": "fcx:k25-iupk-application-2026",
+   "later": "fcx:q3-p-iupk-extension",
+   "same_measure": "not_applicable",
+   "note": null
+  },
+  {
+   "id": "price-assumptions",
+   "label": "The price assumptions behind the outlook",
+   "earlier": "fcx:k25-uncc-outlook-assumptions",
+   "later": "fcx:q3-p-price-assumptions",
+   "same_measure": "no",
+   "note": "The earlier line gives assumptions for the year 2026 and names no copper price. The later line gives assumptions for the fourth quarter of 2026."
+  }
+ ],
+ "prices": [
+  "k25-copper-realized-price-fy2024",
+  "k25-copper-realized-price-fy2025",
+  "q3-cu-realized-price-9m-2025",
+  "q3-cu-realized-price-9m-2026",
+  "q3-cu-realized-price-q3-2025",
+  "q3-cu-realized-price-q3-2026"
+ ],
+ "evidence": {
+  "publications": [
+   {
+    "ref": "fcx:10k-2025",
+    "title": "Freeport-McMoRan Inc., Annual Report on Form 10-K for the fiscal year ended December 31, 2025",
+    "form": "10-K",
+    "date": "2026-02-13",
+    "date_kind": "signature date (signature block, page S-1; file page 192). The EDGAR file's Last-Modified header is the same day (Fri, 13 Feb 2026 19:45:28 GMT). The EDGAR filing date was not read from the filing index."
+   },
+   {
+    "ref": "fcx:10q-2026q3",
+    "title": "Freeport-McMoRan Inc., Quarterly Report on Form 10-Q for the quarterly period ended September 30, 2026",
+    "form": "10-Q",
+    "date": "2026-11-06",
+    "date_kind": "signature date (signature block, file page 71, printed S-1). The EDGAR submissions record (fcx-sec-locate-02) gives the same day as the filing date; the EDGAR file's Last-Modified header is Fri, 06 Nov 2026 17:42:28 GMT."
+   }
+  ],
+  "passages": [
+   {
+    "ref": "fcx:k25-mud-rush-85pct",
+    "source": "10k-2025",
+    "location": {
+     "page": 25,
+     "printed_page": "23",
+     "location": "Items 1. and 2. Business and Properties > Operations > Indonesia > Grasberg Minerals District Mud Rush Incident"
+    },
+    "quote": "Based on current estimates, PTFI expects approximately 85% of its total production at normal operating rates to be restored in the second half of 2026."
+   },
+   {
+    "ref": "fcx:q3-p-gbc-capacity-targets",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 43,
+     "printed_page": "43",
+     "location": "Part I, Item 2 > Operations > Indonesia > Grasberg Block Cave Ramp-Up"
+    },
+    "quote": "PTFI continues to expect to reach 80% of capacity in mid-2027 and approach full capacity by year-end 2027."
+   },
+   {
+    "ref": "fcx:k25-mud-rush-production-blocks",
+    "source": "10k-2025",
+    "location": {
+     "page": 25,
+     "printed_page": "23",
+     "location": "Items 1. and 2. Business and Properties > Operations > Indonesia > Grasberg Minerals District Mud Rush Incident"
+    },
+    "quote": "The plan includes a restart of Production Blocks 2 and 3 in second-quarter 2026 and the potential restart of operations in Production Block 1 during 2027."
+   },
+   {
+    "ref": "fcx:q3-p-gbc-blocks-2-3",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 43,
+     "printed_page": "43",
+     "location": "Part I, Item 2 > Operations > Indonesia > Grasberg Block Cave Ramp-Up"
+    },
+    "quote": "PTFI completed remediation and restoration activities required for the restart of Production Blocks 2 and 3 and commenced initial ramp-up activities at the end of March 2026."
+   },
+   {
+    "ref": "fcx:k25-mud-rush-smelter-restart",
+    "source": "10k-2025",
+    "location": {
+     "page": 25,
+     "printed_page": "23",
+     "location": "Items 1. and 2. Business and Properties > Operations > Indonesia > Downstream Processing Facilities"
+    },
+    "quote": "Shipments to PTFI’s smelter are expected to recommence in the second half of 2026, pending the successful ramp up of mining operations."
+   },
+   {
+    "ref": "fcx:q3-p-smelter-restart",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 44,
+     "printed_page": "44",
+     "location": "Part I, Item 2 > Operations > Indonesia > Downstream Processing Facilities"
+    },
+    "quote": "PT Smelting resumed operations in late 2025 and PTFI’s smelter successfully re-commenced operations in late August 2026. Ramp-up activities continue to progress in line with expectations."
+   },
+   {
+    "ref": "fcx:k25-mud-rush-insurance",
+    "source": "10k-2025",
+    "location": {
+     "page": 163,
+     "printed_page": "161",
+     "location": "Item 8 > Note 10 > Indonesia Matters > Grasberg Minerals District Mud Rush Incident"
+    },
+    "quote": "PTFI is seeking recovery of damages under its property and business interruption insurance policies, which cover up to $1.0 billion in losses (subject to a limit of $0.7 billion on underground incidents), after a $0.5 billion deductible."
+   },
+   {
+    "ref": "fcx:q3-p-insurance-proceeds",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 16,
+     "printed_page": "16",
+     "location": "Part I, Item 1 > Note 7. Contingencies and Commitments > Indonesia Matters"
+    },
+    "quote": "In April 2026, PTFI collected pre-tax proceeds of $0.7 billion associated with the settlement of its insurance claim under its property and business interruption policies related to the September 2025 external mud rush incident."
+   },
+   {
+    "ref": "fcx:k25-p-bagdad-decision-2026",
+    "source": "10k-2025",
+    "location": {
+     "page": 100,
+     "printed_page": "98",
+     "location": "Item 7 (MD&A) > Operations > United States > Development Activities"
+    },
+    "quote": "We completed technical and economic studies in late 2023 and are updating these studies in advance of a potential investment decision during 2026."
+   },
+   {
+    "ref": "fcx:q3-p-bagdad-approval",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 23,
+     "printed_page": "23",
+     "location": "Part I, Item 2 (MD&A) > Consolidated Results"
+    },
+    "quote": "In November 2026, our Board of Directors (Board) approved a $4.5 billion expansion and modernization program at our Bagdad copper and molybdenum operation in northwest Arizona"
+   },
+   {
+    "ref": "fcx:k25-iupk-application-2026",
+    "source": "10k-2025",
+    "location": {
+     "page": 24,
+     "printed_page": "22",
+     "location": "Items 1. and 2. Business and Properties > Operations > Indonesia > IUPK"
+    },
+    "quote": "PTFI is preparing its application for a long-term extension expected to cover the life of the resource, which is expected to be submitted during 2026."
+   },
+   {
+    "ref": "fcx:q3-p-iupk-extension",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 43,
+     "printed_page": "43",
+     "location": "Part I, Item 2 > Operations > Indonesia > Long-Term Mining Rights"
+    },
+    "quote": "In June 2026, PTFI submitted its application for extension of its IUPK, and we and PTFI are working with the Indonesia government to complete the formal license process."
+   },
+   {
+    "ref": "fcx:k25-uncc-outlook-assumptions",
+    "source": "10k-2025",
+    "location": {
+     "page": 86,
+     "printed_page": "84",
+     "location": "Items 7. and 7A. MD&A > Outlook > Consolidated Unit Net Cash Costs"
+    },
+    "quote": "based on achievement of current sales volume estimates and cost estimates and assuming average prices of $4,000 per ounce of gold and $20.00 per pound of molybdenum for the year 2026."
+   },
+   {
+    "ref": "fcx:q3-p-price-assumptions",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 25,
+     "printed_page": "25",
+     "location": "Part I, Item 2 > Outlook > Consolidated Operating Cash Flows"
+    },
+    "quote": "assuming average prices of $6.50 per pound of copper, $4,000 per ounce of gold and $32.00 per pound of molybdenum in fourth-quarter 2026"
+   }
+  ],
+  "documents": [
+   {
+    "ref": "fcx:10k-2025",
+    "acquisition": {
+     "approval_id": "copper-sec-01",
+     "attempt": 1,
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+     "folder": "sec-10k-2025",
+     "name": "fcx-20251231.htm",
+     "sha256": "7ba50efcd0e758e47fca51dc9a88f8c2bb0d8308c881314288b49ae5efd6f167",
+     "bytes": 6347587,
+     "retrieved_at": "2026-11-02T19:25:16.185809+02:00"
+    }
+   },
+   {
+    "ref": "fcx:10q-2026q3",
+    "acquisition": {
+     "approval_id": "fcx-sec-docs-02",
+     "attempt": 1,
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/fcx-20260930.htm",
+     "folder": "sec-10q-2026q3",
+     "name": "fcx-20260930.htm",
+     "sha256": "d2ddefc6b0b022abefec228e2d8407b4e502ba3d3a2807665bc028f61b4f4e6a",
+     "bytes": 4013452,
+     "retrieved_at": "2026-11-11T00:40:48.989015+02:00"
+    }
+   }
+  ]
+ },
+ "change": null,
+ "provenance": {
+  "prepared_by": "the assistant (Claude), AI draft for the owner's review",
+  "ai_assisted": true,
+  "research_use": "excluded"
+ }
+}

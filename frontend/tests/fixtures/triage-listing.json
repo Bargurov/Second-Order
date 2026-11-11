@@ -1,0 +1,76 @@
+{
+ "modes": {
+  "paid": {
+   "detail": "Paid triage is not enabled on this server; nothing can be sent to a provider. It needs an explicit `python -m second_order serve --enable-paid-triage` with the key in SECOND_ORDER_ANTHROPIC_API_KEY.",
+   "enabled": false
+  },
+  "simulated": {
+   "detail": "Local simulation: $0, no provider contacted, no model reads the entries.",
+   "enabled": true
+  }
+ },
+ "requests": [
+  {
+   "attempts": {
+    "paid": {
+     "attempt": "paid",
+     "attempts": 0,
+     "detail": null,
+     "outcome": null,
+     "response_sha256": null,
+     "revalidatable": false,
+     "revalidation": null,
+     "state": "none",
+     "validation_policy": null
+    },
+    "simulated": {
+     "attempt": "simulated",
+     "attempts": 1,
+     "detail": null,
+     "outcome": "triaged",
+     "response_sha256": "09606db368e52d5f6e46fae0bba62982e92a54e4a823ae324fc982488475c260",
+     "revalidatable": false,
+     "revalidation": null,
+     "state": "complete",
+     "validation_policy": "triage-validation-3"
+    }
+   },
+   "comparison_pairs": [
+    [
+     "fed-monetary:7f7c172578f404aa5460",
+     "fed-monetary:cf8a8362dc72babd6faa"
+    ],
+    [
+     "fed-monetary:7f7c172578f404aa5460",
+     "fed-monetary:da3bcbb85f4595d6b859"
+    ],
+    [
+     "fed-monetary:cf8a8362dc72babd6faa",
+     "fed-monetary:da3bcbb85f4595d6b859"
+    ]
+   ],
+   "context_count": 0,
+   "current_config": true,
+   "entry_count": 6,
+   "item_ids": [
+    "fed-monetary:08dfdbdaa9ce20cc125a",
+    "bls-empsit:9c065a430be883f373e1",
+    "fed-monetary:7f7c172578f404aa5460",
+    "fed-monetary:cf8a8362dc72babd6faa",
+    "fed-monetary:da3bcbb85f4595d6b859",
+    "bls-cpi:32eb1f3726e2d520a40f"
+   ],
+   "prepared_at": "2026-10-08T12:00:00+00:00",
+   "sendable": true,
+   "state": "ready",
+   "titles": [
+    "Minutes of the Federal Open Market Committee",
+    "The Employment Situation — September 2026",
+    "Correction to the FOMC statement of September 16, 2026"
+   ],
+   "triage_id": "triage-b44b14b150b4ee37a01b01b7"
+  }
+ ],
+ "triage_version": "headline-triage-0.3",
+ "view_version": "headline-triage-view-0.4"
+}

@@ -1,0 +1,54 @@
+/* Market-implied rate path: a separate record beside Market context, so it has its own frame (a double rule on top)
+   and its numbers never share the yields' tables. The table reuses the context table (library.css); the 25th–75th
+   strip is decorative, the numbers beside it carry the values. */
+
+.rate-path { border-top: 3px double var(--ink); }
+.rate-path-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 16px; }
+.rate-path-head h2 { margin: 0 0 6px; }
+.rate-path-tag { margin: 0 0 6px; font: 500 10.5px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3); }
+.event-context-section p.rate-path-meaning { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-2); }
+
+.rate-path-facts { margin: 0 0 10px; }
+.event-context-section p.rate-path-note { font-size: 13px; color: var(--ink-2); }
+.rate-path-table { margin: 2px 0 14px; }
+.rate-path-table caption { max-width: 78ch; }
+.rate-path-table td { white-space: nowrap; }
+.rate-path-table tbody th { font-family: var(--mono); font-size: 13px; }
+.rate-path-value { display: block; font: 500 14px/1.3 var(--mono); color: var(--ink); }
+.rate-path-bp { display: block; font: 400 11.5px/1.35 var(--mono); color: var(--ink-3); }
+.rate-path-missing { display: block; font-size: 12.5px; color: var(--stamp); white-space: normal; }
+
+.rate-path-table .rate-path-strip-cell { width: 32%; min-width: 120px; padding-right: 2px; vertical-align: middle; }
+.rate-path-strip { position: relative; display: block; height: 16px; margin: 0 6px;
+  border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+.rate-path-strip::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dotted var(--rule-strong); }
+.rate-path-iqr { position: absolute; top: 4px; bottom: 4px; border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.rate-path-mean { position: absolute; top: 1px; bottom: 1px; width: 2px; margin-left: -1px; background: var(--ink); }
+
+.rate-path-meeting { margin: 0 0 12px; padding: 9px 12px; border: 1px dashed var(--rule-strong); background: var(--paper-raised); }
+.event-context-section .rate-path-meeting p { margin: 0; max-width: 78ch; font-size: 13.5px; color: var(--ink-2); }
+.event-context-section .rate-path-meeting p.rate-path-meeting-label { margin: 0 0 3px; font: 500 10.5px/1.4 var(--mono);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--stamp); }
+.event-context-section p.rate-path-separate { padding: 8px 12px; border-left: 3px solid var(--accent);
+  background: var(--paper-raised); font-size: 13px; color: var(--ink); }
+.rate-path-limits { max-width: 78ch; margin: 0 0 12px; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.rate-path-limits li + li { margin-top: 3px; }
+.rate-path-command { margin: 0 0 12px; padding: 8px 10px; overflow-x: auto; background: var(--paper-sunk);
+  font: 400 12.5px/1.5 var(--mono); color: var(--ink); }
+
+.rate-path-provenance { margin-top: 4px; }
+.rate-path-provenance > summary, .rate-path-license > summary { cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+.rate-path-ledger { margin: 8px 0 4px; }
+.rate-path-ledger code { font-size: 11.5px; word-break: break-all; }
+.rate-path-definitions { display: grid; gap: 6px; max-width: 78ch; margin: 0 0 10px; }
+.rate-path-definitions dt { font: 500 11.5px/1.4 var(--mono); color: var(--ink); }
+.rate-path-definitions dd { margin: 0; font-size: 13px; color: var(--ink-2); }
+.event-context-section p.rate-path-rows { font-family: var(--mono); font-size: 12px; color: var(--ink-3); overflow-wrap: anywhere; }
+.rate-path-license p { max-width: 78ch; font-size: 12px; color: var(--ink-3); }
+
+@media (max-width: 640px) {
+  .rate-path-table .rate-path-strip-cell { display: none; }
+  .rate-path-table td { white-space: normal; }
+}

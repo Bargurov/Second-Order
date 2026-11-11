@@ -1,0 +1,97 @@
+{
+  "enrichment_version": "case-enrichment-0.1",
+  "case_id": "bis-2026-02-12",
+  "case_file_sha256": "65e27c53c493be7b2abd5826c40c50d28446a41322c3d17cb86e42d96f6b04b8",
+  "currency": "historical",
+  "sources": [
+    {
+      "id": "release",
+      "role": "The press release the case was written from",
+      "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS), Office of Congressional and Public Affairs",
+      "title": "Applied Materials to Pay $252 Million Penalty to BIS for Illegally Exporting Semiconductor Manufacturing Equipment",
+      "url": "https://www.bis.gov/press-release/applied-materials-pay-252-million-penalty-bis-illegally-exporting-semiconductor-manufacturing-equipment",
+      "date_as_stated": "FOR IMMEDIATE RELEASE | February 12, 2026",
+      "retained": {
+        "approval_id": "bis-semis-sources-01",
+        "attempt": 3,
+        "folder": "bis-2026-02-12",
+        "sha256": "feec7e46ffa0d9f2214d7a7f21fc5a69c04bf59e72415705af338eb788b77227",
+        "bytes": 64517,
+        "retrieved_at": "2026-10-12T14:47:55.282763+00:00",
+        "charset": "utf-8, declared in the HTTP Content-Type header"
+      }
+    },
+    {
+      "id": "listing",
+      "role": "BIS's News & Updates listing, used only for the dates and wording of other releases it lists",
+      "publisher": "U.S. Department of Commerce, Bureau of Industry and Security (BIS)",
+      "title": "News and Updates",
+      "url": "https://www.bis.gov/news-updates",
+      "date_as_stated": null,
+      "retained": {
+        "approval_id": "bis-semis-sources-01",
+        "attempt": 1,
+        "folder": "news-updates",
+        "sha256": "6209b876f4484c0614d363ff77a66de0c99b285fdf00f26ff49e7b6f8c910c4f",
+        "bytes": 3585240,
+        "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+        "charset": "utf-8, declared in the HTTP Content-Type header"
+      }
+    }
+  ],
+  "chain": {
+    "placement": "Chipmaking equipment: ion implanters, tools used in making chips. The release concerns this equipment only; it does not concern chips themselves, advanced computing or chip design.",
+    "attribution": "curator_interpretation",
+    "basis": "BIS calls the ion implanters semiconductor manufacturing equipment; which chipmaking steps they serve is not described in the release and is not assumed. The placement is the curator's reading."
+  },
+  "readout": [
+    {"aspect": "instrument", "status": "stated", "text": "A settlement agreement between BIS and Applied Materials Inc. and Applied Materials Korea, Ltd., with a penalty of approximately $252 million: twice the transaction value and, BIS says, the maximum allowed by statute.", "source": "release", "reference": null},
+    {"aspect": "instrument", "status": "stated", "text": "The requirement the release says was violated: BIS's requirement to obtain a license before shipping to a company on the Entity List.", "source": "release", "reference": null},
+    {"aspect": "instrument", "status": "not_stated", "text": "Any reference to the October 2022 rules on advanced computing and semiconductor manufacturing items.", "source": "release", "reference": null},
+    {"aspect": "scope", "status": "stated", "text": "The equipment: ion implanters, which the release calls semiconductor manufacturing equipment.", "source": "release", "reference": null},
+    {"aspect": "scope", "status": "stated", "text": "Shipments in 2021 and 2022, worth approximately $126 million, first to the Korean affiliate for assembly and then onward to China, without an export license.", "source": "release", "reference": null},
+    {"aspect": "scope", "status": "not_stated", "text": "The customer's name, what it produced, and how many tools were shipped.", "source": "release", "reference": null},
+    {"aspect": "timing", "status": "stated", "text": "Announced on February 12, 2026. The customer was placed on the Entity List in 2020; the shipments were made in 2021 and 2022.", "source": "release", "reference": null},
+    {"aspect": "timing", "status": "not_stated", "text": "When the shipments came to BIS's attention, and the dates of the order and the settlement agreement.", "source": "release", "reference": null},
+    {"aspect": "conditions", "status": "stated", "text": "Multiple audits of the export compliance program, with annual certifications to BIS in connection with those audits.", "source": "release", "reference": null},
+    {"aspect": "conditions", "status": "referenced_unread", "text": "Any further terms: the release refers readers to the full order and settlement agreement, available online.", "source": "release", "reference": "enforcement-documents"},
+    {"aspect": "conditions", "status": "not_stated", "text": "Whether the company disclosed the shipments itself.", "source": "release", "reference": null}
+  ],
+  "references": [
+    {"id": "enforcement-documents", "description": "The full order, settlement agreement and Proposed Charging Letter, which the release links", "url": "https://www.bis.gov/media/2587", "source": "release", "read": false}
+  ],
+  "claim_checks": [
+    {"target": "title", "label": "Title", "status": "qualified", "source": "release", "note": "The release gives the penalty as approximately $252 million, agreed in a settlement."},
+    {"target": "summary", "label": "Summary", "status": "qualified", "source": "release", "note": "The two companies agreed to pay; and the release says the shipments went onward to China to a company on the Entity List, without otherwise describing where that company is based."},
+    {"target": "key_facts[0]", "label": "Penalty", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[1]", "label": "Value of the shipments", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[2]", "label": "Penalty relative to value", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[3]", "label": "Route", "status": "consistent", "source": "release", "note": null},
+    {"target": "key_facts[4]", "label": "Customer", "status": "qualified", "source": "release", "note": "The release says the company was placed on the Entity List in 2020; it does not say whether it is still listed."},
+    {"target": "key_facts[5]", "label": "Other terms", "status": "consistent", "source": "release", "note": null},
+    {"target": "channels[0].source_fact", "label": "Compliance costs for equipment exporters", "status": "consistent", "source": "release", "note": null},
+    {"target": "channels[1].source_fact", "label": "Equipment supply to listed customers in China", "status": "qualified", "source": "release", "note": "The release says the ion implanters went onward to China to a company on the Entity List; it does not otherwise describe where that company is based."},
+    {"target": "channels[2].source_fact", "label": "The company's finances", "status": "consistent", "source": "release", "note": null},
+    {"target": "competing_explanations[0].detail", "label": "Enforcement of past conduct, not a new rule", "status": "discrepancy", "source": "listing", "note": "BIS's News & Updates listing, as retained, dates the January 2026 licensing revision January 13, 2026, not January 14. The rest of this explanation is the case's own reading."},
+    {"target": "source_notes[2].detail", "label": "Context: January 14, 2026", "status": "discrepancy", "source": "listing", "note": "The listing, as retained, dates this release January 13, 2026; its timestamp, 23:00 UTC, is already January 14 east of UTC+1. The listing's text matches the note's description of the policy. The release page itself was not retained, so the date it states was not checked."}
+  ],
+  "not_checked": "The overview, the other competing explanation, assumptions, missing information, weakening observations, critique and the other source notes were not checked; the case's channels and readings remain its own interpretation.",
+  "examination": [
+    {"channel": "Compliance costs for equipment exporters", "observations": ["Exporters' own disclosures of compliance spending or program changes after February 2026.", "BIS enforcement records over time, to see how this penalty and its terms compare with others."]},
+    {"channel": "Equipment supply to listed customers in China", "observations": ["Export statistics for semiconductor manufacturing equipment to China by year, from official trade data.", "License applications and decisions for such equipment and destinations, where BIS publishes them.", "The customer's identity and production, which the release does not give."]},
+    {"channel": "The company's finances", "observations": ["The company's own filings: when it disclosed the matter, any amount set aside, and how the penalty is recorded."]}
+  ],
+  "comparison": {
+    "historical_case": "bis-2022-10-07",
+    "facts": ["two-rules", "sme"],
+    "text": "Both concern semiconductor manufacturing equipment and China. The October 2022 release announced new license requirements, including for certain chipmaking equipment. This release concerns shipments made in 2021 and 2022 without the license required for a company on the Entity List, and it does not cite the October 2022 rules, so by itself it says nothing about how those rules were enforced."
+  },
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-12",
+    "method": "Written offline from the retained copy of the press release and, for the dates of another release, the retained News & Updates listing (approval bis-semis-sources-01), read without running scripts or opening links. Each stated item and each claim check rests on passages of those copies kept in a private acceptance record; the chain placement and the observations are the curator's reading. The case file and its provenance are unchanged.",
+    "ai_assisted": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

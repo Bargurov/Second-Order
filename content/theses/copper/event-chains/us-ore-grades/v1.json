@@ -1,0 +1,89 @@
+{
+ "chain_version": "event-chain-0.1",
+ "id": "us-ore-grades",
+ "version": 1,
+ "previous_version": null,
+ "title": "Lower ore grades and concentrator shutdowns at US mines, and world mine output",
+ "event": "copper:usgs26-mine-events",
+ "target": {
+  "kind": "reason",
+  "id": "world-mine-output"
+ },
+ "steps": [
+  {
+   "kind": "stated",
+   "passage": "copper:usgs26-mine-events",
+   "label": "USGS reports lower ore grades and concentrator shutdowns at several US mines"
+  },
+  {
+   "kind": "mechanism",
+   "id": "ore-grade"
+  },
+  {
+   "kind": "mechanism",
+   "id": "output-offset"
+  }
+ ],
+ "evidence": {
+  "event": {
+   "passage": "copper:usgs26-mine-events",
+   "kind": "Supply disruption",
+   "when": "2025"
+  },
+  "passages": [
+   {
+    "ref": "copper:usgs26-mine-events",
+    "source": "usgs-2026",
+    "location": {
+     "page": 2
+    },
+    "quote": "In 2025, production of copper was affected by concentrator shutdowns and lower ore grades at multiple mines in the United States."
+   }
+  ],
+  "documents": [
+   {
+    "ref": "copper:usgs-2026",
+    "acquisition": {
+     "approval_id": "copper-usgs-01",
+     "attempt": 1,
+     "origin": "get",
+     "url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-copper.pdf",
+     "folder": "usgs-2026",
+     "name": "mcs2026-copper.pdf",
+     "sha256": "c4971f7edfa38feefc51952c5f24889c46f468d936c6620d388233313ae8ae85",
+     "bytes": 141602,
+     "retrieved_at": "2026-11-02T19:24:54.053711+02:00"
+    }
+   },
+   {
+    "ref": "copper:usgs-csv-2026",
+    "acquisition": {
+     "approval_id": "copper-usgs-csv-01",
+     "attempt": 1,
+     "origin": "owner_download",
+     "url": "https://doi.org/10.5066/P1WKQ63T",
+     "folder": "usgs-csv-2026",
+     "name": "MCS2026_Commodities_Data.csv",
+     "sha256": "582a0aa231aea53d8a97dc8d1cd3dfa5f885cf3760353e3d029d7f0ae4fbaaf5",
+     "bytes": 3189010,
+     "retrieved_at": "2026-11-03T01:17:22.769111+02:00"
+    }
+   }
+  ],
+  "thesis": {
+   "id": "copper",
+   "version": 1,
+   "sha256": "4893928f936d3dd3a75ffb37238526d69c809131c72351f938b134d2249e956f"
+  },
+  "mechanisms": {
+   "version": 1,
+   "sha256": "80582509f9075e3b04f82d2af7de0e6d516e0684a629da458ad52aa4d63d412b"
+  }
+ },
+ "change": null,
+ "provenance": {
+  "prepared_by": "the assistant (Claude), AI draft for the owner's review",
+  "ai_assisted": true,
+  "research_use": "excluded"
+ }
+}

@@ -1,0 +1,95 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "eia-tie-2026-09-22",
+  "title": "Public companies were 2% of US oil and gas producers but 68% of Lower 48 output in 2025",
+  "category": "Energy analysis",
+  "summary": "An EIA Today in Energy article, based on Enverus data, reports that publicly traded companies were 2 percent of about 12,000 US oil and gas producers in 2025 but produced 68 percent of Lower 48 crude oil and natural gas. Private producers lead only in the Haynesville. EIA reposted the article to correct a data point on production per well.",
+  "sectors": ["energy"],
+  "source": {
+    "publisher": "U.S. Energy Information Administration (EIA)",
+    "title": "Today in Energy: Public companies produce most U.S. crude oil and natural gas",
+    "url": "https://www.eia.gov/todayinenergy/detail.php?id=68184",
+    "document_id": null,
+    "published_at": "2026-09-22",
+    "published_precision": "date",
+    "published_as_stated": "IN-BRIEF ANALYSIS · SEPTEMBER 22, 2026",
+    "timezone_note": "The article page states a date only. No time or time zone is stated, so none is recorded and the date is not converted.",
+    "reference_period": "2025 (production shares and operator counts, from Enverus data)",
+    "page_last_updated": null,
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "Publicly traded companies are a small minority of US oil and gas producers but most of the output. EIA reports that in 2025 they were 2 percent of about 12,000 producers but produced 68 percent of the crude oil and natural gas in the Lower 48 states, measured in barrels of oil equivalent. The data come from Enverus, a commercial data provider, not from an EIA survey.",
+    "The article links the gap to scale and acreage. Public producers generally report lower breakeven prices than private ones, helped by higher-quality acreage and economies of scale. The 12 firms with the most wells, under 1 percent of companies, each operate from 10,000 to over 50,000 wells, averaging 69 barrels of oil equivalent per day per well; 64 percent of operators have 10 or fewer wells, nearly all stripper wells producing less than 15 barrels of oil equivalent per day.",
+    "Shares differ by region. Public companies produce nearly five times as much as private companies in Appalachia and four times as much in the Permian, where they are 3 percent of active operators. The Haynesville, in Texas and Louisiana, is the only major region where private companies produce the majority, 55 percent; there the top five private natural gas operators produced 38 percent of the region's natural gas, 5.8 billion cubic feet per day."
+  ],
+  "key_facts": [
+    {"label": "Public producers' share of companies / output", "value": "2% of about 12,000 / 68%", "basis": "2025; crude oil and natural gas in the Lower 48, in barrels of oil equivalent; Enverus data"},
+    {"label": "Largest operators", "value": "12 firms, each with 10,000 to over 50,000 wells; 69 boe per day per well on average", "basis": "Less than 1% of companies. EIA reposted the article to correct a data point related to production per well and does not say which"},
+    {"label": "Smallest operators", "value": "64% of operators have 10 or fewer wells", "basis": "Nearly all stripper wells, producing less than 15 boe per day"},
+    {"label": "Permian", "value": "Public companies are 3% of active operators and produce four times as much as private ones", "basis": "New Mexico and Texas"},
+    {"label": "Appalachia", "value": "Public companies produce nearly five times as much as private ones", "basis": "The article says public firms are 1% of the active operators 'in these regions'"},
+    {"label": "Haynesville", "value": "Private companies 55% of output; top five private gas operators 38% (5.8 Bcf/d)", "basis": "The only major region with a private majority; top five private crude producers 30% of the region's crude (10,000 b/d)"}
+  ],
+  "channels": [
+    {
+      "title": "Supply response to prices (oil and gas producers)",
+      "source_fact": "Public producers, 68% of 2025 Lower 48 output, generally report lower breakeven prices than private producers.",
+      "interpretation": "If lower breakevens let public companies keep drilling when prices fall, US output would respond less to price declines than a count of producers suggests. The article does not measure whether public or private output is more sensitive to prices."
+    },
+    {
+      "title": "Natural gas supply from the Haynesville",
+      "source_fact": "Private companies produce 55% of Haynesville output; the top five private gas operators produced 5.8 Bcf/d, 38% of the region's natural gas.",
+      "interpretation": "Gas supply from this region depends more on a few private firms, whose plans are less often publicly reported. If they changed drilling, regional supply could shift with less advance public information than in regions led by public companies. This is a conditional reading, not a finding of the article."
+    },
+    {
+      "title": "Concentration of output",
+      "source_fact": "64% of operators have 10 or fewer wells, nearly all producing less than 15 boe per day, while the largest firms' wells average 69 boe per day.",
+      "interpretation": "Many very small producers contribute little output, so changes in their number matter less for supply than decisions at the largest firms. The article gives no trend, so this describes structure, not change."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Data source and definitions", "detail": "The shares come from Enverus, a commercial provider. How 'publicly traded' and 'producer' are defined, and how affiliates and joint ventures are counted, is not stated; different definitions could move the 2% and 68% figures."},
+    {"title": "Acreage rather than ownership", "detail": "Lower breakevens may reflect where the wells are, on higher-quality acreage, more than whether the owner is publicly traded. The article names both reasons, and its figures do not separate them."}
+  ],
+  "assumptions": [
+    "Output shares in barrels of oil equivalent combine crude oil and natural gas on an energy basis; oil-only or gas-only shares would differ.",
+    "The 2025 shares describe that year's structure; ownership changes through mergers and listings, and the article gives no trend.",
+    "Breakeven prices are as companies report them, and companies calculate them in different ways."
+  ],
+  "missing_information": [
+    "The Enverus data and its definitions, which the article does not publish.",
+    "Which per-well figure EIA corrected, and its earlier value.",
+    "Comparisons with earlier years; the article gives 2025 only.",
+    "National shares by product, crude oil versus natural gas."
+  ],
+  "weakening_observations": [
+    "If public companies' output fell as much as private companies' output in a price downturn, the lower-breakeven reading of the supply channel would weaken.",
+    "If affiliates of public companies were counted as private, or the reverse, the 68% share could change materially.",
+    "If the Haynesville private operators' plans were in fact widely disclosed, for example in public debt filings, the information-gap reading would weaken."
+  ],
+  "critique": [
+    {"title": "A structural snapshot, not an event", "detail": "The article describes ownership in 2025; it reports no change at a point in time. Reading it as news about supply would overstate it. Its value is context for how US output might respond to prices, which the article itself does not test."},
+    {"title": "Ownership, scale and acreage move together", "detail": "The channels lean on breakevens as if ownership drove them, but the article names acreage quality and scale as reasons. Ownership alone should not carry the argument."},
+    {"title": "A corrected figure without a record", "detail": "EIA reposted the article to correct a production-per-well data point without saying which one. The case quotes the corrected page; any per-well comparison carries that unresolved uncertainty."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The article as shown on 2026-10-11, including its note that it was reposted to correct a data point related to production per well. Figures come from the text; the charts' data were not read.", "url": null},
+    {"title": "Selection", "detail": "EIA's Today in Energy archive lists this article on September 22, 2026, after 'What goes into diesel prices?' (September 18) and before the September 25 article on Henry Hub prices.", "url": "https://www.eia.gov/todayinenergy/archive.php"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the article and EIA's Today in Energy archive in a browser on 2026-10-11. Facts come from the article's text; the channels, competing explanations and critique are the assistant's interpretation. The Enverus data, the charts' underlying data, company filings, market prices, forecasts and news coverage were not used.",
+    "sources_read": [
+      "https://www.eia.gov/todayinenergy/detail.php?id=68184",
+      "https://www.eia.gov/todayinenergy/archive.php"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

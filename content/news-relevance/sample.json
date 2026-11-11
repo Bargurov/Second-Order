@@ -1,0 +1,746 @@
+{
+ "eval_version": "relevance-eval-0.1",
+ "set": "sample",
+ "created": "2026-11-10",
+ "purpose": "A public sample for testing the evaluation tooling (packets, measurement, the CLI). It is not a held-out set: it is open, fictional, and may be read and developed against like dev.",
+ "statement": "Fictional cases written for this public sample: every report, publisher, place and company is invented (SYNTHETIC), and links use example.org. No case is taken or paraphrased from another set. Every label is provisional: the set author's judgement, not reviewed by an editor. Paired cases share a pair: similar words, different economic meaning. Nothing measured on this set says how a decision performs on real reports.",
+ "cases": [
+  {
+   "case_id": "sample-s01",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "similar_vocabulary",
+    "consumer_company"
+   ],
+   "pair": "bakery",
+   "reports": [
+    {
+     "id": "synthetic:sample-s01",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 08:00:00 GMT",
+     "title": "Review: the new sourdough bakery on Elm Street is worth the queue",
+     "excerpt": "The loaves are crisp, the pastries sell out by ten, and the owner says she bakes through the night.",
+     "link": "https://example.org/sample/s01",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "food"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A neighbourhood shop review, no economic content."
+   }
+  },
+  {
+   "case_id": "sample-s02",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "similar_vocabulary"
+   ],
+   "pair": "bakery",
+   "reports": [
+    {
+     "id": "synthetic:sample-s02",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 09:00:00 GMT",
+     "title": "Flour mills raise prices 12% as wheat costs climb, bakers say",
+     "excerpt": "Two large mills told customers that flour will cost 12% more from December; bakers say bread prices will follow.",
+     "link": "https://example.org/sample/s02",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "food"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "An input-cost change that passes into consumer prices."
+   }
+  },
+  {
+   "case_id": "sample-s03",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "similar_vocabulary"
+   ],
+   "pair": "patch",
+   "reports": [
+    {
+     "id": "synthetic:sample-s03",
+     "source": null,
+     "publisher": "SYNTHETIC Valley Times",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 10:00:00 GMT",
+     "title": "Photo app's latest patch fixes a crash when saving collages",
+     "excerpt": "The update, released on Tuesday, also speeds up the filters and removes a menu that confused some users.",
+     "link": "https://example.org/sample/s03",
+     "attribution": "SYNTHETIC Valley Times",
+     "synthetic": true,
+     "feed_topic": "technology"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A software bug fix with no economic content."
+   }
+  },
+  {
+   "case_id": "sample-s04",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "similar_vocabulary"
+   ],
+   "pair": "patch",
+   "reports": [
+    {
+     "id": "synthetic:sample-s04",
+     "source": null,
+     "publisher": "SYNTHETIC Valley Times",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 11:00:00 GMT",
+     "title": "Blight spreads through potato patches in the north, growers say yields could halve",
+     "excerpt": "Agronomists said the disease has reached about a third of the region's fields and that harvests may be half the usual size.",
+     "link": "https://example.org/sample/s04",
+     "attribution": "SYNTHETIC Valley Times",
+     "synthetic": true,
+     "feed_topic": "agriculture"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A crop-disease outbreak that cuts a staple harvest."
+   }
+  },
+  {
+   "case_id": "sample-s05",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "similar_vocabulary"
+   ],
+   "pair": "museum",
+   "reports": [
+    {
+     "id": "synthetic:sample-s05",
+     "source": null,
+     "publisher": "SYNTHETIC Lakeside Courier",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 12:00:00 GMT",
+     "title": "Museum opens a new wing of medieval pottery",
+     "excerpt": "The wing holds about 300 bowls and jugs, many shown for the first time, and opens to visitors on Saturday.",
+     "link": "https://example.org/sample/s05",
+     "attribution": "SYNTHETIC Lakeside Courier",
+     "synthetic": true,
+     "feed_topic": "culture"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A cultural opening."
+   }
+  },
+  {
+   "case_id": "sample-s06",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "similar_vocabulary"
+   ],
+   "pair": "museum",
+   "reports": [
+    {
+     "id": "synthetic:sample-s06",
+     "source": null,
+     "publisher": "SYNTHETIC Lakeside Courier",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 13:00:00 GMT",
+     "title": "Heritage trust sells 200 million in bonds to refinance its venues",
+     "excerpt": "The trust said the bonds mature in 2036 and will repay loans taken to restore its museums and halls.",
+     "link": "https://example.org/sample/s06",
+     "attribution": "SYNTHETIC Lakeside Courier",
+     "synthetic": true,
+     "feed_topic": "culture"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A financing decision by an organisation with debt."
+   }
+  },
+  {
+   "case_id": "sample-s07",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s07",
+     "source": null,
+     "publisher": "SYNTHETIC Northern Post",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 14:00:00 GMT",
+     "title": "Heavy snow closes the only rail line to the northern mines",
+     "excerpt": "Rail operators said trains will not run until the line is cleared, which could take several days.",
+     "link": "https://example.org/sample/s07",
+     "attribution": "SYNTHETIC Northern Post",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Transport disruption to a supply route, with no price or money words."
+   }
+  },
+  {
+   "case_id": "sample-s08",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s08",
+     "source": null,
+     "publisher": "SYNTHETIC Valley Times",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 15:00:00 GMT",
+     "title": "Fire at the only plant making a key vaccine ingredient halts production",
+     "excerpt": "The plant's operator said the blaze was contained overnight but that no ingredient will leave the site until inspections finish.",
+     "link": "https://example.org/sample/s08",
+     "attribution": "SYNTHETIC Valley Times",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A single-site supply interruption without financial terms."
+   }
+  },
+  {
+   "case_id": "sample-s09",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s09",
+     "source": null,
+     "publisher": "SYNTHETIC Lakeside Courier",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 16:00:00 GMT",
+     "title": "Local choir wins regional singing prize",
+     "excerpt": "The 40-member choir beat eleven groups at the weekend festival and will perform in the capital next spring.",
+     "link": "https://example.org/sample/s09",
+     "attribution": "SYNTHETIC Lakeside Courier",
+     "synthetic": true,
+     "feed_topic": "culture"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Local culture."
+   }
+  },
+  {
+   "case_id": "sample-s10",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "ambiguous"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s10",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 17:00:00 GMT",
+     "title": "Lakeshore Group issues a statement",
+     "excerpt": "The group said it would comment further in due course. No details were given.",
+     "link": "https://example.org/sample/s10",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "business"
+    }
+   ],
+   "label": {
+    "verdict": "insufficient_information",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Nothing is said about what happened."
+   }
+  },
+  {
+   "case_id": "sample-s11",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "ambiguous",
+    "irrelevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s11",
+     "source": null,
+     "publisher": "SYNTHETIC Valley Times",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 08:00:00 GMT",
+     "title": "Opinion: streaming prices will never stop climbing",
+     "excerpt": "A columnist argues that each new season of subscriptions brings another increase and that viewers should simply cancel.",
+     "link": "https://example.org/sample/s11",
+     "attribution": "SYNTHETIC Valley Times",
+     "synthetic": true,
+     "feed_topic": "opinion"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Opinion without new facts, though about prices."
+   }
+  },
+  {
+   "case_id": "sample-s12",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s12",
+     "source": null,
+     "publisher": "SYNTHETIC Northern Post",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 09:00:00 GMT",
+     "title": "Local football club wins the derby 3-1 with a goal in stoppage time",
+     "excerpt": "Fans sang late into the night after the winner, the club's first against its rivals in four years.",
+     "link": "https://example.org/sample/s12",
+     "attribution": "SYNTHETIC Northern Post",
+     "synthetic": true,
+     "feed_topic": "sport"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A local sports result."
+   }
+  },
+  {
+   "case_id": "sample-s13",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "consumer_company"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s13",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 10:00:00 GMT",
+     "title": "Sneaker maker warns of lower profit as returns rise",
+     "excerpt": "The company said online returns reached a quarter of orders and that full-year profit will fall short of its forecast.",
+     "link": "https://example.org/sample/s13",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "business"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A profit warning by a consumer company."
+   }
+  },
+  {
+   "case_id": "sample-s14",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s14",
+     "source": null,
+     "publisher": "SYNTHETIC Northern Post",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 11:00:00 GMT",
+     "title": "Statistics office: unemployment steady at 5.2% in October",
+     "excerpt": "The office said the rate was unchanged from September and 0.3 points below a year earlier.",
+     "link": "https://example.org/sample/s14",
+     "attribution": "SYNTHETIC Northern Post",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Official labour-market data."
+   }
+  },
+  {
+   "case_id": "sample-s15",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s15",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 12:00:00 GMT",
+     "title": "Shipping firm's quarterly cargo volumes fall 8%",
+     "excerpt": "The firm carried 8% less cargo than a year earlier and said fewer containers were booked on its main routes.",
+     "link": "https://example.org/sample/s15",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "business"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Volume data for a trade-exposed firm."
+   }
+  },
+  {
+   "case_id": "sample-s16",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s16",
+     "source": null,
+     "publisher": "SYNTHETIC Lakeside Courier",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 13:00:00 GMT",
+     "title": "Marathon route changed because of road works",
+     "excerpt": "Organisers moved the course away from the old bridge; the start time stays at nine.",
+     "link": "https://example.org/sample/s16",
+     "attribution": "SYNTHETIC Lakeside Courier",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Event logistics."
+   }
+  },
+  {
+   "case_id": "sample-s17",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "ambiguous"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s17",
+     "source": null,
+     "publisher": "SYNTHETIC Valley Times",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 14:00:00 GMT",
+     "title": "Officials to meet on the port question next week",
+     "excerpt": "A spokesperson confirmed the meeting but would not say which port, which officials or what the question is.",
+     "link": "https://example.org/sample/s17",
+     "attribution": "SYNTHETIC Valley Times",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "insufficient_information",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "The subject is not stated."
+   }
+  },
+  {
+   "case_id": "sample-s18",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s18",
+     "source": null,
+     "publisher": "SYNTHETIC Northern Post",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 15:00:00 GMT",
+     "title": "Cyberattack takes the national land registry offline for days",
+     "excerpt": "Officials said no property transfer can be completed until the system is restored, and no date has been given.",
+     "link": "https://example.org/sample/s18",
+     "attribution": "SYNTHETIC Northern Post",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A system outage that blocks transactions, no financial words."
+   }
+  },
+  {
+   "case_id": "sample-s19",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "similar_vocabulary"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s19",
+     "source": null,
+     "publisher": "SYNTHETIC Lakeside Courier",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 16:00:00 GMT",
+     "title": "Chess club's rare books sold at charity auction",
+     "excerpt": "Collectors paid more than the club hoped for a 1920s opening manual; the money buys boards for schools.",
+     "link": "https://example.org/sample/s19",
+     "attribution": "SYNTHETIC Lakeside Courier",
+     "synthetic": true,
+     "feed_topic": "culture"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "Money words, but a small charity sale."
+   }
+  },
+  {
+   "case_id": "sample-s20",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant",
+    "consumer_company"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s20",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 17:00:00 GMT",
+     "title": "Airline grounds eleven jets after inspectors find cracks in wings",
+     "excerpt": "The airline said it would lease replacement aircraft and that some routes will run less often until repairs are done.",
+     "link": "https://example.org/sample/s20",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "business"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A fleet grounding at a consumer-facing company."
+   }
+  },
+  {
+   "case_id": "sample-s21",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "no_financial_terms"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s21",
+     "source": null,
+     "publisher": "SYNTHETIC Northern Post",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 08:00:00 GMT",
+     "title": "Tourism board launches a hiking-trail map",
+     "excerpt": "The free map covers 14 trails and is available at visitor centres and online.",
+     "link": "https://example.org/sample/s21",
+     "attribution": "SYNTHETIC Northern Post",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A tourist information item."
+   }
+  },
+  {
+   "case_id": "sample-s22",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "ambiguous"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s22",
+     "source": null,
+     "publisher": "SYNTHETIC Valley Times",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 09:00:00 GMT",
+     "title": "Union and employer 'close to a deal', source says",
+     "excerpt": "An unnamed source said talks went on late; neither side confirmed this, and no sector or firm was named.",
+     "link": "https://example.org/sample/s22",
+     "attribution": "SYNTHETIC Valley Times",
+     "synthetic": true,
+     "feed_topic": "business"
+    }
+   ],
+   "label": {
+    "verdict": "insufficient_information",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "No identifiable parties or terms."
+   }
+  },
+  {
+   "case_id": "sample-s23",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "relevant"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s23",
+     "source": null,
+     "publisher": "SYNTHETIC Harbour Gazette",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 10:00:00 GMT",
+     "title": "Parliament raises the minimum wage by 6% from March",
+     "excerpt": "The increase applies to about one worker in eight, according to the labour ministry.",
+     "link": "https://example.org/sample/s23",
+     "attribution": "SYNTHETIC Harbour Gazette",
+     "synthetic": true,
+     "feed_topic": "business"
+    }
+   ],
+   "label": {
+    "verdict": "relevant",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A rule change affecting labour costs."
+   }
+  },
+  {
+   "case_id": "sample-s24",
+   "synthetic": true,
+   "categories": [
+    "synthetic",
+    "irrelevant",
+    "consumer_company"
+   ],
+   "pair": null,
+   "reports": [
+    {
+     "id": "synthetic:sample-s24",
+     "source": null,
+     "publisher": "SYNTHETIC Lakeside Courier",
+     "role": "news",
+     "published": "Tue, 03 Nov 2026 11:00:00 GMT",
+     "title": "Power company's mascot unveiled at school fair",
+     "excerpt": "Children voted for a smiling otter named Volt, which will visit classrooms this year.",
+     "link": "https://example.org/sample/s24",
+     "attribution": "SYNTHETIC Lakeside Courier",
+     "synthetic": true,
+     "feed_topic": "regional"
+    }
+   ],
+   "label": {
+    "verdict": "outside_scope",
+    "status": "provisional",
+    "by": "Claude Code (Claude Opus 5.5), the set's author; not reviewed by an editor",
+    "note": "A mascot at a school fair, though the sponsor is a utility."
+   }
+  }
+ ]
+}

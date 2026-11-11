@@ -1,0 +1,72 @@
+{
+  "contract": "user-api-0.5",
+  "deeper": {
+    "deeper_version": "story-deeper-0.2",
+    "story_id": "story-995f59232bb92b70",
+    "title": "Fact Sheet: Synthetic tariffs on imported widgets",
+    "available": true,
+    "material_reports": 2,
+    "reason": null,
+    "material": {
+      "coverage": "full_text",
+      "statement": "Prepared from the full text of 2 official publications, as this server retrieved them from the publishers' own pages.",
+      "reports": [
+        {
+          "entry_id": "whitehouse-news:7f4100ce1522bb4cc7aa",
+          "version_sha256": "a54e78b6f6741e5c4b4e5a11e8220058cd119d23865d402012ea425df7a5d8b8",
+          "publisher": "The White House",
+          "role": "official",
+          "title": "Fact Sheet: Synthetic tariffs on imported widgets",
+          "excerpt": "SYNTHETIC excerpt: tariffs on imported widgets.",
+          "link": "https://www.whitehouse.gov/fact-sheets/2026/10/synthetic-tariff-fact-sheet/",
+          "published": "Wed, 14 Oct 2026 06:00:00 GMT",
+          "published_utc": "2026-10-14T06:00:00+00:00",
+          "attribution": "The White House",
+          "synthetic": false,
+          "text": {
+            "state": "full_text",
+            "text_sha256": "5fe8e0afad4f0e840ad24a22a103f4767de473a08443b88d75018ce08bbbf6e3",
+            "characters": 335,
+            "retrieved_at": "2026-10-14T09:00:00+00:00",
+            "url": "https://www.whitehouse.gov/fact-sheets/2026/10/synthetic-tariff-fact-sheet/",
+            "extractor": "whitehouse-page-text-0.1",
+            "partial_reason": null
+          }
+        },
+        {
+          "entry_id": "whitehouse-news:22cd5a9fd5879307a0fd",
+          "version_sha256": "b0b7c1925ca05401d93256e43044c593e1e3d6ff3b2072f99c2e328ef05ac516",
+          "publisher": "The White House",
+          "role": "official",
+          "title": "SYNTHETIC: Imposing tariffs on imported widgets",
+          "excerpt": "SYNTHETIC excerpt: tariffs on imported widgets.",
+          "link": "https://www.whitehouse.gov/presidential-actions/2026/10/synthetic-tariff-proclamation/",
+          "published": "Wed, 14 Oct 2026 07:00:00 GMT",
+          "published_utc": "2026-10-14T07:00:00+00:00",
+          "attribution": "The White House",
+          "synthetic": false,
+          "text": {
+            "state": "full_text",
+            "text_sha256": "aff2d3795afe61a456ef874c654a39563195b99bfea2a6b80eb5e19a6a137aaa",
+            "characters": 301,
+            "retrieved_at": "2026-10-14T09:00:00+00:00",
+            "url": "https://www.whitehouse.gov/presidential-actions/2026/10/synthetic-tariff-proclamation/",
+            "extractor": "whitehouse-page-text-0.1",
+            "partial_reason": null
+          }
+        }
+      ],
+      "not_used": []
+    },
+    "material_sha256": "3a419c547f4b966c68510a53868c8effac307fbae0fec0611ee83313b6529d87",
+    "source": {
+      "headline": "Fact Sheet: Synthetic tariffs on imported widgets",
+      "source_url": "https://www.whitehouse.gov/fact-sheets/2026/10/synthetic-tariff-fact-sheet/",
+      "published_at": "2026-10-14T06:00:00+00:00",
+      "characters": 2169,
+      "text": "Material for a deeper analysis of a news story, assembled by Second Order (story-deeper-0.2; reference deeper-70706f54fca4).\nStory: Fact Sheet: Synthetic tariffs on imported widgets\nWhat this is: the text of 2 publications, as this server retrieved them from the publisher's own page.\nThe shared brief of this story is not included: an analysis reads the reports themselves.\nOnly the reports' own words can be quoted as evidence: each headline, feed excerpt and publication text below. These opening lines, the labels of each report (such as \"Publisher:\" or \"Headline:\") and any note in square brackets are Second Order's, not a publisher's, and a quote from them is not accepted.\n\nReport 1 of 2\nPublisher: The White House\nPublished (as the feed states it): Wed, 14 Oct 2026 06:00:00 GMT\nAddress: https://www.whitehouse.gov/fact-sheets/2026/10/synthetic-tariff-fact-sheet/\nHeadline: Fact Sheet: Synthetic tariffs on imported widgets\nText of the publication (retrieved 2026-10-14 09:00 UTC from https://www.whitehouse.gov/fact-sheets/2026/10/synthetic-tariff-fact-sheet/):\nSYNTHETIC: Today the President signed a proclamation imposing a 12% tariff on imported widgets, effective November 1, 2026. It applies to widgets from every country except two partners named in an annex.\n\nSYNTHETIC: The annex lists the two partners.\n\n- SYNTHETIC first point of the fact sheet.\n\n- SYNTHETIC second point, with emphasis.\nCredit: The White House\n\nReport 2 of 2\nPublisher: The White House\nPublished (as the feed states it): Wed, 14 Oct 2026 07:00:00 GMT\nAddress: https://www.whitehouse.gov/presidential-actions/2026/10/synthetic-tariff-proclamation/\nHeadline: SYNTHETIC: Imposing tariffs on imported widgets\nText of the publication (retrieved 2026-10-14 09:00 UTC from https://www.whitehouse.gov/presidential-actions/2026/10/synthetic-tariff-proclamation/):\nSYNTHETIC: BY THE PRESIDENT OF THE UNITED STATES OF AMERICA. A PROCLAMATION. 1. Imports of widgets threaten to impair the national security, as the Secretary reported. 2. A duty of 12% applies from November 1, 2026.\n\n- SYNTHETIC first point of the fact sheet.\n\n- SYNTHETIC second point, with emphasis.\nCredit: The White House\n"
+    },
+    "existing": null,
+    "statement": "Going deeper saves this material as your own source and prepares an analysis of it: one new source and one prepared analysis of today's allowance, and no credits. The analysis runs only after you approve its credit quote. The shared brief is not changed."
+  }
+}

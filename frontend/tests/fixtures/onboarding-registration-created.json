@@ -1,0 +1,12 @@
+{
+  "contract": "onboarding-api-0.1",
+  "duplicate": false,
+  "registration": {
+    "username": "reader-c",
+    "display_name": "Reader C (synthetic)",
+    "status": "pending",
+    "submitted_at": "2026-10-14T09:00:00+00:00",
+    "decided_at": null,
+    "detail": "Your registration is waiting for an administrator's approval. Nothing can be used until it is approved; sign in later to see its status."
+  }
+}

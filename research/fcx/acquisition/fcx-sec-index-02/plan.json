@@ -1,0 +1,52 @@
+{
+ "approval_id": "fcx-sec-index-02",
+ "approved_on": "2026-11-10",
+ "owner_approval": "The owner approved on 2026-11-10, in chat, a separate task to obtain the SEC EDGAR copies of the Form 10-Q for the third quarter of 2026 and of the two releases, if they were filed as 8-K exhibits, including the metadata needed to locate and verify them, with no paid calls.",
+ "scope": "Step 2 of 3: one GET of the EDGAR folder index of each filing located in step 1 (fcx-sec-locate-02): the Form 10-Q for the quarter ended 2026-09-30 (accession 0000831259-26-000051) and the Forms 8-K of 27 October 2026 (0000831259-26-000045) and 4 November 2026 (0000831259-26-000048), to name their documents and exhibits.",
+ "access_rules": {
+  "sec": "https://www.sec.gov/os/accessing-edgar-data: automated access must declare a contact in the User-Agent and stay below ten requests per second. The contact is read at request time from the user-level SECOND_ORDER_FEED_CONTACT and is written nowhere."
+ },
+ "request_headers": {
+  "Accept": "application/json",
+  "Accept-Encoding": "gzip, deflate"
+ },
+ "limits": {
+  "connect_timeout_s": 15,
+  "read_timeout_s": 60,
+  "request_network_deadline_s": 120,
+  "pause_s": 2,
+  "error_excerpt_bytes": 400
+ },
+ "resources": [
+  {
+   "n": 1,
+   "kind": "json",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/index.json",
+   "target": "data/company-sources/fcx/sec-edgar-meta/index-10q-2026q3-000083125926000051.json",
+   "max_body_bytes": 4194304,
+   "accepted_media_types": [
+    "application/json"
+   ]
+  },
+  {
+   "n": 2,
+   "kind": "json",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000045/index.json",
+   "target": "data/company-sources/fcx/sec-edgar-meta/index-8k-2026-10-27-000083125926000045.json",
+   "max_body_bytes": 4194304,
+   "accepted_media_types": [
+    "application/json"
+   ]
+  },
+  {
+   "n": 3,
+   "kind": "json",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/index.json",
+   "target": "data/company-sources/fcx/sec-edgar-meta/index-8k-2026-11-04-000083125926000048.json",
+   "max_body_bytes": 4194304,
+   "accepted_media_types": [
+    "application/json"
+   ]
+  }
+ ]
+}

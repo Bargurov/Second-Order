@@ -1,0 +1,35 @@
+{
+ "cost": "Local and free: nothing is requested, sent or classified.",
+ "counts": {
+  "changed": 0,
+  "existing": 0,
+  "new": 2,
+  "unusable": 1
+ },
+ "rows": [
+  {
+   "id": "bis-snapshot:d259551bc352c3fd7117",
+   "key": "d259551bc352c3fd7117",
+   "reasons": [],
+   "state": "new",
+   "title": "Synthetic Commerce Tightens Controls on Advanced Computing Chips"
+  },
+  {
+   "id": "bis-snapshot:d6b71201b2132e92ab14",
+   "key": "d6b71201b2132e92ab14",
+   "reasons": [],
+   "state": "new",
+   "title": "Synthetic Settlement over Ion Implanters"
+  },
+  {
+   "id": "bis-snapshot:5bf1545710beb8ff7a96",
+   "key": "5bf1545710beb8ff7a96",
+   "reasons": [
+    "The listing data does not mark it as published"
+   ],
+   "state": "unusable",
+   "title": "Synthetic Unpublished"
+  }
+ ],
+ "writes": true
+}

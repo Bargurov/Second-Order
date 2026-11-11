@@ -1,0 +1,69 @@
+{
+ "event": {
+  "address": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261007a.htm",
+  "date": "2026-10-07",
+  "date_as_stated": "Wed, 7 Oct 2026 18:00:00 GMT",
+  "date_label": "feed timestamp",
+  "title": "Minutes of the Federal Open Market Committee, September 15-16, 2026",
+  "title_only": true
+ },
+ "hints_used": false,
+ "id": "fed-monetary:08dfdbdaa9ce20cc125a",
+ "kind": "inbox",
+ "links": [
+  {
+   "differences": [
+    "Different documents: this event is FOMC meeting minutes, the case an FOMC statement.",
+    "The case's release is about 16 months earlier than this event.",
+    "The case's reference period, as stated: Not a data release: the statement announces the Committee's decision of June 18, 2025."
+   ],
+   "explanation": "Same release family (FOMC communications): this event is FOMC meeting minutes dated 7 October 2026 (feed timestamp); the case reads an FOMC statement of 18 June 2025, the latest case of this family in the library on or before this event's date. The family is named in this event's own title and confirmed by its address; it is not the same release.",
+   "family": {
+    "case_document": "statement",
+    "event_document": "minutes",
+    "label": "FOMC communications",
+    "more_earlier": 3,
+    "slug": "fomc"
+   },
+   "relation": "release_family",
+   "relation_label": "Same release family",
+   "status": {
+    "kind": "editorial",
+    "labels": [
+     "Editorial case",
+     "AI-assisted",
+     "Not human-reviewed",
+     "Not research evidence"
+    ],
+    "prepared_on": "2026-10-05",
+    "source": "Source read online on 2026-10-05; no copy retained.",
+    "source_check": null,
+    "timing": "Written on 5 October 2026.",
+    "written_after_event": false
+   },
+   "target": {
+    "category": "Monetary policy",
+    "collection": "library",
+    "date": "2025-06-18",
+    "date_as_stated": "June 18, 2025 · For release at 2:00 p.m. EDT",
+    "href": "/library/fomc-2025-06-18",
+    "id": "fomc-2025-06-18",
+    "title": "The Fed holds a fourth time and says uncertainty has diminished but remains elevated"
+   },
+   "unknown": [
+    "This entry carries only its title, so what this release says is not compared."
+   ]
+  }
+ ],
+ "navigation_version": "related-research-0.2",
+ "notes": [],
+ "provider_called": false,
+ "relations": {
+  "release_family": "Same release family",
+  "same_event": "Coverage of this event",
+  "topic": "Related research topic"
+ },
+ "shown_in_historical": [],
+ "view_version": "related-research-view-0.1",
+ "written": false
+}

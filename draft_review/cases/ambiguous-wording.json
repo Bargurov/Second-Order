@@ -1,0 +1,44 @@
+{
+  "id": "ambiguous-wording",
+  "title": "Ambiguous event where confident directional claims are unjustified",
+  "probes": "Whether a draft recognizes that a statement both removes tightening language and adds inflation-risk language, and avoids calling it clearly dovish or clearly hawkish.",
+  "synthetic": true,
+  "operator": {
+    "headline": "Synthetic rate committee holds rate, drops tightening language but stresses inflation risks",
+    "source_url": "https://example.com/synthetic/ambiguous-wording",
+    "published_at": "2026-09-16T14:00:00-04:00",
+    "story_id": "synthetic-review-ambiguous-wording"
+  },
+  "source_text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nScenario facts: the setting is a fictional version of the United States economy, and the synthetic rate committee sets the United States policy rate.\n\nThe synthetic rate committee left its policy rate unchanged at 4.00 percent, as forecasters had widely expected. The statement removed the sentence 'some further firming may be appropriate', which had appeared in the previous four statements. It added a new sentence: 'The committee remains highly attentive to inflation risks.' The vote was unanimous. There was no press conference, and the committee did not publish new projections.",
+  "rubric": {
+    "declining_to_draft": {
+      "stance": "acceptable",
+      "guidance": "Declining is acceptable: the statement removes tightening language and adds inflation-risk language, and the text gives no way to tell which change dominates."
+    },
+    "defensible_directions": {
+      "yield:ust2y_cmt": ["down", "up"],
+      "yield:ust10y_cmt": ["down", "up"]
+    },
+    "direction_note": "Dropping the firming sentence reads as easier and adding the inflation sentence reads as firmer. Either direction is defensible only with explicit uncertainty; the rubric prescribes neither.",
+    "acceptable_reasoning": [
+      "Names both wording changes and treats them as pulling in opposite directions.",
+      "If it drafts, presents the chosen direction as a tentative reading, with the opposing reading as an explanatory node or an explicit competing influence.",
+      "Uses falsifiers that the opposite reading would produce."
+    ],
+    "required_uncertainties": [
+      "Which wording change markets weigh more is unknown.",
+      "The text gives no market pricing for the decision or the wording.",
+      "Without a press conference or projections, later remarks by committee members may reshape the reading inside the scored window."
+    ],
+    "leakage_flags": {
+      "yield:ust2y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 2-year yield."},
+      "yield:ust10y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 10-year yield."}
+    },
+    "unacceptable_claims": [
+      "Calling the statement clearly dovish or clearly hawkish.",
+      "Confident or certain directional language.",
+      "Ignoring one of the two wording changes.",
+      "Any trade, position or investment recommendation."
+    ]
+  }
+}

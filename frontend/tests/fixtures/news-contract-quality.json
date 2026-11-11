@@ -1,0 +1,38 @@
+{
+  "contract": "user-api-0.5",
+  "quality": {
+    "rubric_version": "research-quality-0.3",
+    "rejected": [],
+    "rejected_note": "Rejection belongs to the research contract (schema, every quote found); an analysis that reached this rubric passed it, and this rubric rejects nothing.",
+    "findings": [],
+    "flagged": 0,
+    "checks": {
+      "source_too_short": "The source has fewer than 30 words or no words beyond its headline, so it may be a headline or a feed excerpt rather than a publication.",
+      "source_may_be_cut": "The source ends with an ellipsis or a 'read more' marker, or without closing punctuation, so it may be cut off.",
+      "number_not_in_source": "A number in a statement does not appear anywhere in the source text.",
+      "number_not_in_quotes": "A number in a statement appears in the source, but not in that statement's own quotes.",
+      "unit_differs": "A number in a statement carries another unit than the same number in its quotes (percent against percentage points, millions against billions).",
+      "level_change_differs": "A figure a statement gives as the size of a change ('by', or after a rise or fall word) is a level reached ('to') where its quote's sentence states it, or the reverse.",
+      "period_not_in_source": "A month, quarter, year or date in a statement does not appear in the source text.",
+      "period_not_in_quotes": "A month, quarter, year or date in a statement is neither in that statement's own quotes nor the one their sentence gives a figure they quote.",
+      "forecast_unattributed": "A statement with basis forecast names no expectation or attribution word.",
+      "assessment_unattributed": "A statement with basis assessment names no attribution word.",
+      "basis_mismatch": "A statement with basis data or action uses future or expectation wording.",
+      "beyond_quotes": "Several content words of a statement are not in its quotes or the source sentences they come from, so it may say more than they do.",
+      "direction_differs": "A statement says something rose, fell or was unchanged (or did not) where its quotes state another direction.",
+      "negation_differs": "A statement negates a word that its quotes and their sentences state with no negation, or states without a negation a word that they negate.",
+      "speaker_not_in_source": "A statement attributes its content to a speaker the source and headline do not name.",
+      "speaker_differs": "A statement attributes its content to a speaker that the sentence its quotes come from does not name, although that sentence names its own speaker (the headline counts for the publisher).",
+      "interpretation_number_not_in_source": "A number in the interpretation does not appear in the source text.",
+      "absence_contradicted": "A missing-information item says something is absent, but every key term of it appears together in one paragraph of the source.",
+      "no_unknowns": "The analysis lists no missing information and no tests."
+    },
+    "human_review": [
+      "Whether each statement is an accurate paraphrase of its quotes, beyond the words and figures checked here.",
+      "Whether the interpretation follows from the statements it names.",
+      "Whether the assumptions, competing explanations and tests are apt and complete.",
+      "Whether the analysis left out something the source establishes that matters."
+    ],
+    "statement": "Lexical checks of words, figures, units, periods and attribution. A flag asks a person to look; no flag is not a confirmation that the analysis is correct."
+  }
+}

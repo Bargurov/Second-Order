@@ -1,0 +1,54 @@
+{
+ "capture_id": "20261013T123000000000Z-0a2154c19979",
+ "definitions": null,
+ "license": null,
+ "limits": [
+  "A window's start date begins a three-month averaging period for SOFR; it is not an FOMC meeting date.",
+  "Average SOFR over a window is not the federal funds target range, or any rate on a particular date.",
+  "No probability of a meeting decision is shown or derived. The workbook's cut and hike probabilities describe average SOFR over a window against the target range; they are not kept or shown.",
+  "No surprise measure, change or score is computed from these averages, and they are not compared with the decision.",
+  "The workbook was obtained after the event. It gives observation dates without a time of day, original publication time or retained vintage, so it does not show what was available before the announcement; values may have been revised since.",
+  "Descriptive context only: not a forecast, a causal attribution, a trading signal or a research score. Nothing here is frozen, scored, attached to a draft or analysis, or added to research summaries.",
+  "A different measure from the Treasury yields under Market context; the two are kept apart and never combined."
+ ],
+ "measure": {
+  "id": "mpt-average-sofr-window-1",
+  "statement": "For each three-month reference window: the mean and the 25th and 75th percentiles of the distribution of average SOFR over that window, as the tracker estimated it from CME 3-month SOFR options on the observation date. The workbook states them in basis points; they are shown in percent by an exact decimal shift (100 bp = 1 percentage point), without rounding."
+ },
+ "meeting_specific": {
+  "state": "unavailable",
+  "statement": "This workbook gives no market-implied pricing for the policy decision announced in this statement. Its distributions describe average SOFR over three-month windows, not that meeting's decision."
+ },
+ "origin": null,
+ "problem": "Saved rate-path version 1.json does not have the expected fields and values",
+ "provenance": null,
+ "provider_called": false,
+ "publication": {
+  "new_york_date": "2026-09-17",
+  "new_york_offset": "-04:00",
+  "new_york_time": "14:00",
+  "published_at": "2026-09-17T18:00:00Z",
+  "published_at_as_supplied": "2026-09-17T14:00:00-04:00"
+ },
+ "rule": {
+  "id": "latest-observation-before-publication-date-1",
+  "statement": "The observation is the latest date in the workbook strictly before the statement's publication date in New York. An observation dated the publication date itself is never used: the workbook gives dates without a time of day, so it cannot show whether that day's estimate came before or after the release. A selection is made only when the workbook also holds an observation dated on or after the publication date, so the chosen date is not merely the end of the file's coverage. The windows are the first four the workbook lists for that observation, in order of their start dates and labelled as the workbook labels them; a value the workbook does not list is shown as unavailable, and no later window takes its place."
+ },
+ "selection": null,
+ "separate": "A separate event record, prepared by an explicit local command. Saved model requests for this event are built from its headline, address, publication time and captured text only; this context was not part of any of them, and no model received it.",
+ "source": {
+  "attribution": "Federal Reserve Bank of Atlanta, Market Probability Tracker, estimated from CME 3-month SOFR options",
+  "file": "MPT historical data (mpt_histdata.xlsx)",
+  "file_url": "https://www.atlantafed.org/-/media/Project/Atlanta/FRBA/Documents/research-and-data/data/market-probability-tracker/mpt_histdata.xlsx",
+  "page_url": "https://www.atlantafed.org/research-and-data/data/market-probability-tracker",
+  "product": "Market Probability Tracker",
+  "publisher": "Federal Reserve Bank of Atlanta"
+ },
+ "state": "unreadable",
+ "target_range": null,
+ "versions": [],
+ "view_version": "rate-path-view-0.1",
+ "windows": [],
+ "windows_listed": null,
+ "written": false
+}

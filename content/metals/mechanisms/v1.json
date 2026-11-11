@@ -1,0 +1,22 @@
+{
+ "mechanisms_version": "event-mechanisms-0.1",
+ "version": 1,
+ "entries": [
+  {
+   "id": "output-offset",
+   "text": "When output at one mine falls and other mines do not add the same amount, world mine output is lower than it would otherwise have been."
+  },
+  {
+   "id": "restart-timing",
+   "text": "When a stopped mine is expected to restart in stages, how long the lost output lasts depends on when each stage restarts."
+  },
+  {
+   "id": "ore-grade",
+   "text": "When ore grades at operating mines fall, each tonne of ore holds less copper, so output falls unless more ore is mined and processed."
+  },
+  {
+   "id": "expansion-counting",
+   "text": "When a producer approves an expansion, the added output enters future mine supply only if it is built as planned, and a projection includes it only if its method counts approved projects."
+  }
+ ]
+}

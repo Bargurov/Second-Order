@@ -1,0 +1,50 @@
+{
+  "id": "clear-policy",
+  "title": "Clear policy announcement",
+  "probes": "Whether a draft states the conventional policy-path reading of a clear decision with appropriate hedging, separates the 2-year from the 10-year yield, keeps a forecaster survey apart from market pricing, and avoids certainty, causal claims and trade advice.",
+  "synthetic": true,
+  "operator": {
+    "headline": "Synthetic rate committee cuts policy rate by 50 basis points and signals further cuts",
+    "source_url": "https://example.com/synthetic/clear-policy",
+    "published_at": "2026-03-18T14:00:00-04:00",
+    "story_id": "synthetic-review-clear-policy"
+  },
+  "source_text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nThe synthetic rate committee lowered its policy rate by 50 basis points, to 3.25 percent, at the end of its scheduled two-day meeting. In its statement the committee said inflation had moved closer to its 2 percent goal and that labor market conditions had softened. It said further reductions would likely be appropriate over the coming meetings. Nine of ten voting members supported the decision; one preferred a 25 basis point cut.\n\nA survey of forecasters taken the week before the meeting showed that most expected a 25 basis point reduction. The statement did not mention the committee's balance sheet.",
+  "rubric": {
+    "declining_to_draft": {
+      "stance": "allowed",
+      "guidance": "Declining is allowed but not expected: the statement gives a decision, its size against forecasts and forward guidance, all of which bear on the expected policy path. A decline should say what it found missing."
+    },
+    "defensible_directions": {
+      "yield:ust2y_cmt": ["down"],
+      "yield:ust10y_cmt": ["down", "up"]
+    },
+    "direction_note": "A larger-than-forecast cut with guidance toward further cuts conventionally implies a lower expected policy path, so a lower 2-year yield is the defensible reading for that leg. The 10-year yield also carries inflation expectations and term premium; a lower 10-year yield or a higher one (a steeper curve) can both be argued, so the rubric prescribes neither.",
+    "acceptable_reasoning": [
+      "Links the decision and guidance to the expected policy path as a channel node, and treats the 2-year yield as the observable most tied to that path, with link set to proxy: the yield responds to the path but does not measure it.",
+      "Treats a 10-year leg, if present, as weaker evidence, and for each other driver it names (such as inflation expectations or term premium) states the channel and the direction it would push the 10-year yield.",
+      "Gives each leg a concrete falsifier, for example a 2-year yield that rises unusually over the scored window.",
+      "Presents the summary as a hypothesis to be measured, not as an established mechanism."
+    ],
+    "required_uncertainties": [
+      "How much of the 50 basis point cut market prices already reflected. The text reports a forecaster survey, not market pricing, so market pricing is unknown and should be said to be unknown.",
+      "Other news and data inside the scored window can move yields.",
+      "For the 10-year yield, inflation expectations and term premium can offset or reverse the policy-path effect."
+    ],
+    "leakage_flags": {
+      "yield:ust2y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 2-year yield."},
+      "yield:ust10y_cmt": {"headline_reports_move": false, "reason": "Neither the headline nor the source text reports a move in the 10-year yield."}
+    },
+    "unacceptable_claims": [
+      "Stating as a certainty that yields will fall, or that the cut caused or will cause a move.",
+      "Any trade, position or investment recommendation.",
+      "Describing a market reaction that the source text does not report.",
+      "Setting headline_reports_move to true when no yield move is reported.",
+      "Inventing details absent from the text, such as market pricing, a balance sheet change or a different vote.",
+      "Setting link to direct for a yield leg on the expected policy path: sensitivity to the path is not measurement of it.",
+      "Comparing the size of the 2-year and 10-year moves (for example 'the 10-year falls by less') without support in the source. Different horizons are allowed; the unsupported comparison is not.",
+      "Naming a force that could move the 10-year yield (such as a growth scare) without the channel through which it would act and the direction that channel implies.",
+      "Treating the gap between the decision and the survey forecast as proof of an unpriced market surprise."
+    ]
+  }
+}

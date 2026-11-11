@@ -1,0 +1,187 @@
+{
+  "tool": "curl 8.21.0 (Windows) libcurl/8.21.0 Schannel zlib/1.3.2 WinIDN WinLDAP",
+  "downloads": [
+    {
+      "case": "fomc-2025-01-29",
+      "file": "fomc-2025-01-29.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=01/15/2025&to=02/12/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:48:34+00:00",
+      "received_at": "2026-10-07T22:48:35+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:48:34 GMT",
+      "bytes": 898,
+      "sha256": "fd6342b34c929770118b071f209fbf33c350f65b0bd3a0dab3737e7a26cf5b98"
+    },
+    {
+      "case": "empsit-2025-04-04",
+      "file": "empsit-2025-04-04.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=03/21/2025&to=04/18/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:48:50+00:00",
+      "received_at": "2026-10-07T22:48:51+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:48:50 GMT",
+      "bytes": 898,
+      "sha256": "958e49189342f9e137e71863163cca46e9234d4fc141a32e073ea5c730f3947d"
+    },
+    {
+      "case": "cpi-2025-04-10",
+      "file": "cpi-2025-04-10.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=03/27/2025&to=04/24/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:48:56+00:00",
+      "received_at": "2026-10-07T22:48:59+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:48:59 GMT",
+      "bytes": 898,
+      "sha256": "7ad994fe31cc1e7982f161b94c258c542f3ed08fd0fac994282a4ded37a95ea9"
+    },
+    {
+      "case": "empsit-2025-05-02",
+      "file": "empsit-2025-05-02.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=04/18/2025&to=05/16/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:15+00:00",
+      "received_at": "2026-10-07T22:49:15+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:49:15 GMT",
+      "bytes": 898,
+      "sha256": "76415798e1a492dbf4054bb2a15186a4bb8950016b455df36d00725f5b9ed5cd"
+    },
+    {
+      "case": "fomc-2025-05-07",
+      "file": "fomc-2025-05-07.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=04/23/2025&to=05/21/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:31+00:00",
+      "received_at": "2026-10-07T22:49:31+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:49:31 GMT",
+      "bytes": 902,
+      "sha256": "cb3614207884584ee6226003dd09793e23ae397091f181c46dcc34bf827bc72d"
+    },
+    {
+      "case": "cpi-2025-05-13",
+      "file": "cpi-2025-05-13.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=04/29/2025&to=05/27/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:47+00:00",
+      "received_at": "2026-10-07T22:49:47+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:49:47 GMT",
+      "bytes": 898,
+      "sha256": "5d27383ab2c323e2d86a7fc090493a8a4b827213574a75eef5571070a54a4329"
+    },
+    {
+      "case": "empsit-2025-06-06",
+      "file": "empsit-2025-06-06.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=05/23/2025&to=06/20/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:50:03+00:00",
+      "received_at": "2026-10-07T22:50:03+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:50:03 GMT",
+      "bytes": 894,
+      "sha256": "23e7322d9a58fd69010462c921cf346307e4e165741b9e685736ba4f0f1d164d"
+    },
+    {
+      "case": "cpi-2025-06-11",
+      "file": "cpi-2025-06-11.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=05/28/2025&to=06/25/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:50:08+00:00",
+      "received_at": "2026-10-07T22:50:12+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:50:11 GMT",
+      "bytes": 898,
+      "sha256": "606f070bf1b39f61b382daf8a3aec4845458379e6209a8893f003436414916b4"
+    },
+    {
+      "case": "fomc-2025-06-18",
+      "file": "fomc-2025-06-18.csv",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=06/04/2025&to=07/02/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:50:17+00:00",
+      "received_at": "2026-10-07T22:50:21+00:00",
+      "http_status": 200,
+      "content_type": "text/csv",
+      "response_date": "Wed, 07 Oct 2026 22:50:20 GMT",
+      "bytes": 898,
+      "sha256": "587a3a89dd0c29c866834eefe8a69381d593682c4e3d0d123c04bfa9227ca15e"
+    }
+  ],
+  "discarded": [
+    {
+      "case": "fomc-2025-01-29",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=01/15/2025&to=02/12/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:48:24+00:00",
+      "received_at": "2026-10-07T22:48:24+00:00",
+      "http_status": 200,
+      "content_type": "text/html",
+      "response_date": "Wed, 07 Oct 2026 22:48:24 GMT",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "an empty reply"
+    },
+    {
+      "case": "empsit-2025-04-04",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=03/21/2025&to=04/18/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:48:40+00:00",
+      "received_at": "2026-10-07T22:48:40+00:00",
+      "http_status": 200,
+      "content_type": "text/html",
+      "response_date": "Wed, 07 Oct 2026 22:48:40 GMT",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "an empty reply"
+    },
+    {
+      "case": "empsit-2025-05-02",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=04/18/2025&to=05/16/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:04+00:00",
+      "received_at": "2026-10-07T22:49:05+00:00",
+      "http_status": 200,
+      "content_type": "text/html",
+      "response_date": "Wed, 07 Oct 2026 22:49:04 GMT",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "an empty reply"
+    },
+    {
+      "case": "fomc-2025-05-07",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=04/23/2025&to=05/21/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:20+00:00",
+      "received_at": "2026-10-07T22:49:21+00:00",
+      "http_status": 200,
+      "content_type": "text/html",
+      "response_date": "Wed, 07 Oct 2026 22:49:20 GMT",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "an empty reply"
+    },
+    {
+      "case": "cpi-2025-05-13",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=04/29/2025&to=05/27/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:36+00:00",
+      "received_at": "2026-10-07T22:49:37+00:00",
+      "http_status": 200,
+      "content_type": "text/html",
+      "response_date": "Wed, 07 Oct 2026 22:49:36 GMT",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "an empty reply"
+    },
+    {
+      "case": "empsit-2025-06-06",
+      "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=aa2b841a39cf82a8a04208d30ba16c2e&lastobs=&from=05/23/2025&to=06/20/2025&filetype=csv&label=include&layout=seriescolumn",
+      "requested_at": "2026-10-07T22:49:52+00:00",
+      "received_at": "2026-10-07T22:49:53+00:00",
+      "http_status": 200,
+      "content_type": "text/html",
+      "response_date": "Wed, 07 Oct 2026 22:49:52 GMT",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "an empty reply"
+    }
+  ]
+}

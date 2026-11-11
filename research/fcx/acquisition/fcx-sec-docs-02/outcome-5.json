@@ -1,0 +1,24 @@
+{
+ "n": 5,
+ "approval_id": "fcx-sec-docs-02",
+ "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104.htm",
+ "kind": "html",
+ "outcome": "complete",
+ "http_status": 200,
+ "sha256": "8ebacd1534406c64b0fa7edecbc8669c4d89ada56bd93507ffdcda4dd6ba68a3",
+ "bytes": 11122,
+ "hash_kind": "complete_response",
+ "retained": "data/company-sources/fcx/sec-8k-2026-11-04/fcx_261104.htm",
+ "dispatched_at": "2026-11-11T00:41:00.844132+02:00",
+ "body_completed_at": "2026-11-11T00:41:01.766503+02:00",
+ "media_type": "text/html",
+ "named_headers": {
+  "content-type": "text/html",
+  "content-encoding": "gzip",
+  "last-modified": "Wed, 04 Nov 2026 21:13:58 GMT"
+ },
+ "contact_declared": true,
+ "network_error": null,
+ "truncated": false,
+ "max_body_bytes": 33554432
+}

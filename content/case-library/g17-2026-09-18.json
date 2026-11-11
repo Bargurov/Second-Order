@@ -1,0 +1,109 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "g17-2026-09-18",
+  "title": "August 2026 industrial production flat; manufacturing −0.3% after seven gains, utilities +1.8%",
+  "category": "Industrial production",
+  "summary": "The G.17 release of September 18, 2026 reported industrial production unchanged in August. Manufacturing fell 0.3 percent, its first decline after seven monthly gains, with durables down 0.5 percent, while utilities rose 1.8 percent. Motor vehicle assemblies fell to 10.43 million units at an annual rate, and the annual revision was set for November 24, 2026.",
+  "sectors": ["manufacturing-automotive", "energy", "mining-materials"],
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Industrial Production and Capacity Utilization - G.17",
+    "url": "https://www.federalreserve.gov/releases/g17/20260918/",
+    "document_id": "G.17",
+    "published_at": "2026-09-18",
+    "published_precision": "date",
+    "published_as_stated": "Release Date: September 18, 2026",
+    "timezone_note": "The release page states a date only. The Board's G.17 release-dates page says monthly releases are issued at 9:15 a.m. but names no time zone, so no time or offset is recorded.",
+    "reference_period": "August 2026 (preliminary), with revised estimates for March to July 2026; seasonally adjusted",
+    "page_last_updated": "2026-09-18",
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "Industrial production was unchanged in August 2026 after rising 0.2 percent in July. At 103.1 percent of its 2017 average, it was 1.4 percent above its level a year earlier. Capacity utilization stayed at 76.3 percent, 3.1 points below its long-run average.",
+    "Manufacturing output fell 0.3 percent after seven consecutive monthly increases. Durable manufacturing fell 0.5 percent, with broad-based declines across categories, and nondurable manufacturing was unchanged. Motor vehicles and parts fell 1.2 percent, and assemblies dropped to 10.43 million units at an annual rate from 10.81 million in July. Business equipment fell 0.5 percent and defense and space equipment 1.2 percent, and manufacturing capacity utilization fell to 75.7 percent.",
+    "Utilities output rose 1.8 percent, as electric utilities more than offset a decline in natural gas utilities, and the utilities operating rate rose 1.1 points to 71.3 percent, still well below its long-run average. Output of energy materials rose 0.7 percent and mining ticked up 0.1 percent. The release also announced that the annual revision, which will rebase the indexes to 2022, is to be issued on November 24, 2026."
+  ],
+  "key_facts": [
+    {"label": "Industrial production, August", "value": "0.0%; +1.4% over 12 months", "basis": "Index 103.1 (2017 = 100); seasonally adjusted; preliminary"},
+    {"label": "Manufacturing, August", "value": "−0.3%, the first decline after seven monthly gains", "basis": "Durables −0.5%, nondurables 0.0%"},
+    {"label": "Motor vehicles and parts", "value": "−1.2% in August; −1.0% over 12 months", "basis": "Table 2; motor vehicles −1.8%, parts −1.3%"},
+    {"label": "Motor vehicle assemblies", "value": "10.43 million in August; 10.81 million in July (revised)", "basis": "Units at a seasonally adjusted annual rate (Table 3)"},
+    {"label": "Utilities / mining, August", "value": "+1.8% / +0.1%", "basis": "Utilities 6.2% above a year earlier; energy materials +0.7%"},
+    {"label": "Capacity utilization, August", "value": "Total 76.3%; manufacturing 75.7%; utilities 71.3%", "basis": "Manufacturing 2.5 points below its 1972–2025 average"},
+    {"label": "Revisions", "value": "July total +0.2% (unchanged); June manufacturing +0.1% (was +0.3%)", "basis": "Compared with the August 18 release"},
+    {"label": "Mining and materials, August", "value": "Mining operating rate 86.3%; materials output +0.2%", "basis": "Mining rate 1.1 points above its 1972–2025 average; mining output +0.3% and materials +1.5% over 12 months; seasonally adjusted; preliminary"}
+  ],
+  "channels": [
+    {
+      "title": "Factory momentum (manufacturers)",
+      "source_fact": "Manufacturing −0.3% after seven monthly gains; durables −0.5% with broad-based declines; manufacturing utilization 75.7%.",
+      "interpretation": "A broad decline after a long run of gains could mark a pause in factory momentum, which would matter for orders to suppliers and for hiring. One preliminary month, with an annual revision ahead, cannot establish a turning point."
+    },
+    {
+      "title": "Vehicle production (automakers and suppliers)",
+      "source_fact": "Assemblies fell to 10.43 million from 10.81 million; motor vehicles and parts output was 1.0% below a year earlier.",
+      "interpretation": "Lower assembly rates in late summer would reduce demand for parts and could reflect production adjusting to sales or inventories. The release gives no sales or inventory data to say which."
+    },
+    {
+      "title": "Electricity output (utilities)",
+      "source_fact": "Utilities +1.8%, led by electric utilities; utilities operating rate 71.3%.",
+      "interpretation": "Higher electricity output in August is consistent with weather-driven demand, and the low operating rate means utilities had spare capacity on this measure. G.17 reports no weather data, so the demand reading is conditional."
+    },
+    {
+      "title": "Materials and mining output (materials producers and mining industries)",
+      "source_fact": "Materials output rose 0.2%, driven by a 0.7% increase in energy materials; mining ticked up 0.1% and ran at 86.3% of capacity, 1.1 points above its 1972–2025 average.",
+      "interpretation": "A materials gain that came mainly from energy materials, with mining running above its long-run operating rate, would point to energy-related output rising rather than broad growth across materials. G.17 measures volumes only, so it cannot say whether the output met demand or went into inventories, and it reports no prices or profits."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Weather, not industry", "detail": "The utilities gain likely reflects temperatures, which drive electricity demand. It says little about industrial customers' activity, and treating it as a sign of industrial strength would mix two different things."},
+    {"title": "The annual revision ahead", "detail": "The November 24 annual revision will incorporate Census Bureau benchmark data for 2023 and 2024 and new seasonal factors, and changes to estimation methods would affect the indexes back to 1972. The August decline and the seven-month streak could both look different afterward."},
+    {"title": "Mining figures the annual revision will revisit", "detail": "The November 24 revision is to add other annual data, including on the mining of metallic and nonmetallic minerals (except fuels), and new capacity data from the U.S. Geological Survey, the U.S. Department of Energy and other organizations. Mining output and its operating rate could look different afterward; this release had already revised July's mining change from +0.2% to +0.1%."}
+  ],
+  "assumptions": [
+    "The streak of seven monthly gains is as the release describes it under current estimates; earlier months were themselves revised.",
+    "Assemblies are seasonally adjusted; late-summer changeover patterns may still affect them.",
+    "Mining and materials are the release's own categories: mining is all industries in NAICS sector 21, and materials is a market group that the pages read do not define further. The summary table gives each as one index; the release text attributes August's materials gain to energy materials, but nothing in the summary shows which fuels or minerals moved within mining."
+  ],
+  "missing_information": [
+    "Orders, shipments and inventories from the Census Bureau for August.",
+    "Temperature data for August, to test the weather explanation for utilities.",
+    "Vehicle sales and dealer inventories.",
+    "The annual revision itself, scheduled for November 24, 2026, after this case was prepared.",
+    "Prices of fuels, metals and other materials, and mining companies' results, which G.17 does not report and which were not read for this case."
+  ],
+  "weakening_observations": [
+    "If output rebounded in September and the annual revision left August unchanged, the pause would look like one soft month.",
+    "If utilities output rose without any weather explanation, the weather reading would weaken."
+  ],
+  "critique": [
+    {"title": "A streak is a fragile frame", "detail": "'First decline after seven gains' is the release's own framing, but streaks rest on small, revisable monthly changes: June's manufacturing change alone moved from 0.0% to +0.3% to +0.1% across three releases."},
+    {"title": "Energy membership rests on utilities", "detail": "The case is listed under Energy because of the utilities and energy-materials figures. They are output volumes; nothing here concerns energy prices or energy companies."},
+    {"title": "No yardstick for the vehicle decline", "detail": "A drop from 10.81 to 10.43 million units is visible, but without sales or inventories the case cannot say whether production fell short of demand or adjusted to it."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The release page, which shows 'Last Update: September 18, 2026', and its Tables 2 and 3, as shown on 2026-10-11.", "url": null},
+    {"title": "Earlier release compared", "detail": "The August 18 release's first estimates for July (assemblies 10.68 million, motor vehicles and parts −2.1%) and for June (manufacturing +0.3%) are revised in this release.", "url": "https://www.federalreserve.gov/releases/g17/20260818/"},
+    {"title": "Release time", "detail": "The Board's G.17 release-dates page lists this release and says monthly releases are issued at 9:15 a.m., without naming a time zone.", "url": "https://www.federalreserve.gov/releases/g17/default.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read the September 18, 2026 release with its Tables 2 and 3, the G.17 release-dates page, and the August 18 release with its Tables 2 and 3 for comparison, in a browser on 2026-10-11. Facts come from the release text and tables; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/releases/g17/20260918/",
+      "https://www.federalreserve.gov/releases/g17/20260918/table2.htm",
+      "https://www.federalreserve.gov/releases/g17/20260918/table3.htm",
+      "https://www.federalreserve.gov/releases/g17/default.htm",
+      "https://www.federalreserve.gov/releases/g17/20260818/",
+      "https://www.federalreserve.gov/releases/g17/20260818/table2.htm",
+      "https://www.federalreserve.gov/releases/g17/20260818/table3.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

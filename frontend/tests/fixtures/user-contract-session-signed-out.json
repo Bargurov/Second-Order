@@ -1,0 +1,8 @@
+{
+  "contract": "user-api-0.2",
+  "mode": "accounts",
+  "state": "signed_out",
+  "reason": "not_signed_in",
+  "user": null,
+  "expires_at": null
+}

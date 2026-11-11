@@ -1,0 +1,12 @@
+{
+  "contract": "user-api-0.1",
+  "mode": "accounts",
+  "state": "signed_in",
+  "user": {
+    "user_id": "u-5ca1ab1e0000b002",
+    "username": "reader-b",
+    "display_name": "Reader B (synthetic)",
+    "role": "user"
+  },
+  "expires_at": "2026-10-14T21:30:00+00:00"
+}

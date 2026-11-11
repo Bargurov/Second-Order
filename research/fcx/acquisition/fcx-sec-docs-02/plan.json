@@ -1,0 +1,77 @@
+{
+ "approval_id": "fcx-sec-docs-02",
+ "approved_on": "2026-11-10",
+ "owner_approval": "The owner approved on 2026-11-10, in chat, a separate task to obtain the SEC EDGAR copies of the Form 10-Q for the third quarter of 2026 and of the two releases, if they were filed as 8-K exhibits, including the metadata needed to locate and verify them, with no paid calls.",
+ "scope": "Step 3 of 3: one GET of each document named by the folder indexes of step 2 (fcx-sec-index-02): the 10-Q's primary document, and each 8-K's cover document and release exhibit. The covers are retained to verify each exhibit's designation.",
+ "access_rules": {
+  "sec": "https://www.sec.gov/os/accessing-edgar-data: automated access must declare a contact in the User-Agent and stay below ten requests per second. The contact is read at request time from the user-level SECOND_ORDER_FEED_CONTACT and is written nowhere."
+ },
+ "request_headers": {
+  "Accept": "text/html",
+  "Accept-Encoding": "gzip, deflate"
+ },
+ "limits": {
+  "connect_timeout_s": 15,
+  "read_timeout_s": 60,
+  "request_network_deadline_s": 120,
+  "pause_s": 2,
+  "error_excerpt_bytes": 400
+ },
+ "resources": [
+  {
+   "n": 1,
+   "kind": "html",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/fcx-20260930.htm",
+   "target": "data/company-sources/fcx/sec-10q-2026q3/fcx-20260930.htm",
+   "max_body_bytes": 33554432,
+   "accepted_media_types": [
+    "text/html"
+   ],
+   "listed_as": "Form 10-Q for the quarter ended 2026-09-30, primary document"
+  },
+  {
+   "n": 2,
+   "kind": "html",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000045/fcx-20261027.htm",
+   "target": "data/company-sources/fcx/sec-8k-2026-10-27/fcx-20261027.htm",
+   "max_body_bytes": 33554432,
+   "accepted_media_types": [
+    "text/html"
+   ],
+   "listed_as": "Form 8-K of 27 October 2026, cover document (items 2.02, 7.01, 9.01)"
+  },
+  {
+   "n": 3,
+   "kind": "html",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000045/a3q2026exhibit991.htm",
+   "target": "data/company-sources/fcx/sec-8k-2026-10-27/a3q2026exhibit991.htm",
+   "max_body_bytes": 33554432,
+   "accepted_media_types": [
+    "text/html"
+   ],
+   "listed_as": "Form 8-K of 27 October 2026, exhibit document (third-quarter 2026 results release)"
+  },
+  {
+   "n": 4,
+   "kind": "html",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx-20261104.htm",
+   "target": "data/company-sources/fcx/sec-8k-2026-11-04/fcx-20261104.htm",
+   "max_body_bytes": 33554432,
+   "accepted_media_types": [
+    "text/html"
+   ],
+   "listed_as": "Form 8-K of 4 November 2026, cover document (items 8.01, 9.01)"
+  },
+  {
+   "n": 5,
+   "kind": "html",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000048/fcx_261104.htm",
+   "target": "data/company-sources/fcx/sec-8k-2026-11-04/fcx_261104.htm",
+   "max_body_bytes": 33554432,
+   "accepted_media_types": [
+    "text/html"
+   ],
+   "listed_as": "Form 8-K of 4 November 2026, exhibit document (Bagdad release)"
+  }
+ ]
+}

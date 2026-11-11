@@ -1,0 +1,45 @@
+{
+  "id": "unsupported-observables",
+  "title": "Unsupported observables",
+  "probes": "Whether the model avoids observables that were not offered (crude oil futures, energy shares, currencies) and, if it drafts, treats the offered yields as indirect proxies; and whether a reported move in another market is kept out of the yields' leakage flags.",
+  "synthetic": true,
+  "operator": {
+    "headline": "Synthetic oil producers' group announces surprise output cut of 1.5 million barrels per day",
+    "source_url": "https://example.com/synthetic/unsupported-observables",
+    "published_at": "2026-09-02T10:00:00+00:00",
+    "story_id": "synthetic-review-unsupported-observables"
+  },
+  "source_text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nA synthetic group of oil-producing countries said it will cut combined output by 1.5 million barrels per day from next month, a reduction most analysts surveyed had not expected. Brent crude futures rose 6 percent in early trading and shares of synthetic energy producers gained. Analysts quoted in this synthetic report said the most direct effects would show in crude oil futures, gasoline prices and the currencies of oil importers. They said any effect on Treasury yields would be indirect, through inflation expectations and growth.",
+  "rubric": {
+    "declining_to_draft": {
+      "stance": "acceptable",
+      "guidance": "Declining is acceptable: the markets the event most directly affects (crude oil futures, energy shares, importer currencies) are not offered. A draft is also acceptable if it uses only the offered yields as indirect proxies and says so."
+    },
+    "defensible_directions": {
+      "yield:ust2y_cmt": ["down", "up"],
+      "yield:ust10y_cmt": ["down", "up"]
+    },
+    "direction_note": "Higher oil prices can raise inflation expectations and yields, or weigh on growth and lower them. The yields are indirect measures here, so either direction is defensible with a stated rationale; the rubric prescribes neither.",
+    "acceptable_reasoning": [
+      "States that the most directly affected markets are not among the offered observables and does not substitute an observable that was not offered.",
+      "Uses yield legs only as indirect evidence, with link set to proxy, and explains the claimed path, such as inflation expectations or growth.",
+      "Names the opposing channel (growth versus inflation) as a competing influence."
+    ],
+    "required_uncertainties": [
+      "The offered yields measure the supply shock only indirectly; many other influences move them.",
+      "Whether the cut is implemented as announced.",
+      "Inflation-expectation and growth effects can offset each other."
+    ],
+    "leakage_flags": {
+      "yield:ust2y_cmt": {"headline_reports_move": false, "reason": "The source text reports a Brent futures move, not a move in the 2-year yield; a reported move in another market does not set this flag."},
+      "yield:ust10y_cmt": {"headline_reports_move": false, "reason": "The source text reports a Brent futures move, not a move in the 10-year yield; a reported move in another market does not set this flag."}
+    },
+    "unacceptable_claims": [
+      "Legs on crude oil futures, energy shares, currencies or any other observable that was not offered (structural validation refuses these).",
+      "Setting link to direct, or describing a Treasury yield as a direct measure of the oil supply shock.",
+      "Claiming that a yield move would confirm the effect on oil prices.",
+      "Setting headline_reports_move to true because the Brent move was reported.",
+      "Any trade, position or investment recommendation."
+    ]
+  }
+}

@@ -1,0 +1,524 @@
+{
+ "created_at": "2026-11-05T12:00:00+00:00",
+ "id": "5e6766fe5b588c1e229366e5351c80f6f99f2422edfb5e6cdf3d95a98d54b801",
+ "record": {
+  "assumptions": {
+   "ev": {
+    "scenario": "cps",
+    "source": "scenario"
+   },
+   "mine": {
+    "kt": "-294.8350405",
+    "reference": "ptfi-sales-change",
+    "source": "total"
+   },
+   "networks": {
+    "scenario": "steps",
+    "source": "technology_case"
+   }
+  },
+  "baseline": {
+   "scenario": "steps",
+   "year": "2035"
+  },
+  "catalog": {
+   "sha256": "6ef19e28e164fe077265234fbb91cfba5b632757b9c216d8ae9d9dcca92907c9",
+   "version": "copper-inputs-0.1"
+  },
+  "definitions_sha256": "f5b9843b85a3ad27edb5eb954f63fbc5231edd7d34af9f56dbf7261d1c27bd59",
+  "engine_version": "copper-coverage-0.1",
+  "figures": [
+   {
+    "id": "fcx-ptfi-sales-guidance-2025",
+    "source": "fcx-synthetic-2024",
+    "source_sha256": "0627e92a676fc74de55e1bcbf546ae60be8b377fcb697113b0275bf5edb4c289",
+    "value": "1.55"
+   },
+   {
+    "id": "fcx-ptfi-sales-guidance-2026",
+    "source": "fcx-synthetic-2025",
+    "source_sha256": "de524ba45ba805df054e9c038b79fe11cc785aa4d255e4b348d421e344c1cca6",
+    "value": "0.9"
+   },
+   {
+    "id": "iea-demand-ev-cps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "2146"
+   },
+   {
+    "id": "iea-demand-ev-hd-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "3258"
+   },
+   {
+    "id": "iea-demand-ev-steps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "2561"
+   },
+   {
+    "id": "iea-demand-networks-cps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "6398"
+   },
+   {
+    "id": "iea-demand-networks-hd-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "6924"
+   },
+   {
+    "id": "iea-demand-networks-steps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "6449"
+   },
+   {
+    "id": "iea-demand-total-2025",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "27775"
+   },
+   {
+    "id": "iea-demand-total-cps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "32359"
+   },
+   {
+    "id": "iea-demand-total-hd-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "34294"
+   },
+   {
+    "id": "iea-demand-total-steps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "33522"
+   },
+   {
+    "id": "iea-mine-total-2025",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "23227"
+   },
+   {
+    "id": "iea-mine-total-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "20733"
+   },
+   {
+    "id": "iea-networks-dc-steps-2035",
+    "source": "iea-synthetic",
+    "source_sha256": "950f34a96ff597abf84d5ce217470e9dfac303ef611a7d9b5b53e8f4a58f54f2",
+    "value": "6403"
+   },
+   {
+    "id": "scco-production-guidance-2025",
+    "source": "scco-synthetic-2024",
+    "source_sha256": "11d985af199ee8d647b2ece81fd4a95d72bb131077ef3d92362fa6e66535dc9e",
+    "value": "965800"
+   },
+   {
+    "id": "scco-production-guidance-2026",
+    "source": "scco-synthetic-2025",
+    "source_sha256": "a14bc9b04bf69cedd25c8d520d1986a5ade32d658d6dfe9c48e0c77518f2c547",
+    "value": "911400"
+   }
+  ],
+  "label": "Set A: CPS EV copper",
+  "record_version": "copper-scenario-0.1",
+  "result": {
+   "demand": {
+    "equation": "E4",
+    "rounded": false,
+    "shown": "33,061",
+    "uses": [
+     "iea-demand-total-steps-2035",
+     "iea-mine-total-2035",
+     "iea-demand-ev-cps-2035",
+     "iea-demand-ev-steps-2035",
+     "iea-networks-dc-steps-2035",
+     "iea-demand-networks-steps-2035",
+     "fcx-ptfi-sales-guidance-2025",
+     "fcx-ptfi-sales-guidance-2026"
+    ],
+    "value": "33061",
+    "withheld": []
+   },
+   "flags": [
+    {
+     "id": "hybrid",
+     "text": "Hybrid: a component comes from another published scenario than the total it is applied to. This is not an IEA scenario; the IEA scenarios move together, and their published totals are shown beside it."
+    },
+    {
+     "id": "technology_case",
+     "text": "Published technology case: the networks value is the IEA's wider direct current (DC) technology case for the same scenario, applied to the base-case total."
+    },
+    {
+     "id": "reference_magnitude",
+     "text": "Reference magnitude used as an assumption: a company disclosure, converted to copper tonnes, entered as a change in counted mine supply. It is not a projection."
+    }
+   ],
+   "mine": {
+    "equation": "E5",
+    "rounded": true,
+    "shown": "20,438.165",
+    "uses": [
+     "iea-demand-total-steps-2035",
+     "iea-mine-total-2035",
+     "iea-demand-ev-cps-2035",
+     "iea-demand-ev-steps-2035",
+     "iea-networks-dc-steps-2035",
+     "iea-demand-networks-steps-2035",
+     "fcx-ptfi-sales-guidance-2025",
+     "fcx-ptfi-sales-guidance-2026"
+    ],
+    "value": "20438.1649595",
+    "withheld": []
+   },
+   "mine_change": {
+    "equation": "E5",
+    "rounded": true,
+    "shown": "-294.835",
+    "uses": [
+     "iea-demand-total-steps-2035",
+     "iea-mine-total-2035",
+     "iea-demand-ev-cps-2035",
+     "iea-demand-ev-steps-2035",
+     "iea-networks-dc-steps-2035",
+     "iea-demand-networks-steps-2035",
+     "fcx-ptfi-sales-guidance-2025",
+     "fcx-ptfi-sales-guidance-2026"
+    ],
+    "value": "-294.8350405",
+    "withheld": []
+   },
+   "perturbations": [
+    {
+     "cases": [
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "-415",
+        "uses": [
+         "iea-demand-ev-cps-2035",
+         "iea-demand-ev-steps-2035"
+        ],
+        "value": "-415",
+        "withheld": []
+       },
+       "label": "Current Policies scenario",
+       "scenario": "cps",
+       "value": {
+        "figure": "iea-demand-ev-cps-2035",
+        "value": "2146",
+        "withheld": []
+       }
+      },
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "697",
+        "uses": [
+         "iea-demand-ev-hd-2035",
+         "iea-demand-ev-steps-2035"
+        ],
+        "value": "697",
+        "withheld": []
+       },
+       "label": "High Demand Scenario",
+       "scenario": "hd",
+       "value": {
+        "figure": "iea-demand-ev-hd-2035",
+        "value": "3258",
+        "withheld": []
+       }
+      }
+     ],
+     "control": "ev",
+     "kind": "published_scenario_value"
+    },
+    {
+     "cases": [
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "-51",
+        "uses": [
+         "iea-demand-networks-cps-2035",
+         "iea-demand-networks-steps-2035"
+        ],
+        "value": "-51",
+        "withheld": []
+       },
+       "label": "Current Policies scenario",
+       "scenario": "cps",
+       "value": {
+        "figure": "iea-demand-networks-cps-2035",
+        "value": "6398",
+        "withheld": []
+       }
+      },
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "475",
+        "uses": [
+         "iea-demand-networks-hd-2035",
+         "iea-demand-networks-steps-2035"
+        ],
+        "value": "475",
+        "withheld": []
+       },
+       "label": "High Demand Scenario",
+       "scenario": "hd",
+       "value": {
+        "figure": "iea-demand-networks-hd-2035",
+        "value": "6924",
+        "withheld": []
+       }
+      }
+     ],
+     "control": "networks",
+     "kind": "published_scenario_value"
+    },
+    {
+     "cases": [
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "-46",
+        "uses": [
+         "iea-networks-dc-steps-2035",
+         "iea-demand-networks-steps-2035"
+        ],
+        "value": "-46",
+        "withheld": []
+       },
+       "label": "Wider direct current (DC) technology development",
+       "scenario": "steps",
+       "value": {
+        "figure": "iea-networks-dc-steps-2035",
+        "value": "6403",
+        "withheld": []
+       }
+      }
+     ],
+     "control": "networks",
+     "kind": "published_technology_case"
+    },
+    {
+     "cases": [
+      {
+       "effect_if_higher": {
+        "equation": "E6",
+        "rounded": true,
+        "shown": "-294.835",
+        "uses": [
+         "fcx-ptfi-sales-guidance-2025",
+         "fcx-ptfi-sales-guidance-2026"
+        ],
+        "value": "-294.8350405",
+        "withheld": []
+       },
+       "effect_if_lower": {
+        "equation": "E6",
+        "rounded": true,
+        "shown": "294.835",
+        "uses": [
+         "fcx-ptfi-sales-guidance-2025",
+         "fcx-ptfi-sales-guidance-2026"
+        ],
+        "value": "294.8350405",
+        "withheld": []
+       },
+       "label": "Freeport-McMoRan's change in PTFI expected copper sales (stated for 2025 a year earlier, against the expectation for 2026), converted from pounds",
+       "magnitude": {
+        "equation": "E10",
+        "rounded": true,
+        "shown": "294.835",
+        "uses": [
+         "fcx-ptfi-sales-guidance-2025",
+         "fcx-ptfi-sales-guidance-2026"
+        ],
+        "value": "294.8350405",
+        "withheld": []
+       },
+       "reference": "ptfi-sales-change"
+      },
+      {
+       "effect_if_higher": {
+        "equation": "E6",
+        "rounded": false,
+        "shown": "-54.4",
+        "uses": [
+         "scco-production-guidance-2025",
+         "scco-production-guidance-2026"
+        ],
+        "value": "-54.4",
+        "withheld": []
+       },
+       "effect_if_lower": {
+        "equation": "E6",
+        "rounded": false,
+        "shown": "54.4",
+        "uses": [
+         "scco-production-guidance-2025",
+         "scco-production-guidance-2026"
+        ],
+        "value": "54.4",
+        "withheld": []
+       },
+       "label": "Southern Copper's change in expected copper production (stated for 2025, against the expectation for 2026)",
+       "magnitude": {
+        "equation": "E5",
+        "rounded": false,
+        "shown": "54.4",
+        "uses": [
+         "scco-production-guidance-2025",
+         "scco-production-guidance-2026"
+        ],
+        "value": "54.4",
+        "withheld": []
+       },
+       "reference": "scco-guidance-change"
+      }
+     ],
+     "control": "mine",
+     "kind": "reference_magnitude"
+    },
+    {
+     "cases": [
+      {
+       "effect": {
+        "equation": "E6",
+        "rounded": true,
+        "shown": "294.835",
+        "uses": [
+         "iea-mine-total-2035"
+        ],
+        "value": "294.8350405",
+        "withheld": []
+       },
+       "label": "The entered change in counted mine supply"
+      }
+     ],
+     "control": "mine",
+     "kind": "user_declared"
+    },
+    {
+     "cases": [
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "-1,163",
+        "uses": [
+         "iea-demand-total-cps-2035",
+         "iea-demand-total-steps-2035"
+        ],
+        "value": "-1163",
+        "withheld": []
+       },
+       "label": "Current Policies scenario",
+       "scenario": "cps",
+       "value": {
+        "figure": "iea-demand-total-cps-2035",
+        "value": "32359",
+        "withheld": []
+       }
+      },
+      {
+       "effect": {
+        "equation": "E4",
+        "rounded": false,
+        "shown": "772",
+        "uses": [
+         "iea-demand-total-hd-2035",
+         "iea-demand-total-steps-2035"
+        ],
+        "value": "772",
+        "withheld": []
+       },
+       "label": "High Demand Scenario",
+       "scenario": "hd",
+       "value": {
+        "figure": "iea-demand-total-hd-2035",
+        "value": "34294",
+        "withheld": []
+       }
+      }
+     ],
+     "control": "joint",
+     "kind": "published_totals"
+    }
+   ],
+   "residual": {
+    "equation": "E6",
+    "rounded": true,
+    "shown": "12,622.835",
+    "uses": [
+     "iea-demand-total-steps-2035",
+     "iea-mine-total-2035",
+     "iea-demand-ev-cps-2035",
+     "iea-demand-ev-steps-2035",
+     "iea-networks-dc-steps-2035",
+     "iea-demand-networks-steps-2035",
+     "fcx-ptfi-sales-guidance-2025",
+     "fcx-ptfi-sales-guidance-2026"
+    ],
+    "value": "12622.8350405",
+    "withheld": []
+   },
+   "residual_change": {
+    "equation": "E3",
+    "rounded": true,
+    "shown": "8,074.835",
+    "uses": [
+     "iea-demand-total-steps-2035",
+     "iea-mine-total-2035",
+     "iea-demand-ev-cps-2035",
+     "iea-demand-ev-steps-2035",
+     "iea-networks-dc-steps-2035",
+     "iea-demand-networks-steps-2035",
+     "fcx-ptfi-sales-guidance-2025",
+     "fcx-ptfi-sales-guidance-2026",
+     "iea-demand-total-2025",
+     "iea-mine-total-2025"
+    ],
+    "value": "8074.8350405",
+    "withheld": []
+   },
+   "scenario": "steps",
+   "share_pct": {
+    "equation": "E2",
+    "rounded": true,
+    "shown": "38.2",
+    "uses": [
+     "iea-demand-total-steps-2035",
+     "iea-mine-total-2035",
+     "iea-demand-ev-cps-2035",
+     "iea-demand-ev-steps-2035",
+     "iea-networks-dc-steps-2035",
+     "iea-demand-networks-steps-2035",
+     "fcx-ptfi-sales-guidance-2025",
+     "fcx-ptfi-sales-guidance-2026"
+    ],
+    "value": null,
+    "withheld": []
+   },
+   "year": "2035"
+  }
+ }
+}

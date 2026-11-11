@@ -1,0 +1,21 @@
+{
+ "note": "Owner text beside what is shown while a document of its basis does not verify. The server (second_order/event_chain_text.py, masked) and the page (frontend/src/eventChains.ts, maskedText) must give the same text for every row; tests/test_event_chain_text.py and frontend/tests/eventChains.test.ts both read this table. Only the digits 0 to 9 make a figure or a step number. The rows with digits of another script can no longer be saved; they fix what both sides show for a record that holds one anyway.",
+ "cases": [
+  {"text": "expects 85% in 2026, see step 3 and שלב 2", "steps": 4,
+   "masked": "expects [figure withheld] in [figure withheld], see step 3 and שלב 2"},
+  {"text": "see step 9", "steps": 4, "masked": "see step [figure withheld]"},
+  {"text": "see step 0", "steps": 4, "masked": "see step [figure withheld]"},
+  {"text": "see step 03", "steps": 4, "masked": "see step 03"},
+  {"text": "see steps 2 and 3.5", "steps": 4, "masked": "see steps 2 and [figure withheld]"},
+  {"text": "4,120.5% of 1,000", "steps": 4, "masked": "[figure withheld] of [figure withheld]"},
+  {"text": "ראו בשלב 2, ובשלב 3 ושבשלבים 4", "steps": 4, "masked": "ראו בשלב 2, ובשלב 3 ושבשלבים 4"},
+  {"text": "ראו בשלב 9", "steps": 4, "masked": "ראו בשלב [figure withheld]"},
+  {"text": "ושבכשלב 2", "steps": 4, "masked": "ושבכשלב [figure withheld]"},
+  {"text": "אבשלב 2", "steps": 4, "masked": "אבשלב [figure withheld]"},
+  {"text": "see step ٠3", "steps": 4, "masked": "see step ٠[figure withheld]"},
+  {"text": "see step ٣", "steps": 4, "masked": "see step ٣"},
+  {"text": "step 3٠", "steps": 4, "masked": "step 3٠"},
+  {"text": "made ٨٥% there", "steps": 4, "masked": "made ٨٥% there"},
+  {"text": "step ３ and 7", "steps": 4, "masked": "step ３ and [figure withheld]"}
+ ]
+}

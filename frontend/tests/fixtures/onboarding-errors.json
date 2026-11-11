@@ -1,0 +1,38 @@
+{
+  "username_unavailable": {
+    "contract": "onboarding-api-0.1",
+    "code": "username_unavailable",
+    "detail": "This username is not available. Choose another, or sign in if it is your account."
+  },
+  "invalid_registration": {
+    "contract": "onboarding-api-0.1",
+    "code": "invalid_registration",
+    "detail": "A password must be 10 to 256 characters without control characters",
+    "field": "password"
+  },
+  "invalid_request": {
+    "contract": "onboarding-api-0.1",
+    "code": "invalid_request",
+    "detail": "A registration has exactly username, display_name, password and note."
+  },
+  "payload_too_large": {
+    "contract": "onboarding-api-0.1",
+    "code": "payload_too_large",
+    "detail": "A registration is limited to 4096 bytes"
+  },
+  "forbidden": {
+    "contract": "onboarding-api-0.1",
+    "code": "forbidden",
+    "detail": "The registrations action header is missing"
+  },
+  "accounts_unavailable": {
+    "contract": "onboarding-api-0.1",
+    "code": "accounts_unavailable",
+    "detail": "This server runs without accounts."
+  },
+  "internal_error": {
+    "contract": "onboarding-api-0.1",
+    "code": "internal_error",
+    "detail": "Something went wrong on the server. Read the page again before trying anything."
+  }
+}

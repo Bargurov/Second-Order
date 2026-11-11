@@ -1,0 +1,109 @@
+{
+ "capture_id": "20261013T123000000000Z-3937acfb4b42",
+ "definitions": {
+  "description": "The Market Probability Tracker uses Chicago Mercantile Exchange (CME) 3-month SOFR options to estimate the probability ditributions implied by their prices and specified reference window.   Below are a selection of statistics generated from those distributions, organized by date and reference window.",
+  "fields": {
+   "Prob: cut": "The probability, in percent, average SOFR over the reference window will be below the FOMC's target range",
+   "Prob: hike": "The probability, in percent, average SOFR over the reference window will be above the FOMC's target range",
+   "Rate: 25th percentile": "The rate, in basis points, associated with the 25th percentile of the estimated distribution for a given reference window",
+   "Rate: 75th percentile": "The average, in basis points, associated with the 75th percentile of the distribution for a given reference window",
+   "Rate: mean": "The rate, in basis points, associated with the mean of the estimated distribution for a given reference window",
+   "reference_start": "Start date of the 3-month window referenced by CME 3-month SOFR contracts",
+   "target_range": "FOMC federal funds rate target range on the indicated observation date"
+  }
+ },
+ "license": {
+  "paragraphs": [
+   "SYNTHETIC: market data notice for a test workbook.",
+   "Atlanta Fed Market Probability Tracker is not an official forecast of the Federal Reserve Bank of Atlanta, its president, the Federal Reserve System, or the FOMC. Use of this data is permitted for personal and educational purposes only. Copyright (c) 2024, Federal Reserve Bank of Atlanta. All rights reserved.",
+   "SYNTHETIC: warranty disclaimer for a test workbook."
+  ],
+  "statement": "Atlanta Fed Market Probability Tracker is not an official forecast of the Federal Reserve Bank of Atlanta, its president, the Federal Reserve System, or the FOMC. Use of this data is permitted for personal and educational purposes only. Copyright (c) 2024, Federal Reserve Bank of Atlanta. All rights reserved."
+ },
+ "limits": [
+  "A window's start date begins a three-month averaging period for SOFR; it is not an FOMC meeting date.",
+  "Average SOFR over a window is not the federal funds target range, or any rate on a particular date.",
+  "No probability of a meeting decision is shown or derived. The workbook's cut and hike probabilities describe average SOFR over a window against the target range; they are not kept or shown.",
+  "No surprise measure, change or score is computed from these averages, and they are not compared with the decision.",
+  "The workbook was obtained after the event. It gives observation dates without a time of day, original publication time or retained vintage, so it does not show what was available before the announcement; values may have been revised since.",
+  "Descriptive context only: not a forecast, a causal attribution, a trading signal or a research score. Nothing here is frozen, scored, attached to a draft or analysis, or added to research summaries.",
+  "A different measure from the Treasury yields under Market context; the two are kept apart and never combined."
+ ],
+ "measure": {
+  "id": "mpt-average-sofr-window-1",
+  "statement": "For each three-month reference window: the mean and the 25th and 75th percentiles of the distribution of average SOFR over that window, as the tracker estimated it from CME 3-month SOFR options on the observation date. The workbook states them in basis points; they are shown in percent by an exact decimal shift (100 bp = 1 percentage point), without rounding."
+ },
+ "meeting_specific": {
+  "state": "unavailable",
+  "statement": "This workbook gives no market-implied pricing for the policy decision announced in this statement. Its distributions describe average SOFR over three-month windows, not that meeting's decision."
+ },
+ "origin": {
+  "state": "none"
+ },
+ "problem": null,
+ "provenance": {
+  "bytes": 51655,
+  "first_observation": "2026-09-10",
+  "http_status": null,
+  "last_observation": "2026-09-17",
+  "method": "SYNTHETIC: written by the test suite",
+  "obtained_on": "2026-10-13",
+  "parser_version": "mpt-workbook-parser-0.1",
+  "prepared_at": "2026-10-13T12:30:00+00:00",
+  "publication_time": null,
+  "record_version": 1,
+  "response_headers": null,
+  "retained_at": "2026-10-13T12:30:00+00:00",
+  "sha256": "d39b7a3da74fba23ed35e7b90026346ea3cc00dee88d35b26ff0b96afe06636c",
+  "source_id": "mpt-d39b7a3da74fba23",
+  "supplied_name": "synthetic-mpt.xlsx",
+  "unknown": "Supplied as an already downloaded file. Its HTTP status, response headers, server time and original publication time were not recorded and are unknown; the date it was obtained is the operator's statement.",
+  "validated_at": "2026-10-13T12:30:00+00:00",
+  "validation_sha256": "3d58766ea9bb5278f710e8fc47e64cb59b813bb9403ddd14f3b2bbf4764b3338",
+  "workbook_rows": 210
+ },
+ "provider_called": false,
+ "publication": {
+  "new_york_date": "2026-09-23",
+  "new_york_offset": "-04:00",
+  "new_york_time": "14:00",
+  "published_at": "2026-09-23T18:00:00Z",
+  "published_at_as_supplied": "2026-09-23T14:00:00-04:00"
+ },
+ "rule": {
+  "id": "latest-observation-before-publication-date-1",
+  "statement": "The observation is the latest date in the workbook strictly before the statement's publication date in New York. An observation dated the publication date itself is never used: the workbook gives dates without a time of day, so it cannot show whether that day's estimate came before or after the release. A selection is made only when the workbook also holds an observation dated on or after the publication date, so the chosen date is not merely the end of the file's coverage. The windows are the first four the workbook lists for that observation, in order of their start dates and labelled as the workbook labels them; a value the workbook does not list is shown as unavailable, and no later window takes its place."
+ },
+ "selection": {
+  "calendar_days_before": null,
+  "first_observation": "2026-09-10",
+  "last_observation": "2026-09-17",
+  "observation_date": null,
+  "publication_new_york_date": "2026-09-23",
+  "reason": "none_on_or_after",
+  "same_day_observation": false,
+  "state": "no_coverage"
+ },
+ "separate": "A separate event record, prepared by an explicit local command. Saved model requests for this event are built from its headline, address, publication time and captured text only; this context was not part of any of them, and no model received it.",
+ "source": {
+  "attribution": "Federal Reserve Bank of Atlanta, Market Probability Tracker, estimated from CME 3-month SOFR options",
+  "file": "MPT historical data (mpt_histdata.xlsx)",
+  "file_url": "https://www.atlantafed.org/-/media/Project/Atlanta/FRBA/Documents/research-and-data/data/market-probability-tracker/mpt_histdata.xlsx",
+  "page_url": "https://www.atlantafed.org/research-and-data/data/market-probability-tracker",
+  "product": "Market Probability Tracker",
+  "publisher": "Federal Reserve Bank of Atlanta"
+ },
+ "state": "no_coverage",
+ "target_range": null,
+ "versions": [
+  {
+   "prepared_at": "2026-10-13T12:30:00+00:00",
+   "source_id": "mpt-d39b7a3da74fba23",
+   "version": 1
+  }
+ ],
+ "view_version": "rate-path-view-0.1",
+ "windows": [],
+ "windows_listed": null,
+ "written": false
+}

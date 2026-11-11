@@ -1,0 +1,2237 @@
+{
+ "thesis_version": "thesis-0.1",
+ "id": "copper",
+ "version": 1,
+ "previous_version": null,
+ "title": "Copper: technology-driven demand and the physical supply balance",
+ "topic": "Copper",
+ "opened_on": "2026-11-03",
+ "prepared_on": "2026-11-03",
+ "confidence": {
+  "level": "medium",
+  "basis": "The demand and mine-pipeline reasons rest on one IEA edition compared across its own projection years, since no earlier edition is retained. On the supply side, Southern Copper expects less copper for the coming year in guidance it says it is reviewing, and world mine output reads unchanged between two rounded USGS figures, the later an estimate. Recycling, measured for the United States only, grew; substitution by aluminium is named but not measured. The one material change used for every measure was set after the figures had been read, not before."
+ },
+ "sources": [
+  {
+   "id": "iea-dataset-2026",
+   "kind": "xlsx",
+   "origin": "owner_download",
+   "publisher": "International Energy Agency",
+   "title": "Critical Minerals Dataset 2026",
+   "series": "iea-critical-minerals-dataset",
+   "edition": "2026",
+   "edition_date": "2026-01-01",
+   "url": "https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset",
+   "approval_id": "copper-iea-dataset-01",
+   "attempt": 1,
+   "folder": "iea-dataset-2026",
+   "name": "IEA-Critical-Minerals-Dataset-2026.xlsx",
+   "sha256": "43bd9338a08ac8399c65471115f30ffc10dca7117e62f03cca86d49224717935",
+   "bytes": 1140286,
+   "retrieved_at": "2026-11-03T01:19:00.126297+02:00",
+   "terms": {
+    "licence": "CC BY 4.0",
+    "note": "Notice: CC BY 4.0; cite as “IEA (2024), Critical Minerals Data Explorer, IEA, Paris”. No sheet flags a third-party series. Sheet 2, A72: “Supply projections for the key energy transition minerals are built using the data for the pipeline of operating and announced mining and refining projects by country.” A73: ““Base case” is assessed through their probability of coming online based on various factors such as the status of financing, permitting and feasibility studies.” Changes and comparisons here are this project's. Edition date: the year in the file name."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "usgs-csv-2026",
+   "kind": "csv",
+   "origin": "owner_download",
+   "publisher": "U.S. Geological Survey",
+   "title": "Mineral Commodity Summaries 2026 data release: commodities data file",
+   "series": "usgs-mineral-commodity-summaries",
+   "edition": "2026",
+   "edition_date": "2026-02-06",
+   "url": "https://doi.org/10.5066/P1WKQ63T",
+   "approval_id": "copper-usgs-csv-01",
+   "attempt": 1,
+   "folder": "usgs-csv-2026",
+   "name": "MCS2026_Commodities_Data.csv",
+   "sha256": "582a0aa231aea53d8a97dc8d1cd3dfa5f885cf3760353e3d029d7f0ae4fbaaf5",
+   "bytes": 3189010,
+   "retrieved_at": "2026-11-03T01:17:22.769111+02:00",
+   "terms": {
+    "licence": "CC0 1.0 (public domain dedication)",
+    "note": "Rights field of the data release's item record, as the owner pasted it: Creative Commons Zero v1.0 Universal. Owner download, recorded only on a size and MD5 match with that record. Edition date: the publication date in that item record."
+   },
+   "transcription": null,
+   "encoding": "windows-1252"
+  },
+  {
+   "id": "usgs-2026",
+   "kind": "pdf",
+   "origin": "get",
+   "publisher": "U.S. Geological Survey",
+   "title": "Mineral Commodity Summaries 2026: Copper",
+   "series": "usgs-mineral-commodity-summaries",
+   "edition": "2026",
+   "edition_date": "2026-02-01",
+   "url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-copper.pdf",
+   "approval_id": "copper-usgs-01",
+   "attempt": 1,
+   "folder": "usgs-2026",
+   "name": "mcs2026-copper.pdf",
+   "sha256": "c4971f7edfa38feefc51952c5f24889c46f468d936c6620d388233313ae8ae85",
+   "bytes": 141602,
+   "retrieved_at": "2026-11-02T19:24:54.053711+02:00",
+   "terms": {
+    "licence": "U.S. public domain",
+    "note": "USGS publication. The chapter carries no licence text; USGS states that its works are in the U.S. public domain (copyrights and credits page, read at recon). Figures and passages are transcribed from the PDF's text layer; the contact line in the chapter header is not quoted. Edition date: the first day of the month in the chapter footer."
+   },
+   "transcription": {
+    "pages": [
+     1,
+     2
+    ],
+    "method": "transcribed from the PDF's text layer"
+   },
+   "encoding": null
+  },
+  {
+   "id": "usgs-2025",
+   "kind": "pdf",
+   "origin": "get",
+   "publisher": "U.S. Geological Survey",
+   "title": "Mineral Commodity Summaries 2025: Copper",
+   "series": "usgs-mineral-commodity-summaries",
+   "edition": "2025",
+   "edition_date": "2025-01-01",
+   "url": "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-copper.pdf",
+   "approval_id": "copper-usgs-01",
+   "attempt": 2,
+   "folder": "usgs-2025",
+   "name": "mcs2025-copper.pdf",
+   "sha256": "348b1e224d830a51e6d35cf81343eead26a0cb2a4e74c474d699b7faed1b10e6",
+   "bytes": 746302,
+   "retrieved_at": "2026-11-02T19:25:00.899516+02:00",
+   "terms": {
+    "licence": "U.S. public domain",
+    "note": "USGS publication. The chapter carries no licence text; USGS states that its works are in the U.S. public domain (copyrights and credits page, read at recon). Figures and passages are transcribed from the PDF's text layer; the contact line in the chapter header is not quoted. Edition date: the first day of the month in the chapter footer."
+   },
+   "transcription": {
+    "pages": [
+     1
+    ],
+    "method": "transcribed from the PDF's text layer"
+   },
+   "encoding": null
+  },
+  {
+   "id": "worldbank-cmo-2026-10",
+   "kind": "pdf",
+   "origin": "get",
+   "publisher": "World Bank",
+   "title": "Commodity Markets Outlook, October 2026: Table 1, Commodity prices",
+   "series": "worldbank-commodity-markets-outlook",
+   "edition": "October 2026",
+   "edition_date": "2026-10-01",
+   "url": "https://thedocs.worldbank.org/en/doc/2ac43f46629cf90c2ea5b8929a343593-0050012026/related/CMO-October-2026-Forecasts.pdf",
+   "approval_id": "copper-worldbank-01",
+   "attempt": 3,
+   "folder": "worldbank-cmo-2026-10",
+   "name": "CMO-October-2026-Forecasts.pdf",
+   "sha256": "2397f5f87d092d0190ffe64c62cc577b2f88c15c80c66b5687a75e07ac9cf46e",
+   "bytes": 88063,
+   "retrieved_at": "2026-11-02T19:24:50.553865+02:00",
+   "terms": {
+    "licence": "No licence text on the retained pages; quoted as a World Bank publication",
+    "note": "The two retained pages carry no copyright or licence statement; the World Bank data terms (retained, paragraph 36) govern its datasets, not this publication. Table 1 states “Source: World Bank.” and “f = forecast”. One short quote of the World Bank's own forecast columns is used, labelled as its forecast; the 2024 and 2025 averages are not. An October forecast for the current year includes months already realised. Text layer; edition date: the first day of the month in the page header."
+   },
+   "transcription": {
+    "pages": [
+     2
+    ],
+    "method": "transcribed from the PDF's text layer"
+   },
+   "encoding": null
+  },
+  {
+   "id": "sec-fcx-2025",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Freeport-McMoRan Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2025",
+   "series": "sec-fcx-10k",
+   "edition": "Fiscal 2025",
+   "edition_date": "2026-02-13",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 1,
+   "folder": "sec-fcx-2025",
+   "name": "fcx-20251231.htm",
+   "sha256": "7ba50efcd0e758e47fca51dc9a88f8c2bb0d8308c881314288b49ae5efd6f167",
+   "bytes": 6347587,
+   "retrieved_at": "2026-11-02T19:25:20.379798+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-fcx-2024",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Freeport-McMoRan Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2024",
+   "series": "sec-fcx-10k",
+   "edition": "Fiscal 2024",
+   "edition_date": "2025-02-14",
+   "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125925000006/fcx-20241231.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 2,
+   "folder": "sec-fcx-2024",
+   "name": "fcx-20241231.htm",
+   "sha256": "220349384034370c7676fc03683e7ccd2ec431f0b6728ddd7b3948f976d354f8",
+   "bytes": 6548029,
+   "retrieved_at": "2026-11-02T19:25:28.376537+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-scco-2025",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Southern Copper Corporation",
+   "title": "Annual report on Form 10-K for fiscal 2025",
+   "series": "sec-scco-10k",
+   "edition": "Fiscal 2025",
+   "edition_date": "2026-02-27",
+   "url": "https://www.sec.gov/Archives/edgar/data/1001838/000110465926021492/scco-20251231x10k.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 3,
+   "folder": "sec-scco-2025",
+   "name": "scco-20251231x10k.htm",
+   "sha256": "6340956e768c24533bd98627c1e4fbff651dd55e543f79ed56bd2f13691923f9",
+   "bytes": 10718275,
+   "retrieved_at": "2026-11-02T19:25:38.082423+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-scco-2024",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Southern Copper Corporation",
+   "title": "Annual report on Form 10-K for fiscal 2024",
+   "series": "sec-scco-10k",
+   "edition": "Fiscal 2024",
+   "edition_date": "2025-03-03",
+   "url": "https://www.sec.gov/Archives/edgar/data/1001838/000155837025002017/scco-20241231x10k.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 4,
+   "folder": "sec-scco-2024",
+   "name": "scco-20241231x10k.htm",
+   "sha256": "d365418aeb44fd0bd27878294b14163cfe49733d3bc11335b5f04653484e42cd",
+   "bytes": 10316965,
+   "retrieved_at": "2026-11-02T19:25:49.725725+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-mli-2025",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Mueller Industries, Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2025",
+   "series": "sec-mli-10k",
+   "edition": "Fiscal 2025",
+   "edition_date": "2026-02-25",
+   "url": "https://www.sec.gov/Archives/edgar/data/89439/000008943926000008/mli-20251227.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 5,
+   "folder": "sec-mli-2025",
+   "name": "mli-20251227.htm",
+   "sha256": "b1580450b26faafb098e86c73801901b36489ed7c847801cfc2890f3911edbf9",
+   "bytes": 2590366,
+   "retrieved_at": "2026-11-02T19:26:00.772151+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-mli-2024",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Mueller Industries, Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2024",
+   "series": "sec-mli-10k",
+   "edition": "Fiscal 2024",
+   "edition_date": "2025-02-26",
+   "url": "https://www.sec.gov/Archives/edgar/data/89439/000008943925000010/mli-20241228.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 6,
+   "folder": "sec-mli-2024",
+   "name": "mli-20241228.htm",
+   "sha256": "7e602e98d1fcde2bf4f5e59bd002249c8abcc5190053d15191d03e276e594a72",
+   "bytes": 2632798,
+   "retrieved_at": "2026-11-02T19:26:09.676890+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-tsla-2025",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Tesla, Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2025",
+   "series": "sec-tsla-10k",
+   "edition": "Fiscal 2025",
+   "edition_date": "2026-01-28",
+   "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 7,
+   "folder": "sec-tsla-2025",
+   "name": "tsla-20251231.htm",
+   "sha256": "6613b0ffabe8e9b2668eef50f40540756bd4ef03e2f633d489ca83aa58b99729",
+   "bytes": 2391638,
+   "retrieved_at": "2026-11-02T19:26:20.336495+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  },
+  {
+   "id": "sec-tsla-2024",
+   "kind": "html",
+   "origin": "get",
+   "publisher": "Tesla, Inc.",
+   "title": "Annual report on Form 10-K for fiscal 2024",
+   "series": "sec-tsla-10k",
+   "edition": "Fiscal 2024",
+   "edition_date": "2025-01-29",
+   "url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828025003063/tsla-20241231.htm",
+   "approval_id": "copper-sec-01",
+   "attempt": 8,
+   "folder": "sec-tsla-2024",
+   "name": "tsla-20241231.htm",
+   "sha256": "8e920d2c97ffbc458b22b73ad9789b6b4350dd643dca4f791078b5e1eb50aee2",
+   "bytes": 2596568,
+   "retrieved_at": "2026-11-02T19:26:40.974902+02:00",
+   "terms": {
+    "licence": "Public filing on SEC EDGAR",
+    "note": "Annual report on Form 10-K, retrieved from EDGAR by one request with a declared contact (the contact is written nowhere). Quoted at the cited paragraph. Edition date: the date in the report's signature block."
+   },
+   "transcription": null,
+   "encoding": null
+  }
+ ],
+ "figures": [
+  {
+   "id": "iea-solar-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from solar PV",
+   "unit": "kt",
+   "value": "1970",
+   "as_shown": "1,970",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   }
+  },
+  {
+   "id": "iea-solar-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from solar PV",
+   "unit": "kt",
+   "value": "2222",
+   "as_shown": "2,222",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   }
+  },
+  {
+   "id": "iea-solar-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from solar PV",
+   "unit": "kt",
+   "value": "2164",
+   "as_shown": "2,164",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   }
+  },
+  {
+   "id": "iea-solar-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from solar PV",
+   "unit": "kt",
+   "value": "2219",
+   "as_shown": "2,219",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L8",
+    "label_cell": "A8",
+    "label": "Solar PV"
+   }
+  },
+  {
+   "id": "iea-wind-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from wind",
+   "unit": "kt",
+   "value": "542",
+   "as_shown": "542",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B9",
+    "label_cell": "A9",
+    "label": "Wind"
+   }
+  },
+  {
+   "id": "iea-wind-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from wind",
+   "unit": "kt",
+   "value": "791",
+   "as_shown": "791",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J9",
+    "label_cell": "A9",
+    "label": "Wind"
+   }
+  },
+  {
+   "id": "iea-wind-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from wind",
+   "unit": "kt",
+   "value": "734",
+   "as_shown": "734",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K9",
+    "label_cell": "A9",
+    "label": "Wind"
+   }
+  },
+  {
+   "id": "iea-wind-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from wind",
+   "unit": "kt",
+   "value": "571",
+   "as_shown": "571",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L9",
+    "label_cell": "A9",
+    "label": "Wind"
+   }
+  },
+  {
+   "id": "iea-ev-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electric vehicles",
+   "unit": "kt",
+   "value": "794",
+   "as_shown": "794",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   }
+  },
+  {
+   "id": "iea-ev-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electric vehicles",
+   "unit": "kt",
+   "value": "1763",
+   "as_shown": "1,763",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   }
+  },
+  {
+   "id": "iea-ev-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electric vehicles",
+   "unit": "kt",
+   "value": "2561",
+   "as_shown": "2,561",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   }
+  },
+  {
+   "id": "iea-ev-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electric vehicles",
+   "unit": "kt",
+   "value": "3046",
+   "as_shown": "3,046",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L11",
+    "label_cell": "A11",
+    "label": "Electric vehicles"
+   }
+  },
+  {
+   "id": "iea-networks-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electricity networks",
+   "unit": "kt",
+   "value": "4544",
+   "as_shown": "4,544",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   }
+  },
+  {
+   "id": "iea-networks-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electricity networks",
+   "unit": "kt",
+   "value": "5713",
+   "as_shown": "5,713",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   }
+  },
+  {
+   "id": "iea-networks-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electricity networks",
+   "unit": "kt",
+   "value": "6449",
+   "as_shown": "6,449",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   }
+  },
+  {
+   "id": "iea-networks-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from electricity networks",
+   "unit": "kt",
+   "value": "6631",
+   "as_shown": "6,631",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L13",
+    "label_cell": "A13",
+    "label": "Electricity networks"
+   }
+  },
+  {
+   "id": "iea-energy-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from all energy technologies",
+   "unit": "kt",
+   "value": "8003",
+   "as_shown": "8,003",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   }
+  },
+  {
+   "id": "iea-energy-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from all energy technologies",
+   "unit": "kt",
+   "value": "10765",
+   "as_shown": "10,765",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   }
+  },
+  {
+   "id": "iea-energy-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from all energy technologies",
+   "unit": "kt",
+   "value": "12364",
+   "as_shown": "12,364",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   }
+  },
+  {
+   "id": "iea-energy-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from all energy technologies",
+   "unit": "kt",
+   "value": "13073",
+   "as_shown": "13,073",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L15",
+    "label_cell": "A15",
+    "label": "Total energy technologies"
+   }
+  },
+  {
+   "id": "iea-other-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from other uses",
+   "unit": "kt",
+   "value": "19772",
+   "as_shown": "19,772",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   }
+  },
+  {
+   "id": "iea-other-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from other uses",
+   "unit": "kt",
+   "value": "20605",
+   "as_shown": "20,605",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   }
+  },
+  {
+   "id": "iea-other-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from other uses",
+   "unit": "kt",
+   "value": "21158",
+   "as_shown": "21,158",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   }
+  },
+  {
+   "id": "iea-other-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA copper demand from other uses",
+   "unit": "kt",
+   "value": "21911",
+   "as_shown": "21,911",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L16",
+    "label_cell": "A16",
+    "label": "Other uses"
+   }
+  },
+  {
+   "id": "iea-demand-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA total copper demand",
+   "unit": "kt",
+   "value": "27775",
+   "as_shown": "27,775",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "B17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   }
+  },
+  {
+   "id": "iea-demand-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA total copper demand",
+   "unit": "kt",
+   "value": "31370",
+   "as_shown": "31,370",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "J17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   }
+  },
+  {
+   "id": "iea-demand-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA total copper demand",
+   "unit": "kt",
+   "value": "33522",
+   "as_shown": "33,522",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "K17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   }
+  },
+  {
+   "id": "iea-demand-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA total copper demand",
+   "unit": "kt",
+   "value": "34984",
+   "as_shown": "34,984",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "Stated Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "L17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   }
+  },
+  {
+   "id": "iea-demand-cps-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA total copper demand",
+   "unit": "kt",
+   "value": "32359",
+   "as_shown": "32,359",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "Current Policies scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "E17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   }
+  },
+  {
+   "id": "iea-demand-hd-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA total copper demand",
+   "unit": "kt",
+   "value": "34294",
+   "as_shown": "34,294",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "High Demand Scenario",
+   "locator": {
+    "sheet": "1 Total demand for key minerals",
+    "cell": "Q17",
+    "label_cell": "A17",
+    "label": "Total demand"
+   }
+  },
+  {
+   "id": "iea-mining-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mine supply",
+   "unit": "kt",
+   "value": "23227",
+   "as_shown": "23,227",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "B14",
+    "label_cell": "A14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-mining-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mine supply",
+   "unit": "kt",
+   "value": "24571",
+   "as_shown": "24,571",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "C14",
+    "label_cell": "A14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-mining-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mine supply",
+   "unit": "kt",
+   "value": "20733",
+   "as_shown": "20,733",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "D14",
+    "label_cell": "A14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-mining-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case copper mine supply",
+   "unit": "kt",
+   "value": "17183",
+   "as_shown": "17,183",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "E14",
+    "label_cell": "A14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-refining-2025",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case refined copper supply",
+   "unit": "kt",
+   "value": "27955",
+   "as_shown": "27,955",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "H14",
+    "label_cell": "G14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-refining-2030",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case refined copper supply",
+   "unit": "kt",
+   "value": "36383",
+   "as_shown": "36,383",
+   "year": "2030",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "I14",
+    "label_cell": "G14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-refining-2035",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case refined copper supply",
+   "unit": "kt",
+   "value": "34501",
+   "as_shown": "34,501",
+   "year": "2035",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "J14",
+    "label_cell": "G14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "iea-refining-2040",
+   "source": "iea-dataset-2026",
+   "measure": "IEA base-case refined copper supply",
+   "unit": "kt",
+   "value": "33710",
+   "as_shown": "33,710",
+   "year": "2040",
+   "period": null,
+   "basis": null,
+   "scenario": "base case",
+   "locator": {
+    "sheet": "2 Total supply for key minerals",
+    "cell": "K14",
+    "label_cell": "G14",
+    "label": "Total"
+   }
+  },
+  {
+   "id": "usgs26-world-mine-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS world copper mine production, rounded; the edition's latest year is an estimate",
+   "unit": "kt",
+   "value": "23000",
+   "as_shown": "23,000",
+   "year": "2024",
+   "period": null,
+   "basis": "world",
+   "scenario": null,
+   "locator": {
+    "row": 2009,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Mine production: rounded"
+   }
+  },
+  {
+   "id": "usgs26-world-mine-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS world copper mine production, rounded; the edition's latest year is an estimate",
+   "unit": "kt",
+   "value": "23000",
+   "as_shown": "23,000",
+   "year": "2025",
+   "period": null,
+   "basis": "world",
+   "scenario": null,
+   "locator": {
+    "row": 2028,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Mine production: rounded"
+   }
+  },
+  {
+   "id": "usgs26-us-refinery-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper production",
+   "unit": "kt",
+   "value": "921",
+   "as_shown": "921",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 2029,
+    "column": "Value",
+    "label_column": "Country",
+    "label": "United States"
+   }
+  },
+  {
+   "id": "usgs26-us-refinery-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper production, estimated",
+   "unit": "kt",
+   "value": "850",
+   "as_shown": "850",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 2048,
+    "column": "Value",
+    "label_column": "Country",
+    "label": "United States"
+   }
+  },
+  {
+   "id": "usgs26-us-consumption-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US reported consumption of refined copper",
+   "unit": "kt",
+   "value": "1580",
+   "as_shown": "1,580",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1948,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Consumption: Reported, refined copper"
+   }
+  },
+  {
+   "id": "usgs26-us-consumption-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US reported consumption of refined copper, estimated",
+   "unit": "kt",
+   "value": "1700",
+   "as_shown": "1,700",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1964,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Consumption: Reported, refined copper"
+   }
+  },
+  {
+   "id": "usgs26-us-primary-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper production from ore (primary)",
+   "unit": "kt",
+   "value": "882",
+   "as_shown": "882",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1941,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Production, Refinery: Primary (from ore)"
+   }
+  },
+  {
+   "id": "usgs26-us-primary-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper production from ore (primary), estimated",
+   "unit": "kt",
+   "value": "790",
+   "as_shown": "790",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1957,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Production, Refinery: Primary (from ore)"
+   }
+  },
+  {
+   "id": "usgs26-us-secondary-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper production from scrap (secondary)",
+   "unit": "kt",
+   "value": "39",
+   "as_shown": "39",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1942,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Production, Refinery: Secondary (from scrap)"
+   }
+  },
+  {
+   "id": "usgs26-us-secondary-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper production from scrap (secondary), estimated",
+   "unit": "kt",
+   "value": "60",
+   "as_shown": "60",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1958,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Production, Refinery: Secondary (from scrap)"
+   }
+  },
+  {
+   "id": "usgs26-us-imports-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US imports of refined copper for consumption",
+   "unit": "kt",
+   "value": "903",
+   "as_shown": "903",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1945,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Imports for consumption: Refined"
+   }
+  },
+  {
+   "id": "usgs26-us-imports-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US imports of refined copper for consumption, estimated",
+   "unit": "kt",
+   "value": "1700",
+   "as_shown": "1,700",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1961,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Imports for consumption: Refined"
+   }
+  },
+  {
+   "id": "usgs26-us-exports-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US exports of refined copper",
+   "unit": "kt",
+   "value": "72",
+   "as_shown": "72",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1947,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Exports: Refined"
+   }
+  },
+  {
+   "id": "usgs26-us-exports-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US exports of refined copper, estimated",
+   "unit": "kt",
+   "value": "110",
+   "as_shown": "110",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1963,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Exports: Refined"
+   }
+  },
+  {
+   "id": "usgs26-us-stocks-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper stocks at yearend",
+   "unit": "kt",
+   "value": "123",
+   "as_shown": "123",
+   "year": "2024",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1953,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Stocks, refined, held by U.S. producers, consumers, and metal exchanges, yearend"
+   }
+  },
+  {
+   "id": "usgs26-us-stocks-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US refined copper stocks at yearend, estimated",
+   "unit": "kt",
+   "value": "450",
+   "as_shown": "450",
+   "year": "2025",
+   "period": null,
+   "basis": "United States, refined copper",
+   "scenario": null,
+   "locator": {
+    "row": 1969,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Stocks, refined, held by U.S. producers, consumers, and metal exchanges, yearend"
+   }
+  },
+  {
+   "id": "usgs26-us-old-scrap-2024",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US copper recovered from old (post-consumer) scrap, estimated",
+   "unit": "kt",
+   "value": "140",
+   "as_shown": "140",
+   "year": "2024",
+   "period": null,
+   "basis": "United States",
+   "scenario": null,
+   "locator": {
+    "row": 1943,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Copper recovered from old (post-consumer) scrap"
+   }
+  },
+  {
+   "id": "usgs26-us-old-scrap-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS US copper recovered from old (post-consumer) scrap, estimated",
+   "unit": "kt",
+   "value": "160",
+   "as_shown": "160",
+   "year": "2025",
+   "period": null,
+   "basis": "United States",
+   "scenario": null,
+   "locator": {
+    "row": 1959,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Copper recovered from old (post-consumer) scrap"
+   }
+  },
+  {
+   "id": "cmo-copper-2026",
+   "source": "worldbank-cmo-2026-10",
+   "measure": "World Bank expected annual average copper price, nominal, column 2026f; the quote runs on through its two later columns",
+   "unit": "usd_per_tonne",
+   "value": "13200",
+   "as_shown": "13200",
+   "year": "2026",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "page": 2,
+    "quote": "13200 13000 12500"
+   }
+  },
+  {
+   "id": "usgs26-producer-price-2025",
+   "source": "usgs-csv-2026",
+   "measure": "USGS annual average U.S. producer cathode price (COMEX + premium), estimated",
+   "unit": "usd_cents_per_lb",
+   "value": "490",
+   "as_shown": "490",
+   "year": "2025",
+   "period": null,
+   "basis": "United States",
+   "scenario": null,
+   "locator": {
+    "row": 1966,
+    "column": "Value",
+    "label_column": "Statistics_detail",
+    "label": "Price, annual average, cents per pound: U.S. producer, cathode (COMEX + premium)"
+   }
+  },
+  {
+   "id": "fcx-sensitivity-2026",
+   "source": "sec-fcx-2025",
+   "measure": "Freeport-McMoRan stated change in operating cash flows for each ten cents a pound",
+   "unit": "usd_million",
+   "value": "330",
+   "as_shown": "$330",
+   "year": "2026",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 4245,
+    "quote": "The impact of price changes on operating cash flows for the year 2026 would approximate $330 million for each $0.10 per pound change in the average price of copper"
+   }
+  },
+  {
+   "id": "scco-guidance-2026",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper expected copper production for the year ahead",
+   "unit": "t",
+   "value": "911400",
+   "as_shown": "911,400",
+   "year": "2026",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 7784,
+    "quote": "In 2026, we expect our copper production to stand at 911,400 tonnes, mainly due to lower ore grades. We are reviewing this forecast to improve it throughout the year."
+   }
+  },
+  {
+   "id": "scco-guidance-2025",
+   "source": "sec-scco-2024",
+   "measure": "Southern Copper expected copper production for the year ahead",
+   "unit": "t",
+   "value": "965800",
+   "as_shown": "965,800",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 7674,
+    "quote": "In 2025, we expect our copper production to reach 965,800 tonnes, a decrease of 0.8% over final production in 2024."
+   }
+  },
+  {
+   "id": "scco-copper-share-2025",
+   "source": "sec-scco-2025",
+   "measure": "Southern Copper copper share of sales",
+   "unit": "percent",
+   "value": "74.8",
+   "as_shown": "74.8%",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 7773,
+    "quote": "In 2025, copper accounted for approximately 74.8% of our sales."
+   }
+  },
+  {
+   "id": "mli-selling-prices-2025",
+   "source": "sec-mli-2025",
+   "measure": "Mueller net sales added by changes in net selling prices of core products",
+   "unit": "usd_million",
+   "value": "336.9",
+   "as_shown": "$336.9",
+   "year": "2025",
+   "period": null,
+   "basis": null,
+   "scenario": null,
+   "locator": {
+    "paragraph": 831,
+    "quote": "The increase in net sales in 2025 was primarily due to (i) higher net selling prices of $336.9 million in our core product lines, primarily copper tube, copper fittings, and brass rod"
+   }
+  }
+ ],
+ "passages": [
+  {
+   "id": "usgs25-scrap-share",
+   "source": "usgs-2025",
+   "locator": {
+    "page": 1,
+    "quote": "Copper recovered from scrap contributed about 35% of the U.S. copper supply."
+   }
+  },
+  {
+   "id": "usgs25-recycling",
+   "source": "usgs-2025",
+   "locator": {
+    "page": 1,
+    "quote": "Old (post-consumer) scrap, converted to refined metal, alloys, and other forms, provided an estimated 150,000 tons of copper in 2024, and an estimated 720,000 tons of copper was recovered from new (manufacturing) scrap derived from fabricating operations."
+   }
+  },
+  {
+   "id": "usgs26-recycling",
+   "source": "usgs-2026",
+   "locator": {
+    "page": 1,
+    "quote": "Old (post-consumer) scrap, converted to refined metal, alloys, and other forms, provided an estimated 160,000 tons of copper in 2025, and an estimated 760,000 tons of copper was recovered from new (manufacturing) scrap derived from fabricating operations."
+   }
+  },
+  {
+   "id": "usgs26-supply-definition",
+   "source": "usgs-2026",
+   "locator": {
+    "page": 2,
+    "quote": "Primary refined production + copper from old and new scrap + refined imports – refined exports ± adjustments for refined copper stock changes."
+   }
+  },
+  {
+   "id": "usgs26-scrap-share",
+   "source": "usgs-2026",
+   "locator": {
+    "page": 1,
+    "quote": "Copper recovered from scrap contributed about 30% of the U.S. copper supply."
+   }
+  },
+  {
+   "id": "usgs26-mine-events",
+   "source": "usgs-2026",
+   "locator": {
+    "page": 2,
+    "quote": "In 2025, production of copper was affected by concentrator shutdowns and lower ore grades at multiple mines in the United States."
+   }
+  },
+  {
+   "id": "usgs26-end-uses",
+   "source": "usgs-2026",
+   "locator": {
+    "page": 1,
+    "quote": "According to the Copper Development Association, copper and copper alloy products were used in building construction, 42%; electrical and electronic products, 23%; transportation equipment, 18%; consumer and general products, 10%; and industrial machinery and equipment, 7%."
+   }
+  },
+  {
+   "id": "usgs26-substitutes",
+   "source": "usgs-2026",
+   "locator": {
+    "page": 2,
+    "quote": "Aluminum substitutes for copper in automobile radiators, cooling and refrigeration tube, electrical equipment, and power cable."
+   }
+  },
+  {
+   "id": "fcx-assumptions-2026",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 4245,
+    "quote": "based on current sales volume and cost estimates, and assuming average prices of $5.00 per pound of copper, $4,000 per ounce of gold and $20.00 per pound of molybdenum for the year 2026."
+   }
+  },
+  {
+   "id": "fcx-deferral-2026",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 5473,
+    "quote": "For the year 2026, copper and gold production volumes are expected to exceed sales volumes, reflecting deferrals of approximately 100 million pounds of copper and 100 thousand ounces of gold associated with inventory held at PTFI’s smelting operations."
+   }
+  },
+  {
+   "id": "fcx-china-2025",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 3787,
+    "quote": "demand from China, which is currently the largest consumer of refined copper in the world"
+   }
+  },
+  {
+   "id": "mli-aluminum-2025",
+   "source": "sec-mli-2025",
+   "locator": {
+    "paragraph": 807,
+    "quote": "For certain air-conditioning and refrigeration applications, aluminum-based systems are the primary substitution threat. We cannot predict the acceptance or the rate of switching that may occur."
+   }
+  },
+  {
+   "id": "fcx-ptfi-2026",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 5473,
+    "quote": "Consolidated sales volumes from PTFI are expected to approximate 0.9 billion pounds of copper and 0.8 million ounces of gold for the year 2026."
+   }
+  },
+  {
+   "id": "fcx-mud-rush-2025",
+   "source": "sec-fcx-2025",
+   "locator": {
+    "paragraph": 450,
+    "quote": "Lower milling rates and production volumes in 2025, compared to 2024 and 2023, reflect the impact of the September 2025 mud rush incident."
+   }
+  },
+  {
+   "id": "fcx-ptfi-2025",
+   "source": "sec-fcx-2024",
+   "locator": {
+    "paragraph": 4967,
+    "quote": "Consolidated sales volumes from PT-FI are expected to approximate 1.55 billion pounds of copper and 1.6 million ounces of gold in 2025."
+   }
+  },
+  {
+   "id": "mli-pass-through-2025",
+   "source": "sec-mli-2025",
+   "locator": {
+    "paragraph": 832,
+    "quote": "Net selling prices generally fluctuate with changes in raw material costs. Changes in raw material costs are generally passed through to customers by adjustments to selling prices."
+   }
+  },
+  {
+   "id": "mli-pass-through-2024",
+   "source": "sec-mli-2024",
+   "locator": {
+    "paragraph": 848,
+    "quote": "Net selling prices generally fluctuate with changes in raw material costs. Changes in raw material costs are generally passed through to customers by adjustments to selling prices."
+   }
+  },
+  {
+   "id": "mli-spreads-2025",
+   "source": "sec-mli-2025",
+   "locator": {
+    "paragraph": 806,
+    "quote": "Profitability of certain of our product lines depends upon the “spreads” between the cost of raw material and the selling prices of our products."
+   }
+  },
+  {
+   "id": "mli-fifo-2025",
+   "source": "sec-mli-2025",
+   "locator": {
+    "paragraph": 806,
+    "quote": "We attempt to minimize the effects on profitability from fluctuations in material costs by passing through these costs to our customers; however margins of our businesses that account for inventory on a FIFO basis may be impacted in periods of significant fluctuations in material costs."
+   }
+  },
+  {
+   "id": "tsla-deliveries-2025",
+   "source": "sec-tsla-2025",
+   "locator": {
+    "paragraph": 538,
+    "quote": "In 2025, we produced approximately 1.66 million consumer vehicles and delivered approximately 1.64 million consumer vehicles."
+   }
+  },
+  {
+   "id": "tsla-deliveries-2024",
+   "source": "sec-tsla-2024",
+   "locator": {
+    "paragraph": 562,
+    "quote": "In 2024, we produced approximately 1,773,000 consumer vehicles and delivered approximately 1,789,000 consumer vehicles."
+   }
+  }
+ ],
+ "view": {
+  "status": "interpretation",
+  "text": "Reading of the IEA Critical Minerals Dataset: in the Stated Policies scenario, world copper demand rises from 31,370 kt in 2030 to 33,522 kt in 2035, while the dataset's base case for mine supply falls from 24,571 kt to 20,733 kt; base-case refined supply, 36,383 kt and 34,501 kt, stays above demand. Demand already exceeds base-case mine supply in the base year, 27,775 kt against 23,227 kt; what this reading tracks is that this distance widens after 2030. It can be covered by recycled metal, which the dataset does not show as a separate figure, by mine supply that the base case does not include, or by demand below the stated path. On these figures the constraint the dataset shows is at the mine, not the refinery.",
+  "cites": [
+   "iea-demand-2025",
+   "iea-mining-2025",
+   "iea-demand-2030",
+   "iea-demand-2035",
+   "iea-mining-2030",
+   "iea-mining-2035",
+   "iea-refining-2030",
+   "iea-refining-2035"
+  ]
+ },
+ "balance": {
+  "tables": [
+   {
+    "id": "balance-iea",
+    "title": "IEA dataset: copper demand under Stated Policies beside base-case mine and refined supply",
+    "gap": "not_computed",
+    "why_not": "Demand is given per scenario while supply is one base case, so the two sides are not in one scenario; the dataset also gives no separate figure for recycled supply, which meets part of demand. No surplus or deficit is computed.",
+    "rows": [
+     {
+      "year": "2025",
+      "kind": "historical",
+      "demand_total": "iea-demand-2025",
+      "supply_total": "iea-mining-2025",
+      "lines": [
+       {
+        "label": "Demand: all energy technologies (also holds grid storage, other low-emission power and hydrogen, not listed)",
+        "figure": "iea-energy-2025"
+       },
+       {
+        "label": "Of which: electric vehicles",
+        "figure": "iea-ev-2025"
+       },
+       {
+        "label": "Of which: electricity networks",
+        "figure": "iea-networks-2025"
+       },
+       {
+        "label": "Of which: solar PV",
+        "figure": "iea-solar-2025"
+       },
+       {
+        "label": "Of which: wind",
+        "figure": "iea-wind-2025"
+       },
+       {
+        "label": "Demand: other uses",
+        "figure": "iea-other-2025"
+       },
+       {
+        "label": "Supply: refined, base case",
+        "figure": "iea-refining-2025"
+       }
+      ]
+     },
+     {
+      "year": "2030",
+      "kind": "projection",
+      "demand_total": "iea-demand-2030",
+      "supply_total": "iea-mining-2030",
+      "lines": [
+       {
+        "label": "Demand: all energy technologies (also holds grid storage, other low-emission power and hydrogen, not listed)",
+        "figure": "iea-energy-2030"
+       },
+       {
+        "label": "Of which: electric vehicles",
+        "figure": "iea-ev-2030"
+       },
+       {
+        "label": "Of which: electricity networks",
+        "figure": "iea-networks-2030"
+       },
+       {
+        "label": "Of which: solar PV",
+        "figure": "iea-solar-2030"
+       },
+       {
+        "label": "Of which: wind",
+        "figure": "iea-wind-2030"
+       },
+       {
+        "label": "Demand: other uses",
+        "figure": "iea-other-2030"
+       },
+       {
+        "label": "Supply: refined, base case",
+        "figure": "iea-refining-2030"
+       }
+      ]
+     },
+     {
+      "year": "2035",
+      "kind": "projection",
+      "demand_total": "iea-demand-2035",
+      "supply_total": "iea-mining-2035",
+      "lines": [
+       {
+        "label": "Demand: all energy technologies (also holds grid storage, other low-emission power and hydrogen, not listed)",
+        "figure": "iea-energy-2035"
+       },
+       {
+        "label": "Of which: electric vehicles",
+        "figure": "iea-ev-2035"
+       },
+       {
+        "label": "Of which: electricity networks",
+        "figure": "iea-networks-2035"
+       },
+       {
+        "label": "Of which: solar PV",
+        "figure": "iea-solar-2035"
+       },
+       {
+        "label": "Of which: wind",
+        "figure": "iea-wind-2035"
+       },
+       {
+        "label": "Demand: other uses",
+        "figure": "iea-other-2035"
+       },
+       {
+        "label": "Supply: refined, base case",
+        "figure": "iea-refining-2035"
+       }
+      ]
+     },
+     {
+      "year": "2040",
+      "kind": "projection",
+      "demand_total": "iea-demand-2040",
+      "supply_total": "iea-mining-2040",
+      "lines": [
+       {
+        "label": "Demand: all energy technologies (also holds grid storage, other low-emission power and hydrogen, not listed)",
+        "figure": "iea-energy-2040"
+       },
+       {
+        "label": "Of which: electric vehicles",
+        "figure": "iea-ev-2040"
+       },
+       {
+        "label": "Of which: electricity networks",
+        "figure": "iea-networks-2040"
+       },
+       {
+        "label": "Of which: solar PV",
+        "figure": "iea-solar-2040"
+       },
+       {
+        "label": "Of which: wind",
+        "figure": "iea-wind-2040"
+       },
+       {
+        "label": "Demand: other uses",
+        "figure": "iea-other-2040"
+       },
+       {
+        "label": "Supply: refined, base case",
+        "figure": "iea-refining-2040"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "us-refined-context",
+    "title": "United States refined copper, for context and not the world balance: output, use, trade and stocks",
+    "gap": "not_computed",
+    "why_not": "The United States meets the difference between its refinery output and its reported refined consumption mainly through refined imports, exports and changes in stocks, shown in the rows; reported consumption is a survey figure, so the rows do not add up exactly. That difference is one importing country's trade, not a shortage of the metal, so no surplus or deficit is computed.",
+    "rows": [
+     {
+      "year": "2024",
+      "kind": "historical",
+      "demand_total": "usgs26-us-consumption-2024",
+      "supply_total": "usgs26-us-refinery-2024",
+      "lines": [
+       {
+        "label": "Of which refinery output from ore (primary)",
+        "figure": "usgs26-us-primary-2024"
+       },
+       {
+        "label": "Of which refinery output from scrap (secondary)",
+        "figure": "usgs26-us-secondary-2024"
+       },
+       {
+        "label": "Refined imports for consumption",
+        "figure": "usgs26-us-imports-2024"
+       },
+       {
+        "label": "Refined exports",
+        "figure": "usgs26-us-exports-2024"
+       },
+       {
+        "label": "Refined stocks at yearend",
+        "figure": "usgs26-us-stocks-2024"
+       }
+      ]
+     },
+     {
+      "year": "2025",
+      "kind": "historical",
+      "demand_total": "usgs26-us-consumption-2025",
+      "supply_total": "usgs26-us-refinery-2025",
+      "lines": [
+       {
+        "label": "Of which refinery output from ore (primary)",
+        "figure": "usgs26-us-primary-2025"
+       },
+       {
+        "label": "Of which refinery output from scrap (secondary)",
+        "figure": "usgs26-us-secondary-2025"
+       },
+       {
+        "label": "Refined imports for consumption",
+        "figure": "usgs26-us-imports-2025"
+       },
+       {
+        "label": "Refined exports",
+        "figure": "usgs26-us-exports-2025"
+       },
+       {
+        "label": "Refined stocks at yearend",
+        "figure": "usgs26-us-stocks-2025"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "differs": [
+  {
+   "id": "differs-scenarios",
+   "about": {
+    "status": "interpretation",
+    "text": "The dataset's other two scenarios put 2035 demand at 32,359 kt (Current Policies) and 34,294 kt (High Demand), against 33,522 kt under Stated Policies; all three are above the 20,733 kt of base-case mine supply for 2035. Base-case refined supply for 2035, 34,501 kt, stays above demand in all three, but under High Demand only narrowly. This reading does not depart from the IEA's published figures: it reads them, and its reading at the mine holds whichever of the three scenarios is taken.",
+    "cites": [
+     "iea-demand-cps-2035",
+     "iea-demand-hd-2035",
+     "iea-demand-2035",
+     "iea-mining-2035",
+     "iea-refining-2035"
+    ]
+   },
+   "others": [
+    {
+     "cite": "iea-demand-cps-2035",
+     "label": "IEA Current Policies scenario, total demand"
+    },
+    {
+     "cite": "iea-demand-hd-2035",
+     "label": "IEA High Demand Scenario, total demand"
+    }
+   ],
+   "differs": false
+  },
+  {
+   "id": "differs-price-outlook",
+   "about": {
+    "status": "interpretation",
+    "text": "The only other published expectation retained is the World Bank's October 2026 commodity table, which puts copper at 13200 USD per tonne for 2026. It is an expectation about the price, not about the physical balance; this reading makes no statement about the price, so on the balance it has nothing to agree or disagree with.",
+    "cites": [
+     "cmo-copper-2026"
+    ]
+   },
+   "others": [
+    {
+     "cite": "cmo-copper-2026",
+     "label": "World Bank October 2026 forecast, copper"
+    }
+   ],
+   "differs": false
+  }
+ ],
+ "reasons": [
+  {
+   "id": "grid-demand",
+   "title": "Electricity networks use more copper from 2030 to 2035 in the projection",
+   "statement": {
+    "status": "interpretation",
+    "text": "In the Stated Policies scenario the IEA puts copper demand from electricity networks at 5,713 kt in 2030 and 6,449 kt in 2035, a change of 12.9% within one edition of the dataset.",
+    "cites": [
+     "iea-networks-2030",
+     "iea-networks-2035"
+    ]
+   },
+   "plain": "Power grids are the largest clean-energy use of copper in this dataset, so more grid building means more copper demand; this compares two years of one IEA projection.",
+   "measure": {
+    "latest": "iea-networks-2035",
+    "previous": "iea-networks-2030",
+    "compare": "period",
+    "supports_when": "higher",
+    "material_change_pct": "5"
+   }
+  },
+  {
+   "id": "ev-demand",
+   "title": "Electric vehicles add copper demand quickly in the projection",
+   "statement": {
+    "status": "interpretation",
+    "text": "The IEA puts copper demand from electric vehicles at 1,763 kt in 2030 and 2,561 kt in 2035 under Stated Policies, a change of 45.3% within one edition of the dataset.",
+    "cites": [
+     "iea-ev-2030",
+     "iea-ev-2035"
+    ]
+   },
+   "plain": "Electric vehicles are a fast-growing use of copper, so their growth adds to demand; this compares two years of one IEA projection.",
+   "measure": {
+    "latest": "iea-ev-2035",
+    "previous": "iea-ev-2030",
+    "compare": "period",
+    "supports_when": "higher",
+    "material_change_pct": "5"
+   }
+  },
+  {
+   "id": "mine-pipeline",
+   "title": "The counted mine pipeline shrinks after 2030",
+   "statement": {
+    "status": "interpretation",
+    "text": "The IEA's base case puts world copper mine supply at 24,571 kt in 2030 and 20,733 kt in 2035, a fall of 15.6% within one edition of the dataset.",
+    "cites": [
+     "iea-mining-2030",
+     "iea-mining-2035"
+    ]
+   },
+   "plain": "In this IEA base case, mine supply peaks and then falls; the difference would have to come from mine supply that the base case does not include, from recycled metal, or from lower demand. This compares two years of one projection.",
+   "measure": {
+    "latest": "iea-mining-2035",
+    "previous": "iea-mining-2030",
+    "compare": "period",
+    "supports_when": "lower",
+    "material_change_pct": "5"
+   }
+  },
+  {
+   "id": "producer-plans",
+   "title": "Southern Copper expects less copper in 2026 than it expected for 2025",
+   "statement": {
+    "status": "interpretation",
+    "text": "Southern Copper expects copper production of 911,400 tonnes in 2026, which it attributes mainly to lower ore grades and says it is reviewing to improve during the year, against the 965,800 tonnes it expected for 2025 a year earlier, a fall of 5.6%.",
+    "cites": [
+     "scco-guidance-2026",
+     "scco-guidance-2025"
+    ]
+   },
+   "plain": "This is one producer's own plan for the coming year, which it says it is reviewing; one company is not the market, and its change sits close to the material change, so a small upward revision would read as unchanged.",
+   "measure": {
+    "latest": "scco-guidance-2026",
+    "previous": "scco-guidance-2025",
+    "compare": "period",
+    "supports_when": "lower",
+    "material_change_pct": "5"
+   }
+  },
+  {
+   "id": "world-mine-output",
+   "title": "World mine output did not grow in the latest USGS edition",
+   "statement": {
+    "status": "interpretation",
+    "text": "In its latest edition USGS puts world mine production at 23,000 kt for both 2024 and 2025, rounded, the 2025 figure an estimate, and reports concentrator shutdowns and lower ore grades at United States mines in 2025.",
+    "cites": [
+     "usgs26-world-mine-2024",
+     "usgs26-world-mine-2025",
+     "usgs26-mine-events"
+    ]
+   },
+   "plain": "Mine output that stays flat while demand grows is the supply side of this view; USGS rounds world totals, so small changes do not show.",
+   "measure": {
+    "latest": "usgs26-world-mine-2025",
+    "previous": "usgs26-world-mine-2024",
+    "compare": "period",
+    "supports_when": "lower",
+    "material_change_pct": "5"
+   }
+  }
+ ],
+ "risks": [
+  {
+   "id": "aluminium-substitution",
+   "title": "Aluminium replaces copper in cables and equipment",
+   "statement": {
+    "status": "interpretation",
+    "text": "USGS lists aluminium as a substitute for copper in power cable and electrical equipment, uses close to the grid and vehicle demand this view rests on, and Mueller names aluminum-based systems as the primary substitution threat for certain air-conditioning and refrigeration applications; no retained series measures how much substitution takes place, so this risk is named but not tracked.",
+    "cites": [
+     "usgs26-substitutes",
+     "mli-aluminum-2025"
+    ]
+   },
+   "plain": "Where aluminium can do the job, more switching to it would mean less copper demand than projected.",
+   "measure": null
+  },
+  {
+   "id": "recycling",
+   "title": "More recycled copper narrows the gap at the mine",
+   "statement": {
+    "status": "interpretation",
+    "text": "In its latest edition USGS puts United States copper recovered from old scrap at 140 kt for 2024 and 160 kt for 2025, both estimates, a change of 14.3%; its previous edition had put 2024 at 150,000 tons. Recovery from new scrap, given only for each edition's latest year, was an estimated 760,000 tons in 2025 against 720,000 tons for 2024 in the previous edition. The share of United States supply from scrap was about 30%, against about 35% in the previous edition, but that supply counts refined imports, which rose from 903 kt to 1,700 kt, so the lower share is not a sign of less recycling.",
+    "cites": [
+     "usgs26-us-old-scrap-2024",
+     "usgs26-us-old-scrap-2025",
+     "usgs25-recycling",
+     "usgs26-recycling",
+     "usgs25-scrap-share",
+     "usgs26-scrap-share",
+     "usgs26-supply-definition",
+     "usgs26-us-imports-2024",
+     "usgs26-us-imports-2025"
+    ]
+   },
+   "plain": "Recycled copper is supply that needs no new mine, so if more is recovered, less has to be mined; these measures cover the United States only.",
+   "measure": {
+    "latest": "usgs26-us-old-scrap-2025",
+    "previous": "usgs26-us-old-scrap-2024",
+    "compare": "period",
+    "grows_when": "higher",
+    "material_change_pct": "5"
+   }
+  },
+  {
+   "id": "china-construction",
+   "title": "Building in China slows",
+   "statement": {
+    "status": "interpretation",
+    "text": "Freeport-McMoRan names China as currently the largest consumer of refined copper in the world, and USGS puts building construction at 42% of United States copper use; these passages are context, not a measure. None of the retained sources measures building construction in China, so this risk is named but not tracked.",
+    "cites": [
+     "fcx-china-2025",
+     "usgs26-end-uses"
+    ]
+   },
+   "plain": "Buildings use copper in wiring and pipes, so slower building in a large economy would mean less demand; no retained source tracks it.",
+   "measure": null
+  },
+  {
+   "id": "other-uses-fall",
+   "title": "Demand outside energy technologies falls",
+   "statement": {
+    "status": "interpretation",
+    "text": "Under Stated Policies the IEA puts copper demand from other uses, the part of demand outside energy technologies, at 20,605 kt in 2030 and 21,158 kt in 2035, a change of 2.7%: in this projection it grows slowly rather than falling, so this risk has not materialised within the edition. It is most of total demand, so a fall there would narrow the distance the view reads.",
+    "cites": [
+     "iea-other-2030",
+     "iea-other-2035"
+    ]
+   },
+   "plain": "Most copper demand in this dataset is outside energy technologies; if that part fell, total demand would fall with it. Its change is under the material change, but a test about half as strict would read it as receding.",
+   "measure": {
+    "latest": "iea-other-2035",
+    "previous": "iea-other-2030",
+    "compare": "period",
+    "grows_when": "lower",
+    "material_change_pct": "5"
+   }
+  }
+ ],
+ "conditions": [
+  {
+   "id": "mine-meets-demand",
+   "figure": "iea-mining-2035",
+   "comparator": "above",
+   "threshold": "33522",
+   "text": "The view would change if a later IEA edition put base-case mine supply for 2035 above 33,522 kt, this edition's Stated Policies demand for 2035, so that counted mine supply alone would exceed stated demand, a level counted mine supply does not reach even in the base year; this edition puts it at 20,733 kt."
+  },
+  {
+   "id": "refinery-falls-short",
+   "figure": "iea-refining-2035",
+   "comparator": "below",
+   "threshold": "33522",
+   "text": "The view would also change if a later IEA edition put base-case refined supply for 2035 below 33,522 kt, this edition's Stated Policies demand for 2035, which would move the constraint the dataset shows to the refinery; this edition puts it at 34,501 kt."
+  }
+ ],
+ "exposure": {
+  "movers": [
+   {
+    "company": "Freeport-McMoRan Inc.",
+    "moves": "world-mine-output",
+    "through": "Its Indonesian operations, PTFI, expected copper sales, not production, of 0.9 billion pounds for 2026, against 1.55 billion pounds of sales expected for 2025 a year earlier; it expects 2026 production to exceed those sales, with about 100 million pounds deferred in inventory, and links lower 2025 production volumes to the September 2025 mud rush incident.",
+    "cites": [
+     "fcx-ptfi-2026",
+     "fcx-deferral-2026",
+     "fcx-ptfi-2025",
+     "fcx-mud-rush-2025"
+    ]
+   },
+   {
+    "company": "Southern Copper Corporation",
+    "moves": "producer-plans",
+    "through": "Its expected copper production, 911,400 tonnes for 2026 against 965,800 tonnes for 2025, is the measure of this reason.",
+    "cites": [
+     "scco-guidance-2026",
+     "scco-guidance-2025"
+    ]
+   },
+   {
+    "company": "Tesla, Inc.",
+    "moves": "ev-demand",
+    "through": "It delivered about 1.64 million consumer vehicles in 2025, against about 1,789,000 in 2024; electric-vehicle copper demand rests on deliveries like these, and one maker's deliveries are not the market's.",
+    "cites": [
+     "tsla-deliveries-2025",
+     "tsla-deliveries-2024"
+    ]
+   }
+  ],
+  "moved": [
+   {
+    "company": "Freeport-McMoRan Inc.",
+    "side": "producer",
+    "how": {
+     "status": "stated",
+     "text": "Freeport-McMoRan states that its operating cash flows for 2026 would change by about $330 million for each change of ten cents a pound in the average copper price, an estimate based on its current sales volume and cost estimates and an assumed average of $5.00 per pound of copper for 2026.",
+     "cites": [
+      "fcx-sensitivity-2026",
+      "fcx-assumptions-2026"
+     ]
+    },
+    "amount": {
+     "kind": "stated",
+     "figure": "fcx-sensitivity-2026"
+    }
+   },
+   {
+    "company": "Southern Copper Corporation",
+    "side": "producer",
+    "how": {
+     "status": "stated",
+     "text": "Southern Copper states that copper made up about 74.8% of its sales in 2025.",
+     "cites": [
+      "scco-copper-share-2025"
+     ]
+    },
+    "amount": {
+     "kind": "stated",
+     "figure": "scco-copper-share-2025"
+    }
+   },
+   {
+    "company": "Mueller Industries, Inc.",
+    "side": "consumer",
+    "how": {
+     "status": "stated",
+     "text": "Mueller states, in its last two annual reports, that changes in raw material costs are generally passed through to customers by adjustments to selling prices, and that changes in net selling prices added $336.9 million to its 2025 net sales. It states that the profitability of certain of its product lines depends on the spreads between raw material cost and selling prices, and that margins of its businesses that account for inventory on a FIFO basis may be affected in periods of significant fluctuations in material costs.",
+     "cites": [
+      "mli-pass-through-2025",
+      "mli-pass-through-2024",
+      "mli-spreads-2025",
+      "mli-fifo-2025",
+      "mli-selling-prices-2025"
+     ]
+    },
+    "amount": {
+     "kind": "stated",
+     "figure": "mli-selling-prices-2025"
+    }
+   }
+  ]
+ },
+ "log": [
+  {
+   "date": "2026-11-03",
+   "kind": "opened",
+   "text": "The thesis opened with five reasons, four risks and two conditions, read from retained IEA, USGS, World Bank and company sources.",
+   "refs": []
+  }
+ ],
+ "price_record": {
+  "series": "USGS U.S. producer cathode copper price (COMEX + premium), annual average, US cents per pound; opening and latest are both the 2025 average, an estimate, the latest in the retained release",
+  "opening": "usgs26-producer-price-2025",
+  "latest": "usgs26-producer-price-2025"
+ },
+ "plain": {
+  "view": "The view reads published projections of how much copper the world will use and how much known mines and refineries will supply, and says where the shortfall in those numbers sits.",
+  "balance": "No surplus or deficit is computed here: the IEA figures sit side by side because demand and supply are built on different cases, and the United States figures are one importing country's context, met by trade and stocks.",
+  "differs": "This section asks whether the reading departs from what others publish; here it does not, and the one price expectation retained is shown only as the World Bank's own.",
+  "reasons": "Each reason shows its latest figure against a previous one: an earlier year in the same edition where the latest edition gives both years, or the previous edition where only it gives the earlier figure.",
+  "risks": "Risks use the same comparison; a risk with no retained measure is named but not tracked.",
+  "conditions": "A condition says what new figure would change the view, so the view can be checked against later editions.",
+  "exposure": "Exposure is read from company filings, not assumed: some companies move the reasons, and some are moved by copper in ways their own reports describe.",
+  "log": "The log only grows; earlier entries are never rewritten.",
+  "price": "The price is one USGS annual average, for the latest year in the retained release, shown as a record beside the view, not as evidence that the view is right."
+ },
+ "not_claimed": [
+  "No price target, price forecast or trading signal is stated or implied.",
+  "Nothing here is a recommendation to buy or sell any company, security or commodity.",
+  "The view does not claim that the physical balance will cause any change in the copper price.",
+  "Comparisons of IEA projection years within one edition show the shape of one projection; they do not confirm that the projection is right.",
+  "No copper cost per electric vehicle is shown: no retained source prints a per-vehicle copper amount that this thesis may use, and none states a vehicle's price.",
+  "The recycling measures and the United States refined-copper table describe the United States only, not the world; the difference between its refinery output and its consumption is met by trade and stocks, not a shortage.",
+  "Company exposure is what each company's own filing states; it is not a measure of how its shares behave."
+ ],
+ "provenance": {
+  "prepared_by": "Claude, an AI assistant, in an authoring session for the owner",
+  "method": "Written by hand in a working session from the retained sources: each workbook, CSV and HTML figure or passage was located with the project's own readers before the file was written, and each PDF figure and passage was transcribed from the PDF's text layer, with line breaks read as spaces; no page image was rendered. No billed request was made.",
+  "ai_assisted": true,
+  "human_review": "not_reviewed",
+  "research_use": "excluded"
+ }
+}

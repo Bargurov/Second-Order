@@ -1,0 +1,280 @@
+{
+  "contract": "user-api-0.5",
+  "story": {
+    "view_version": "news-story-view-0.6",
+    "story_id": "story-c52957851d5d2583",
+    "requested_id": "story-c52957851d5d2583",
+    "merged": false,
+    "title": "Steel buyers brace as Synthetic Republic duties hit 15% after Marrowvale review",
+    "title_basis": "first_report",
+    "first_at": "2026-10-12T17:00:00+00:00",
+    "first_basis": "published",
+    "latest_at": "2026-10-12T17:00:00+00:00",
+    "latest_basis": "published",
+    "coverage": {
+      "coverage_version": "story-coverage-0.3",
+      "reports": 4,
+      "publishers": 4,
+      "origins": 3,
+      "news_origins": 3,
+      "official_origins": 0,
+      "company_origins": 0,
+      "reporting_origins": 3,
+      "confirmed_news": 1,
+      "confirmed_official": 0,
+      "possible_news": 2,
+      "possible_official": 0,
+      "uncertain": 2,
+      "company_statements": 0,
+      "official_releases": 0,
+      "repeats": 1,
+      "units": [
+        {
+          "publishers": [
+            "Synthetic Courier"
+          ],
+          "entries": [
+            "synthetic-courier:ef84e8f399e118e4c63a"
+          ],
+          "counted_together_because": [],
+          "role": "news",
+          "independence": "established",
+          "uncertain_because": []
+        },
+        {
+          "publishers": [
+            "synthetic-post.example",
+            "synthetic-wire.example"
+          ],
+          "entries": [
+            "gdelt-index:7d1951b3ef121086796b",
+            "gdelt-index:3f24b439e1aa61867a3b"
+          ],
+          "counted_together_because": [
+            "the same headline"
+          ],
+          "role": "news",
+          "independence": "unverified",
+          "uncertain_because": [
+            "only its headline is held, so its text could not be compared"
+          ]
+        },
+        {
+          "publishers": [
+            "synthetic-review.example"
+          ],
+          "entries": [
+            "gdelt-index:911700ca9fde9fa379e8"
+          ],
+          "counted_together_because": [],
+          "role": "news",
+          "independence": "unverified",
+          "uncertain_because": [
+            "only its headline is held, so its text could not be compared"
+          ]
+        }
+      ],
+      "possible_shared_origins": []
+    },
+    "interests": [
+      "markets"
+    ],
+    "signals": [
+      {
+        "signal": "freshness",
+        "text": "Latest report 40 hours ago (by its feed's stated time)."
+      },
+      {
+        "signal": "coverage",
+        "text": "From 4 publishers: 1 confirmed reporting origin (1 newsroom) and 2 possible origins (2 newsrooms) whose independence is not established, which count half; 1 copy counted with an origin."
+      },
+      {
+        "signal": "importance",
+        "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+      }
+    ],
+    "older": false,
+    "stale": false,
+    "synthetic": true,
+    "brief_state": "none",
+    "brief_note": "No brief has been prepared for this story yet. The reports are listed below.",
+    "brief": null,
+    "explanation": {
+      "state": "pending",
+      "statement": "No economic explanation has been prepared for this story yet.",
+      "reason": null
+    },
+    "relevance": {
+      "state": "relevant",
+      "statement": "In the economic news.",
+      "basis": "synthetic",
+      "basis_label": "A SYNTHETIC assessment for tests and the demo.",
+      "explanation": "SYNTHETIC: a reported policy change affecting trade.",
+      "change": "SYNTHETIC: the sources report a change.",
+      "dimensions": [
+        {
+          "dimension": "trade",
+          "how": "SYNTHETIC: it may change what importers pay."
+        }
+      ],
+      "missing": [
+        "SYNTHETIC: how long it lasts is not stated."
+      ],
+      "current": false
+    },
+    "sources": [
+      {
+        "entry_id": "synthetic-courier:ef84e8f399e118e4c63a",
+        "publisher": "Synthetic Courier",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News report",
+        "title": "Steel buyers brace as Synthetic Republic duties hit 15% after Marrowvale review",
+        "title_shortened": false,
+        "excerpt": "Importers in Marrowvale said the new 15% levy would apply.",
+        "excerpt_shortened": false,
+        "link": "https://courier.example.org/news/duties",
+        "published": {
+          "as_stated": "Mon, 12 Oct 2026 17:00:00 GMT",
+          "element": "RSS pubDate",
+          "state": "stated",
+          "utc": "2026-10-12T17:00:00+00:00",
+          "date": "2026-10-12",
+          "note": null
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Synthetic Courier",
+        "synthetic": true,
+        "unit": 1,
+        "counted_together_because": [],
+        "use": "permitted",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      },
+      {
+        "entry_id": "gdelt-index:7d1951b3ef121086796b",
+        "publisher": "synthetic-wire.example",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News article listed by the GDELT index",
+        "title": "Marrowvale importers brace for 15% steel duties",
+        "title_shortened": false,
+        "excerpt": null,
+        "excerpt_shortened": false,
+        "link": "https://www.synthetic-wire.example/news/0",
+        "published": {
+          "as_stated": null,
+          "element": null,
+          "state": "unstated",
+          "utc": null,
+          "date": null,
+          "note": "Kept from a GDELT index lookup attached 2026-10-14 09:00 UTC: the index saw it at 2026-10-13T03:00:00+00:00 and states no publication time. It is not checked again unless an editor looks the story up again."
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Indexed by the GDELT Project (https://www.gdeltproject.org/)",
+        "synthetic": false,
+        "unit": 2,
+        "counted_together_because": [
+          "the same headline"
+        ],
+        "use": "listed",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      },
+      {
+        "entry_id": "gdelt-index:3f24b439e1aa61867a3b",
+        "publisher": "synthetic-post.example",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News article listed by the GDELT index",
+        "title": "Marrowvale importers brace for 15% steel duties",
+        "title_shortened": false,
+        "excerpt": null,
+        "excerpt_shortened": false,
+        "link": "https://www.synthetic-post.example/news/1",
+        "published": {
+          "as_stated": null,
+          "element": null,
+          "state": "unstated",
+          "utc": null,
+          "date": null,
+          "note": "Kept from a GDELT index lookup attached 2026-10-14 09:00 UTC: the index saw it at 2026-10-13T04:00:00+00:00 and states no publication time. It is not checked again unless an editor looks the story up again."
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Indexed by the GDELT Project (https://www.gdeltproject.org/)",
+        "synthetic": false,
+        "unit": 2,
+        "counted_together_because": [
+          "the same headline"
+        ],
+        "use": "listed",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      },
+      {
+        "entry_id": "gdelt-index:911700ca9fde9fa379e8",
+        "publisher": "synthetic-review.example",
+        "role": "news",
+        "role_label": "News report",
+        "kind": "News article listed by the GDELT index",
+        "title": "Republic's Marrowvale review ends with 15% duties",
+        "title_shortened": false,
+        "excerpt": null,
+        "excerpt_shortened": false,
+        "link": "https://www.synthetic-review.example/news/2",
+        "published": {
+          "as_stated": null,
+          "element": null,
+          "state": "unstated",
+          "utc": null,
+          "date": null,
+          "note": "Kept from a GDELT index lookup attached 2026-10-14 09:00 UTC: the index saw it at 2026-10-13T05:00:00+00:00 and states no publication time. It is not checked again unless an editor looks the story up again."
+        },
+        "first_seen_at": "2026-10-14T09:00:00+00:00",
+        "listing": "current",
+        "stale": false,
+        "attribution": "Indexed by the GDELT Project (https://www.gdeltproject.org/)",
+        "synthetic": false,
+        "unit": 3,
+        "counted_together_because": [],
+        "use": "listed",
+        "text": {
+          "state": "not_supported",
+          "characters": null,
+          "retrieved_at": null,
+          "partial_reason": null,
+          "detail": "This publisher's pages are not read for their text."
+        }
+      }
+    ],
+    "topics": [],
+    "related": [],
+    "deeper": {
+      "available": true,
+      "material_reports": 1,
+      "reason": null
+    },
+    "statement": "Read from this server's saved records: opening this page contacts no publisher, runs no analysis and uses no credits."
+  }
+}

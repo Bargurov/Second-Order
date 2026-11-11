@@ -1,0 +1,300 @@
+{
+  "contract": "user-api-0.5",
+  "view_version": "user-news-search-0.1",
+  "search": {
+    "query": "synthetic",
+    "words": [
+      "synthetic"
+    ],
+    "interests": null,
+    "sources": null,
+    "listing": "all",
+    "matched": 6,
+    "shown": 6,
+    "limit": 100
+  },
+  "entries": [
+    {
+      "entry_id": "eia-todayinenergy:2a2d67884b035117ce49",
+      "version_sha256": "68895e29dea7671e72a7a344e55020497b710631391276a908b77bc6ded90db6",
+      "source": "eia-todayinenergy",
+      "title": "Synthetic natural gas storage rises",
+      "title_shortened": false,
+      "excerpt": "Synthetic energy excerpt.",
+      "excerpt_shortened": false,
+      "excerpt_repeats_title": false,
+      "link": "https://www.eia.gov/todayinenergy/detail.php?id=90001",
+      "published": {
+        "as_stated": "Wed, 07 Oct 2026 09:00:00 EDT",
+        "element": "RSS pubDate",
+        "state": "stated",
+        "utc": "2026-10-07T13:00:00+00:00",
+        "date": "2026-10-07",
+        "note": null
+      },
+      "first_retrieved_at": "2026-10-14T09:00:05+00:00",
+      "last_retrieved_at": "2026-10-14T09:00:05+00:00",
+      "listing": "current",
+      "stale": false,
+      "topics": [
+        {
+          "interest": "energy",
+          "basis": "source",
+          "terms": [
+            {
+              "term": "energy",
+              "field": "excerpt"
+            },
+            {
+              "term": "natural gas",
+              "field": "title"
+            }
+          ]
+        }
+      ],
+      "matches_interests": false,
+      "import": {
+        "state": "unsupported",
+        "reason": "Importing the full publication is not available for this publisher yet. You can open the official page and paste its text into a new source instead.",
+        "source_ids": []
+      },
+      "story_id": null
+    },
+    {
+      "entry_id": "fed-monetary:e6ea86fba2aa8bf06700",
+      "version_sha256": "090c533881826e01798ad817129a6c48ebf4ea1f883ac37bae7255c4fbc8fe33",
+      "source": "fed-monetary",
+      "title": "Simulated Committee issues synthetic statement",
+      "title_shortened": false,
+      "excerpt": "The Simulated Committee kept the federal funds rate unchanged.",
+      "excerpt_shortened": false,
+      "excerpt_repeats_title": false,
+      "link": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260911a.htm",
+      "published": {
+        "as_stated": "Wed, 16 Sep 2026 18:00:00 GMT",
+        "element": "RSS pubDate",
+        "state": "stated",
+        "utc": "2026-09-16T18:00:00+00:00",
+        "date": "2026-09-16",
+        "note": null
+      },
+      "first_retrieved_at": "2026-10-14T09:00:01+00:00",
+      "last_retrieved_at": "2026-10-14T09:00:01+00:00",
+      "listing": "current",
+      "stale": false,
+      "topics": [
+        {
+          "interest": "monetary-policy",
+          "basis": "source",
+          "terms": [
+            {
+              "term": "federal funds",
+              "field": "excerpt"
+            }
+          ]
+        }
+      ],
+      "matches_interests": false,
+      "import": {
+        "state": "supported",
+        "reason": null,
+        "source_ids": []
+      },
+      "story_id": null
+    },
+    {
+      "entry_id": "fed-monetary:b8882b70996964140cb5",
+      "version_sha256": "f9d9400ac5faca94132d053676b9ad4b92de65c7b46182c399e12eabfcfbc220",
+      "source": "fed-monetary",
+      "title": "Synthetic minutes of the Committee",
+      "title_shortened": false,
+      "excerpt": null,
+      "excerpt_shortened": false,
+      "excerpt_repeats_title": false,
+      "link": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260912a.htm",
+      "published": {
+        "as_stated": "Wed, 29 Jul 2026 18:00:00 GMT",
+        "element": "RSS pubDate",
+        "state": "stated",
+        "utc": "2026-07-29T18:00:00+00:00",
+        "date": "2026-07-29",
+        "note": null
+      },
+      "first_retrieved_at": "2026-10-14T09:00:01+00:00",
+      "last_retrieved_at": "2026-10-14T09:00:01+00:00",
+      "listing": "current",
+      "stale": false,
+      "topics": [
+        {
+          "interest": "monetary-policy",
+          "basis": "source",
+          "terms": []
+        }
+      ],
+      "matches_interests": false,
+      "import": {
+        "state": "supported",
+        "reason": null,
+        "source_ids": []
+      },
+      "story_id": null
+    },
+    {
+      "entry_id": "eia-todayinenergy:1bca4b2eab4d57f61838",
+      "version_sha256": "829b0b1168aaaca89c5a119bc1ca7fc763d492ae1fd766ef2bfc2eecded491e2",
+      "source": "eia-todayinenergy",
+      "title": "Synthetic electricity use by vehicles",
+      "title_shortened": false,
+      "excerpt": "Synthetic energy excerpt.",
+      "excerpt_shortened": false,
+      "excerpt_repeats_title": false,
+      "link": "https://www.eia.gov/todayinenergy/detail.php?id=90002",
+      "published": {
+        "as_stated": "Wed, 07 Oct 2026  09:00:00 EST",
+        "element": "RSS pubDate",
+        "state": "unstated",
+        "utc": null,
+        "date": null,
+        "note": "The feed's timestamp names EST (UTC-05:00), but US Eastern time was UTC-04:00 then, so the zone contradicts the date and its time is ambiguous."
+      },
+      "first_retrieved_at": "2026-10-14T09:00:05+00:00",
+      "last_retrieved_at": "2026-10-14T09:00:05+00:00",
+      "listing": "current",
+      "stale": false,
+      "topics": [
+        {
+          "interest": "energy",
+          "basis": "source",
+          "terms": [
+            {
+              "term": "energy",
+              "field": "excerpt"
+            },
+            {
+              "term": "electricity",
+              "field": "title"
+            }
+          ]
+        }
+      ],
+      "matches_interests": false,
+      "import": {
+        "state": "unsupported",
+        "reason": "Importing the full publication is not available for this publisher yet. You can open the official page and paste its text into a new source instead.",
+        "source_ids": []
+      },
+      "story_id": null
+    },
+    {
+      "entry_id": "wto-news:32de5add4d0365be3615",
+      "version_sha256": "7722281a8ecbef80341b8a272db47406d79a0cf9b481dafd13b52a786d5c11f8",
+      "source": "wto-news",
+      "title": "Synthetic members discuss energy subsidies and tariffs",
+      "title_shortened": false,
+      "excerpt": "Synthetic trade excerpt.",
+      "excerpt_shortened": false,
+      "excerpt_repeats_title": false,
+      "link": "https://www.wto.org/english/news_e/news26_e/synth_01oct26_e.htm",
+      "published": {
+        "as_stated": "Thu, 08 Oct 2026 00:00:00 GMT",
+        "element": "RSS pubDate",
+        "state": "date_only",
+        "utc": null,
+        "date": "2026-10-08",
+        "note": "The feed gives a date with a placeholder time, so no time of day is stated."
+      },
+      "first_retrieved_at": "2026-10-14T09:00:07+00:00",
+      "last_retrieved_at": "2026-10-14T09:00:07+00:00",
+      "listing": "current",
+      "stale": false,
+      "topics": [
+        {
+          "interest": "energy",
+          "basis": "terms",
+          "terms": [
+            {
+              "term": "energy",
+              "field": "title"
+            }
+          ]
+        },
+        {
+          "interest": "trade",
+          "basis": "source",
+          "terms": [
+            {
+              "term": "trade",
+              "field": "excerpt"
+            },
+            {
+              "term": "tariffs",
+              "field": "title"
+            }
+          ]
+        }
+      ],
+      "matches_interests": false,
+      "import": {
+        "state": "unsupported",
+        "reason": "Importing the full publication is not available for this publisher yet. You can open the official page and paste its text into a new source instead.",
+        "source_ids": []
+      },
+      "story_id": null
+    },
+    {
+      "entry_id": "wto-news:9752c1d6f0c799911479",
+      "version_sha256": "1bd99090a215f9ea2b50ad642bb2bc4d7d6e6531429a0ee257541807b369257f",
+      "source": "wto-news",
+      "title": "Synthetic trade forecast update",
+      "title_shortened": false,
+      "excerpt": "Synthetic trade excerpt.",
+      "excerpt_shortened": false,
+      "excerpt_repeats_title": false,
+      "link": "https://www.wto.org/english/news_e/news26_e/synth_02oct26_e.htm",
+      "published": {
+        "as_stated": "Thu, 08 Oct 2026 00:00:00 GMT",
+        "element": "RSS pubDate",
+        "state": "date_only",
+        "utc": null,
+        "date": "2026-10-08",
+        "note": "The feed gives a date with a placeholder time, so no time of day is stated."
+      },
+      "first_retrieved_at": "2026-10-14T09:00:07+00:00",
+      "last_retrieved_at": "2026-10-14T09:00:07+00:00",
+      "listing": "current",
+      "stale": false,
+      "topics": [
+        {
+          "interest": "trade",
+          "basis": "source",
+          "terms": [
+            {
+              "term": "trade",
+              "field": "title"
+            },
+            {
+              "term": "trade",
+              "field": "excerpt"
+            }
+          ]
+        }
+      ],
+      "matches_interests": false,
+      "import": {
+        "state": "unsupported",
+        "reason": "Importing the full publication is not available for this publisher yet. You can open the official page and paste its text into a new source instead.",
+        "source_ids": []
+      },
+      "story_id": null
+    }
+  ],
+  "statement": "The search read this server's cached entries only; no publisher was contacted.",
+  "counted": true,
+  "quota": {
+    "operation": "search",
+    "label": "Searches",
+    "limit": 20,
+    "used": 4,
+    "remaining": 16
+  }
+}

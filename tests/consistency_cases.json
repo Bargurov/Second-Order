@@ -1,0 +1,1426 @@
+{
+ "about": "Retained regression cases of the economic-consistency slice (29 October 2026), copied from the saved records by data/local-checks/econ-consistency-2026-10-29/make_consistency_cases.py. Real cases, not SYNTHETIC: our saved brief versions exactly (the published Šefčovič v5 and von der Leyen v1), and of the European Commission publications only the sentences the tests need. The case \"northmere\" is FICTIONAL, marked \"fictional\": true: invented text about the fictional Northmere Reserve Bank and the fictional newspaper Harbour Ledger (a new banknote series; model version 6 with its two semantic errors and the assisted version 7 that corrects them, rebuilt on a new subject, with an example.org link); it quotes no real person or publication. They never enter research scores.",
+ "built_at": "2026-10-29T13:30:13+00:00",
+ "cases": {
+  "northmere": {
+   "story_id": "story-00000000000f1c01",
+   "released_at": "2026-10-14T06:00:00+00:00",
+   "versions": {
+    "6": {
+     "method": "model",
+     "content": {
+      "claims": [
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k1",
+        "modality": "prospective",
+        "quote": "The new series goes into circulation in 2027, after a closed trial run by our branch staff.",
+        "source": "report:fictional:00000000000000000001"
+       },
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k2",
+        "modality": "prospective",
+        "quote": "Parliament is expected to approve the currency amendment before the summer recess, and the Board would then fix the withdrawal date.",
+        "source": "report:fictional:00000000000000000001"
+       },
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k3",
+        "modality": "asserted",
+        "quote": "In our latest survey, notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025.",
+        "source": "report:fictional:00000000000000000001"
+       },
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k4",
+        "modality": "view",
+        "quote": "Our stress tests suggest that a household cap on exchanges will not trouble the commercial banks' cash handling.",
+        "source": "report:fictional:00000000000000000001"
+       }
+      ],
+      "economics": {
+       "alternatives": [
+        {
+         "basis": [
+          "fact:2",
+          "claim:k2"
+         ],
+         "kind": "competing_explanation",
+         "text": "The timetable may slip if parliament takes longer than the hoped-for approval before the recess, which would delay the Board's choice of a withdrawal date."
+        },
+        {
+         "basis": [
+          "fact:4",
+          "claim:k4"
+         ],
+         "kind": "offsetting_force",
+         "text": "Holding limits on old notes that the speaker says would prevent queues could also restrict how far households can use their old notes before withdrawal, which could dampen how quickly the changeover finishes."
+        }
+       ],
+       "analysis_version": "econ-explanation-0.5",
+       "assumptions": [
+        {
+         "id": "a1",
+         "text": "a1: Parliament approves the amendment and the trial goes ahead roughly as the speaker describes."
+        },
+        {
+         "id": "a2",
+         "text": "a2: The speaker's statements on note ageing, queues and effects on banks are taken as the speaker's own claims, not independently verified."
+        }
+       ],
+       "calculations": [],
+       "change": {
+        "basis": [
+         "fact:1",
+         "fact:2",
+         "claim:k1",
+         "claim:k2"
+        ],
+        "form": "statement",
+        "instrument": "other",
+        "respondents": null,
+        "stage": "forecast",
+        "text": "In an interview with the fictional newspaper Harbour Ledger, Board member Halvard Quennel of the fictional Northmere Reserve Bank said the bank will introduce a new banknote series in 2027 after a closed staff trial, and expects parliament to approve the currency amendment before the summer recess, after which the Board would fix a withdrawal date for the old notes."
+       },
+       "channels": [
+        {
+         "affected": [
+          {
+           "how": "May need new note-handling equipment, and face a period when two note series circulate, if the new series is introduced.",
+           "kind": "firms",
+           "name": "Small merchants"
+          },
+          {
+           "how": "Would handle exchanges and deposits of old notes and need time to adjust their cash machines.",
+           "kind": "industry",
+           "name": "Banks and payment operators"
+          }
+         ],
+         "assumptions": [
+          "a1",
+          "a2"
+         ],
+         "basis": [
+          "fact:1",
+          "fact:3",
+          "claim:k1",
+          "claim:k3"
+         ],
+         "conditions": "Depends on parliament's approval, a Board decision on the withdrawal date, and households bringing in old notes in time; the survey and bank-handling claims are the speaker's, with sources not given.",
+         "horizon": "years",
+         "id": "m1",
+         "note": null,
+         "scope": "micro",
+         "steps": [
+          "Parliament approves and the Board fixes the withdrawal date",
+          "Closed trial of the new notes in 2027 with branch staff",
+          "Two note series circulate side by side",
+          "Old notes are exchanged or paid into accounts"
+         ],
+         "support": "bounded_inference",
+         "text": "If the new series is issued, shops and banks might handle two note series for a time, as notes older than ten years made up {f1} of those in circulation in 2021 and {f2} in 2025, per the speaker."
+        }
+       ],
+       "context": [],
+       "figures": [
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "41%",
+         "id": "f1",
+         "label": "Share of notes older than ten years in circulation, 2021",
+         "measure": "share",
+         "period": "2021",
+         "price": false,
+         "quote": "notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025",
+         "seasonal": "not_stated",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:fictional:00000000000000000001",
+         "statistic": "not_stated",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": 41,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-14T06:00:00+00:00",
+          "source": "Northmere Reserve Bank (fictional)"
+         }
+        },
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "33%",
+         "id": "f2",
+         "label": "Share of notes older than ten years in circulation, 2025",
+         "measure": "share",
+         "period": "2025",
+         "price": false,
+         "quote": "notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025",
+         "seasonal": "not_stated",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:fictional:00000000000000000001",
+         "statistic": "not_stated",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": 33,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-14T06:00:00+00:00",
+          "source": "Northmere Reserve Bank (fictional)"
+         }
+        }
+       ],
+       "framework": {
+        "digests": {},
+        "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63",
+        "framework_version": "econ-framework-0.3",
+        "notes": {},
+        "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names."
+       },
+       "insufficient_reason": null,
+       "main_uncertainty": "Whether parliament approves the amendment on the hoped-for timetable and on what terms, including the exchange limit.",
+       "second_order": [
+        {
+         "assumptions": [
+          "a1"
+         ],
+         "basis": [
+          "fact:1"
+         ],
+         "conditions": "If the trial succeeds and parliament approves.",
+         "from": "m1",
+         "horizon": "years",
+         "id": "s1",
+         "text": "Cash-handling firms might offer new sorting services for the mixed stock of old and new notes."
+        }
+       ],
+       "significance": {
+        "basis": [
+         "fact:1",
+         "fact:2",
+         "fact:3",
+         "claim:k1",
+         "claim:k2"
+        ],
+        "text": "The interview sets out the bank's plans and hopes for the new note series, which the speaker presents as a way to keep cash durable. These are intentions and views, not decisions; the timetable rests on legislation not yet concluded."
+       },
+       "status": "explained",
+       "watch": [
+        {
+         "observable": "Parliament's vote on the currency amendment",
+         "text": "Approval before the recess would support the timetable the speaker hopes for.",
+         "would": "support"
+        },
+        {
+         "observable": "Board decision on the withdrawal date",
+         "text": "Delay in the legislation or the formal decision would weaken the reading of a near-term rollout.",
+         "would": "weaken"
+        }
+       ]
+      },
+      "facts": [
+       {
+        "claims": [
+         "k1"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "Quennel said the new series will enter circulation in 2027 after a closed trial run by the bank's branch staff."
+       },
+       {
+        "claims": [
+         "k2"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "He said the withdrawal date can only be fixed once parliament has acted, and the bank expects approval before the summer recess."
+       },
+       {
+        "claims": [
+         "k3"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "Quennel said that in the bank's latest survey notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025."
+       },
+       {
+        "claims": [
+         "k4"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "He said households may exchange old notes only up to a set amount per month, with any surplus paid into an account, and that the bank's stress tests show the limit would not trouble commercial banks' cash handling."
+       }
+      ],
+      "headline": "Northmere Reserve Bank's Quennel says new banknote series planned for 2027, expects parliament to act before recess",
+      "implications": [
+       {
+        "text": "A 2027 trial could let the bank and cash-handling firms test the new notes in real conditions before any decision on the withdrawal date."
+       },
+       {
+        "text": "If parliament approves, banks, shops and cash-handling firms might need time to adjust their machines, so preparations may be gradual."
+       },
+       {
+        "text": "Two note series circulating together could raise handling costs for small merchants for a time, if the changeover is slow."
+       }
+      ],
+      "missing": [
+       "Parliament's timetable for the amendment beyond the speaker's expectation",
+       "The size of the monthly exchange limit",
+       "Source and detail of the survey on note ageing",
+       "Evidence behind the claimed absence of strain on banks' cash handling"
+      ],
+      "summary": "In an interview published by the fictional newspaper Harbour Ledger, Board member Halvard Quennel of the fictional Northmere Reserve Bank said a new banknote series will enter circulation in 2027 after a closed trial by branch staff. He said the bank expects parliament to approve the currency amendment before the summer recess, after which the Board would fix a withdrawal date. He said exchanges of old notes would be limited per household, but spending them would not.",
+      "themes": [
+       {
+        "basis": "Interview centres on the new notes, the trial, the exchange limit and the withdrawal date.",
+        "kind": "theme",
+        "name": "Banknote series"
+       },
+       {
+        "basis": "Quennel cites the ageing of notes in circulation and queues at branches.",
+        "kind": "sector",
+        "name": "Payments"
+       },
+       {
+        "basis": "He says branches will run the exchanges and discusses banks' cash handling and the exchange limit.",
+        "kind": "sector",
+        "name": "Banking"
+       },
+       {
+        "basis": "He mentions secure transport and sorting of notes by two contractors.",
+        "kind": "theme",
+        "name": "Cash logistics"
+       }
+      ],
+      "uncertainties": [
+       "The legislative timetable depends on parliament; approval before the recess is only an expectation.",
+       "The size of the exchange limit is not given.",
+       "The source of the note-ageing figures is not stated.",
+       "The claim of no strain on banks' cash handling is the speaker's view, and the evidence behind it is not shown."
+      ]
+     },
+     "content_sha256": "9c22e58d8c6820c2e89f1df94ca4b79fa8d3a1672e29fc1aa062915b92afca15"
+    },
+    "7": {
+     "method": "assisted",
+     "content": {
+      "claims": [
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k1",
+        "modality": "prospective",
+        "quote": "The new series goes into circulation in 2027, after a closed trial run by our branch staff.",
+        "source": "report:fictional:00000000000000000001"
+       },
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k2",
+        "modality": "prospective",
+        "quote": "Parliament is expected to approve the currency amendment before the summer recess, and the Board would then fix the withdrawal date.",
+        "source": "report:fictional:00000000000000000001"
+       },
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k3",
+        "modality": "asserted",
+        "quote": "In our latest survey, notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025.",
+        "source": "report:fictional:00000000000000000001"
+       },
+       {
+        "condition": null,
+        "holder": "speaker",
+        "holder_name": "Halvard Quennel",
+        "id": "k4",
+        "modality": "view",
+        "quote": "Our stress tests suggest that a household cap on exchanges will not trouble the commercial banks' cash handling.",
+        "source": "report:fictional:00000000000000000001"
+       }
+      ],
+      "economics": {
+       "alternatives": [
+        {
+         "basis": [
+          "fact:2",
+          "claim:k2"
+         ],
+         "kind": "competing_explanation",
+         "text": "The timetable may slip if parliament takes longer than the hoped-for approval before the recess, which would delay the Board's choice of a withdrawal date."
+        },
+        {
+         "basis": [
+          "fact:4",
+          "report:fictional:00000000000000000001"
+         ],
+         "kind": "offsetting_force",
+         "text": "Quennel says the ceiling applies to exchanges at branches, not to spending; surplus above it can be paid into a bank account and is credited in full. The exchange ceiling alone does not establish how many old notes would stay in circulation or how fast the changeover would finish."
+        }
+       ],
+       "analysis_version": "econ-explanation-0.5",
+       "assumptions": [
+        {
+         "id": "a1",
+         "text": "a1: Parliament approves the amendment and the trial goes ahead roughly as the speaker describes."
+        },
+        {
+         "id": "a2",
+         "text": "a2: The speaker's statements on note ageing, queues and effects on banks are taken as the speaker's own claims, not independently verified."
+        }
+       ],
+       "calculations": [],
+       "change": {
+        "basis": [
+         "fact:1",
+         "fact:2",
+         "claim:k1",
+         "claim:k2"
+        ],
+        "form": "statement",
+        "instrument": "other",
+        "respondents": null,
+        "stage": "forecast",
+        "text": "In an interview with the fictional newspaper Harbour Ledger, Board member Halvard Quennel of the fictional Northmere Reserve Bank said the bank will introduce a new banknote series in 2027 after a closed staff trial, and expects parliament to approve the currency amendment before the summer recess, after which the Board would fix a withdrawal date for the old notes."
+       },
+       "channels": [
+        {
+         "affected": [
+          {
+           "how": "May need new note-handling equipment, and face a period when two note series circulate, if the new series is introduced.",
+           "kind": "firms",
+           "name": "Small merchants"
+          },
+          {
+           "how": "Would handle exchanges and deposits of old notes and need time to adjust their cash machines.",
+           "kind": "industry",
+           "name": "Banks and payment operators"
+          }
+         ],
+         "assumptions": [
+          "a1",
+          "a2"
+         ],
+         "basis": [
+          "fact:1",
+          "fact:3",
+          "claim:k1",
+          "claim:k3"
+         ],
+         "conditions": "Depends on parliament's approval, a Board decision on the withdrawal date, and households bringing in old notes in time; the survey and bank-handling claims are the speaker's, with sources not given.",
+         "horizon": "years",
+         "id": "m1",
+         "note": null,
+         "scope": "micro",
+         "steps": [
+          "Parliament approves and the Board fixes the withdrawal date",
+          "Households and shops start using the new notes once they are issued",
+          "Two note series circulate side by side",
+          "Old notes are exchanged or paid into accounts"
+         ],
+         "support": "bounded_inference",
+         "text": "If the new series is issued, shops and banks might handle two note series for a time, as notes older than ten years made up {f1} of those in circulation in 2021 and {f2} in 2025, per the speaker."
+        }
+       ],
+       "context": [],
+       "figures": [
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "41%",
+         "id": "f1",
+         "label": "Share of notes older than ten years in circulation, 2021",
+         "measure": "share",
+         "period": "2021",
+         "price": false,
+         "quote": "notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025",
+         "seasonal": "not_stated",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:fictional:00000000000000000001",
+         "statistic": "not_stated",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": 41,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-14T06:00:00+00:00",
+          "source": "Northmere Reserve Bank (fictional)"
+         }
+        },
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "33%",
+         "id": "f2",
+         "label": "Share of notes older than ten years in circulation, 2025",
+         "measure": "share",
+         "period": "2025",
+         "price": false,
+         "quote": "notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025",
+         "seasonal": "not_stated",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:fictional:00000000000000000001",
+         "statistic": "not_stated",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": 33,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-14T06:00:00+00:00",
+          "source": "Northmere Reserve Bank (fictional)"
+         }
+        }
+       ],
+       "framework": {
+        "digests": {},
+        "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63",
+        "framework_version": "econ-framework-0.3",
+        "notes": {},
+        "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names."
+       },
+       "insufficient_reason": null,
+       "main_uncertainty": "Whether parliament approves the amendment on the hoped-for timetable and on what terms, including the exchange limit.",
+       "second_order": [
+        {
+         "assumptions": [
+          "a1"
+         ],
+         "basis": [
+          "fact:1"
+         ],
+         "conditions": "If the trial succeeds and parliament approves.",
+         "from": "m1",
+         "horizon": "years",
+         "id": "s1",
+         "text": "Cash-handling firms might offer new sorting services for the mixed stock of old and new notes."
+        }
+       ],
+       "significance": {
+        "basis": [
+         "fact:1",
+         "fact:2",
+         "fact:3",
+         "claim:k1",
+         "claim:k2"
+        ],
+        "text": "The interview sets out the bank's plans and hopes for the new note series, which the speaker presents as a way to keep cash durable. These are intentions and views, not decisions; the timetable rests on legislation not yet concluded."
+       },
+       "status": "explained",
+       "watch": [
+        {
+         "observable": "Parliament's vote on the currency amendment",
+         "text": "Approval before the recess would support the timetable the speaker hopes for.",
+         "would": "support"
+        },
+        {
+         "observable": "Board decision on the withdrawal date",
+         "text": "Delay in the legislation or the formal decision would weaken the reading of a near-term rollout.",
+         "would": "weaken"
+        }
+       ]
+      },
+      "facts": [
+       {
+        "claims": [
+         "k1"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "Quennel said the new series will enter circulation in 2027 after a closed trial run by the bank's branch staff."
+       },
+       {
+        "claims": [
+         "k2"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "He said the withdrawal date can only be fixed once parliament has acted, and the bank expects approval before the summer recess."
+       },
+       {
+        "claims": [
+         "k3"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "Quennel said that in the bank's latest survey notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025."
+       },
+       {
+        "claims": [
+         "k4"
+        ],
+        "reports": [
+         "fictional:00000000000000000001"
+        ],
+        "text": "He said households may exchange old notes only up to a set amount per month, with any surplus paid into an account, and that the bank's stress tests show the limit would not trouble commercial banks' cash handling."
+       }
+      ],
+      "headline": "Northmere Reserve Bank's Quennel says new banknote series planned for 2027, expects parliament to act before recess",
+      "implications": [
+       {
+        "text": "A 2027 trial could let the bank and cash-handling firms test the new notes in real conditions; the withdrawal date depends on parliament's decision."
+       },
+       {
+        "text": "If parliament approves, banks, shops and cash-handling firms might need time to adjust their machines, so preparations may be gradual."
+       },
+       {
+        "text": "Two note series circulating together could raise handling costs for small merchants for a time, if the changeover is slow."
+       }
+      ],
+      "missing": [
+       "Parliament's timetable for the amendment beyond the speaker's expectation",
+       "The size of the monthly exchange limit",
+       "Source and detail of the survey on note ageing",
+       "Evidence behind the claimed absence of strain on banks' cash handling"
+      ],
+      "summary": "In an interview published by the fictional newspaper Harbour Ledger, Board member Halvard Quennel of the fictional Northmere Reserve Bank said a new banknote series will enter circulation in 2027 after a closed trial by branch staff. He said the bank expects parliament to approve the currency amendment before the summer recess, after which the Board would fix a withdrawal date. He said exchanges of old notes would be limited per household, but spending them would not.",
+      "themes": [
+       {
+        "basis": "Interview centres on the new notes, the trial, the exchange limit and the withdrawal date.",
+        "kind": "theme",
+        "name": "Banknote series"
+       },
+       {
+        "basis": "Quennel cites the ageing of notes in circulation and queues at branches.",
+        "kind": "sector",
+        "name": "Payments"
+       },
+       {
+        "basis": "He says branches will run the exchanges and discusses banks' cash handling and the exchange limit.",
+        "kind": "sector",
+        "name": "Banking"
+       },
+       {
+        "basis": "He mentions secure transport and sorting of notes by two contractors.",
+        "kind": "theme",
+        "name": "Cash logistics"
+       }
+      ],
+      "uncertainties": [
+       "The legislative timetable depends on parliament; approval before the recess is only an expectation.",
+       "The size of the exchange limit is not given.",
+       "The source of the note-ageing figures is not stated.",
+       "The claim of no strain on banks' cash handling is the speaker's view, and the evidence behind it is not shown."
+      ]
+     },
+     "content_sha256": "c79f51bcd07361a9d22a41f8f0998393c4c16769edb7f2f67707224bd93aeec3"
+    }
+   },
+   "reports": [
+    {
+     "entry_id": "fictional:00000000000000000001",
+     "publisher": "Northmere Reserve Bank (fictional)",
+     "title": "Halvard Quennel: Interview with Harbour Ledger",
+     "excerpt": "Parliament is expected to approve the currency amendment before the summer recess, and the Board would then fix the withdrawal date.\nIs there a ceiling on how many old notes a household can swap?\nThere is, but spending old notes will stay unrestricted until the withdrawal date.\nThe ceiling applies to exchanges at our branches, not to purchases in shops.\nAnyone holding more than the ceiling can pay the surplus into a bank account instead, where it is credited in full.\nThe new series goes into circulation in 2027, after a closed trial run by our branch staff.\nOur stress tests suggest that a household cap on exchanges will not trouble the commercial banks' cash handling.\nThe ceiling is meant to prevent queues in the final weeks, when most people tend to arrive.\nIn our latest survey, notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025.",
+     "link": "https://example.org/northmere/interview-2026-10-14",
+     "published": "Wed, 14 Oct 2026 08:00:00 +0200",
+     "published_utc": "2026-10-14T06:00:00+00:00",
+     "text": null,
+     "reduced": "Fictional test text, written for these cases. Only the sentences the regression cases need are kept here.",
+     "fictional": true
+    }
+   ],
+   "fictional": true
+  },
+  "deficit": {
+   "story_id": "story-d9e7f7be125e1df9",
+   "released_at": "2026-10-23T14:54:52+00:00",
+   "versions": {
+    "5": {
+     "method": "assisted",
+     "content": {
+      "economics": {
+       "alternatives": [
+        {
+         "basis": [
+          "fact:1"
+         ],
+         "kind": "competing_explanation",
+         "text": "The deficit may also reflect weak EU demand or price changes rather than import surges alone; the remarks do not separate them."
+        },
+        {
+         "basis": [
+          "fact:5",
+          "calc:c1"
+         ],
+         "kind": "offsetting_force",
+         "text": "Exports to free-trade partners grew faster than to other partners in 2025, the difference being {c1}, which he presents as a gain from trade agreements."
+        }
+       ],
+       "analysis_version": "econ-explanation-0.3",
+       "assumptions": [],
+       "calculations": [
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "calc_version": "econ-calc-0.2",
+         "decimals": 1,
+         "display": "+2.7 percentage points",
+         "formula": "f3 − f4",
+         "id": "c1",
+         "inputs": [
+          "f3",
+          "f4"
+         ],
+         "label": "Gap between export growth to free-trade partners and to others, 2025",
+         "measure": "change",
+         "op": "difference",
+         "period": "2025",
+         "seasonal": "not_applicable",
+         "unit": "percentage points",
+         "value": 2.7
+        }
+       ],
+       "change": {
+        "basis": [
+         "fact:2",
+         "fact:3"
+        ],
+        "instrument": "trade_remedy",
+        "stage": "proposal",
+        "text": "Trade Commissioner Maroš Šefčovič said a safeguard on hybrids and plug-in hybrids will be initiated soon, further priority sectors will be identified with the Import Barometer, and a DiversifyEU package with proposals for stronger trade-defence tools will be tabled in December."
+       },
+       "channels": [
+        {
+         "affected": [
+          {
+           "how": "could face less import competition",
+           "kind": "industry",
+           "name": "EU makers of hybrid and plug-in hybrid cars"
+          },
+          {
+           "how": "could pay more if imports are restricted",
+           "kind": "households",
+           "name": "EU buyers of hybrid cars"
+          },
+          {
+           "how": "could face quotas or tariffs",
+           "kind": "firms",
+           "name": "exporters of hybrids to the EU"
+          }
+         ],
+         "assumptions": [],
+         "basis": [
+          "fact:2"
+         ],
+         "conditions": "If the safeguard is initiated, finds serious injury and ends in a measure",
+         "horizon": "quarters",
+         "id": "m1",
+         "note": "trade-safeguards",
+         "scope": "micro",
+         "steps": [
+          "The Commission initiates a safeguard investigation",
+          "It assesses whether increased imports cause or threaten serious injury",
+          "A quota or a tariff on imported hybrids could follow"
+         ],
+         "support": "framework",
+         "text": "If an investigation found that increased imports cause or threaten serious injury and a measure were imposed, imports of hybrids and plug-in hybrids into the EU could face quotas or higher tariffs, which could protect EU producers and raise what buyers pay."
+        },
+        {
+         "affected": [
+          {
+           "how": "could gain protection from imports",
+           "kind": "industry",
+           "name": "EU sectors facing import surges"
+          }
+         ],
+         "assumptions": [],
+         "basis": [
+          "fact:1",
+          "fact:2",
+          "report:ec-press:4e234936bb2b196f8f15"
+         ],
+         "conditions": "If further sectors are identified and measures adopted",
+         "horizon": "years",
+         "id": "m2",
+         "note": null,
+         "scope": "macro",
+         "steps": [
+          "The Import Barometer flags sectors with sustained import surges",
+          "Trade-defence measures are adopted",
+          "Imports in those sectors could slow"
+         ],
+         "support": "event_evidence",
+         "text": "The Commissioner presents rebalancing trade with China as the aim of these steps; whether measures in further sectors would narrow the deficit would depend on how much they reduce imports, which the remarks do not estimate."
+        }
+       ],
+       "context": [],
+       "figures": [
+        {
+         "basis": "nominal",
+         "bound": "upper_bound",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "at most 197 billion euros",
+         "id": "f1",
+         "label": "EU trade deficit with China",
+         "measure": "level",
+         "period": "first half of 2026",
+         "price": false,
+         "quote": "Our deficit with China reached almost 197 billion euros in the first half of this year",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:4e234936bb2b196f8f15",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "billion euros",
+         "value": 197,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-23T14:54:52+00:00",
+          "source": "European Commission"
+         }
+        },
+        {
+         "basis": "nominal",
+         "bound": "exact",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "397 billion euros",
+         "id": "f2",
+         "label": "EU trade deficit with China, record year",
+         "measure": "level",
+         "period": "2022",
+         "price": false,
+         "quote": "the 2022 record of 397 billion euros",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:4e234936bb2b196f8f15",
+         "statistic": "observed",
+         "stock_flow": "flow_per_year",
+         "unit": "billion euros",
+         "value": 397,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-23T14:54:52+00:00",
+          "source": "European Commission"
+         }
+        },
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "decimals": 1,
+         "direction_check": "consistent",
+         "display": "3.3%",
+         "id": "f3",
+         "label": "Growth of EU goods exports to free-trade partners",
+         "measure": "growth_rate",
+         "period": "2025",
+         "price": false,
+         "quote": "EU goods exports to our preferential partners grew 3.3%",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:4e234936bb2b196f8f15",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": 3.3,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-23T14:54:52+00:00",
+          "source": "European Commission"
+         }
+        },
+        {
+         "basis": "not_stated",
+         "bound": "exact",
+         "decimals": 1,
+         "direction_check": "unstated",
+         "display": "0.6%",
+         "id": "f4",
+         "label": "Growth of EU goods exports to other partners",
+         "measure": "growth_rate",
+         "period": "2025",
+         "price": false,
+         "quote": "against 0.6% with non-FTA partners",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:4e234936bb2b196f8f15",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": 0.6,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-23T14:54:52+00:00",
+          "source": "European Commission"
+         }
+        }
+       ],
+       "framework": {
+        "digests": {
+         "trade-safeguards": "e5070758ab3af13177c146a2facef9d74f3608fd56a809f1798b49b97bd2eece"
+        },
+        "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+        "framework_version": "econ-framework-0.2",
+        "notes": {
+         "trade-safeguards": {
+          "applies_to": [
+           "trade_remedy"
+          ],
+          "id": "trade-safeguards",
+          "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+          "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+          "scope": "micro",
+          "sources": [
+           {
+            "publisher": "World Trade Organization",
+            "title": "Safeguard measures",
+            "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm",
+            "year": null
+           },
+           {
+            "publisher": "World Trade Organization",
+            "title": "The Agreement on Safeguards",
+            "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm",
+            "year": null
+           }
+          ],
+          "title": "Safeguard investigations and measures"
+         }
+        },
+        "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+       },
+       "insufficient_reason": null,
+       "main_uncertainty": "Whether the safeguard investigation finds serious injury and what measure, if any, follows; the remarks give no scope or timetable beyond soon.",
+       "second_order": [
+        {
+         "assumptions": [],
+         "basis": [
+          "fact:2"
+         ],
+         "conditions": "If a safeguard measure is imposed and no compensation is agreed",
+         "from": "m1",
+         "horizon": "years",
+         "id": "s1",
+         "text": "Exporting countries may seek compensation or suspend equivalent concessions, as the safeguard rules allow, which could affect EU exports in other sectors."
+        }
+       ],
+       "significance": {
+        "basis": [
+         "fact:1",
+         "fact:2",
+         "figure:f1",
+         "figure:f2"
+        ],
+        "text": "He presented the steps as a response to the EU's trade deficit with China, which he put at {f1} in the first half of the year, against a record of {f2} for the whole of 2022; the periods differ. A safeguard investigation is the first formal step towards possible import restrictions on hybrids and plug-in hybrids."
+       },
+       "status": "explained",
+       "watch": [
+        {
+         "observable": "The formal initiation notice of the hybrids safeguard",
+         "text": "An initiation notice would make import restrictions on hybrids a live possibility.",
+         "would": "support"
+        },
+        {
+         "observable": "The meeting with Chinese counterparts next month",
+         "text": "An agreement that addresses the imbalance could make measures less likely.",
+         "would": "weaken"
+        }
+       ]
+      },
+      "facts": [
+       {
+        "reports": [
+         "ec-press:4e234936bb2b196f8f15"
+        ],
+        "text": "The European Commission says the EU's trade deficit with China reached almost €197 billion in the first half of 2026, and that at this rate it could exceed the 2022 record of €397 billion."
+       },
+       {
+        "reports": [
+         "ec-press:4e234936bb2b196f8f15"
+        ],
+        "text": "Next steps named: a safeguard on hybrids and plug-in hybrids to be initiated soon; identification of further priority sectors using the Import Barometer, which tracks sustained import surges harming EU industry; and a meeting with Chinese counterparts next month."
+       },
+       {
+        "reports": [
+         "ec-press:4e234936bb2b196f8f15"
+        ],
+        "text": "In December the Commission will table the DiversifyEU package and propose ways to make its trade defence tools more effective, including new instruments."
+       },
+       {
+        "reports": [
+         "ec-press:4e234936bb2b196f8f15"
+        ],
+        "text": "EU exports to the US grew 3.5% in 2025 to €555 billion; the Commissioner named metals and derivatives as outstanding issues with the US."
+       },
+       {
+        "reports": [
+         "ec-press:4e234936bb2b196f8f15"
+        ],
+        "text": "EU goods exports to preferential (free trade agreement) partners grew 3.3% in 2025, against 0.6% with other partners; agri-food exports to them grew 4.6%."
+       }
+      ],
+      "headline": "EU trade chief says a safeguard on Chinese hybrid imports will be initiated soon, with new trade defence proposals in December",
+      "implications": [
+       {
+        "text": "If a safeguard on hybrids and plug-in hybrids is initiated and measures follow, importers and sellers of these cars from China in the EU could face new limits or duties, depending on what is decided."
+       },
+       {
+        "text": "The December package could change the trade defence tools available against import surges, which may matter for EU industries the Import Barometer flags and for exporters to the EU in those sectors."
+       },
+       {
+        "text": "Remarks that EU-US issues on metals and derivatives remain open suggest those sectors might still see further negotiation, though no step or date is stated."
+       }
+      ],
+      "missing": [
+       "The scope, form and timetable of any hybrid safeguard measure.",
+       "What the DiversifyEU package and the new trade defence instruments would contain.",
+       "Any outcome of the ministers' meeting itself, or of the questions taken afterwards."
+      ],
+      "summary": "After an informal meeting of EU trade ministers in Dublin, Trade Commissioner Maroš Šefčovič said the EU's deficit with China reached almost €197 billion in the first half of 2026 and that rebalancing is the Commission's central workstream, starting with a safeguard on hybrids and plug-in hybrids \"to be initiated soon\". He said the Commission will table a DiversifyEU package in December and propose ways to make its trade defence tools more effective. On the United States, he said EU exports grew 3.5% in 2025, to €555 billion.",
+      "themes": [
+       {
+        "basis": "The Commissioner names a safeguard on hybrids and plug-in hybrids to be initiated soon.",
+        "kind": "sector",
+        "name": "Automotive (hybrid and plug-in hybrid vehicles)"
+       },
+       {
+        "basis": "He calls rebalancing the central workstream and states the deficit figures.",
+        "kind": "theme",
+        "name": "EU-China trade rebalancing"
+       },
+       {
+        "basis": "The DiversifyEU package and proposals on trade defence tools are announced for December.",
+        "kind": "theme",
+        "name": "Trade defence instruments"
+       },
+       {
+        "basis": "Named as an outstanding issue in EU-US trade.",
+        "kind": "sector",
+        "name": "Metals"
+       }
+      ],
+      "uncertainties": [
+       "\"To be initiated soon\" gives no date, and initiating a safeguard is a procedure whose outcome the remarks do not state.",
+       "The remarks do not say which further sectors the Import Barometer may identify.",
+       "Remarks as delivered may differ from this text."
+      ]
+     },
+     "content_sha256": "81ff6af2940361b604a6af13b95f25128c10cfcd042b5c2d6ab1ee132d34aca9"
+    }
+   },
+   "reports": [
+    {
+     "entry_id": "ec-press:4e234936bb2b196f8f15",
+     "publisher": "European Commission",
+     "title": "Remarks by Commissioner Šefčovič at the press conference following the informal Foreign Affairs Council (Trade)",
+     "excerpt": "Our deficit with China reached almost 197 billion euros in the first half of this year.\nAt this rate, we could break the 2022 record of 397 billion euros.\n- A safeguard on hybrids and plug-in hybrids to be initiated soon;\n- In 2025, EU goods exports to our preferential partners grew 3.3%, against 0.6% with non-FTA partners.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_2252",
+     "published": "Fri, 23 Oct 2026 14:54:52 GMT",
+     "published_utc": "2026-10-23T14:54:52+00:00",
+     "text": null,
+     "reduced": "Only the sentences the regression cases need are kept here."
+    }
+   ]
+  },
+  "quota": {
+   "story_id": "story-4e4676f607810f7d",
+   "released_at": "2026-10-21T06:04:27+00:00",
+   "versions": {
+    "1": {
+     "method": "assisted",
+     "content": {
+      "economics": {
+       "alternatives": [
+        {
+         "basis": [],
+         "kind": "offsetting_force",
+         "text": "Buyers may turn to other imported or EU-made hybrids, limiting any effect on prices; the speech gives no price information."
+        },
+        {
+         "basis": [
+          "report:ec-press:16bb242e2540d675e5d7"
+         ],
+         "kind": "competing_explanation",
+         "text": "The agreement may matter more as a sign of the EU's readiness to use safeguards, which she said leaders backed and which chemicals and machinery may face, than for car prices."
+        }
+       ],
+       "analysis_version": "econ-explanation-0.3",
+       "assumptions": [
+        {
+         "id": "a1",
+         "text": "The quota binds, that is, it is below what Chinese makers would otherwise ship; she said it reduces exports by around 45%."
+        }
+       ],
+       "calculations": [
+        {
+         "basis": "nominal",
+         "bound": "exact",
+         "calc_version": "econ-calc-0.2",
+         "decimals": 1,
+         "display": "+200.0%",
+         "formula": "(f3 ÷ f2 − 1) × 100",
+         "id": "c1",
+         "inputs": [
+          "f3",
+          "f2"
+         ],
+         "label": "Change in Chinese hybrid exports to the EU over twelve months",
+         "measure": "growth_rate",
+         "op": "percent_change",
+         "period": "latest twelve months (not dated) against twelve months earlier (not dated)",
+         "seasonal": "not_applicable",
+         "unit": "percent",
+         "value": 200.0
+        }
+       ],
+       "change": {
+        "basis": [
+         "fact:1",
+         "figure:f1"
+        ],
+        "instrument": "trade_remedy",
+        "stage": "decision",
+        "text": "Commission President von der Leyen said the EU and China agreed an annual quota of 350 000 hybrid vehicles from China, to be implemented through a safeguard, which she said changes those exports by {f1}."
+       },
+       "channels": [
+        {
+         "affected": [
+          {
+           "how": "could face less import competition",
+           "kind": "industry",
+           "name": "EU makers of hybrid cars"
+          },
+          {
+           "how": "could pay more or have fewer models to choose from",
+           "kind": "households",
+           "name": "EU buyers of hybrid cars"
+          },
+          {
+           "how": "could ship fewer cars to the EU",
+           "kind": "firms",
+           "name": "Chinese hybrid exporters"
+          }
+         ],
+         "assumptions": [
+          "a1"
+         ],
+         "basis": [
+          "fact:1",
+          "fact:2",
+          "report:ec-press:16bb242e2540d675e5d7"
+         ],
+         "conditions": "If the safeguard is adopted and the quota applied as described",
+         "horizon": "months",
+         "id": "m1",
+         "note": "trade-safeguards",
+         "scope": "micro",
+         "steps": [
+          "The quota is implemented through a safeguard",
+          "Chinese hybrid supplies to the EU are capped",
+          "EU producers face less import competition; buyers may face higher prices"
+         ],
+         "support": "framework",
+         "text": "If the quota caps Chinese hybrid imports as described, EU makers of hybrid cars could face less import competition, and buyers of hybrid cars in the EU could pay more or have fewer models to choose from."
+        },
+        {
+         "affected": [
+          {
+           "how": "could pay lower duties in China",
+           "kind": "industry",
+           "name": "EU exporters of the products covered"
+          }
+         ],
+         "assumptions": [],
+         "basis": [
+          "fact:3",
+          "figure:f4"
+         ],
+         "conditions": "If China applies the tariff cuts as she described",
+         "horizon": "months",
+         "id": "m2",
+         "note": null,
+         "scope": "micro",
+         "steps": [
+          "China cuts tariffs on listed EU products",
+          "EU exporters of those products pay less duty",
+          "Their sales to China could become more competitive"
+         ],
+         "support": "event_evidence",
+         "text": "She said China agreed to cut tariffs on EU products worth almost {f4}; if the cuts apply as she described, EU exporters of those products could face lower duties in China."
+        }
+       ],
+       "context": [],
+       "figures": [
+        {
+         "basis": "not_stated",
+         "bound": "approximate",
+         "decimals": 0,
+         "direction_check": "consistent",
+         "display": "about −45%",
+         "id": "f1",
+         "label": "Change in Chinese hybrid exports to the EU under the quota, as stated",
+         "measure": "change",
+         "period": "under the quota (base not stated)",
+         "price": false,
+         "quote": "We agreed an annual quota of 350 000 hybrid vehicles from China. Reducing exports by around 45%.",
+         "seasonal": "not_applicable",
+         "sign": "from_words",
+         "sign_words": "Reducing",
+         "source": "report:ec-press:16bb242e2540d675e5d7",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "percent",
+         "value": -45,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-21T06:04:27+00:00",
+          "source": "European Commission"
+         }
+        },
+        {
+         "basis": "nominal",
+         "bound": "exact",
+         "decimals": 1,
+         "direction_check": "as_quoted",
+         "display": "2.5 billion dollars",
+         "id": "f2",
+         "label": "Chinese hybrid exports to the EU",
+         "measure": "level",
+         "period": "twelve months earlier (not dated)",
+         "price": false,
+         "quote": "Chinese hybrid electric vehicle exports to the EU had gone up from $2.5 billion to $7.5 billion",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:16bb242e2540d675e5d7",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "billion dollars",
+         "value": 2.5,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-21T06:04:27+00:00",
+          "source": "European Commission"
+         }
+        },
+        {
+         "basis": "nominal",
+         "bound": "exact",
+         "decimals": 1,
+         "direction_check": "as_quoted",
+         "display": "7.5 billion dollars",
+         "id": "f3",
+         "label": "Chinese hybrid exports to the EU",
+         "measure": "level",
+         "period": "latest twelve months (not dated)",
+         "price": false,
+         "quote": "Chinese hybrid electric vehicle exports to the EU had gone up from $2.5 billion to $7.5 billion",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:16bb242e2540d675e5d7",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "billion dollars",
+         "value": 7.5,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-21T06:04:27+00:00",
+          "source": "European Commission"
+         }
+        },
+        {
+         "basis": "nominal",
+         "bound": "upper_bound",
+         "decimals": 0,
+         "direction_check": "as_quoted",
+         "display": "at most 4 billion euros",
+         "id": "f4",
+         "label": "EU products covered by China's tariff cuts",
+         "measure": "level",
+         "period": "as agreed",
+         "price": false,
+         "quote": "China has agreed to cut tariffs on EU products worth almost €4 billion",
+         "seasonal": "not_applicable",
+         "sign": "as_quoted",
+         "sign_words": null,
+         "source": "report:ec-press:16bb242e2540d675e5d7",
+         "statistic": "observed",
+         "stock_flow": "not_applicable",
+         "unit": "billion euros",
+         "value": 4,
+         "vintage": {
+          "label": null,
+          "published": "2026-10-21T06:04:27+00:00",
+          "source": "European Commission"
+         }
+        }
+       ],
+       "framework": {
+        "digests": {
+         "trade-safeguards": "e5070758ab3af13177c146a2facef9d74f3608fd56a809f1798b49b97bd2eece"
+        },
+        "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+        "framework_version": "econ-framework-0.2",
+        "notes": {
+         "trade-safeguards": {
+          "applies_to": [
+           "trade_remedy"
+          ],
+          "id": "trade-safeguards",
+          "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+          "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+          "scope": "micro",
+          "sources": [
+           {
+            "publisher": "World Trade Organization",
+            "title": "Safeguard measures",
+            "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm",
+            "year": null
+           },
+           {
+            "publisher": "World Trade Organization",
+            "title": "The Agreement on Safeguards",
+            "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm",
+            "year": null
+           }
+          ],
+          "title": "Safeguard investigations and measures"
+         }
+        },
+        "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+       },
+       "insufficient_reason": null,
+       "main_uncertainty": "How and when the quota applies: the speech gives no legal text, start date or duration, and does not say what the reduction of about 45% is measured against.",
+       "second_order": [],
+       "significance": {
+        "basis": [
+         "fact:1",
+         "fact:2",
+         "calc:c1",
+         "report:ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "She said Chinese hybrid exports to the EU had risen from {f2} to {f3} in twelve months, a change of {c1}; a quota caps that supply, and she presented it as the first time China has agreed to export moderation in a major industrial sector, while saying that one agreement in one sector cannot fix the overall structural imbalance."
+       },
+       "status": "explained",
+       "watch": [
+        {
+         "observable": "The safeguard's legal text and start date",
+         "text": "A binding quota with a start date would make the effect on supply likely.",
+         "would": "support"
+        },
+        {
+         "observable": "Chinese hybrid shipments to the EU in the coming months",
+         "text": "Shipments well below the quota would mean it does not bind.",
+         "would": "weaken"
+        }
+       ]
+      },
+      "facts": [
+       {
+        "reports": [
+         "ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "Von der Leyen said the EU and China agreed an annual quota of 350 000 hybrid vehicles from China, reducing exports by around 45%, to be implemented through a safeguard."
+       },
+       {
+        "reports": [
+         "ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "She said Chinese hybrid electric vehicle exports to the EU had risen from $2.5 billion to $7.5 billion in twelve months."
+       },
+       {
+        "reports": [
+         "ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "She said China agreed to cut tariffs on EU products worth almost €4 billion and gave greater predictability on export controls for rare earths and magnets."
+       },
+       {
+        "reports": [
+         "ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "She said the EU's trade deficit with China reached €1 billion a day in 2025, and that the Commission will present a DiversifyEU package in December and propose a new instrument to limit access to the Single Market when EU interests are threatened."
+       },
+       {
+        "reports": [
+         "ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "She said the Commission's simplification proposals could save over €22 billion of administrative burden a year if all are agreed, and that the Commission will develop a plan for a European Energy Union."
+       },
+       {
+        "reports": [
+         "ec-press:16bb242e2540d675e5d7"
+        ],
+        "text": "She said energy sanctions on Russia will stay until Russia stops the war."
+       }
+      ],
+      "headline": "Von der Leyen says China agreed an annual quota of 350 000 hybrid cars for the EU, to be implemented through a safeguard",
+      "implications": [
+       {
+        "text": "If the quota is applied as described, Chinese hybrid supplies to the EU could fall, which may support EU hybrid producers and could raise what buyers pay."
+       },
+       {
+        "text": "EU exporters of the products covered by China's tariff cuts could face lower duties, though the speech does not name the products."
+       },
+       {
+        "text": "Chemicals and machinery, which she named as sectors facing growing concerns, may see trade defence measures if dialogue does not deliver."
+       }
+      ],
+      "missing": [
+       "The text of the agreement with China.",
+       "The contents of the DiversifyEU package and of the new deterrence instrument."
+      ],
+      "summary": "Reporting to the European Parliament on the European Council of 15-16 October, Commission President von der Leyen said dialogue with China had produced an annual quota of 350 000 hybrid vehicles from China, which she said reduces those exports by around 45% and will be implemented through a safeguard, after Chinese hybrid exports to the EU rose from $2.5 billion to $7.5 billion in twelve months. She said China agreed to cut tariffs on EU products worth almost €4 billion, announced a DiversifyEU package for December and a new deterrence instrument, and said energy sanctions on Russia will stay until it stops the war.",
+      "themes": [],
+      "uncertainties": [
+       "The quota's legal form, start date and duration are not given; she said only that it will be implemented through a safeguard.",
+       "The base against which exports fall by around 45% is not stated.",
+       "Which EU products benefit from China's tariff cuts is not stated."
+      ]
+     },
+     "content_sha256": "9bf55e9664bf50f567f44769274194b256153deda3cc83e948da43ec91fe1394"
+    }
+   },
+   "reports": [
+    {
+     "entry_id": "ec-press:16bb242e2540d675e5d7",
+     "publisher": "European Commission",
+     "title": "Speech by President von der Leyen at the European Parliament plenary debate on the conclusions of the European Council meeting of 15-16 October 2026",
+     "excerpt": "In 2025, our trade deficit with China reached €1 billion a day.\nChinese hybrid electric vehicle exports to the EU had gone up from $2.5 billion to $7.5 billion.\nA threefold increase in just twelve months.\nWe agreed an annual quota of 350 000 hybrid vehicles from China.\nReducing exports by around 45%.\nThis will be implemented through a safeguard, so we keep control.\nWe agreed an annual quota of 350 000 hybrid vehicles from China. Reducing exports by around 45%.\nChina has agreed to cut tariffs on EU products worth almost €4 billion.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_2222",
+     "published": "Wed, 21 Oct 2026 06:04:27 GMT",
+     "published_utc": "2026-10-21T06:04:27+00:00",
+     "text": null,
+     "reduced": "Only the sentences the regression cases need are kept here."
+    }
+   ]
+  }
+ }
+}

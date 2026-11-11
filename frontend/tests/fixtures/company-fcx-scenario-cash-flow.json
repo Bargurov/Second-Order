@@ -1,0 +1,32 @@
+{
+ "view_version": "company-scenario-0.1",
+ "mode": "cash_flow",
+ "inputs": {
+  "price": "6.37"
+ },
+ "uses": {
+  "price": {
+   "record": "r3-out-cu-price-q4-2026",
+   "value": "6.5"
+  },
+  "sensitivity": {
+   "record": "r3-sens-ocf-copper",
+   "value": "75"
+  },
+  "step": {
+   "record": "r3-sens-ocf-copper-step",
+   "value": "0.1"
+  }
+ },
+ "result": {
+  "price_change": "-0.13",
+  "steps": "-1.3",
+  "change": "-97.5"
+ },
+ "unit": "USD millions",
+ "rests_on": [
+  "release-2026q3"
+ ],
+ "stored": false,
+ "provider_called": false
+}

@@ -1,0 +1,1381 @@
+{
+ "available": true,
+ "common_limitations": [
+  "Time alignment does not make these the same measurement: retail electricity purchases are not total electricity consumption, and an output index is not kilowatthours.",
+  "G.17 rates are seasonally adjusted; the EIA retail sales are not. Comparing the same quarter or month of consecutive years limits seasonal differences but does not remove weather or calendar differences.",
+  "The sources are different vintages: each G.17 value is as printed in the release named beside it, and the EIA file is one retrieval whose edition is not stated. They are not a common historical information set.",
+  "Whether the Federal Reserve's output measures draw on EIA data is not stated in the retained material, so the two sources are not treated as independent: agreement between them is not corroboration.",
+  "Observed periods only. They neither validate nor invalidate either series as a general guide to the other, and no cause is established."
+ ],
+ "comparisons": {
+  "industrial_vs_manufacturing": [
+   {
+    "eia": {
+     "change": "0.000",
+     "code": "ESICPUS",
+     "current": "240000.000",
+     "months": [
+      "2023-10",
+      "2023-11",
+      "2023-12"
+     ],
+     "percent": "0.00",
+     "prior": "240000.000",
+     "prior_months": [
+      "2022-10",
+      "2022-11",
+      "2022-12"
+     ],
+     "reason": null,
+     "sign": 0,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "Fourth quarter to fourth quarter / 2023",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": null,
+     "naics": "31-33",
+     "path": "INDUSTRY GROUP / Manufacturing / Manufacturing (NAICS)",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": -1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "-.1",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "-.1"
+      },
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "-.1"
+      },
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "-.1"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "fourth_quarter",
+    "label": "Q4 2023 vs Q4 2022",
+    "period": "2023-Q4",
+    "signs": "no_direction"
+   },
+   {
+    "eia": {
+     "change": "7200.000",
+     "code": "ESICPUS",
+     "current": "247200.000",
+     "months": [
+      "2024-10",
+      "2024-11",
+      "2024-12"
+     ],
+     "percent": "3.00",
+     "prior": "240000.000",
+     "prior_months": [
+      "2023-10",
+      "2023-11",
+      "2023-12"
+     ],
+     "reason": null,
+     "sign": 1,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "Fourth quarter to fourth quarter / 2024",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": null,
+     "naics": "31-33",
+     "path": "INDUSTRY GROUP / Manufacturing / Manufacturing (NAICS)",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": -1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "-1.4",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "-1.4"
+      },
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "-1.4"
+      },
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "-1.4"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "fourth_quarter",
+    "label": "Q4 2024 vs Q4 2023",
+    "period": "2024-Q4",
+    "signs": "opposite_signs"
+   },
+   {
+    "eia": {
+     "change": "-7120.000",
+     "code": "ESICPUS",
+     "current": "240080.000",
+     "months": [
+      "2025-10",
+      "2025-11",
+      "2025-12"
+     ],
+     "percent": "-2.88",
+     "prior": "247200.000",
+     "prior_months": [
+      "2024-10",
+      "2024-11",
+      "2024-12"
+     ],
+     "reason": null,
+     "sign": -1,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "Fourth quarter to fourth quarter / 2025",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": null,
+     "naics": "31-33",
+     "path": "INDUSTRY GROUP / Manufacturing / Manufacturing (NAICS)",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "1.4",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "1.2"
+      },
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "1.4"
+      },
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "1.4"
+      }
+     ],
+     "vintages_differ": true
+    },
+    "kind": "fourth_quarter",
+    "label": "Q4 2025 vs Q4 2024",
+    "period": "2025-Q4",
+    "signs": "opposite_signs"
+   },
+   {
+    "eia": {
+     "change": "-800.000",
+     "code": "ESICPUS",
+     "current": "79200.000",
+     "months": [
+      "2026-06"
+     ],
+     "percent": "-1.00",
+     "prior": "80000.000",
+     "prior_months": [
+      "2025-06"
+     ],
+     "reason": null,
+     "sign": -1,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "June '25 to June '26",
+     "extract_id": "d6e8bdbfd1f03bc31ce143920dec341cc7a80ab4ba2e71a2e50a77229e91dfa3",
+     "marker": "p",
+     "naics": "31-33",
+     "path": "INDUSTRY GROUP / Manufacturing / Manufacturing (NAICS)",
+     "release": "20260717",
+     "release_date_as_stated": "July 17, 2026",
+     "sha256": "93cdda60aae8bf0daa2512143fea1757f063cfe798ac70380d066a702dc504f6",
+     "sign": -1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260717/table1.htm",
+     "value": "-.5",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "-.5"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "twelve_month",
+    "label": "June 2026 vs June 2025",
+    "period": "2026-06",
+    "signs": "same_sign"
+   },
+   {
+    "eia": {
+     "change": null,
+     "code": "ESICPUS",
+     "current": null,
+     "months": [
+      "2026-07"
+     ],
+     "percent": null,
+     "prior": null,
+     "prior_months": [
+      "2025-07"
+     ],
+     "reason": "outside the retained file (2022-01 to 2026-06): 2026-07",
+     "sign": null,
+     "state": "not_covered"
+    },
+    "g17": {
+     "column": "July '25 to July '26",
+     "extract_id": "cf84d2cb5a40f9dff5231230118d83647721ec9a3fee933c0367916f8149f7a0",
+     "marker": "p",
+     "naics": "31-33",
+     "path": "INDUSTRY GROUP / Manufacturing / Manufacturing (NAICS)",
+     "release": "20260818",
+     "release_date_as_stated": "August 18, 2026",
+     "sha256": "9144fb527742232915616052008ac180801981b9f11f7f49173f57db7b7c8469",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260818/table1.htm",
+     "value": "1.3",
+     "vintages": [
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "1.3"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "twelve_month",
+    "label": "July 2026 vs July 2025",
+    "period": "2026-07",
+    "signs": "not_covered"
+   },
+   {
+    "eia": {
+     "change": null,
+     "code": "ESICPUS",
+     "current": null,
+     "months": [
+      "2026-08"
+     ],
+     "percent": null,
+     "prior": null,
+     "prior_months": [
+      "2025-08"
+     ],
+     "reason": "outside the retained file (2022-01 to 2026-06): 2026-08",
+     "sign": null,
+     "state": "not_covered"
+    },
+    "g17": {
+     "column": "Aug. '25 to Aug. '26",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": "p",
+     "naics": "31-33",
+     "path": "INDUSTRY GROUP / Manufacturing / Manufacturing (NAICS)",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "1.0",
+     "vintages": [
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "1.0"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "twelve_month",
+    "label": "August 2026 vs August 2025",
+    "period": "2026-08",
+    "signs": "not_covered"
+   }
+  ],
+  "utility_output_and_customers": [
+   {
+    "breakdown": {
+     "analyzed_change": "0.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "0.000",
+      "ESICPUS": "0.000",
+      "ESRCPUS": "0.000"
+     },
+     "state": "computed",
+     "total_change": "0.000"
+    },
+    "eia_classes": {
+     "ESACPUS": {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "current": "1800.000",
+      "months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "percent": "0.00",
+      "prior": "1800.000",
+      "prior_months": [
+       "2022-10",
+       "2022-11",
+       "2022-12"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     },
+     "ESCCPUS": {
+      "change": "0.000",
+      "code": "ESCCPUS",
+      "current": "300000.000",
+      "months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "percent": "0.00",
+      "prior": "300000.000",
+      "prior_months": [
+       "2022-10",
+       "2022-11",
+       "2022-12"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     },
+     "ESICPUS": {
+      "change": "0.000",
+      "code": "ESICPUS",
+      "current": "240000.000",
+      "months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "percent": "0.00",
+      "prior": "240000.000",
+      "prior_months": [
+       "2022-10",
+       "2022-11",
+       "2022-12"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     },
+     "ESRCPUS": {
+      "change": "0.000",
+      "code": "ESRCPUS",
+      "current": "300000.000",
+      "months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "percent": "0.00",
+      "prior": "300000.000",
+      "prior_months": [
+       "2022-10",
+       "2022-11",
+       "2022-12"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     }
+    },
+    "eia_total": {
+     "change": "0.000",
+     "code": "ESTCPUS",
+     "current": "841800.000",
+     "months": [
+      "2023-10",
+      "2023-11",
+      "2023-12"
+     ],
+     "percent": "0.00",
+     "prior": "841800.000",
+     "prior_months": [
+      "2022-10",
+      "2022-11",
+      "2022-12"
+     ],
+     "reason": null,
+     "sign": 0,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "Fourth quarter to fourth quarter / 2023",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": null,
+     "naics": "2211",
+     "path": "INDUSTRY GROUP / Utilities / Electric",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": ".2",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": ".2"
+      },
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": ".2"
+      },
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": ".2"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "fourth_quarter",
+    "label": "Q4 2023 vs Q4 2022",
+    "period": "2023-Q4"
+   },
+   {
+    "breakdown": {
+     "analyzed_change": "16200.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "6000.000",
+      "ESICPUS": "7200.000",
+      "ESRCPUS": "3000.000"
+     },
+     "state": "computed",
+     "total_change": "16200.000"
+    },
+    "eia_classes": {
+     "ESACPUS": {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "current": "1800.000",
+      "months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "percent": "0.00",
+      "prior": "1800.000",
+      "prior_months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     },
+     "ESCCPUS": {
+      "change": "6000.000",
+      "code": "ESCCPUS",
+      "current": "306000.000",
+      "months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "percent": "2.00",
+      "prior": "300000.000",
+      "prior_months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "reason": null,
+      "sign": 1,
+      "state": "computed"
+     },
+     "ESICPUS": {
+      "change": "7200.000",
+      "code": "ESICPUS",
+      "current": "247200.000",
+      "months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "percent": "3.00",
+      "prior": "240000.000",
+      "prior_months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "reason": null,
+      "sign": 1,
+      "state": "computed"
+     },
+     "ESRCPUS": {
+      "change": "3000.000",
+      "code": "ESRCPUS",
+      "current": "303000.000",
+      "months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "percent": "1.00",
+      "prior": "300000.000",
+      "prior_months": [
+       "2023-10",
+       "2023-11",
+       "2023-12"
+      ],
+      "reason": null,
+      "sign": 1,
+      "state": "computed"
+     }
+    },
+    "eia_total": {
+     "change": "16200.000",
+     "code": "ESTCPUS",
+     "current": "858000.000",
+     "months": [
+      "2024-10",
+      "2024-11",
+      "2024-12"
+     ],
+     "percent": "1.92",
+     "prior": "841800.000",
+     "prior_months": [
+      "2023-10",
+      "2023-11",
+      "2023-12"
+     ],
+     "reason": null,
+     "sign": 1,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "Fourth quarter to fourth quarter / 2024",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": null,
+     "naics": "2211",
+     "path": "INDUSTRY GROUP / Utilities / Electric",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "2.3",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "2.3"
+      },
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "2.3"
+      },
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "2.3"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "fourth_quarter",
+    "label": "Q4 2024 vs Q4 2023",
+    "period": "2024-Q4"
+   },
+   {
+    "breakdown": {
+     "analyzed_change": "-15420.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "-6800.000",
+      "ESICPUS": "-7120.000",
+      "ESRCPUS": "-1500.000"
+     },
+     "state": "computed",
+     "total_change": "-15420.000"
+    },
+    "eia_classes": {
+     "ESACPUS": {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "current": "1800.000",
+      "months": [
+       "2025-10",
+       "2025-11",
+       "2025-12"
+      ],
+      "percent": "0.00",
+      "prior": "1800.000",
+      "prior_months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     },
+     "ESCCPUS": {
+      "change": "-6800.000",
+      "code": "ESCCPUS",
+      "current": "299200.000",
+      "months": [
+       "2025-10",
+       "2025-11",
+       "2025-12"
+      ],
+      "percent": "-2.22",
+      "prior": "306000.000",
+      "prior_months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "reason": null,
+      "sign": -1,
+      "state": "computed"
+     },
+     "ESICPUS": {
+      "change": "-7120.000",
+      "code": "ESICPUS",
+      "current": "240080.000",
+      "months": [
+       "2025-10",
+       "2025-11",
+       "2025-12"
+      ],
+      "percent": "-2.88",
+      "prior": "247200.000",
+      "prior_months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "reason": null,
+      "sign": -1,
+      "state": "computed"
+     },
+     "ESRCPUS": {
+      "change": "-1500.000",
+      "code": "ESRCPUS",
+      "current": "301500.000",
+      "months": [
+       "2025-10",
+       "2025-11",
+       "2025-12"
+      ],
+      "percent": "-0.49",
+      "prior": "303000.000",
+      "prior_months": [
+       "2024-10",
+       "2024-11",
+       "2024-12"
+      ],
+      "reason": null,
+      "sign": -1,
+      "state": "computed"
+     }
+    },
+    "eia_total": {
+     "change": "-15420.000",
+     "code": "ESTCPUS",
+     "current": "842580.000",
+     "months": [
+      "2025-10",
+      "2025-11",
+      "2025-12"
+     ],
+     "percent": "-1.79",
+     "prior": "858000.000",
+     "prior_months": [
+      "2024-10",
+      "2024-11",
+      "2024-12"
+     ],
+     "reason": null,
+     "sign": -1,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "Fourth quarter to fourth quarter / 2025",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": null,
+     "naics": "2211",
+     "path": "INDUSTRY GROUP / Utilities / Electric",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "3.0",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "3.0"
+      },
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "3.0"
+      },
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "3.0"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "fourth_quarter",
+    "label": "Q4 2025 vs Q4 2024",
+    "period": "2025-Q4"
+   },
+   {
+    "breakdown": {
+     "analyzed_change": "1200.000",
+     "detail": null,
+     "residual_change": "0.000",
+     "sectors": {
+      "ESACPUS": "0.000",
+      "ESCCPUS": "1000.000",
+      "ESICPUS": "-800.000",
+      "ESRCPUS": "1000.000"
+     },
+     "state": "computed",
+     "total_change": "1200.000"
+    },
+    "eia_classes": {
+     "ESACPUS": {
+      "change": "0.000",
+      "code": "ESACPUS",
+      "current": "600.000",
+      "months": [
+       "2026-06"
+      ],
+      "percent": "0.00",
+      "prior": "600.000",
+      "prior_months": [
+       "2025-06"
+      ],
+      "reason": null,
+      "sign": 0,
+      "state": "computed"
+     },
+     "ESCCPUS": {
+      "change": "1000.000",
+      "code": "ESCCPUS",
+      "current": "101000.000",
+      "months": [
+       "2026-06"
+      ],
+      "percent": "1.00",
+      "prior": "100000.000",
+      "prior_months": [
+       "2025-06"
+      ],
+      "reason": null,
+      "sign": 1,
+      "state": "computed"
+     },
+     "ESICPUS": {
+      "change": "-800.000",
+      "code": "ESICPUS",
+      "current": "79200.000",
+      "months": [
+       "2026-06"
+      ],
+      "percent": "-1.00",
+      "prior": "80000.000",
+      "prior_months": [
+       "2025-06"
+      ],
+      "reason": null,
+      "sign": -1,
+      "state": "computed"
+     },
+     "ESRCPUS": {
+      "change": "1000.000",
+      "code": "ESRCPUS",
+      "current": "101000.000",
+      "months": [
+       "2026-06"
+      ],
+      "percent": "1.00",
+      "prior": "100000.000",
+      "prior_months": [
+       "2025-06"
+      ],
+      "reason": null,
+      "sign": 1,
+      "state": "computed"
+     }
+    },
+    "eia_total": {
+     "change": "1200.000",
+     "code": "ESTCPUS",
+     "current": "281800.000",
+     "months": [
+      "2026-06"
+     ],
+     "percent": "0.42",
+     "prior": "280600.000",
+     "prior_months": [
+      "2025-06"
+     ],
+     "reason": null,
+     "sign": 1,
+     "state": "computed"
+    },
+    "g17": {
+     "column": "June '25 to June '26",
+     "extract_id": "d6e8bdbfd1f03bc31ce143920dec341cc7a80ab4ba2e71a2e50a77229e91dfa3",
+     "marker": "p",
+     "naics": "2211",
+     "path": "INDUSTRY GROUP / Utilities / Electric",
+     "release": "20260717",
+     "release_date_as_stated": "July 17, 2026",
+     "sha256": "93cdda60aae8bf0daa2512143fea1757f063cfe798ac70380d066a702dc504f6",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260717/table1.htm",
+     "value": "1.3",
+     "vintages": [
+      {
+       "release": "20260717",
+       "release_date_as_stated": "July 17, 2026",
+       "value": "1.3"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "twelve_month",
+    "label": "June 2026 vs June 2025",
+    "period": "2026-06"
+   },
+   {
+    "breakdown": {
+     "analyzed_change": null,
+     "detail": "outside the retained file (2022-01 to 2026-06): 2026-07",
+     "residual_change": null,
+     "sectors": null,
+     "state": "unavailable",
+     "total_change": null
+    },
+    "eia_classes": {
+     "ESACPUS": {
+      "change": null,
+      "code": "ESACPUS",
+      "current": null,
+      "months": [
+       "2026-07"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-07"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-07",
+      "sign": null,
+      "state": "not_covered"
+     },
+     "ESCCPUS": {
+      "change": null,
+      "code": "ESCCPUS",
+      "current": null,
+      "months": [
+       "2026-07"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-07"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-07",
+      "sign": null,
+      "state": "not_covered"
+     },
+     "ESICPUS": {
+      "change": null,
+      "code": "ESICPUS",
+      "current": null,
+      "months": [
+       "2026-07"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-07"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-07",
+      "sign": null,
+      "state": "not_covered"
+     },
+     "ESRCPUS": {
+      "change": null,
+      "code": "ESRCPUS",
+      "current": null,
+      "months": [
+       "2026-07"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-07"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-07",
+      "sign": null,
+      "state": "not_covered"
+     }
+    },
+    "eia_total": {
+     "change": null,
+     "code": "ESTCPUS",
+     "current": null,
+     "months": [
+      "2026-07"
+     ],
+     "percent": null,
+     "prior": null,
+     "prior_months": [
+      "2025-07"
+     ],
+     "reason": "outside the retained file (2022-01 to 2026-06): 2026-07",
+     "sign": null,
+     "state": "not_covered"
+    },
+    "g17": {
+     "column": "July '25 to July '26",
+     "extract_id": "cf84d2cb5a40f9dff5231230118d83647721ec9a3fee933c0367916f8149f7a0",
+     "marker": "p",
+     "naics": "2211",
+     "path": "INDUSTRY GROUP / Utilities / Electric",
+     "release": "20260818",
+     "release_date_as_stated": "August 18, 2026",
+     "sha256": "9144fb527742232915616052008ac180801981b9f11f7f49173f57db7b7c8469",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260818/table1.htm",
+     "value": "1.3",
+     "vintages": [
+      {
+       "release": "20260818",
+       "release_date_as_stated": "August 18, 2026",
+       "value": "1.3"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "twelve_month",
+    "label": "July 2026 vs July 2025",
+    "period": "2026-07"
+   },
+   {
+    "breakdown": {
+     "analyzed_change": null,
+     "detail": "outside the retained file (2022-01 to 2026-06): 2026-08",
+     "residual_change": null,
+     "sectors": null,
+     "state": "unavailable",
+     "total_change": null
+    },
+    "eia_classes": {
+     "ESACPUS": {
+      "change": null,
+      "code": "ESACPUS",
+      "current": null,
+      "months": [
+       "2026-08"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-08"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-08",
+      "sign": null,
+      "state": "not_covered"
+     },
+     "ESCCPUS": {
+      "change": null,
+      "code": "ESCCPUS",
+      "current": null,
+      "months": [
+       "2026-08"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-08"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-08",
+      "sign": null,
+      "state": "not_covered"
+     },
+     "ESICPUS": {
+      "change": null,
+      "code": "ESICPUS",
+      "current": null,
+      "months": [
+       "2026-08"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-08"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-08",
+      "sign": null,
+      "state": "not_covered"
+     },
+     "ESRCPUS": {
+      "change": null,
+      "code": "ESRCPUS",
+      "current": null,
+      "months": [
+       "2026-08"
+      ],
+      "percent": null,
+      "prior": null,
+      "prior_months": [
+       "2025-08"
+      ],
+      "reason": "outside the retained file (2022-01 to 2026-06): 2026-08",
+      "sign": null,
+      "state": "not_covered"
+     }
+    },
+    "eia_total": {
+     "change": null,
+     "code": "ESTCPUS",
+     "current": null,
+     "months": [
+      "2026-08"
+     ],
+     "percent": null,
+     "prior": null,
+     "prior_months": [
+      "2025-08"
+     ],
+     "reason": "outside the retained file (2022-01 to 2026-06): 2026-08",
+     "sign": null,
+     "state": "not_covered"
+    },
+    "g17": {
+     "column": "Aug. '25 to Aug. '26",
+     "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+     "marker": "p",
+     "naics": "2211",
+     "path": "INDUSTRY GROUP / Utilities / Electric",
+     "release": "20260918",
+     "release_date_as_stated": "September 18, 2026",
+     "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+     "sign": 1,
+     "state": "printed",
+     "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm",
+     "value": "7.0",
+     "vintages": [
+      {
+       "release": "20260918",
+       "release_date_as_stated": "September 18, 2026",
+       "value": "7.0"
+      }
+     ],
+     "vintages_differ": false
+    },
+    "kind": "twelve_month",
+    "label": "August 2026 vs August 2025",
+    "period": "2026-08"
+   }
+  ]
+ },
+ "comparisons_text": {
+  "industrial_vs_manufacturing": {
+   "differences": [
+    "The EIA industrial class is a class of service, not NAICS manufacturing: it includes agriculture and irrigation from 2003 (Table 7.6 footnote d), and its other members are not stated in the retained material.",
+    "Retail sales leave out electricity generated and used on site. Table 7.6's direct use is one aggregate, not split by sector; its net change cannot show industrial self-generation, because its parts may offset."
+   ],
+   "eia_measure": "EIA Table 7.6: electricity sales to ultimate customers, industrial class (ESICPUS), million kWh, not seasonally adjusted; a fourth quarter is the October-December total.",
+   "g17_measure": "G.17 Table 1: Manufacturing (NAICS 31-33), percent change of a seasonally adjusted output index, as printed.",
+   "link": {
+    "label": "Electricity by sector (EIA Table 7.6)",
+    "section": "electricity"
+   },
+   "link_g17": {
+    "label": "Industries and revisions (G.17)",
+    "section": "g17"
+   },
+   "possibilities": [
+    "Industry mix: industries' electricity use per unit of output differs, so the two can diverge when composition changes.",
+    "Weather: cooling and irrigation loads can change electricity purchases without any change in factory output.",
+    "On-site generation: more or less self-generation can change purchases for the same use.",
+    "Changes among customers in the industrial class outside manufacturing."
+   ],
+   "possibilities_note": "Possibilities only: these observations do not establish any of them.",
+   "question": "When retail electricity sales to the industrial class change, did manufacturing output change in the same direction over the same period?",
+   "title": "Industrial electricity retail sales and manufacturing output"
+  },
+  "utility_output_and_customers": {
+   "differences": [
+    "The customer breakdown decomposes EIA total retail sales only. It does not show which customers drove the change in G.17 utility output, and the two are shown side by side, not reconciled.",
+    "Utility output and retail sales measure different things; how far they differ in any period (for example through losses, wholesale trade or own use) is not measured here."
+   ],
+   "eia_measure": "EIA Table 7.6: total retail sales (ESTCPUS) and its four customer classes, million kWh, not seasonally adjusted.",
+   "g17_measure": "G.17 Table 1: Utilities / Electric (NAICS 2211), percent change of a seasonally adjusted output index, as printed.",
+   "link": {
+    "label": "Electricity by sector (EIA Table 7.6)",
+    "section": "electricity"
+   },
+   "link_g17": {
+    "label": "Industries and revisions (G.17)",
+    "section": "g17"
+   },
+   "possibilities": [],
+   "possibilities_note": null,
+   "question": "When electric utility output changes, how did EIA retail sales change by customer class over the same period?",
+   "title": "Electric utility output and the customer breakdown of electricity retail sales"
+  }
+ },
+ "counts": {
+  "industrial_signs": {
+   "no_direction": 1,
+   "not_covered": 2,
+   "not_printed": 0,
+   "opposite_signs": 2,
+   "same_sign": 1,
+   "unavailable": 0
+  },
+  "periods": 6
+ },
+ "definitions": {
+  "comparisons": {
+   "industrial_vs_manufacturing": {
+    "eia": "ESICPUS",
+    "g17": "manufacturing"
+   },
+   "utility_output_and_customers": {
+    "eia": "ESTCPUS",
+    "g17": "electric"
+   }
+  },
+  "customer_breakdown": "decomposes EIA total retail sales only (four classes and the rounding residual), when every month involved reconciles within 0.0025 million kWh; not a decomposition of G.17 output",
+  "eia_fourth_quarter": "October-December total of the year against the same months a year earlier; all three months required in both years",
+  "eia_month": "the month's value against the same month a year earlier",
+  "eia_not_covered": "a month outside the range of the retained file",
+  "eia_percent": "change / prior x 100, two decimals truncated toward zero",
+  "eia_unavailable": "a month inside the file's range without a value, or a prior total of zero or less",
+  "g17_value": "published percent change of a seasonally adjusted index as printed; a printed 0.0 or -0.0 has no direction",
+  "not_computed": "no difference of growth rates, efficiency score, conversion factor or causal estimate",
+  "release_selection": {
+   "fourth_quarter": "the latest retained release printing the year for the row",
+   "twelve_month": "the release whose 12-month column is exactly that month"
+  },
+  "scope": {
+   "fourth_quarters": [
+    2023,
+    2024,
+    2025
+   ],
+   "twelve_month": "each 12-month period printed in a retained G.17 release's 12-month column"
+  },
+  "signs": "sign-only: same_sign, opposite_signs, or no_direction (an exact zero EIA change or a printed G.17 0.0); no magnitude threshold; not the +/-1% categories of Electricity by sector",
+  "version": "cross-source-rules-0.1"
+ },
+ "detail": null,
+ "kept_results": 1,
+ "periods": [
+  {
+   "key": "2023-Q4",
+   "kind": "fourth_quarter",
+   "label": "Q4 2023 vs Q4 2022",
+   "months": [
+    "2023-10",
+    "2023-11",
+    "2023-12"
+   ],
+   "prior_months": [
+    "2022-10",
+    "2022-11",
+    "2022-12"
+   ],
+   "year": 2023
+  },
+  {
+   "key": "2024-Q4",
+   "kind": "fourth_quarter",
+   "label": "Q4 2024 vs Q4 2023",
+   "months": [
+    "2024-10",
+    "2024-11",
+    "2024-12"
+   ],
+   "prior_months": [
+    "2023-10",
+    "2023-11",
+    "2023-12"
+   ],
+   "year": 2024
+  },
+  {
+   "key": "2025-Q4",
+   "kind": "fourth_quarter",
+   "label": "Q4 2025 vs Q4 2024",
+   "months": [
+    "2025-10",
+    "2025-11",
+    "2025-12"
+   ],
+   "prior_months": [
+    "2024-10",
+    "2024-11",
+    "2024-12"
+   ],
+   "year": 2025
+  },
+  {
+   "key": "2026-06",
+   "kind": "twelve_month",
+   "label": "June 2026 vs June 2025",
+   "months": [
+    "2026-06"
+   ],
+   "prior_months": [
+    "2025-06"
+   ]
+  },
+  {
+   "key": "2026-07",
+   "kind": "twelve_month",
+   "label": "July 2026 vs July 2025",
+   "months": [
+    "2026-07"
+   ],
+   "prior_months": [
+    "2025-07"
+   ]
+  },
+  {
+   "key": "2026-08",
+   "kind": "twelve_month",
+   "label": "August 2026 vs August 2025",
+   "months": [
+    "2026-08"
+   ],
+   "prior_months": [
+    "2025-08"
+   ]
+  }
+ ],
+ "provider_called": false,
+ "result": {
+  "computed_at": "2026-10-12T10:00:00+00:00",
+  "definitions_sha256": "63e593b31a7cce0c9d217efcb2861f0d408af0bc9dc5b6211cc6db56e5da2a80",
+  "result_id": "1747e3f9faa4f4153a5ab0880e86dcfbe7be40c7758e40031118a10c9cdcf2e2",
+  "rules_version": "cross-source-rules-0.1"
+ },
+ "scope": "Descriptive comparisons across two retained sources: EIA Monthly Energy Review Table 7.6 retail electricity sales and Federal Reserve G.17 industrial production, set side by side for the same periods. They are not transmission findings, research evidence, forecasts or recommendations, and nothing here enters research summaries.",
+ "sign_labels": {
+  "no_direction": "No direction (an exact zero, or G.17 printed 0.0)",
+  "not_covered": "Not covered by the retained EIA file",
+  "not_printed": "Not printed in a retained G.17 release",
+  "opposite_signs": "Opposite signs",
+  "same_sign": "Same sign",
+  "unavailable": "Unavailable"
+ },
+ "sign_note": "Signs describe only whether each reported change is above or below zero; there is no size threshold, and they are not the ±1% categories of Electricity by sector. A G.17 rate printed as 0.0 has no direction because its unrounded value could lie on either side. Growth rates are never subtracted or combined.",
+ "sources": {
+  "eia": {
+   "approval_id": "eia-mer-table76-01",
+   "bytes": 43520,
+   "edition": null,
+   "edition_note": "No edition is stated in the file or its response headers, so none is assigned.",
+   "file": "table76/T07.06.csv",
+   "kind": "csv",
+   "last_modified_header": null,
+   "monthly_first": "2022-01",
+   "monthly_last": "2026-06",
+   "retrieved_at": "2026-10-11T21:41:13.000000+00:00",
+   "role": "Table 7.6 data (CSV)",
+   "sha256": "a4706bf7963233e05958a6f07e6e92eef7b8a28370e25ccef12c1af10384fe5c",
+   "url": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T07.06"
+  },
+  "g17": [
+   {
+    "approval_id": "g17-industry-tables-01",
+    "extract_id": "d6e8bdbfd1f03bc31ce143920dec341cc7a80ab4ba2e71a2e50a77229e91dfa3",
+    "file": "20260717/table1.htm",
+    "release": "20260717",
+    "release_date_as_stated": "July 17, 2026",
+    "retrieved_at": "2026-10-11T17:00:00+00:00",
+    "sha256": "93cdda60aae8bf0daa2512143fea1757f063cfe798ac70380d066a702dc504f6",
+    "url": "https://www.federalreserve.gov/releases/g17/20260717/table1.htm"
+   },
+   {
+    "approval_id": "g17-industry-tables-01",
+    "extract_id": "cf84d2cb5a40f9dff5231230118d83647721ec9a3fee933c0367916f8149f7a0",
+    "file": "20260818/table1.htm",
+    "release": "20260818",
+    "release_date_as_stated": "August 18, 2026",
+    "retrieved_at": "2026-10-11T17:00:00+00:00",
+    "sha256": "9144fb527742232915616052008ac180801981b9f11f7f49173f57db7b7c8469",
+    "url": "https://www.federalreserve.gov/releases/g17/20260818/table1.htm"
+   },
+   {
+    "approval_id": "g17-industry-tables-01",
+    "extract_id": "fda8e95d8f919996303ee9afb2cb7813050515e9f4534a2a571ea01a417ef0f9",
+    "file": "20260918/table1.htm",
+    "release": "20260918",
+    "release_date_as_stated": "September 18, 2026",
+    "retrieved_at": "2026-10-11T17:00:00+00:00",
+    "sha256": "474d386dba4c43fcb6f831a3cebf5003e6831943ce8dce13ed1f9b86d1d2b49c",
+    "url": "https://www.federalreserve.gov/releases/g17/20260918/table1.htm"
+   }
+  ]
+ },
+ "sources_detail": null,
+ "state": "checked",
+ "view_version": "cross-source-view-0.1",
+ "written": false
+}

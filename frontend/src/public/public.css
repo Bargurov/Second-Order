@@ -1,0 +1,140 @@
+/* The signed-out pages (src/public): the landing page, registration, a registrant's status and how credits work.
+   Scoped under .public and the public-* classes; it uses only the global colour and type variables and the shared
+   topbar, ledger, card and button classes from styles.css. The worked example repeats the Client's three result
+   surfaces on purpose: quoted evidence, a dashed generated interpretation, and what remains unknown. */
+
+.public-skip { position: absolute; top: -80px; left: 12px; z-index: 10; padding: 10px 14px; background: var(--ink);
+  color: var(--paper); font: 500 13px var(--sans); text-decoration: none; }
+.public-skip:focus { top: 10px; }
+
+.public { display: grid; gap: 30px; padding-top: 26px; }
+.public:focus, .public [tabindex="-1"]:focus { outline: none; }
+.public a { color: var(--accent); text-underline-offset: 3px; }
+.public .button { display: inline-flex; align-items: center; min-height: 40px; color: var(--ink); text-decoration: none; }
+.public .button:disabled, .public .button:disabled:hover { border-color: var(--rule-strong); background: var(--paper-sunk);
+  color: var(--ink-3); cursor: not-allowed; }
+.public .button-quiet { border-color: var(--rule-strong); background: transparent; }
+.public h2 { margin: 0 0 12px; font: 400 26px/1.2 var(--serif); letter-spacing: -0.005em; }
+.public-small { font-size: 13px; color: var(--ink-3); }
+.public-status { color: var(--ink-3); }
+.public-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 16px 0 0; }
+.public-points { margin: 0; padding-left: 20px; max-width: 70ch; }
+.public-points li + li { margin-top: 6px; }
+.public-link-button { min-height: 40px; padding: 0 2px; border: 0; background: none; color: var(--accent); font: inherit;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* A signed-out reason, and notices. */
+.public-reason { margin: 0; padding: 9px 13px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.public-notice { padding: 10px 13px; border-left: 3px solid var(--stamp); background: var(--contradicted-soft); }
+.public-notice.is-unconfirmed { border-left-color: var(--inconclusive); background: var(--inconclusive-soft); }
+.public-notice p { margin: 0 0 6px; }
+.public-notice p:last-child { margin-bottom: 0; }
+.public-notice-title { font-weight: 600; }
+.public-note { max-width: 70ch; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+
+/* The landing page. */
+.public-hero { max-width: 780px; padding: 14px 0 4px; }
+.public-hero h1, .public-panel h1 { margin: 6px 0 14px; font: 400 clamp(32px, 5vw, 50px)/1.08 var(--serif);
+  letter-spacing: -0.015em; overflow-wrap: anywhere; }
+.public-hero.is-compact h1, .public-panel h1 { font-size: clamp(30px, 4vw, 40px); }
+.public-lede { max-width: 64ch; margin: 0; font: 400 clamp(17px, 2vw, 20px)/1.5 var(--serif); color: var(--ink-2); }
+.public-lede.is-small { font-size: 17px; }
+.public-section { min-width: 0; }
+.public-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; margin: 0;
+  padding: 0; list-style: none; counter-reset: step; }
+.public-steps li { display: grid; align-content: start; gap: 6px; padding: 14px 16px; border: 1px solid var(--rule);
+  background: var(--paper-raised); counter-increment: step; }
+.public-steps li::before { content: counter(step, decimal-leading-zero); font: 500 11px/1 var(--mono);
+  letter-spacing: 0.12em; color: var(--accent); }
+.public-steps h3 { margin: 0; font: 600 15px/1.3 var(--sans); }
+.public-steps p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.public-steps .public-free, .public-steps .public-uses { font: 500 10.5px/1.4 var(--mono); letter-spacing: 0.1em;
+  text-transform: uppercase; }
+.public-steps .public-free { color: var(--supported); }
+.public-steps .public-uses { color: var(--inconclusive); }
+.public-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px 40px; }
+
+/* The worked example: a SYNTHETIC source and the three surfaces of a result. */
+.public-synthetic { display: inline-block; max-width: 70ch; margin: 0 0 14px; padding: 6px 10px;
+  border: 1px dashed var(--stamp); color: var(--stamp); font: 500 12px/1.45 var(--mono); }
+.public-source { margin: 0 0 14px; padding: 14px 16px; border: 1px solid var(--rule); background: var(--paper-sunk); }
+.public-source figcaption { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 6px; font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.public-source p { max-width: 78ch; margin: 0; font: 400 16px/1.55 var(--serif); }
+.public-surfaces { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.public-surface { min-width: 0; padding: 16px 18px; border: 1px solid var(--rule); }
+.public-surface h3 { margin: 0 0 8px; font: 400 21px/1.2 var(--serif); }
+.public-surface h4 { margin: 12px 0 4px; font: 600 11.5px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-2); }
+.public-surface ul { margin: 0; padding-left: 18px; font-size: 14px; }
+.public-surface.is-evidence { border-top: 3px solid var(--accent); background: var(--paper-raised); }
+.public-surface.is-interpretation { border-style: dashed; border-color: var(--rule-strong); background: transparent; }
+.public-surface.is-unknowns { background: color-mix(in srgb, var(--paper-sunk) 55%, transparent); }
+.public-statements { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.public-statements li { padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+.public-statements li:last-child { padding-bottom: 0; border-bottom: 0; }
+.public-statements p { margin: 0 0 4px; font-size: 14.5px; }
+.public-basis { margin: 0 0 4px; font: 500 10.5px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--accent); }
+.public-statements blockquote { margin: 4px 0 0; padding: 2px 0 2px 12px; border-left: 2px solid var(--accent);
+  font: italic 400 15.5px/1.45 var(--serif); }
+
+/* Registration and a registrant's status. */
+.public-panel { min-width: 0; max-width: 640px; }
+.public-register-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px 48px;
+  align-items: start; }
+.public-register-aside { min-width: 0; padding: 18px 20px; border: 1px solid var(--rule); background: var(--paper-raised); }
+.public-register-aside h2 { font-size: 21px; }
+.public-register-aside .public-points { font-size: 14px; }
+.public-footnote { margin: 14px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.public-field { display: grid; gap: 5px; min-width: 0; }
+.public-field label { font-weight: 600; font-size: 13.5px; color: var(--ink); }
+.public-field textarea { min-width: 0; padding: 8px 10px; border: 1px solid var(--rule-strong); border-radius: 2px;
+  background: var(--paper-raised); font: 15px/1.5 var(--sans); resize: vertical; }
+.public-field input[readonly], .public-field textarea[readonly] { background: var(--paper-sunk); color: var(--ink-2); }
+.public-field [aria-invalid="true"] { border-color: var(--stamp); box-shadow: inset 3px 0 0 var(--stamp); }
+.public-hint { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.public-field-error { margin: 0; font-size: 13px; font-weight: 500; color: var(--stamp); }
+.public-count { white-space: nowrap; }
+.public-facts { margin: 14px 0 16px; }
+.public-status-detail { max-width: 70ch; margin: 0 0 8px; }
+
+/* How credits work. */
+.public-credits, .credits-guide { display: grid; gap: 18px; min-width: 0; }
+.public-card { min-width: 0; }
+.public-card p { max-width: 74ch; }
+.public-rules { margin: 0; padding-left: 20px; max-width: 78ch; }
+.public-rules li + li { margin-top: 8px; }
+.public-own { max-width: 640px; }
+.public-own > p:first-child { margin-top: 0; }
+.public-own .shell-panel { padding: 0; }
+.public-table-wrap { overflow-x: auto; }
+.public-table { width: 100%; min-width: 320px; border-collapse: collapse; font-size: 14px; }
+.public-table caption { margin-bottom: 8px; text-align: left; font-size: 13px; color: var(--ink-2); }
+.public-table th, .public-table td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: left;
+  vertical-align: top; }
+.public-table thead th { font: 500 10.5px/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.public-table tbody th { font-weight: 500; }
+.public-table tbody th .public-small { display: block; font-weight: 400; }
+.public-table td { font: 400 15px/1.3 var(--mono); text-align: right; }
+.public-table thead th:not(:first-child) { text-align: right; }
+
+.public .shell-panel { max-width: 560px; margin: 0; padding: 0; }
+.public-footer p { max-width: 80ch; margin: 0; }
+
+@media (max-width: 960px) {
+  .public-surfaces { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 860px) {
+  .public-register-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .public { gap: 24px; padding-top: 18px; }
+  .public-topbar .site-link { display: inline-flex; align-items: center; min-height: 32px; }
+  .public-topbar .wordmark { padding: 5px 0; }
+  .public .button, .public-link-button { min-height: 44px; }
+  .public-surface { padding: 14px 12px; }
+  .public-steps li { padding: 12px 14px; }
+}

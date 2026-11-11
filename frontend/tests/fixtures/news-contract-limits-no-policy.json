@@ -1,0 +1,55 @@
+{
+  "contract": "user-api-0.5",
+  "limits": {
+    "state": "no_policy",
+    "detail": "Searches, imports and new sources are not available yet: no usage limits are set on this server. Ask the administrator.",
+    "policy_version": null,
+    "day": "2026-10-14",
+    "timezone": "Asia/Jerusalem",
+    "resets_at": "2026-10-14T21:00:00+00:00",
+    "operations": [
+      {
+        "operation": "search",
+        "label": "Searches",
+        "limit": null,
+        "used": 0,
+        "remaining": null
+      },
+      {
+        "operation": "import",
+        "label": "Publication imports",
+        "limit": null,
+        "used": 0,
+        "remaining": null
+      },
+      {
+        "operation": "source",
+        "label": "New sources",
+        "limit": null,
+        "used": 0,
+        "remaining": null
+      },
+      {
+        "operation": "preparation",
+        "label": "Prepared analyses",
+        "limit": null,
+        "used": 0,
+        "remaining": null
+      }
+    ],
+    "storage": {
+      "sources": {
+        "used": 0,
+        "limit": null
+      },
+      "source_bytes": {
+        "used": 0,
+        "limit": null
+      }
+    },
+    "rate": {
+      "requests_per_minute": null,
+      "concurrent_requests": null
+    }
+  }
+}

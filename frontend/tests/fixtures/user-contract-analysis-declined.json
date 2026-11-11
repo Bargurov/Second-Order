@@ -1,0 +1,42 @@
+{
+  "contract": "user-api-0.2",
+  "analysis": {
+    "analysis_id": "20261014T092500000000Z-0f1e2d3c4b5a.research-prompt-1.medium",
+    "effort": "medium",
+    "prepared_at": "2026-10-14T09:26:00+00:00",
+    "source": {
+      "source_id": "20261014T092500000000Z-0f1e2d3c4b5a",
+      "headline": "Simulated ministry statement",
+      "source_url": "https://example.org/synthetic/ministry-statement",
+      "published_at": "2026-10-11T08:30:00+00:00",
+      "published_at_as_supplied": "2026-10-11T11:30:00+03:00",
+      "captured_at": "2026-10-14T09:25:00+00:00",
+      "characters": 212,
+      "text": "October 11, 2026\n\nSimulated ministry statement\n\nThe Simulated Ministry said it had received the committee's report and would respond in due course.\n\nSYNTHETIC TEST SOURCE: invented for the user-contract fixtures."
+    },
+    "state": "recorded",
+    "state_detail": "Recorded. Reading, reviewing or exporting this result uses no credits or allowance.",
+    "quote": null,
+    "charge": {
+      "credits_reserved": 4,
+      "credits_charged": 4,
+      "credits_returned": 0,
+      "state": "charged",
+      "quota_day": "2026-10-14"
+    },
+    "result": {
+      "outcome": "declined",
+      "note": "No analysis was produced for this source. Any explanation given is shown as written.",
+      "recorded_at": "2026-10-14T09:29:40+00:00",
+      "analysis": null,
+      "explanation": "SYNTHETIC: the source is too short to establish anything beyond its single sentence."
+    },
+    "result_sha256": "97d65915f6224eb57eefa2f33110e1d32ac16f361b611b62e772b0f812a17104",
+    "reviews": [],
+    "retrospective": "Retrospective: the analysis is made after the publication, from its captured text. It is not a forecast and not an out-of-sample test.",
+    "baseline": {
+      "state": "not_supplied",
+      "note": "No earlier baseline publication was supplied with this request, so the analysis makes no comparison with earlier statements or data."
+    }
+  }
+}

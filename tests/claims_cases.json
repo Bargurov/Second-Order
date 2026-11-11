@@ -1,0 +1,3356 @@
+{
+ "about": "Retained regression cases of the claims, conditions and procedural-stage slice (29 October 2026), copied from the saved records by data/local-checks/claims-implementation-2026-10-29/make_claims_cases.py. Real cases, not SYNTHETIC: our published brief versions exactly, and of the White House, European Commission and WTO publications and an ECB press release without a named author only the passages the cases quote. The cases \"northmere\" (an interview about a new banknote series) and \"keynote\" (a speech about port congestion) are FICTIONAL, marked \"fictional\": true: invented text with a fictional central bank, newspaper and speakers and example.org links, written to keep the purpose of the cases they replace; they quote no real person or publication. They never enter research scores.",
+ "built_at": "2026-10-29T08:27:28+00:00",
+ "cases": {
+  "northmere": {
+   "story_id": "story-00000000000f1c01",
+   "version": 4,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [],
+       "kind": "competing_explanation",
+       "text": "Many households could wait until the final weeks to exchange notes, in which case the changeover would bunch up at the end."
+      },
+      {
+       "basis": [
+        "report:fictional:00000000000000000001"
+       ],
+       "kind": "offsetting_force",
+       "text": "Banks and shops would bear costs to adjust cash machines and tills for two note series, for which he said they will need time."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "Households would exchange their old notes in time for the withdrawal date to hold."
+      }
+     ],
+     "calculations": [
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "calc_version": "econ-calc-0.2",
+       "decimals": 0,
+       "display": "−8 percentage points",
+       "formula": "f2 − f1",
+       "id": "c1",
+       "inputs": [
+        "f2",
+        "f1"
+       ],
+       "label": "Change in the share of old notes, 2021 to 2025",
+       "measure": "change",
+       "op": "difference",
+       "period": "2025 against 2021",
+       "seasonal": "not_applicable",
+       "unit": "percentage points",
+       "value": -8
+      }
+     ],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2"
+      ],
+      "instrument": "other",
+      "stage": "forecast",
+      "text": "Board member Halvard Quennel of the fictional Northmere Reserve Bank said branch staff will trial a new banknote series in 2027, and that the bank expects parliament to act before the summer recess, enabling a decision on the withdrawal date."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "might spend less on handling worn notes",
+         "kind": "firms",
+         "name": "small merchants in Northmere"
+        },
+        {
+         "how": "could see more demand for sorting and transport",
+         "kind": "industry",
+         "name": "cash-handling firms and banks"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:4",
+        "fact:2",
+        "report:fictional:00000000000000000001"
+       ],
+       "conditions": "If parliament approves and the new series is issued",
+       "horizon": "years",
+       "id": "m1",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "Parliament approves and the withdrawal date is decided",
+        "Shops accept the new notes alongside old ones",
+        "Cash-handling firms sort a mixed stock"
+       ],
+       "support": "event_evidence",
+       "text": "Quennel argues that newer notes with better security features would be accepted alongside the old ones and make worn notes less common in tills; this could follow if the series is issued and widely accepted."
+      },
+      {
+       "affected": [
+        {
+         "how": "could see steady cash deposits",
+         "kind": "institutions",
+         "name": "Northmere banks"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:3",
+        "report:fictional:00000000000000000001"
+       ],
+       "conditions": "If the exchange limit is set as the bank says its stress tests show",
+       "horizon": "years",
+       "id": "m2",
+       "note": null,
+       "scope": "macro",
+       "steps": [
+        "The bank sets a monthly exchange limit",
+        "Surplus above the limit is paid into accounts",
+        "Banks' cash handling could stay manageable"
+       ],
+       "support": "event_evidence",
+       "text": "He says an exchange limit would prevent queues in the final weeks and that the bank's stress tests show no strain on banks' cash handling with a sensibly set limit; deposits of surplus notes could then stay orderly."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "41%",
+       "id": "f1",
+       "label": "Share of notes older than ten years among notes in circulation",
+       "measure": "share",
+       "period": "2021",
+       "price": false,
+       "quote": "notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:fictional:00000000000000000001",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 41,
+       "vintage": {
+        "label": "as Quennel cited it",
+        "published": "2026-10-14T06:00:00+00:00",
+        "source": "Northmere Reserve Bank (fictional)"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "33%",
+       "id": "f2",
+       "label": "Share of notes older than ten years among notes in circulation",
+       "measure": "share",
+       "period": "2025",
+       "price": false,
+       "quote": "notes older than ten years made up 41% of those in circulation in 2021 and 33% in 2025",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:fictional:00000000000000000001",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 33,
+       "vintage": {
+        "label": "as Quennel cited it",
+        "published": "2026-10-14T06:00:00+00:00",
+        "source": "Northmere Reserve Bank (fictional)"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {},
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {},
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether and when parliament approves: the withdrawal date depends on it, and the interview gives no date beyond the bank's expectation.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:4",
+       "calc:c1"
+      ],
+      "text": "He presents the new series as a way to cut machine refusals, where, he said, worn notes are rejected more often and small shops with older machines are hit most; in Northmere, he said, the share of notes older than ten years changed by {c1} between 2021 and 2025."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "Parliament's vote on the currency amendment",
+       "text": "Approval would allow the withdrawal date, and the exchange period, to be set.",
+       "would": "support"
+      },
+      {
+       "observable": "Delays in the parliamentary debate",
+       "text": "Further delay would push any effects years out.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "fictional:00000000000000000001"
+      ],
+      "text": "Quennel said branch staff will test the first notes of the new series in a closed trial in 2027, with two cash-handling contractors already preparing the sorting lines."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000001"
+      ],
+      "text": "He said the bank expects parliament to approve the amendment before the summer recess, after which the Board would set the withdrawal date; the interviewer put a possible rollout as early as 2029."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000001"
+      ],
+      "text": "He said branches will swap old notes only up to a monthly ceiling per household; amounts above it can be banked instead, and old notes stay spendable until the withdrawal date."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000001"
+      ],
+      "text": "He said ticket and vending machines reject worn notes more often than newer ones, and that small shops with older machines see the most refusals."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000001"
+      ],
+      "text": "He said the bank's secure printing works in the northern ports will double its night shifts by autumn 2027."
+     }
+    ],
+    "headline": "Northmere Reserve Bank's Quennel sets out a 2027 banknote trial and a possible 2029 withdrawal of old notes",
+    "implications": [
+     {
+      "text": "If parliament approves this year, banks, shops and cash-handling firms could face a set timetable to adjust their machines ahead of a 2027 trial."
+     },
+     {
+      "text": "Shops with older machines may see fewer refused notes if the new series arrives as described."
+     },
+     {
+      "text": "A monthly exchange limit, as described, could shape how quickly old notes return to the bank."
+     }
+    ],
+    "missing": [
+     "The size of the monthly exchange limit was not given.",
+     "No date for a Board decision on the withdrawal was given."
+    ],
+    "summary": "In an interview with the fictional newspaper Harbour Ledger conducted on 14 October, Board member Halvard Quennel of the fictional Northmere Reserve Bank said branch staff will trial a new banknote series in 2027 and that the bank expects parliament to act before the summer recess so the Board can set a withdrawal date for old notes. He said exchanges would be limited per household and that new notes would carry updated security features.",
+    "themes": [
+     {
+      "basis": "The interview concerns the new notes' design and timetable.",
+      "kind": "theme",
+      "name": "Banknote series"
+     },
+     {
+      "basis": "He discusses machine acceptance, worn notes and cash logistics.",
+      "kind": "sector",
+      "name": "Payments"
+     }
+    ],
+    "uncertainties": [
+     "Whether parliament will act this year is not known, and the timetable depends on it."
+    ]
+   },
+   "content_sha256": "7afa548e2d3577ff233cd08cf22d4fd633049c52b9c84bd7842f1c9d573f43dd",
+   "released_at": "2026-10-14T06:00:00+00:00",
+   "reports": [
+    {
+     "entry_id": "fictional:00000000000000000001",
+     "publisher": "Northmere Reserve Bank (fictional)",
+     "title": "Halvard Quennel: Interview with Harbour Ledger",
+     "excerpt": "If parliament signs off on the amendment this year, might the old notes be pulled from tills as early as 2029? And who sets the date?\nThat is for the Board to settle, and only once the trial results are in.\nOur branch staff will try the first notes of the new series in a closed trial during 2027.",
+     "link": "https://example.org/northmere/interview-2026-10-14",
+     "published": "Wed, 14 Oct 2026 08:00:00 +0200",
+     "published_utc": "2026-10-14T06:00:00+00:00",
+     "text": null,
+     "reduced": "Fictional test text, written for these cases. Only the passages the regression cases quote are kept here.",
+     "fictional": true
+    }
+   ],
+   "fictional": true
+  },
+  "housing": {
+   "story_id": "story-e65b3c509372afd2",
+   "version": 4,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "report:whitehouse-news:9d3c78fd767d171d5e1d"
+       ],
+       "kind": "offsetting_force",
+       "text": "Mortgage and title insurers would lose revenue, and the Enterprises could bear more risk if automated valuations prove optimistic; the order requires safety and soundness standards for the pilot."
+      },
+      {
+       "basis": [],
+       "kind": "competing_explanation",
+       "text": "The effect on affordability may be small if few borrowers qualify or the pilot is not established; neither document gives figures."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "fact:4"
+      ],
+      "instrument": "financial_conditions",
+      "stage": "decision",
+      "text": "An executive order directs the FHFA to have Fannie Mae and Freddie Mac pilot proactive cancellation of mortgage insurance for borrowers who meet equity requirements, to make its title insurance waiver pilot permanent, and directs the USDA and VA to reduce rates on their single-family home loans."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could stop paying mortgage insurance sooner",
+         "kind": "households",
+         "name": "new borrowers with Fannie Mae or Freddie Mac loans"
+        },
+        {
+         "how": "could collect fewer premiums",
+         "kind": "firms",
+         "name": "mortgage insurers"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:1",
+        "report:whitehouse-news:9d3c78fd767d171d5e1d",
+        "report:whitehouse-news:4ebb4ec7fc6e7c2605f0"
+       ],
+       "conditions": "If the pilot is established and borrowers qualify",
+       "horizon": "years",
+       "id": "m1",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "The FHFA Director decides whether to direct the pilot",
+        "The Enterprises review loans using automated valuations",
+        "Qualifying borrowers' mortgage insurance is cancelled"
+       ],
+       "support": "event_evidence",
+       "text": "The fact sheet says cancelling mortgage insurance once equity requirements are met would remove a monthly expense for qualifying borrowers; that would follow if the FHFA Director directs the pilot, which the order leaves to his determination."
+      },
+      {
+       "affected": [
+        {
+         "how": "could pay lower interest",
+         "kind": "households",
+         "name": "borrowers using USDA and VA home loans"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:4"
+       ],
+       "conditions": "If the Departments set lower rates",
+       "horizon": "months",
+       "id": "m2",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "The Departments set lower rates on their home loans",
+        "Eligible borrowers pay less interest",
+        "Some could buy or refinance sooner"
+       ],
+       "support": "event_evidence",
+       "text": "The order directs the USDA and VA to reduce rates on their single-family home loans, which could make those loans cheaper for eligible borrowers and might support home purchases among them."
+      }
+     ],
+     "context": [],
+     "figures": [],
+     "framework": {
+      "digests": {},
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {},
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "How many borrowers qualify and how much they save; neither the order nor the fact sheet gives figures.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:2"
+      ],
+      "text": "For eligible borrowers, earlier cancellation of mortgage insurance would lower monthly payments, and title insurance waivers could cut refinancing closing costs; the pilot applies only to mortgages made after it is established, and neither document says how many borrowers would qualify or how much they would save."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "FHFA's decision on the pilot and its eligibility rules",
+       "text": "Broad eligibility rules would widen the savings.",
+       "would": "support"
+      },
+      {
+       "observable": "USDA and VA announcements of lower loan rates",
+       "text": "Announced rate cuts would show the second channel at work.",
+       "would": "support"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "whitehouse-news:9d3c78fd767d171d5e1d",
+       "whitehouse-news:4ebb4ec7fc6e7c2605f0"
+      ],
+      "text": "The order directs the FHFA Director to have the Enterprises establish a pilot program to cancel mortgage insurance proactively once borrowers satisfy equity requirements based on current market value; it applies only to mortgages made after the pilot is established."
+     },
+     {
+      "reports": [
+       "whitehouse-news:4ebb4ec7fc6e7c2605f0"
+      ],
+      "text": "It directs the FHFA to expand its title insurance waiver pilot into a permanent program."
+     },
+     {
+      "reports": [
+       "whitehouse-news:4ebb4ec7fc6e7c2605f0"
+      ],
+      "text": "It establishes a Task Force on Manufactured Housing Innovation, co-chaired by the HUD Secretary and the FHFA Director."
+     },
+     {
+      "reports": [
+       "whitehouse-news:4ebb4ec7fc6e7c2605f0"
+      ],
+      "text": "It directs the Secretaries of Agriculture and Veterans Affairs to reduce interest rates on single-family home loans made by their departments."
+     }
+    ],
+    "headline": "Executive order targets mortgage insurance, title insurance and federal home loan rates",
+    "implications": [
+     {
+      "text": "Some homeowners could see lower monthly payments if mortgage insurance is cancelled sooner under the pilot, though only newer mortgages are covered."
+     },
+     {
+      "text": "Mortgage and title insurers could see less premium income if the pilot and the permanent waiver program reach many borrowers."
+     },
+     {
+      "text": "Lower rates on USDA and VA loans could make those programs more attractive to eligible buyers, depending on the size of the reductions."
+     }
+    ],
+    "missing": [
+     "No estimate of the number of qualifying borrowers or of savings.",
+     "The size and timing of the USDA and VA rate reductions."
+    ],
+    "summary": "The President signed an executive order on housing costs. It directs the FHFA to have Fannie Mae and Freddie Mac pilot proactive cancellation of mortgage insurance for borrowers who meet equity requirements, and to make its title insurance waiver pilot permanent. It also creates a task force on manufactured housing and directs USDA and VA to reduce interest rates on their single-family home loans. Neither the order nor the fact sheet estimates how many borrowers qualify or how much they would save.",
+    "themes": [
+     {
+      "basis": "The order concerns mortgage insurance, title insurance and federal home loans.",
+      "kind": "sector",
+      "name": "Housing finance"
+     },
+     {
+      "basis": "The order directs the FHFA to have the two Enterprises run the mortgage insurance pilot.",
+      "kind": "company",
+      "name": "Fannie Mae and Freddie Mac"
+     }
+    ],
+    "uncertainties": [
+     "The pilot's design, timing and reach depend on decisions still to be made by the FHFA Director."
+    ]
+   },
+   "content_sha256": "222eccd8bebbbfe49f14560fb37abd8dabd85f37948ab0b21aa2fe083a8a0c9f",
+   "released_at": "2026-10-22T19:25:44+00:00",
+   "reports": [
+    {
+     "entry_id": "whitehouse-news:9d3c78fd767d171d5e1d",
+     "publisher": "The White House",
+     "title": "DECREASING HOUSING COSTS FOR THE AMERICAN PEOPLE",
+     "excerpt": "(a) The Director of the Federal Housing Finance Agency (Director) shall, if he determines that it is in the best interests of the Federal National Mortgage Association and the Federal Home Loan Mortgage Corporation (Enterprises) or the Federal Housing Finance Agency (FHFA), and the American public, direct the Enterprises to establish a pilot program\nThe Director shall, if he determines that it is in the best interests of the Enterprises or the FHFA, and the American public, and consistent with financial safety and soundness, the Director’s authorities as regulator and conservator, and applicable law, direct the Enterprises to expand the title acceptance pilot into an ongoing program\nSec. 5. Department of Agriculture and Department of Veterans Affairs Direct Loan Rates.\nThe Secretary of Agriculture and the Secretary of Veterans Affairs shall, consistent with applicable law, including 42 U.S.C. 1490a(a)(1)(B) and 38 U.S.C. 3762(c)(1), and available appropriations, reduce the interest rates charged on single-family home loans made directly by their respective departments.",
+     "link": "https://www.whitehouse.gov/presidential-actions/2026/10/decreasing-housing-costs-for-the-american-people/",
+     "published": "Thu, 22 Oct 2026 20:48:38 +0000",
+     "published_utc": "2026-10-22T20:48:38+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    },
+    {
+     "entry_id": "whitehouse-news:4ebb4ec7fc6e7c2605f0",
+     "publisher": "The White House",
+     "title": "Fact Sheet: President Donald J. Trump Decreases Housing Costs for Americans",
+     "excerpt": "The Order directs the FHFA Director to reduce homeowners’ refinancing costs by expanding the FHFA’s title insurance waiver pilot into a permanent program",
+     "link": "https://www.whitehouse.gov/fact-sheets/2026/10/fact-sheet-president-donald-j-trump-decreases-housing-costs-for-americans/",
+     "published": "Thu, 22 Oct 2026 19:25:44 +0000",
+     "published_utc": "2026-10-22T19:25:44+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "seafood": {
+   "story_id": "story-54e720832f0a4ed3",
+   "version": 5,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:4"
+       ],
+       "kind": "competing_explanation",
+       "text": "The strategy may change little in the short run: apart from the loans and the proposed label, the fact sheet lists priorities without specific measures."
+      },
+      {
+       "basis": [
+        "fact:4"
+       ],
+       "kind": "offsetting_force",
+       "text": "Stricter import certification could raise costs for seafood importers, which could raise what buyers of imported seafood pay."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "The guarantees reduce lenders' expected losses enough to change lending terms; the fact sheet does not describe the terms."
+      },
+      {
+       "id": "a2",
+       "text": "Some buyers value domestic catch enough to choose labelled seafood; the fact sheet gives no evidence of such demand."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "fact:3",
+       "figure:f1"
+      ],
+      "instrument": "industrial_policy",
+      "stage": "decision",
+      "text": "The administration unveiled a seafood strategy, the FDA proposed a voluntary U.S. Caught Seafood label, and {f1} in USDA guaranteed loans was made available for meat and seafood processing."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could borrow on easier terms",
+         "kind": "industry",
+         "name": "meat and seafood processors"
+        },
+        {
+         "how": "could gain processing jobs",
+         "kind": "region",
+         "name": "rural Alaska communities"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:3",
+        "figure:f1"
+       ],
+       "conditions": "If lenders and processors use the guarantees",
+       "horizon": "years",
+       "id": "m1",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "USDA guarantees part of qualifying loans",
+        "Lenders could offer processors more credit or better terms",
+        "Processors could invest in modernised plants"
+       ],
+       "support": "bounded_inference",
+       "text": "If processors take up the guarantees, investment in processing and cold storage could rise, which could add processing capacity and jobs in fishing communities over several years."
+      },
+      {
+       "affected": [
+        {
+         "how": "could differentiate their catch",
+         "kind": "firms",
+         "name": "U.S. fishermen and seafood sellers"
+        }
+       ],
+       "assumptions": [
+        "a2"
+       ],
+       "basis": [
+        "fact:2"
+       ],
+       "conditions": "If the FDA adopts the proposed label and sellers use it",
+       "horizon": "months",
+       "id": "m2",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "The FDA finalises the voluntary label",
+        "Sellers put it on U.S.-caught seafood",
+        "Some buyers could choose labelled products"
+       ],
+       "support": "bounded_inference",
+       "text": "A voluntary label could let buyers who prefer domestic catch identify it, which might support demand for U.S.-caught seafood if consumers value the distinction."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "nominal",
+       "bound": "lower_bound",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "at least 5 billion dollars",
+       "id": "f1",
+       "label": "USDA guaranteed loans made available for meat and seafood processing",
+       "measure": "level",
+       "period": "made available on 23 October 2026",
+       "price": false,
+       "quote": "more than $5 billion in guaranteed loans",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:whitehouse-news:0b1c7a9055eaa10ae150",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "billion dollars",
+       "value": 5,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-23T20:10:57+00:00",
+        "source": "The White House"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {},
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {},
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "How much of the guaranteed lending goes to seafood rather than meat processing, and on what terms; the fact sheet does not say.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:3",
+       "fact:4",
+       "figure:f1"
+      ],
+      "text": "The loan guarantees are the measure with a stated size: by taking on part of lenders' risk, they may make credit for processing plants easier to obtain, while the rest of the strategy states priorities rather than specific measures."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "USDA announcements of guaranteed loans to seafood processors",
+       "text": "Loans awarded to seafood plants would show the investment channel at work.",
+       "would": "support"
+      },
+      {
+       "observable": "Low take-up of the guarantees",
+       "text": "Little use of the guarantees would weaken the investment channel.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "whitehouse-news:0b1c7a9055eaa10ae150"
+      ],
+      "text": "The administration unveiled the America First Seafood Strategy and launched the website Seafood.gov."
+     },
+     {
+      "reports": [
+       "whitehouse-news:0b1c7a9055eaa10ae150"
+      ],
+      "text": "The FDA is proposing a voluntary \"U.S. Caught Seafood\" label for seafood caught and harvested by American fishermen."
+     },
+     {
+      "reports": [
+       "whitehouse-news:0b1c7a9055eaa10ae150"
+      ],
+      "text": "The President is making available more than $5 billion in guaranteed loans through the USDA for modernized meat and seafood processing."
+     },
+     {
+      "reports": [
+       "whitehouse-news:0b1c7a9055eaa10ae150"
+      ],
+      "text": "The strategy's stated priorities include reducing regulatory barriers to processing infrastructure, strengthening import certification and compliance, and seeking expanded market access for American seafood abroad."
+     }
+    ],
+    "headline": "White House launches an America First Seafood Strategy with $5 billion in USDA loan guarantees",
+    "implications": [
+     {
+      "text": "Seafood and meat processors could find it easier to finance new or modernized plants if they take up the USDA loans."
+     },
+     {
+      "text": "Stricter import certification could raise compliance demands on seafood importers and foreign suppliers, depending on how it is applied."
+     },
+     {
+      "text": "A voluntary origin label might let some U.S. producers differentiate their products, if retailers and consumers adopt it."
+     }
+    ],
+    "missing": [
+     "The strategy document itself, beyond the fact sheet's summary.",
+     "Any estimate of costs or effects on prices or volumes."
+    ],
+    "summary": "The White House says the administration unveiled an America First Seafood Strategy and launched Seafood.gov. With it, the FDA is proposing a voluntary \"U.S. Caught Seafood\" label, and more than $5 billion in USDA guaranteed loans is being made available for meat and seafood processing. The fact sheet describes the strategy's priorities (fewer regulatory barriers, stricter import certification, wider market access abroad) but not its specific measures.",
+    "themes": [
+     {
+      "basis": "The strategy concerns U.S. fishermen, seafood processing and seafood imports.",
+      "kind": "sector",
+      "name": "Seafood and fisheries"
+     },
+     {
+      "basis": "The fact sheet names import certification and market access abroad.",
+      "kind": "theme",
+      "name": "Trade and import standards"
+     }
+    ],
+    "uncertainties": [
+     "How the import certification changes will work, and when, is not stated.",
+     "The terms and eligibility of the $5 billion in loan guarantees are not given."
+    ]
+   },
+   "content_sha256": "9111e917b695c07274b3befc9b52c0239675a4ccf83c6e1d662733c333c7bb12",
+   "released_at": "2026-10-23T20:10:57+00:00",
+   "reports": [
+    {
+     "entry_id": "whitehouse-news:0b1c7a9055eaa10ae150",
+     "publisher": "The White House",
+     "title": "Fact Sheet: President Donald J. Trump Announces the America First Seafood Strategy and Seafood.gov",
+     "excerpt": "Additionally, today the President is making available more than $5 billion in guaranteed loans through the United States Department of Agriculture (USDA) to expand American dominance in modernized meat and seafood processing.",
+     "link": "https://www.whitehouse.gov/fact-sheets/2026/10/fact-sheet-president-donald-j-trump-announces-the-america-first-seafood-strategy-and-seafood-gov/",
+     "published": "Fri, 23 Oct 2026 20:10:57 +0000",
+     "published_utc": "2026-10-23T20:10:57+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "zimbabwe": {
+   "story_id": "story-f6d3efa28f4854fa",
+   "version": 2,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:3",
+        "report:wto-news:66f7b6167013ae45386f"
+       ],
+       "kind": "competing_explanation",
+       "text": "The investigation may end without any measure if increased imports are not found to cause or threaten serious injury, leaving trade conditions unchanged."
+      },
+      {
+       "basis": [
+        "fact:1",
+        "fact:2"
+       ],
+       "kind": "offsetting_force",
+       "text": "Participation by importers, exporters and other interested parties could shape the evidence and temper any outcome."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "a1: A measure would follow only if the investigation finds increased imports cause or threaten serious injury."
+      },
+      {
+       "id": "a2",
+       "text": "a2: Any measure would apply to the covered pasta products, whose scope is not stated."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "report:wto-news:66f7b6167013ae45386f"
+      ],
+      "instrument": "trade_remedy",
+      "stage": "implementation",
+      "text": "Zimbabwe has opened a safeguard investigation into imports of certain pasta products, notified to the WTO on 22 October 2026; no safeguard measure is reported, only the start of an inquiry with set deadlines for interested parties."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "Could gain protection only if a measure is imposed after a finding of injury.",
+         "kind": "industry",
+         "name": "Domestic pasta producers"
+        },
+        {
+         "how": "Could face higher prices or restricted supply if a measure follows.",
+         "kind": "firms",
+         "name": "Importers and buyers of pasta"
+        },
+        {
+         "how": "Could see reduced access if a measure is imposed.",
+         "kind": "firms",
+         "name": "Exporters of pasta to Zimbabwe"
+        }
+       ],
+       "assumptions": [
+        "a1",
+        "a2"
+       ],
+       "basis": [
+        "fact:1",
+        "fact:2",
+        "fact:3"
+       ],
+       "conditions": "Only if the investigation finds serious injury or a threat of it and a measure is then adopted.",
+       "horizon": "unclear",
+       "id": "m1",
+       "note": "trade-safeguards",
+       "scope": "micro",
+       "steps": [
+        "Investigation collects evidence from interested parties",
+        "Authority decides on injury",
+        "A measure, if any, restricts imports",
+        "Costs and supply adjust for buyers and exporters"
+       ],
+       "support": "framework",
+       "text": "If a safeguard measure were later imposed, domestic pasta producers might gain protection while importers and buyers face higher costs and exporters lose access. The investigation alone imposes no measure."
+      }
+     ],
+     "context": [],
+     "figures": [],
+     "framework": {
+      "digests": {
+       "trade-safeguards": "e5070758ab3af13177c146a2facef9d74f3608fd56a809f1798b49b97bd2eece"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "trade-safeguards": {
+        "applies_to": [
+         "trade_remedy"
+        ],
+        "id": "trade-safeguards",
+        "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+        "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+        "scope": "micro",
+        "sources": [
+         {
+          "publisher": "World Trade Organization",
+          "title": "Safeguard measures",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm",
+          "year": null
+         },
+         {
+          "publisher": "World Trade Organization",
+          "title": "The Agreement on Safeguards",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm",
+          "year": null
+         }
+        ],
+        "title": "Safeguard investigations and measures"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the investigation finds serious injury and whether any measure would follow, and in what form.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:3"
+      ],
+      "text": "A safeguard investigation is the step before any temporary import restriction. It signals possible protection for domestic pasta producers but imposes no measure yet."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "Outcome of the Competition and Tariff Commission's injury finding",
+       "text": "A finding of serious injury would make a measure more plausible.",
+       "would": "support"
+      },
+      {
+       "observable": "Termination of the investigation without a measure",
+       "text": "This would weaken the protection reading.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "wto-news:66f7b6167013ae45386f"
+      ],
+      "text": "The WTO reports that on 22 October 2026 Zimbabwe notified its Committee on Safeguards that it initiated on 18 September 2026 a safeguard investigation on imports of certain pasta products."
+     },
+     {
+      "reports": [
+       "wto-news:66f7b6167013ae45386f"
+      ],
+      "text": "In the quoted notification, Zimbabwe says interested parties have 30 days from initiation to state interest and submit comments or request an oral hearing; no hearing request is considered more than 60 days from the initiation notice."
+     },
+     {
+      "reports": [
+       "wto-news:66f7b6167013ae45386f"
+      ],
+      "text": "Correspondence goes to the Director of the Competition and Tariff Commission in Harare; the notification is document G/SG/N/6/ZWE/4. The WTO explains a safeguard action is allowed only if increased imports cause or threaten serious injury."
+     }
+    ],
+    "headline": "Zimbabwe opens WTO-notified safeguard investigation into imports of certain pasta products",
+    "implications": [
+     {
+      "text": "If a measure follows, domestic pasta producers could gain protection while buyers might face higher costs."
+     },
+     {
+      "text": "Exporters of pasta to Zimbabwe might face restricted access if injury is found and a measure is imposed."
+     },
+     {
+      "text": "The investigation may end without a measure, since it only examines whether increased imports cause or threaten serious injury."
+     }
+    ],
+    "missing": [
+     "Which pasta products and tariff lines are covered",
+     "Import volumes, trends or injury evidence behind the investigation",
+     "Possible form, size or duration of any safeguard measure",
+     "Which exporting countries are most affected",
+     "Investigation timeline and decision date"
+    ],
+    "summary": "The WTO reports that Zimbabwe notified its Committee on Safeguards on 22 October 2026 that it began a safeguard investigation on certain pasta imports on 18 September 2026. In the notification, interested parties have 30 days from initiation to register interest, comment or request a hearing. No safeguard measure is reported.",
+    "themes": [
+     {
+      "basis": "The report concerns a safeguard investigation on imports of certain pasta products.",
+      "kind": "sector",
+      "name": "Pasta and food imports"
+     },
+     {
+      "basis": "Zimbabwe's Competition and Tariff Commission is the investigating authority; the notification went to the WTO Committee on Safeguards.",
+      "kind": "theme",
+      "name": "Safeguard trade remedies"
+     }
+    ],
+    "uncertainties": [
+     "Which pasta products and tariff lines are covered is not stated.",
+     "The import volumes and injury evidence behind the investigation are not given.",
+     "The possible form, size or duration of any measure is unknown.",
+     "Which exporting countries are most affected is not stated.",
+     "The decision date and investigation timeline are not given."
+    ]
+   },
+   "content_sha256": "4061038743e609227307432bb1c7df5e49b8e53db6a4c8814d731ce9c6cf3549",
+   "released_at": "2026-10-22T23:59:59+00:00",
+   "reports": [
+    {
+     "entry_id": "wto-news:66f7b6167013ae45386f",
+     "publisher": "World Trade Organization",
+     "title": "Zimbabwe initiates safeguard investigation on pasta products",
+     "excerpt": "On 22 October 2026, Zimbabwe notified the WTO’s Committee on Safeguards that it had initiated on 18 September 2026 a safeguard investigation on imports of certain pasta products.",
+     "link": "https://www.wto.org/english/news_e/news26_e/safe_zwe_22oct26_523_e.htm",
+     "published": "Thu, 22 Oct 2026 00:00:00 GMT",
+     "published_utc": null,
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "philippines": {
+   "story_id": "story-1f0f95c0b6424655",
+   "version": 4,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:5"
+       ],
+       "kind": "competing_explanation",
+       "text": "The investigation may end without a measure if injury is not found or is attributed to other factors."
+      },
+      {
+       "basis": [],
+       "kind": "offsetting_force",
+       "text": "Under WTO safeguard rules, exporting members may seek compensation or suspend equivalent concessions if a measure is imposed."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:3"
+      ],
+      "instrument": "trade_remedy",
+      "stage": "proposal",
+      "text": "The Philippines has launched a safeguard investigation on pork, notified to the WTO; interested parties have five working days from the Notice's publication to submit evidence."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could gain protection from imports",
+         "kind": "industry",
+         "name": "Philippine pork producers"
+        },
+        {
+         "how": "could face quotas or tariffs",
+         "kind": "firms",
+         "name": "pork importers"
+        },
+        {
+         "how": "could pay more",
+         "kind": "households",
+         "name": "Philippine pork consumers"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:1",
+        "fact:5"
+       ],
+       "conditions": "If the investigation finds serious injury and a measure is imposed",
+       "horizon": "months",
+       "id": "m1",
+       "note": "trade-safeguards",
+       "scope": "micro",
+       "steps": [
+        "The Department of Agriculture investigates",
+        "It decides whether increased imports cause serious injury",
+        "A quota or a tariff on pork imports could follow"
+       ],
+       "support": "framework",
+       "text": "If a measure were imposed, Philippine pork producers could face less import competition, while importers and consumers could pay more for pork."
+      }
+     ],
+     "context": [],
+     "figures": [],
+     "framework": {
+      "digests": {
+       "trade-safeguards": "e5070758ab3af13177c146a2facef9d74f3608fd56a809f1798b49b97bd2eece"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "trade-safeguards": {
+        "applies_to": [
+         "trade_remedy"
+        ],
+        "id": "trade-safeguards",
+        "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+        "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+        "scope": "micro",
+        "sources": [
+         {
+          "publisher": "World Trade Organization",
+          "title": "Safeguard measures",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm",
+          "year": null
+         },
+         {
+          "publisher": "World Trade Organization",
+          "title": "The Agreement on Safeguards",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm",
+          "year": null
+         }
+        ],
+        "title": "Safeguard investigations and measures"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the investigation finds serious injury and what measure follows; the notification gives no measure, rate or timetable beyond the comment period.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:5"
+      ],
+      "text": "The investigation is the first step towards possible temporary restrictions on pork imports, allowed only if increased imports are found to cause or threaten serious injury to domestic producers."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "The Department of Agriculture's findings or a provisional measure",
+       "text": "A finding of serious injury would make restrictions on pork imports likely.",
+       "would": "support"
+      },
+      {
+       "observable": "Termination of the investigation",
+       "text": "A termination would leave pork imports unrestricted.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "wto-news:6c31bcd0fc5b729cc29e"
+      ],
+      "text": "The Philippines notified the WTO of a safeguard investigation on pork; the notification is document G/SG/N/6/PHL/25."
+     },
+     {
+      "reports": [
+       "wto-news:6c31bcd0fc5b729cc29e"
+      ],
+      "text": "The competent authority named in the notification is the Trade Remedies Office, Policy Research Service, of the Philippine Department of Agriculture in Quezon City."
+     },
+     {
+      "reports": [
+       "wto-news:6c31bcd0fc5b729cc29e"
+      ],
+      "text": "Interested parties are invited to submit written comments, evidence and views within five working days from the date of publication of the Notice; parties required to complete an investigation questionnaire must respond within the prescribed period."
+     },
+     {
+      "reports": [
+       "wto-news:6c31bcd0fc5b729cc29e"
+      ],
+      "text": "The Notice does not specify an intended public hearing date."
+     },
+     {
+      "reports": [
+       "wto-news:6c31bcd0fc5b729cc29e"
+      ],
+      "text": "As the WTO describes it, a safeguard action is a temporary restriction on imports of a product, allowed only if increased imports are found to be seriously injuring, or threatening to seriously injure, a domestic industry."
+     }
+    ],
+    "headline": "The Philippines launches a safeguard investigation on pork, according to its notification to the WTO",
+    "implications": [
+     {
+      "text": "If the investigation finds serious injury or a threat of it, the Philippines could temporarily restrict pork imports, which might affect exporting members' access to the Philippine market."
+     },
+     {
+      "text": "Pork exporters and importers might have little time to take part, given the five-working-day window for submissions set out in the Notice."
+     },
+     {
+      "text": "The outcome could matter to Philippine pork producers and to importers, whose competitive conditions may differ depending on whether any measure is adopted."
+     }
+    ],
+    "missing": [
+     "The product coverage, such as tariff lines, of the investigation.",
+     "Import statistics and the domestic industry's injury claims.",
+     "Who, if anyone, petitioned for the investigation.",
+     "The expected timetable for a determination."
+    ],
+    "summary": "The World Trade Organization reports that the Philippines has launched a safeguard investigation on pork, set out in notification G/SG/N/6/PHL/25. According to the notification quoted by the WTO, the Trade Remedies Office of the Philippine Department of Agriculture is the competent authority, and interested parties are invited to submit written comments and evidence within five working days of the Notice's publication. The WTO explains that a member may temporarily restrict imports of a product under a safeguard only if increased imports are found to be seriously injuring, or threatening to seriously injure, a domestic industry.",
+    "themes": [
+     {
+      "basis": "The Philippine safeguard investigation concerns pork.",
+      "kind": "sector",
+      "name": "Pork and meat trade"
+     },
+     {
+      "basis": "The competent authority is the Trade Remedies Office of the Philippine Department of Agriculture.",
+      "kind": "sector",
+      "name": "Agriculture"
+     },
+     {
+      "basis": "The Philippines notified the WTO of a safeguard investigation, which may lead to a temporary import restriction.",
+      "kind": "theme",
+      "name": "Trade remedies and safeguards"
+     }
+    ],
+    "uncertainties": [
+     "The publication does not state the volume or trend of the pork imports at issue, or the injury the domestic industry is said to face.",
+     "The date of publication of the Notice, which starts the five-working-day window, is not given in the text.",
+     "Whether the Philippines might consider provisional measures during the investigation is not stated.",
+     "It is unclear which exporting members could be most affected by any measure."
+    ]
+   },
+   "content_sha256": "f8258923540ac47c2da5654b00594c5faa08f97617cc700ca307de819b5c2b96",
+   "released_at": "2026-10-21T23:59:59+00:00",
+   "reports": [
+    {
+     "entry_id": "wto-news:6c31bcd0fc5b729cc29e",
+     "publisher": "World Trade Organization",
+     "title": "The Philippines launches safeguard investigation on pork",
+     "excerpt": "On 21 October 2026, the Philippines notified the WTO’s Committee on Safeguards that it had initiated on 9 October 2026 a safeguard investigation on imports of pork.",
+     "link": "https://www.wto.org/english/news_e/news26_e/safe_phl_21oct26_520_e.htm",
+     "published": "Wed, 21 Oct 2026 00:00:00 GMT",
+     "published_utc": null,
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "omya": {
+   "story_id": "story-e4f07bff0c79171c",
+   "version": 4,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [],
+       "kind": "competing_explanation",
+       "text": "Rebates and exclusive terms can also come with lower prices or security of supply for buyers; whether these terms harm competition is what the investigation is to establish."
+      },
+      {
+       "basis": [],
+       "kind": "offsetting_force",
+       "text": "If switching suppliers is costly for mills, ending the terms may change little in practice."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "Paper mills can switch between suppliers of calcium carbonates; the release does not say how easily."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "fact:3"
+      ],
+      "instrument": "competition_enforcement",
+      "stage": "decision",
+      "text": "The Commission opened a formal investigation into whether Omya, the largest supplier of calcium carbonates in the EEA, abused a possibly dominant position through exclusive purchasing obligations and exclusivity rebates for paper-industry customers."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could have to change its supply terms",
+         "kind": "firms",
+         "name": "Omya"
+        },
+        {
+         "how": "could gain more choice of supplier",
+         "kind": "industry",
+         "name": "paper mills in the EEA"
+        },
+        {
+         "how": "could compete for more customers",
+         "kind": "firms",
+         "name": "rival suppliers of calcium carbonates"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:1",
+        "fact:3"
+       ],
+       "conditions": "If the Commission finds an abuse or accepts commitments",
+       "horizon": "years",
+       "id": "m1",
+       "note": "competition-enforcement",
+       "scope": "micro",
+       "steps": [
+        "The Commission investigates the obligations and rebates",
+        "A decision or commitments could end them",
+        "Rival suppliers could compete for mills' orders"
+       ],
+       "support": "framework",
+       "text": "If the investigation ended in a decision or commitments ending the exclusivity terms, rival suppliers could compete for paper mills' purchases, which could lower prices or improve terms for some mills."
+      }
+     ],
+     "context": [],
+     "figures": [],
+     "framework": {
+      "digests": {
+       "competition-enforcement": "0166a7c84bcb8329060b8015508ebdd92260fd2d9678600bde690c778a10cc4d"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "competition-enforcement": {
+        "applies_to": [
+         "competition_enforcement"
+        ],
+        "id": "competition-enforcement",
+        "limits": "Opening an investigation does not establish an infringement; how long a case takes and which remedies follow vary and are not given by the sources cited.",
+        "mechanism": "Under EU rules a dominant position is not illegal; abusing it is, for example by requiring customers to buy all or most of what they need from the dominant supplier. An investigation gathers evidence and may end in a decision ordering the conduct to stop, with remedies or fines, or in binding commitments without a finding of infringement, and decisions can be appealed. Until then, effects on rivals' access to customers and on customers' prices or choice are possibilities, not outcomes.",
+        "scope": "micro",
+        "sources": [
+         {
+          "publisher": "European Commission, Directorate-General for Competition",
+          "title": "Article 102 investigations",
+          "url": "https://competition-policy.ec.europa.eu/antitrust-and-cartels/procedures/article-102-investigations_en",
+          "year": null
+         }
+        ],
+        "title": "Competition investigations and their outcomes"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the Commission finds an abuse, and when: there is no legal deadline, and the release gives no market shares, prices or volumes.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:3",
+       "fact:4",
+       "fact:5",
+       "report:ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "Obligations and rebates that reward buying all or most from one supplier can make it harder for rivals to win customers. Calcium carbonates are an input that, the Commission says, can reduce paper production costs, so competition in their supply could matter for paper mills' costs and, it says, for buyers of paper and cardboard packaging. Opening an investigation establishes no infringement."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "A statement of objections in case AT.40893",
+       "text": "Formal objections would make a decision against the practices more likely.",
+       "would": "support"
+      },
+      {
+       "observable": "Closure of the case without findings",
+       "text": "A closure would leave the terms in place.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "The Commission opened a formal antitrust investigation, case AT.40893, into whether Omya abused a dominant position in the supply of calcium carbonates."
+     },
+     {
+      "reports": [
+       "ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "Omya, headquartered in Switzerland, is the largest supplier of calcium carbonates in the EEA and may hold a dominant position, the Commission says."
+     },
+     {
+      "reports": [
+       "ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "The practices investigated are exclusive purchasing obligations and exclusivity rebates, which give customers financial incentives to source all or most of their calcium carbonates from Omya."
+     },
+     {
+      "reports": [
+       "ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "Calcium carbonates are used as fillers and coating pigments in paper production, where they can reduce production costs and improve brightness, opacity, smoothness and printability."
+     },
+     {
+      "reports": [
+       "ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "The Commission says competitive supplies can lower input costs for paper mills and benefit buyers of paper and cardboard, including packaging used instead of single-use plastic."
+     },
+     {
+      "reports": [
+       "ec-press:9ed2a2fb9148c669a525"
+      ],
+      "text": "There is no legal deadline for an antitrust investigation; opening one relieves national competition authorities of their competence over the practices."
+     }
+    ],
+    "headline": "Commission investigates Omya's exclusive purchasing obligations and rebates in calcium carbonate supply to paper makers",
+    "implications": [
+     {
+      "text": "If the practices were found abusive and ended, rival suppliers could compete for paper mills' purchases, which may lower calcium carbonate costs for some mills."
+     },
+     {
+      "text": "Omya could face a decision ordering the practices to end, or could offer commitments, if the Commission's concerns are confirmed."
+     }
+    ],
+    "missing": [
+     "Omya's response to the investigation.",
+     "Which national markets and periods the investigation covers."
+    ],
+    "summary": "The European Commission has opened a formal antitrust investigation into whether Omya, the largest supplier of calcium carbonates in the European Economic Area, abused a possible dominant position by requiring paper-industry customers to buy all or most of their calcium carbonates from it and by offering exclusivity rebates. Calcium carbonates are fillers and coating pigments in paper and cardboard. The Commission says the practices may have limited rivals' ability to compete; opening an investigation does not prejudge its outcome, and there is no legal deadline.",
+    "themes": [],
+    "uncertainties": [
+     "How long the investigation will take; there is no legal deadline.",
+     "The release gives no market shares, prices or volumes."
+    ]
+   },
+   "content_sha256": "9d07ad742f8f53e3ef134daa6211263f781cddb6b012e72acee97cff3932ad57",
+   "released_at": "2026-10-22T22:00:00+00:00",
+   "reports": [
+    {
+     "entry_id": "ec-press:9ed2a2fb9148c669a525",
+     "publisher": "European Commission",
+     "title": "Commission opens investigation into possible anticompetitive conduct by Omya in the supply of calcium carbonates to the paper industry",
+     "excerpt": "The European Commission has opened a formal antitrust investigation to assess whether Omya has breached EU competition rules",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2232",
+     "published": "Thu, 22 Oct 2026 22:00:00 GMT",
+     "published_utc": "2026-10-22T22:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "booking": {
+   "story_id": "story-2906e2a4883a3464",
+   "version": 4,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [],
+       "kind": "competing_explanation",
+       "text": "The proceedings may matter more as a precedent for how online platforms label paid rankings and handle fraud than for Booking.com's own costs."
+      },
+      {
+       "basis": [],
+       "kind": "offsetting_force",
+       "text": "Stricter checks could slow new listings, a cost for accommodation providers and the platform."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "Travellers give weight to a listing's position when choosing; the release does not measure this."
+      },
+      {
+       "id": "a2",
+       "text": "Stronger controls would reduce the fake listings and phishing that reach users; the release does not say so."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "fact:3"
+      ],
+      "instrument": "consumer_regulation",
+      "stage": "decision",
+      "text": "The Commission opened formal proceedings to assess whether Booking.com breached the Digital Services Act on three counts: risks from fraudulent listings, phishing that exploits reservation and guest data, and paid boosted listings not clearly labelled as advertisements."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could tell paid placements from relevant results",
+         "kind": "households",
+         "name": "travellers booking on the platform"
+        },
+        {
+         "how": "could reconsider paying higher commissions for visibility",
+         "kind": "firms",
+         "name": "accommodation providers listed on Booking.com"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:3",
+        "report:ec-press:bde1e12976d6b823f246"
+       ],
+       "conditions": "If labelling is required by a decision or commitments",
+       "horizon": "years",
+       "id": "m1",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "The Commission finds a breach or accepts commitments on labelling",
+        "Boosted listings are shown as advertisements",
+        "Travellers could weigh paid placements differently"
+       ],
+       "support": "bounded_inference",
+       "text": "If boosted listings had to be labelled as ads, travellers could discount paid placements, which could change how much accommodation providers pay for visibility and how they compete for bookings."
+      },
+      {
+       "affected": [
+        {
+         "how": "could face less fraud",
+         "kind": "households",
+         "name": "travellers booking on the platform"
+        },
+        {
+         "how": "could face higher compliance costs",
+         "kind": "firms",
+         "name": "Booking.com"
+        }
+       ],
+       "assumptions": [
+        "a2"
+       ],
+       "basis": [
+        "fact:1",
+        "fact:2"
+       ],
+       "conditions": "If the proceedings end in a decision or commitments",
+       "horizon": "years",
+       "id": "m2",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "The Commission requires stronger risk controls",
+        "Fake listings and phishing become harder",
+        "Losses to travellers could fall"
+       ],
+       "support": "bounded_inference",
+       "text": "If stronger controls on listings and on guest-data sharing were required, fraud against travellers could fall, while Booking.com could face higher compliance costs."
+      }
+     ],
+     "context": [],
+     "figures": [],
+     "framework": {
+      "digests": {},
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {},
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the Commission finds a breach and what it would require; the release gives no timetable and no figures on fraud or on boosted listings.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:3",
+       "fact:1",
+       "fact:2",
+       "report:ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "Two of the issues bear on how the platform's market works. As the Commission puts it, without a label users cannot tell whether a listing appears prominently because it matches their search or because its provider paid a higher commission; and fraud imposes losses on travellers and can erode trust in bookings. Opening proceedings establishes no breach."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "Preliminary findings or interim measures from the Commission",
+       "text": "Findings would make obligations on the platform likely.",
+       "would": "support"
+      },
+      {
+       "observable": "Commitments offered by Booking.com",
+       "text": "Commitments to label boosted listings would bring the change without a decision.",
+       "would": "support"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "The proceedings cover fraudulent and non-compliant listings, such as non-existent properties and impersonation fraud, and whether Booking.com removes them effectively."
+     },
+     {
+      "reports": [
+       "ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "They cover phishing scams that exploit reservation and guest data shared with accommodation providers, and the design of Booking.com's messaging service."
+     },
+     {
+      "reports": [
+       "ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "They cover boosted listings, which accommodation providers obtain by paying a higher commission, and whether users can recognise them as advertisements."
+     },
+     {
+      "reports": [
+       "ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "If proven, the failures would infringe Articles 34 and 35 of the DSA on systemic risks and Article 26(1) on advertising transparency."
+     },
+     {
+      "reports": [
+       "ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "The Commission may take interim measures, adopt non-compliance decisions or accept commitments offered by Booking.com."
+     },
+     {
+      "reports": [
+       "ec-press:bde1e12976d6b823f246"
+      ],
+      "text": "Booking.com was designated a Very Large Online Platform under the DSA on 25 April 2023."
+     }
+    ],
+    "headline": "Commission opens DSA proceedings into Booking.com over fake listings, phishing scams and unlabelled paid rankings",
+    "implications": [
+     {
+      "text": "If boosted listings had to be labelled as ads, travellers might weigh paid placements differently, which could change how accommodation providers compete for visibility."
+     },
+     {
+      "text": "Stronger checks on listings and on guest-data sharing could reduce fraud against travellers, though they may add steps for accommodation providers."
+     }
+    ],
+    "missing": [
+     "Any response from Booking.com.",
+     "Booking.com's commission levels for boosted listings."
+    ],
+    "summary": "The European Commission has opened formal proceedings to assess whether Booking.com breached the Digital Services Act by not diligently assessing or mitigating risks from fraudulent listings and from phishing scams that exploit reservation and guest data, and by not clearly labelling as ads the listings whose providers paid a higher commission for better ranking. The proceedings follow a preliminary investigation; they do not prejudge the outcome, and they allow interim measures, non-compliance decisions or commitments.",
+    "themes": [],
+    "uncertainties": [
+     "How long the proceedings will take is not stated.",
+     "The release gives no figures on the scale of fraud or on the use of boosted listings."
+    ]
+   },
+   "content_sha256": "e619aac4bf2e916ee1511e2eb17e34582ba7e283e2036fd63b57ea4e52953717",
+   "released_at": "2026-10-21T07:37:53+00:00",
+   "reports": [
+    {
+     "entry_id": "ec-press:bde1e12976d6b823f246",
+     "publisher": "European Commission",
+     "title": "Commission to investigate how Booking.com combats scams and fraud under the Digital Services Act",
+     "excerpt": "Today, the European Commission has opened formal proceedings to assess whether Booking.com may have breached the Digital Services Act (DSA)",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2223",
+     "published": "Wed, 21 Oct 2026 07:37:53 GMT",
+     "published_utc": "2026-10-21T07:37:53+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "sefcovic": {
+   "story_id": "story-d9e7f7be125e1df9",
+   "version": 5,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:1"
+       ],
+       "kind": "competing_explanation",
+       "text": "The deficit may also reflect weak EU demand or price changes rather than import surges alone; the remarks do not separate them."
+      },
+      {
+       "basis": [
+        "fact:5",
+        "calc:c1"
+       ],
+       "kind": "offsetting_force",
+       "text": "Exports to free-trade partners grew faster than to other partners in 2025, the difference being {c1}, which he presents as a gain from trade agreements."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [],
+     "calculations": [
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "calc_version": "econ-calc-0.2",
+       "decimals": 1,
+       "display": "+2.7 percentage points",
+       "formula": "f3 − f4",
+       "id": "c1",
+       "inputs": [
+        "f3",
+        "f4"
+       ],
+       "label": "Gap between export growth to free-trade partners and to others, 2025",
+       "measure": "change",
+       "op": "difference",
+       "period": "2025",
+       "seasonal": "not_applicable",
+       "unit": "percentage points",
+       "value": 2.7
+      }
+     ],
+     "change": {
+      "basis": [
+       "fact:2",
+       "fact:3"
+      ],
+      "instrument": "trade_remedy",
+      "stage": "proposal",
+      "text": "Trade Commissioner Maroš Šefčovič said a safeguard on hybrids and plug-in hybrids will be initiated soon, further priority sectors will be identified with the Import Barometer, and a DiversifyEU package with proposals for stronger trade-defence tools will be tabled in December."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could face less import competition",
+         "kind": "industry",
+         "name": "EU makers of hybrid and plug-in hybrid cars"
+        },
+        {
+         "how": "could pay more if imports are restricted",
+         "kind": "households",
+         "name": "EU buyers of hybrid cars"
+        },
+        {
+         "how": "could face quotas or tariffs",
+         "kind": "firms",
+         "name": "exporters of hybrids to the EU"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:2"
+       ],
+       "conditions": "If the safeguard is initiated, finds serious injury and ends in a measure",
+       "horizon": "quarters",
+       "id": "m1",
+       "note": "trade-safeguards",
+       "scope": "micro",
+       "steps": [
+        "The Commission initiates a safeguard investigation",
+        "It assesses whether increased imports cause or threaten serious injury",
+        "A quota or a tariff on imported hybrids could follow"
+       ],
+       "support": "framework",
+       "text": "If an investigation found that increased imports cause or threaten serious injury and a measure were imposed, imports of hybrids and plug-in hybrids into the EU could face quotas or higher tariffs, which could protect EU producers and raise what buyers pay."
+      },
+      {
+       "affected": [
+        {
+         "how": "could gain protection from imports",
+         "kind": "industry",
+         "name": "EU sectors facing import surges"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:1",
+        "fact:2",
+        "report:ec-press:4e234936bb2b196f8f15"
+       ],
+       "conditions": "If further sectors are identified and measures adopted",
+       "horizon": "years",
+       "id": "m2",
+       "note": null,
+       "scope": "macro",
+       "steps": [
+        "The Import Barometer flags sectors with sustained import surges",
+        "Trade-defence measures are adopted",
+        "Imports in those sectors could slow"
+       ],
+       "support": "event_evidence",
+       "text": "The Commissioner presents rebalancing trade with China as the aim of these steps; whether measures in further sectors would narrow the deficit would depend on how much they reduce imports, which the remarks do not estimate."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "nominal",
+       "bound": "upper_bound",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "at most 197 billion euros",
+       "id": "f1",
+       "label": "EU trade deficit with China",
+       "measure": "level",
+       "period": "first half of 2026",
+       "price": false,
+       "quote": "Our deficit with China reached almost 197 billion euros in the first half of this year",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:4e234936bb2b196f8f15",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "billion euros",
+       "value": 197,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-23T14:54:52+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "nominal",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "397 billion euros",
+       "id": "f2",
+       "label": "EU trade deficit with China, record year",
+       "measure": "level",
+       "period": "2022",
+       "price": false,
+       "quote": "the 2022 record of 397 billion euros",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:4e234936bb2b196f8f15",
+       "statistic": "observed",
+       "stock_flow": "flow_per_year",
+       "unit": "billion euros",
+       "value": 397,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-23T14:54:52+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "consistent",
+       "display": "3.3%",
+       "id": "f3",
+       "label": "Growth of EU goods exports to free-trade partners",
+       "measure": "growth_rate",
+       "period": "2025",
+       "price": false,
+       "quote": "EU goods exports to our preferential partners grew 3.3%",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:4e234936bb2b196f8f15",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 3.3,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-23T14:54:52+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "not_stated",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "unstated",
+       "display": "0.6%",
+       "id": "f4",
+       "label": "Growth of EU goods exports to other partners",
+       "measure": "growth_rate",
+       "period": "2025",
+       "price": false,
+       "quote": "against 0.6% with non-FTA partners",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:4e234936bb2b196f8f15",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 0.6,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-23T14:54:52+00:00",
+        "source": "European Commission"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {
+       "trade-safeguards": "e5070758ab3af13177c146a2facef9d74f3608fd56a809f1798b49b97bd2eece"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "trade-safeguards": {
+        "applies_to": [
+         "trade_remedy"
+        ],
+        "id": "trade-safeguards",
+        "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+        "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+        "scope": "micro",
+        "sources": [
+         {
+          "publisher": "World Trade Organization",
+          "title": "Safeguard measures",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm",
+          "year": null
+         },
+         {
+          "publisher": "World Trade Organization",
+          "title": "The Agreement on Safeguards",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm",
+          "year": null
+         }
+        ],
+        "title": "Safeguard investigations and measures"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the safeguard investigation finds serious injury and what measure, if any, follows; the remarks give no scope or timetable beyond soon.",
+     "second_order": [
+      {
+       "assumptions": [],
+       "basis": [
+        "fact:2"
+       ],
+       "conditions": "If a safeguard measure is imposed and no compensation is agreed",
+       "from": "m1",
+       "horizon": "years",
+       "id": "s1",
+       "text": "Exporting countries may seek compensation or suspend equivalent concessions, as the safeguard rules allow, which could affect EU exports in other sectors."
+      }
+     ],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "figure:f1",
+       "figure:f2"
+      ],
+      "text": "He presented the steps as a response to the EU's trade deficit with China, which he put at {f1} in the first half of the year, against a record of {f2} for the whole of 2022; the periods differ. A safeguard investigation is the first formal step towards possible import restrictions on hybrids and plug-in hybrids."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "The formal initiation notice of the hybrids safeguard",
+       "text": "An initiation notice would make import restrictions on hybrids a live possibility.",
+       "would": "support"
+      },
+      {
+       "observable": "The meeting with Chinese counterparts next month",
+       "text": "An agreement that addresses the imbalance could make measures less likely.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "ec-press:4e234936bb2b196f8f15"
+      ],
+      "text": "The European Commission says the EU's trade deficit with China reached almost €197 billion in the first half of 2026, and that at this rate it could exceed the 2022 record of €397 billion."
+     },
+     {
+      "reports": [
+       "ec-press:4e234936bb2b196f8f15"
+      ],
+      "text": "Next steps named: a safeguard on hybrids and plug-in hybrids to be initiated soon; identification of further priority sectors using the Import Barometer, which tracks sustained import surges harming EU industry; and a meeting with Chinese counterparts next month."
+     },
+     {
+      "reports": [
+       "ec-press:4e234936bb2b196f8f15"
+      ],
+      "text": "In December the Commission will table the DiversifyEU package and propose ways to make its trade defence tools more effective, including new instruments."
+     },
+     {
+      "reports": [
+       "ec-press:4e234936bb2b196f8f15"
+      ],
+      "text": "EU exports to the US grew 3.5% in 2025 to €555 billion; the Commissioner named metals and derivatives as outstanding issues with the US."
+     },
+     {
+      "reports": [
+       "ec-press:4e234936bb2b196f8f15"
+      ],
+      "text": "EU goods exports to preferential (free trade agreement) partners grew 3.3% in 2025, against 0.6% with other partners; agri-food exports to them grew 4.6%."
+     }
+    ],
+    "headline": "EU trade chief says a safeguard on Chinese hybrid imports will be initiated soon, with new trade defence proposals in December",
+    "implications": [
+     {
+      "text": "If a safeguard on hybrids and plug-in hybrids is initiated and measures follow, importers and sellers of these cars from China in the EU could face new limits or duties, depending on what is decided."
+     },
+     {
+      "text": "The December package could change the trade defence tools available against import surges, which may matter for EU industries the Import Barometer flags and for exporters to the EU in those sectors."
+     },
+     {
+      "text": "Remarks that EU-US issues on metals and derivatives remain open suggest those sectors might still see further negotiation, though no step or date is stated."
+     }
+    ],
+    "missing": [
+     "The scope, form and timetable of any hybrid safeguard measure.",
+     "What the DiversifyEU package and the new trade defence instruments would contain.",
+     "Any outcome of the ministers' meeting itself, or of the questions taken afterwards."
+    ],
+    "summary": "After an informal meeting of EU trade ministers in Dublin, Trade Commissioner Maroš Šefčovič said the EU's deficit with China reached almost €197 billion in the first half of 2026 and that rebalancing is the Commission's central workstream, starting with a safeguard on hybrids and plug-in hybrids \"to be initiated soon\". He said the Commission will table a DiversifyEU package in December and propose ways to make its trade defence tools more effective. On the United States, he said EU exports grew 3.5% in 2025, to €555 billion.",
+    "themes": [
+     {
+      "basis": "The Commissioner names a safeguard on hybrids and plug-in hybrids to be initiated soon.",
+      "kind": "sector",
+      "name": "Automotive (hybrid and plug-in hybrid vehicles)"
+     },
+     {
+      "basis": "He calls rebalancing the central workstream and states the deficit figures.",
+      "kind": "theme",
+      "name": "EU-China trade rebalancing"
+     },
+     {
+      "basis": "The DiversifyEU package and proposals on trade defence tools are announced for December.",
+      "kind": "theme",
+      "name": "Trade defence instruments"
+     },
+     {
+      "basis": "Named as an outstanding issue in EU-US trade.",
+      "kind": "sector",
+      "name": "Metals"
+     }
+    ],
+    "uncertainties": [
+     "\"To be initiated soon\" gives no date, and initiating a safeguard is a procedure whose outcome the remarks do not state.",
+     "The remarks do not say which further sectors the Import Barometer may identify.",
+     "Remarks as delivered may differ from this text."
+    ]
+   },
+   "content_sha256": "81ff6af2940361b604a6af13b95f25128c10cfcd042b5c2d6ab1ee132d34aca9",
+   "released_at": "2026-10-23T14:54:52+00:00",
+   "reports": [
+    {
+     "entry_id": "ec-press:4e234936bb2b196f8f15",
+     "publisher": "European Commission",
+     "title": "Remarks by Commissioner Šefčovič at the press conference following the informal Foreign Affairs Council (Trade)",
+     "excerpt": "A safeguard on hybrids and plug-in hybrids to be initiated soon;",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_2252",
+     "published": "Fri, 23 Oct 2026 14:54:52 GMT",
+     "published_utc": "2026-10-23T14:54:52+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "vdl": {
+   "story_id": "story-4e4676f607810f7d",
+   "version": 1,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [],
+       "kind": "offsetting_force",
+       "text": "Buyers may turn to other imported or EU-made hybrids, limiting any effect on prices; the speech gives no price information."
+      },
+      {
+       "basis": [
+        "report:ec-press:16bb242e2540d675e5d7"
+       ],
+       "kind": "competing_explanation",
+       "text": "The agreement may matter more as a sign of the EU's readiness to use safeguards, which she said leaders backed and which chemicals and machinery may face, than for car prices."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "The quota binds, that is, it is below what Chinese makers would otherwise ship; she said it reduces exports by around 45%."
+      }
+     ],
+     "calculations": [
+      {
+       "basis": "nominal",
+       "bound": "exact",
+       "calc_version": "econ-calc-0.2",
+       "decimals": 1,
+       "display": "+200.0%",
+       "formula": "(f3 ÷ f2 − 1) × 100",
+       "id": "c1",
+       "inputs": [
+        "f3",
+        "f2"
+       ],
+       "label": "Change in Chinese hybrid exports to the EU over twelve months",
+       "measure": "growth_rate",
+       "op": "percent_change",
+       "period": "latest twelve months (not dated) against twelve months earlier (not dated)",
+       "seasonal": "not_applicable",
+       "unit": "percent",
+       "value": 200.0
+      }
+     ],
+     "change": {
+      "basis": [
+       "fact:1",
+       "figure:f1"
+      ],
+      "instrument": "trade_remedy",
+      "stage": "decision",
+      "text": "Commission President von der Leyen said the EU and China agreed an annual quota of 350 000 hybrid vehicles from China, to be implemented through a safeguard, which she said changes those exports by {f1}."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could face less import competition",
+         "kind": "industry",
+         "name": "EU makers of hybrid cars"
+        },
+        {
+         "how": "could pay more or have fewer models to choose from",
+         "kind": "households",
+         "name": "EU buyers of hybrid cars"
+        },
+        {
+         "how": "could ship fewer cars to the EU",
+         "kind": "firms",
+         "name": "Chinese hybrid exporters"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:1",
+        "fact:2",
+        "report:ec-press:16bb242e2540d675e5d7"
+       ],
+       "conditions": "If the safeguard is adopted and the quota applied as described",
+       "horizon": "months",
+       "id": "m1",
+       "note": "trade-safeguards",
+       "scope": "micro",
+       "steps": [
+        "The quota is implemented through a safeguard",
+        "Chinese hybrid supplies to the EU are capped",
+        "EU producers face less import competition; buyers may face higher prices"
+       ],
+       "support": "framework",
+       "text": "If the quota caps Chinese hybrid imports as described, EU makers of hybrid cars could face less import competition, and buyers of hybrid cars in the EU could pay more or have fewer models to choose from."
+      },
+      {
+       "affected": [
+        {
+         "how": "could pay lower duties in China",
+         "kind": "industry",
+         "name": "EU exporters of the products covered"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:3",
+        "figure:f4"
+       ],
+       "conditions": "If China applies the tariff cuts as she described",
+       "horizon": "months",
+       "id": "m2",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "China cuts tariffs on listed EU products",
+        "EU exporters of those products pay less duty",
+        "Their sales to China could become more competitive"
+       ],
+       "support": "event_evidence",
+       "text": "She said China agreed to cut tariffs on EU products worth almost {f4}; if the cuts apply as she described, EU exporters of those products could face lower duties in China."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_stated",
+       "bound": "approximate",
+       "decimals": 0,
+       "direction_check": "consistent",
+       "display": "about −45%",
+       "id": "f1",
+       "label": "Change in Chinese hybrid exports to the EU under the quota, as stated",
+       "measure": "change",
+       "period": "under the quota (base not stated)",
+       "price": false,
+       "quote": "We agreed an annual quota of 350 000 hybrid vehicles from China. Reducing exports by around 45%.",
+       "seasonal": "not_applicable",
+       "sign": "from_words",
+       "sign_words": "Reducing",
+       "source": "report:ec-press:16bb242e2540d675e5d7",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": -45,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-21T06:04:27+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "nominal",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "as_quoted",
+       "display": "2.5 billion dollars",
+       "id": "f2",
+       "label": "Chinese hybrid exports to the EU",
+       "measure": "level",
+       "period": "twelve months earlier (not dated)",
+       "price": false,
+       "quote": "Chinese hybrid electric vehicle exports to the EU had gone up from $2.5 billion to $7.5 billion",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:16bb242e2540d675e5d7",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "billion dollars",
+       "value": 2.5,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-21T06:04:27+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "nominal",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "as_quoted",
+       "display": "7.5 billion dollars",
+       "id": "f3",
+       "label": "Chinese hybrid exports to the EU",
+       "measure": "level",
+       "period": "latest twelve months (not dated)",
+       "price": false,
+       "quote": "Chinese hybrid electric vehicle exports to the EU had gone up from $2.5 billion to $7.5 billion",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:16bb242e2540d675e5d7",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "billion dollars",
+       "value": 7.5,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-21T06:04:27+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "nominal",
+       "bound": "upper_bound",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "at most 4 billion euros",
+       "id": "f4",
+       "label": "EU products covered by China's tariff cuts",
+       "measure": "level",
+       "period": "as agreed",
+       "price": false,
+       "quote": "China has agreed to cut tariffs on EU products worth almost €4 billion",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:16bb242e2540d675e5d7",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "billion euros",
+       "value": 4,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-21T06:04:27+00:00",
+        "source": "European Commission"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {
+       "trade-safeguards": "e5070758ab3af13177c146a2facef9d74f3608fd56a809f1798b49b97bd2eece"
+      },
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {
+       "trade-safeguards": {
+        "applies_to": [
+         "trade_remedy"
+        ],
+        "id": "trade-safeguards",
+        "limits": "An investigation may end without a measure; a measure's form, size and duration are set later, within the agreement's limits.",
+        "mechanism": "Under WTO rules a member may restrict imports of a product temporarily, by a quota or a higher tariff applied to all sources, if an investigation finds that increased imports cause or threaten serious injury to a domestic industry; injury from other causes must not be attributed to imports. An investigation comes before any measure: protection for domestic producers and higher costs for buyers of the product would follow only if a measure is imposed, and affected exporters may seek compensation or suspend equivalent concessions.",
+        "scope": "micro",
+        "sources": [
+         {
+          "publisher": "World Trade Organization",
+          "title": "Safeguard measures",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeg_e.htm",
+          "year": null
+         },
+         {
+          "publisher": "World Trade Organization",
+          "title": "The Agreement on Safeguards",
+          "url": "https://www.wto.org/english/tratop_e/safeg_e/safeint_e.htm",
+          "year": null
+         }
+        ],
+        "title": "Safeguard investigations and measures"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "How and when the quota applies: the speech gives no legal text, start date or duration, and does not say what the reduction of about 45% is measured against.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "calc:c1",
+       "report:ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "She said Chinese hybrid exports to the EU had risen from {f2} to {f3} in twelve months, a change of {c1}; a quota caps that supply, and she presented it as the first time China has agreed to export moderation in a major industrial sector, while saying that one agreement in one sector cannot fix the overall structural imbalance."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "The safeguard's legal text and start date",
+       "text": "A binding quota with a start date would make the effect on supply likely.",
+       "would": "support"
+      },
+      {
+       "observable": "Chinese hybrid shipments to the EU in the coming months",
+       "text": "Shipments well below the quota would mean it does not bind.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "Von der Leyen said the EU and China agreed an annual quota of 350 000 hybrid vehicles from China, reducing exports by around 45%, to be implemented through a safeguard."
+     },
+     {
+      "reports": [
+       "ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "She said Chinese hybrid electric vehicle exports to the EU had risen from $2.5 billion to $7.5 billion in twelve months."
+     },
+     {
+      "reports": [
+       "ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "She said China agreed to cut tariffs on EU products worth almost €4 billion and gave greater predictability on export controls for rare earths and magnets."
+     },
+     {
+      "reports": [
+       "ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "She said the EU's trade deficit with China reached €1 billion a day in 2025, and that the Commission will present a DiversifyEU package in December and propose a new instrument to limit access to the Single Market when EU interests are threatened."
+     },
+     {
+      "reports": [
+       "ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "She said the Commission's simplification proposals could save over €22 billion of administrative burden a year if all are agreed, and that the Commission will develop a plan for a European Energy Union."
+     },
+     {
+      "reports": [
+       "ec-press:16bb242e2540d675e5d7"
+      ],
+      "text": "She said energy sanctions on Russia will stay until Russia stops the war."
+     }
+    ],
+    "headline": "Von der Leyen says China agreed an annual quota of 350 000 hybrid cars for the EU, to be implemented through a safeguard",
+    "implications": [
+     {
+      "text": "If the quota is applied as described, Chinese hybrid supplies to the EU could fall, which may support EU hybrid producers and could raise what buyers pay."
+     },
+     {
+      "text": "EU exporters of the products covered by China's tariff cuts could face lower duties, though the speech does not name the products."
+     },
+     {
+      "text": "Chemicals and machinery, which she named as sectors facing growing concerns, may see trade defence measures if dialogue does not deliver."
+     }
+    ],
+    "missing": [
+     "The text of the agreement with China.",
+     "The contents of the DiversifyEU package and of the new deterrence instrument."
+    ],
+    "summary": "Reporting to the European Parliament on the European Council of 15-16 October, Commission President von der Leyen said dialogue with China had produced an annual quota of 350 000 hybrid vehicles from China, which she said reduces those exports by around 45% and will be implemented through a safeguard, after Chinese hybrid exports to the EU rose from $2.5 billion to $7.5 billion in twelve months. She said China agreed to cut tariffs on EU products worth almost €4 billion, announced a DiversifyEU package for December and a new deterrence instrument, and said energy sanctions on Russia will stay until it stops the war.",
+    "themes": [],
+    "uncertainties": [
+     "The quota's legal form, start date and duration are not given; she said only that it will be implemented through a safeguard.",
+     "The base against which exports fall by around 45% is not stated.",
+     "Which EU products benefit from China's tariff cuts is not stated."
+    ]
+   },
+   "content_sha256": "9bf55e9664bf50f567f44769274194b256153deda3cc83e948da43ec91fe1394",
+   "released_at": "2026-10-21T06:04:27+00:00",
+   "reports": [
+    {
+     "entry_id": "ec-press:16bb242e2540d675e5d7",
+     "publisher": "European Commission",
+     "title": "Speech by President von der Leyen at the European Parliament plenary debate on the conclusions of the European Council meeting of 15-16 October 2026",
+     "excerpt": "We agreed an annual quota of 350 000 hybrid vehicles from China. Reducing exports by around 45%. This will be implemented through a safeguard, so we keep control.",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_2222",
+     "published": "Wed, 21 Oct 2026 06:04:27 GMT",
+     "published_utc": "2026-10-21T06:04:27+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "keynote": {
+   "story_id": "story-00000000000f1c02",
+   "version": 2,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:3",
+        "report:fictional:00000000000000000002"
+       ],
+       "kind": "competing_explanation",
+       "text": "Marrowby says freight price rises this year mostly reflect fuel costs, so the contribution of port delays to prices is not separated in the speech."
+      },
+      {
+       "basis": [
+        "report:fictional:00000000000000000002"
+       ],
+       "kind": "offsetting_force",
+       "text": "She notes that new berths opened this year have made the harbour less exposed to single-terminal outages."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [],
+     "calculations": [
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "calc_version": "econ-calc-0.2",
+       "decimals": 1,
+       "display": "+2.5 percentage points",
+       "formula": "f2 − f3",
+       "id": "c1",
+       "inputs": [
+        "f2",
+        "f3"
+       ],
+       "label": "Change in container freight charges, August to September",
+       "measure": "change",
+       "op": "difference",
+       "period": "September 2026 against August 2026",
+       "seasonal": "not_stated",
+       "unit": "percentage points",
+       "value": 2.5
+      }
+     ],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "report:fictional:00000000000000000002"
+      ],
+      "instrument": "other",
+      "stage": "observation",
+      "text": "In a keynote, Board member Isolde Marrowby of the fictional Northmere Reserve Bank said port capacity matters to the bank as delays increasingly affect trade, prices and the output of exporting firms, citing this autumn's queue of waiting vessels."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could face higher prices for imported goods",
+         "kind": "households",
+         "name": "Northmere households"
+        },
+        {
+         "how": "may build such delays into its models and forecasts",
+         "kind": "institutions",
+         "name": "the Reserve Bank"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:3",
+        "report:fictional:00000000000000000002"
+       ],
+       "conditions": "If berth shortages recur",
+       "horizon": "quarters",
+       "id": "m1",
+       "note": null,
+       "scope": "macro",
+       "steps": [
+        "Berth capacity falls short again",
+        "Vessels queue and deliveries slip",
+        "Prices of imported goods could rise"
+       ],
+       "support": "event_evidence",
+       "text": "Marrowby says port delays increasingly affect prices as well as trade; if berth shortages recur, deliveries could slip again and add to import prices, which the bank would have to take into account."
+      },
+      {
+       "affected": [
+        {
+         "how": "may find freight space harder to book",
+         "kind": "firms",
+         "name": "exporters without long-term carrier contracts"
+        }
+       ],
+       "assumptions": [],
+       "basis": [
+        "fact:6"
+       ],
+       "conditions": "If carriers keep applying these priorities",
+       "horizon": "months",
+       "id": "m2",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "Carriers rank customers by contract length",
+        "Long-contract customers are served first",
+        "Exporters without contracts could find space harder to book"
+       ],
+       "support": "event_evidence",
+       "text": "According to the shippers' survey she cited, carriers reported that congestion led them to give priority to long-contract customers and to cut space for spot bookings; if carriers keep doing so, space could be harder to book for exporters without contracts."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_applicable",
+       "bound": "upper_bound",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "at most 24%",
+       "id": "f1",
+       "label": "Container volume waiting offshore in a prolonged berth shortage, by Reserve Bank research",
+       "measure": "share",
+       "period": "a prolonged shortage (scenario)",
+       "price": false,
+       "quote": "a prolonged berth shortage could leave as much as 24% of container volume waiting offshore",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:fictional:00000000000000000002",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 24,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-19T06:00:00+00:00",
+        "source": "Northmere Reserve Bank (fictional)"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "consistent",
+       "display": "8.4%",
+       "id": "f2",
+       "label": "Northmere container freight charges, as cited",
+       "measure": "growth_rate",
+       "period": "September 2026",
+       "price": true,
+       "quote": "(reaching 8.4% in September, after 5.9% in August)",
+       "seasonal": "not_stated",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:fictional:00000000000000000002",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 8.4,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-19T06:00:00+00:00",
+        "source": "Northmere Reserve Bank (fictional)"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 1,
+       "direction_check": "unstated",
+       "display": "5.9%",
+       "id": "f3",
+       "label": "Northmere container freight charges, as cited",
+       "measure": "growth_rate",
+       "period": "August 2026",
+       "price": true,
+       "quote": "(reaching 8.4% in September, after 5.9% in August)",
+       "seasonal": "not_stated",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:fictional:00000000000000000002",
+       "statistic": "observed",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 5.9,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-19T06:00:00+00:00",
+        "source": "Northmere Reserve Bank (fictional)"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {},
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {},
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "How long and how often such shortages will last: the offshore figure refers to a scenario, and the speech gives no estimate of this autumn's effect on output or prices.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:2",
+       "fact:3",
+       "calc:c1",
+       "report:fictional:00000000000000000002"
+      ],
+      "text": "She cited Reserve Bank research that a prolonged berth shortage could leave as much as {f1} of container volume waiting offshore, and said queues this autumn delayed deliveries and contributed to higher freight charges, which, she said, reached {f2} in September after {f3} in August, a change of {c1}."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "The next shippers' survey's results on booking priorities",
+       "text": "A continued gap in priority between contract and spot customers would support the booking reading.",
+       "would": "support"
+      },
+      {
+       "observable": "Reserve Bank projections that include port delays",
+       "text": "Projections that quantify such delays would show them entering policy analysis.",
+       "would": "support"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "fictional:00000000000000000002"
+      ],
+      "text": "Marrowby said the autumn of 2026 saw the longest vessel queue in the harbour's records; the speech cites a median wait of eleven days and 140 sailings cancelled between September and mid-October."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000002"
+      ],
+      "text": "She cited Reserve Bank research that a prolonged berth shortage could leave up to 24% of container volume waiting offshore, and said two in five exporters rely on a single terminal."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000002"
+      ],
+      "text": "The speech reports freight charges up 8.4% in September, after 5.9% in August, and says queues this autumn delayed deliveries to Northmere shops and factories."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000002"
+      ],
+      "text": "Rail carries around one fifth of containers leaving the harbour, and trucks most of the rest, according to figures cited in the speech."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000002"
+      ],
+      "text": "The speech cites a regional plan for about 6 billion marks of berth and rail investment through 2030, and a Reserve Bank estimate that terminal upgrades could lift port capacity by a fifth."
+     },
+     {
+      "reports": [
+       "fictional:00000000000000000002"
+      ],
+      "text": "According to the 2026 shippers' survey cited by Marrowby, carriers gave priority to long-contract customers and reduced space for spot bookings."
+     }
+    ],
+    "headline": "Northmere Reserve Bank's Marrowby calls port congestion a macroeconomic concern and urges early terminal investment",
+    "implications": [
+     {
+      "text": "If the bank and the port authority build berth delays into forecasts, as Marrowby argued, exporters relying on one terminal might see closer attention to their routing risk."
+     },
+     {
+      "text": "The survey findings Marrowby cited suggest exporters without contracts could find space harder to book, if that pattern persists."
+     },
+     {
+      "text": "Marrowby's emphasis on early decisions may matter for terminal and rail projects, which she described as sensitive to planning delays and financing conditions."
+     }
+    ],
+    "missing": [
+     "Any concrete monetary policy measures following from the speech.",
+     "Estimates of the economic cost of this autumn's vessel queue.",
+     "Terminal-level data on exposure to berth shortages."
+    ],
+    "summary": "In a keynote at the fictional Quayside Trade Forum 2026, Board member Isolde Marrowby of the fictional Northmere Reserve Bank said the autumn of 2026 saw the longest vessel queue in the harbour's records and that port capacity matters to the bank because delays affect trade, prices and output. She cited Reserve Bank research that a prolonged berth shortage could leave up to 24% of container volume waiting offshore and said both new berths and better scheduling are needed. She named planning delays and financing as the main obstacles to terminal investment and called for early decisions.",
+    "themes": [
+     {
+      "basis": "Marrowby discussed booking priorities and spot space for exporters.",
+      "kind": "sector",
+      "name": "Freight and carriers"
+     },
+     {
+      "basis": "The speech discusses berths, rail links and terminal outages.",
+      "kind": "sector",
+      "name": "Port capacity"
+     },
+     {
+      "basis": "Marrowby said port delays affect trade, prices and output.",
+      "kind": "theme",
+      "name": "Trade-related risk"
+     },
+     {
+      "basis": "She named planning delays and financing as the main obstacles to terminal investment.",
+      "kind": "theme",
+      "name": "Terminal investment financing"
+     },
+     {
+      "basis": "Marrowby argued that extra berths and rail links can reduce dependence on a single terminal.",
+      "kind": "theme",
+      "name": "Supply chain resilience"
+     }
+    ],
+    "uncertainties": [
+     "The 24% offshore-volume figure refers to a scenario, not an expected outcome.",
+     "The speech gives no quantified estimate of how much this autumn's queue added to prices.",
+     "Investment need estimates vary across planners, as the speech acknowledges.",
+     "The speech states Marrowby's views on policy; it announces no new Reserve Bank measures."
+    ]
+   },
+   "content_sha256": "69af6de905078b5ed3bd919f672feb3dfa0549ec9ecb167cdea49bdbc1cb4862",
+   "released_at": "2026-10-19T06:00:00+00:00",
+   "reports": [
+    {
+     "entry_id": "fictional:00000000000000000002",
+     "publisher": "Northmere Reserve Bank (fictional)",
+     "title": "Isolde Marrowby: Port capacity, trade and the economy",
+     "excerpt": "Our harbour model finds that, if berth capacity stays short for a long stretch, a prolonged berth shortage could leave as much as 24% of container volume waiting offshore.\nFreight charges are climbing again (reaching 8.4% in September, after 5.9% in August), chiefly on the cost of waiting time.",
+     "link": "https://example.org/northmere/keynote-2026-10-19",
+     "published": "Mon, 19 Oct 2026 08:00:00 +0200",
+     "published_utc": "2026-10-19T06:00:00+00:00",
+     "text": null,
+     "reduced": "Fictional test text, written for these cases. Only the passages the regression cases quote are kept here.",
+     "fictional": true
+    }
+   ],
+   "fictional": true
+  },
+  "tmed": {
+   "story_id": "story-fa5f92ee16f49a04",
+   "version": 3,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:2",
+        "fact:4"
+       ],
+       "kind": "offsetting_force",
+       "text": "Guarantees may only partly reduce risk perceptions if regulatory, permitting, grid-access or offtake barriers persist, which could limit how much private capital is attracted."
+      },
+      {
+       "basis": [
+        "fact:3",
+        "report:ec-press:dbe01bdc9960e38d5b35"
+       ],
+       "kind": "competing_explanation",
+       "text": "Some cited projects may have proceeded for commercial reasons, so the platform's additional effect on investment is not established by the Commission's text."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.3",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "a1: The Commission's stated aims describe intended rather than achieved results."
+      },
+      {
+       "id": "a2",
+       "text": "a2: Guarantee capacity is a ceiling, not funds disbursed or investment already made."
+      },
+      {
+       "id": "a3",
+       "text": "a3: Private investors respond to lower perceived risk when guarantees are available."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "figure:f1"
+      ],
+      "instrument": "industrial_policy",
+      "stage": "implementation",
+      "text": "The Commission launched the T-MED Investment Platform, backed by up to {f1} in EFSD+ guarantee capacity, to mobilise investment in Mediterranean renewable energy and clean technology."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "May face lower risk and gain easier access to financing for renewable and clean-tech projects.",
+         "kind": "firms",
+         "name": "Project promoters and investors"
+        },
+        {
+         "how": "May receive grid, generation and hydrogen investment in Egypt and Tunisia.",
+         "kind": "region",
+         "name": "Southern Mediterranean partners"
+        }
+       ],
+       "assumptions": [
+        "a2",
+        "a3"
+       ],
+       "basis": [
+        "fact:2",
+        "fact:3",
+        "figure:f1",
+        "figure:f2"
+       ],
+       "conditions": "If guarantees are actually used and projects are bankable, with regulatory and permitting barriers addressed.",
+       "horizon": "years",
+       "id": "m1",
+       "note": null,
+       "scope": "micro",
+       "steps": [
+        "EFSD+ guarantee absorbs part of the investment risk",
+        "Financiers and promoters are matched to projects",
+        "Private capital may join projects that otherwise seemed too risky",
+        "Generation, grid and hydrogen projects may be built"
+       ],
+       "support": "bounded_inference",
+       "text": "A guarantee of up to {f1} could lower the risk borne by private financiers, possibly drawing capital towards projects within the {f2} mobilisation aim."
+      },
+      {
+       "affected": [
+        {
+         "how": "Grid and connection upgrades may improve reliability and reduce transmission losses, as the Commission expects.",
+         "kind": "households",
+         "name": "Electricity users in Egypt and Tunisia"
+        },
+        {
+         "how": "Green ammonia exports to the EU and European technology supply may be supported.",
+         "kind": "industry",
+         "name": "Hydrogen and clean-tech supply chains"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:3",
+        "fact:4",
+        "report:ec-press:dbe01bdc9960e38d5b35"
+       ],
+       "conditions": "If the cited projects are completed and the grids integrate the new generation.",
+       "horizon": "years",
+       "id": "m2",
+       "note": null,
+       "scope": "macro",
+       "steps": [
+        "Grids and interconnections are expanded",
+        "More renewable power is integrated",
+        "Reliability and energy security may improve",
+        "Clean-tech trade and skills may develop"
+       ],
+       "support": "event_evidence",
+       "text": "The Commission says grid and generation investments could improve reliability and energy security and support regional clean-energy trade and skills for up to 10 000 workers."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_applicable",
+       "bound": "upper_bound",
+       "decimals": 1,
+       "direction_check": "as_quoted",
+       "display": "at most 4.5 EUR billion",
+       "id": "f1",
+       "label": "EFSD+ guarantee capacity for T-MED",
+       "measure": "level",
+       "period": "not stated",
+       "price": false,
+       "quote": "EU support will include up to €4.5 billion in guarantee capacity under the European Fund for Sustainable Development Plus (EFSD+)",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:dbe01bdc9960e38d5b35",
+       "statistic": "not_stated",
+       "stock_flow": "not_applicable",
+       "unit": "EUR billion",
+       "value": 4.5,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-26T10:41:12+00:00",
+        "source": "European Commission"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "upper_bound",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "at most 25 EUR billion",
+       "id": "f2",
+       "label": "T-MED investment mobilisation target by 2035",
+       "measure": "level",
+       "period": "by 2035",
+       "price": false,
+       "quote": "By 2035, T-MED aims to mobilise up to €25 billion in expected investments",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ec-press:dbe01bdc9960e38d5b35",
+       "statistic": "not_stated",
+       "stock_flow": "not_applicable",
+       "unit": "EUR billion",
+       "value": 25,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-26T10:41:12+00:00",
+        "source": "European Commission"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {},
+      "framework_sha256": "a2646115201c7e5afb24435a1c101cc38cd3f2cccbf2b304de13557489fe4c15",
+      "framework_version": "econ-framework-0.2",
+      "notes": {},
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26); not reviewed by an economist or an editor."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "How much private capital the guarantee will actually attract is not stated.",
+     "second_order": [
+      {
+       "assumptions": [
+        "a3"
+       ],
+       "basis": [
+        "fact:3"
+       ],
+       "conditions": "If early projects perform well and attract further financiers.",
+       "from": "m1",
+       "horizon": "years",
+       "id": "s1",
+       "text": "Successful early projects may build investor confidence and encourage further private investment in regional clean-tech."
+      }
+     ],
+     "significance": {
+      "basis": [
+       "fact:2",
+       "fact:4",
+       "figure:f1",
+       "figure:f2"
+      ],
+      "text": "The platform pairs up to {f1} of EU guarantees with a {f2} investment aim, a risk-sharing approach that could help finance Mediterranean energy infrastructure, though outcomes depend on uptake and reforms."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "Announced guarantee agreements and committed investors",
+       "text": "Signed deals would show the guarantee being used.",
+       "would": "support"
+      },
+      {
+       "observable": "Reforms to permitting, grid access and power purchase agreements",
+       "text": "Visible progress would support the platform's barrier-reduction aim.",
+       "would": "support"
+      },
+      {
+       "observable": "Delays or cancellations of cited projects",
+       "text": "These would weaken the reading that the platform delivers concrete investment.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "ec-press:dbe01bdc9960e38d5b35"
+      ],
+      "text": "The European Commission says it launched the T-MED Investment Platform on 26 October 2026 to mobilise large-scale investment in renewable energy and clean technologies across the Mediterranean."
+     },
+     {
+      "reports": [
+       "ec-press:dbe01bdc9960e38d5b35"
+      ],
+      "text": "The Commission says EU support will include up to €4.5 billion in guarantee capacity under EFSD+, intended to reduce investment risks and attract private capital."
+     },
+     {
+      "reports": [
+       "ec-press:dbe01bdc9960e38d5b35"
+      ],
+      "text": "The Commission lists Egyptian and Tunisian projects as examples, including a €1.6 billion grid programme, a €575 million green ammonia project and 500 MW of onshore wind."
+     },
+     {
+      "reports": [
+       "ec-press:dbe01bdc9960e38d5b35"
+      ],
+      "text": "The Commission says T-MED aims to mobilise up to €25 billion in expected investments by 2035 and to train and upskill up to 10 000 workers."
+     }
+    ],
+    "headline": "Commission launches T-MED platform with up to €4.5 billion in EU guarantees for Mediterranean clean energy",
+    "implications": [
+     {
+      "text": "The guarantee could lower perceived risk and help draw private capital to renewable and grid projects, if projects prove bankable."
+     },
+     {
+      "text": "Grid upgrades and hydrogen projects in Egypt and Tunisia may support energy reliability and EU-linked clean-energy trade."
+     },
+     {
+      "text": "Reforms on permitting, grid access and power purchase agreements might determine whether the €25 billion aim is approached."
+     }
+    ],
+    "missing": [
+     "How much private capital the guarantee is expected to attract (leverage ratio)",
+     "Guarantee period and conditions, and how it is allocated across countries and projects",
+     "Which financial institutions and investors are committed",
+     "How much of the €25 billion is already secured",
+     "Independent assessment of risks and outcomes"
+    ],
+    "summary": "The European Commission says it launched the T-MED Investment Platform to mobilise renewable energy and clean-tech investment across the Mediterranean, with up to €4.5 billion in EFSD+ guarantee capacity. It cites Egyptian and Tunisian projects, and says T-MED aims to mobilise up to €25 billion by 2035. These are the Commission's own claims.",
+    "themes": [
+     {
+      "basis": "Platform aims to support renewable generation, hydrogen, grids, storage and interconnections.",
+      "kind": "sector",
+      "name": "Renewable energy and clean technology"
+     },
+     {
+      "basis": "Egypt and Tunisia host the projects the Commission cites.",
+      "kind": "theme",
+      "name": "Egypt and Tunisia energy investment"
+     },
+     {
+      "basis": "EFSD+ guarantees are the stated EU instrument to reduce risk and attract private capital.",
+      "kind": "theme",
+      "name": "EU guarantees and blended finance"
+     },
+     {
+      "basis": "Green ammonia in Ain Sokhna is exported to the EU, and the Commission cites a hydrogen link.",
+      "kind": "sector",
+      "name": "Renewable hydrogen and ammonia"
+     }
+    ],
+    "uncertainties": [
+     "The leverage ratio and amount of private capital attracted are not given.",
+     "Guarantee conditions, duration and allocation across countries are not stated.",
+     "Which financial institutions and investors are committed is not stated.",
+     "How much of the €25 billion aim is already secured is unknown.",
+     "No independent assessment of risks or outcomes was provided."
+    ]
+   },
+   "content_sha256": "fe108dc2fee0229b292a9e171bed0d6964f286d4a748f2248381a6559bb0ddc9",
+   "released_at": "2026-10-26T10:41:12+00:00",
+   "reports": [
+    {
+     "entry_id": "ec-press:dbe01bdc9960e38d5b35",
+     "publisher": "European Commission",
+     "title": "Commission launches T-MED Investment Platform with up to €4.5 billion in EU guarantees",
+     "excerpt": "By 2035, T-MED aims to mobilise up to €25 billion in expected investments in renewable energy production, electricity grids, interconnections and clean technologies\nEU support will include up to €4.5 billion in guarantee capacity under the European Fund for Sustainable Development Plus (EFSD+)",
+     "link": "https://ec.europa.eu/commission/presscorner/detail/en/ip_26_2256",
+     "published": "Mon, 26 Oct 2026 10:41:12 GMT",
+     "published_utc": "2026-10-26T10:41:12+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  },
+  "safe": {
+   "story_id": "story-6ae1c6cb9895df47",
+   "version": 2,
+   "content": {
+    "economics": {
+     "alternatives": [
+      {
+       "basis": [
+        "fact:3"
+       ],
+       "kind": "competing_explanation",
+       "text": "The tighter reported conditions may reflect lenders' view of the economic outlook, which firms cite as the main constraint on the availability of financing, rather than a change in banks' own funding conditions."
+      },
+      {
+       "basis": [
+        "fact:2"
+       ],
+       "kind": "offsetting_force",
+       "text": "A net 2% of firms reported lower needs for bank loans, so part of the demand for credit eased while conditions tightened."
+      },
+      {
+       "basis": [
+        "fact:5"
+       ],
+       "kind": "competing_explanation",
+       "text": "With first-time respondents the majority of the sample, comparisons with the previous round may be less reliable; the ECB says so for the numerical questions."
+      }
+     ],
+     "analysis_version": "econ-explanation-0.4",
+     "assumptions": [
+      {
+       "id": "a1",
+       "text": "The firms reporting tighter conditions are among those that use bank credit; the rate question's base is firms that applied for bank finance, as the release states."
+      }
+     ],
+     "calculations": [],
+     "change": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "figure:f1",
+       "figure:f2",
+       "figure:f3",
+       "figure:f4"
+      ],
+      "form": "survey_answers",
+      "instrument": "financial_conditions",
+      "respondents": "firms",
+      "stage": "observation",
+      "text": "In the ECB's survey for the third quarter of 2026, the balance of firms reporting higher interest rates on bank loans was {f1}, against {f2} in the previous quarter. The balance reporting greater bank-loan availability was {f3}, against {f4} previously."
+     },
+     "channels": [
+      {
+       "affected": [
+        {
+         "how": "could face costlier and scarcer credit",
+         "kind": "firms",
+         "name": "euro area firms that rely on bank loans"
+        },
+        {
+         "how": "could find bank loans less available",
+         "kind": "firms",
+         "name": "SMEs in the euro area"
+        }
+       ],
+       "assumptions": [
+        "a1"
+       ],
+       "basis": [
+        "fact:1",
+        "fact:2",
+        "fact:4"
+       ],
+       "conditions": "If the tightening reported this quarter persists",
+       "horizon": "quarters",
+       "id": "m1",
+       "note": "credit-conditions",
+       "scope": "micro",
+       "steps": [
+        "Firms that applied for bank finance report higher rates and lower availability",
+        "Borrowing becomes costlier and harder to obtain",
+        "Firms that depend on bank credit could delay spending"
+       ],
+       "support": "framework",
+       "text": "If loan rates keep rising and availability keeps falling, firms that rely on bank credit could postpone investment, inventories or hiring; more firms expect external financing to become less available over the next three months."
+      }
+     ],
+     "context": [],
+     "figures": [
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "46%",
+       "id": "f1",
+       "label": "Net percentage of firms reporting higher bank loan rates",
+       "measure": "net_percentage",
+       "period": "2026 Q3",
+       "price": false,
+       "quote": "a further net increase in interest rates on bank loans (net 46%, compared with 42% in the previous quarter)",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ecb-press:e68b407e57b5d5407898",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 46,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-26T09:00:00+00:00",
+        "source": "European Central Bank"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "42%",
+       "id": "f2",
+       "label": "Net percentage of firms reporting higher bank loan rates",
+       "measure": "net_percentage",
+       "period": "2026 Q2",
+       "price": false,
+       "quote": "a further net increase in interest rates on bank loans (net 46%, compared with 42% in the previous quarter)",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ecb-press:e68b407e57b5d5407898",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": 42,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-26T09:00:00+00:00",
+        "source": "European Central Bank"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "−5%",
+       "id": "f3",
+       "label": "Net percentage of firms reporting higher bank loan availability",
+       "measure": "net_percentage",
+       "period": "2026 Q3",
+       "price": false,
+       "quote": "Firms reported a decrease in the availability of bank loans in the third quarter of 2026 (-5%, compared with a net -1% in the second quarter of 2026)",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ecb-press:e68b407e57b5d5407898",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": -5,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-26T09:00:00+00:00",
+        "source": "European Central Bank"
+       }
+      },
+      {
+       "basis": "not_applicable",
+       "bound": "exact",
+       "decimals": 0,
+       "direction_check": "as_quoted",
+       "display": "−1%",
+       "id": "f4",
+       "label": "Net percentage of firms reporting higher bank loan availability",
+       "measure": "net_percentage",
+       "period": "2026 Q2",
+       "price": false,
+       "quote": "Firms reported a decrease in the availability of bank loans in the third quarter of 2026 (-5%, compared with a net -1% in the second quarter of 2026)",
+       "seasonal": "not_applicable",
+       "sign": "as_quoted",
+       "sign_words": null,
+       "source": "report:ecb-press:e68b407e57b5d5407898",
+       "statistic": "other_summary",
+       "stock_flow": "not_applicable",
+       "unit": "percent",
+       "value": -1,
+       "vintage": {
+        "label": null,
+        "published": "2026-10-26T09:00:00+00:00",
+        "source": "European Central Bank"
+       }
+      }
+     ],
+     "framework": {
+      "digests": {
+       "credit-conditions": "98100f41220907452e746c5562092dc423a3f7d2f06067b4bc0a426c36d3862a"
+      },
+      "framework_sha256": "b8029a9db8167c1b3a91743160b2d1b94e1f066529b31d56604b3a818d4f6c63",
+      "framework_version": "econ-framework-0.3",
+      "notes": {
+       "credit-conditions": {
+        "applies_to": [
+         "financial_conditions"
+        ],
+        "forms": [
+         "survey_answers"
+        ],
+        "id": "credit-conditions",
+        "limits": "Survey answers are firms' own reports, not measured lending volumes or rates; a change in reported conditions may reflect firms' demand for finance as well as its supply.",
+        "mechanism": "The cost and availability of external finance, such as bank loans and credit lines, matter for firms' ability to invest, hold inventories and hire. Surveys of firms, such as the ECB's survey on the access to finance of enterprises, ask firms about their need for external financing, its availability and its terms, by firm size, sector and country. Tighter reported conditions may mean that some firms postpone spending, especially those that rely on bank credit.",
+        "respondents": [
+         "firms"
+        ],
+        "scope": "micro",
+        "sources": [
+         {
+          "publisher": "European Central Bank",
+          "title": "Survey on the Access to Finance of Enterprises (SAFE)",
+          "url": "https://www.ecb.europa.eu/stats/ecb_surveys/safe/html/index.en.html",
+          "year": null
+         }
+        ],
+        "title": "Firms' access to finance"
+       }
+      },
+      "statement": "General mechanisms, not evidence about any particular event. Written with an AI assistant from the sources each note cites (checked on 2026-10-26; the bank lending survey note on 2026-10-28); not reviewed by an economist or an editor. Each note applies only to the subjects, forms of evidence and survey respondents it names."
+     },
+     "insufficient_reason": null,
+     "main_uncertainty": "Whether the tightening persists: the survey's sample changed substantially this round, and its balances are firms' reports, not measured lending rates or volumes.",
+     "second_order": [],
+     "significance": {
+      "basis": [
+       "fact:1",
+       "fact:2",
+       "figure:f1",
+       "figure:f2",
+       "figure:f3",
+       "figure:f4"
+      ],
+      "text": "The survey reports a larger balance of firms reporting higher loan rates and a negative balance for loan availability. These are net percentages of respondents, not changes in measured interest rates or loan volumes. The ECB reports a positive bank-loan financing gap, which may matter for firms relying on bank finance if tighter reported conditions persist."
+     },
+     "status": "explained",
+     "watch": [
+      {
+       "observable": "The ECB's bank lending survey for the fourth quarter",
+       "text": "Banks reporting tighter credit standards for firms would support the reading.",
+       "would": "support"
+      },
+      {
+       "observable": "The next round of this survey, with a more stable sample",
+       "text": "A fall in the balance of firms reporting higher loan rates would weaken it.",
+       "would": "weaken"
+      }
+     ]
+    },
+    "facts": [
+     {
+      "reports": [
+       "ecb-press:e68b407e57b5d5407898"
+      ],
+      "text": "A net 46% of firms reported higher interest rates on bank loans in the third quarter of 2026, against 42% in the previous quarter; large firms reported increases more often (net 55%) than SMEs (net 38%)."
+     },
+     {
+      "reports": [
+       "ecb-press:e68b407e57b5d5407898"
+      ],
+      "text": "Firms reported lower availability of bank loans (net -5%, against -1%), while a net 2% reported lower bank loan needs; the ECB's financing gap indicator was positive, at net 2%."
+     },
+     {
+      "reports": [
+       "ecb-press:e68b407e57b5d5407898"
+      ],
+      "text": "Firms continued to see the general economic outlook as the main factor constraining the availability of external financing (net 31%, against 29%)."
+     },
+     {
+      "reports": [
+       "ecb-press:e68b407e57b5d5407898"
+      ],
+      "text": "More firms expect the availability of external financing to decrease over the next three months."
+     },
+     {
+      "reports": [
+       "ecb-press:e68b407e57b5d5407898"
+      ],
+      "text": "First-time respondents were the majority of this round's 12,822 enterprises, which the ECB says makes the numerical questions challenging to interpret at this stage."
+     }
+    ],
+    "headline": "Euro area firms report costlier bank loans and lower loan availability in the third quarter, ECB survey shows",
+    "implications": [
+     {
+      "text": "Firms that rely on bank loans could face higher borrowing costs and less credit, which may weigh on their investment or inventory plans if the tightening persists."
+     },
+     {
+      "text": "Large firms reporting rate increases more often than SMEs might mean the tightening is not confined to smaller borrowers."
+     }
+    ],
+    "missing": [
+     "Country-level results, on the ECB Data Portal, were not retrieved.",
+     "Measured bank lending rates and volumes for the same quarter."
+    ],
+    "summary": "In the ECB's Survey on the Access to Finance of Enterprises for the third quarter of 2026, a net 46% of euro area firms reported higher interest rates on bank loans, against 42% in the previous quarter, and firms reported that the availability of bank loans fell by more than their needs, widening the financing gap. The ECB says that, with first-time respondents the majority of this round's sample, the answers to numerical questions such as price and inflation expectations are hard to interpret for now.",
+    "themes": [],
+    "uncertainties": [
+     "The release does not say whether the change in the sample also affects the balances on loan conditions.",
+     "Net percentages are survey balances, not measured lending rates or volumes."
+    ]
+   },
+   "content_sha256": "988f804660fe19cc8ad1a8d4172e1381d4c6881a0cbb19ab1e2f59a0084feb82",
+   "released_at": "2026-10-26T09:00:00+00:00",
+   "reports": [
+    {
+     "entry_id": "ecb-press:e68b407e57b5d5407898",
+     "publisher": "European Central Bank",
+     "title": "Survey on the Access to Finance of Enterprises: lending conditions tightened",
+     "excerpt": "A positive value for the indicator points to a widening of the financing gap.",
+     "link": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.pr261026~bde7b6d11a.en.html",
+     "published": "Mon, 26 Oct 2026 10:00:00 +0100",
+     "published_utc": "2026-10-26T09:00:00+00:00",
+     "text": null,
+     "reduced": "Only the passages the regression cases quote are kept here."
+    }
+   ]
+  }
+ }
+}

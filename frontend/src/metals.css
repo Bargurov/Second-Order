@@ -1,0 +1,407 @@
+/* The metals comparison (/metals): a ledger on the library's paper and ink. One short header, a closed picker, three
+   tabs; a calm comparison table first, and every longer word one click away. The IEA part is set apart from the USGS
+   part, and IEA projection years are shaded. Wide tables scroll inside their own frame; the page never scrolls
+   sideways. */
+.mt-page { max-width: 1120px; }
+.mt-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.library-section-block p.mt-plain, .mt-plain { margin: 0 0 12px; max-width: 82ch; font-size: 14px; color: var(--ink-2); }
+.mt-empty, .mt-none { font-size: 13.5px; color: var(--ink-3); }
+.mt-text-button { padding: 0; border: 0; background: none; font: 500 13.5px/1.4 var(--sans); color: var(--accent);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; cursor: pointer; }
+.mt-text-button:hover { color: var(--ink); }
+.mt-page :is(button, a, summary, input, select, [tabindex="0"]):focus-visible { outline: 2px solid var(--accent);
+  outline-offset: 2px; }
+
+/* Header: the question, then one line on the sources. */
+.library-case-header.mt-header { padding-bottom: 4px; border-bottom: 0; }
+.mt-lead { margin: 0 0 12px; max-width: 52ch; font: 400 clamp(18px, 2vw, 21px)/1.4 var(--serif); color: var(--ink-2); }
+.mt-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0; max-width: 90ch;
+  font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.mt-status-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--supported);
+  transform: translateY(-1px); }
+.mt-status.is-withheld { padding: 6px 10px; border-left: 3px solid var(--stamp); background: var(--contradicted-soft);
+  color: var(--ink); }
+.mt-status.is-withheld .mt-status-dot { background: var(--stamp); }
+.mt-status-aside { color: var(--ink-3); }
+
+/* The picker: one closed button; its panel opens below it. */
+.mt-toolbar { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  margin: 22px 0 0; }
+.mt-picker { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0;
+  max-width: 100%; }
+.mt-picker-button { display: inline-flex; align-items: center; gap: 10px; padding: 9px 12px 9px 14px;
+  border: 1px solid var(--rule-strong); border-radius: 3px; background: var(--paper-raised); color: var(--ink);
+  font: 600 14px/1.2 var(--sans); cursor: pointer; transition: border-color 120ms ease, box-shadow 120ms ease; }
+.mt-picker-button:hover { border-color: var(--ink); }
+.mt-picker-button[aria-expanded="true"] { border-color: var(--ink); box-shadow: 0 0 0 3px var(--accent-soft); }
+.mt-count { padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); font: 500 11.5px/1.4 var(--mono);
+  color: var(--accent); }
+.mt-chevron { width: 7px; height: 7px; margin: 0 2px 3px 0; border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform 140ms ease; }
+.mt-picker-button[aria-expanded="true"] .mt-chevron { margin-bottom: -3px; transform: rotate(-135deg); }
+.mt-picker-names { min-width: 0; max-width: 62ch; overflow: hidden; font-size: 13.5px; color: var(--ink-3);
+  white-space: nowrap; text-overflow: ellipsis; }
+.mt-picker-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; display: grid; gap: 10px;
+  width: min(24rem, calc(100vw - 2 * var(--gutter))); max-height: min(62vh, 32rem); padding: 14px;
+  border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--paper-raised);
+  box-shadow: 0 14px 36px rgba(28, 27, 24, 0.16), 0 2px 6px rgba(28, 27, 24, 0.08);
+  grid-template-rows: auto auto minmax(0, 1fr) auto; animation: mt-drop 140ms ease-out; }
+@keyframes mt-drop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.mt-picker-find input { box-sizing: border-box; width: 100%; padding: 9px 12px; border: 1px solid var(--rule-strong);
+  border-radius: 3px; background: var(--paper); font: 15px/1.3 var(--sans); color: var(--ink); }
+.mt-picker-find input::placeholder { color: var(--ink-3); }
+.mt-picker-status { margin: -2px 0 0; font: 500 11.5px/1.4 var(--mono); color: var(--ink-3); }
+.mt-picker-empty { margin: 4px 0; font-size: 14px; color: var(--ink-2); }
+.mt-picker-fieldset { min-height: 0; margin: 0 -14px; padding: 0 14px; overflow-y: auto; border: 0;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); overscroll-behavior: contain; }
+/* One column: the list reads top to bottom in USGS order, the order the arrow keys and Tab follow. */
+.mt-picker-list { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0; padding: 6px 0; list-style: none; }
+.mt-picker-list label { display: flex; align-items: flex-start; gap: 8px; padding: 6px 4px; border-radius: 3px;
+  font-size: 14px; line-height: 1.35; color: var(--ink-2); cursor: pointer; }
+.mt-picker-list label:hover { background: var(--paper-sunk); }
+.mt-picker-list input { flex: none; width: 15px; height: 15px; margin: 1px 0 0; accent-color: var(--accent); }
+.mt-picker-list input:checked + span { color: var(--ink); font-weight: 600; }
+.mt-picker-actions { display: flex; align-items: center; gap: 18px; }
+.mt-done { margin-left: auto; padding: 7px 16px; border: 1px solid var(--ink); border-radius: 3px;
+  background: var(--ink); color: var(--paper); font: 600 13.5px/1.2 var(--sans); cursor: pointer; }
+.mt-done:hover { background: var(--accent); border-color: var(--accent); }
+.mt-ignored { margin: 0; padding: 5px 10px; border-left: 3px solid var(--stamp); font-size: 13px; color: var(--ink);
+  background: var(--paper-raised); }
+
+/* Tabs. */
+.mt-tabs { display: flex; gap: 4px; margin: 22px 0 0; border-bottom: 1px solid var(--rule-strong); overflow-x: auto;
+  scrollbar-width: none; }
+.mt-tabs [role="tab"] { flex: none; margin-bottom: -1px; padding: 10px 14px 9px; border: 0;
+  border-bottom: 2px solid transparent; background: none; font: 500 15px/1.2 var(--sans); color: var(--ink-3);
+  cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
+.mt-tabs [role="tab"]:hover { color: var(--ink); }
+.mt-tabs [role="tab"][aria-selected="true"] { border-bottom-color: var(--accent); color: var(--ink); font-weight: 600; }
+.mt-panel { padding-top: 22px; }
+.mt-panel:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mt-picker-panel { animation: none; }
+  .mt-chevron, .mt-tabs [role="tab"], .mt-picker-button { transition: none; }
+}
+
+/* Tables. */
+.mt-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); background: var(--paper-raised); }
+.mt-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.mt-table caption { padding: 8px 10px 6px; text-align: left; font: 600 13px/1.4 var(--sans); color: var(--ink); }
+.mt-table caption .mt-sub { display: inline; margin-left: 8px; font-weight: 400; }
+.mt-table th, .mt-table td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: left;
+  vertical-align: top; }
+.mt-table thead th { font: 600 11px/1.4 var(--sans); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-2); background: var(--paper-sunk); }
+.mt-table thead th .mt-sub { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.mt-table tbody th, .mt-table tfoot th { font-weight: 500; color: var(--ink); }
+.mt-table tfoot th, .mt-table tfoot td { border-bottom: 0; border-top: 1px solid var(--rule-strong); }
+.mt-table tr.mt-total th, .mt-table tr.mt-total td { font-weight: 600; }
+.mt-table .mt-num { text-align: right; }
+.mt-table td.mt-num, .mt-printed { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.mt-sub { display: block; margin-top: 2px; font: 400 12px/1.4 var(--sans); color: var(--ink-3); white-space: normal; }
+.mt-share { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.mt-country { color: var(--ink); }
+.mt-withheld { font-size: 13px; color: var(--ink-3); }
+.mt-narrow { width: auto; min-width: min(100%, 22em); margin: 6px 0 12px; border: 1px solid var(--rule);
+  background: var(--paper-raised); }
+.mt-cell-notes { min-width: 12em; font-size: 12.5px; color: var(--ink-3); }
+
+/* A figure not shown: a short label, "Why?", and the full reason in place. */
+.mt-why { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; max-width: 100%; }
+.mt-why-label { font-size: 13px; color: var(--ink-3); font-style: italic; }
+.mt-why-button { padding: 0; border: 0; background: none; font: 500 12px/1.4 var(--sans); color: var(--accent);
+  text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+.mt-why-button[aria-expanded="true"] { color: var(--ink); text-decoration-style: solid; }
+.mt-why-text { flex-basis: 100%; max-width: 34ch; margin-top: 4px; padding: 6px 9px; border-left: 2px solid var(--rule-strong);
+  background: var(--paper); font-size: 12.5px; line-height: 1.5; color: var(--ink-2); font-style: normal; }
+.mt-why-text[hidden] { display: none; }
+.mt-why-unit .mt-why-label { padding: 1px 7px; border: 1px solid var(--stamp); border-radius: 2px;
+  font: 600 11px/1.5 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--stamp);
+  font-style: normal; }
+.mt-why-unit .mt-why-text { border-left-color: var(--stamp); }
+.mt-aside { display: inline; }
+.mt-aside-button { display: inline-grid; place-items: center; width: 17px; height: 17px; margin-left: 6px; padding: 0;
+  border: 1px solid var(--rule-strong); border-radius: 50%; background: var(--paper); vertical-align: 1px;
+  font: italic 600 11px/1 var(--serif); color: var(--accent); cursor: pointer; }
+.mt-aside-button[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.mt-aside-text { display: block; max-width: 30ch; margin-top: 3px; font-size: 12px; color: var(--ink-3); }
+.mt-aside-text[hidden] { display: none; }
+
+/* Overview. */
+.mt-overview-head { display: grid; gap: 6px; margin-bottom: 14px; }
+.mt-overview-head h2 { margin: 0; font: 400 clamp(22px, 2.4vw, 26px)/1.25 var(--serif); color: var(--ink); }
+.mt-scope-line { margin: 0; font-size: 14px; color: var(--ink-2); }
+.mt-howto { max-width: 82ch; font-size: 13.5px; }
+.mt-howto > summary { width: fit-content; color: var(--accent); cursor: pointer; text-decoration: underline;
+  text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.mt-howto-body { margin-top: 8px; padding: 10px 14px; border-left: 2px solid var(--rule-strong);
+  background: var(--paper-raised); }
+.mt-howto-body p { margin: 0 0 8px; line-height: 1.55; color: var(--ink-2); }
+.mt-howto-body p:last-child { margin-bottom: 0; }
+.mt-banner { margin: 0 0 14px; padding: 8px 12px; border-left: 3px solid var(--stamp); background: var(--contradicted-soft);
+  font-size: 13.5px; color: var(--ink); }
+.mt-compare-table { min-width: 760px; font-size: 14px; }
+.mt-compare-table th, .mt-compare-table td { padding: 11px 12px; }
+.mt-compare-table tbody + tbody { border-top: 2px solid var(--rule-strong); }
+.mt-compare-table tbody th { font: 400 17px/1.3 var(--serif); }
+/* The metal stays in view while the comparison scrolls sideways on a narrow screen. */
+.mt-compare-table thead th:first-child, .mt-compare-table tbody th { position: sticky; left: 0; z-index: 1;
+  box-shadow: inset -1px 0 0 var(--rule); }
+.mt-compare-table thead th:first-child { background: var(--paper-sunk); }
+.mt-compare-table tbody th { background: var(--paper-raised); }
+.mt-compare-table .mt-stage { color: var(--ink-2); }
+.mt-compare-table tbody[data-state="none"] td, .mt-compare-table tbody[data-state="withheld"] td { color: var(--ink-3); }
+.mt-metal-link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule-strong);
+  text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.mt-metal-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.mt-years-value { font-family: var(--mono); font-size: 13.5px; color: var(--ink); white-space: nowrap; }
+
+/* By metal: the picked metals as chips, one metal open. */
+.mt-chooser { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+.mt-chooser [role="tab"] { padding: 6px 13px; border: 1px solid var(--rule-strong); border-radius: 999px;
+  background: var(--paper-raised); font: 500 13.5px/1.25 var(--sans); color: var(--ink-2); cursor: pointer; }
+.mt-chooser [role="tab"]:hover { border-color: var(--ink); color: var(--ink); }
+.mt-chooser [role="tab"][aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.mt-metal-panel:focus-visible { outline: none; }
+.mt-metal-head { margin: 0 0 6px; }
+.mt-metal-head h3 { margin: 0; font: 400 clamp(24px, 2.6vw, 30px)/1.2 var(--serif); color: var(--ink); }
+.mt-metal-meta { margin: 4px 0 0; font-size: 13px; color: var(--ink-3); }
+.mt-part { min-width: 0; margin: 16px 0 0; }
+.mt-part > .kicker { margin: 0 0 4px; }
+.mt-part-iea { margin-top: 22px; padding: 12px 14px 4px; border-left: 3px solid var(--accent);
+  background: var(--paper-raised); }
+.mt-iea-title { margin: 2px 0 6px; font: 400 18px/1.3 var(--serif); color: var(--ink); }
+.mt-part p.mt-apart { margin: 0 0 8px; max-width: 82ch; font-size: 13px; color: var(--ink-2); }
+.mt-part p.mt-scope { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 13px; color: var(--ink); }
+.mt-fold { border-top: 1px solid var(--rule); }
+.mt-fold:last-child { border-bottom: 1px solid var(--rule); }
+.mt-part-iea .mt-fold:last-child { border-bottom: 0; }
+.mt-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 12px 2px;
+  cursor: pointer; list-style: none; }
+.mt-fold > summary::-webkit-details-marker { display: none; }
+.mt-fold > summary::before { content: "+"; content: "+" / ""; flex: none; width: 1em; font: 500 16px/1 var(--mono);
+  color: var(--ink-3); }
+.mt-fold[open] > summary::before { content: "−"; content: "−" / ""; }
+.mt-fold > summary:hover .mt-fold-title { color: var(--accent); }
+.mt-fold-title { font: 600 15px/1.3 var(--sans); color: var(--ink); }
+.mt-fold-teaser { margin-left: auto; font: 500 11.5px/1.4 var(--mono); color: var(--ink-3); }
+.mt-flag { padding: 1px 7px; border: 1px solid var(--stamp); border-radius: 2px; font: 600 11px/1.5 var(--mono);
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--stamp); }
+.mt-fold-body { padding: 2px 0 16px 1.6em; }
+.mt-fold-body h4, .mt-fold-body h5 { margin: 14px 0 6px; font: 600 13.5px/1.4 var(--sans); color: var(--ink); }
+.mt-fold-body h4:first-child { margin-top: 2px; }
+.mt-part .mt-fact { color: var(--ink-2); }
+.mt-unit-issue { margin: 0 0 8px; padding: 7px 11px; border-left: 3px solid var(--stamp);
+  background: var(--contradicted-soft); font-size: 13px; line-height: 1.5; color: var(--ink); }
+.mt-series { margin: 12px 0 0; }
+.mt-series:first-child { margin-top: 2px; }
+.mt-series-table { min-width: 560px; }
+.mt-series-foot { margin: 6px 0 2px; font-size: 13px; color: var(--ink-2); }
+.mt-series-scope { margin-bottom: 14px; color: var(--ink-3); }
+.mt-list { margin: 4px 0 10px; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); max-width: 90ch; }
+.mt-list li { margin: 3px 0; }
+
+/* The IEA part: projection years are shaded and labelled. */
+.mt-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 2px 0 10px; font-size: 14px; }
+.mt-controls label { color: var(--ink-2); }
+.mt-controls select { max-width: 100%; padding: 5px 7px; border: 1px solid var(--rule-strong); border-radius: 3px;
+  font: 14px var(--sans); background: var(--paper); color: var(--ink); }
+.mt-control { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; }
+.mt-proj { display: block; margin-top: 1px; font: 500 10px/1.4 var(--mono); letter-spacing: 0.06em; color: var(--accent); }
+.mt-table td[data-projection] { background: var(--accent-soft); }
+.mt-demand-table { min-width: 300px; }
+.mt-share-table { min-width: 620px; }
+.mt-supply-table { min-width: 560px; }
+.mt-part-iea .mt-table-wrap { margin-bottom: 4px; }
+
+/* Method & sources. */
+.mt-method { display: grid; gap: 30px; }
+.mt-method-block h2 { margin: 0 0 10px; font: 400 22px/1.3 var(--serif); color: var(--ink); }
+.mt-read { margin: 0 0 8px; max-width: 82ch; font-size: 14.5px; line-height: 1.55; color: var(--ink); }
+.mt-notes { display: grid; gap: 0; margin: 0; max-width: 90ch; }
+.mt-notes > div { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 4px 18px; padding: 11px 0;
+  border-bottom: 1px solid var(--rule); }
+.mt-notes > div:first-child { border-top: 1px solid var(--rule); }
+.mt-notes dt { font: 600 14px/1.5 var(--sans); color: var(--ink); }
+.mt-notes dd { margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+
+/* Overview: the Leaders | Concentration switch above the table. */
+.mt-switch { display: inline-flex; margin: 0 0 10px; }
+.mt-switch-button { padding: 7px 14px; border: 1px solid var(--rule-strong); background: var(--paper-raised);
+  font: 500 13.5px/1.2 var(--sans); color: var(--ink-2); cursor: pointer; }
+.mt-switch-button:first-child { border-radius: 3px 0 0 3px; }
+.mt-switch-button:last-child { border-radius: 0 3px 3px 0; }
+.mt-switch-button + .mt-switch-button { border-left: 0; }
+.mt-switch-button:hover { color: var(--ink); background: var(--paper-sunk); }
+.mt-switch-button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper);
+  font-weight: 600; }
+.mt-conc-table { min-width: 720px; }
+.mt-hhi { display: inline-block; }
+/* An indicator's "About" note: the "i" stays with its heading; its text reads as plain words, not as a heading. */
+.mt-about { white-space: nowrap; }
+.mt-about .mt-aside-text { max-width: 40ch; white-space: normal; text-transform: none; letter-spacing: 0;
+  font: 400 12px/1.5 var(--sans); color: var(--ink-2); }
+.mt-missing { display: inline-flex; flex-direction: column; gap: 1px; }
+.mt-missing-label { font-size: 13px; font-style: italic; color: var(--ink-3); }
+.mt-dot, .mt-sub-inline { color: var(--ink-3); }
+.mt-dot { padding: 0 0.1em; }
+.mt-sub-inline { font-size: 12px; }
+
+/* Snapshot: always open at the top of a metal; a grid of definitions, each naming its source. */
+.mt-snapshot { margin: 14px 0 0; padding: 10px 14px 2px; border: 1px solid var(--rule); border-top: 2px solid var(--ink);
+  background: var(--paper-raised); }
+.mt-snap-title { margin: 0 0 6px; font: 600 11px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-2); }
+.mt-snap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr)); gap: 0 22px;
+  margin: 0; }
+.mt-snap-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 9px 0 10px;
+  border-top: 1px solid var(--rule); }
+.mt-snap-item dt { font: 600 11px/1.4 var(--sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.mt-snap-item dd { display: flex; flex: 1; flex-direction: column; gap: 5px; margin: 0; }
+.mt-snap-value { font-size: 14px; line-height: 1.45; color: var(--ink); }
+.mt-snap-source { margin: auto 0 0; font: 400 11px/1.4 var(--mono); color: var(--ink-3); }
+.mt-snap-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.mt-snap-key { color: var(--ink-2); }
+.mt-snap-line { display: block; margin-top: 4px; }
+.mt-snap-mark { font-weight: 600; }
+.mt-snap-missing { font-size: 12.5px; font-style: italic; color: var(--ink-3); }
+.mt-snapshot .mt-src-withheld { margin: 0; }
+
+/* The research parts: each block names its source and is set apart by its own rule. */
+.mt-research { margin-top: 20px; }
+.mt-src { margin: 8px 0 14px; padding: 6px 0 4px 14px; border-left: 2px solid var(--rule-strong); }
+.mt-src-iea { padding: 10px 12px 6px 14px; border-left: 3px solid var(--accent); background: var(--paper-raised); }
+.mt-src-quoted { border-left: 2px dotted var(--ink-3); }
+.mt-src-label { margin: 0 0 6px; font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); }
+.mt-src-iea .mt-src-label { color: var(--accent); }
+.mt-part .mt-src-note { margin: -2px 0 8px; max-width: 82ch; font-size: 12.5px; line-height: 1.5; color: var(--ink-3); }
+.mt-src-withheld { margin: 4px 0 8px; padding: 6px 10px; border-left: 3px solid var(--stamp);
+  background: var(--contradicted-soft); }
+.mt-src-withheld .mt-withheld { color: var(--ink); }
+.mt-fold-body .mt-src > h4:first-of-type { margin-top: 10px; }
+.mt-facts { display: grid; margin: 4px 0 12px; max-width: 92ch; }
+.mt-facts > div { display: grid; grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr); gap: 2px 16px; padding: 8px 0;
+  border-bottom: 1px solid var(--rule); }
+.mt-facts > div:first-child { border-top: 1px solid var(--rule); }
+.mt-facts dt { font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink-2); }
+.mt-facts dd { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.mt-list-tight { margin: 0; }
+
+/* The stage ladder: a line of stages, missing ones drawn open, final products always last. */
+.mt-ladder { margin: 2px 0 0; padding: 0; list-style: none; }
+.mt-step { position: relative; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 2px 12px; margin: 0;
+  padding: 8px 0 8px 20px; font-size: 13.5px; line-height: 1.45; }
+.mt-step::before { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: var(--rule-strong); }
+.mt-step::after { content: ""; position: absolute; top: 13px; left: 0; box-sizing: border-box; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--ink); }
+.mt-step.is-missing::after, .mt-step-final::after { border: 1px dashed var(--ink-3); background: var(--paper); }
+.mt-step-tag { font: 600 11px/1.7 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.mt-step-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mt-step-name { font-weight: 600; color: var(--ink); }
+.mt-step-figures { color: var(--ink-2); }
+.mt-step.is-missing .mt-step-body { font-style: italic; color: var(--ink-3); }
+.mt-part p.mt-step-final { display: block; margin: 0 0 8px; font-style: italic; color: var(--ink-3); }
+.mt-part p.mt-step-final::before { bottom: 50%; }
+.mt-steps-iea { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.mt-step-iea { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: var(--ink-2); }
+.mt-alt-table { min-width: 0; }
+
+/* Quoted passages: the source's own words, then its file and place. */
+.mt-quotes { display: grid; gap: 12px; margin: 4px 0 10px; }
+.mt-quote { margin: 0; max-width: 82ch; }
+.mt-quote blockquote { margin: 0; padding: 1px 0 1px 12px; border-left: 2px solid var(--rule-strong);
+  font: 400 15.5px/1.5 var(--serif); color: var(--ink); }
+.mt-quote blockquote p { margin: 0; }
+.mt-quote blockquote p::before { content: "“"; }
+.mt-quote blockquote p::after { content: "”"; }
+.mt-part .mt-quote-source { margin: 3px 0 0 14px; font: 400 11.5px/1.4 var(--mono); color: var(--ink-3); }
+.mt-part .mt-quote-kind { margin: 0 0 3px; font: 600 11px/1.4 var(--sans); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-2); }
+.mt-quote-when { font-family: var(--mono); letter-spacing: 0.02em; }
+.mt-quote.is-withheld { padding-left: 12px; border-left: 2px dashed var(--rule-strong); }
+.mt-quote.is-withheld .mt-quote-source { margin-left: 0; }
+.mt-unverified { margin-top: 12px; }
+
+/* Industrial uses. */
+.mt-use { margin: 6px 0 14px; }
+.mt-uses-table { min-width: 480px; }
+.mt-table td.mt-base { font: 400 12px/1.4 var(--sans); color: var(--ink-3); white-space: normal; }
+.mt-part .mt-share-line { margin: 4px 0 12px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+.mt-share-line [data-projection] { padding: 1px 4px; background: var(--accent-soft); }
+.mt-proj-inline { font: 500 10px/1.4 var(--mono); letter-spacing: 0.06em; color: var(--accent); }
+.mt-note-box { max-width: 88ch; margin: 12px 0 6px; padding: 10px 14px; border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink-3); background: var(--paper-sunk); }
+.mt-part .mt-note-box p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+.mt-part .mt-note-box p.mt-note-title { margin-bottom: 4px; font: 600 13.5px/1.4 var(--sans); color: var(--ink); }
+.mt-part .mt-note-box p.mt-note-fact { color: var(--ink); }
+
+/* Economic transmission: assistant-written, every link labelled by what stands behind it. */
+.mt-part p.mt-written { width: fit-content; max-width: 82ch; margin: 2px 0 12px; padding: 6px 10px;
+  border: 1px solid var(--stamp); border-radius: 2px; font: 600 12px/1.5 var(--mono); color: var(--stamp);
+  background: var(--paper-raised); }
+.mt-chain { margin: 10px 0 18px; padding: 12px 14px 6px; border: 1px solid var(--rule); background: var(--paper-raised); }
+.mt-fold-body .mt-chain-title { margin: 0 0 6px; font: 400 19px/1.3 var(--serif); color: var(--ink); }
+.mt-part .mt-chain-start { max-width: 82ch; margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.mt-chain-key { display: block; font: 600 10.5px/1.5 var(--mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--inconclusive); }
+.mt-part .mt-chain-count { margin: 0 0 6px; font: 500 11.5px/1.4 var(--mono); color: var(--ink-3); }
+.mt-part .mt-chain-reading { max-width: 82ch; margin: 0 0 8px; padding-top: 8px; border-top: 1px solid var(--rule);
+  font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.mt-links { margin: 0 0 12px; padding: 0; list-style: none; counter-reset: link; }
+.mt-link { position: relative; display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 4px 12px;
+  padding: 9px 0 9px 28px; border-top: 1px solid var(--rule); counter-increment: link; }
+.mt-link::before { content: counter(link); position: absolute; top: 9px; left: 0; width: 18px; height: 18px;
+  border: 1px solid var(--rule-strong); border-radius: 50%; font: 500 10.5px/18px var(--mono); text-align: center;
+  color: var(--ink-3); box-sizing: border-box; line-height: 16px; }
+.mt-badge { align-self: start; justify-self: start; max-width: 100%; padding: 2px 7px; border: 1px solid currentColor;
+  border-radius: 2px; font: 600 10.5px/1.45 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.mt-badge-measured { color: var(--supported); background: var(--supported-soft); }
+.mt-badge-stated { color: var(--accent); background: var(--accent-soft); }
+.mt-badge-hypothesis { color: var(--inconclusive); background: var(--inconclusive-soft); font: 600 11px/1.4 var(--sans);
+  letter-spacing: 0; text-transform: none; }
+.mt-link-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 14px; line-height: 1.5;
+  color: var(--ink); }
+.mt-link[data-kind="hypothesis"] .mt-link-text { font-style: italic; color: var(--ink-2); }
+.mt-link-value { font: 500 13.5px/1.4 var(--mono); color: var(--ink); }
+.mt-link .mt-quote blockquote { font-size: 14.5px; }
+.mt-chain-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 22px; }
+.mt-gains { display: grid; gap: 7px; margin: 4px 0 10px; padding: 0; list-style: none; }
+.mt-gains li { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 2px 10px; font-size: 13.5px; line-height: 1.45; }
+.mt-dir { font: 600 11px/1.7 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.mt-dir.is-gain { color: var(--supported); }
+.mt-dir.is-loss { color: var(--stamp); }
+.mt-gain-who { display: block; font-weight: 600; color: var(--ink); }
+.mt-gain-how { display: block; color: var(--ink-2); }
+.mt-learned { margin: 6px 0 10px; }
+.mt-learned > div { padding: 2px 10px 6px; border-top: 2px solid var(--supported); background: var(--paper); }
+.mt-learned > div + div { border-top-color: var(--inconclusive); }
+.mt-learned p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+.mt-part .mt-thesis-link { margin: 8px 0 4px; font-size: 14px; color: var(--ink-2); }
+.mt-thesis-link a { color: var(--accent); text-underline-offset: 3px; }
+
+@media (max-width: 640px) {
+  .mt-toolbar { margin-top: 18px; }
+  .mt-picker { position: static; }
+  .mt-picker-names { flex-basis: 100%; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; }
+  .mt-picker-panel { right: 0; width: auto; max-height: min(70vh, 30rem); }
+  .mt-picker-list label { padding: 9px 4px; font-size: 15px; }
+  .mt-tabs { gap: 0; margin-top: 18px; }
+  .mt-tabs [role="tab"] { padding: 10px 11px 9px; font-size: 14.5px; }
+  .mt-panel { padding-top: 18px; }
+  .mt-part-iea { padding: 10px 10px 2px; }
+  .mt-fold-body { padding-left: 0; }
+  .mt-fold-teaser { margin-left: 0; flex-basis: 100%; padding-left: 1.6em; }
+  .mt-notes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .mt-snapshot { padding: 8px 10px 2px; }
+  .mt-snap-item { padding: 7px 0 8px; }
+  .mt-src { padding-left: 10px; }
+  .mt-src-iea { padding: 8px 8px 4px 10px; }
+  .mt-step, .mt-link, .mt-facts > div { grid-template-columns: minmax(0, 1fr); }
+  .mt-chain { padding: 10px 10px 4px; }
+  .mt-chain-grid { grid-template-columns: minmax(0, 1fr); }
+  .mt-gains li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}

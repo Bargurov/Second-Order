@@ -1,0 +1,95 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "fomc-2025-05-07",
+  "title": "The Fed holds and judges that the risks of higher unemployment and higher inflation have risen",
+  "category": "Monetary policy",
+  "summary": "The FOMC kept the target range at 4-1/4 to 4-1/2 percent. The statement added that swings in net exports had affected the data, said uncertainty had 'increased further', and judged that the risks of both higher unemployment and higher inflation had risen. The vote was unanimous.",
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Federal Reserve issues FOMC statement",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250507a.htm",
+    "document_id": null,
+    "published_at": "2025-05-07T14:00:00-04:00",
+    "published_as_stated": "May 07, 2025 · For release at 2:00 p.m. EDT",
+    "timezone_note": "EDT is Eastern Daylight Time, UTC−04:00, so the release time is 18:00 UTC.",
+    "reference_period": "Not a data release: the statement announces the Committee's decision of May 7, 2025.",
+    "page_last_updated": "2025-05-07",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "The rate decision is the same as in January and March: the target range stays at 4-1/4 to 4-1/2 percent with the same guidance on further adjustments. The balance-sheet sentence no longer repeats March's redemption caps; it says only that holdings will keep declining, so nothing in this text changes the slower Treasury runoff announced in March.",
+    "The economic assessment gains a qualifier: 'Although swings in net exports have affected the data, recent indicators suggest that economic activity has continued to expand at a solid pace.' The labor market and inflation sentences are unchanged from March, word for word.",
+    "The risk language moves twice. 'Uncertainty around the economic outlook has increased' becomes 'Uncertainty about the economic outlook has increased further', and the Committee now 'judges that the risks of higher unemployment and higher inflation have risen'. That says both sides of the mandate are under more threat at once, without saying which would take priority. The vote was 12 to 0; Christopher Waller, who dissented on runoff in March, voted with the majority, and Neel Kashkari voted as an alternate member."
+  ],
+  "key_facts": [
+    {"label": "Federal funds target range", "value": "4-1/4 to 4-1/2 percent", "basis": "Maintained, as in January and March"},
+    {"label": "Activity", "value": "'continued to expand at a solid pace'", "basis": "New qualifier: 'swings in net exports have affected the data'"},
+    {"label": "Uncertainty", "value": "'has increased further'", "basis": "March: 'has increased'"},
+    {"label": "Risks", "value": "'the risks of higher unemployment and higher inflation have risen'", "basis": "New judgment; March said only that the Committee was attentive to both sides"},
+    {"label": "Balance sheet", "value": "Holdings continue to decline", "basis": "March's redemption caps are not restated or changed"},
+    {"label": "Vote", "value": "12 for, 0 against", "basis": "Waller voted with the majority after March's dissent; Kashkari voted as an alternate"}
+  ],
+  "channels": [
+    {
+      "title": "Two-sided risk and the policy path (shorter maturities)",
+      "source_fact": "The Committee judges that the risks of 'higher unemployment and higher inflation have risen'; the rate is unchanged.",
+      "interpretation": "A higher risk of unemployment argues for earlier cuts; a higher risk of inflation argues for waiting. Stating both without a ranking can be read as a reason to hold until the data resolve the conflict. If investors read it that way, near-term cut expectations would fall and two-year yields would be supported; if they focused on the unemployment risk, the reverse. The statement alone does not settle which."
+    },
+    {
+      "title": "Uncertainty and term premium (longer maturities)",
+      "source_fact": "'Uncertainty about the economic outlook has increased further.'",
+      "interpretation": "More stated uncertainty, now about both sides of the mandate, could raise the compensation investors ask for holding longer-term bonds, which would tend to lift longer yields relative to shorter ones. It could equally raise demand for safe assets if read mainly as a growth risk. The sign is ambiguous."
+    },
+    {
+      "title": "Discounting trade-distorted data (activity assessment)",
+      "source_fact": "'Although swings in net exports have affected the data, recent indicators suggest that economic activity has continued to expand at a solid pace.'",
+      "interpretation": "The qualifier tells readers to look past recent headline activity figures distorted by trade flows. If investors had been weighing weak headline activity, the qualifier lowers its weight in the expected path and reduces pressure for earlier cuts. The statement names neither the data nor the size of the swings."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Describing conditions, not committing to a plan", "detail": "Saying that both risks have risen describes the environment and commits to nothing. If investors already saw two-sided risk, the sentence acknowledged what they had priced and was close to neutral for the expected path."},
+    {"title": "Balance sheet unchanged in substance", "detail": "Dropping the cap sentences could be misread as a change. The text simply stops repeating March's announcement; nothing in it alters runoff."},
+    {"title": "Other communications", "detail": "Federal Reserve communications around the decision, which this case does not use, could have stressed one side of the risk balance more than the statement does."}
+  ],
+  "assumptions": [
+    "Investors read the 'risks have risen' sentence as a guide to how the Committee would react, not only as a description of the outlook.",
+    "The net-exports qualifier refers to recent activity data that investors had already seen; the statement does not say which data.",
+    "How Treasury yields respond depends on how investors weigh two risks that the statement deliberately leaves unranked."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous expectations benchmark for the decision and the statement. Without it this case cannot say whether anything in it was a surprise.",
+    "The data behind the net-exports qualifier, including the size of the swings, which the statement does not give.",
+    "The Implementation Note linked from the release, the minutes published later and other remarks around the decision, which could show how the two risks were weighed; none is used."
+  ],
+  "weakening_observations": [
+    "If later Federal Reserve communications emphasized one side of the mandate over the other, reading the sentence as a reason to wait would weaken.",
+    "If the net-export swings were small relative to other moves in the data, the qualifier would carry little weight.",
+    "Evidence that investors already expected an acknowledgment of two-sided risk would leave this release with little new information."
+  ],
+  "critique": [
+    {"title": "Two risks, no ranking", "detail": "The central new sentence is genuinely ambiguous: it raises both risks without ranking them. The case cannot turn that into a direction for yields, and any analysis that does is choosing a side the Committee did not choose."},
+    {"title": "A qualifier about unseen data", "detail": "The net-exports clause points at distortions in data the statement never cites. The analysis takes the clause on trust; a stronger reading would check which figures it referred to, which this case does not do."},
+    {"title": "A third hold invites over-reading", "detail": "With the rate unchanged for a third decision in a row, every wording change looks larger. The case should keep in view that policy did not move and that the only news is in how risk is described."},
+    {"title": "Third of four, read with later knowledge", "detail": "One of four consecutive 2025 FOMC statements in the library, included by that rule, and analysed in October 2026 by an AI assistant that may know what followed. The case avoids later events, but hindsight can still colour which ambiguities look important."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The statement as published on the release page, which shows 'Last Update: May 07, 2025'. A PDF version and an Implementation Note are linked from the page and are not used.", "url": null},
+    {"title": "Comparison text", "detail": "Wording changes are measured against the March 19, 2025 FOMC statement, which is also a case in this library.", "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250319a.htm"},
+    {"title": "No revisions apply", "detail": "A policy statement is not a statistical estimate and is not revised. Later Federal Reserve communications may explain or reinterpret it; none is used here.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived May 7, 2025 statement and the March 19, 2025 statement on 2026-10-05. Facts and quotations come from those texts; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250507a.htm",
+      "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250319a.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

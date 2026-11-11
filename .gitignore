@@ -1,128 +1,15 @@
-# Python bytecode and caches
-__pycache__/
-tests/__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
 .venv/
-venv/
-env/
-ENV/
-
-# Environment files
-.env
-.env.*
-!.env.example
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
-
-# Test, coverage, and type-check caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-
-# Build and packaging artifacts
-build/
-dist/
+__pycache__/
+*.py[cod]
 *.egg-info/
-.eggs/
-pip-wheel-metadata/
-
-# Local project databases
-events.db
-events*.db
+.pytest_cache/
+data/
 *.db
-*.sqlite
-*.sqlite3
-*.db.bak
-*.db-journal
-*.db-wal
-*.db-shm
-
-# Local backup directory created by scripts/backup_archive.py
-backups/
-
-# Audit logs from auto_adjust_mismatch_repair writes
-audit_logs/
-
-# Evaluation outputs
-evaluation_output.json
-evaluation_output*.json
-eval_output*.json
-
-# Generated test databases
-tests/test_events*.db
-tests/test_api*.db
-tests/test_events_*/
-tests/eval_tmp_*/
-tests/test_phc_*/
-tests/.fuse_hidden*
-*.tmp
-*.temp
-*.log
-
-# Local agent folders
-.claude/
-.codex/
-
-# Public repo quarantine / local-only artifacts
-.superpowers/
-gimp/
-CALIBRATION_REPORT.md
-TOPIC_BALANCE_REVIEW.md
-VALIDATION_LOG.md
-product_validation_log.md
-eval_run_index.json
-
-# Local operator evidence notes and generated artifacts
-artifacts/
-tmp/
-*_operator_writeup.md
-*_deferred_methodology_note.md
-DEMO_SCRIPT_SECTION_C.md
-ULTRA_REVIEW.md
-INBOX_WORKBENCH_SLICE_01_AUDIT.md
-SECOND_ORDER_V2_INTERVIEW_DEFENSE.md
-TXT_LMT_corrected_candidate.md
-cv_framing.md
-manual_five_event_inspection_decisions.csv
-next_five_event_inspection_decisions.csv
-short_horizon_repair_packet.csv
-
-# Generated design exports
-design/second-order-design.zip
-design/extracted/Second\ Order.html
-design/extracted/Second\ Order-print.html
-
-# Frontend
+*.db-*
+*.sqlite*
+.env
 node_modules/
-frontend/node_modules/
 frontend/dist/
-frontend/.vite/
-frontend/.cache/
-frontend/*.tsbuildinfo
-*.tsbuildinfo
-
-# VS Code and Windows local files
-.vscode/
-.streamlit/
-Thumbs.db
-Desktop.ini
-docs/
-future_ideas.md
-.githooks/
-design/
-AGENTS.md
-ARCHITECTURE.md
-ARCH_AUDIT.md
-CLAUDE.md
-CONTRIBUTING.md
-DESIGN.md
-EVALUATION.md
-
-# Mission G local state-series cache (never committed)
-g_state_cache/
+frontend/dist-client/
+content/.market-context.lock
+content/.market-context-*/

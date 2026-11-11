@@ -1,0 +1,36 @@
+{
+  "contract": "user-api-0.1",
+  "analysis": {
+    "analysis_id": "20261014T092000000000Z-a0b1c2d3e4f5.research-prompt-1.high",
+    "effort": "high",
+    "prepared_at": "2026-10-14T09:21:00+00:00",
+    "source": {
+      "source_id": "20261014T092000000000Z-a0b1c2d3e4f5",
+      "headline": "Simulated port authority notice",
+      "source_url": "https://example.org/synthetic/port-notice",
+      "published_at": "2026-10-12T12:00:00+00:00",
+      "published_at_as_supplied": "2026-10-12T12:00:00+00:00",
+      "captured_at": "2026-10-14T09:20:00+00:00",
+      "characters": 250,
+      "text": "October 12, 2026\n\nSimulated port authority notice\n\nThe Simulated Port Authority said container throughput was unchanged in September and that it will publish revised figures next month.\n\nSYNTHETIC TEST SOURCE: invented for the user-contract fixtures."
+    },
+    "state": "failed",
+    "state_detail": "SYNTHETIC: The analysis service returned an error. An administrator reviewed the attempt and charged none of the reserved credits. It is not run again.",
+    "quote": null,
+    "charge": {
+      "credits_reserved": 5,
+      "credits_charged": 0,
+      "credits_returned": 5,
+      "state": "charged",
+      "quota_day": "2026-10-14"
+    },
+    "result": null,
+    "result_sha256": null,
+    "reviews": [],
+    "retrospective": "Retrospective: the analysis is made after the publication, from its captured text. It is not a forecast and not an out-of-sample test.",
+    "baseline": {
+      "state": "not_supplied",
+      "note": "No earlier baseline publication was supplied with this request, so the analysis makes no comparison with earlier statements or data."
+    }
+  }
+}

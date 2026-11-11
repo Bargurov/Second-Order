@@ -1,0 +1,107 @@
+{
+ "draft": {
+  "edges": [
+   {
+    "source": "event",
+    "target": "policy"
+   },
+   {
+    "source": "policy",
+    "target": "two"
+   },
+   {
+    "source": "policy",
+    "target": "ten"
+   },
+   {
+    "source": "energy",
+    "target": "ten"
+   }
+  ],
+  "legs": [
+   {
+    "channel": "policy_path",
+    "expected": "down",
+    "falsifier": "The 2-year yield rises unusually over the scored window.",
+    "headline_reports_move": false,
+    "horizon": 5,
+    "id": "primary",
+    "link": "direct",
+    "node_id": "two",
+    "observable_id": "yield:ust2y_cmt",
+    "primary": true,
+    "rationale": "The 2-year yield is most tied to the expected policy path."
+   },
+   {
+    "channel": "policy_path",
+    "expected": "down",
+    "falsifier": "The 10-year yield rises unusually over the scored window.",
+    "headline_reports_move": false,
+    "horizon": 5,
+    "id": "secondary",
+    "link": "proxy",
+    "node_id": "ten",
+    "observable_id": "yield:ust10y_cmt",
+    "primary": false,
+    "rationale": "The 10-year yield also carries term premium and supply."
+   }
+  ],
+  "nodes": [
+   {
+    "id": "event",
+    "kind": "event",
+    "label": "Synthetic committee statement"
+   },
+   {
+    "id": "policy",
+    "kind": "channel",
+    "label": "Expected policy path"
+   },
+   {
+    "id": "two",
+    "kind": "observable",
+    "label": "2-year Treasury yield"
+   },
+   {
+    "id": "ten",
+    "kind": "observable",
+    "label": "10-year Treasury yield"
+   },
+   {
+    "id": "energy",
+    "kind": "explanatory",
+    "label": "Energy prices"
+   }
+  ],
+  "summary": "A synthetic signal of slower tightening may lower Treasury yields over the following sessions; energy prices are the main competing influence."
+ },
+ "explanation": null,
+ "id": "660a198157416e55ca0bf43942b9e562e5cffb26c5895e13d650357be13fcdd7",
+ "outcome": "draft",
+ "problem": null,
+ "provenance": {
+  "case": "draft",
+  "effort": "medium",
+  "http_status": 200,
+  "max_tokens": 16000,
+  "model": "claude-sonnet-5-5",
+  "pilot": "pilot-synthetic",
+  "prompt_hash": "9b230d7a5e2437a3d8764ef3b33463a5bcf54292cc5a49b8f328b8388c7faf8a",
+  "prompt_version": "draft-prompt-synthetic",
+  "received_at": "2026-09-30T12:00:05.100000+00:00",
+  "recorded_outcome": "draft",
+  "request_id": "req_011SyntheticReview01",
+  "reserved_at": "2026-09-30T12:00:00.000000+00:00",
+  "response_sha256": "6950e507f07d036151675c4aa54beca1a577ed5b7fbc80ce91e786e77f40bcb5",
+  "sent_at": "2026-09-30T12:00:00.100000+00:00",
+  "synthetic_case": true
+ },
+ "review_status": "Not frozen · Requires human review",
+ "source": {
+  "headline": "Synthetic committee signals a slower tightening pace",
+  "published_at": "2026-09-15T18:00:00Z",
+  "source_url": "https://example.com/synthetic-statement",
+  "text": "SYNTHETIC TEST TEXT. No real institution, release, quote or market data is described.\n\nThe synthetic committee said further tightening is less likely after softer labor data.\n  An indented line, <b>markup-like text</b> & an ampersand stay plain text."
+ },
+ "view_version": "draft-review-view-0.1"
+}

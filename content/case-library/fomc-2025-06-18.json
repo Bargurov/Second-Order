@@ -1,0 +1,95 @@
+{
+  "library_version": "case-library-0.1",
+  "id": "fomc-2025-06-18",
+  "title": "The Fed holds a fourth time and says uncertainty has diminished but remains elevated",
+  "category": "Monetary policy",
+  "summary": "The FOMC left the target range at 4-1/4 to 4-1/2 percent for the fourth decision of 2025. Uncertainty was now said to have 'diminished but remains elevated', May's judgment that the risks of higher unemployment and higher inflation had risen was removed, and the vote was unanimous.",
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Federal Reserve issues FOMC statement",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250618a.htm",
+    "document_id": null,
+    "published_at": "2025-06-18T14:00:00-04:00",
+    "published_as_stated": "June 18, 2025 · For release at 2:00 p.m. EDT",
+    "timezone_note": "EDT is Eastern Daylight Time, UTC−04:00, so the release time is 18:00 UTC.",
+    "reference_period": "Not a data release: the statement announces the Committee's decision of June 18, 2025.",
+    "page_last_updated": "2025-06-18",
+    "retrieved_on": "2026-10-05"
+  },
+  "overview": [
+    "Policy is unchanged for the fourth decision of 2025: the target range stays at 4-1/4 to 4-1/2 percent, with the same guidance and the same balance-sheet sentence as in May. The activity sentence, including May's qualifier about swings in net exports, is unchanged.",
+    "Three phrases move. The labor sentence changes from 'The unemployment rate has stabilized at a low level in recent months' to 'The unemployment rate remains low'. 'Uncertainty about the economic outlook has increased further' becomes 'has diminished but remains elevated'. And May's judgment that 'the risks of higher unemployment and higher inflation have risen' is gone; the risk sentence goes back to the Committee being 'attentive to the risks to both sides of its dual mandate'.",
+    "The vote was 12 to 0. Everything else in the text, including the inflation sentence ('remains somewhat elevated') and the commitment to the 2 percent objective, is unchanged from May."
+  ],
+  "key_facts": [
+    {"label": "Federal funds target range", "value": "4-1/4 to 4-1/2 percent", "basis": "Maintained; unchanged at all four 2025 decisions in this library"},
+    {"label": "Uncertainty", "value": "'has diminished but remains elevated'", "basis": "May: 'has increased further'"},
+    {"label": "Risk judgment", "value": "May's 'risks of higher unemployment and higher inflation have risen' removed", "basis": "Back to 'attentive to the risks to both sides of its dual mandate'"},
+    {"label": "Labor market wording", "value": "'The unemployment rate remains low'", "basis": "May: 'has stabilized at a low level in recent months'"},
+    {"label": "Activity", "value": "Net-exports qualifier kept", "basis": "Unchanged from May"},
+    {"label": "Vote", "value": "12 for, 0 against", "basis": "Unanimous, as in January and May"}
+  ],
+  "channels": [
+    {
+      "title": "A withdrawn risk judgment (shorter maturities)",
+      "source_fact": "A fourth hold with unchanged guidance, and May's statement that both risks had risen is removed.",
+      "interpretation": "Withdrawing the judgment reads as less concern than in May. Whether that points to earlier or later cuts depends on which risk investors thought had receded, and the statement does not say. The direction of this channel is therefore undetermined; its main effect is to lower the weight of May's risk language."
+    },
+    {
+      "title": "Lower stated uncertainty (longer maturities)",
+      "source_fact": "Uncertainty 'has diminished but remains elevated'.",
+      "interpretation": "Less stated uncertainty could reduce the compensation investors ask for holding longer-term bonds, which would tend to lower longer yields relative to a statement that kept 'increased further'. 'Remains elevated' limits that effect."
+    },
+    {
+      "title": "A softer labor phrase (shorter maturities)",
+      "source_fact": "'The unemployment rate remains low' replaces 'has stabilized at a low level in recent months'.",
+      "interpretation": "The new phrase drops the claim of stability over recent months. A reader could see it as a small step back from calling the labor market settled, which would put slightly more weight on cuts. It is a thin signal."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "A return to the usual template", "detail": "The edits can be read as returning the text toward its earlier form after an unusual May statement, not as new judgment. On that reading June carries little news for the policy path."},
+    {"title": "The hold outweighs the wording", "detail": "With the rate unchanged for a fourth time and identical guidance, investors may have given other communications around the decision, which this case does not use, far more weight than three edited phrases."},
+    {"title": "Signals that cancel", "detail": "Lower uncertainty, which supports waiting, and a softer labor phrase, which points toward cuts, pull in different directions and may offset each other."}
+  ],
+  "assumptions": [
+    "Investors compare June's text with May's and treat removed sentences as information.",
+    "Removing the 'risks have risen' sentence reflects a change in the Committee's view rather than drafting.",
+    "Stated uncertainty affects the compensation investors require for holding duration."
+  ],
+  "missing_information": [
+    "A sourced, contemporaneous expectations benchmark for the decision and the statement. Without it this case cannot say whether anything in it was a surprise.",
+    "Other materials released with or after the decision, such as the Implementation Note linked from the release and the minutes, which could show the outlook in more detail; none is used.",
+    "The data behind the wording: the statement gives no figures."
+  ],
+  "weakening_observations": [
+    "If later Federal Reserve communications said the balance of risks had not changed since May, the reading of the deletion would weaken.",
+    "If 'remains low' was a stylistic variant of 'has stabilized', the labor channel would disappear.",
+    "If longer yields showed no change separable from other news around the release, the uncertainty channel would have no support in this event."
+  ],
+  "critique": [
+    {"title": "Deletions are weaker evidence than additions", "detail": "The main news is a sentence that disappeared. Removing a judgment does not assert its opposite, and the analysis must not read it as 'the risks have fallen'."},
+    {"title": "A direction left open on purpose", "detail": "The policy-path channel has no sign because the statement does not say which risk receded. That is unsatisfying but correct; supplying a direction would be speculation."},
+    {"title": "Small edits, small information", "detail": "Three phrase changes in an otherwise identical statement may be mainly editorial, and this case may give them more attention than their information content deserves."},
+    {"title": "Last of four, read with later knowledge", "detail": "The fourth consecutive 2025 FOMC statement in the library, included by that rule and analysed in October 2026 by an AI assistant that may know later events. The text avoids them, but its sense of which edits matter may still be influenced."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "The statement as published on the release page, which shows 'Last Update: June 18, 2025'. A PDF version and an Implementation Note are linked from the page and are not used.", "url": null},
+    {"title": "Comparison text", "detail": "Wording changes are measured against the May 7, 2025 FOMC statement, which is also a case in this library.", "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250507a.htm"},
+    {"title": "No revisions apply", "detail": "A policy statement is not a statistical estimate and is not revised. Later Federal Reserve communications may explain or reinterpret it; none is used here.", "url": null}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-05",
+    "method": "Read the archived June 18, 2025 statement and the May 7, 2025 statement on 2026-10-05. Facts and quotations come from those texts; the channels, competing explanations and critique are the assistant's interpretation. No market prices, forecasts, surveys or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250618a.htm",
+      "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250507a.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

@@ -1,0 +1,26 @@
+/* The shared shell: the session check and the sign-in form. Both builds load it. */
+
+.shell-status { max-width: 1200px; margin: 0 auto; padding: 40px var(--gutter); color: var(--ink-3); }
+
+.shell-panel { max-width: 560px; margin: 0 auto; padding: 64px var(--gutter) 40px; }
+.shell-panel h1 { margin: 4px 0 14px; font: 400 clamp(30px, 4vw, 40px)/1.1 var(--serif); letter-spacing: -0.01em; }
+.shell-panel h1:focus { outline: none; }
+.shell-note { padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.shell-context { max-width: 60ch; font-size: 14px; color: var(--ink-2); }
+.shell-problem { margin: 0; padding: 8px 12px; border-left: 3px solid var(--stamp); background: var(--contradicted-soft); }
+.shell-unsure { padding: 8px 12px; border-left: 3px solid var(--inconclusive); background: var(--inconclusive-soft); }
+.shell-unsure p { margin: 0 0 8px; }
+.shell-form { display: grid; gap: 14px; margin-top: 18px; }
+.shell-form label { display: grid; gap: 5px; color: var(--ink-2); font-size: 13px; }
+.shell-form input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--paper-raised);
+  font: 15px var(--sans);
+}
+.shell-form .button { justify-self: start; min-height: 40px; }
+.shell-form .button-quiet { border-color: var(--rule-strong); background: transparent; }
+.shell-footnote { margin-top: 26px; font-size: 13px; }

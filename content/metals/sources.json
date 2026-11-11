@@ -1,0 +1,53 @@
+{
+ "sources_version": "metals-sources-0.1",
+ "sources": [
+  {
+   "id": "usgs-csv-2026",
+   "kind": "csv",
+   "origin": "owner_download",
+   "publisher": "U.S. Geological Survey",
+   "title": "Mineral Commodity Summaries 2026 data release: commodities data file",
+   "series": "usgs-mineral-commodity-summaries",
+   "edition": "2026",
+   "edition_date": "2026-02-06",
+   "url": "https://doi.org/10.5066/P1WKQ63T",
+   "approval_id": "copper-usgs-csv-01",
+   "attempt": 1,
+   "folder": "usgs-csv-2026",
+   "name": "MCS2026_Commodities_Data.csv",
+   "sha256": "582a0aa231aea53d8a97dc8d1cd3dfa5f885cf3760353e3d029d7f0ae4fbaaf5",
+   "bytes": 3189010,
+   "retrieved_at": "2026-11-03T01:17:22.769111+02:00",
+   "terms": {
+    "licence": "CC0 1.0 (public domain dedication)",
+    "note": "Rights field of the data release's item record, as the owner pasted it: Creative Commons Zero v1.0 Universal. Owner download, recorded only on a size and MD5 match with that record. Edition date: the publication date in that item record."
+   },
+   "transcription": null,
+   "encoding": "windows-1252"
+  },
+  {
+   "id": "iea-dataset-2026",
+   "kind": "xlsx",
+   "origin": "owner_download",
+   "publisher": "International Energy Agency",
+   "title": "Critical Minerals Dataset 2026",
+   "series": "iea-critical-minerals-dataset",
+   "edition": "2026",
+   "edition_date": "2026-01-01",
+   "url": "https://www.iea.org/data-and-statistics/data-product/critical-minerals-dataset",
+   "approval_id": "copper-iea-dataset-01",
+   "attempt": 1,
+   "folder": "iea-dataset-2026",
+   "name": "IEA-Critical-Minerals-Dataset-2026.xlsx",
+   "sha256": "43bd9338a08ac8399c65471115f30ffc10dca7117e62f03cca86d49224717935",
+   "bytes": 1140286,
+   "retrieved_at": "2026-11-03T01:19:00.126297+02:00",
+   "terms": {
+    "licence": "CC BY 4.0",
+    "note": "Notice: CC BY 4.0; cite as “IEA (2024), Critical Minerals Data Explorer, IEA, Paris”. No sheet flags a third-party series. Sheet 2, A72: “Supply projections for the key energy transition minerals are built using the data for the pipeline of operating and announced mining and refining projects by country.” A73: ““Base case” is assessed through their probability of coming online based on various factors such as the status of financing, permitting and feasibility studies.” Changes and comparisons here are this project's. Edition date: the year in the file name."
+   },
+   "transcription": null,
+   "encoding": null
+  }
+ ]
+}

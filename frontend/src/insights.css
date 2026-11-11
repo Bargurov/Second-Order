@@ -1,0 +1,205 @@
+/* Treasury findings pilot: quiet, dense, institutional. */
+.findings { display: grid; gap: 18px; }
+.findings-header h1 { margin: 6px 0 8px; font: 400 clamp(26px, 3.4vw, 38px)/1.12 var(--serif); }
+.findings-scope { margin: 10px 0 0; padding: 9px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft);
+  font-size: 13.5px; max-width: 92ch; }
+.findings-summary { display: inline-block; margin: 6px 0 0; padding: 4px 10px; border: 1px solid var(--ink);
+  font: 500 12.5px/1.4 var(--mono); }
+.findings .card h2, .findings .card h3 { margin: 0 0 8px; font: 400 21px/1.25 var(--serif); }
+/* Each evidence type is its own part, ruled off and labelled, so Treasury and G.17 findings never read as one. */
+.findings-part { display: grid; gap: 18px; padding-top: 14px; border-top: 2px solid var(--ink); }
+.findings-part-head h2 { margin: 4px 0 6px; font: 400 clamp(22px, 2.6vw, 28px)/1.2 var(--serif); }
+.findings-g17 { border-top-color: var(--accent); }
+.findings-note { margin: 6px 0; color: var(--ink-3); font-size: 12.5px; max-width: 86ch; overflow-wrap: anywhere; }
+.findings-empty { margin: 6px 0; color: var(--ink-2); font-size: 13.5px; }
+.findings-ledger { margin: 6px 0 10px; }
+.findings-ledger dd { overflow-wrap: anywhere; }
+.findings-run { margin-top: 6px; }
+.findings-outcome { margin: 8px 0 0; font-size: 13.5px; }
+.findings-outcome.is-refused, .findings-outcome.is-unconfirmed { color: var(--stamp); }
+.findings-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.findings-list > li { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 2px 14px; padding: 9px 0;
+  border-bottom: 1px solid var(--rule); align-items: baseline; }
+.findings-date { font: 500 13px/1.4 var(--mono); }
+.findings-chip { justify-self: start; padding: 1px 8px; border: 1px solid var(--rule-strong); font: 500 11.5px/1.5 var(--mono);
+  color: var(--ink-2); }
+.findings-chip.has-findings { border-color: var(--accent); color: var(--accent); }
+.findings-chip.is-unavailable, .findings-chip.is-problem { color: var(--ink-3); border-style: dashed; }
+.findings-events { grid-column: 2; margin: 2px 0 0; padding-left: 16px; font-size: 13px; color: var(--ink-2); }
+.findings-events small, .findings-other small { color: var(--ink-3); }
+.findings-group { margin: 6px 0; font-size: 13px; }
+.findings-group summary { cursor: pointer; font-weight: 600; }
+.findings-group ul { margin: 4px 0; padding-left: 18px; }
+.findings-group li { margin: 3px 0; overflow-wrap: anywhere; }
+.findings-rules, .findings-limits { margin: 6px 0; padding-left: 18px; font-size: 13px; max-width: 92ch; }
+.findings-rules li, .findings-limits li { margin: 3px 0; }
+.findings-releases { margin: 0; padding-left: 18px; font-size: 13.5px; }
+.findings-releases > li { margin: 6px 0; }
+.findings-releases ul { margin: 3px 0; padding-left: 16px; font-size: 12.5px; color: var(--ink-2); }
+.findings-meta { display: block; color: var(--ink-3); font-size: 12px; }
+.findings-cards { display: grid; gap: 14px; }
+.finding-card { border-left: 3px solid var(--accent); }
+.finding-card h2 { margin: 2px 0 10px; }
+.finding-card h3, .g17-card h4 { margin: 12px 0 4px; font: 600 11.5px/1.4 var(--sans); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2); }
+.finding-card h3 small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+.finding-card p { margin: 4px 0; max-width: 86ch; font-size: 14px; }
+.finding-inference { padding: 6px 10px; background: var(--paper-sunk); }
+.finding-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 22px; }
+.finding-columns ul { margin: 2px 0; padding-left: 18px; font-size: 13px; }
+.findings-rule { color: var(--ink-3); font-size: 12px; }
+.findings-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.findings-table th, .findings-table td { padding: 5px 7px; border-bottom: 1px solid var(--rule); text-align: left;
+  vertical-align: top; overflow-wrap: anywhere; }
+.findings-table thead th { font: 500 10px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.findings-table td { font-family: var(--mono); }
+.findings-table code { font-size: 10.5px; color: var(--ink-3); }
+.findings-table .findings-num { white-space: nowrap; }
+.findings-checks, .findings-series { margin: 4px 0; padding-left: 18px; font-size: 12.5px; overflow-wrap: anywhere; }
+.findings-limits-band { padding: 0 2px; }
+.findings-limits-band ul { margin: 6px 0; padding-left: 18px; font-size: 13px; max-width: 92ch; }
+.findings-band p { margin: 4px 0; }
+
+@media (max-width: 720px) {
+  .findings-list > li { grid-template-columns: minmax(0, 1fr); }
+  .findings-events { grid-column: 1; }
+  .finding-columns { grid-template-columns: minmax(0, 1fr); }
+  .findings-table { display: block; overflow-x: auto; }
+}
+
+/* Industry findings (G.17). */
+.g17-cards { display: grid; gap: 14px; margin-top: 10px; }
+.g17-card { border-left: 3px solid var(--accent); }
+.g17-card h3 { margin: 2px 0 10px; font: 400 19px/1.3 var(--serif); }
+.g17-card h4 small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+.g17-card p { margin: 4px 0; max-width: 86ch; font-size: 14px; }
+.g17-card table th small, .g17-card table td small, .g17-releases small, .g17-matrix small, .g17-provenance small {
+  display: block; color: var(--ink-3); font: 400 11px/1.35 var(--sans); }
+.g17-chain tr.is-compared th, .g17-chain tr.is-compared td { background: var(--paper-sunk); }
+.g17-totals { margin: 4px 0; font: 500 13px/1.5 var(--sans); }
+.g17-estimates, .g17-limits, .g17-quiet ul, .g17-zero ul { margin: 4px 0; padding-left: 18px; font-size: 13px; }
+.g17-quiet { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--rule); }
+.g17-quiet h4 { margin: 0 0 4px; font: 600 11.5px/1.4 var(--sans); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-2); }
+.g17-source { display: block; overflow-wrap: anywhere; }
+.g17-releases td, .g17-releases th { font-family: var(--sans); }
+.g17-release > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.g17-release > summary h2 { display: inline; margin: 0; }
+.g17-matrix td { min-width: 9em; }
+.g17-matrix th[scope="row"] { min-width: 15em; }
+.g17-matrix td.is-opposing { background: var(--contradicted-soft); }
+.g17-matrix td.is-quiet { color: var(--ink-3); background: var(--muted-soft); }
+.g17-matrix td.is-missing { color: var(--ink-3); }
+.g17-provenance code { font-size: 10.5px; overflow-wrap: anywhere; }
+.g17-problem { border-left: 3px solid var(--stamp); }
+
+/* Manufacturing breadth: counts of subsectors, drawn as proportions of the 19 (not shares of aggregate growth). */
+.g17-bar { display: flex; width: 100%; min-width: 7.5em; height: 12px; border: 1px solid var(--rule-strong);
+  background: var(--paper); }
+.g17-bar span, .g17-swatch { display: inline-block; height: 100%; }
+.g17-bar .is-positive, .g17-swatch.is-positive { background: var(--accent); }
+.g17-bar .is-negative, .g17-swatch.is-negative { background: var(--contradicted); }
+.g17-bar .is-printed_zero, .g17-swatch.is-printed_zero { background: var(--rule-strong); }
+.g17-bar .is-missing, .g17-swatch.is-missing {
+  background: repeating-linear-gradient(45deg, var(--paper), var(--paper) 2px, var(--ink-3) 2px, var(--ink-3) 3px); }
+.g17-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0; padding: 0; list-style: none;
+  font-size: 12.5px; color: var(--ink-2); }
+.g17-swatch { width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--rule-strong); }
+.g17-breadth-table caption, .g17-groups caption, .g17-breadth-revisions caption { text-align: left;
+  font: 500 12px/1.4 var(--sans); color: var(--ink-3); padding: 4px 0; }
+.g17-breadth-table td small, .g17-breadth-table th small { display: block; color: var(--ink-3);
+  font: 400 11px/1.3 var(--sans); }
+.g17-latest, .g17-switches { font-size: 13px; }
+.g17-breadth-revisions tr.is-changed th, .g17-breadth-revisions tr.is-changed td { background: var(--paper-sunk); }
+.g17-breadth-release h3 { margin: 14px 0 4px; font: 400 18px/1.3 var(--serif); }
+.g17-breadth-release h3 small { font: 400 12px/1.3 var(--sans); color: var(--ink-3); }
+
+/* Electricity by sector (EIA Table 7.6): sector changes against the same month a year earlier. Up and down use the
+   breadth colours; context rows and the ±1% band stay muted so they never read as findings. */
+.findings-electricity { border-top-color: var(--ink-3); }
+.electricity-coverage { margin: 4px 0 10px; font-size: 13.5px; max-width: 92ch; }
+.electricity-sources th, .electricity-sources td { font-family: var(--sans); }
+.electricity-sources code, .electricity-card code, .electricity-method code { white-space: nowrap; }
+.electricity-table th, .electricity-table td { white-space: nowrap; overflow-wrap: normal; }
+.electricity-sources small, .electricity-table small, .electricity-observed small, .electricity-period small,
+.electricity-contributions small { display: block; color: var(--ink-3); font: 400 11px/1.35 var(--sans); }
+.electricity-table caption { text-align: left; font: 500 12px/1.4 var(--sans); color: var(--ink-3); padding: 4px 0; }
+.electricity-table tr.is-finding th[scope="row"] { box-shadow: inset 3px 0 0 var(--accent); }
+.electricity-cell.is-up { color: var(--accent); }
+.electricity-cell.is-down { color: var(--contradicted); }
+.electricity-cell.is-little_changed, .electricity-cell.is-unavailable, .electricity-cell.is-context { color: var(--ink-3); }
+.electricity-strip-cell { min-width: 11em; vertical-align: middle; }
+.electricity-strip { position: relative; height: 36px; border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+.electricity-band { position: absolute; top: 0; bottom: 0; background: var(--muted-soft); }
+.electricity-zero { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--rule-strong); }
+.electricity-total { position: absolute; top: 1px; bottom: 1px; width: 2px; margin-left: -1px; background: var(--ink); }
+.electricity-dot { position: absolute; width: 11px; height: 11px; margin-left: -5.5px; border-radius: 50%;
+  font: 600 7.5px/11px var(--mono); text-align: center; color: var(--paper-raised); background: var(--ink-3); }
+.electricity-dot.is-up { background: var(--accent); }
+.electricity-dot.is-down { background: var(--contradicted); }
+.electricity-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0; padding: 0; list-style: none;
+  font-size: 12.5px; color: var(--ink-2); }
+.electricity-legend .electricity-dot { position: static; display: inline-block; width: 14px; height: 14px; margin: 0 5px 0 0;
+  font: 600 8.5px/14px var(--mono); vertical-align: -2px; }
+.electricity-legend .electricity-dot.is-key { color: var(--ink); background: var(--paper); border: 1px solid var(--ink-3);
+  line-height: 12px; }
+.electricity-swatch { display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+.electricity-swatch.is-band { background: var(--muted-soft); border: 1px solid var(--rule-strong); }
+.electricity-swatch.is-up, .electricity-swatch.is-down, .electricity-swatch.is-little { width: 10px; height: 10px;
+  border-radius: 50%; }
+.electricity-swatch.is-up { background: var(--accent); }
+.electricity-swatch.is-down { background: var(--contradicted); }
+.electricity-swatch.is-little { background: var(--ink-3); }
+.electricity-swatch.is-total { width: 2px; background: var(--ink); }
+.electricity-cards { display: grid; gap: 14px; margin-top: 10px; }
+.electricity-card { border-left: 3px solid var(--accent); }
+.electricity-card h3 { margin: 2px 0 10px; font: 400 19px/1.3 var(--serif); }
+.electricity-card h4, .electricity-method h4, .electricity-subhead { margin: 12px 0 4px;
+  font: 600 11.5px/1.4 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.electricity-card h4 small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+.electricity-card p { margin: 4px 0; max-width: 86ch; font-size: 14px; }
+.electricity-observed tr.is-context th, .electricity-observed tr.is-context td, .electricity-period tr.is-context th,
+.electricity-period tr.is-context td { color: var(--ink-3); }
+.electricity-observed tr.is-up td:last-child, .electricity-period tr.is-up td:last-child { color: var(--accent); }
+.electricity-observed tr.is-down td:last-child, .electricity-period tr.is-down td:last-child { color: var(--contradicted); }
+.electricity-contributions tr.is-total th, .electricity-contributions tr.is-total td { font-weight: 600;
+  border-top: 1px solid var(--rule-strong); }
+.electricity-disclosures, .electricity-beyond { margin: 4px 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-2);
+  max-width: 92ch; }
+.electricity-disclosures li, .electricity-beyond li { margin: 2px 0; }
+.electricity-totals { margin: 4px 0; font: 500 13px/1.5 var(--sans); }
+.electricity-footnotes { display: grid; grid-template-columns: 1.6em minmax(0, 1fr); gap: 3px 8px; margin: 6px 0;
+  font-size: 12.5px; }
+.electricity-footnotes div { display: contents; }
+.electricity-footnotes dt { font: 600 12px/1.4 var(--mono); }
+.electricity-footnotes dd { margin: 0; }
+.electricity-problem { border-left: 3px solid var(--stamp); }
+@media (max-width: 720px) {
+  .electricity-strip-head, .electricity-strip-cell { display: none; }
+}
+
+/* Cross-source comparisons: two sources side by side, never merged; sign labels stay plain text. */
+.findings-cross { border-top-color: var(--rule-strong); }
+.cross-coverage { margin: 4px 0 10px; font-size: 13.5px; max-width: 92ch; }
+.cross-card h3 { margin: 2px 0 6px; font: 400 19px/1.3 var(--serif); }
+.cross-card h4, .cross-limits h4 { margin: 12px 0 4px; font: 600 11.5px/1.4 var(--sans); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-2); }
+.cross-card h4 small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-3); }
+.cross-question { margin: 0 0 8px; font-size: 14.5px; max-width: 86ch; }
+.cross-measures { display: grid; gap: 2px; margin: 0 0 8px; font-size: 12.5px; }
+.cross-measures div { display: grid; grid-template-columns: 3.5em minmax(0, 1fr); gap: 8px; }
+.cross-measures dt { font: 600 11.5px/1.5 var(--mono); color: var(--ink-2); }
+.cross-measures dd { margin: 0; color: var(--ink-2); }
+.cross-table th small, .cross-table td small, .cross-provenance small { display: block; color: var(--ink-3);
+  font: 400 11px/1.35 var(--sans); }
+.cross-table td, .cross-table th { white-space: nowrap; overflow-wrap: normal; }
+.cross-table td small, .cross-table th small { white-space: normal; max-width: 26ch; }
+.findings-table.cross-table thead th { white-space: normal; }
+.cross-cell.is-not_covered, .cross-cell.is-unavailable { color: var(--ink-3); font-family: var(--sans); }
+.cross-table .cross-signs { font-family: var(--sans); color: var(--ink-2); }
+.cross-list { margin: 4px 0; padding-left: 18px; font-size: 13px; max-width: 92ch; }
+.cross-list li { margin: 3px 0; }
+.cross-possible { color: var(--ink-2); }
+.cross-provenance td { font-family: var(--sans); }
+.cross-provenance code { white-space: nowrap; }
+.cross-problem { border-left: 3px solid var(--stamp); }

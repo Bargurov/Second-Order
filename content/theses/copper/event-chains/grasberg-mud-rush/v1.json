@@ -1,0 +1,174 @@
+{
+ "chain_version": "event-chain-0.1",
+ "id": "grasberg-mud-rush",
+ "version": 1,
+ "previous_version": null,
+ "title": "The Grasberg mud rush, the company's restart expectations and world mine output",
+ "event": "copper:fcx-mud-rush-2025",
+ "target": {
+  "kind": "reason",
+  "id": "world-mine-output"
+ },
+ "steps": [
+  {
+   "kind": "stated",
+   "passage": "copper:fcx-mud-rush-2025",
+   "label": "The company relates its lower milling and production to the mud rush"
+  },
+  {
+   "kind": "stated",
+   "passage": "fcx:k25-mud-rush-gbc-restart",
+   "label": "The restart plan: the company anticipates restarting the block cave in phases"
+  },
+  {
+   "kind": "stated",
+   "passage": "fcx:k25-mud-rush-85pct",
+   "label": "The company's expectation, in its annual report, for restoring production"
+  },
+  {
+   "kind": "stated",
+   "passage": "fcx:q3-p-gbc-capacity-targets",
+   "label": "The company's later expectation, in its quarterly report, for the ramp-up"
+  },
+  {
+   "kind": "mechanism",
+   "id": "output-offset"
+  },
+  {
+   "kind": "mechanism",
+   "id": "restart-timing"
+  }
+ ],
+ "evidence": {
+  "event": {
+   "passage": "copper:fcx-mud-rush-2025",
+   "kind": "Supply disruption",
+   "when": "September 2025"
+  },
+  "passages": [
+   {
+    "ref": "copper:fcx-mud-rush-2025",
+    "source": "sec-fcx-2025",
+    "location": {
+     "paragraph": 450
+    },
+    "quote": "Lower milling rates and production volumes in 2025, compared to 2024 and 2023, reflect the impact of the September 2025 mud rush incident."
+   },
+   {
+    "ref": "fcx:k25-mud-rush-gbc-restart",
+    "source": "10k-2025",
+    "location": {
+     "page": 25,
+     "printed_page": "23",
+     "location": "Items 1. and 2. Business and Properties > Operations > Indonesia > Grasberg Minerals District Mud Rush Incident"
+    },
+    "quote": "Investigations and remedial plans were completed in fourth-quarter 2025 and a phased restart and ramp-up of the Grasberg Block Cave underground mine is anticipated to begin in second-quarter 2026."
+   },
+   {
+    "ref": "fcx:k25-mud-rush-85pct",
+    "source": "10k-2025",
+    "location": {
+     "page": 25,
+     "printed_page": "23",
+     "location": "Items 1. and 2. Business and Properties > Operations > Indonesia > Grasberg Minerals District Mud Rush Incident"
+    },
+    "quote": "Based on current estimates, PTFI expects approximately 85% of its total production at normal operating rates to be restored in the second half of 2026."
+   },
+   {
+    "ref": "fcx:q3-p-gbc-capacity-targets",
+    "source": "10q-2026q3",
+    "location": {
+     "page": 43,
+     "printed_page": "43",
+     "location": "Part I, Item 2 > Operations > Indonesia > Grasberg Block Cave Ramp-Up"
+    },
+    "quote": "PTFI continues to expect to reach 80% of capacity in mid-2027 and approach full capacity by year-end 2027."
+   }
+  ],
+  "documents": [
+   {
+    "ref": "copper:sec-fcx-2025",
+    "acquisition": {
+     "approval_id": "copper-sec-01",
+     "attempt": 1,
+     "origin": "get",
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+     "folder": "sec-fcx-2025",
+     "name": "fcx-20251231.htm",
+     "sha256": "7ba50efcd0e758e47fca51dc9a88f8c2bb0d8308c881314288b49ae5efd6f167",
+     "bytes": 6347587,
+     "retrieved_at": "2026-11-02T19:25:20.379798+02:00"
+    }
+   },
+   {
+    "ref": "copper:usgs-2026",
+    "acquisition": {
+     "approval_id": "copper-usgs-01",
+     "attempt": 1,
+     "origin": "get",
+     "url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-copper.pdf",
+     "folder": "usgs-2026",
+     "name": "mcs2026-copper.pdf",
+     "sha256": "c4971f7edfa38feefc51952c5f24889c46f468d936c6620d388233313ae8ae85",
+     "bytes": 141602,
+     "retrieved_at": "2026-11-02T19:24:54.053711+02:00"
+    }
+   },
+   {
+    "ref": "copper:usgs-csv-2026",
+    "acquisition": {
+     "approval_id": "copper-usgs-csv-01",
+     "attempt": 1,
+     "origin": "owner_download",
+     "url": "https://doi.org/10.5066/P1WKQ63T",
+     "folder": "usgs-csv-2026",
+     "name": "MCS2026_Commodities_Data.csv",
+     "sha256": "582a0aa231aea53d8a97dc8d1cd3dfa5f885cf3760353e3d029d7f0ae4fbaaf5",
+     "bytes": 3189010,
+     "retrieved_at": "2026-11-03T01:17:22.769111+02:00"
+    }
+   },
+   {
+    "ref": "fcx:10k-2025",
+    "acquisition": {
+     "approval_id": "copper-sec-01",
+     "attempt": 1,
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000012/fcx-20251231.htm",
+     "folder": "sec-10k-2025",
+     "name": "fcx-20251231.htm",
+     "sha256": "7ba50efcd0e758e47fca51dc9a88f8c2bb0d8308c881314288b49ae5efd6f167",
+     "bytes": 6347587,
+     "retrieved_at": "2026-11-02T19:25:16.185809+02:00"
+    }
+   },
+   {
+    "ref": "fcx:10q-2026q3",
+    "acquisition": {
+     "approval_id": "fcx-sec-docs-02",
+     "attempt": 1,
+     "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000051/fcx-20260930.htm",
+     "folder": "sec-10q-2026q3",
+     "name": "fcx-20260930.htm",
+     "sha256": "d2ddefc6b0b022abefec228e2d8407b4e502ba3d3a2807665bc028f61b4f4e6a",
+     "bytes": 4013452,
+     "retrieved_at": "2026-11-11T00:40:48.989015+02:00"
+    }
+   }
+  ],
+  "thesis": {
+   "id": "copper",
+   "version": 1,
+   "sha256": "4893928f936d3dd3a75ffb37238526d69c809131c72351f938b134d2249e956f"
+  },
+  "mechanisms": {
+   "version": 1,
+   "sha256": "80582509f9075e3b04f82d2af7de0e6d516e0684a629da458ad52aa4d63d412b"
+  }
+ },
+ "change": null,
+ "provenance": {
+  "prepared_by": "the assistant (Claude), AI draft for the owner's review",
+  "ai_assisted": true,
+  "research_use": "excluded"
+ }
+}

@@ -1,0 +1,149 @@
+/* Research views: a retrospective comparison of selected retained publications. Quiet, dense, and explicit about
+   what is the publisher's, what is the curator's and what is unknown; the labels never rely on colour alone. */
+
+.policy-research .library-body.policy-body { max-width: none; }
+.policy-scope { margin: 12px 0 8px; padding: 8px 12px; border-left: 3px solid var(--inconclusive);
+  background: var(--inconclusive-soft); font-size: 14px; color: var(--ink); max-width: 78ch; }
+.policy-corpus { margin: 8px 0 12px; padding-left: 18px; max-width: 78ch; font-size: 13.5px; line-height: 1.55;
+  color: var(--ink-2); }
+.policy-corpus li { margin: 3px 0; }
+.policy-check { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+.policy-check-verified strong { color: var(--supported); }
+.policy-check-changed strong, .policy-check-missing strong { color: var(--stamp); }
+
+/* The status labels: solid for the publisher's words, dashed for the curator's reading, dotted for silence. */
+.policy-status { display: inline-block; padding: 1px 6px 0; border: 1px solid var(--ink); font: 500 10px/1.5 var(--mono);
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: var(--paper-raised);
+  white-space: nowrap; vertical-align: 1px; }
+.policy-status-interpretation { border-style: dashed; border-color: var(--ink-2); color: var(--ink-2); }
+.policy-status-not_stated { border-style: dotted; border-color: var(--ink-3); color: var(--ink-3); }
+.policy-status-referenced_unread { border-style: dotted; border-color: var(--inconclusive); color: var(--inconclusive); }
+.policy-status-unknown { border-color: var(--inconclusive); background: var(--inconclusive-soft); color: var(--ink); }
+.policy-legend { margin: 14px 0 6px; padding: 10px 12px; border: 1px solid var(--rule); background: var(--paper-raised);
+  max-width: 78ch; }
+.policy-legend .kicker { margin: 0 0 6px; }
+.policy-legend dl { display: grid; gap: 6px; margin: 0; }
+.policy-legend dl div { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.policy-legend dt { margin: 0; }
+.policy-legend dd { margin: 0; font-size: 13px; color: var(--ink-2); }
+
+/* Chronology. */
+.policy-timeline { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.policy-moment { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 4px 18px; padding: 12px 0;
+  border-bottom: 1px solid var(--rule); }
+.library-section-block p.policy-moment-day { margin: 2px 0 0; font: 500 13px/1.4 var(--mono); color: var(--ink); }
+.policy-moment-title { font: 400 18px/1.3 var(--serif); color: var(--ink); text-decoration-color: var(--rule-strong); }
+.policy-dates { display: grid; gap: 2px; margin: 6px 0 0; font-size: 13px; }
+.policy-dates div { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px; }
+.policy-dates dt { font: 500 10.5px/1.6 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.policy-dates dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+.policy-date-of { display: block; font-size: 12.5px; color: var(--ink-3); }
+.policy-precision { margin-left: 4px; font: 400 10.5px var(--mono); letter-spacing: 0.04em; color: var(--ink-3);
+  text-transform: uppercase; }
+
+/* The matrix and the stage grid scroll inside their own frame, never the page. */
+.policy-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--rule); background: var(--paper-raised); }
+.policy-matrix, .policy-stages { width: 100%; border-collapse: collapse; font-size: 13px; }
+.policy-matrix th, .policy-matrix td, .policy-stages th, .policy-stages td { padding: 8px 10px; border-bottom: 1px solid var(--rule);
+  text-align: left; vertical-align: top; }
+.policy-matrix thead th, .policy-stages thead th { font: 500 10px/1.35 var(--mono); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3); background: var(--paper); }
+.policy-matrix tbody th { min-width: 150px; font-weight: 600; color: var(--ink); }
+.policy-matrix tbody th a, .policy-stages tbody th a { color: var(--ink); text-decoration-color: var(--rule-strong); }
+.policy-matrix td { min-width: 150px; color: var(--ink-2); }
+.policy-when { display: block; margin-top: 2px; font: 400 11px/1.4 var(--mono); color: var(--ink-3); }
+.policy-compared .policy-when, .policy-publication summary .policy-when { display: inline; }
+.policy-cell-label { display: block; }
+.policy-cell-marks { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+.policy-mark { padding: 0 4px; border: 1px solid var(--ink); font: 500 9.5px/1.5 var(--mono); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink); }
+.policy-mark.policy-status-interpretation { border-style: dashed; color: var(--ink-2); }
+.policy-mark.policy-status-not_stated { border-style: dotted; border-color: var(--ink-3); color: var(--ink-3); }
+.policy-mark.policy-status-referenced_unread { border-style: dotted; border-color: var(--inconclusive);
+  color: var(--inconclusive); }
+.policy-unchecked { color: var(--stamp); font-size: 12.5px; }
+.policy-stages thead th { min-width: 84px; text-align: center; }
+.policy-stages thead th:first-child { text-align: left; }
+.policy-stages td { text-align: center; font: 500 14px/1 var(--mono); }
+.policy-named { color: var(--ink); }
+.policy-none { color: var(--rule-strong); }
+
+/* Comparisons. */
+.policy-comparisons { display: grid; gap: 14px; }
+.policy-comparison { padding: 14px 16px 12px; border: 1px solid var(--rule-strong); background: var(--paper-raised);
+  scroll-margin-top: 16px; }
+.policy-comparison[data-state="needs_revalidation"], .policy-comparison[data-state="unavailable"] {
+  border-style: dashed; background: var(--paper); }
+.library-section-block p.policy-kind { margin: 0 0 4px; font: 500 10px/1.4 var(--mono); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3); }
+.library-section-block .policy-comparison h3 { margin: 0 0 6px; font: 400 19px/1.3 var(--serif); color: var(--ink); }
+.library-section-block p.policy-compared { margin: 0 0 10px; font-size: 13px; color: var(--ink-2); }
+.policy-observation, .policy-why, .policy-unknown { margin: 10px 0 0; padding: 2px 0 2px 12px; }
+.policy-observation { border-left: 3px solid var(--ink); }
+.policy-why { border-left: 3px dashed var(--rule-strong); }
+.policy-unknown { padding: 8px 12px; border-left: 3px solid var(--inconclusive); background: var(--inconclusive-soft); }
+.library-section-block .policy-comparison p:not(.kicker) { margin: 0 0 6px; font-size: 14.5px; }
+.library-section-block .policy-comparison p.policy-part { margin: 0 0 4px; font: 500 10.5px/1.5 var(--mono);
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.policy-unknown p:last-child { margin-bottom: 0; }
+.policy-evidence { margin: 10px 0 0; }
+.policy-evidence summary { cursor: pointer; font: 600 13px/1.5 var(--sans); color: var(--ink); }
+.policy-evidence ol { margin: 8px 0 0; padding-left: 20px; }
+.policy-evidence li { margin: 0 0 8px; }
+.policy-metadata { font-size: 13px; color: var(--ink-2); }
+.policy-withheld { margin: 8px 0 0; padding: 8px 12px; border: 1px dashed var(--stamp); font-size: 13.5px; color: var(--ink); }
+.policy-withheld ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); }
+
+/* A quoted passage and its locator. */
+.policy-quote { margin: 6px 0 0; }
+.policy-quote blockquote { margin: 0; padding: 6px 10px; border: 1px solid var(--rule); border-left: 3px solid var(--ink);
+  background: var(--paper); font: italic 400 14px/1.5 var(--serif); color: var(--ink); overflow-wrap: anywhere; }
+.policy-quote figcaption { margin-top: 2px; font: 400 11px/1.5 var(--mono); color: var(--ink-3); }
+
+/* The releases, one disclosure each. */
+.policy-publication { border-top: 1px solid var(--rule); scroll-margin-top: 16px; }
+.policy-publication:last-of-type { border-bottom: 1px solid var(--rule); }
+.policy-publication summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 0;
+  cursor: pointer; }
+.policy-position { font: 500 11px var(--mono); color: var(--ink-3); }
+.policy-summary-title { font: 400 17px/1.3 var(--serif); color: var(--ink); }
+.policy-publication[open] summary { border-bottom: 1px dashed var(--rule); }
+.policy-ledger { margin: 10px 0; }
+.library-section-block p.policy-selected, .library-section-block p.policy-cases { font-size: 14px; }
+.policy-dimensions { display: grid; gap: 0; margin: 8px 0 12px; }
+.policy-dimensions > div { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 6px 18px;
+  padding: 10px 0; border-top: 1px solid var(--rule); }
+.policy-dimensions dt { font: 600 13px/1.4 var(--sans); color: var(--ink); }
+.policy-dimension-label { display: block; margin-top: 3px; font: 400 12.5px/1.45 var(--sans); color: var(--ink-2); }
+.policy-dimensions dd { margin: 0; }
+.policy-dimensions dd > ul { margin: 0; padding: 0; list-style: none; }
+.policy-statement { margin: 0 0 10px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.policy-statement:last-child { margin-bottom: 0; }
+.policy-stage-tag { font-size: 12.5px; color: var(--ink-3); }
+.policy-stated-dates { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+.policy-references h3 { margin-top: 6px; }
+.policy-references ul { margin: 0 0 12px; padding-left: 18px; font-size: 14px; color: var(--ink-2); }
+.policy-excluded { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.policy-excluded li { padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.library-section-block .policy-excluded p:not(.kicker) { margin: 4px 0 0; font-size: 14px; }
+.policy-hash { font-size: 11.5px; word-break: break-all; }
+
+@media (max-width: 640px) {
+  .policy-legend dl div, .policy-moment, .policy-dates div, .policy-dimensions > div {
+    grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .policy-legend dl div { gap: 4px; }
+  /* Phone layout: each matrix row becomes a stacked block, each cell labelled by its column. */
+  .policy-scroll:has(.policy-matrix) { overflow-x: visible; border: 0; background: none; }
+  .policy-matrix thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .policy-matrix, .policy-matrix tbody, .policy-matrix tr, .policy-matrix th, .policy-matrix td { display: block;
+    width: auto; min-width: 0; }
+  .policy-matrix tr { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .policy-matrix th, .policy-matrix td { padding: 3px 0; border: 0; }
+  .policy-matrix td::before { content: attr(data-label); display: block; font: 500 10px/1.4 var(--mono);
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .policy-comparison { padding: 12px 12px 10px; }
+  .policy-dates dt { font-size: 11px; }
+  .policy-quote figcaption, .policy-when { font-size: 12px; }
+}
+.policy-label { margin-right: 6px; font: 500 10px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); }

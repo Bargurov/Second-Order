@@ -1,0 +1,12 @@
+{
+ "index_version": "event-mechanisms-index-0.1",
+ "id": "mechanisms",
+ "versions": [
+  {
+   "version": 1,
+   "file": "v1.json",
+   "sha256": "80582509f9075e3b04f82d2af7de0e6d516e0684a629da458ad52aa4d63d412b",
+   "published_on": "2026-11-09"
+  }
+ ]
+}

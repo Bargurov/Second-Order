@@ -1,0 +1,107 @@
+{
+  "view_version": "copper-producers-0.2",
+  "rate_pct": "0",
+  "years": 20,
+  "method": "limit_at_zero_rate",
+  "crf": "0.050000",
+  "projects": [
+    {
+      "project": "bagdad-2026-11-04",
+      "charges": [
+        {
+          "equation": "E14",
+          "uses": [
+            "nr-bagdad-capex-estimate",
+            "nr-bagdad-cu-increment"
+          ],
+          "withheld": [],
+          "shown": "1.000"
+        }
+      ],
+      "problem": null
+    },
+    {
+      "project": "bagdad",
+      "charges": [
+        {
+          "equation": "E14",
+          "uses": [
+            "fcx-bagdad-capital-2025",
+            "fcx-bagdad-low-2025"
+          ],
+          "withheld": [],
+          "shown": "0.875"
+        },
+        {
+          "equation": "E14",
+          "uses": [
+            "fcx-bagdad-capital-2025",
+            "fcx-bagdad-high-2025"
+          ],
+          "withheld": [],
+          "shown": "0.700"
+        }
+      ],
+      "problem": null
+    },
+    {
+      "project": "el-abra",
+      "charges": [],
+      "problem": "Not computed: the company states no capital for this project"
+    },
+    {
+      "project": "tia-maria",
+      "charges": [
+        {
+          "equation": "E14",
+          "uses": [
+            "scco-tia-maria-budget-2025",
+            "scco-tia-maria-capacity-2025"
+          ],
+          "withheld": [],
+          "shown": "0.341"
+        }
+      ],
+      "problem": null
+    },
+    {
+      "project": "los-chancas",
+      "charges": [
+        {
+          "equation": "E14",
+          "uses": [
+            "scco-los-chancas-capital-2025",
+            "scco-los-chancas-copper-2025"
+          ],
+          "withheld": [],
+          "shown": "0.454"
+        }
+      ],
+      "problem": null
+    },
+    {
+      "project": "michiquillay",
+      "charges": [
+        {
+          "equation": "E14",
+          "uses": [
+            "scco-michiquillay-capital-2025",
+            "scco-michiquillay-capacity-2025"
+          ],
+          "withheld": [],
+          "shown": "0.252"
+        }
+      ],
+      "problem": null
+    }
+  ],
+  "ignores": [
+    "construction-period interest",
+    "ramp-up to full capacity",
+    "sustaining capital",
+    "taxes and royalties",
+    "closure costs"
+  ],
+  "stored": false,
+  "provider_called": false
+}

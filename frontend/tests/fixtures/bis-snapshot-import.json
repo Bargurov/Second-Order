@@ -1,0 +1,34 @@
+{
+ "cost": "Local and free: nothing was requested, sent or classified.",
+ "counts": {
+  "added": 2,
+  "conflict": 0,
+  "kept": 0,
+  "reused": 0,
+  "unusable": 0,
+  "version_added": 0
+ },
+ "import_id": "20261012T160000Z-e4524278",
+ "imported_at": "2026-10-12T16:00:00+00:00",
+ "rows": [
+  {
+   "id": "bis-snapshot:d259551bc352c3fd7117",
+   "key": "d259551bc352c3fd7117",
+   "outcome": "added",
+   "reasons": [],
+   "state": "new",
+   "title": "Synthetic Commerce Tightens Controls on Advanced Computing Chips",
+   "version": 1
+  },
+  {
+   "id": "bis-snapshot:d6b71201b2132e92ab14",
+   "key": "d6b71201b2132e92ab14",
+   "outcome": "added",
+   "reasons": [],
+   "state": "new",
+   "title": "Synthetic Settlement over Ion Implanters",
+   "version": 1
+  }
+ ],
+ "written": true
+}

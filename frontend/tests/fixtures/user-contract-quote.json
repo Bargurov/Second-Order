@@ -1,0 +1,55 @@
+{
+  "contract": "user-api-0.2",
+  "quote": {
+    "quote_id": "q-7d1f0c2a9e4b5a61c3d2e1f0",
+    "analysis_id": "20261014T091500000000Z-5e1a7c0d9b42.research-prompt-1.high",
+    "effort": "high",
+    "credits": 6,
+    "policy_version": "credit-policy-1",
+    "issued_at": "2026-10-14T09:35:00+00:00",
+    "expires_at": "2026-10-14T09:50:00+00:00",
+    "state": "active"
+  },
+  "account": {
+    "contract": "user-api-0.2",
+    "user": {
+      "user_id": "u-5ca1ab1e0000a001",
+      "username": "reader-a",
+      "display_name": "Reader A (synthetic)",
+      "role": "user"
+    },
+    "credits": {
+      "available": 40,
+      "held": 0
+    },
+    "daily": {
+      "timezone": "Asia/Jerusalem",
+      "day": "2026-10-14",
+      "limit": 3,
+      "used": 0,
+      "remaining": 3,
+      "resets_at": "2026-10-14T21:00:00+00:00"
+    },
+    "efforts": [
+      {
+        "effort": "low",
+        "label": "Low"
+      },
+      {
+        "effort": "medium",
+        "label": "Medium"
+      },
+      {
+        "effort": "high",
+        "label": "High"
+      }
+    ],
+    "effort_note": "Higher Effort lets the analysis spend more of its output allowance on reasoning. It does not promise a better result or a fixed running time, and it can need more credits.",
+    "analysis": {
+      "available": true,
+      "reason": null,
+      "detail": null,
+      "reasons": []
+    }
+  }
+}

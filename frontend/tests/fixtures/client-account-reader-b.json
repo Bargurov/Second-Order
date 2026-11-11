@@ -1,0 +1,37 @@
+{
+  "contract": "user-api-0.1",
+  "user": {
+    "user_id": "u-5ca1ab1e0000b002",
+    "username": "reader-b",
+    "display_name": "Reader B (synthetic)",
+    "role": "user"
+  },
+  "credits": {
+    "available": 2,
+    "held": 4
+  },
+  "daily": {
+    "timezone": "Asia/Jerusalem",
+    "day": "2026-10-14",
+    "limit": 2,
+    "used": 2,
+    "remaining": 0,
+    "resets_at": "2026-10-14T21:00:00+00:00"
+  },
+  "efforts": [
+    {
+      "effort": "low",
+      "label": "Low"
+    },
+    {
+      "effort": "medium",
+      "label": "Medium"
+    }
+  ],
+  "effort_note": "SYNTHETIC: higher Effort lets the analysis spend more of its output allowance on reasoning. It does not promise a better result or a fixed running time.",
+  "analysis": {
+    "available": true,
+    "reason": null,
+    "detail": null
+  }
+}

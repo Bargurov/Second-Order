@@ -1,53 +1,39 @@
-# Data provenance & honesty notes
+# Data provenance
 
-Second Order is an **honest research dashboard** for geopolitical, macro, and
-policy events. It is a quant-finance research craftsmanship project — **not a
-trading or trade-recommendation tool**. Read this before reading any number in
-the repo.
+Second Order is an economic research tool, not a trading or recommendation tool. This note lists the third-party
+material the repository holds, the terms it is held under, and what the repository leaves out.
 
-## What the evidence is — and is not
+## What is shipped
 
-- **No buy / sell / trading-signal framing.** Findings are reported as
-  *evidence*, never as a confirmed mechanism, a forecast, or a recommendation.
-- **Representative cases are not proof.** The curated "case library" is selected
-  to show the *range* of outcomes a reviewer should expect (including
-  contradictions and unresolved reads), not a best-of and not a success record.
-  Single-event readouts are `n = 1` descriptive reads, not generalisable results.
-- **Phase 1 and Phase 2 are separate FDR pools.** They are never combined into a
-  single q-value or a single denominator, and no cross-phase FDR statistic is
-  computed. The closed evidence track preserves this separation everywhere it is
-  surfaced (e.g. `GET /evidence/summary`).
-- **Two kinds of denominator are kept distinct:** the *analysis / coverage*
-  denominator (can the engine read the event) and the *thesis / track-record*
-  denominator (was a directional outcome captured). They are not merged.
-- **Synthetic / seed / test rows are flagged, not deleted.** Bootstrap seed rows
-  live in the archive but are flagged in the `event_hygiene` sidecar
-  (`override_class = 'synthetic_seed'`) and excluded from the accepted-corpus
-  denominators. They remain retrievable by id for auditability (keep-and-flag).
+- The source code, under the MIT [LICENSE](LICENSE).
+- Research content written for the project: event readings, the copper thesis, event chains and publication
+  comparisons. They hold short quotations and selected figures, each linked to the document and place it comes from.
+- Small extracts that this content and the tests read, listed below.
+- Demonstration data: the fictional market series of the offline demo (demo-market-0.1, every number invented), the
+  fictional interview and speech test cases, synthetic test values and fictional companies, each marked as such.
 
-## What is shipped — and what is not
+## What is not shipped
 
-- **The source code is shipped** under the MIT `LICENSE`.
-- **The events archive (`events.db`) is NOT shipped.** It is gitignored, large,
-  and carries seed/test rows. A clean clone starts with an **empty** archive, so
-  every archive-derived figure quoted in `README.md` reflects the maintainer's
-  local archive *as of the dates noted there*, not a fresh checkout. The
-  read-only report scripts recompute all such figures from whatever `events.db`
-  is present and are the source of truth.
-- **No secrets are shipped.** `.env`, provider API keys (`ANTHROPIC_API_KEY`,
-  etc.), and `backups/` are gitignored and have never been committed.
-- **The closed Phase 1–4 evidence artifacts ARE shipped** under
-  `evidence_artifacts/section_c_v2/` — real frozen, source-anchored research
-  artifacts (see README), clean-clone reproducible via CI against a fixture
-  database. (`evidence_artifacts/section_c_v1/` is a separate demo-walkthrough
-  input bundle, labelled as such in its own README — not part of the frozen
-  evidence pools.)
+- **Retained source files.** Each downloaded document is kept under `data/` with its acquisition record, and `data/` is
+  not committed. A fresh clone therefore withholds every figure that rests on a retained file until that file is
+  acquired again.
+- **Working notes.** Dated working logs and design notes that some documents cite (under `docs/`) are kept in the
+  private repository.
+- **Earlier evidence versions.** The versions that rested on the company's investor-relations copies, their
+  acquisition records and the private source notes stay private; the public version numbering of the affected
+  comparison and chains starts at the SEC-based version.
+- **Local records:** the research store, accounts, the analyst's notes and readings.
+- **Keys and credentials.** Keys that appear in tests are dummies.
 
-## Data sources
+## Sources and terms
 
-Saved headlines and source metadata are derived from public news / RSS feeds and
-official sources (e.g. government press releases, regulatory filings); market
-prices come from market-data providers (e.g. Polygon, yfinance) and are cached
-locally. None of that third-party content is redistributed in this repository —
-only the code that fetches, caches, and analyses it. Provider terms govern any
-data you fetch yourself; this project makes no warranty about third-party data.
+| Source | Used for | Terms |
+|---|---|---|
+| Board of Governors of the Federal Reserve System (H.15, G.17, FOMC statements) | Treasury yields around events, case readings | Public domain; the Board is cited |
+| U.S. Geological Survey, Mineral Commodity Summaries | Mine production, reserves and the annual copper price | U.S. public domain |
+| Company filings on SEC EDGAR | Company statements and figures | Public filings |
+| BLS, BEA, Census Bureau, EIA, Commerce (BIS), Treasury (OFAC) | Case readings and tests | U.S. public domain |
+| International Energy Agency, Critical Minerals Dataset | Copper demand and supply projections | CC BY 4.0. Based on IEA data, © IEA; values selected and, where stated, combined by Second Order |
+| European Commission, ECB, WTO | Short excerpts in tests | Reuse with attribution, as each publisher states |
+
+The MIT licence covers the code only. Third-party material stays under its own terms, and no warranty is made about it.

@@ -1,0 +1,19 @@
+{
+  "pilot_version": "fomc-pilot-0.1",
+  "status": "approved",
+  "protocol": "docs/pilot/fomc-pilot-protocol.md",
+  "start_utc": "2026-12-01T00:00:00+00:00",
+  "family": "Scheduled FOMC post-meeting policy statements: the Board press release \"Federal Reserve issues FOMC statement\"",
+  "primary": {"observable_id": "yield:ust2y_cmt_h15", "horizon": 5},
+  "secondary": {"observable_id": "yield:ust10y_cmt_h15", "horizon": 5},
+  "statements": [
+    {"date": "2026-12-09", "story_id": "fomc-2026-12-09", "not_held": null, "missed_reason": null, "note": null},
+    {"date": "2027-01-27", "story_id": "fomc-2027-01-27", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"},
+    {"date": "2027-03-17", "story_id": "fomc-2027-03-17", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"},
+    {"date": "2027-04-28", "story_id": "fomc-2027-04-28", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"},
+    {"date": "2027-06-09", "story_id": "fomc-2027-06-09", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"},
+    {"date": "2027-07-28", "story_id": "fomc-2027-07-28", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"},
+    {"date": "2027-09-15", "story_id": "fomc-2027-09-15", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"},
+    {"date": "2027-10-27", "story_id": "fomc-2027-10-27", "not_held": null, "missed_reason": null, "note": "Tentative until confirmed at the preceding meeting"}
+  ]
+}

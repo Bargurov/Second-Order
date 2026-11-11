@@ -1,0 +1,23 @@
+{
+ "n": 1,
+ "approval_id": "fcx-sec-locate-02",
+ "url": "https://data.sec.gov/submissions/CIK0000831259.json",
+ "kind": "json",
+ "outcome": "complete",
+ "http_status": 200,
+ "sha256": "4027d2c6c0151e74015da919b3631ae5d561dcfc78f19817d94af560d90f5a94",
+ "bytes": 165027,
+ "hash_kind": "complete_response",
+ "retained": "data/company-sources/fcx/sec-edgar-meta/submissions-CIK0000831259.json",
+ "dispatched_at": "2026-11-11T00:39:46.927505+02:00",
+ "body_completed_at": "2026-11-11T00:39:48.332038+02:00",
+ "media_type": "application/json",
+ "named_headers": {
+  "content-type": "application/json",
+  "content-encoding": "gzip"
+ },
+ "contact_declared": true,
+ "network_error": null,
+ "truncated": false,
+ "max_body_bytes": 16777216
+}

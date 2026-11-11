@@ -1,0 +1,63 @@
+/* Event overview: one event's local records in four separate sections. The market section reuses the market-context
+   view (eventContext.css, library.css); the draft section reuses My analyses' layers (analyses.css). */
+
+.overview-toc { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: -6px 0 0; font: 500 11px/1.4 var(--mono);
+  letter-spacing: 0.06em; text-transform: uppercase; }
+.overview-toc a { color: var(--ink-2); text-decoration-color: var(--rule-strong); }
+.overview-section { scroll-margin-top: 16px; }
+.overview-section .overview-label, .overview-label { margin: 0 0 8px; font: 500 10.5px/1.4 var(--mono);
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.overview-facts { grid-template-columns: minmax(0, 1fr); margin: 0 0 10px; }
+.overview-facts dd { font: 400 13.5px/1.5 var(--sans); color: var(--ink); overflow-wrap: anywhere; }
+.overview-facts code, .overview-note code { font-size: 11.5px; }
+.event-context-section p.overview-note, .overview-note { font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
+.event-context-section p.overview-gap, .overview-gap { padding: 8px 12px; border: 1px dashed var(--rule-strong);
+  background: var(--paper-raised); font-size: 13.5px; color: var(--ink-2); }
+.event-context-section p.overview-excerpt { font-size: 14px; color: var(--ink-2); }
+.overview-versions, .overview-text { margin: 4px 0 10px; font-size: 13px; color: var(--ink-2); }
+.overview-versions summary, .overview-text summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.overview-versions ol { margin: 6px 0 0; padding-left: 20px; }
+.overview-versions li[data-current="true"] { color: var(--ink); }
+.overview-text pre { max-height: 360px; overflow: auto; margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--rule);
+  background: var(--paper-raised); font: 400 13px/1.55 var(--sans); white-space: pre-wrap; overflow-wrap: anywhere; }
+.event-context-section p.overview-origin { font-size: 14px; color: var(--ink); }
+.event-context-section p.overview-origin.is-none, .event-context-section p.overview-origin.is-unreadable {
+  padding: 8px 12px; border: 1px dashed var(--rule-strong); background: var(--paper-raised); color: var(--ink-2); }
+.event-context-section p.overview-origin.is-unreadable { color: var(--stamp); }
+.overview-origin-link { font-size: 13.5px; }
+.overview-origin-link span { color: var(--ink-3); }
+.overview-triage { margin: 0 0 12px; padding: 10px 12px; border-left: 3px solid var(--rule-strong); }
+.overview-triage[data-status="current"] { border-left-color: var(--accent); }
+.overview-triage[data-status="earlier_version"] { border-left-color: var(--inconclusive); }
+.overview-relations { font-size: 13.5px; }
+.overview-captures { margin-top: 4px; }
+.overview-capture { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.overview-capture .event-context-entry-title { font-size: 18px; }
+.overview-market { display: grid; gap: 18px; scroll-margin-top: 16px; }
+.overview-market .overview-gap.is-complete { border-style: solid; border-color: var(--rule); }
+
+/* Processing history: dated steps from the records each step keeps, apart from the sections they link to. */
+.event-context-section p.overview-history-state { padding: 8px 12px; border: 1px solid var(--rule); font-size: 14px;
+  color: var(--ink); background: var(--paper-raised); }
+.event-context-section p.overview-history-state.is-not_processed { border-style: dashed; color: var(--ink-2); }
+.event-context-section p.overview-history-state.is-needs_attention { border-color: var(--stamp); }
+.overview-history-step { margin: 12px 0 0; }
+.overview-history-step h3 { margin: 0 0 6px; font: 600 12px/1.4 var(--mono); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-2); }
+.overview-history-rows { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.overview-history-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 2px 14px; padding: 7px 0 7px 10px;
+  border-bottom: 1px solid var(--rule); border-left: 3px solid var(--rule-strong); font-size: 13px; }
+.overview-history-row.is-done { border-left-color: var(--accent); }
+.overview-history-row.is-warn { border-left-color: var(--stamp); }
+.overview-history-when { grid-row: span 4; font: 500 11px/1.5 var(--mono); color: var(--ink-3); }
+.overview-history-label { font-weight: 600; color: var(--ink); }
+.overview-history-detail, .overview-history-cost { color: var(--ink-2); overflow-wrap: anywhere; }
+.overview-history-cost { font-size: 12.5px; color: var(--ink-3); }
+.overview-history-link { justify-self: start; font-size: 12.5px; }
+.overview-history-limits { margin: 12px 0 0; font-size: 13px; color: var(--ink-2); }
+.overview-history-limits summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.overview-history-limits ul { margin: 6px 0 0; padding-left: 20px; }
+@media (max-width: 760px) {
+  .overview-history-row { grid-template-columns: minmax(0, 1fr); }
+  .overview-history-when { grid-row: auto; }
+}

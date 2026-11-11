@@ -1,0 +1,12 @@
+{
+ "index_version": "publication-comparison-index-0.1",
+ "id": "fcx-annual-2025-to-q3-2026",
+ "versions": [
+  {
+   "version": 1,
+   "file": "v1.json",
+   "sha256": "2c1104b2787d88fcd0067a3d2ef7f7e701e29668d1b41ae9e73e69124d1c1966",
+   "published_on": "2026-11-11"
+  }
+ ]
+}

@@ -1,0 +1,94 @@
+{
+  "library_version": "case-library-0.2",
+  "id": "h8-2026-09-11",
+  "title": "H.8, September 11: business loans grew at an 18.8% rate in August as bank cash fell",
+  "category": "Bank balance sheets",
+  "summary": "The Federal Reserve's H.8 release of September 11, 2026 showed commercial and industrial loans at all commercial banks in the United States growing at an 18.8 percent annual rate in August after declining in July, with total loans up 8.8 percent and deposits 8.0 percent. Cash assets fell at a 56.7 percent rate and borrowings at 31.2 percent.",
+  "sectors": ["banking-credit"],
+  "source": {
+    "publisher": "Board of Governors of the Federal Reserve System",
+    "title": "Assets and Liabilities of Commercial Banks in the United States - H.8",
+    "url": "https://www.federalreserve.gov/releases/h8/20260911/",
+    "document_id": "H.8",
+    "published_at": "2026-09-11",
+    "published_precision": "date",
+    "published_as_stated": "Release Date: September 11, 2026",
+    "timezone_note": "The release page states a date only. The H.8 release-dates page says the data are released each Friday, generally at 4:15 p.m., and names no time zone, so no time or offset is recorded.",
+    "reference_period": "Monthly averages through August 2026 and Wednesday levels for the weeks ending August 12 to September 2, 2026; seasonally adjusted unless noted",
+    "page_last_updated": "2026-09-11",
+    "retrieved_on": "2026-10-11"
+  },
+  "overview": [
+    "The H.8 release reports aggregate balance sheets of commercial banks in the United States, estimated from weekly data reported by a sample of banks and benchmarked to quarterly Call Reports. In the September 11, 2026 release, August growth rates (seasonally adjusted, annual rates, adjusted for breaks) showed loans and leases up 8.8 percent after 3.8 percent in July, and bank credit up 4.8 percent as securities holdings fell 4.6 percent.",
+    "Commercial and industrial (C&I) loans rose at an 18.8 percent rate after falling 2.4 percent in July; they had grown at 12.2 and 14.8 percent in the first two quarters. Commercial real estate loans rose 4.7 percent and consumer loans 3.8 percent, with credit cards up only 0.2 percent. All other loans and leases, which include loans to nondepository financial institutions, rose 12.3 percent.",
+    "On the funding side, deposits grew 8.0 percent after 3.2 percent in July, while borrowings fell at a 31.2 percent rate. Cash assets, which include balances due from Federal Reserve Banks, fell at a 56.7 percent rate after rising 26.1 percent in July. In the latest week, ending September 2, C&I loans rose $9.1 billion to $2,965.1 billion and credit card balances fell $6.3 billion."
+  ],
+  "key_facts": [
+    {"label": "C&I loans, August", "value": "+18.8% annual rate (July −2.4%)", "basis": "All commercial banks; seasonally adjusted; break adjusted (Table 1)"},
+    {"label": "Loans and leases / bank credit, August", "value": "+8.8% / +4.8%", "basis": "Securities in bank credit −4.6%; annual rates"},
+    {"label": "Deposits / borrowings, August", "value": "+8.0% / −31.2%", "basis": "Annual rates (Table 1)"},
+    {"label": "Cash assets, August", "value": "−56.7% annual rate (July +26.1%)", "basis": "Includes balances due from Federal Reserve Banks"},
+    {"label": "C&I loans, week ending September 2", "value": "$2,965.1 billion (+$9.1 billion on the week)", "basis": "Seasonally adjusted Wednesday level (Table 2)"},
+    {"label": "Credit cards, week ending September 2", "value": "$1,083.2 billion (−$6.3 billion on the week)", "basis": "Seasonally adjusted; August growth +0.2% annual rate"}
+  ],
+  "channels": [
+    {
+      "title": "Business credit (borrowers and lenders)",
+      "source_fact": "C&I loans grew at an 18.8% annual rate in August after −2.4% in July, following 12.2% and 14.8% in the first two quarters.",
+      "interpretation": "A rebound to rapid business loan growth would fit firms drawing on bank credit for investment or working capital, or substituting bank loans for market funding. H.8 shows balances only: it does not show loan rates, new originations versus drawdowns, or why firms borrowed."
+    },
+    {
+      "title": "Bank liquidity and reserves",
+      "source_fact": "Cash assets fell at a 56.7% rate and borrowings at 31.2% in August while deposits grew 8.0%.",
+      "interpretation": "Banks running down cash while deposits grew and borrowings fell is consistent with using reserves to repay borrowings and fund loans. Lower cash buffers would matter for banks' room to absorb deposit outflows; the release reports no liquidity ratios."
+    },
+    {
+      "title": "Consumer credit (card lenders and spending)",
+      "source_fact": "Credit card balances grew at a 0.2% annual rate in August and fell $6.3 billion in the week to September 2.",
+      "interpretation": "Flat card balances could reflect weaker spending, faster repayment or tighter lending, and H.8 cannot separate them; a single week's decline is noisy."
+    }
+  ],
+  "competing_explanations": [
+    {"title": "Reclassifications around July", "detail": "Growth rates are adjusted for structure breaks, but the H.8 notes record that on July 1, 2026 foreign-related institutions reclassified $6.1 billion of C&I loans as loans to nondepository financial institutions. The swing from July to August in C&I growth depends on that adjustment being complete."},
+    {"title": "Timing noise in monthly averages", "detail": "Monthly figures are averages of Wednesday values, and single months of C&I and cash growth swing widely: C&I went from +7.0% in June to −2.4% in July to +18.8% in August. One month may reflect the timing of large draws or repayments."}
+  ],
+  "assumptions": [
+    "The weekly sample estimates track the whole banking system well between quarterly benchmarks to Call Reports.",
+    "Seasonal adjustment of the weekly and monthly series is adequate for August."
+  ],
+  "missing_information": [
+    "Loan rates and lending standards (for example the Senior Loan Officer Opinion Survey), which would separate demand for credit from its supply.",
+    "Which banks drove the C&I increase (large or small domestic banks, or foreign-related institutions); only the all-bank tables were read.",
+    "Reserve balances and Treasury account movements, which affect banks' cash assets."
+  ],
+  "weakening_observations": [
+    "If C&I growth reversed in September, the rebound would look like timing noise.",
+    "If the cash decline was concentrated at foreign-related institutions, the liquidity reading for domestic banks would weaken; that table was not read."
+  ],
+  "critique": [
+    {"title": "Annualized monthly rates exaggerate", "detail": "An 18.8% annual rate corresponds to an increase of about 1.6% in the month: the August average was about $45.5 billion above July's. Headlines built on annualized single months can overstate change, so the case gives both."},
+    {"title": "Balances are not new lending", "detail": "H.8 levels move with drawdowns, repayments, charge-offs, loan sales and reclassifications. The case describes balances and says so; it cannot speak to how much new credit banks extended."},
+    {"title": "One aggregate for very different banks", "detail": "All commercial banks together hide differences between large and small banks and foreign-related institutions, which matter for credit available to smaller firms."}
+  ],
+  "source_notes": [
+    {"title": "Text used", "detail": "Tables 1 and 2 (all commercial banks) and the footnotes of the release page, which shows 'Last Update: September 11, 2026', as shown on 2026-10-11. The other tables were not read.", "url": null},
+    {"title": "Notes on the Data", "detail": "The H.8 notes record reclassifications on December 31, 2025, April 1, 2026 and July 1, 2026 that moved loans between categories. Table 1 growth rates are adjusted for such breaks; Table 2 levels are not.", "url": "https://www.federalreserve.gov/releases/h8/h8notes.htm"},
+    {"title": "Release time", "detail": "The H.8 release-dates page says the data are released each Friday, generally at 4:15 p.m., without naming a time zone.", "url": "https://www.federalreserve.gov/releases/h8/default.htm"}
+  ],
+  "expectations_benchmark": null,
+  "provenance": {
+    "prepared_by": "Claude Opus 5.5, an Anthropic AI model, in a Claude Code session for the repository owner",
+    "prepared_on": "2026-10-11",
+    "method": "Read Tables 1 and 2 and the footnotes of the September 11, 2026 release, the H.8 release-dates page and the H.8 Notes on the Data in a browser on 2026-10-11. Facts come from the release tables and notes; the channels, competing explanations and critique are the assistant's interpretation, and the monthly dollar change is the assistant's arithmetic on Table 2. No market prices, surveys, forecasts or news coverage were used.",
+    "sources_read": [
+      "https://www.federalreserve.gov/releases/h8/20260911/",
+      "https://www.federalreserve.gov/releases/h8/default.htm",
+      "https://www.federalreserve.gov/releases/h8/h8notes.htm"
+    ],
+    "ai_assisted": true,
+    "retrospective": true,
+    "prepared_after_publication": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  }
+}

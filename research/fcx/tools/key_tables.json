@@ -1,0 +1,1038 @@
+[
+ {
+  "title": "Quarter and nine months: financial figures",
+  "note": "Three-month and nine-month columns are separate periods; changes compare equal-length periods only (see comparison.md). All rows are consolidated (including noncontrolling interests) unless the basis cell says otherwise.",
+  "columns": [
+   "Q3 2026",
+   "Q3 2025",
+   "9M 2026",
+   "9M 2025"
+  ],
+  "rows": [
+   [
+    "Revenues",
+    [
+     "r3-revenues-q3-2026",
+     "r3-revenues-q3-2025",
+     "r3-revenues-9m-2026",
+     "r3-revenues-9m-2025"
+    ]
+   ],
+   [
+    "Operating income",
+    [
+     "r3-operating-income-q3-2026",
+     "r3-operating-income-q3-2025",
+     "r3-operating-income-9m-2026",
+     "r3-operating-income-9m-2025"
+    ]
+   ],
+   [
+    "  of which: gain on PTFI insurance settlement (a negative cost)",
+    [
+     null,
+     null,
+     "r3-insurance-gain-9m-2026",
+     null
+    ]
+   ],
+   [
+    "Net income (consolidated group)",
+    [
+     "r3-net-income-q3-2026",
+     "r3-net-income-q3-2025",
+     "r3-net-income-9m-2026",
+     "r3-net-income-9m-2025"
+    ]
+   ],
+   [
+    "Net income attributable to noncontrolling interests",
+    [
+     "r3-ni-nci-q3-2026",
+     "r3-ni-nci-q3-2025",
+     "r3-ni-nci-9m-2026",
+     "r3-ni-nci-9m-2025"
+    ]
+   ],
+   [
+    "Net income attributable to common stockholders",
+    [
+     "r3-ni-common-is-q3-2026",
+     "r3-ni-common-is-q3-2025",
+     "r3-ni-common-is-9m-2026",
+     "r3-ni-common-is-9m-2025"
+    ]
+   ],
+   [
+    "Adjusted net income attributable to common stock (non-GAAP)",
+    [
+     "r3-adj-ni-q3-2026",
+     null,
+     "r3-adj-ni-9m-2026",
+     null
+    ]
+   ],
+   [
+    "Operating cash flows",
+    [
+     "r3-ocf-q3-2026",
+     "r3-ocf-q3-2025",
+     "r3-ocf-9m-2026",
+     "r3-ocf-9m-2025"
+    ]
+   ],
+   [
+    "Capital expenditures",
+    [
+     "r3-capex-q3-2026",
+     "r3-capex-q3-2025",
+     "r3-capex-9m-2026",
+     "r3-capex-9m-2025"
+    ]
+   ],
+   [
+    "Operating cash flows less capital expenditures",
+    [
+     "c-ocf-less-capex-q3-2026",
+     "c-ocf-less-capex-q3-2025",
+     "c-ocf-less-capex-9m-2026",
+     "c-ocf-less-capex-9m-2025"
+    ]
+   ],
+   [
+    "Distributions paid to noncontrolling interests",
+    [
+     null,
+     null,
+     "r3-cf-dist-nci-9m-2026",
+     "r3-cf-dist-nci-9m-2025"
+    ]
+   ],
+   [
+    "Dividends paid on common stock",
+    [
+     null,
+     null,
+     "r3-cf-div-common-9m-2026",
+     "r3-cf-div-common-9m-2025"
+    ]
+   ],
+   [
+    "Treasury stock purchases",
+    [
+     null,
+     null,
+     "r3-cf-buybacks-9m-2026",
+     "r3-cf-buybacks-9m-2025"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "Quarter and nine months: operating figures",
+  "note": "Consolidated volumes include 100% of PTFI, Cerro Verde and El Abra and FCX's 72% of Morenci. Unit net cash costs are the company's non-GAAP measure (net of by-product credits, excluding the mud-rush idle facility and restoration costs).",
+  "columns": [
+   "Q3 2026",
+   "Q3 2025",
+   "9M 2026",
+   "9M 2025"
+  ],
+  "rows": [
+   [
+    "Copper production",
+    [
+     "r3-cu-production-q3-2026",
+     "r3-cu-production-q3-2025",
+     "r3-cu-production-9m-2026",
+     "r3-cu-production-9m-2025"
+    ]
+   ],
+   [
+    "Copper sales, excluding purchases",
+    [
+     "r3-cu-sales-q3-2026",
+     "r3-cu-sales-q3-2025",
+     "r3-cu-sales-9m-2026",
+     "r3-cu-sales-9m-2025"
+    ]
+   ],
+   [
+    "Copper sales, net of noncontrolling interests",
+    [
+     "r3-cu-net-q3-2026-sales",
+     "r3-cu-net-q3-2025-sales",
+     "r3-cu-net-9m-2026-sales",
+     "r3-cu-net-9m-2025-sales"
+    ]
+   ],
+   [
+    "Average realized copper price",
+    [
+     "r3-cu-price-q3-2026",
+     "r3-cu-price-q3-2025",
+     "r3-cu-price-9m-2026",
+     "r3-cu-price-9m-2025"
+    ]
+   ],
+   [
+    "Unit net cash costs per pound of copper",
+    [
+     "r3-cu-unc-q3-2026",
+     "r3-cu-unc-q3-2025",
+     "r3-cu-unc-9m-2026",
+     "r3-cu-unc-9m-2025"
+    ]
+   ],
+   [
+    "Gold sales",
+    [
+     "r3-au-sales-q3-2026",
+     "r3-au-sales-q3-2025",
+     "r3-au-sales-9m-2026",
+     "r3-au-sales-9m-2025"
+    ]
+   ],
+   [
+    "Average realized gold price",
+    [
+     "r3-au-price-q3-2026",
+     "r3-au-price-q3-2025",
+     "r3-au-price-9m-2026",
+     "r3-au-price-9m-2025"
+    ]
+   ],
+   [
+    "Molybdenum sales, excluding purchases",
+    [
+     "r3-mo-sales-q3-2026",
+     "r3-mo-sales-q3-2025",
+     "r3-mo-sales-9m-2026",
+     "r3-mo-sales-9m-2025"
+    ]
+   ],
+   [
+    "Average realized molybdenum price",
+    [
+     "r3-mo-price-q3-2026",
+     "r3-mo-price-q3-2025",
+     "r3-mo-price-9m-2026",
+     "r3-mo-price-9m-2025"
+    ]
+   ],
+   [
+    "U.S. copper mines: copper sales",
+    [
+     "r3-us-cu-sales-q3-2026",
+     "r3-us-cu-sales-q3-2025",
+     "r3-us-cu-sales-9m-2026",
+     "r3-us-cu-sales-9m-2025"
+    ]
+   ],
+   [
+    "U.S. copper mines: unit net cash costs",
+    [
+     "r3-us-unc-q3-2026",
+     "r3-us-unc-q3-2025",
+     "r3-us-unc-9m-2026",
+     "r3-us-unc-9m-2025"
+    ]
+   ],
+   [
+    "South America: copper sales",
+    [
+     "r3-sa-cu-sales-q3-2026",
+     "r3-sa-cu-sales-q3-2025",
+     "r3-sa-cu-sales-9m-2026",
+     "r3-sa-cu-sales-9m-2025"
+    ]
+   ],
+   [
+    "South America: unit net cash costs",
+    [
+     "r3-sa-unc-q3-2026",
+     "r3-sa-unc-q3-2025",
+     "r3-sa-unc-9m-2026",
+     "r3-sa-unc-9m-2025"
+    ]
+   ],
+   [
+    "Indonesia: copper sales",
+    [
+     "r3-id-cu-sales-q3-2026",
+     "r3-id-cu-sales-q3-2025",
+     "r3-id-cu-sales-9m-2026",
+     "r3-id-cu-sales-9m-2025"
+    ]
+   ],
+   [
+    "Indonesia: unit net cash credits (negative = credit)",
+    [
+     "r3-id-unc-q3-2026",
+     "r3-id-unc-q3-2025",
+     "r3-id-unc-9m-2026",
+     "r3-id-unc-9m-2025"
+    ]
+   ],
+   [
+    "Mud-rush idle facility, recovery and restoration costs",
+    [
+     "r3-idle-costs-q3-2026",
+     null,
+     "r3-idle-costs-9m-2026",
+     null
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "Segment operating income",
+  "note": "From Business Divisions and Segments; segments are as the company organises them, with intersegment sales at arm's-length terms. Indonesia's 9M 2026 figure includes the $699 million insurance gain.",
+  "columns": [
+   "Q3 2026",
+   "Q3 2025",
+   "9M 2026",
+   "9M 2025"
+  ],
+  "rows": [
+   [
+    "U.S. copper mines (total)",
+    [
+     "r3-seg-oi-us-q3-2026",
+     "r3-seg-oi-us-q3-2025",
+     "r3-seg-oi-us-9m-2026",
+     "r3-seg-oi-us-9m-2025"
+    ]
+   ],
+   [
+    "South America operations (total)",
+    [
+     "r3-seg-oi-sa-q3-2026",
+     "r3-seg-oi-sa-q3-2025",
+     "r3-seg-oi-sa-9m-2026",
+     "r3-seg-oi-sa-9m-2025"
+    ]
+   ],
+   [
+    "Indonesia operations",
+    [
+     "r3-seg-oi-id-q3-2026",
+     "r3-seg-oi-id-q3-2025",
+     "r3-seg-oi-id-9m-2026",
+     "r3-seg-oi-id-9m-2025"
+    ]
+   ],
+   [
+    "FCX total",
+    [
+     "r3-seg-oi-total-q3-2026",
+     "r3-seg-oi-total-q3-2025",
+     "r3-seg-oi-total-9m-2026",
+     "r3-seg-oi-total-9m-2025"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "Full years (10-K): financial figures",
+  "note": "Fiscal years from the 2025 Form 10-K. Not comparable with the nine-month columns above; changes compare full years only.",
+  "columns": [
+   "FY2025",
+   "FY2024"
+  ],
+  "rows": [
+   [
+    "Revenues",
+    [
+     "k25-revenues-fy2025",
+     "k25-revenues-fy2024"
+    ]
+   ],
+   [
+    "Operating income",
+    [
+     "k25-operating-income-fy2025",
+     "k25-operating-income-fy2024"
+    ]
+   ],
+   [
+    "Net income (consolidated group)",
+    [
+     "k25-net-income-consolidated-fy2025",
+     "k25-net-income-consolidated-fy2024"
+    ]
+   ],
+   [
+    "Net income attributable to noncontrolling interests",
+    [
+     "k25-net-income-nci-fy2025",
+     "k25-net-income-nci-fy2024"
+    ]
+   ],
+   [
+    "Net income attributable to common stockholders",
+    [
+     "k25-net-income-common-fy2025",
+     "k25-net-income-common-fy2024"
+    ]
+   ],
+   [
+    "Operating cash flows",
+    [
+     "k25-operating-cash-flow-fy2025",
+     "k25-operating-cash-flow-fy2024"
+    ]
+   ],
+   [
+    "Capital expenditures",
+    [
+     "k25-capex-total-fy2025",
+     "k25-capex-total-fy2024"
+    ]
+   ],
+   [
+    "Operating cash flows less capital expenditures",
+    [
+     "c-ocf-less-capex-fy2025",
+     "c-ocf-less-capex-fy2024"
+    ]
+   ],
+   [
+    "Distributions paid to noncontrolling interests",
+    [
+     "k25-distributions-paid-nci-fy2025",
+     "k25-distributions-paid-nci-fy2024"
+    ]
+   ],
+   [
+    "Dividends paid on common stock",
+    [
+     "k25-dividends-paid-common-fy2025",
+     "k25-dividends-paid-common-fy2024"
+    ]
+   ],
+   [
+    "Treasury stock purchases",
+    [
+     "k25-treasury-stock-purchases-fy2025",
+     "k25-treasury-stock-purchases-fy2024"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "Full years (10-K): operating figures",
+  "note": "Consolidated volumes include 100% of PTFI, Cerro Verde and El Abra and 72% of Morenci; the net row removes noncontrolling interests. Unit net cash costs are non-GAAP and exclude the mud-rush costs.",
+  "columns": [
+   "FY2025",
+   "FY2024"
+  ],
+  "rows": [
+   [
+    "Copper production",
+    [
+     "k25-copper-production-fy2025",
+     "k25-copper-production-fy2024"
+    ]
+   ],
+   [
+    "Copper sales",
+    [
+     "k25-copper-sales-fy2025",
+     "k25-copper-sales-fy2024"
+    ]
+   ],
+   [
+    "Copper sales, net of noncontrolling interests",
+    [
+     "k25-copper-sales-net-fy2025",
+     "k25-copper-sales-net-fy2024"
+    ]
+   ],
+   [
+    "Average realized copper price",
+    [
+     "k25-copper-realized-price-fy2025",
+     "k25-copper-realized-price-fy2024"
+    ]
+   ],
+   [
+    "Unit net cash costs per pound of copper",
+    [
+     "k25-unit-net-cash-costs-fy2025",
+     "k25-unit-net-cash-costs-fy2024"
+    ]
+   ],
+   [
+    "Gold sales",
+    [
+     "k25-gold-sales-fy2025",
+     "k25-gold-sales-fy2024"
+    ]
+   ],
+   [
+    "Average realized gold price",
+    [
+     "k25-gold-realized-price-fy2025",
+     "k25-gold-realized-price-fy2024"
+    ]
+   ],
+   [
+    "Molybdenum sales",
+    [
+     "k25-moly-sales-fy2025",
+     "k25-moly-sales-fy2024"
+    ]
+   ],
+   [
+    "U.S. copper mines: unit net cash costs",
+    [
+     "k25-us-unit-net-cash-costs-fy2025",
+     "k25-us-unit-net-cash-costs-fy2024"
+    ]
+   ],
+   [
+    "South America: unit net cash costs",
+    [
+     "k25-sa-unit-net-cash-costs-fy2025",
+     "k25-sa-unit-net-cash-costs-fy2024"
+    ]
+   ],
+   [
+    "Indonesia: copper sales",
+    [
+     "k25-ptfi-copper-sales-fy2025",
+     "k25-ptfi-copper-sales-fy2024"
+    ]
+   ],
+   [
+    "Indonesia: unit net cash credits (negative = credit)",
+    [
+     "k25-ptfi-unit-net-cash-credits-fy2025",
+     "k25-ptfi-unit-net-cash-credits-fy2024"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "Balance sheet: cash, debt and equity",
+  "note": "Point-in-time balances; the Where column names each column's report in order. Net debt is the company's non-GAAP definition (consolidated debt less consolidated cash and cash equivalents).",
+  "columns": [
+   "2026-09-30",
+   "2025-12-31",
+   "2024-12-31"
+  ],
+  "rows": [
+   [
+    "Cash and cash equivalents",
+    [
+     "r3-bs-cash-2026-09-30",
+     "r3-bs-cash-2025-12-31",
+     "k25-cash-and-equivalents-2024-12-31"
+    ]
+   ],
+   [
+    "Current portion of debt",
+    [
+     "r3-debt-current-2026-09-30",
+     "r3-debt-current-2025-12-31",
+     "k25-current-portion-of-debt-2024-12-31"
+    ]
+   ],
+   [
+    "Long-term debt, less current portion",
+    [
+     "r3-debt-long-2026-09-30",
+     "r3-debt-long-2025-12-31",
+     "k25-long-term-debt-2024-12-31"
+    ]
+   ],
+   [
+    "Total debt",
+    [
+     "r3-debt-2026-09-30",
+     "k25-total-debt-2025-12-31",
+     "k25-total-debt-2024-12-31"
+    ]
+   ],
+   [
+    "Net debt (company definition)",
+    [
+     "r3-nd-net-debt-2026-09-30",
+     "k25-net-debt-2025-12-31",
+     null
+    ]
+   ],
+   [
+    "Net debt excluding PTFI downstream project debt",
+    [
+     "r3-nd-net-debt-ex-2026-09-30",
+     "k25-net-debt-ex-ptfi-downstream-2025-12-31",
+     null
+    ]
+   ],
+   [
+    "Total stockholders' equity (FCX)",
+    [
+     "r3-equity-fcx-2026-09-30",
+     "r3-equity-fcx-2025-12-31",
+     "k25-stockholders-equity-2024-12-31"
+    ]
+   ],
+   [
+    "Noncontrolling interests (equity)",
+    [
+     "r3-equity-nci-2026-09-30",
+     "r3-equity-nci-2025-12-31",
+     "k25-noncontrolling-interests-equity-2024-12-31"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "Outlook for 2026 (release of 2026-10-27)",
+  "note": "The company's expectations, at $6.50/lb copper, $4,000/oz gold and $32.00/lb molybdenum for Q4 2026 and its current volume and cost estimates. Not results, and not the project's forecast.",
+  "columns": [
+   "FY2026 outlook",
+   "Q4 2026"
+  ],
+  "rows": [
+   [
+    "Copper sales volumes",
+    [
+     "r3-out-cu-sales-fy2026",
+     "r3-out-cu-sales-q4-2026"
+    ]
+   ],
+   [
+    "Unit net cash costs per pound of copper",
+    [
+     "r3-out-unc-fy2026",
+     null
+    ]
+   ],
+   [
+    "Operating cash flows",
+    [
+     "r3-out-ocf-fy2026",
+     "c-q4-ocf-implied"
+    ]
+   ],
+   [
+    "Capital expenditures",
+    [
+     "r3-out-capex-fy2026",
+     "c-q4-capex-implied"
+    ]
+   ],
+   [
+    "Net income attributable to noncontrolling interests",
+    [
+     "r3-out-nci-ni-fy2026",
+     null
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "The 2026 outlook in February (10-K) and in October (Q3 2026 reports)",
+  "note": "Outlooks, not results, each at its own price assumptions ($5.00/lb copper for 2026 in February; actual prices for nine months plus $6.50/lb for Q4 in October). A change in a cash line mixes price and operations.",
+  "columns": [
+   "10-K (signature date 2026-02-13)",
+   "10-Q (signature date 2026-11-06)"
+  ],
+  "rows": [
+   [
+    "Copper sales volumes",
+    [
+     "k25-outlook-copper-sales-total-fy2026",
+     "q3-outlook-cu-sales-total-fy2026"
+    ]
+   ],
+   [
+    "Indonesia copper sales volumes",
+    [
+     "k25-outlook-copper-sales-indonesia-fy2026",
+     "q3-outlook-cu-sales-indonesia-fy2026"
+    ]
+   ],
+   [
+    "Gold sales volumes",
+    [
+     "k25-outlook-gold-sales-fy2026",
+     "q3-outlook-au-sales-fy2026"
+    ]
+   ],
+   [
+    "Unit net cash costs per pound of copper",
+    [
+     "k25-outlook-unit-net-cash-costs-fy2026",
+     "q3-outlook-uncc-consolidated-fy2026"
+    ]
+   ],
+   [
+    "PTFI idle facility costs",
+    [
+     "k25-idle-facility-costs-outlook-fy2026",
+     "q3-outlook-idle-costs-fy2026"
+    ]
+   ],
+   [
+    "Operating cash flows",
+    [
+     "k25-outlook-operating-cash-flows-fy2026",
+     "q3-outlook-ocf-fy2026"
+    ]
+   ],
+   [
+    "Capital expenditures",
+    [
+     "k25-outlook-capex-total-fy2026",
+     "q3-outlook-capex-total-fy2026"
+    ]
+   ],
+   [
+    "Net income attributable to noncontrolling interests",
+    [
+     "k25-outlook-net-income-nci-fy2026",
+     "q3-outlook-nci-fy2026"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "The company's revenue bridge: quarter and nine months (10-Q)",
+  "note": "The company's own lines from the prior-period to the current-period consolidated revenues (10-Q, printed page 29), each the effect on revenues. Quarter and nine-month columns are separate comparisons. The group sums are this project's (a-revenue-bridge-grouping).",
+  "columns": [
+   "Q3 2026 vs Q3 2025",
+   "9M 2026 vs 9M 2025"
+  ],
+  "rows": [
+   [
+    "Copper sales volumes",
+    [
+     "q3-rev-bridge-cu-volume-q3-2026",
+     "q3-rev-bridge-cu-volume-9m-2026"
+    ]
+   ],
+   [
+    "Gold sales volumes",
+    [
+     "q3-rev-bridge-au-volume-q3-2026",
+     "q3-rev-bridge-au-volume-9m-2026"
+    ]
+   ],
+   [
+    "Molybdenum sales volumes",
+    [
+     "q3-rev-bridge-mo-volume-q3-2026",
+     "q3-rev-bridge-mo-volume-9m-2026"
+    ]
+   ],
+   [
+    "Copper realized prices",
+    [
+     "q3-rev-bridge-cu-price-q3-2026",
+     "q3-rev-bridge-cu-price-9m-2026"
+    ]
+   ],
+   [
+    "Gold realized prices",
+    [
+     "q3-rev-bridge-au-price-q3-2026",
+     "q3-rev-bridge-au-price-9m-2026"
+    ]
+   ],
+   [
+    "Molybdenum realized prices",
+    [
+     "q3-rev-bridge-mo-price-q3-2026",
+     "q3-rev-bridge-mo-price-9m-2026"
+    ]
+   ],
+   [
+    "Prior-period provisionally priced copper sales",
+    [
+     "q3-rev-bridge-prior-provisional-q3-2026",
+     "q3-rev-bridge-prior-provisional-9m-2026"
+    ]
+   ],
+   [
+    "Atlantic Copper revenues",
+    [
+     "q3-rev-bridge-atlantic-q3-2026",
+     "q3-rev-bridge-atlantic-9m-2026"
+    ]
+   ],
+   [
+    "Purchased copper",
+    [
+     "q3-rev-bridge-purchased-q3-2026",
+     "q3-rev-bridge-purchased-9m-2026"
+    ]
+   ],
+   [
+    "Treatment charges",
+    [
+     "q3-rev-bridge-treatment-q3-2026",
+     "q3-rev-bridge-treatment-9m-2026"
+    ]
+   ],
+   [
+    "Export duties",
+    [
+     "q3-rev-bridge-export-duties-q3-2026",
+     "q3-rev-bridge-export-duties-9m-2026"
+    ]
+   ],
+   [
+    "Royalties",
+    [
+     "q3-rev-bridge-royalties-q3-2026",
+     "q3-rev-bridge-royalties-9m-2026"
+    ]
+   ],
+   [
+    "Other and intercompany eliminations",
+    [
+     "q3-rev-bridge-other-q3-2026",
+     "q3-rev-bridge-other-9m-2026"
+    ]
+   ],
+   [
+    "Sum of the volume lines (computed)",
+    [
+     "c-rev-bridge-volume-q3-2026",
+     "c-rev-bridge-volume-9m-2026"
+    ]
+   ],
+   [
+    "Sum of the price lines (computed)",
+    [
+     "c-rev-bridge-price-q3-2026",
+     "c-rev-bridge-price-9m-2026"
+    ]
+   ],
+   [
+    "Sum of the other lines (computed)",
+    [
+     "c-rev-bridge-other-lines-q3-2026",
+     "c-rev-bridge-other-lines-9m-2026"
+    ]
+   ],
+   [
+    "Check: the bridge adds up (zero)",
+    [
+     "c-rev-bridge-closes-q3-2026",
+     "c-rev-bridge-closes-9m-2026"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "The company's revenue bridge: full year (10-K)",
+  "note": "The 10-K's lines from 2024 to 2025 consolidated revenues (printed page 91). The 10-K combines export duties and royalties in one line.",
+  "columns": [
+   "FY2025 vs FY2024"
+  ],
+  "rows": [
+   [
+    "Copper sales volumes",
+    [
+     "k25-rev-bridge-cu-volume-fy2025"
+    ]
+   ],
+   [
+    "Gold sales volumes",
+    [
+     "k25-rev-bridge-au-volume-fy2025"
+    ]
+   ],
+   [
+    "Molybdenum sales volumes",
+    [
+     "k25-rev-bridge-mo-volume-fy2025"
+    ]
+   ],
+   [
+    "Copper realized prices",
+    [
+     "k25-rev-bridge-cu-price-fy2025"
+    ]
+   ],
+   [
+    "Gold realized prices",
+    [
+     "k25-rev-bridge-au-price-fy2025"
+    ]
+   ],
+   [
+    "Molybdenum realized prices",
+    [
+     "k25-rev-bridge-mo-price-fy2025"
+    ]
+   ],
+   [
+    "Prior-period provisionally priced copper sales",
+    [
+     "k25-rev-bridge-prior-provisional-fy2025"
+    ]
+   ],
+   [
+    "Atlantic Copper revenues",
+    [
+     "k25-rev-bridge-atlantic-fy2025"
+    ]
+   ],
+   [
+    "Purchased copper",
+    [
+     "k25-rev-bridge-purchased-fy2025"
+    ]
+   ],
+   [
+    "Treatment charges",
+    [
+     "k25-rev-bridge-treatment-fy2025"
+    ]
+   ],
+   [
+    "Export duties and royalties",
+    [
+     "k25-rev-bridge-export-royalties-fy2025"
+    ]
+   ],
+   [
+    "Other, including intercompany eliminations",
+    [
+     "k25-rev-bridge-other-fy2025"
+    ]
+   ],
+   [
+    "Sum of the volume lines (computed)",
+    [
+     "c-rev-bridge-volume-fy2025"
+    ]
+   ],
+   [
+    "Sum of the price lines (computed)",
+    [
+     "c-rev-bridge-price-fy2025"
+    ]
+   ],
+   [
+    "Sum of the other lines (computed)",
+    [
+     "c-rev-bridge-other-lines-fy2025"
+    ]
+   ],
+   [
+    "Check: the bridge adds up (zero)",
+    [
+     "c-rev-bridge-closes-fy2025"
+    ]
+   ]
+  ]
+ },
+ {
+  "title": "The Bagdad expansion: the company's statements on four dates",
+  "note": "Company estimates, not results, as each document states them. The board approved the program on or before 2026-11-04 (nr-p-board-approval). 'Incentive price' and 'break-even' are kept as each document words them and sit on separate rows.",
+  "columns": [
+   "10-K (2026-02-13)",
+   "Results release (2026-10-27)",
+   "Bagdad release (2026-11-04)",
+   "10-Q (signature date 2026-11-06)"
+  ],
+  "rows": [
+   [
+    "Capital cost estimate",
+    [
+     "k25-bagdad-capex-estimate",
+     "r3-bagdad-capex-estimate",
+     "nr-bagdad-capex-estimate",
+     "q3-bagdad-capex-estimate"
+    ]
+   ],
+   [
+    "Added copper a year, low end of the stated range",
+    [
+     "k25-bagdad-cu-increment-low",
+     "r3-bagdad-cu-increment-low",
+     null,
+     null
+    ]
+   ],
+   [
+    "Added copper a year, high end of the stated range",
+    [
+     "k25-bagdad-cu-increment-high",
+     "r3-bagdad-cu-increment-high",
+     null,
+     null
+    ]
+   ],
+   [
+    "Added copper a year, single figure (approximately)",
+    [
+     null,
+     null,
+     "nr-bagdad-cu-increment",
+     "q3-bagdad-cu-increment"
+    ]
+   ],
+   [
+    "Copper production a year at full rates (over)",
+    [
+     null,
+     null,
+     "nr-bagdad-cu-total",
+     "q3-bagdad-cu-total"
+    ]
+   ],
+   [
+    "Added molybdenum a year, low end of the stated range",
+    [
+     null,
+     "r3-bagdad-mo-increment-low",
+     null,
+     null
+    ]
+   ],
+   [
+    "Added molybdenum a year, high end of the stated range",
+    [
+     null,
+     "r3-bagdad-mo-increment-high",
+     null,
+     null
+    ]
+   ],
+   [
+    "Added molybdenum a year, single figure (approximately)",
+    [
+     null,
+     null,
+     "nr-bagdad-mo-increment",
+     "q3-bagdad-mo-increment"
+    ]
+   ],
+   [
+    "Incentive copper price",
+    [
+     "k25-bagdad-incentive-price",
+     "r3-bagdad-incentive-price",
+     null,
+     null
+    ]
+   ],
+   [
+    "Copper price supporting break-even economics",
+    [
+     null,
+     null,
+     "nr-bagdad-breakeven-cu",
+     null
+    ]
+   ]
+  ]
+ }
+]

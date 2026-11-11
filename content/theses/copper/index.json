@@ -1,0 +1,12 @@
+{
+ "index_version": "thesis-index-0.1",
+ "id": "copper",
+ "versions": [
+  {
+   "version": 1,
+   "file": "v1.json",
+   "sha256": "4893928f936d3dd3a75ffb37238526d69c809131c72351f938b134d2249e956f",
+   "published_on": "2026-11-03"
+  }
+ ]
+}

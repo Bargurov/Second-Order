@@ -1,0 +1,509 @@
+{
+ "description": "Exact provider-facing schema from the live brief-prompt-8 grammar-size rejection (brief-58e058b535778a8e), copied from its saved request on 2026-10-28 when the assisted contract it was built from changed (econ-explanation-0.4); no source text, credentials or response body.",
+ "prompt_version": "brief-prompt-8",
+ "request_sha256": "58e058b535778a8ef739f5f7dd8188f54c47d1a99b32c93e2a6a42a30f5b2858",
+ "format_sha256": "2a7c49f25a269eefdbfb3a0aefe3367ca8ae269ce59b47a9ba76946f20d9177e",
+ "schema": {
+  "additionalProperties": false,
+  "properties": {
+   "economics": {
+    "additionalProperties": false,
+    "properties": {
+     "alternatives": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "basis": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "kind": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "kind",
+        "text",
+        "basis"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "assumptions": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "text"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "calculations": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "inputs": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "label": {
+         "type": "string"
+        },
+        "op": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "op",
+        "inputs",
+        "label"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "change": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "basis": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "instrument": {
+         "type": "string"
+        },
+        "stage": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "stage",
+        "instrument",
+        "text",
+        "basis"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "channels": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "affected": {
+         "items": {
+          "additionalProperties": false,
+          "properties": {
+           "how": {
+            "type": "string"
+           },
+           "kind": {
+            "type": "string"
+           },
+           "name": {
+            "type": "string"
+           }
+          },
+          "required": [
+           "kind",
+           "name",
+           "how"
+          ],
+          "type": "object"
+         },
+         "type": "array"
+        },
+        "assumptions": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "basis": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "conditions": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "horizon": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "note": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "scope": {
+         "type": "string"
+        },
+        "steps": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "support": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "scope",
+        "support",
+        "note",
+        "text",
+        "steps",
+        "affected",
+        "conditions",
+        "horizon",
+        "basis",
+        "assumptions"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "figures": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "basis": {
+         "type": "string"
+        },
+        "bound": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        },
+        "measure": {
+         "type": "string"
+        },
+        "period": {
+         "type": "string"
+        },
+        "price": {
+         "type": "boolean"
+        },
+        "quote": {
+         "type": "string"
+        },
+        "seasonal": {
+         "type": "string"
+        },
+        "sign": {
+         "type": "string"
+        },
+        "sign_words": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "source": {
+         "type": "string"
+        },
+        "statistic": {
+         "type": "string"
+        },
+        "stock_flow": {
+         "type": "string"
+        },
+        "unit": {
+         "type": "string"
+        },
+        "value": {
+         "type": "number"
+        },
+        "vintage_label": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        }
+       },
+       "required": [
+        "id",
+        "label",
+        "value",
+        "unit",
+        "measure",
+        "period",
+        "basis",
+        "seasonal",
+        "price",
+        "source",
+        "quote",
+        "vintage_label",
+        "sign",
+        "sign_words",
+        "bound",
+        "statistic",
+        "stock_flow"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "insufficient_reason": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "main_uncertainty": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array"
+     },
+     "second_order": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "assumptions": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "basis": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "conditions": {
+         "type": "string"
+        },
+        "from": {
+         "type": "string"
+        },
+        "horizon": {
+         "type": "string"
+        },
+        "id": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "id",
+        "from",
+        "text",
+        "conditions",
+        "horizon",
+        "basis",
+        "assumptions"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "significance": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "basis": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "text": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "text",
+        "basis"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     },
+     "status": {
+      "type": "string"
+     },
+     "watch": {
+      "items": {
+       "additionalProperties": false,
+       "properties": {
+        "observable": {
+         "type": "string"
+        },
+        "text": {
+         "type": "string"
+        },
+        "would": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "observable",
+        "would",
+        "text"
+       ],
+       "type": "object"
+      },
+      "type": "array"
+     }
+    },
+    "required": [
+     "status",
+     "insufficient_reason",
+     "change",
+     "significance",
+     "main_uncertainty",
+     "figures",
+     "calculations",
+     "assumptions",
+     "channels",
+     "second_order",
+     "alternatives",
+     "watch"
+    ],
+    "type": "object"
+   },
+   "facts": {
+    "items": {
+     "additionalProperties": false,
+     "properties": {
+      "reports": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "text",
+      "reports"
+     ],
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "headline": {
+    "type": "string"
+   },
+   "implications": {
+    "items": {
+     "additionalProperties": false,
+     "properties": {
+      "text": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "text"
+     ],
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "insufficient_material": {
+    "type": "string"
+   },
+   "missing": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   },
+   "summary": {
+    "type": "string"
+   },
+   "themes": {
+    "items": {
+     "additionalProperties": false,
+     "properties": {
+      "basis": {
+       "type": "string"
+      },
+      "kind": {
+       "type": "string"
+      },
+      "name": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "kind",
+      "name",
+      "basis"
+     ],
+     "type": "object"
+    },
+    "type": "array"
+   },
+   "uncertainties": {
+    "items": {
+     "type": "string"
+    },
+    "type": "array"
+   }
+  },
+  "required": [
+   "headline",
+   "summary",
+   "facts",
+   "insufficient_material",
+   "implications",
+   "themes",
+   "uncertainties",
+   "missing",
+   "economics"
+  ],
+  "type": "object"
+ }
+}

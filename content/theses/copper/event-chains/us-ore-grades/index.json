@@ -1,0 +1,12 @@
+{
+ "index_version": "event-chain-index-0.1",
+ "id": "us-ore-grades",
+ "versions": [
+  {
+   "version": 1,
+   "file": "v1.json",
+   "sha256": "d81322469d6cec0e74decb17780551f731ea2f840dd5d340384557c0496df82f",
+   "published_on": "2026-11-09"
+  }
+ ]
+}

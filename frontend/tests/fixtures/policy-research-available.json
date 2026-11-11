@@ -1,0 +1,838 @@
+{
+ "comparisons": [
+  {
+   "evidence": [
+    {
+     "absent": null,
+     "field": null,
+     "kind": "quote",
+     "paragraph": 1,
+     "paragraphs": 5,
+     "publication": "synthetic-rule",
+     "quote": "BIS issued a rule adding license requirements for advanced computing chips",
+     "value": null
+    },
+    {
+     "absent": null,
+     "field": "published",
+     "kind": "field",
+     "paragraph": null,
+     "paragraphs": 5,
+     "publication": "synthetic-rule",
+     "quote": null,
+     "value": "2026-01-10T15:00:00+00:00"
+    },
+    {
+     "absent": null,
+     "field": null,
+     "kind": "quote",
+     "paragraph": 1,
+     "paragraphs": 3,
+     "publication": "synthetic-update",
+     "quote": "this rule modifies the rule of January 10, 2026",
+     "value": null
+    }
+   ],
+   "id": "synthetic-stated-change",
+   "kind": "stated_change",
+   "observation": "The update says it modifies the rule of January 10, 2026.",
+   "problems": [],
+   "publications": [
+    "synthetic-rule",
+    "synthetic-update"
+   ],
+   "question": "Does the update say it changes the rule?",
+   "state": "available",
+   "unknown": "Synthetic: what changed in detail.",
+   "why": "The later text states the relationship itself.",
+   "would_establish": "Synthetic: the rule texts."
+  },
+  {
+   "evidence": [
+    {
+     "absent": null,
+     "field": null,
+     "kind": "quote",
+     "paragraph": 1,
+     "paragraphs": 1,
+     "publication": "synthetic-first",
+     "quote": "Synthetic first document, about chip-making equipment.",
+     "value": null
+    },
+    {
+     "absent": null,
+     "field": null,
+     "kind": "quote",
+     "paragraph": 1,
+     "paragraphs": 1,
+     "publication": "synthetic-second",
+     "quote": "Synthetic second, different document.",
+     "value": null
+    },
+    {
+     "absent": "chip-making",
+     "field": null,
+     "kind": "absence",
+     "paragraph": null,
+     "paragraphs": 1,
+     "publication": "synthetic-second",
+     "quote": null,
+     "value": null
+    }
+   ],
+   "id": "synthetic-same-title",
+   "kind": "different_subjects",
+   "observation": "They share a title but carry different texts.",
+   "problems": [],
+   "publications": [
+    "synthetic-first",
+    "synthetic-second"
+   ],
+   "question": "Are the two same-titled releases one document?",
+   "state": "available",
+   "unknown": "Synthetic: why they share a title.",
+   "why": "Merging them by title would lose one document.",
+   "would_establish": "Synthetic: the publisher's note."
+  }
+ ],
+ "corpus_notes": [
+  "Synthetic: one publisher's invented releases."
+ ],
+ "counts": {
+  "comparisons": {
+   "available": 2,
+   "needs_revalidation": 0,
+   "unavailable": 0
+  },
+  "publications": {
+   "changed": 0,
+   "missing": 0,
+   "verified": 4
+  }
+ },
+ "id": "synthetic-policy",
+ "labels": {
+  "comparison_kinds": {
+   "dates": "Which date, how precise",
+   "different_subjects": "One name, two subjects",
+   "instrument": "Rule, clarification or enforcement",
+   "non_equivalent": "Alike, not shown to be the same",
+   "stated_change": "A change the source states"
+  },
+  "comparison_states": {
+   "available": "Checked against the retained sources",
+   "needs_revalidation": "Needs revalidation: a source changed",
+   "unavailable": "Unavailable: a source is not on this machine"
+  },
+  "date_kinds": {
+   "comment_deadline": "Comments due",
+   "compliance": "Compliance date",
+   "conduct": "Conduct",
+   "designation": "Placed on the Entity List",
+   "effective": "Takes effect",
+   "issued": "Issued, as stated",
+   "license_deadline": "Licenses needed"
+  },
+  "dimensions": {
+   "conditions": "Exceptions, thresholds and conditions",
+   "instrument": "Instrument",
+   "parties": "Jurisdictions, actors and end uses",
+   "relation": "Stated relation to earlier publications",
+   "scope": "Technology or product scope",
+   "supply_chain": "Supply-chain stages named",
+   "timing": "Announcement and effective dates"
+  },
+  "listing_fields": {
+   "changed": "CMS last change",
+   "created": "CMS creation time",
+   "published": "BIS listing time"
+  },
+  "precisions": {
+   "day": "Day",
+   "relative": "Relative to another date",
+   "year": "Year only"
+  },
+  "publication_states": {
+   "changed": "The retained source differs from the version this was written against",
+   "missing": "The retained source is not on this machine",
+   "verified": "Checked against the retained source on this machine"
+  },
+  "stages": {
+   "ai_models": "AI models",
+   "chips": "Advanced computing chips",
+   "computing_systems": "Supercomputers and data centers",
+   "design_software": "Chip-design software",
+   "equipment": "Chip-making equipment",
+   "fabrication": "Chip fabrication",
+   "memory": "Memory"
+  },
+  "statuses": {
+   "interpretation": "Curator interpretation",
+   "not_stated": "Not stated in this source",
+   "referenced_unread": "In a linked document not retained",
+   "stated": "Publisher statement"
+  }
+ },
+ "method_note": "Synthetic: chosen to exercise every state.",
+ "not_claimed": [
+  "That the synthetic rule caused anything."
+ ],
+ "not_included": [
+  {
+   "case": {
+    "href": "/library/bis-2026-07-10",
+    "id": "bis-2026-07-10",
+    "kind": "library",
+    "note": "Synthetic case link.",
+    "title": "BIS moves the UAE to Country Group A:5 and approves license-free AI chips for certain recipients"
+   },
+   "listed": "2026-07-01T15:00:00+00:00",
+   "reason": "Synthetic: considered and not selected.",
+   "state": "verified",
+   "title": "Synthetic Not Selected Semiconductor Notice",
+   "url": "https://www.bis.gov/press-release/synthetic-not-selected"
+  }
+ ],
+ "provenance": {
+  "ai_assisted": true,
+  "human_review": "not_reviewed",
+  "method": "Synthetic: written by the test fixture.",
+  "prepared_by": "Synthetic test fixture",
+  "prepared_on": "2026-10-12",
+  "research_use": "excluded"
+ },
+ "provider_called": false,
+ "publications": [
+  {
+   "cases": [
+    {
+     "href": "/library/historical/bis-2022-10-07",
+     "id": "bis-2022-10-07",
+     "kind": "historical",
+     "note": "Synthetic link to a committed case.",
+     "title": "Commerce restricts advanced computing and chipmaking items for the PRC"
+    }
+   ],
+   "dateline": {
+    "detail": "The release page matches its acquisition record and carries the recorded dateline.",
+    "page": "synthetic-rule-page",
+    "state": "verified",
+    "value": "January 10, 2026"
+   },
+   "dimensions": {
+    "conditions": {
+     "label": "In the rule text, not retained",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 4,
+         "quote": "the text of the rule is available here"
+        }
+       ],
+       "reference": "synthetic-rule-text",
+       "stage": null,
+       "status": "referenced_unread",
+       "text": "The conditions are in the rule text."
+      }
+     ]
+    },
+    "instrument": {
+     "label": "A rule",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "BIS issued a rule adding license requirements for advanced computing chips"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "BIS issued a rule."
+      }
+     ]
+    },
+    "parties": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Which destinations the requirements apply to."
+      }
+     ]
+    },
+    "relation": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Which earlier rule it amends."
+      }
+     ]
+    },
+    "scope": {
+     "label": "Advanced computing chips",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "adding license requirements for advanced computing chips"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "License requirements for advanced computing chips."
+      }
+     ]
+    },
+    "supply_chain": {
+     "label": "Chips",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "advanced computing chips"
+        }
+       ],
+       "reference": null,
+       "stage": "chips",
+       "status": "interpretation",
+       "text": "Advanced computing chips."
+      }
+     ]
+    },
+    "timing": {
+     "label": "Effective March 2, 2026; comments 30 days after publication",
+     "statements": [
+      {
+       "dates": [
+        {
+         "as_stated": "March 2, 2026",
+         "kind": "effective",
+         "precision": "day",
+         "value": "2026-03-02"
+        }
+       ],
+       "excerpts": [
+        {
+         "paragraph": 2,
+         "quote": "the rule is effective on March 2, 2026"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "The rule takes effect on March 2, 2026."
+      },
+      {
+       "dates": [
+        {
+         "as_stated": "30 days after publication",
+         "kind": "comment_deadline",
+         "precision": "relative",
+         "value": null
+        }
+       ],
+       "excerpts": [
+        {
+         "paragraph": 3,
+         "quote": "comments are due 30 days after publication"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "Comments are due 30 days after publication."
+      },
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "The publication date."
+      }
+     ]
+    }
+   },
+   "id": "synthetic-rule",
+   "listing": {
+    "changed": "2026-09-04T21:00:00+00:00",
+    "created": "2026-01-10T15:05:00+00:00",
+    "published": "2026-01-10T15:00:00+00:00"
+   },
+   "position": 1,
+   "problems": [],
+   "record": {
+    "key": "bdf005562448e5a699fb",
+    "paragraphs": 5,
+    "record_sha256": "16b6a073ba906ffd63f0c8f713144b85411e5664f74c05d209c37e2418658230"
+   },
+   "references": [
+    {
+     "description": "Synthetic rule text",
+     "excerpts": [
+      {
+       "paragraph": 4,
+       "quote": "the text of the rule is available here"
+      }
+     ],
+     "id": "synthetic-rule-text"
+    }
+   ],
+   "short_title": "Synthetic chips rule",
+   "stages": [
+    "chips"
+   ],
+   "state": "verified",
+   "text": {
+    "detail": "Checked: the listing's paragraphs appear, in order, directly after the dateline of a separately retained release page.",
+    "status": "checked"
+   },
+   "title": "Synthetic Rule on Advanced Chips",
+   "url": "https://www.bis.gov/press-release/synthetic-rule-advanced-chips",
+   "why_included": "Synthetic: synthetic chips rule is part of the test selection."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": {
+    "conditions": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Conditions."
+      }
+     ]
+    },
+    "instrument": {
+     "label": "A rule modifying the January 10, 2026 rule",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "this rule modifies the rule of January 10, 2026"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "A rule that modifies the earlier rule."
+      }
+     ]
+    },
+    "parties": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Which parties it applies to."
+      }
+     ]
+    },
+    "relation": {
+     "label": "Modifies the January 10, 2026 rule",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "this rule modifies the rule of January 10, 2026"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "It says it modifies the rule of January 10, 2026."
+      }
+     ]
+    },
+    "scope": {
+     "label": "One parameter for chip-making equipment",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 2,
+         "quote": "it removes one parameter for chip-making equipment"
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "It removes one parameter."
+      }
+     ]
+    },
+    "supply_chain": {
+     "label": "Equipment",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 2,
+         "quote": "chip-making equipment"
+        }
+       ],
+       "reference": null,
+       "stage": "equipment",
+       "status": "interpretation",
+       "text": "Chip-making equipment."
+      }
+     ]
+    },
+    "timing": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "An effective date."
+      }
+     ]
+    }
+   },
+   "id": "synthetic-update",
+   "listing": {
+    "changed": "2026-09-04T21:00:00+00:00",
+    "created": "2026-04-01T14:00:00+00:00",
+    "published": "2026-04-01T15:00:00+00:00"
+   },
+   "position": 2,
+   "problems": [],
+   "record": {
+    "key": "73b058f1074272e0ae66",
+    "paragraphs": 3,
+    "record_sha256": "878b1fc7e30cfbc534d4e6b4dfb6b6673058856a900712dd0e934e9bcfd8b90e"
+   },
+   "references": [],
+   "short_title": "Synthetic update",
+   "stages": [
+    "equipment"
+   ],
+   "state": "verified",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Synthetic Update to the Chips Rule",
+   "url": "https://www.bis.gov/press-release/synthetic-update-chips-rule",
+   "why_included": "Synthetic: synthetic update is part of the test selection."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": {
+    "conditions": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "instrument": {
+     "label": "A document",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "Synthetic first document, about chip-making equipment."
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "A document."
+      }
+     ]
+    },
+    "parties": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "relation": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "scope": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "supply_chain": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "No stage."
+      }
+     ]
+    },
+    "timing": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    }
+   },
+   "id": "synthetic-first",
+   "listing": {
+    "changed": "2026-09-04T21:00:00+00:00",
+    "created": "2026-05-01T14:00:00+00:00",
+    "published": "2026-05-01T15:00:00+00:00"
+   },
+   "position": 3,
+   "problems": [],
+   "record": {
+    "key": "172a0f231ed5a15d6090",
+    "paragraphs": 1,
+    "record_sha256": "e7ed7bcce73e3415a5d02bde92091432f30f8af43f6abf7366f24d9e70b7a2ec"
+   },
+   "references": [],
+   "short_title": "Synthetic first of two same-titled releases",
+   "stages": [],
+   "state": "verified",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Synthetic Repeated Title",
+   "url": "https://www.bis.gov/press-release/synthetic-repeated-title",
+   "why_included": "Synthetic: synthetic first of two same-titled releases is part of the test selection."
+  },
+  {
+   "cases": [],
+   "dateline": null,
+   "dimensions": {
+    "conditions": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "instrument": {
+     "label": "A document",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [
+        {
+         "paragraph": 1,
+         "quote": "Synthetic second, different document."
+        }
+       ],
+       "reference": null,
+       "stage": null,
+       "status": "stated",
+       "text": "A document."
+      }
+     ]
+    },
+    "parties": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "relation": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "scope": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    },
+    "supply_chain": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "No stage."
+      }
+     ]
+    },
+    "timing": {
+     "label": "Not stated in this source",
+     "statements": [
+      {
+       "dates": [],
+       "excerpts": [],
+       "reference": null,
+       "stage": null,
+       "status": "not_stated",
+       "text": "Not given."
+      }
+     ]
+    }
+   },
+   "id": "synthetic-second",
+   "listing": {
+    "changed": "2026-09-04T21:00:00+00:00",
+    "created": "2026-06-01T14:00:00+00:00",
+    "published": "2026-06-01T15:00:00+00:00"
+   },
+   "position": 4,
+   "problems": [],
+   "record": {
+    "key": "580add18420d1b10f7f9",
+    "paragraphs": 1,
+    "record_sha256": "016200bf748ce1004b8129d460bb53173b2bb9b46b93163dc57049812f25ff8e"
+   },
+   "references": [],
+   "short_title": "Synthetic second of two same-titled releases",
+   "stages": [],
+   "state": "verified",
+   "text": {
+    "detail": "Listing text: as embedded in BIS's News & Updates listing on the retrieval date; not checked against a release page.",
+    "status": "listing_text"
+   },
+   "title": "Synthetic Repeated Title",
+   "url": "https://www.bis.gov/press-release/synthetic-repeated-title-0",
+   "why_included": "Synthetic: synthetic second of two same-titled releases is part of the test selection."
+  }
+ ],
+ "question": "Synthetic: how do these invented releases relate?",
+ "release_pages": [
+  {
+   "approval_id": "related-cases-sources-01",
+   "bytes": 628,
+   "dateline": "January 10, 2026",
+   "detail": "The release page matches its acquisition record and carries the recorded dateline.",
+   "id": "synthetic-rule-page",
+   "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+   "sha256": "190d590317651718d7efaaa389434590ee7d370def50dd132e978dc1ab44ac2e",
+   "state": "verified",
+   "url": "https://www.bis.gov/press-release/synthetic-rule-advanced-chips"
+  }
+ ],
+ "research_version": "policy-research-0.1",
+ "scope_note": "A synthetic comparison for tests; not BIS's text.",
+ "snapshot": {
+  "approval_id": "bis-semis-sources-01",
+  "bytes": 5311,
+  "detail": "The retained snapshot on this machine matches its acquisition record and the version this research was written against.",
+  "extractor_version": "bis-snapshot-extract-0.1",
+  "filter_matches": 4,
+  "retrieved_at": "2026-10-12T14:47:42.973565+00:00",
+  "sha256": "edbc7db4a76600aa0300ea3afeafe7b93e645585378f3fca784ef6b401c5321a",
+  "state": "verified",
+  "url": "https://www.bis.gov/news-updates"
+ },
+ "title": "Synthetic policy comparison",
+ "view_version": "policy-research-view-0.1"
+}

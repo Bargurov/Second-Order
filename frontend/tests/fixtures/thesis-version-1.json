@@ -1,0 +1,2116 @@
+{
+  "view_version": "thesis-view-0.1",
+  "thesis_version": "thesis-0.1",
+  "id": "synthetic-copper",
+  "version": 1,
+  "versions": [
+    {
+      "version": 1,
+      "published_on": "2026-11-02"
+    },
+    {
+      "version": 2,
+      "published_on": "2026-11-16"
+    }
+  ],
+  "draft": false,
+  "title": "Synthetic copper: technology demand and the physical balance",
+  "topic": "Synthetic copper",
+  "opened_on": "2026-11-02",
+  "prepared_on": "2026-11-02",
+  "published_on": "2026-11-02",
+  "confidence": {
+    "level": "medium",
+    "basis": "Synthetic: three of four reasons hold against their latest figures."
+  },
+  "provider_called": false,
+  "labels": {
+    "statuses": {
+      "stated": "Source statement",
+      "interpretation": "Author's reading",
+      "not_stated": "Not stated in the sources"
+    },
+    "source_states": {
+      "verified": "Checked against the retained source on this machine",
+      "changed": "The retained source differs from the version this was written against",
+      "missing": "The retained source is not on this machine"
+    },
+    "element_states": {
+      "available": "Checked: every figure and passage it cites was found where cited in retained sources that match their acquisition records; a figure or passage transcribed from a PDF is bound to the PDF by its SHA-256 only.",
+      "needs_revalidation": "Needs revalidation: a source differs from its acquisition record, or a figure or passage is not found where it is cited (or its file cannot be read)",
+      "unavailable": "Unavailable: a source is not on this machine"
+    },
+    "reason_states": {
+      "strengthening": "Strengthening: the latest figure differs from the previous one by at least the material change, in the direction this reason needs",
+      "weakening": "Weakening: the latest figure differs from the previous one by at least the material change, in the other direction",
+      "unchanged": "Unchanged: the latest figure differs from the previous one by less than the material change"
+    },
+    "risk_states": {
+      "materialising": "Materialising: the latest figure differs from the previous one by at least the material change, in the direction in which this risk grows",
+      "receding": "Receding: the latest figure differs from the previous one by at least the material change, in the other direction",
+      "unchanged": "Unchanged: the latest figure differs from the previous one by less than the material change",
+      "not_tracked": "Not tracked: no retained figure measures this risk"
+    },
+    "condition_states": {
+      "happened": "Happened: the figure it names is past the threshold in the stated direction (a figure equal to the threshold is not past it)",
+      "not_happened": "Not happened: the figure it names is not past the threshold in the stated direction (a figure equal to the threshold is not past it)"
+    },
+    "sides": {
+      "producer": "Producer: supplies the metal",
+      "consumer": "Consumer: uses the metal in what it makes"
+    },
+    "units": {
+      "kt": "thousand tonnes",
+      "million_t": "million tonnes",
+      "t": "tonnes",
+      "kg": "kilograms",
+      "kg_per_unit": "kilograms per unit",
+      "usd_per_tonne": "US dollars per tonne",
+      "usd_per_lb": "US dollars per pound",
+      "usd_cents_per_lb": "US cents per pound",
+      "usd": "US dollars",
+      "usd_million": "million US dollars",
+      "percent": "percent",
+      "count": "count"
+    }
+  },
+  "sources": [
+    {
+      "id": "usgs-2026",
+      "publisher": "Synthetic USGS",
+      "title": "Synthetic Mineral Commodity Summaries 2026: copper data release",
+      "edition": "2026",
+      "edition_date": "2026-01-30",
+      "url": "https://example.org/synthetic/usgs-2026/copper.csv",
+      "kind": "csv",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:01:00+00:00",
+      "sha256": "517a6bb6a42aa559e03146cf51953abcc3d4cfb3834067a4f63c3a9e371eaca6",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "usgs-2025",
+      "publisher": "Synthetic USGS",
+      "title": "Synthetic Mineral Commodity Summaries 2025: copper data release",
+      "edition": "2025",
+      "edition_date": "2025-01-31",
+      "url": "https://example.org/synthetic/usgs-2025/copper.csv",
+      "kind": "csv",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:02:00+00:00",
+      "sha256": "a96429890cf248ecf8fb90aaeeaea92e45ef7f6939c4dc9474e460cdc7843f7f",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "iea-2026",
+      "publisher": "Synthetic IEA",
+      "title": "Synthetic Critical Minerals Dataset 2026",
+      "edition": "2026",
+      "edition_date": "2026-07-15",
+      "url": "https://example.org/synthetic/iea-critical-minerals-dataset",
+      "kind": "xlsx",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T08:01:00+00:00",
+      "sha256": "44762ccbb64de2574febfc1b20f51652551f12cdcf39193aaf5f1cc1fe04ffe9",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "iea-2025",
+      "publisher": "Synthetic IEA",
+      "title": "Synthetic Critical Minerals Dataset 2025",
+      "edition": "2025",
+      "edition_date": "2025-05-21",
+      "url": "https://example.org/synthetic/iea-critical-minerals-dataset",
+      "kind": "xlsx",
+      "origin": "owner_download",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T08:02:00+00:00",
+      "sha256": "670be8d065c496770089e351f90601bae6f0e6989cc8a1dcd02122b3d6fa266c",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "worldbank",
+      "publisher": "Synthetic World Bank",
+      "title": "Synthetic Commodity Price Data (The Pink Sheet)",
+      "edition": "November 2026",
+      "edition_date": "2026-11-02",
+      "url": "https://example.org/synthetic/worldbank/pink.xlsx",
+      "kind": "xlsx",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:03:00+00:00",
+      "sha256": "192472e4a01cbbf649a73558a6f190e40b3378bd52fb8b1af694cd4470d3285c",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "iea-2021",
+      "publisher": "Synthetic IEA",
+      "title": "Synthetic report on minerals in clean energy transitions",
+      "edition": "2021",
+      "edition_date": "2021-05-05",
+      "url": "https://example.org/synthetic/iea-2021/report.pdf",
+      "kind": "pdf",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": {
+        "pages": [
+          1,
+          2
+        ],
+        "method": "transcribed from the page image"
+      },
+      "retrieved_at": "2026-11-02T09:04:00+00:00",
+      "sha256": "977d1222343ac0a1cbe9674d7f484ba574352f7267bec7f490f4924b6e8e7b14",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "sec-producer-2025",
+      "publisher": "Synthetic Producer Corp.",
+      "title": "Synthetic annual report on Form 10-K, fiscal 2025",
+      "edition": "Fiscal 2025",
+      "edition_date": "2026-02-13",
+      "url": "https://example.org/synthetic/sec-producer-2025/10k.htm",
+      "kind": "html",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:05:00+00:00",
+      "sha256": "75651deb31708a2aaccf5a8ab6c3c24c7ef95628921cb0ef4ca4e0d87a5f58dd",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "sec-producer-2024",
+      "publisher": "Synthetic Producer Corp.",
+      "title": "Synthetic annual report on Form 10-K, fiscal 2024",
+      "edition": "Fiscal 2024",
+      "edition_date": "2025-02-14",
+      "url": "https://example.org/synthetic/sec-producer-2024/10k.htm",
+      "kind": "html",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:06:00+00:00",
+      "sha256": "a3418a22b357019bd7217c380cda913d908c4f803fa9658041345e8bc296dea4",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    },
+    {
+      "id": "sec-maker-2025",
+      "publisher": "Synthetic Maker Inc.",
+      "title": "Synthetic annual report on Form 10-K, fiscal 2025",
+      "edition": "Fiscal 2025",
+      "edition_date": "2026-01-29",
+      "url": "https://example.org/synthetic/sec-maker-2025/10k.htm",
+      "kind": "html",
+      "origin": "get",
+      "terms": {
+        "licence": "Synthetic test terms",
+        "note": "Synthetic: made-up terms for tests; no real source."
+      },
+      "transcription": null,
+      "retrieved_at": "2026-11-02T09:07:00+00:00",
+      "sha256": "87336f31430ccdbfc9e291f3607e85c84056d2889dfe97057bc7bff8bd48e4c6",
+      "state": "verified",
+      "detail": "The retained file matches its acquisition record: attempt, address, retrieval time, size and SHA-256."
+    }
+  ],
+  "view": {
+    "id": "view",
+    "items": [
+      {
+        "id": "iea26-demand-2030",
+        "source": "iea-2026"
+      },
+      {
+        "id": "iea26-supply-2030",
+        "source": "iea-2026"
+      }
+    ],
+    "sources": [
+      "iea-2026"
+    ],
+    "state": "available",
+    "problems": [],
+    "not_found": [],
+    "statement": {
+      "status": "interpretation",
+      "text": "Synthetic reading: in the Synthetic STEPS projection, total demand of 29,500 kt in 2030 exceeds total supply of 28,700 kt, so the physical balance runs short.",
+      "cites": [
+        "iea26-demand-2030",
+        "iea26-supply-2030"
+      ],
+      "figures": [
+        {
+          "id": "iea26-demand-2030",
+          "value": "29500",
+          "as_shown": "29,500",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell E5",
+          "measure": "Synthetic total demand",
+          "quote": null
+        },
+        {
+          "id": "iea26-supply-2030",
+          "value": "28700",
+          "as_shown": "28,700",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell E8",
+          "measure": "Synthetic total supply",
+          "quote": null
+        }
+      ],
+      "passages": []
+    }
+  },
+  "balance": {
+    "tables": [
+      {
+        "id": "balance-steps",
+        "title": "Synthetic balance in the Synthetic STEPS projection",
+        "gap": "computed",
+        "items": [
+          {
+            "id": "iea26-demand-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-supply-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-clean-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-other-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-primary-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-secondary-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-demand-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-supply-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-clean-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-other-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-primary-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-secondary-2030",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-demand-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-supply-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-clean-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-other-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-primary-2035",
+            "source": "iea-2026"
+          },
+          {
+            "id": "iea26-secondary-2035",
+            "source": "iea-2026"
+          }
+        ],
+        "sources": [
+          "iea-2026"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "why_not": null,
+        "rows": [
+          {
+            "year": "2025",
+            "kind": "historical",
+            "demand_total": {
+              "id": "iea26-demand-2025",
+              "value": "26500",
+              "as_shown": "26,500",
+              "unit": "kt",
+              "year": "2025",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell D5",
+              "measure": "Synthetic total demand",
+              "quote": null
+            },
+            "supply_total": {
+              "id": "iea26-supply-2025",
+              "value": "26000",
+              "as_shown": "26,000",
+              "unit": "kt",
+              "year": "2025",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell D8",
+              "measure": "Synthetic total supply",
+              "quote": null
+            },
+            "lines": [
+              {
+                "label": "Synthetic clean technologies",
+                "figure": {
+                  "id": "iea26-clean-2025",
+                  "value": "7300",
+                  "as_shown": "7,300",
+                  "unit": "kt",
+                  "year": "2025",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell D3",
+                  "measure": "Synthetic clean-technology demand",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic other uses",
+                "figure": {
+                  "id": "iea26-other-2025",
+                  "value": "19200",
+                  "as_shown": "19,200",
+                  "unit": "kt",
+                  "year": "2025",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell D4",
+                  "measure": "Synthetic demand for other uses",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic primary supply",
+                "figure": {
+                  "id": "iea26-primary-2025",
+                  "value": "21900",
+                  "as_shown": "21,900",
+                  "unit": "kt",
+                  "year": "2025",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell D6",
+                  "measure": "Synthetic primary supply",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic secondary supply",
+                "figure": {
+                  "id": "iea26-secondary-2025",
+                  "value": "4100",
+                  "as_shown": "4,100",
+                  "unit": "kt",
+                  "year": "2025",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell D7",
+                  "measure": "Synthetic secondary supply",
+                  "quote": null
+                }
+              }
+            ],
+            "gap": "-500",
+            "label": "deficit",
+            "weeks": "1.0"
+          },
+          {
+            "year": "2030",
+            "kind": "projection",
+            "demand_total": {
+              "id": "iea26-demand-2030",
+              "value": "29500",
+              "as_shown": "29,500",
+              "unit": "kt",
+              "year": "2030",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell E5",
+              "measure": "Synthetic total demand",
+              "quote": null
+            },
+            "supply_total": {
+              "id": "iea26-supply-2030",
+              "value": "28700",
+              "as_shown": "28,700",
+              "unit": "kt",
+              "year": "2030",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell E8",
+              "measure": "Synthetic total supply",
+              "quote": null
+            },
+            "lines": [
+              {
+                "label": "Synthetic clean technologies",
+                "figure": {
+                  "id": "iea26-clean-2030",
+                  "value": "10100",
+                  "as_shown": "10,100",
+                  "unit": "kt",
+                  "year": "2030",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell E3",
+                  "measure": "Synthetic clean-technology demand",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic other uses",
+                "figure": {
+                  "id": "iea26-other-2030",
+                  "value": "19400",
+                  "as_shown": "19,400",
+                  "unit": "kt",
+                  "year": "2030",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell E4",
+                  "measure": "Synthetic demand for other uses",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic primary supply",
+                "figure": {
+                  "id": "iea26-primary-2030",
+                  "value": "23900",
+                  "as_shown": "23,900",
+                  "unit": "kt",
+                  "year": "2030",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell E6",
+                  "measure": "Synthetic primary supply",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic secondary supply",
+                "figure": {
+                  "id": "iea26-secondary-2030",
+                  "value": "4800",
+                  "as_shown": "4,800",
+                  "unit": "kt",
+                  "year": "2030",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell E7",
+                  "measure": "Synthetic secondary supply",
+                  "quote": null
+                }
+              }
+            ],
+            "gap": "-800",
+            "label": "deficit",
+            "weeks": "1.4"
+          },
+          {
+            "year": "2035",
+            "kind": "projection",
+            "demand_total": {
+              "id": "iea26-demand-2035",
+              "value": "31800",
+              "as_shown": "31,800",
+              "unit": "kt",
+              "year": "2035",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell F5",
+              "measure": "Synthetic total demand",
+              "quote": null
+            },
+            "supply_total": {
+              "id": "iea26-supply-2035",
+              "value": "30200",
+              "as_shown": "30,200",
+              "unit": "kt",
+              "year": "2035",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell F8",
+              "measure": "Synthetic total supply",
+              "quote": null
+            },
+            "lines": [
+              {
+                "label": "Synthetic clean technologies",
+                "figure": {
+                  "id": "iea26-clean-2035",
+                  "value": "12300",
+                  "as_shown": "12,300",
+                  "unit": "kt",
+                  "year": "2035",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell F3",
+                  "measure": "Synthetic clean-technology demand",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic other uses",
+                "figure": {
+                  "id": "iea26-other-2035",
+                  "value": "19500",
+                  "as_shown": "19,500",
+                  "unit": "kt",
+                  "year": "2035",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell F4",
+                  "measure": "Synthetic demand for other uses",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic primary supply",
+                "figure": {
+                  "id": "iea26-primary-2035",
+                  "value": "24600",
+                  "as_shown": "24,600",
+                  "unit": "kt",
+                  "year": "2035",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell F6",
+                  "measure": "Synthetic primary supply",
+                  "quote": null
+                }
+              },
+              {
+                "label": "Synthetic secondary supply",
+                "figure": {
+                  "id": "iea26-secondary-2035",
+                  "value": "5600",
+                  "as_shown": "5,600",
+                  "unit": "kt",
+                  "year": "2035",
+                  "period": null,
+                  "basis": null,
+                  "scenario": "Synthetic STEPS",
+                  "source": "iea-2026",
+                  "where": "sheet Copper, cell F7",
+                  "measure": "Synthetic secondary supply",
+                  "quote": null
+                }
+              }
+            ],
+            "gap": "-1,600",
+            "label": "deficit",
+            "weeks": "2.6"
+          }
+        ]
+      },
+      {
+        "id": "balance-side-by-side",
+        "title": "Synthetic dataset demand beside data-release output",
+        "gap": "not_computed",
+        "items": [
+          {
+            "id": "iea25-demand-2024",
+            "source": "iea-2025"
+          },
+          {
+            "id": "usgs26-refinery-2024",
+            "source": "usgs-2026"
+          },
+          {
+            "id": "usgs26-mine-2024",
+            "source": "usgs-2026"
+          },
+          {
+            "id": "iea26-demand-2025",
+            "source": "iea-2026"
+          },
+          {
+            "id": "usgs26-refinery-2025",
+            "source": "usgs-2026"
+          },
+          {
+            "id": "usgs26-mine-2025",
+            "source": "usgs-2026"
+          }
+        ],
+        "sources": [
+          "iea-2025",
+          "iea-2026",
+          "usgs-2026"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "why_not": "Synthetic: demand and supply come from two publications on different bases, so no gap is computed.",
+        "rows": [
+          {
+            "year": "2024",
+            "kind": "historical",
+            "demand_total": {
+              "id": "iea25-demand-2024",
+              "value": "26000",
+              "as_shown": "26,000",
+              "unit": "kt",
+              "year": "2024",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2025",
+              "where": "sheet Copper, cell D5",
+              "measure": "Synthetic total demand",
+              "quote": null
+            },
+            "supply_total": {
+              "id": "usgs26-refinery-2024",
+              "value": "27300",
+              "as_shown": "27,300",
+              "unit": "kt",
+              "year": "2024",
+              "period": null,
+              "basis": "Synthetic refined output",
+              "scenario": null,
+              "source": "usgs-2026",
+              "where": "row 5, column World refinery production (kt)",
+              "measure": "Synthetic world refinery production",
+              "quote": null
+            },
+            "lines": [
+              {
+                "label": "Synthetic world mine production",
+                "figure": {
+                  "id": "usgs26-mine-2024",
+                  "value": "22900",
+                  "as_shown": "22,900",
+                  "unit": "kt",
+                  "year": "2024",
+                  "period": null,
+                  "basis": "Synthetic mine output",
+                  "scenario": null,
+                  "source": "usgs-2026",
+                  "where": "row 5, column World mine production (kt)",
+                  "measure": "Synthetic world mine production",
+                  "quote": null
+                }
+              }
+            ],
+            "gap": null,
+            "label": null,
+            "weeks": null
+          },
+          {
+            "year": "2025",
+            "kind": "historical",
+            "demand_total": {
+              "id": "iea26-demand-2025",
+              "value": "26500",
+              "as_shown": "26,500",
+              "unit": "kt",
+              "year": "2025",
+              "period": null,
+              "basis": null,
+              "scenario": "Synthetic STEPS",
+              "source": "iea-2026",
+              "where": "sheet Copper, cell D5",
+              "measure": "Synthetic total demand",
+              "quote": null
+            },
+            "supply_total": {
+              "id": "usgs26-refinery-2025",
+              "value": "28000",
+              "as_shown": "28,000",
+              "unit": "kt",
+              "year": "2025",
+              "period": null,
+              "basis": "Synthetic refined output",
+              "scenario": null,
+              "source": "usgs-2026",
+              "where": "row 6, column World refinery production (kt)",
+              "measure": "Synthetic world refinery production",
+              "quote": null
+            },
+            "lines": [
+              {
+                "label": "Synthetic world mine production",
+                "figure": {
+                  "id": "usgs26-mine-2025",
+                  "value": "23300",
+                  "as_shown": "23,300",
+                  "unit": "kt",
+                  "year": "2025",
+                  "period": null,
+                  "basis": "Synthetic mine output",
+                  "scenario": null,
+                  "source": "usgs-2026",
+                  "where": "row 6, column World mine production (kt)",
+                  "measure": "Synthetic world mine production",
+                  "quote": null
+                }
+              }
+            ],
+            "gap": null,
+            "label": null,
+            "weeks": null
+          }
+        ]
+      }
+    ]
+  },
+  "differs": [
+    {
+      "id": "differs-earlier-edition",
+      "items": [
+        {
+          "id": "iea25-supply-2030",
+          "source": "iea-2025"
+        },
+        {
+          "id": "iea25-demand-2030",
+          "source": "iea-2025"
+        },
+        {
+          "id": "iea26-demand-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea26-supply-2030",
+          "source": "iea-2026"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "about": {
+        "status": "interpretation",
+        "text": "Synthetic reading: the earlier edition put supply of 29,100 kt above demand of 28,750 kt in 2030; the newer edition puts demand of 29,500 kt above supply of 28,700 kt.",
+        "cites": [
+          "iea25-supply-2030",
+          "iea25-demand-2030",
+          "iea26-demand-2030",
+          "iea26-supply-2030"
+        ],
+        "figures": [
+          {
+            "id": "iea25-supply-2030",
+            "value": "29100",
+            "as_shown": "29,100",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell E8",
+            "measure": "Synthetic total supply",
+            "quote": null
+          },
+          {
+            "id": "iea25-demand-2030",
+            "value": "28750",
+            "as_shown": "28,750",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell E5",
+            "measure": "Synthetic total demand",
+            "quote": null
+          },
+          {
+            "id": "iea26-demand-2030",
+            "value": "29500",
+            "as_shown": "29,500",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell E5",
+            "measure": "Synthetic total demand",
+            "quote": null
+          },
+          {
+            "id": "iea26-supply-2030",
+            "value": "28700",
+            "as_shown": "28,700",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell E8",
+            "measure": "Synthetic total supply",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "others": [
+        {
+          "cite": "iea25-supply-2030",
+          "label": "Synthetic earlier dataset edition, supply",
+          "figure": {
+            "id": "iea25-supply-2030",
+            "value": "29100",
+            "as_shown": "29,100",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell E8",
+            "measure": "Synthetic total supply",
+            "quote": null
+          },
+          "passage": null
+        },
+        {
+          "cite": "iea25-demand-2030",
+          "label": "Synthetic earlier dataset edition, demand",
+          "figure": {
+            "id": "iea25-demand-2030",
+            "value": "28750",
+            "as_shown": "28,750",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell E5",
+            "measure": "Synthetic total demand",
+            "quote": null
+          },
+          "passage": null
+        }
+      ],
+      "differs": true
+    }
+  ],
+  "reasons": [
+    {
+      "id": "clean-tech-demand",
+      "title": "Synthetic clean-technology demand keeps growing",
+      "plain": "Synthetic: more demand from clean technologies would widen the gap the view describes.",
+      "items": [
+        {
+          "id": "iea26-clean-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea25-clean-2030",
+          "source": "iea-2025"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: the newer edition puts clean-technology demand in 2030 at 10,100 kt, against 9,400 kt in the earlier edition.",
+        "cites": [
+          "iea26-clean-2030",
+          "iea25-clean-2030"
+        ],
+        "figures": [
+          {
+            "id": "iea26-clean-2030",
+            "value": "10100",
+            "as_shown": "10,100",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell E3",
+            "measure": "Synthetic clean-technology demand",
+            "quote": null
+          },
+          {
+            "id": "iea25-clean-2030",
+            "value": "9400",
+            "as_shown": "9,400",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell E3",
+            "measure": "Synthetic clean-technology demand",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "measure": {
+        "latest": {
+          "id": "iea26-clean-2030",
+          "value": "10100",
+          "as_shown": "10,100",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell E3",
+          "measure": "Synthetic clean-technology demand",
+          "quote": null
+        },
+        "previous": {
+          "id": "iea25-clean-2030",
+          "value": "9400",
+          "as_shown": "9,400",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2025",
+          "where": "sheet Copper, cell E3",
+          "measure": "Synthetic clean-technology demand",
+          "quote": null
+        },
+        "compare": "revision",
+        "supports_when": "higher",
+        "material_change_pct": "5"
+      },
+      "status": "strengthening",
+      "change_pct": "7.4",
+      "moved_by": {
+        "source": "iea-2026",
+        "publisher": "Synthetic IEA",
+        "edition": "2026",
+        "edition_date": "2026-07-15"
+      }
+    },
+    {
+      "id": "mine-supply-slow",
+      "title": "Synthetic mine supply responds slowly",
+      "plain": "Synthetic: if mines add output slowly, supply stays behind demand for longer.",
+      "items": [
+        {
+          "id": "usgs26-mine-2024",
+          "source": "usgs-2026"
+        },
+        {
+          "id": "usgs25-mine-2024",
+          "source": "usgs-2025"
+        }
+      ],
+      "sources": [
+        "usgs-2025",
+        "usgs-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: the newer release puts world mine production in 2024 at 22,900 kt, against 22,700 kt in the earlier release.",
+        "cites": [
+          "usgs26-mine-2024",
+          "usgs25-mine-2024"
+        ],
+        "figures": [
+          {
+            "id": "usgs26-mine-2024",
+            "value": "22900",
+            "as_shown": "22,900",
+            "unit": "kt",
+            "year": "2024",
+            "period": null,
+            "basis": "Synthetic mine output",
+            "scenario": null,
+            "source": "usgs-2026",
+            "where": "row 5, column World mine production (kt)",
+            "measure": "Synthetic world mine production",
+            "quote": null
+          },
+          {
+            "id": "usgs25-mine-2024",
+            "value": "22700",
+            "as_shown": "22,700",
+            "unit": "kt",
+            "year": "2024",
+            "period": null,
+            "basis": "Synthetic mine output",
+            "scenario": null,
+            "source": "usgs-2025",
+            "where": "row 6, column World mine production (kt)",
+            "measure": "Synthetic world mine production",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "measure": {
+        "latest": {
+          "id": "usgs26-mine-2024",
+          "value": "22900",
+          "as_shown": "22,900",
+          "unit": "kt",
+          "year": "2024",
+          "period": null,
+          "basis": "Synthetic mine output",
+          "scenario": null,
+          "source": "usgs-2026",
+          "where": "row 5, column World mine production (kt)",
+          "measure": "Synthetic world mine production",
+          "quote": null
+        },
+        "previous": {
+          "id": "usgs25-mine-2024",
+          "value": "22700",
+          "as_shown": "22,700",
+          "unit": "kt",
+          "year": "2024",
+          "period": null,
+          "basis": "Synthetic mine output",
+          "scenario": null,
+          "source": "usgs-2025",
+          "where": "row 6, column World mine production (kt)",
+          "measure": "Synthetic world mine production",
+          "quote": null
+        },
+        "compare": "revision",
+        "supports_when": "lower",
+        "material_change_pct": "2"
+      },
+      "status": "unchanged",
+      "change_pct": "0.9",
+      "moved_by": {
+        "source": "usgs-2026",
+        "publisher": "Synthetic USGS",
+        "edition": "2026",
+        "edition_date": "2026-01-30"
+      }
+    },
+    {
+      "id": "recycling-limited",
+      "title": "Synthetic recycling adds little supply",
+      "plain": "Synthetic: recycled metal is supply too, and more of it narrows the gap.",
+      "items": [
+        {
+          "id": "iea26-secondary-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea25-secondary-2030",
+          "source": "iea-2025"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: the newer edition puts secondary supply in 2030 at 4,800 kt, against 4,300 kt in the earlier edition.",
+        "cites": [
+          "iea26-secondary-2030",
+          "iea25-secondary-2030"
+        ],
+        "figures": [
+          {
+            "id": "iea26-secondary-2030",
+            "value": "4800",
+            "as_shown": "4,800",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell E7",
+            "measure": "Synthetic secondary supply",
+            "quote": null
+          },
+          {
+            "id": "iea25-secondary-2030",
+            "value": "4300",
+            "as_shown": "4,300",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell E7",
+            "measure": "Synthetic secondary supply",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "measure": {
+        "latest": {
+          "id": "iea26-secondary-2030",
+          "value": "4800",
+          "as_shown": "4,800",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell E7",
+          "measure": "Synthetic secondary supply",
+          "quote": null
+        },
+        "previous": {
+          "id": "iea25-secondary-2030",
+          "value": "4300",
+          "as_shown": "4,300",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2025",
+          "where": "sheet Copper, cell E7",
+          "measure": "Synthetic secondary supply",
+          "quote": null
+        },
+        "compare": "revision",
+        "supports_when": "lower",
+        "material_change_pct": "5"
+      },
+      "status": "weakening",
+      "change_pct": "11.6",
+      "moved_by": {
+        "source": "iea-2026",
+        "publisher": "Synthetic IEA",
+        "edition": "2026",
+        "edition_date": "2026-07-15"
+      }
+    },
+    {
+      "id": "total-demand-rising",
+      "title": "Synthetic total demand keeps rising through the projection",
+      "plain": "Synthetic: demand that keeps rising within one edition's projection widens the gap the view describes.",
+      "items": [
+        {
+          "id": "iea26-demand-2030",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea26-demand-2035",
+          "source": "iea-2026"
+        }
+      ],
+      "sources": [
+        "iea-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: the same edition puts total demand at 29,500 kt in 2030 and at 31,800 kt in 2035.",
+        "cites": [
+          "iea26-demand-2030",
+          "iea26-demand-2035"
+        ],
+        "figures": [
+          {
+            "id": "iea26-demand-2030",
+            "value": "29500",
+            "as_shown": "29,500",
+            "unit": "kt",
+            "year": "2030",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell E5",
+            "measure": "Synthetic total demand",
+            "quote": null
+          },
+          {
+            "id": "iea26-demand-2035",
+            "value": "31800",
+            "as_shown": "31,800",
+            "unit": "kt",
+            "year": "2035",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell F5",
+            "measure": "Synthetic total demand",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "measure": {
+        "latest": {
+          "id": "iea26-demand-2035",
+          "value": "31800",
+          "as_shown": "31,800",
+          "unit": "kt",
+          "year": "2035",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell F5",
+          "measure": "Synthetic total demand",
+          "quote": null
+        },
+        "previous": {
+          "id": "iea26-demand-2030",
+          "value": "29500",
+          "as_shown": "29,500",
+          "unit": "kt",
+          "year": "2030",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell E5",
+          "measure": "Synthetic total demand",
+          "quote": null
+        },
+        "compare": "period",
+        "supports_when": "higher",
+        "material_change_pct": "5"
+      },
+      "status": "strengthening",
+      "change_pct": "7.8",
+      "moved_by": {
+        "source": "iea-2026",
+        "publisher": "Synthetic IEA",
+        "edition": "2026",
+        "edition_date": "2026-07-15"
+      }
+    }
+  ],
+  "risks": [
+    {
+      "id": "mine-output-rising",
+      "title": "Synthetic mine output grows faster",
+      "plain": "Synthetic: faster mine growth would close the gap sooner.",
+      "items": [
+        {
+          "id": "usgs26-mine-2025",
+          "source": "usgs-2026"
+        },
+        {
+          "id": "usgs25-mine-2024",
+          "source": "usgs-2025"
+        }
+      ],
+      "sources": [
+        "usgs-2025",
+        "usgs-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: world mine production was 23,300 kt in 2025, against 22,700 kt in 2024.",
+        "cites": [
+          "usgs26-mine-2025",
+          "usgs25-mine-2024"
+        ],
+        "figures": [
+          {
+            "id": "usgs26-mine-2025",
+            "value": "23300",
+            "as_shown": "23,300",
+            "unit": "kt",
+            "year": "2025",
+            "period": null,
+            "basis": "Synthetic mine output",
+            "scenario": null,
+            "source": "usgs-2026",
+            "where": "row 6, column World mine production (kt)",
+            "measure": "Synthetic world mine production",
+            "quote": null
+          },
+          {
+            "id": "usgs25-mine-2024",
+            "value": "22700",
+            "as_shown": "22,700",
+            "unit": "kt",
+            "year": "2024",
+            "period": null,
+            "basis": "Synthetic mine output",
+            "scenario": null,
+            "source": "usgs-2025",
+            "where": "row 6, column World mine production (kt)",
+            "measure": "Synthetic world mine production",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "measure": {
+        "latest": {
+          "id": "usgs26-mine-2025",
+          "value": "23300",
+          "as_shown": "23,300",
+          "unit": "kt",
+          "year": "2025",
+          "period": null,
+          "basis": "Synthetic mine output",
+          "scenario": null,
+          "source": "usgs-2026",
+          "where": "row 6, column World mine production (kt)",
+          "measure": "Synthetic world mine production",
+          "quote": null
+        },
+        "previous": {
+          "id": "usgs25-mine-2024",
+          "value": "22700",
+          "as_shown": "22,700",
+          "unit": "kt",
+          "year": "2024",
+          "period": null,
+          "basis": "Synthetic mine output",
+          "scenario": null,
+          "source": "usgs-2025",
+          "where": "row 6, column World mine production (kt)",
+          "measure": "Synthetic world mine production",
+          "quote": null
+        },
+        "compare": "period",
+        "grows_when": "higher",
+        "material_change_pct": "2"
+      },
+      "status": "materialising",
+      "change_pct": "2.6",
+      "moved_by": {
+        "source": "usgs-2026",
+        "publisher": "Synthetic USGS",
+        "edition": "2026",
+        "edition_date": "2026-01-30"
+      }
+    },
+    {
+      "id": "primary-supply-projections",
+      "title": "Synthetic primary supply projections move up",
+      "plain": "Synthetic: more projected primary supply would weaken the view.",
+      "items": [
+        {
+          "id": "iea26-primary-2035",
+          "source": "iea-2026"
+        },
+        {
+          "id": "iea25-primary-2035",
+          "source": "iea-2025"
+        }
+      ],
+      "sources": [
+        "iea-2025",
+        "iea-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: the newer edition puts primary supply in 2035 at 24,600 kt, against 25,100 kt in the earlier edition.",
+        "cites": [
+          "iea26-primary-2035",
+          "iea25-primary-2035"
+        ],
+        "figures": [
+          {
+            "id": "iea26-primary-2035",
+            "value": "24600",
+            "as_shown": "24,600",
+            "unit": "kt",
+            "year": "2035",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2026",
+            "where": "sheet Copper, cell F6",
+            "measure": "Synthetic primary supply",
+            "quote": null
+          },
+          {
+            "id": "iea25-primary-2035",
+            "value": "25100",
+            "as_shown": "25,100",
+            "unit": "kt",
+            "year": "2035",
+            "period": null,
+            "basis": null,
+            "scenario": "Synthetic STEPS",
+            "source": "iea-2025",
+            "where": "sheet Copper, cell F6",
+            "measure": "Synthetic primary supply",
+            "quote": null
+          }
+        ],
+        "passages": []
+      },
+      "measure": {
+        "latest": {
+          "id": "iea26-primary-2035",
+          "value": "24600",
+          "as_shown": "24,600",
+          "unit": "kt",
+          "year": "2035",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2026",
+          "where": "sheet Copper, cell F6",
+          "measure": "Synthetic primary supply",
+          "quote": null
+        },
+        "previous": {
+          "id": "iea25-primary-2035",
+          "value": "25100",
+          "as_shown": "25,100",
+          "unit": "kt",
+          "year": "2035",
+          "period": null,
+          "basis": null,
+          "scenario": "Synthetic STEPS",
+          "source": "iea-2025",
+          "where": "sheet Copper, cell F6",
+          "measure": "Synthetic primary supply",
+          "quote": null
+        },
+        "compare": "revision",
+        "grows_when": "higher",
+        "material_change_pct": "1"
+      },
+      "status": "receding",
+      "change_pct": "-2.0",
+      "moved_by": {
+        "source": "iea-2026",
+        "publisher": "Synthetic IEA",
+        "edition": "2026",
+        "edition_date": "2026-07-15"
+      }
+    },
+    {
+      "id": "construction-slowdown",
+      "title": "Synthetic construction slows",
+      "plain": "Synthetic: slower building would mean less demand, and no retained measure tracks it.",
+      "items": [
+        {
+          "id": "iea21-construction",
+          "source": "iea-2021"
+        }
+      ],
+      "sources": [
+        "iea-2021"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "statement": {
+        "status": "interpretation",
+        "text": "Synthetic reading: construction is the largest use the report names, and no retained series tracks it.",
+        "cites": [
+          "iea21-construction"
+        ],
+        "figures": [],
+        "passages": [
+          {
+            "id": "iea21-construction",
+            "source": "iea-2021",
+            "quote": "Synthetic: building construction remains the largest single use of copper.",
+            "where": "page 2 (transcribed from the PDF)"
+          }
+        ]
+      },
+      "measure": null,
+      "status": "not_tracked",
+      "change_pct": null,
+      "moved_by": null
+    }
+  ],
+  "conditions": [
+    {
+      "id": "supply-above",
+      "items": [
+        {
+          "id": "iea26-supply-2030",
+          "source": "iea-2026"
+        }
+      ],
+      "sources": [
+        "iea-2026"
+      ],
+      "state": "available",
+      "problems": [],
+      "not_found": [],
+      "threshold_value": "29500",
+      "comparator": "above",
+      "text": "Synthetic: the view would change if projected total supply for 2030 went above 29,500 kt, against 28,700 kt in the newer edition.",
+      "figure": {
+        "id": "iea26-supply-2030",
+        "value": "28700",
+        "as_shown": "28,700",
+        "unit": "kt",
+        "year": "2030",
+        "period": null,
+        "basis": null,
+        "scenario": "Synthetic STEPS",
+        "source": "iea-2026",
+        "where": "sheet Copper, cell E8",
+        "measure": "Synthetic total supply",
+        "quote": null
+      },
+      "threshold": "29,500",
+      "status": "not_happened"
+    }
+  ],
+  "exposure": {
+    "movers": [
+      {
+        "id": "mover-1",
+        "company": "Synthetic Producer Corp.",
+        "moves": "mine-supply-slow",
+        "items": [
+          {
+            "id": "producer-sales-2025",
+            "source": "sec-producer-2025"
+          },
+          {
+            "id": "producer-sales-2024",
+            "source": "sec-producer-2024"
+          }
+        ],
+        "sources": [
+          "sec-producer-2024",
+          "sec-producer-2025"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "through": "Synthetic: its stated copper sales of 4,120 million pounds in 2025, against 3,980 million pounds in 2024, feed mine supply.",
+        "cites": [
+          "producer-sales-2025",
+          "producer-sales-2024"
+        ],
+        "figures": [],
+        "passages": [
+          {
+            "id": "producer-sales-2025",
+            "source": "sec-producer-2025",
+            "quote": "Synthetic copper sales were 4,120 million pounds in 2025.",
+            "where": "paragraph 3"
+          },
+          {
+            "id": "producer-sales-2024",
+            "source": "sec-producer-2024",
+            "quote": "Synthetic copper sales were 3,980 million pounds in 2024.",
+            "where": "paragraph 3"
+          }
+        ]
+      },
+      {
+        "id": "mover-2",
+        "company": "Synthetic Maker Inc.",
+        "moves": "clean-tech-demand",
+        "items": [
+          {
+            "id": "maker-deliveries-2025",
+            "source": "sec-maker-2025"
+          }
+        ],
+        "sources": [
+          "sec-maker-2025"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "through": "Synthetic: its stated deliveries of 210,000 vehicles in 2025 feed clean-technology demand.",
+        "cites": [
+          "maker-deliveries-2025"
+        ],
+        "figures": [],
+        "passages": [
+          {
+            "id": "maker-deliveries-2025",
+            "source": "sec-maker-2025",
+            "quote": "We delivered 210,000 Synthetic vehicles in 2025.",
+            "where": "paragraph 5"
+          }
+        ]
+      }
+    ],
+    "moved": [
+      {
+        "id": "moved-1",
+        "company": "Synthetic Producer Corp.",
+        "side": "producer",
+        "items": [
+          {
+            "id": "producer-sensitivity-2025",
+            "source": "sec-producer-2025"
+          }
+        ],
+        "sources": [
+          "sec-producer-2025"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "how": {
+          "status": "stated",
+          "text": "Synthetic: the producer states an approximate $410 million effect on its annual operating cash flows for a change of ten cents a pound.",
+          "cites": [
+            "producer-sensitivity-2025"
+          ],
+          "figures": [
+            {
+              "id": "producer-sensitivity-2025",
+              "value": "410",
+              "as_shown": "$410",
+              "unit": "usd_million",
+              "year": "2026",
+              "period": null,
+              "basis": null,
+              "scenario": null,
+              "source": "sec-producer-2025",
+              "where": "paragraph 4",
+              "measure": "Synthetic cash-flow effect of a change of ten cents a pound",
+              "quote": "Based on projected copper sales volumes for 2026, a change of $0.10 per pound in copper prices would have an approximate $410 million effect on our annual operating cash flows."
+            }
+          ],
+          "passages": []
+        },
+        "amount": {
+          "kind": "stated",
+          "figure": {
+            "id": "producer-sensitivity-2025",
+            "value": "410",
+            "as_shown": "$410",
+            "unit": "usd_million",
+            "year": "2026",
+            "period": null,
+            "basis": null,
+            "scenario": null,
+            "source": "sec-producer-2025",
+            "where": "paragraph 4",
+            "measure": "Synthetic cash-flow effect of a change of ten cents a pound",
+            "quote": "Based on projected copper sales volumes for 2026, a change of $0.10 per pound in copper prices would have an approximate $410 million effect on our annual operating cash flows."
+          }
+        },
+        "usd_per_unit": null,
+        "share_pct": null
+      },
+      {
+        "id": "moved-2",
+        "company": "Synthetic Maker Inc.",
+        "side": "consumer",
+        "items": [
+          {
+            "id": "maker-purchases-2025",
+            "source": "sec-maker-2025"
+          }
+        ],
+        "sources": [
+          "sec-maker-2025"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "how": {
+          "status": "stated",
+          "text": "Synthetic: the maker states copper purchases of approximately $95 million in 2025.",
+          "cites": [
+            "maker-purchases-2025"
+          ],
+          "figures": [
+            {
+              "id": "maker-purchases-2025",
+              "value": "95",
+              "as_shown": "$95",
+              "unit": "usd_million",
+              "year": "2025",
+              "period": null,
+              "basis": null,
+              "scenario": null,
+              "source": "sec-maker-2025",
+              "where": "paragraph 4",
+              "measure": "Synthetic purchases of copper and copper products",
+              "quote": "Our purchases of copper and copper products were approximately $95 million in 2025."
+            }
+          ],
+          "passages": []
+        },
+        "amount": {
+          "kind": "stated",
+          "figure": {
+            "id": "maker-purchases-2025",
+            "value": "95",
+            "as_shown": "$95",
+            "unit": "usd_million",
+            "year": "2025",
+            "period": null,
+            "basis": null,
+            "scenario": null,
+            "source": "sec-maker-2025",
+            "where": "paragraph 4",
+            "measure": "Synthetic purchases of copper and copper products",
+            "quote": "Our purchases of copper and copper products were approximately $95 million in 2025."
+          }
+        },
+        "usd_per_unit": null,
+        "share_pct": null
+      },
+      {
+        "id": "moved-3",
+        "company": "Synthetic Maker Inc.",
+        "side": "consumer",
+        "items": [
+          {
+            "id": "iea21-ev-copper",
+            "source": "iea-2021"
+          },
+          {
+            "id": "wb-copper-2026m10",
+            "source": "worldbank"
+          },
+          {
+            "id": "maker-price-2025",
+            "source": "sec-maker-2025"
+          }
+        ],
+        "sources": [
+          "iea-2021",
+          "sec-maker-2025",
+          "worldbank"
+        ],
+        "state": "available",
+        "problems": [],
+        "not_found": [],
+        "how": {
+          "status": "interpretation",
+          "text": "Synthetic reading: at 53.2 kg of copper per vehicle and 9,500 USD per tonne, copper is about 505 USD of a $45,000 vehicle.",
+          "cites": [
+            "iea21-ev-copper",
+            "wb-copper-2026m10",
+            "maker-price-2025"
+          ],
+          "figures": [
+            {
+              "id": "iea21-ev-copper",
+              "value": "53.2",
+              "as_shown": "53.2",
+              "unit": "kg_per_unit",
+              "year": null,
+              "period": null,
+              "basis": null,
+              "scenario": null,
+              "source": "iea-2021",
+              "where": "page 1 (transcribed from the PDF)",
+              "measure": "Synthetic copper in one electric car",
+              "quote": "Synthetic: an electric car uses 53.2 kg of copper"
+            },
+            {
+              "id": "wb-copper-2026m10",
+              "value": "9500",
+              "as_shown": "9,500",
+              "unit": "usd_per_tonne",
+              "year": "2026",
+              "period": "2026M10",
+              "basis": null,
+              "scenario": null,
+              "source": "worldbank",
+              "where": "sheet Monthly Prices, cell B8",
+              "measure": "Synthetic monthly copper price",
+              "quote": null
+            },
+            {
+              "id": "maker-price-2025",
+              "value": "45000",
+              "as_shown": "$45,000",
+              "unit": "usd",
+              "year": "2025",
+              "period": null,
+              "basis": null,
+              "scenario": null,
+              "source": "sec-maker-2025",
+              "where": "paragraph 3",
+              "measure": "Synthetic average selling price of a vehicle",
+              "quote": "The average selling price of our Synthetic vehicles was $45,000 in 2025."
+            }
+          ],
+          "passages": []
+        },
+        "amount": {
+          "kind": "computed",
+          "per_unit": {
+            "id": "iea21-ev-copper",
+            "value": "53.2",
+            "as_shown": "53.2",
+            "unit": "kg_per_unit",
+            "year": null,
+            "period": null,
+            "basis": null,
+            "scenario": null,
+            "source": "iea-2021",
+            "where": "page 1 (transcribed from the PDF)",
+            "measure": "Synthetic copper in one electric car",
+            "quote": "Synthetic: an electric car uses 53.2 kg of copper"
+          },
+          "price": {
+            "id": "wb-copper-2026m10",
+            "value": "9500",
+            "as_shown": "9,500",
+            "unit": "usd_per_tonne",
+            "year": "2026",
+            "period": "2026M10",
+            "basis": null,
+            "scenario": null,
+            "source": "worldbank",
+            "where": "sheet Monthly Prices, cell B8",
+            "measure": "Synthetic monthly copper price",
+            "quote": null
+          },
+          "unit_price": {
+            "id": "maker-price-2025",
+            "value": "45000",
+            "as_shown": "$45,000",
+            "unit": "usd",
+            "year": "2025",
+            "period": null,
+            "basis": null,
+            "scenario": null,
+            "source": "sec-maker-2025",
+            "where": "paragraph 3",
+            "measure": "Synthetic average selling price of a vehicle",
+            "quote": "The average selling price of our Synthetic vehicles was $45,000 in 2025."
+          }
+        },
+        "usd_per_unit": "505",
+        "share_pct": "1.1"
+      }
+    ]
+  },
+  "price_record": {
+    "id": "price-record",
+    "series": "Synthetic monthly copper price, nominal US dollars per tonne",
+    "items": [
+      {
+        "id": "wb-copper-2026m08",
+        "source": "worldbank"
+      },
+      {
+        "id": "wb-copper-2026m10",
+        "source": "worldbank"
+      }
+    ],
+    "sources": [
+      "worldbank"
+    ],
+    "state": "available",
+    "problems": [],
+    "not_found": [],
+    "opening": {
+      "id": "wb-copper-2026m08",
+      "value": "9180.25",
+      "as_shown": "9,180.25",
+      "unit": "usd_per_tonne",
+      "year": "2026",
+      "period": "2026M08",
+      "basis": null,
+      "scenario": null,
+      "source": "worldbank",
+      "where": "sheet Monthly Prices, cell B6",
+      "measure": "Synthetic monthly copper price",
+      "quote": null
+    },
+    "latest": {
+      "id": "wb-copper-2026m10",
+      "value": "9500",
+      "as_shown": "9,500",
+      "unit": "usd_per_tonne",
+      "year": "2026",
+      "period": "2026M10",
+      "basis": null,
+      "scenario": null,
+      "source": "worldbank",
+      "where": "sheet Monthly Prices, cell B8",
+      "measure": "Synthetic monthly copper price",
+      "quote": null
+    }
+  },
+  "log": [
+    {
+      "date": "2026-11-02",
+      "kind": "opened",
+      "text": "Synthetic: the thesis opened with four reasons, three risks and one condition.",
+      "refs": []
+    }
+  ],
+  "plain": {
+    "view": "Synthetic: the view reads stated projections of the physical balance.",
+    "balance": "Synthetic: a gap is computed only when both sides come from one publication, basis and scenario.",
+    "differs": "Synthetic: this compares the reading with what an earlier edition expected.",
+    "reasons": "Synthetic: each reason compares its latest figure with a previous one, from an earlier edition or from an earlier year of the same edition.",
+    "risks": "Synthetic: risks use the same comparison, and one risk has no retained measure.",
+    "conditions": "Synthetic: a condition states what would change the view.",
+    "exposure": "Synthetic: exposure is read from company filings, not assumed.",
+    "log": "Synthetic: the log only grows, and earlier entries are never rewritten.",
+    "price": "Synthetic: the monthly price is shown as a record beside the view, not as evidence that the view is right."
+  },
+  "not_claimed": [
+    "Synthetic: no price target, price forecast or trade is stated or implied.",
+    "Synthetic: nothing here is proof that prices will rise or fall.",
+    "Synthetic: the balance is a reading of stated projections, not a cause of any price change."
+  ],
+  "provenance": {
+    "prepared_by": "Synthetic test author",
+    "method": "Synthetic: written by hand from the synthetic retained sources for the thesis tests.",
+    "ai_assisted": true,
+    "human_review": "not_reviewed",
+    "research_use": "excluded"
+  },
+  "counts": {
+    "sources": {
+      "verified": 9,
+      "changed": 0,
+      "missing": 0
+    },
+    "elements": {
+      "available": 18,
+      "needs_revalidation": 0,
+      "unavailable": 0
+    }
+  }
+}

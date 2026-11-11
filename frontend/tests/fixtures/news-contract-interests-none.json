@@ -1,0 +1,151 @@
+{
+  "contract": "user-api-0.5",
+  "interests": {
+    "vocabulary_version": "news-interests-0.2",
+    "rule": "An entry concerns an interest when its source's topic is that interest, or when one of the interest's terms appears in its title or excerpt as whole words, ignoring case.",
+    "vocabulary": [
+      {
+        "interest": "monetary-policy",
+        "label": "Monetary policy",
+        "sources": [
+          "fed-monetary"
+        ],
+        "terms": [
+          "monetary policy",
+          "federal funds",
+          "interest rate",
+          "interest rates",
+          "FOMC",
+          "Federal Open Market Committee",
+          "discount rate"
+        ]
+      },
+      {
+        "interest": "employment",
+        "label": "Employment",
+        "sources": [
+          "bls-empsit"
+        ],
+        "terms": [
+          "employment",
+          "unemployment",
+          "payroll",
+          "payrolls",
+          "jobs",
+          "labor market",
+          "labor force",
+          "wages"
+        ]
+      },
+      {
+        "interest": "inflation",
+        "label": "Inflation",
+        "sources": [
+          "bls-cpi"
+        ],
+        "terms": [
+          "inflation",
+          "consumer price index",
+          "consumer prices",
+          "CPI",
+          "price index"
+        ]
+      },
+      {
+        "interest": "energy",
+        "label": "Energy",
+        "sources": [
+          "eia-todayinenergy"
+        ],
+        "terms": [
+          "energy",
+          "oil",
+          "crude oil",
+          "natural gas",
+          "electricity",
+          "gasoline",
+          "diesel",
+          "coal",
+          "LNG",
+          "renewable",
+          "power generation"
+        ]
+      },
+      {
+        "interest": "trade",
+        "label": "Trade",
+        "sources": [
+          "wto-news"
+        ],
+        "terms": [
+          "trade",
+          "tariff",
+          "tariffs",
+          "exports",
+          "imports",
+          "WTO",
+          "World Trade Organization"
+        ]
+      },
+      {
+        "interest": "markets",
+        "label": "Markets",
+        "sources": [],
+        "terms": [
+          "stock market",
+          "stocks",
+          "shares",
+          "equities",
+          "bond market",
+          "bonds",
+          "Treasury yields",
+          "Wall Street",
+          "S&P 500",
+          "Nasdaq",
+          "Dow Jones",
+          "recession",
+          "GDP"
+        ]
+      },
+      {
+        "interest": "technology",
+        "label": "Technology",
+        "sources": [],
+        "terms": [
+          "technology",
+          "AI",
+          "artificial intelligence",
+          "software",
+          "semiconductor",
+          "semiconductors",
+          "chips",
+          "chipmaker",
+          "cloud computing",
+          "cybersecurity",
+          "startup",
+          "startups"
+        ]
+      },
+      {
+        "interest": "companies",
+        "label": "Companies",
+        "sources": [],
+        "terms": [
+          "acquisition",
+          "acquires",
+          "merger",
+          "earnings",
+          "quarterly results",
+          "IPO",
+          "CEO",
+          "layoffs",
+          "dividend",
+          "revenue"
+        ]
+      }
+    ],
+    "selected": [],
+    "version": null,
+    "saved_at": null
+  }
+}

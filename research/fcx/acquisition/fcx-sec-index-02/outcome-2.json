@@ -1,0 +1,23 @@
+{
+ "n": 2,
+ "approval_id": "fcx-sec-index-02",
+ "url": "https://www.sec.gov/Archives/edgar/data/831259/000083125926000045/index.json",
+ "kind": "json",
+ "outcome": "complete",
+ "http_status": 200,
+ "sha256": "c6526e16f68a37a4408cf93940d59b6de5ce6eb97943f7adb052931a50aebaf2",
+ "bytes": 5558,
+ "hash_kind": "complete_response",
+ "retained": "data/company-sources/fcx/sec-edgar-meta/index-8k-2026-10-27-000083125926000045.json",
+ "dispatched_at": "2026-11-11T00:40:18.938031+02:00",
+ "body_completed_at": "2026-11-11T00:40:19.811976+02:00",
+ "media_type": "application/json",
+ "named_headers": {
+  "content-type": "application/json; charset=utf-8",
+  "content-encoding": "gzip"
+ },
+ "contact_declared": true,
+ "network_error": null,
+ "truncated": false,
+ "max_body_bytes": 4194304
+}

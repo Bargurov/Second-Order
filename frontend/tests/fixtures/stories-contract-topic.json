@@ -1,0 +1,234 @@
+{
+  "contract": "user-api-0.5",
+  "topic": {
+    "view_version": "news-topics-view-0.1",
+    "topic_id": "topic-c0867966717f7e48",
+    "title": "Synthetic steel dispute",
+    "summary": "SYNTHETIC: a tariff, a response and a revision, invented to show how an ongoing topic is followed.",
+    "developments": 3,
+    "latest_at": "2026-10-14T07:00:00+00:00",
+    "latest_title": "Synthetic Republic narrows steel tariff after talks",
+    "synthetic": true,
+    "timeline": [
+      {
+        "story_id": "story-c656c19416cbcd7a",
+        "title": "Synthetic Republic announces 15% tariff on imported steel",
+        "first_at": "2026-10-12T07:00:00+00:00",
+        "first_basis": "published",
+        "latest_at": "2026-10-12T08:00:00+00:00",
+        "latest_basis": "published",
+        "reports": 2,
+        "publishers": [
+          "Synthetic Courier",
+          "Synthetic Ledger"
+        ],
+        "coverage": {
+          "publishers": 2,
+          "origins": 1,
+          "news_origins": 1,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 1,
+          "confirmed_news": 1,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 1,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade",
+          "markets"
+        ],
+        "topics": [
+          {
+            "topic_id": "topic-c0867966717f7e48",
+            "title": "Synthetic steel dispute"
+          }
+        ],
+        "brief": {
+          "state": "published",
+          "summary": "The Synthetic Republic said it would impose a 15% tariff on imported steel from next month.",
+          "current": true,
+          "authorship": "editor",
+          "review": "written_by_editor",
+          "explained": true
+        },
+        "excerpt": null,
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report 2 days ago (by its feed's stated time)."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ],
+        "label": "Tariff announced"
+      },
+      {
+        "story_id": "story-74c8ec21df978d5b",
+        "title": "Synthetic Federation responds with duties on farm goods",
+        "first_at": "2026-10-13T07:00:00+00:00",
+        "first_basis": "published",
+        "latest_at": "2026-10-13T08:00:00+00:00",
+        "latest_basis": "published",
+        "reports": 2,
+        "publishers": [
+          "Synthetic Courier",
+          "Synthetic Gazette"
+        ],
+        "coverage": {
+          "publishers": 2,
+          "origins": 2,
+          "news_origins": 2,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 2,
+          "confirmed_news": 2,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 0,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade",
+          "markets"
+        ],
+        "topics": [
+          {
+            "topic_id": "topic-c0867966717f7e48",
+            "title": "Synthetic steel dispute"
+          }
+        ],
+        "brief": {
+          "state": "none",
+          "summary": null,
+          "current": null,
+          "authorship": null,
+          "review": null,
+          "explained": false
+        },
+        "excerpt": {
+          "publisher": "Synthetic Courier",
+          "text": "The Synthetic Federation said it would impose duties on farm goods in response to the steel tariff."
+        },
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report 25 hours ago (by its feed's stated time)."
+          },
+          {
+            "signal": "coverage",
+            "text": "From 2 publishers: 2 confirmed reporting origins (2 newsrooms)."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ],
+        "label": "The Federation responds"
+      },
+      {
+        "story_id": "story-f6adc493142c934f",
+        "title": "Synthetic Republic narrows steel tariff after talks",
+        "first_at": "2026-10-14T07:00:00+00:00",
+        "first_basis": "published",
+        "latest_at": "2026-10-14T07:00:00+00:00",
+        "latest_basis": "published",
+        "reports": 1,
+        "publishers": [
+          "Synthetic Ledger"
+        ],
+        "coverage": {
+          "publishers": 1,
+          "origins": 1,
+          "news_origins": 1,
+          "official_origins": 0,
+          "company_origins": 0,
+          "reporting_origins": 1,
+          "confirmed_news": 1,
+          "confirmed_official": 0,
+          "possible_news": 0,
+          "possible_official": 0,
+          "uncertain": 0,
+          "repeats": 0,
+          "company_statements": 0,
+          "official_releases": 0
+        },
+        "interests": [
+          "trade"
+        ],
+        "topics": [
+          {
+            "topic_id": "topic-c0867966717f7e48",
+            "title": "Synthetic steel dispute"
+          }
+        ],
+        "brief": {
+          "state": "none",
+          "summary": null,
+          "current": null,
+          "authorship": null,
+          "review": null,
+          "explained": false
+        },
+        "excerpt": {
+          "publisher": "Synthetic Ledger",
+          "text": "The Synthetic Republic said it would exempt three grades of steel from the tariff after talks."
+        },
+        "relevance": {
+          "state": "relevant",
+          "statement": "In the economic news."
+        },
+        "older": false,
+        "stale": false,
+        "synthetic": true,
+        "signals": [
+          {
+            "signal": "freshness",
+            "text": "Latest report 2 hours ago (by its feed's stated time)."
+          },
+          {
+            "signal": "new_development",
+            "text": "A new development: first reported 2 hours ago."
+          },
+          {
+            "signal": "topic",
+            "text": "The latest development in the ongoing topic “Synthetic steel dispute”."
+          },
+          {
+            "signal": "breaking",
+            "text": "A new development of high assessed importance, shown although only one source has reported it yet."
+          },
+          {
+            "signal": "importance",
+            "text": "Assessed as an adopted policy decision of national reach (a SYNTHETIC assessment)."
+          }
+        ],
+        "label": "Tariff narrowed"
+      }
+    ],
+    "statement": "The developments the editors linked to this topic, in the order they were first reported. Each is its own story with its own sources."
+  }
+}

@@ -1,0 +1,101 @@
+{
+ "cases_available": 2,
+ "coverage_note": "A first version with two cases: one on semiconductor export controls and one on sanctions. Two cases cannot cover policy events broadly, so most events will have no related case.",
+ "detail": null,
+ "event": {
+  "date_label": "Feed timestamp (feed metadata, not a verified publication time)",
+  "date_short": "feed timestamp",
+  "date_value": "Wed, 07 Oct 2026  09:00:00 EST",
+  "held": "current",
+  "hint": null,
+  "identity": {
+   "content_sha256": "4259c049081c3c9f547a63f65a23aa5147fe9e664ea372d0b510dac20e168142",
+   "id": "eia-todayinenergy:1bca4b2eab4d57f61838",
+   "kind": "inbox"
+  },
+  "inputs": [
+   {
+    "field": "title",
+    "label": "the entry's title",
+    "present": true
+   },
+   {
+    "field": "excerpt",
+    "label": "the feed excerpt",
+    "present": true
+   }
+  ],
+  "link": "https://www.eia.gov/todayinenergy/detail.php?id=90002",
+  "publisher": "U.S. Energy Information Administration",
+  "source": "eia-todayinenergy",
+  "title": "U.S. crude oil production reached a record in July"
+ },
+ "historical_note": "These cases describe announcements as of their dates. Rules, licenses and sanctions change after they are announced; nothing here says what applies today.",
+ "id": "eia-todayinenergy:1bca4b2eab4d57f61838",
+ "kept_records": 1,
+ "kind": "inbox",
+ "match": {
+  "collection_version": "related-cases-0.1",
+  "computed_at": "2026-10-12T10:00:00+00:00",
+  "match_id": "e20705530c5a9f8c5594bf6c71dda3e71f388be051b12bcebaf91dfaee45e847",
+  "overlaps": [
+   {
+    "case_id": "ofac-pdvsa-2019-01-28",
+    "missing": "instrument",
+    "shared": [
+     {
+      "dimension": "sector",
+      "found": [
+       {
+        "field": "title",
+        "hint": false,
+        "term": "oil"
+       },
+       {
+        "field": "excerpt",
+        "hint": false,
+        "term": "oil"
+       }
+      ],
+      "label": "Oil and petroleum",
+      "value": "oil"
+     }
+    ],
+    "text": "Shares Oil and petroleum (“oil” in the entry's title; “oil” in the feed excerpt) with this case, but it names none of the case's policy instruments (Sanctions), so it is not presented as related.",
+    "title": "Treasury sanctions Venezuela’s state-owned oil company, PdVSA"
+   }
+  ],
+  "related": [],
+  "rules_version": "related-match-rules-0.1",
+  "tags": {
+   "agency": {},
+   "geography": {},
+   "instrument": {},
+   "sector": {
+    "oil": {
+     "found": [
+      {
+       "field": "title",
+       "hint": false,
+       "term": "oil"
+      },
+      {
+       "field": "excerpt",
+       "hint": false,
+       "term": "oil"
+      }
+     ],
+     "label": "Oil and petroleum"
+    }
+   }
+  }
+ },
+ "matching_note": "A case is shown as related to an event only when the event’s own text names the case’s policy instrument and also its sector or its country. A shared topic alone, such as oil, is listed as an overlap, not as a related case. Saved headline classifications are used only as labelled hints. Matching runs on this machine with a fixed word list: no model, no network and no score.",
+ "not_compared_note": "Not compared by this check. The event's text is scanned only for the instrument, sector, country and agency; read the case to compare these yourself.",
+ "provider_called": false,
+ "rules_version": "related-match-rules-0.1",
+ "state": "checked",
+ "unreadable_records": 0,
+ "view_version": "related-match-view-0.1",
+ "written": false
+}
